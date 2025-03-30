@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz Aviation - Accueil</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body onload="initIndex()">
+  <h1>Quiz Aviation - Accueil</h1>
+  <div class="container">
+    <!-- Sélection de la catégorie avec compteur -->
+    <label for="categorie">Catégorie :</label>
+    <select id="categorie">
+      <!-- Les options seront remplies dynamiquement avec le nom de la catégorie et le nombre de questions -->
+    </select>
+    <br><br>
+    <!-- Choix du nombre de questions -->
+    <label for="nbQuestions">Nombre de questions :</label>
+    <input type="number" id="nbQuestions" value="10" min="1">
+    <br><br>
+    <!-- Choix du mode -->
+    <label for="mode">Mode :</label>
+    <select id="mode">
+      <!-- Options mises à jour par updateModeCounts() -->
+    </select>
+    <br><br>
+    <p id="totalGlobalInfo" style="color: #444;"></p>
+    <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
+    <button onclick="window.location='stats.html'">Voir les Statistiques</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
