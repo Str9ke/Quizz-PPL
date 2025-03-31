@@ -28,18 +28,22 @@ label {
   font-weight: bold;
 }
 
-/* Forcer l'alignement correct des boutons radio et du texte, 
-   en ignorant le style inline de l'HTML */
+/* Forcer l'alignement correct des boutons radio et du texte 
+   et empêcher le label de s'étendre inutilement */
 .answer-list label {
-  display: flex !important;
+  display: inline-flex !important;  /* on force inline-flex pour éviter le block par défaut */
   align-items: center !important;
   margin-bottom: 4px !important;
+  width: auto !important;
 }
 
+/* On s'assure que le bouton radio garde sa taille minimale */
 .answer-list input[type="radio"] {
+  flex: 0 0 auto;
   margin-right: 8px;
 }
 
+/* Les éléments de formulaire */
 select, input {
   margin-right: 10px;
   padding: 4px 6px;
@@ -142,7 +146,15 @@ button:disabled {
     margin: 0.5rem 0;
   }
   
+  /* Pour les réponses, on force le label à occuper uniquement l'espace nécessaire */
   .answer-list {
     margin-left: 10px;
+  }
+  
+  /* On conserve l'affichage inline-flex sur le label pour que le bouton radio et le texte soient côte à côte */
+  .answer-list label {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: auto !important;
   }
 }
