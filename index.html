@@ -23,24 +23,22 @@
 
     // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
-    // Initialiser Auth et Firestore
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    // Attacher Auth et Firestore à window pour les rendre accessibles globalement dans script.js
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
 
     // Surveille l'état de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
       if (user) {
         console.log("Utilisateur connecté :", user.uid);
-        // Masquer le formulaire de connexion et afficher l'interface du quiz
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
-        // Lancer initIndex() pour charger les données du quiz
+        // Lancer initIndex() pour charger le quiz (si définie dans script.js)
         if (typeof initIndex === 'function') {
           initIndex();
         }
       } else {
         console.log("Aucun utilisateur connecté");
-        // Afficher le formulaire de connexion et masquer l'interface du quiz
         document.getElementById("loginContainer").style.display = "block";
         document.getElementById("quizContainer").style.display = "none";
       }

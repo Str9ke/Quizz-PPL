@@ -307,8 +307,7 @@ function afficherQuiz() {
 }
 
 /**
- * validerReponses() – Traite les réponses de l'utilisateur et affiche la correction.
- * Appelle ensuite la sauvegarde complète de la progression.
+ * validerReponses() – Traite les réponses de l'utilisateur, affiche la correction et sauvegarde la progression
  */
 async function validerReponses() {
   console.log(">>> validerReponses()");
