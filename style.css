@@ -28,18 +28,19 @@ label {
   font-weight: bold;
 }
 
-/* Forcer l'alignement correct des boutons radio et du texte 
-   et empêcher le label de s'étendre inutilement */
+/* Correction pour l'affichage des réponses */
+/* On force l'override des styles inline et on utilise inline-flex */
 .answer-list label {
-  display: inline-flex !important;  /* on force inline-flex pour éviter le block par défaut */
-  align-items: center !important;
+  display: inline-flex !important;  /* Override du display: block */
+  align-items: center !important;     /* Aligne verticalement le contenu */
+  width: auto !important;             /* Ne prend que la place nécessaire */
   margin-bottom: 4px !important;
-  width: auto !important;
 }
 
-/* On s'assure que le bouton radio garde sa taille minimale */
+/* Le bouton radio prend sa taille minimale et s'aligne verticalement */
 .answer-list input[type="radio"] {
   flex: 0 0 auto;
+  vertical-align: middle;
   margin-right: 8px;
 }
 
@@ -146,12 +147,12 @@ button:disabled {
     margin: 0.5rem 0;
   }
   
-  /* Pour les réponses, on force le label à occuper uniquement l'espace nécessaire */
+  /* Ajustement des marges pour la liste des réponses */
   .answer-list {
     margin-left: 10px;
   }
   
-  /* On conserve l'affichage inline-flex sur le label pour que le bouton radio et le texte soient côte à côte */
+  /* On conserve inline-flex pour les labels des réponses */
   .answer-list label {
     display: inline-flex !important;
     align-items: center !important;
