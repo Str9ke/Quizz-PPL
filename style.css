@@ -28,11 +28,12 @@ label {
   font-weight: bold;
 }
 
-/* Pour aligner les boutons radio et le texte sur une même ligne */
+/* Forcer l'alignement correct des boutons radio et du texte, 
+   en ignorant le style inline de l'HTML */
 .answer-list label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
 }
 
 .answer-list input[type="radio"] {
