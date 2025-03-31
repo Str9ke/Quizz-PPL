@@ -29,34 +29,34 @@ label {
 }
 
 /* --- Mise en page pour les réponses du quiz --- */
-/* On utilise CSS Grid pour forcer le bouton radio dans une colonne fixe de 40px et le texte dans l'autre colonne.
-   On ajoute les préfixes pour une meilleure compatibilité sur Chrome mobile. */
+/* On force l'élément label à occuper 100% de la largeur, en affichage inline-block */
 .answer-list label {
-  display: -ms-grid !important; /* IE 10-11 */
-  display: grid !important;
-  -webkit-grid-template-columns: 40px 1fr;
-      grid-template-columns: 40px 1fr;
-  -webkit-gap: 8px;
-          gap: 8px;
-  align-items: center;
+  display: inline-block !important;
+  vertical-align: middle;
+  width: 100%;
   margin-bottom: 4px !important;
+  /* Supprimez tout style inline potentiellement gênant */
   padding: 0 !important;
 }
 
-/* Le bouton radio occupe exactement 40px de largeur */
+/* Le bouton radio aura une largeur fixe et une marge à droite */
 .answer-list label input[type="radio"] {
+  display: inline-block;
+  vertical-align: middle;
   width: 40px;
   max-width: 40px;
   margin: 0;
+  margin-right: 8px;
   padding: 0;
-  justify-self: center;
 }
 
-/* Le texte de la réponse (s'il est contenu dans une balise, par exemple <span>) s'affichera dans la seconde colonne.
-   Si le HTML ne comporte pas de balise englobante pour le texte, le navigateur créera une boîte anonyme qui se comporte comme prévu. */
+/* Le texte de la réponse, contenu dans le <span>, occupe le reste de la ligne */
 .answer-list label span {
-  white-space: normal;
+  display: inline-block;
+  vertical-align: middle;
+  width: calc(100% - 48px); /* 40px (bouton) + 8px (marge) */
   word-wrap: break-word;
+  white-space: normal;
 }
 
 /* Les éléments de formulaire */
@@ -149,13 +149,14 @@ button:disabled {
     padding: 1rem;
   }
   
-  /* Mise en page bloc pour les formulaires */
+  /* Affichage en bloc pour les éléments de formulaire */
   label, select, input {
     display: block;
     width: 100%;
     margin: 0.5rem 0;
   }
   
+  /* Boutons en pleine largeur */
   button {
     width: 100%;
     margin: 0.5rem 0;
@@ -163,18 +164,5 @@ button:disabled {
   
   .answer-list {
     margin-left: 10px;
-  }
-  
-  /* On conserve le grid pour les réponses sur smartphone */
-  .answer-list label {
-    display: -ms-grid !important;
-    display: grid !important;
-    -webkit-grid-template-columns: 40px 1fr;
-        grid-template-columns: 40px 1fr;
-    -webkit-gap: 8px;
-            gap: 8px;
-    align-items: center;
-    margin-bottom: 4px !important;
-    padding: 0 !important;
   }
 }

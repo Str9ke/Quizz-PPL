@@ -320,11 +320,12 @@ function afficherQuiz() {
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
         <div class="answer-list">
-          ${q.choix.map((c, i) => `
-            <label style="display:block;margin-bottom:4px;">
-              <input type="radio" name="q${q.id}" value="${i}"> ${c}
-            </label>
-          `).join('')}
+        ${q.choix.map((c, i) => 
+          `<label style="display:block;margin-bottom:4px;">
+              <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
+           </label>`
+        ).join('')}
+        
         </div>
       </div>
     `;
