@@ -369,6 +369,14 @@ function computeProgress() {
  * sauvegarderProgression() – Enregistre la progression complète (réponses et stats) dans Firestore
  */
 async function sauvegarderProgression() {
+  console.log(">>> sauvegarderProgression()");
+  
+  if (!auth.currentUser) {
+    alert("Vous devez être connecté pour sauvegarder votre progression.");
+    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
+    return;
+  }
+
   let progressData = {
     category: selectedCategory,
     currentQuestionIndex: 0,  // À ajuster selon la logique de reprise
@@ -386,10 +394,6 @@ async function sauvegarderProgression() {
   // Calculer les statistiques complètes
   progressData.stats = computeProgress();
 
-  if (!auth.currentUser) {
-    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
-    return;
-  }
   const uid = auth.currentUser.uid;
   try {
     await db.collection('quizProgress').doc(uid).set({
@@ -402,6 +406,7 @@ async function sauvegarderProgression() {
     console.log("Progression complète sauvegardée dans Firestore !");
   } catch (error) {
     console.error("Erreur lors de la sauvegarde de la progression :", error);
+    alert("Erreur lors de la sauvegarde de la progression : " + error.message);
   }
 }
 
