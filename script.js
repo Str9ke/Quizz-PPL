@@ -227,11 +227,21 @@ async function chargerQuestions(cat) {
     fileName = "questions_motorisation.json";
   }
   
-  const res = await fetch(fileName);
-  console.log("    fetch effectué, statut=", res.status);
-  questions = await res.json();
-  console.log("    questions chargées:", questions.length);
+  try {
+    const res = await fetch(fileName);
+    if (!res.ok) {
+      console.error("Erreur lors du chargement du fichier:", fileName, "status:", res.status);
+      questions = [];
+      return;
+    }
+    questions = await res.json();
+    console.log("    questions chargées:", questions.length);
+  } catch (error) {
+    console.error("Erreur fetch pour", fileName, error);
+    questions = [];
+  }
 }
+
 
 /**
  * Filtrer les questions selon le mode choisi et le nombre demandé
