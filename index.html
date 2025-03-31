@@ -10,7 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script>
-    // Configuration Firebase obtenue depuis la console Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA571OMe9w5ldJLcIwkT9bN6zd_Qn_Y9GU",
       authDomain: "quizaviation-b79ff.firebaseapp.com",
@@ -21,19 +20,15 @@
       measurementId: "G-N3G7EVGZ84"
     };
 
-    // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
-    // Attacher Auth et Firestore à window pour les rendre accessibles globalement dans script.js
     window.auth = firebase.auth();
     window.db = firebase.firestore();
 
-    // Surveille l'état de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
       if (user) {
         console.log("Utilisateur connecté :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
-        // Lancer initIndex() pour charger le quiz (si définie dans script.js)
         if (typeof initIndex === 'function') {
           initIndex();
         }
@@ -45,6 +40,7 @@
     });
   </script>
 </head>
+
 <body>
   <h1>Quiz Aviation - Accueil</h1>
 

@@ -367,7 +367,7 @@ function computeProgress() {
 async function sauvegarderProgression() {
   let progressData = {
     category: selectedCategory,
-    currentQuestionIndex: 0,  // Vous pouvez ajuster cette valeur pour reprendre exactement la question en cours
+    currentQuestionIndex: 0,  // Adaptez cette valeur selon la logique du quiz
     responses: {},
     stats: {}
   };
@@ -379,7 +379,6 @@ async function sauvegarderProgression() {
     }
   });
 
-  // Calculer les statistiques complètes
   progressData.stats = computeProgress();
 
   if (!auth.currentUser) {
@@ -400,6 +399,7 @@ async function sauvegarderProgression() {
     console.error("Erreur lors de la sauvegarde de la progression :", error);
   }
 }
+
 
 /**
  * afficherCorrection() – Affiche la correction sur quiz.html
