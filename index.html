@@ -27,6 +27,8 @@
     window.auth = firebase.auth();
     window.db = firebase.firestore();
 
+    console.log("Firebase initialisé :", firebase.apps.length > 0);
+
     // Surveille l'état de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
       if (user) {
