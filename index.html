@@ -10,8 +10,8 @@
   <div class="container">
     <!-- Sélection de la catégorie avec compteur -->
     <label for="categorie">Catégorie :</label>
-    <select id="categorie">
-      <!-- Les options seront remplies dynamiquement avec le nom de la catégorie et le nombre de questions -->
+    <select id="categorie" onchange="categoryChanged()">
+      <!-- Les options seront remplies dynamiquement par updateCategorySelect() -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
@@ -31,3 +31,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+

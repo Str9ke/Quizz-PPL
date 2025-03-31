@@ -1,82 +1,163 @@
 // script.js
 
-// Tableau global pour stocker toutes les questions de la catégorie chargée
+// On maintient un grand tableau global "questions" quand on charge une des catégories.
+// On maintient "currentQuestions" pour le quiz en cours.
 let questions = [];
 let currentQuestions = [];
 
-let selectedCategory = "PROCÉDURE RADIO"; // Catégorie par défaut
+let selectedCategory = "PROCÉDURE RADIO"; // Par défaut, mais on va le changer
 let modeQuiz = "toutes";
 let nbQuestions = 10;
 
-// Pour stocker les compteurs par catégorie
-const counts = {};
+// Variables pour stocker le nombre de questions par catégorie
+let countRadio = 0;
+let countOp = 0;
+let countRegl = 0;
+let countConv = 0;
+let countInstr = 0;
+let countMasse = 0;
+let countMotor = 0;
+let totalGlobal = 0;
 
 /**
- * initIndex() - s'exécute sur index.html pour charger toutes les catégories et mettre à jour le menu.
+ * 0) initIndex() -- on est sur index.html
  */
 async function initIndex() {
   console.log(">>> initIndex()");
-
-  // Charger toutes les catégories pour obtenir les compteurs
+  
+  // Charger toutes les catégories pour pouvoir compter le total global
+  
+  // 1) PROCÉDURE RADIO
   await chargerQuestions("PROCÉDURE RADIO");
-  counts["PROCÉDURE RADIO"] = questions.length;
+  countRadio = questions.length;
 
+  // 2) PROCÉDURES OPÉRATIONNELLES
   await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
-  counts["PROCÉDURES OPÉRATIONNELLES"] = questions.length;
+  countOp = questions.length;
 
+  // 3) RÉGLEMENTATION
   await chargerQuestions("RÉGLEMENTATION");
-  counts["RÉGLEMENTATION"] = questions.length;
+  countRegl = questions.length;
 
+  // 4) CONNAISSANCE DE L’AVION
   await chargerQuestions("CONNAISSANCE DE L’AVION");
-  counts["CONNAISSANCE DE L’AVION"] = questions.length;
-
+  countConv = questions.length;
+  
+  // 5) INSTRUMENTATION
   await chargerQuestions("INSTRUMENTATION");
-  counts["INSTRUMENTATION"] = questions.length;
-
+  countInstr = questions.length;
+  
+  // 6) MASSE ET CENTRAGE
   await chargerQuestions("MASSE ET CENTRAGE");
-  counts["MASSE ET CENTRAGE"] = questions.length;
-
+  countMasse = questions.length;
+  
+  // 7) MOTORISATION
   await chargerQuestions("MOTORISATION");
-  counts["MOTORISATION"] = questions.length;
+  countMotor = questions.length;
 
-  // Mettre à jour le sélecteur de catégorie avec le nombre de questions
-  const catSelect = document.getElementById('categorie');
-  catSelect.innerHTML = `
-    <option value="PROCÉDURE RADIO">PROCÉDURE RADIO (${counts["PROCÉDURE RADIO"]})</option>
-    <option value="PROCÉDURES OPÉRATIONNELLES">PROCÉDURES OPÉRATIONNELLES (${counts["PROCÉDURES OPÉRATIONNELLES"]})</option>
-    <option value="RÉGLEMENTATION">RÉGLEMENTATION (${counts["RÉGLEMENTATION"]})</option>
-    <option value="CONNAISSANCE DE L’AVION">CONNAISSANCE DE L’AVION (${counts["CONNAISSANCE DE L’AVION"]})</option>
-    <option value="INSTRUMENTATION">INSTRUMENTATION (${counts["INSTRUMENTATION"]})</option>
-    <option value="MASSE ET CENTRAGE">MASSE ET CENTRAGE (${counts["MASSE ET CENTRAGE"]})</option>
-    <option value="MOTORISATION">MOTORISATION (${counts["MOTORISATION"]})</option>
-  `;
+  // Calculer le total global
+  totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor;
+  
+  // Mettre à jour le menu déroulant des catégories avec les compteurs
+  updateCategorySelect();
 
-  // Lorsque l'utilisateur change de catégorie, recharge les questions et met à jour le mode.
-  catSelect.addEventListener('change', async function() {
-    selectedCategory = this.value;
-    await chargerQuestions(selectedCategory);
-    updateModeCounts();
-  });
-
-  // Charger la catégorie par défaut
-  selectedCategory = "PROCÉDURE RADIO";
-  await chargerQuestions(selectedCategory);
+  // Sélectionner par défaut "TOUTES LES QUESTIONS" pour l'affichage initial
+  const catSelect = document.getElementById("categorie");
+  catSelect.value = "TOUTES";
+  selectedCategory = "TOUTES";
+  // Charger toutes les questions (concaténation des catégories)
+  await loadAllQuestions();
+  
+  // Mettre à jour le menu du mode selon les questions chargées
   updateModeCounts();
 
-  // Calcul du total global de questions
-  const totalGlobal = counts["PROCÉDURE RADIO"] + counts["PROCÉDURES OPÉRATIONNELLES"] +
-                      counts["RÉGLEMENTATION"] + counts["CONNAISSANCE DE L’AVION"] +
-                      counts["INSTRUMENTATION"] + counts["MASSE ET CENTRAGE"] +
-                      counts["MOTORISATION"];
+  // Afficher le total global
   const p = document.getElementById('totalGlobalInfo');
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
-  // Activer le bouton de démarrage
+  // Activer le bouton start
   document.getElementById('btnStart').disabled = false;
 }
 
 /**
- * updateModeCounts() - met à jour le select "mode" avec le nombre total, ratées, non vues, etc.
+ * Charge toutes les questions de toutes les catégories
+ */
+async function loadAllQuestions() {
+  let allQuestions = [];
+  const categories = [
+    "PROCÉDURE RADIO",
+    "PROCÉDURES OPÉRATIONNELLES",
+    "RÉGLEMENTATION",
+    "CONNAISSANCE DE L’AVION",
+    "INSTRUMENTATION",
+    "MASSE ET CENTRAGE",
+    "MOTORISATION"
+  ];
+  for (const cat of categories) {
+    await chargerQuestions(cat);
+    allQuestions = allQuestions.concat(questions);
+  }
+  questions = allQuestions;
+}
+
+/**
+ * updateCategorySelect() – construit dynamiquement le menu déroulant des catégories
+ * en plaçant en première position "TOUTES LES QUESTIONS" avec son compteur global,
+ * puis les autres catégories avec leur nombre de questions.
+ */
+function updateCategorySelect() {
+  const catSelect = document.getElementById("categorie");
+  catSelect.innerHTML = "";
+
+  // Option "TOUTES LES QUESTIONS"
+  const optionToutes = document.createElement("option");
+  optionToutes.value = "TOUTES";
+  optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
+  catSelect.appendChild(optionToutes);
+
+  // Liste des catégories et leurs compteurs
+  const categories = [
+    { name: "PROCÉDURE RADIO", count: countRadio },
+    { name: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
+    { name: "RÉGLEMENTATION", count: countRegl },
+    { name: "CONNAISSANCE DE L’AVION", count: countConv },
+    { name: "INSTRUMENTATION", count: countInstr },
+    { name: "MASSE ET CENTRAGE", count: countMasse },
+    { name: "MOTORISATION", count: countMotor }
+  ];
+
+  categories.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = `${cat.name} (${cat.count})`;
+    catSelect.appendChild(opt);
+  });
+}
+
+/**
+ * Fonction appelée lors du changement de catégorie dans le menu déroulant.
+ */
+function categoryChanged() {
+  const catSelect = document.getElementById("categorie");
+  const selected = catSelect.value;
+  
+  if (selected === "TOUTES") {
+    // Charger toutes les catégories et concaténer les questions
+    (async function() {
+      await loadAllQuestions();
+      updateModeCounts();
+    })();
+  } else {
+    // Charger uniquement la catégorie sélectionnée
+    (async function() {
+      await chargerQuestions(selected);
+      updateModeCounts();
+    })();
+  }
+}
+
+/**
+ * 1) updateModeCounts() – met à jour le <select id="mode"> selon la catégorie actuelle
  */
 function updateModeCounts() {
   console.log('>>> updateModeCounts()');
@@ -84,10 +165,14 @@ function updateModeCounts() {
   let nbRatees = 0, nbNonvues = 0;
   questions.forEach(q => {
     const st = localStorage.getItem(getKeyFor(q));
-    if (!st) nbNonvues++;
-    else if (st === 'ratée') nbRatees++;
+    if (!st) {
+      nbNonvues++;
+    } else if (st === 'ratée') {
+      nbRatees++;
+    }
   });
   const nbRateesNonvues = nbRatees + nbNonvues;
+
   const modeSelect = document.getElementById('mode');
   modeSelect.innerHTML = `
     <option value="toutes">Toutes (${total})</option>
@@ -98,7 +183,7 @@ function updateModeCounts() {
 }
 
 /**
- * demarrerQuiz() - démarre le quiz sur quiz.html
+ * 2) demarrerQuiz() -- clic sur "Démarrer le quiz"
  */
 async function demarrerQuiz() {
   console.log(">>> demarrerQuiz()");
@@ -106,7 +191,12 @@ async function demarrerQuiz() {
   modeQuiz = document.getElementById('mode').value;
   nbQuestions = parseInt(document.getElementById('nbQuestions').value);
 
-  await chargerQuestions(selectedCategory);
+  if (selectedCategory === "TOUTES") {
+    await loadAllQuestions();
+  } else {
+    await chargerQuestions(selectedCategory);
+  }
+
   filtrerQuestions(modeQuiz, nbQuestions);
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
@@ -114,7 +204,7 @@ async function demarrerQuiz() {
 }
 
 /**
- * chargerQuestions(cat) - charge le JSON correspondant à la catégorie
+ * 3) Charger le JSON correspondant à la catégorie
  */
 async function chargerQuestions(cat) {
   console.log(">>> chargerQuestions() cat=", cat);
@@ -134,6 +224,7 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   }
+  
   const res = await fetch(fileName);
   console.log("    fetch effectué, statut=", res.status);
   questions = await res.json();
@@ -141,16 +232,17 @@ async function chargerQuestions(cat) {
 }
 
 /**
- * filtrerQuestions(mode, nb) - filtre les questions selon le mode choisi et le nombre souhaité.
+ * 4) Filtrer selon mode + nb
  */
 function filtrerQuestions(mode, nb) {
-  console.log(`>>> filtrerQuestions(mode=${mode}, nb=${nb})`);
+  console.log('>>> filtrerQuestions(mode=' + mode + ', nb=' + nb + ')');
   if (!questions.length) {
     console.warn("    questions[] est vide");
     currentQuestions = [];
     return;
   }
   const shuffled = [...questions].sort(() => 0.5 - Math.random());
+
   if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   } else if (mode === "ratees") {
@@ -170,30 +262,33 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * initQuiz() - s'exécute sur quiz.html pour charger et afficher le quiz.
+ * 5) Sur quiz.html => onload="initQuiz()"
  */
 function initQuiz() {
   console.log(">>> initQuiz()");
-  selectedCategory = localStorage.getItem('quizCategory') || "PROCÉDURE RADIO";
+  selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
   chargerQuestions(selectedCategory).then(() => {
     afficherQuiz();
   });
 }
 
 /**
- * afficherQuiz() - affiche les questions du quiz sur quiz.html.
+ * 6) Afficher le quiz sur quiz.html
  */
 function afficherQuiz() {
   console.log(">>> afficherQuiz()");
   currentQuestions = JSON.parse(localStorage.getItem('currentQuestions')) || [];
   console.log("    currentQuestions=", currentQuestions);
+
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
+
   if (!currentQuestions.length) {
     cont.innerHTML = `<p style="color:red;">Aucune question chargée.<br>
       Retournez à l'accueil et cliquez sur «Démarrer le Quiz».</p>`;
     return;
   }
+
   cont.innerHTML = "";
   currentQuestions.forEach((q, idx) => {
     cont.innerHTML += `
@@ -212,11 +307,12 @@ function afficherQuiz() {
 }
 
 /**
- * validerReponses() - s'exécute lors du clic sur "Envoyer les réponses".
+ * 7) Traitement de l'envoi des réponses par l'utilisateur
  */
 function validerReponses() {
   console.log(">>> validerReponses()");
   let correctCount = 0;
+
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
@@ -227,7 +323,9 @@ function validerReponses() {
       localStorage.setItem(key, 'ratée');
     }
   });
+
   afficherCorrection();
+
   const rc = document.getElementById('resultContainer');
   if (rc) {
     rc.style.display = "block";
@@ -239,28 +337,36 @@ function validerReponses() {
 }
 
 /**
- * afficherCorrection() - affiche la correction sur quiz.html.
+ * 8) Afficher la correction sur quiz.html
  */
 function afficherCorrection() {
   console.log(">>> afficherCorrection()");
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
+
   let html = "";
   currentQuestions.forEach((q, idx) => {
     const st = localStorage.getItem(getKeyFor(q));
     const checkedVal = document.querySelector(`input[name="q${q.id}"]:checked`)?.value;
+
     let ansHtml = "";
     q.choix.forEach((choixText, i) => {
       let styleCls = "";
       if (i === q.bonne_reponse) styleCls = "correct";
       else if (checkedVal && parseInt(checkedVal) === i) styleCls = "wrong";
-      ansHtml += `<div style="margin-bottom:4px;"><span class="${styleCls}">${choixText}</span></div>`;
+
+      ansHtml += `<div style="margin-bottom:4px;">
+        <span class="${styleCls}">${choixText}</span>
+      </div>`;
     });
+
     html += `
       <div class="question-block">
         <div class="question-title">
           ${idx+1}. ${q.question}
-          <span style="color:#999;font-size:0.9em;">(${st ? st.toUpperCase() : 'NON REPONDU'})</span>
+          <span style="color:#999;font-size:0.9em;">
+            (${st ? st.toUpperCase() : 'NON REPONDU'})
+          </span>
         </div>
         <div class="answer-list">
           ${ansHtml}
@@ -272,34 +378,42 @@ function afficherCorrection() {
 }
 
 /**
- * initStats() - s'exécute sur stats.html pour charger les statistiques de toutes les catégories.
+ * 9) Page stats => onload="initStats()"
  */
 async function initStats() {
   console.log(">>> initStats()");
   await chargerQuestions("PROCÉDURE RADIO");
   const arrRadio = [...questions];
+  
   await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
   const arrOp = [...questions];
+  
   await chargerQuestions("RÉGLEMENTATION");
   const arrRegl = [...questions];
+  
   await chargerQuestions("CONNAISSANCE DE L’AVION");
   const arrConv = [...questions];
+  
   await chargerQuestions("INSTRUMENTATION");
   const arrInstr = [...questions];
+  
   await chargerQuestions("MASSE ET CENTRAGE");
   const arrMasse = [...questions];
+  
   await chargerQuestions("MOTORISATION");
   const arrMotor = [...questions];
+
   afficherStats(arrRadio, arrOp, arrRegl, arrConv, arrInstr, arrMasse, arrMotor);
 }
 
 /**
- * afficherStats() - affiche les statistiques sur stats.html.
+ * 10) Afficher le bloc de statistiques sur stats.html
  */
 function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, motorArr) {
   console.log(">>> afficherStats()");
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
+
   const statsRadio = computeStatsFor(radioArr);
   const statsOp = computeStatsFor(opArr);
   const statsRegl = computeStatsFor(reglArr);
@@ -317,17 +431,17 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
   const totalMotor = motorArr.length;
 
   const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor;
-  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie +
-                         statsConv.reussie + statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
+  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
+                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
 
   let percRadio = totalRadio ? Math.round((statsRadio.reussie * 100) / totalRadio) : 0;
-  let percOp    = totalOp ? Math.round((statsOp.reussie * 100) / totalOp) : 0;
-  let percRegl  = totalRegl ? Math.round((statsRegl.reussie * 100) / totalRegl) : 0;
-  let percConv  = totalConv ? Math.round((statsConv.reussie * 100) / totalConv) : 0;
+  let percOp    = totalOp    ? Math.round((statsOp.reussie   * 100) / totalOp)    : 0;
+  let percRegl  = totalRegl  ? Math.round((statsRegl.reussie * 100) / totalRegl) : 0;
+  let percConv  = totalConv  ? Math.round((statsConv.reussie * 100) / totalConv) : 0;
   let percInstr = totalInstr ? Math.round((statsInstr.reussie * 100) / totalInstr) : 0;
   let percMasse = totalMasse ? Math.round((statsMasse.reussie * 100) / totalMasse) : 0;
   let percMotor = totalMotor ? Math.round((statsMotor.reussie * 100) / totalMotor) : 0;
-  let percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal): 0;
 
   cont.innerHTML = `
     <h2>Catégorie : PROCÉDURE RADIO</h2>
@@ -336,6 +450,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsRadio.ratée}</p>
     <p>👀 Non vues : ${statsRadio.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percRadio}%;"></div></div>
+
     <hr>
     <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
     <p>Total : ${totalOp} questions</p>
@@ -343,6 +458,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsOp.ratée}</p>
     <p>👀 Non vues : ${statsOp.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percOp}%;"></div></div>
+
     <hr>
     <h2>Catégorie : RÉGLEMENTATION</h2>
     <p>Total : ${totalRegl} questions</p>
@@ -350,6 +466,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsRegl.ratée}</p>
     <p>👀 Non vues : ${statsRegl.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percRegl}%;"></div></div>
+
     <hr>
     <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
     <p>Total : ${totalConv} questions</p>
@@ -357,6 +474,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsConv.ratée}</p>
     <p>👀 Non vues : ${statsConv.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percConv}%;"></div></div>
+
     <hr>
     <h2>Catégorie : INSTRUMENTATION</h2>
     <p>Total : ${totalInstr} questions</p>
@@ -364,6 +482,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsInstr.ratée}</p>
     <p>👀 Non vues : ${statsInstr.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percInstr}%;"></div></div>
+
     <hr>
     <h2>Catégorie : MASSE ET CENTRAGE</h2>
     <p>Total : ${totalMasse} questions</p>
@@ -371,6 +490,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsMasse.ratée}</p>
     <p>👀 Non vues : ${statsMasse.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percMasse}%;"></div></div>
+
     <hr>
     <h2>Catégorie : MOTORISATION</h2>
     <p>Total : ${totalMotor} questions</p>
@@ -378,6 +498,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
     <p>❌ Ratées : ${statsMotor.ratée}</p>
     <p>👀 Non vues : ${statsMotor.nonvue}</p>
     <div class="progressbar"><div class="progress" style="width:${percMotor}%;"></div></div>
+
     <hr>
     <h2>Global</h2>
     <p>Total cumulé : ${totalGlobal}</p>
@@ -388,7 +509,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
 }
 
 /**
- * computeStatsFor(arr) - calcule les statistiques pour un tableau de questions
+ * 11) computeStatsFor(questionArray)
  */
 function computeStatsFor(arr) {
   let reussie = 0, ratee = 0, nonvue = 0;
@@ -402,22 +523,23 @@ function computeStatsFor(arr) {
 }
 
 /**
- * resetStats() - supprime toutes les clés "question_"
+ * 12) resetStats() – supprime du localStorage toutes les clés "question_..."
  */
 function resetStats() {
   console.log(">>> resetStats()");
   const toRemove = [];
-  for (let i = 0; i < localStorage.length; i++){
+  for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (k && k.startsWith("question_")) toRemove.push(k);
   }
   toRemove.forEach(k => localStorage.removeItem(k));
+
   alert("Les stats ont été réinitialisées !");
   window.location.reload();
 }
 
 /**
- * getKeyFor(q) - génère une clé pour chaque question sous la forme "question_CATEGORIE_ID"
+ * getKeyFor(q) – retourne la clé de stockage pour une question donnée
  */
 function getKeyFor(q) {
   return "question_" + q.categorie + "_" + q.id;
