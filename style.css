@@ -28,35 +28,28 @@ label {
   font-weight: bold;
 }
 
-/* --- Mise en page pour les réponses du quiz --- */
-/* On force l'élément label à occuper 100% de la largeur, en affichage inline-block */
+/* --- Mise en page pour les réponses du quiz avec Flexbox --- */
+/* Forcer le label à utiliser flex afin d'aligner le bouton radio et le texte sur la même ligne */
 .answer-list label {
-  display: inline-block !important;
-  vertical-align: middle;
+  display: flex !important;  /* Annule le display:block inline */
+  align-items: center !important; /* Aligne verticalement sur la même ligne */
   width: 100%;
   margin-bottom: 4px !important;
-  /* Supprimez tout style inline potentiellement gênant */
   padding: 0 !important;
 }
 
-/* Le bouton radio aura une largeur fixe et une marge à droite */
+/* Le bouton radio est contenu dans un espace fixe de 40px */
 .answer-list label input[type="radio"] {
-  display: inline-block;
-  vertical-align: middle;
-  width: 40px;
-  max-width: 40px;
-  margin: 0;
+  flex: 0 0 40px;  /* largeur fixe de 40px */
   margin-right: 8px;
-  padding: 0;
 }
 
-/* Le texte de la réponse, contenu dans le <span>, occupe le reste de la ligne */
+/* Le texte de la réponse, contenu dans un <span>, occupe le reste de la ligne et reste sur la même ligne */
 .answer-list label span {
-  display: inline-block;
-  vertical-align: middle;
-  width: calc(100% - 48px); /* 40px (bouton) + 8px (marge) */
-  word-wrap: break-word;
+  flex: 1;
   white-space: normal;
+  word-wrap: break-word;
+  vertical-align: middle;
 }
 
 /* Les éléments de formulaire */
@@ -149,14 +142,13 @@ button:disabled {
     padding: 1rem;
   }
   
-  /* Affichage en bloc pour les éléments de formulaire */
+  /* Pour les éléments de formulaire, affichage en bloc */
   label, select, input {
     display: block;
     width: 100%;
     margin: 0.5rem 0;
   }
   
-  /* Boutons en pleine largeur */
   button {
     width: 100%;
     margin: 0.5rem 0;
@@ -164,5 +156,12 @@ button:disabled {
   
   .answer-list {
     margin-left: 10px;
+  }
+  
+  /* Assurer que le label des réponses garde le comportement flex sur smartphone */
+  .answer-list label {
+    display: flex !important;
+    align-items: center !important;
+    width: 100%;
   }
 }
