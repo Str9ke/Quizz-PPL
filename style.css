@@ -29,32 +29,32 @@ label {
 }
 
 /* --- Mise en page pour les réponses du quiz --- */
-/* On utilise CSS Grid pour forcer le bouton radio dans une colonne fixe de 40px,
-   et le texte occupe la colonne restante. */
+/* On utilise CSS Grid pour forcer le bouton radio dans une colonne fixe de 40px et le texte dans l'autre colonne.
+   On ajoute les préfixes pour une meilleure compatibilité sur Chrome mobile. */
 .answer-list label {
+  display: -ms-grid !important; /* IE 10-11 */
   display: grid !important;
-  grid-template-columns: 40px 1fr;
+  -webkit-grid-template-columns: 40px 1fr;
+      grid-template-columns: 40px 1fr;
+  -webkit-gap: 8px;
+          gap: 8px;
   align-items: center;
-  gap: 8px;
   margin-bottom: 4px !important;
-  /* On retire tout padding inutile pour ne pas agrandir le label */
-  padding: 0;
+  padding: 0 !important;
 }
 
-/* Le bouton radio occupe la première colonne avec une largeur fixe */
+/* Le bouton radio occupe exactement 40px de largeur */
 .answer-list label input[type="radio"] {
   width: 40px;
   max-width: 40px;
-  height: auto;
-  justify-self: center;
   margin: 0;
   padding: 0;
+  justify-self: center;
 }
 
-/* Le texte de la réponse se trouve dans la seconde colonne et s'enroule si nécessaire */
-.answer-list label {
-  /* En l'absence de balise englobante pour le texte, le navigateur crée une boîte anonyme
-     qui occupe la seconde colonne et se met à la ligne si besoin */
+/* Le texte de la réponse (s'il est contenu dans une balise, par exemple <span>) s'affichera dans la seconde colonne.
+   Si le HTML ne comporte pas de balise englobante pour le texte, le navigateur créera une boîte anonyme qui se comporte comme prévu. */
+.answer-list label span {
   white-space: normal;
   word-wrap: break-word;
 }
@@ -149,14 +149,13 @@ button:disabled {
     padding: 1rem;
   }
   
-  /* Pour les éléments de formulaire, on passe en affichage bloc */
+  /* Mise en page bloc pour les formulaires */
   label, select, input {
     display: block;
     width: 100%;
     margin: 0.5rem 0;
   }
   
-  /* Boutons en pleine largeur */
   button {
     width: 100%;
     margin: 0.5rem 0;
@@ -166,13 +165,16 @@ button:disabled {
     margin-left: 10px;
   }
   
-  /* Conserver le grid pour les réponses sur smartphone */
+  /* On conserve le grid pour les réponses sur smartphone */
   .answer-list label {
+    display: -ms-grid !important;
     display: grid !important;
-    grid-template-columns: 40px 1fr;
+    -webkit-grid-template-columns: 40px 1fr;
+        grid-template-columns: 40px 1fr;
+    -webkit-gap: 8px;
+            gap: 8px;
     align-items: center;
-    gap: 8px;
     margin-bottom: 4px !important;
-    padding: 0;
+    padding: 0 !important;
   }
 }
