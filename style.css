@@ -28,20 +28,39 @@ label {
   font-weight: bold;
 }
 
-/* Correction pour l'affichage des réponses */
-/* On force l'override des styles inline et on utilise inline-flex */
+/* 
+  Modification pour les réponses du quiz :
+  On force le label à s'afficher en flex (en override du style inline)
+  avec une petite zone fixe pour le bouton radio.
+*/
 .answer-list label {
-  display: inline-flex !important;  /* Override du display: block */
-  align-items: center !important;     /* Aligne verticalement le contenu */
-  width: auto !important;             /* Ne prend que la place nécessaire */
+  display: flex !important;       /* Forcer le layout en flex */
+  align-items: center !important;  /* Alignement vertical */
   margin-bottom: 4px !important;
+  padding: 0 !important;
+  width: auto !important;          /* Ne pas occuper toute la largeur */
 }
 
-/* Le bouton radio prend sa taille minimale et s'aligne verticalement */
-.answer-list input[type="radio"] {
-  flex: 0 0 auto;
-  vertical-align: middle;
-  margin-right: 8px;
+/* Le conteneur du bouton radio a une largeur fixe et minimale */
+.answer-list label input[type="radio"] {
+  flex: 0 0 30px;      /* 30px de largeur fixe pour le bouton radio */
+  max-width: 30px;
+  margin: 0;           /* Supprimer toute marge interne */
+  padding: 0;
+}
+
+/* Le texte de la réponse apparaîtra immédiatement après */
+.answer-list label span {
+  flex: 1;
+}
+
+/* Si vous ne contrôlez pas le HTML, vous pouvez cibler l'input 
+   et utiliser la pseudo-classe suivante pour le texte restant :
+   Ici, on s'assure que le contenu textuel n'est pas sur une ligne séparée.
+*/
+.answer-list label::after {
+  content: "";
+  flex: 1;
 }
 
 /* Les éléments de formulaire */
@@ -147,14 +166,14 @@ button:disabled {
     margin: 0.5rem 0;
   }
   
-  /* Ajustement des marges pour la liste des réponses */
   .answer-list {
     margin-left: 10px;
   }
   
-  /* On conserve inline-flex pour les labels des réponses */
+  /* Conserver l'alignement inline-flex sur le label pour que le bouton radio
+     et le texte restent côte à côte sans occuper toute la largeur */
   .answer-list label {
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
     width: auto !important;
   }
