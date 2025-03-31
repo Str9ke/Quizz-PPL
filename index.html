@@ -93,30 +93,39 @@
   <script>
     // Gestion du formulaire de connexion/inscription
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  
+  // Vérifiez que le mot de passe a au moins 6 caractères
+  if (password.length < 6) {
+    alert("Le mot de passe doit contenir au moins 6 caractères.");
+    return;
+  }
+  
+  try {
+    // Tente de connecter l'utilisateur
+    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    console.log("Connecté :", userCredential.user.uid);
+    // Redirection gérée par onAuthStateChanged
+  } catch (error) {
+    console.error("Erreur lors de la connexion :", error);
+    // Si l'erreur indique que l'utilisateur n'existe pas, on tente de créer le compte
+    if (error.code === 'auth/user-not-found') {
       try {
-        // Essayer de connecter l'utilisateur
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        console.log("Connecté :", userCredential.user.uid);
-        // Le listener onAuthStateChanged gère l'affichage de l'interface du quiz
-      } catch (error) {
-        // Si l'utilisateur n'existe pas, créer le compte
-        if (error.code === 'auth/user-not-found') {
-          try {
-            const newUser = await auth.createUserWithEmailAndPassword(email, password);
-            console.log("Utilisateur créé et connecté :", newUser.user.uid);
-          } catch (creationError) {
-            console.error("Erreur lors de la création du compte :", creationError);
-            alert("Erreur lors de la création du compte : " + creationError.message);
-          }
-        } else {
-          console.error("Erreur de connexion :", error);
-          alert("Erreur de connexion : " + error.message);
-        }
+        const newUser = await auth.createUserWithEmailAndPassword(email, password);
+        console.log("Utilisateur créé et connecté :", newUser.user.uid);
+        // Redirection ou autre action après création réussie
+      } catch (creationError) {
+        console.error("Erreur lors de la création du compte :", creationError);
+        alert("Erreur lors de la création du compte : " + creationError.message);
       }
-    });
+    } else {
+      alert("Erreur de connexion : " + error.message);
+    }
+  }
+});
+
 
     // Gestion du bouton de déconnexion
     document.getElementById('btnLogout').addEventListener('click', async () => {
