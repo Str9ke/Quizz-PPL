@@ -268,19 +268,23 @@ function filtrerQuestions(mode, nb) {
  */
 async function initQuiz() {
   console.log(">>> initQuiz()");
-  selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
-
-  // S’il s’agit de la catégorie TOUTES, on charge tout
-  if (selectedCategory === "TOUTES") {
-    await loadAllQuestions(); 
+  // Si on a déjà des questions sauvegardées, on les utilise
+  const stored = localStorage.getItem('currentQuestions');
+  if (stored) {
+    currentQuestions = JSON.parse(stored);
+    afficherQuiz();
   } else {
-    // Sinon, on charge juste la catégorie sélectionnée
-    await chargerQuestions(selectedCategory);
+    // Sinon, on charge en fonction de la catégorie sauvegardée
+    selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
+    if (selectedCategory === "TOUTES") {
+      await loadAllQuestions();
+    } else {
+      await chargerQuestions(selectedCategory);
+    }
+    afficherQuiz();
   }
-
-  // Ensuite on affiche
-  afficherQuiz();
 }
+
 
 
 /**
