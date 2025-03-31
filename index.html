@@ -5,20 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz Aviation - Accueil</title>
   <link rel="stylesheet" href="style.css" />
-    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<!-- Add Firebase products that you want to use -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-  
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  <!-- Inclusion des SDK Firebase en mode compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Configuration Firebase obtenue depuis la console Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA571OMe9w5ldJLcIwkT9bN6zd_Qn_Y9GU",
       authDomain: "quizaviation-b79ff.firebaseapp.com",
@@ -28,20 +20,50 @@
       appId: "1:200438765697:web:3467cf30e905ed586e5580",
       measurementId: "G-N3G7EVGZ84"
     };
-  
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
 
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    // Initialiser l'authentification et Firestore
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Surveille l'état de connexion de l'utilisateur
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("Utilisateur connecté :", user.uid);
+        // Cacher le formulaire de connexion et afficher l'interface du quiz
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("quizContainer").style.display = "block";
+        // Vous pouvez ici lancer initIndex() pour charger vos questions
+        initIndex();
+      } else {
+        console.log("Aucun utilisateur connecté");
+        // Afficher le formulaire de connexion et masquer l'interface du quiz
+        document.getElementById("loginContainer").style.display = "block";
+        document.getElementById("quizContainer").style.display = "none";
+      }
+    });
+  </script>
 </head>
-<body onload="initIndex()">
+<body>
   <h1>Quiz Aviation - Accueil</h1>
-  <div class="container">
+
+  <!-- Formulaire de connexion/inscription -->
+  <div id="loginContainer" class="container">
+    <h2>Connexion / Inscription</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Mot de passe" required>
+      <button type="submit">Se connecter / S'inscrire</button>
+    </form>
+  </div>
+
+  <!-- Interface du quiz, affichée uniquement après authentification -->
+  <div id="quizContainer" class="container" style="display:none;">
     <!-- Sélection de la catégorie -->
     <label for="categorie">Catégorie :</label>
     <select id="categorie" onchange="categoryChanged()">
-      <!-- Options remplies dynamiquement -->
+      <!-- Options remplies dynamiquement par script.js -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
@@ -58,6 +80,35 @@
     <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
     <button onclick="window.location='stats.html'">Voir les Statistiques</button>
   </div>
+
+  <!-- Votre script principal qui gère le quiz -->
   <script src="script.js"></script>
+  
+  <!-- Gestion de la connexion -->
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      try {
+        // Essayer de connecter l'utilisateur
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log("Connecté :", userCredential.user.uid);
+        // Le listener onAuthStateChanged se chargera d'afficher l'interface du quiz
+      } catch (error) {
+        // Si l'utilisateur n'existe pas, on le crée
+        if (error.code === 'auth/user-not-found') {
+          try {
+            const newUser = await auth.createUserWithEmailAndPassword(email, password);
+            console.log("Utilisateur créé et connecté :", newUser.user.uid);
+          } catch (err) {
+            console.error("Erreur lors de la création :", err);
+          }
+        } else {
+          console.error("Erreur de connexion :", error);
+        }
+      }
+    });
+  </script>
 </body>
 </html>
