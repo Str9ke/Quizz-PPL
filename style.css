@@ -28,39 +28,35 @@ label {
   font-weight: bold;
 }
 
-/* 
-  Modification pour les réponses du quiz :
-  On force le label à s'afficher en flex (en override du style inline)
-  avec une petite zone fixe pour le bouton radio.
-*/
+/* --- Mise en page pour les réponses du quiz --- */
+/* On utilise CSS Grid pour forcer le bouton radio dans une colonne fixe de 40px,
+   et le texte occupe la colonne restante. */
 .answer-list label {
-  display: flex !important;       /* Forcer le layout en flex */
-  align-items: center !important;  /* Alignement vertical */
+  display: grid !important;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 4px !important;
-  padding: 0 !important;
-  width: auto !important;          /* Ne pas occuper toute la largeur */
-}
-
-/* Le conteneur du bouton radio a une largeur fixe et minimale */
-.answer-list label input[type="radio"] {
-  flex: 0 0 30px;      /* 30px de largeur fixe pour le bouton radio */
-  max-width: 30px;
-  margin: 0;           /* Supprimer toute marge interne */
+  /* On retire tout padding inutile pour ne pas agrandir le label */
   padding: 0;
 }
 
-/* Le texte de la réponse apparaîtra immédiatement après */
-.answer-list label span {
-  flex: 1;
+/* Le bouton radio occupe la première colonne avec une largeur fixe */
+.answer-list label input[type="radio"] {
+  width: 40px;
+  max-width: 40px;
+  height: auto;
+  justify-self: center;
+  margin: 0;
+  padding: 0;
 }
 
-/* Si vous ne contrôlez pas le HTML, vous pouvez cibler l'input 
-   et utiliser la pseudo-classe suivante pour le texte restant :
-   Ici, on s'assure que le contenu textuel n'est pas sur une ligne séparée.
-*/
-.answer-list label::after {
-  content: "";
-  flex: 1;
+/* Le texte de la réponse se trouve dans la seconde colonne et s'enroule si nécessaire */
+.answer-list label {
+  /* En l'absence de balise englobante pour le texte, le navigateur crée une boîte anonyme
+     qui occupe la seconde colonne et se met à la ligne si besoin */
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 /* Les éléments de formulaire */
@@ -153,7 +149,7 @@ button:disabled {
     padding: 1rem;
   }
   
-  /* Affichage en bloc pour les éléments de formulaire */
+  /* Pour les éléments de formulaire, on passe en affichage bloc */
   label, select, input {
     display: block;
     width: 100%;
@@ -170,11 +166,13 @@ button:disabled {
     margin-left: 10px;
   }
   
-  /* Conserver l'alignement inline-flex sur le label pour que le bouton radio
-     et le texte restent côte à côte sans occuper toute la largeur */
+  /* Conserver le grid pour les réponses sur smartphone */
   .answer-list label {
-    display: flex !important;
-    align-items: center !important;
-    width: auto !important;
+    display: grid !important;
+    grid-template-columns: 40px 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px !important;
+    padding: 0;
   }
 }
