@@ -2,16 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz Aviation - Accueil</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body onload="initIndex()">
   <h1>Quiz Aviation - Accueil</h1>
   <div class="container">
-    <!-- Sélection de la catégorie avec compteur -->
+    <!-- Sélection de la catégorie -->
     <label for="categorie">Catégorie :</label>
     <select id="categorie" onchange="categoryChanged()">
-      <!-- Les options seront remplies dynamiquement par updateCategorySelect() -->
+      <!-- Options remplies dynamiquement -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
@@ -31,4 +32,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-

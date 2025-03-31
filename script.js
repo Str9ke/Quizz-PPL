@@ -61,17 +61,18 @@ async function initIndex() {
   // Mettre à jour le menu déroulant des catégories avec les compteurs
   updateCategorySelect();
 
-  // Sélectionner par défaut "TOUTES LES QUESTIONS" pour l'affichage initial
+  // Par défaut, on sélectionne "TOUTES LES QUESTIONS"
   const catSelect = document.getElementById("categorie");
   catSelect.value = "TOUTES";
   selectedCategory = "TOUTES";
-  // Charger toutes les questions (concaténation des catégories)
+  
+  // Charger toutes les questions (concaténation de toutes les catégories)
   await loadAllQuestions();
   
-  // Mettre à jour le menu du mode selon les questions chargées
+  // Mettre à jour le menu du mode selon les questions chargées (pour "TOUTES")
   updateModeCounts();
 
-  // Afficher le total global
+  // Afficher le total global dans la page d'accueil
   const p = document.getElementById('totalGlobalInfo');
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
@@ -80,7 +81,7 @@ async function initIndex() {
 }
 
 /**
- * Charge toutes les questions de toutes les catégories
+ * Charge toutes les questions de toutes les catégories et les concatène dans "questions"
  */
 async function loadAllQuestions() {
   let allQuestions = [];
@@ -157,7 +158,8 @@ function categoryChanged() {
 }
 
 /**
- * 1) updateModeCounts() – met à jour le <select id="mode"> selon la catégorie actuelle
+ * updateModeCounts() – met à jour le <select id="mode"> selon la catégorie actuelle
+ * en comptant "total / ratées / nonvues / ratées+nonvues" dans le tableau questions
  */
 function updateModeCounts() {
   console.log('>>> updateModeCounts()');
@@ -183,7 +185,7 @@ function updateModeCounts() {
 }
 
 /**
- * 2) demarrerQuiz() -- clic sur "Démarrer le quiz"
+ * demarrerQuiz() -- déclenché par le bouton "Démarrer le Quiz"
  */
 async function demarrerQuiz() {
   console.log(">>> demarrerQuiz()");
@@ -204,7 +206,7 @@ async function demarrerQuiz() {
 }
 
 /**
- * 3) Charger le JSON correspondant à la catégorie
+ * Charger le JSON correspondant à la catégorie sélectionnée
  */
 async function chargerQuestions(cat) {
   console.log(">>> chargerQuestions() cat=", cat);
@@ -232,7 +234,7 @@ async function chargerQuestions(cat) {
 }
 
 /**
- * 4) Filtrer selon mode + nb
+ * Filtrer les questions selon le mode choisi et le nombre demandé
  */
 function filtrerQuestions(mode, nb) {
   console.log('>>> filtrerQuestions(mode=' + mode + ', nb=' + nb + ')');
@@ -264,16 +266,25 @@ function filtrerQuestions(mode, nb) {
 /**
  * 5) Sur quiz.html => onload="initQuiz()"
  */
-function initQuiz() {
+async function initQuiz() {
   console.log(">>> initQuiz()");
   selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
-  chargerQuestions(selectedCategory).then(() => {
-    afficherQuiz();
-  });
+
+  // S’il s’agit de la catégorie TOUTES, on charge tout
+  if (selectedCategory === "TOUTES") {
+    await loadAllQuestions(); 
+  } else {
+    // Sinon, on charge juste la catégorie sélectionnée
+    await chargerQuestions(selectedCategory);
+  }
+
+  // Ensuite on affiche
+  afficherQuiz();
 }
 
+
 /**
- * 6) Afficher le quiz sur quiz.html
+ * Afficher le quiz sur quiz.html
  */
 function afficherQuiz() {
   console.log(">>> afficherQuiz()");
@@ -307,7 +318,7 @@ function afficherQuiz() {
 }
 
 /**
- * 7) Traitement de l'envoi des réponses par l'utilisateur
+ * validerReponses() – traité l'envoi des réponses par l'utilisateur
  */
 function validerReponses() {
   console.log(">>> validerReponses()");
@@ -337,7 +348,7 @@ function validerReponses() {
 }
 
 /**
- * 8) Afficher la correction sur quiz.html
+ * afficherCorrection() – affiche la correction sur quiz.html
  */
 function afficherCorrection() {
   console.log(">>> afficherCorrection()");
@@ -378,7 +389,7 @@ function afficherCorrection() {
 }
 
 /**
- * 9) Page stats => onload="initStats()"
+ * initStats() – appelé par stats.html onload
  */
 async function initStats() {
   console.log(">>> initStats()");
@@ -407,7 +418,7 @@ async function initStats() {
 }
 
 /**
- * 10) Afficher le bloc de statistiques sur stats.html
+ * afficherStats() – affiche les statistiques sur stats.html
  */
 function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, motorArr) {
   console.log(">>> afficherStats()");
@@ -441,7 +452,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
   let percInstr = totalInstr ? Math.round((statsInstr.reussie * 100) / totalInstr) : 0;
   let percMasse = totalMasse ? Math.round((statsMasse.reussie * 100) / totalMasse) : 0;
   let percMotor = totalMotor ? Math.round((statsMotor.reussie * 100) / totalMotor) : 0;
-  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal): 0;
+  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
 
   cont.innerHTML = `
     <h2>Catégorie : PROCÉDURE RADIO</h2>
@@ -509,7 +520,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
 }
 
 /**
- * 11) computeStatsFor(questionArray)
+ * computeStatsFor() – calcule les stats pour un tableau de questions
  */
 function computeStatsFor(arr) {
   let reussie = 0, ratee = 0, nonvue = 0;
@@ -523,7 +534,7 @@ function computeStatsFor(arr) {
 }
 
 /**
- * 12) resetStats() – supprime du localStorage toutes les clés "question_..."
+ * resetStats() – supprime du localStorage toutes les clés "question_..."
  */
 function resetStats() {
   console.log(">>> resetStats()");
@@ -533,7 +544,6 @@ function resetStats() {
     if (k && k.startsWith("question_")) toRemove.push(k);
   }
   toRemove.forEach(k => localStorage.removeItem(k));
-
   alert("Les stats ont été réinitialisées !");
   window.location.reload();
 }

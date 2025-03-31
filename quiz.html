@@ -2,28 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Quiz - Aviation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Aviation - Quiz</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body onload="initQuiz()">
-
-<h1>Quiz Aviation - Questions</h1>
-
-<div class="container" id="resultContainer" style="display:none; margin-bottom:1rem;">
-  <!-- Résumé du quiz (X bonnes réponses sur N) -->
-</div>
-
-<div class="container" id="quizContainer">
-  <!-- Questions-réponses -->
-</div>
-
-<div class="container" style="margin-top:1rem;">
-  <button onclick="validerReponses()">Envoyer les réponses</button>
-  <button onclick="window.location='stats.html'">Voir les Stats</button>
-  <button onclick="window.location='index.html'">Retour accueil</button>
-</div>
-
-<script src="script.js"></script>
+  <h1>Quiz Aviation - Quiz</h1>
+  <div class="container" id="quizContainer">
+    <!-- Les questions s'affichent ici -->
+  </div>
+  <div class="container" style="text-align: center; margin-top: 1rem;">
+    <button onclick="validerReponses()">Valider les Réponses</button>
+    <button onclick="window.location='index.html'">Retour Accueil</button>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
 

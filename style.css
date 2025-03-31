@@ -22,14 +22,17 @@ h1 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
+/* Formulaires et boutons */
 label {
   margin-right: 4px;
   font-weight: bold;
 }
+
 select, input {
   margin-right: 10px;
   padding: 4px 6px;
 }
+
 button {
   margin-top: 8px;
   margin-right: 8px;
@@ -40,9 +43,11 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
+
 button:hover {
   background: #015c91;
 }
+
 button:disabled {
   background: #b0bec5;
   cursor: not-allowed;
@@ -56,11 +61,13 @@ button:disabled {
   padding: 8px;
   background: #f8fafc;
 }
+
 .question-title {
   font-weight: bold;
   margin-bottom: 6px;
   color: #37474f;
 }
+
 .answer-list {
   margin-left: 20px;
   color: #455a64;
@@ -71,6 +78,7 @@ button:disabled {
   color: green;
   font-weight: bold;
 }
+
 .wrong {
   color: red;
   font-weight: bold;
@@ -95,8 +103,34 @@ button:disabled {
   margin: 0.5rem 0;
   overflow: hidden;
 }
+
 .progress {
   height: 20px;
   background: #4caf50; /* vert */
   transition: width 0.6s ease;
+}
+
+/* ----- Responsive design ----- */
+@media (max-width: 600px) {
+  .container {
+    width: 95%;
+    padding: 1rem;
+  }
+  
+  /* Affichage en bloc pour les éléments de formulaire */
+  label, select, input {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  /* Boutons en pleine largeur */
+  button {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  .answer-list {
+    margin-left: 10px;
+  }
 }
