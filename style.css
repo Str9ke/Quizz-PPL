@@ -28,6 +28,17 @@ label {
   font-weight: bold;
 }
 
+/* Pour aligner les boutons radio et le texte sur une même ligne */
+.answer-list label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.answer-list input[type="radio"] {
+  margin-right: 8px;
+}
+
 select, input {
   margin-right: 10px;
   padding: 4px 6px;
@@ -106,7 +117,7 @@ button:disabled {
 
 .progress {
   height: 20px;
-  background: #4caf50; /* vert */
+  background: #4caf50;
   transition: width 0.6s ease;
 }
 
