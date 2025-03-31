@@ -379,7 +379,7 @@ async function sauvegarderProgression() {
 
   let progressData = {
     category: selectedCategory,
-    currentQuestionIndex: 0,  // À ajuster selon la logique de reprise
+    currentQuestionIndex: 0, // À ajuster selon la logique de reprise
     responses: {},
     stats: {}
   };
@@ -395,6 +395,8 @@ async function sauvegarderProgression() {
   progressData.stats = computeProgress();
 
   const uid = auth.currentUser.uid;
+  console.log("Données à sauvegarder :", progressData);
+
   try {
     await db.collection('quizProgress').doc(uid).set({
       category: progressData.category,
