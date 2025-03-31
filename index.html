@@ -34,7 +34,7 @@
         // Masquer le formulaire de connexion et afficher l'interface du quiz
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
-        // Optionnel : lancer initIndex() pour charger les données du quiz
+        // Lancer initIndex() pour charger les données du quiz
         if (typeof initIndex === 'function') {
           initIndex();
         }
@@ -86,53 +86,47 @@
     <button id="btnLogout">Déconnexion</button>
   </div>
 
-  <!-- Inclusion de votre script principal (qui contiendra aussi initIndex, categoryChanged, demarrerQuiz, etc.) -->
+  <!-- Inclusion de votre script principal -->
   <script src="script.js"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
     // Gestion du formulaire de connexion/inscription
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
 
-  // Vérifier que le mot de passe a au moins 6 caractères
-  if (password.length < 6) {
-    alert("Le mot de passe doit contenir au moins 6 caractères.");
-    return;
-  }
-
-  try {
-    // Tente de connecter l'utilisateur
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-    console.log("Connecté :", userCredential.user.uid);
-    // Le listener onAuthStateChanged gère l'affichage de l'interface du quiz
-  } catch (error) {
-    console.error("Erreur lors de la connexion :", error);
-    // Si l'erreur est liée à des identifiants invalides ou à l'absence de l'utilisateur, on tente de créer le compte
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
-      try {
-        const newUser = await auth.createUserWithEmailAndPassword(email, password);
-        console.log("Utilisateur créé et connecté :", newUser.user.uid);
-      } catch (creationError) {
-        console.error("Erreur lors de la création du compte :", creationError);
-        alert("Erreur lors de la création du compte : " + creationError.message);
+      if (password.length < 6) {
+        alert("Le mot de passe doit contenir au moins 6 caractères.");
+        return;
       }
-    } else {
-      alert("Erreur de connexion : " + error.message);
-    }
-  }
-});
 
-
+      try {
+        // Tente de connecter l'utilisateur
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log("Connecté :", userCredential.user.uid);
+      } catch (error) {
+        console.error("Erreur lors de la connexion :", error);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
+          try {
+            const newUser = await auth.createUserWithEmailAndPassword(email, password);
+            console.log("Utilisateur créé et connecté :", newUser.user.uid);
+          } catch (creationError) {
+            console.error("Erreur lors de la création du compte :", creationError);
+            alert("Erreur lors de la création du compte : " + creationError.message);
+          }
+        } else {
+          alert("Erreur de connexion : " + error.message);
+        }
+      }
+    });
 
     // Gestion du bouton de déconnexion
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
         await auth.signOut();
         console.log("Déconnecté !");
-        // Recharger la page pour afficher le formulaire de connexion
         window.location.reload();
       } catch (error) {
         console.error("Erreur lors de la déconnexion :", error);

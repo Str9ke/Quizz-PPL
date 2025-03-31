@@ -29,7 +29,6 @@ label {
 }
 
 /* --- Mise en page pour les réponses du quiz avec Flexbox --- */
-/* Forcer le label à utiliser flex afin d'aligner le bouton radio et le texte sur la même ligne */
 .answer-list label {
   display: flex !important;
   align-items: center !important;
@@ -43,7 +42,6 @@ label {
   flex: 0 0 auto;
   margin-right: 8px;
   vertical-align: middle;
-  /* Optionnel : ajuster la taille de l'input pour forcer l'alignement */
   width: 20px;
   height: 20px;
 }
@@ -54,7 +52,7 @@ label {
   line-height: 1.2;
 }
 
-/* Les éléments de formulaire */
+/* Éléments de formulaire */
 select, input {
   margin-right: 10px;
   padding: 4px 6px;
@@ -144,7 +142,6 @@ button:disabled {
     padding: 1rem;
   }
   
-  /* Pour les éléments de formulaire, affichage en bloc */
   label, select, input {
     display: block;
     width: 100%;
@@ -160,7 +157,6 @@ button:disabled {
     margin-left: 10px;
   }
   
-  /* Assurer que le label des réponses garde le comportement flex sur smartphone */
   .answer-list label {
     display: flex !important;
     align-items: center !important;

@@ -1,15 +1,15 @@
 // script.js
 
-// On maintient un grand tableau global "questions" quand on charge une des catégories.
-// On maintient "currentQuestions" pour le quiz en cours.
+// Tableaux globaux pour toutes les questions et pour le quiz en cours
 let questions = [];
 let currentQuestions = [];
 
-let selectedCategory = "PROCÉDURE RADIO"; // Par défaut, mais on va le changer
+// Variables de configuration initiale
+let selectedCategory = "PROCÉDURE RADIO"; // Par défaut
 let modeQuiz = "toutes";
 let nbQuestions = 10;
 
-// Variables pour stocker le nombre de questions par catégorie
+// Variables pour compter les questions par catégorie
 let countRadio = 0;
 let countOp = 0;
 let countRegl = 0;
@@ -20,68 +20,55 @@ let countMotor = 0;
 let totalGlobal = 0;
 
 /**
- * 0) initIndex() -- on est sur index.html
+ * initIndex() – Chargement initial sur index.html
  */
 async function initIndex() {
   console.log(">>> initIndex()");
   
-  // Charger toutes les catégories pour pouvoir compter le total global
-  
-  // 1) PROCÉDURE RADIO
+  // Charger les questions pour chaque catégorie
   await chargerQuestions("PROCÉDURE RADIO");
   countRadio = questions.length;
 
-  // 2) PROCÉDURES OPÉRATIONNELLES
   await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
   countOp = questions.length;
 
-  // 3) RÉGLEMENTATION
   await chargerQuestions("RÉGLEMENTATION");
   countRegl = questions.length;
 
-  // 4) CONNAISSANCE DE L’AVION
   await chargerQuestions("CONNAISSANCE DE L’AVION");
   countConv = questions.length;
   
-  // 5) INSTRUMENTATION
   await chargerQuestions("INSTRUMENTATION");
   countInstr = questions.length;
   
-  // 6) MASSE ET CENTRAGE
   await chargerQuestions("MASSE ET CENTRAGE");
   countMasse = questions.length;
   
-  // 7) MOTORISATION
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
 
-  // Calculer le total global
   totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor;
   
-  // Mettre à jour le menu déroulant des catégories avec les compteurs
   updateCategorySelect();
 
-  // Par défaut, on sélectionne "TOUTES LES QUESTIONS"
+  // Par défaut, on sélectionne "TOUTES"
   const catSelect = document.getElementById("categorie");
   catSelect.value = "TOUTES";
   selectedCategory = "TOUTES";
   
-  // Charger toutes les questions (concaténation de toutes les catégories)
+  // Charger toutes les questions
   await loadAllQuestions();
   
-  // Mettre à jour le menu du mode selon les questions chargées (pour "TOUTES")
   updateModeCounts();
 
-  // Afficher le total global dans la page d'accueil
   const p = document.getElementById('totalGlobalInfo');
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
-  // Activer le bouton start
   document.getElementById('btnStart').disabled = false;
 }
 
 /**
- * Charge toutes les questions de toutes les catégories et les concatène dans "questions"
+ * loadAllQuestions() – Charge toutes les questions de toutes les catégories
  */
 async function loadAllQuestions() {
   let allQuestions = [];
@@ -102,21 +89,17 @@ async function loadAllQuestions() {
 }
 
 /**
- * updateCategorySelect() – construit dynamiquement le menu déroulant des catégories
- * en plaçant en première position "TOUTES LES QUESTIONS" avec son compteur global,
- * puis les autres catégories avec leur nombre de questions.
+ * updateCategorySelect() – Met à jour le menu déroulant des catégories
  */
 function updateCategorySelect() {
   const catSelect = document.getElementById("categorie");
   catSelect.innerHTML = "";
 
-  // Option "TOUTES LES QUESTIONS"
   const optionToutes = document.createElement("option");
   optionToutes.value = "TOUTES";
   optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
   catSelect.appendChild(optionToutes);
 
-  // Liste des catégories et leurs compteurs
   const categories = [
     { name: "PROCÉDURE RADIO", count: countRadio },
     { name: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
@@ -136,20 +119,18 @@ function updateCategorySelect() {
 }
 
 /**
- * Fonction appelée lors du changement de catégorie dans le menu déroulant.
+ * categoryChanged() – Charge les questions selon la catégorie sélectionnée
  */
 function categoryChanged() {
   const catSelect = document.getElementById("categorie");
   const selected = catSelect.value;
   
   if (selected === "TOUTES") {
-    // Charger toutes les catégories et concaténer les questions
     (async function() {
       await loadAllQuestions();
       updateModeCounts();
     })();
   } else {
-    // Charger uniquement la catégorie sélectionnée
     (async function() {
       await chargerQuestions(selected);
       updateModeCounts();
@@ -158,8 +139,7 @@ function categoryChanged() {
 }
 
 /**
- * updateModeCounts() – met à jour le <select id="mode"> selon la catégorie actuelle
- * en comptant "total / ratées / nonvues / ratées+nonvues" dans le tableau questions
+ * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales
  */
 function updateModeCounts() {
   console.log('>>> updateModeCounts()');
@@ -185,7 +165,7 @@ function updateModeCounts() {
 }
 
 /**
- * demarrerQuiz() -- déclenché par le bouton "Démarrer le Quiz"
+ * demarrerQuiz() – Prépare le quiz et redirige vers quiz.html
  */
 async function demarrerQuiz() {
   console.log(">>> demarrerQuiz()");
@@ -206,7 +186,7 @@ async function demarrerQuiz() {
 }
 
 /**
- * Charger le JSON correspondant à la catégorie sélectionnée
+ * chargerQuestions() – Charge le fichier JSON correspondant à la catégorie
  */
 async function chargerQuestions(cat) {
   console.log(">>> chargerQuestions() cat=", cat);
@@ -242,9 +222,8 @@ async function chargerQuestions(cat) {
   }
 }
 
-
 /**
- * Filtrer les questions selon le mode choisi et le nombre demandé
+ * filtrerQuestions() – Filtre le tableau "questions" selon le mode et le nombre demandé
  */
 function filtrerQuestions(mode, nb) {
   console.log('>>> filtrerQuestions(mode=' + mode + ', nb=' + nb + ')');
@@ -274,17 +253,15 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * 5) Sur quiz.html => onload="initQuiz()"
+ * initQuiz() – Chargement initial sur quiz.html
  */
 async function initQuiz() {
   console.log(">>> initQuiz()");
-  // Si on a déjà des questions sauvegardées, on les utilise
   const stored = localStorage.getItem('currentQuestions');
   if (stored) {
     currentQuestions = JSON.parse(stored);
     afficherQuiz();
   } else {
-    // Sinon, on charge en fonction de la catégorie sauvegardée
     selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
     if (selectedCategory === "TOUTES") {
       await loadAllQuestions();
@@ -295,10 +272,8 @@ async function initQuiz() {
   }
 }
 
-
-
 /**
- * Afficher le quiz sur quiz.html
+ * afficherQuiz() – Affiche les questions du quiz sur quiz.html
  */
 function afficherQuiz() {
   console.log(">>> afficherQuiz()");
@@ -320,12 +295,11 @@ function afficherQuiz() {
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
         <div class="answer-list">
-        ${q.choix.map((c, i) => 
-          `<label style="display:block;margin-bottom:4px;">
-              <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
-           </label>`
-        ).join('')}
-        
+          ${q.choix.map((c, i) => 
+            `<label style="display:block;margin-bottom:4px;">
+                <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
+             </label>`
+          ).join('')}
         </div>
       </div>
     `;
@@ -333,9 +307,10 @@ function afficherQuiz() {
 }
 
 /**
- * validerReponses() – traité l'envoi des réponses par l'utilisateur
+ * validerReponses() – Traite les réponses de l'utilisateur et affiche la correction.
+ * Appelle ensuite la sauvegarde complète de la progression.
  */
-function validerReponses() {
+async function validerReponses() {
   console.log(">>> validerReponses()");
   let correctCount = 0;
 
@@ -360,10 +335,75 @@ function validerReponses() {
       sur <strong>${currentQuestions.length}</strong>.
     `;
   }
+
+  // Sauvegarder la progression complète dans Firestore
+  await sauvegarderProgression();
 }
 
 /**
- * afficherCorrection() – affiche la correction sur quiz.html
+ * computeProgress() – Calcule la progression complète (statistiques) à partir de currentQuestions
+ */
+function computeProgress() {
+  let total = currentQuestions.length;
+  let countReussies = 0, countRatees = 0, countNonvues = 0;
+  
+  currentQuestions.forEach(q => {
+    const st = localStorage.getItem(getKeyFor(q));
+    if (!st) countNonvues++;
+    else if (st === 'réussie') countReussies++;
+    else if (st === 'ratée') countRatees++;
+  });
+  
+  return {
+    total,
+    reussies: countReussies,
+    ratees: countRatees,
+    nonvues: countNonvues
+  };
+}
+
+/**
+ * sauvegarderProgression() – Enregistre la progression complète (réponses et stats) dans Firestore
+ */
+async function sauvegarderProgression() {
+  let progressData = {
+    category: selectedCategory,
+    currentQuestionIndex: 0,  // Vous pouvez ajuster cette valeur pour reprendre exactement la question en cours
+    responses: {},
+    stats: {}
+  };
+
+  currentQuestions.forEach(q => {
+    const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+    if (sel) {
+      progressData.responses[q.id] = parseInt(sel.value);
+    }
+  });
+
+  // Calculer les statistiques complètes
+  progressData.stats = computeProgress();
+
+  if (!auth.currentUser) {
+    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
+    return;
+  }
+  const uid = auth.currentUser.uid;
+  try {
+    await db.collection('quizProgress').doc(uid).set({
+      category: progressData.category,
+      currentQuestionIndex: progressData.currentQuestionIndex,
+      responses: progressData.responses,
+      stats: progressData.stats,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    console.log("Progression complète sauvegardée dans Firestore !");
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde de la progression :", error);
+  }
+}
+
+/**
+ * afficherCorrection() – Affiche la correction sur quiz.html
  */
 function afficherCorrection() {
   console.log(">>> afficherCorrection()");
@@ -404,7 +444,14 @@ function afficherCorrection() {
 }
 
 /**
- * initStats() – appelé par stats.html onload
+ * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
+ */
+function getKeyFor(q) {
+  return "question_" + q.categorie + "_" + q.id;
+}
+
+/**
+ * initStats() – Chargé par stats.html pour afficher les statistiques
  */
 async function initStats() {
   console.log(">>> initStats()");
@@ -433,7 +480,7 @@ async function initStats() {
 }
 
 /**
- * afficherStats() – affiche les statistiques sur stats.html
+ * afficherStats() – Affiche les statistiques sur stats.html
  */
 function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, motorArr) {
   console.log(">>> afficherStats()");
@@ -535,7 +582,7 @@ function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, mo
 }
 
 /**
- * computeStatsFor() – calcule les stats pour un tableau de questions
+ * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues) pour un tableau de questions
  */
 function computeStatsFor(arr) {
   let reussie = 0, ratee = 0, nonvue = 0;
@@ -549,7 +596,7 @@ function computeStatsFor(arr) {
 }
 
 /**
- * resetStats() – supprime du localStorage toutes les clés "question_..."
+ * resetStats() – Réinitialise les statistiques stockées dans le localStorage
  */
 function resetStats() {
   console.log(">>> resetStats()");
@@ -564,14 +611,14 @@ function resetStats() {
 }
 
 /**
- * getKeyFor(q) – retourne la clé de stockage pour une question donnée
+ * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
  */
 function getKeyFor(q) {
   return "question_" + q.categorie + "_" + q.id;
 }
 
 /**
- * Divers
+ * voirStats() – Redirige vers la page des statistiques
  */
 function voirStats() {
   window.location = 'stats.html';
