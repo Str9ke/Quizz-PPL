@@ -222,7 +222,7 @@ async function chargerQuestions(cat) {
   } else if (cat === "INSTRUMENTATION") {
     fileName = "questions_instrumentation.json";
   } else if (cat === "MASSE ET CENTRAGE") {
-    fileName = "questions_masse_centrage.json";
+    fileName = "questions_masse_et_centrage.json";
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   }
