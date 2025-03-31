@@ -31,25 +31,27 @@ label {
 /* --- Mise en page pour les réponses du quiz avec Flexbox --- */
 /* Forcer le label à utiliser flex afin d'aligner le bouton radio et le texte sur la même ligne */
 .answer-list label {
-  display: flex !important;  /* Annule le display:block inline */
-  align-items: center !important; /* Aligne verticalement sur la même ligne */
-  width: 100%;
+  display: flex !important;
+  align-items: center !important;
   margin-bottom: 4px !important;
+  width: 100%;
   padding: 0 !important;
+  line-height: 1.2 !important;
 }
 
-/* Le bouton radio est contenu dans un espace fixe de 40px */
 .answer-list label input[type="radio"] {
-  flex: 0 0 40px;  /* largeur fixe de 40px */
+  flex: 0 0 auto;
   margin-right: 8px;
+  vertical-align: middle;
+  /* Optionnel : ajuster la taille de l'input pour forcer l'alignement */
+  width: 20px;
+  height: 20px;
 }
 
-/* Le texte de la réponse, contenu dans un <span>, occupe le reste de la ligne et reste sur la même ligne */
 .answer-list label span {
   flex: 1;
-  white-space: normal;
-  word-wrap: break-word;
   vertical-align: middle;
+  line-height: 1.2;
 }
 
 /* Les éléments de formulaire */
