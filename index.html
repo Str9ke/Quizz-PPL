@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script>
+    // Configuration Firebase obtenue depuis la console Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA571OMe9w5ldJLcIwkT9bN6zd_Qn_Y9GU",
       authDomain: "quizaviation-b79ff.firebaseapp.com",
@@ -20,10 +21,13 @@
       measurementId: "G-N3G7EVGZ84"
     };
 
+    // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
+    // Attacher Auth et Firestore à window pour les rendre globalement accessibles
     window.auth = firebase.auth();
     window.db = firebase.firestore();
 
+    // Surveille l'état de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
       if (user) {
         console.log("Utilisateur connecté :", user.uid);
@@ -40,7 +44,6 @@
     });
   </script>
 </head>
-
 <body>
   <h1>Quiz Aviation - Accueil</h1>
 
@@ -85,7 +88,6 @@
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
-    // Gestion du formulaire de connexion/inscription
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
@@ -97,7 +99,6 @@
       }
 
       try {
-        // Tente de connecter l'utilisateur
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log("Connecté :", userCredential.user.uid);
       } catch (error) {
@@ -116,7 +117,6 @@
       }
     });
 
-    // Gestion du bouton de déconnexion
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
         await auth.signOut();

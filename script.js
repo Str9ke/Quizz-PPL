@@ -1,5 +1,9 @@
 // script.js
 
+// Récupérer les variables globales depuis window
+const auth = window.auth;
+const db = window.db;
+
 // Tableaux globaux pour toutes les questions et pour le quiz en cours
 let questions = [];
 let currentQuestions = [];
@@ -367,7 +371,7 @@ function computeProgress() {
 async function sauvegarderProgression() {
   let progressData = {
     category: selectedCategory,
-    currentQuestionIndex: 0,  // Adaptez cette valeur selon la logique du quiz
+    currentQuestionIndex: 0,  // À ajuster selon la logique de reprise
     responses: {},
     stats: {}
   };
@@ -379,6 +383,7 @@ async function sauvegarderProgression() {
     }
   });
 
+  // Calculer les statistiques complètes
   progressData.stats = computeProgress();
 
   if (!auth.currentUser) {
@@ -399,7 +404,6 @@ async function sauvegarderProgression() {
     console.error("Erreur lors de la sauvegarde de la progression :", error);
   }
 }
-
 
 /**
  * afficherCorrection() – Affiche la correction sur quiz.html
@@ -450,7 +454,7 @@ function getKeyFor(q) {
 }
 
 /**
- * initStats() – Chargé par stats.html pour afficher les statistiques
+ * initStats() – Chargement initial sur stats.html pour afficher les statistiques
  */
 async function initStats() {
   console.log(">>> initStats()");
