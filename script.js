@@ -329,14 +329,25 @@ async function validerReponses() {
   console.log(">>> validerReponses()");
   let correctCount = 0;
 
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    alert("Vous devez être connecté pour sauvegarder votre progression.");
+    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
+    return;
+  }
+
+  const responsesToSave = {};
+
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
     if (sel && parseInt(sel.value) === q.bonne_reponse) {
       localStorage.setItem(key, 'réussie');
+      responsesToSave[key] = 'réussie';
       correctCount++;
     } else {
       localStorage.setItem(key, 'ratée');
+      responsesToSave[key] = 'ratée';
     }
   });
 
@@ -351,8 +362,19 @@ async function validerReponses() {
     `;
   }
 
-  // Sauvegarder la progression complète dans Firestore
-  await sauvegarderProgression();
+  // Sauvegarder les réponses dans Firestore
+  try {
+    await db.collection('quizProgress').doc(uid).set(
+      {
+        responses: responsesToSave,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+    console.log("Réponses sauvegardées dans Firestore :", responsesToSave);
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde des réponses dans Firestore :", error);
+  }
 }
 
 /**
@@ -499,6 +521,28 @@ async function initStats() {
 
   console.log("Utilisateur authentifié :", auth.currentUser.uid);
 
+  // Charger les statistiques depuis Firestore
+  const uid = auth.currentUser.uid;
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      console.log("Statistiques récupérées depuis Firestore :", data);
+
+      // Synchroniser les réponses dans localStorage
+      if (data.responses) {
+        Object.keys(data.responses).forEach(key => {
+          localStorage.setItem(key, data.responses[key] === 'ratée' ? 'ratée' : 'réussie');
+        });
+      }
+    } else {
+      console.log("Aucune statistique trouvée pour cet utilisateur.");
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques :", error);
+  }
+
+  // Charger les questions pour chaque catégorie
   await chargerQuestions("PROCÉDURE RADIO");
   const arrRadio = [...questions];
   
