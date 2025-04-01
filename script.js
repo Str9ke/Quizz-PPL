@@ -322,7 +322,7 @@ function toggleMarquerQuestion(questionId, button) {
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { ...currentResponse, status: restoredStatus }
+          [key]: { category: selectedCategory, questionId, status: restoredStatus }
         }
       },
       { merge: true }
@@ -331,8 +331,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question supprimée des marquées :", key);
         button.textContent = "Marquer";
         button.className = "mark-button";
-        currentResponses[key].status = restoredStatus;
-        delete currentResponses[key].previousStatus;
+        currentResponses[key] = { category: selectedCategory, questionId, status: restoredStatus };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
@@ -342,7 +341,7 @@ function toggleMarquerQuestion(questionId, button) {
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { ...currentResponse, previousStatus, status: 'marquée' }
+          [key]: { category: selectedCategory, questionId, previousStatus, status: 'marquée' }
         }
       },
       { merge: true }
@@ -351,7 +350,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question marquée :", key);
         button.textContent = "Supprimer";
         button.className = "delete-button";
-        currentResponses[key] = { ...currentResponse, previousStatus, status: 'marquée' };
+        currentResponses[key] = { category: selectedCategory, questionId, previousStatus, status: 'marquée' };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors du marquage de la question :", error));

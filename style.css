@@ -142,8 +142,11 @@ button:disabled {
   text-align: center;
   border: 2px solid #ffb300;
   border-radius: 4px;
-  margin-top: -1rem; /* Place la ligne en haut */
-  padding: 1rem; /* Augmente l'épaisseur */
+  margin-bottom: 1rem; /* Ajustement pour qu'il soit bien espacé */
+  padding: 1.5rem; /* Augmente l'épaisseur */
+  position: sticky; /* Reste visible en haut */
+  top: 0;
+  z-index: 1000;
 }
 
 /* Barre de progression */
