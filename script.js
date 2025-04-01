@@ -693,3 +693,49 @@ function getKeyFor(q) {
 function voirStats() {
   window.location = 'stats.html';
 }
+
+/**
+ * afficherProgression() – Récupère et affiche les données sauvegardées pour chaque question
+ */
+async function afficherProgression() {
+  console.log(">>> afficherProgression()");
+
+  if (typeof auth === 'undefined' || !auth) {
+    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+    alert("Erreur : Firebase Auth n'est pas initialisé.");
+    return;
+  }
+
+  if (!auth.currentUser) {
+    alert("Vous devez être connecté pour voir votre progression.");
+    console.error("Utilisateur non authentifié, impossible de récupérer la progression");
+    return;
+  }
+
+  const uid = auth.currentUser.uid;
+
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      console.log("Progression récupérée :", data);
+
+      // Afficher les données dans la console ou dans une section dédiée
+      const cont = document.getElementById('progressionContainer');
+      if (cont) {
+        cont.innerHTML = `
+          <h2>Progression sauvegardée</h2>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } else {
+        alert("Progression récupérée. Consultez la console pour les détails.");
+      }
+    } else {
+      console.log("Aucune progression trouvée pour cet utilisateur.");
+      alert("Aucune progression trouvée.");
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la progression :", error);
+    alert("Erreur lors de la récupération de la progression : " + error.message);
+  }
+}
