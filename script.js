@@ -302,7 +302,7 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * toggleMarquerQuestion() – Marque ou supprime une question marquée tout en conservant son statut précédent
+ * toggleMarquerQuestion() – Marque ou supprime une question marquée tout en conservant son statut initial
  */
 function toggleMarquerQuestion(questionId, button) {
   console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
@@ -317,11 +317,12 @@ function toggleMarquerQuestion(questionId, button) {
   const isMarked = currentResponse.status === 'marquée';
 
   if (isMarked) {
-    // Supprimer la question marquée et restaurer son statut précédent
+    // Supprimer la question marquée et restaurer son statut initial
+    const restoredStatus = currentResponse.previousStatus || 'ratée'; // Par défaut, "ratée" si aucune valeur initiale
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { ...currentResponse, status: currentResponse.previousStatus || 'nonvue' }
+          [key]: { ...currentResponse, status: restoredStatus }
         }
       },
       { merge: true }
@@ -330,13 +331,13 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question supprimée des marquées :", key);
         button.textContent = "Marquer";
         button.className = "mark-button";
-        currentResponses[key].status = currentResponses[key].previousStatus || 'nonvue';
+        currentResponses[key].status = restoredStatus;
         delete currentResponses[key].previousStatus;
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
   } else {
-    // Marquer la question tout en sauvegardant son statut précédent
+    // Marquer la question tout en sauvegardant son statut initial
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
@@ -503,10 +504,10 @@ async function validerReponses() {
 }
 
 /**
- * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues) pour une catégorie
+ * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues, marquées) pour une catégorie
  */
 function computeStatsFor(category, responses) {
-  let reussie = 0, ratee = 0, nonvue = 0;
+  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0;
 
   // Filtrer les questions par catégorie
   const categoryQuestions = questions.filter(q => q.categorie === category);
@@ -520,10 +521,12 @@ function computeStatsFor(category, responses) {
       reussie++;
     } else if (response.status === 'ratée') {
       ratee++;
+    } else if (response.status === 'marquée') {
+      marquee++;
     }
   });
 
-  return { reussie, ratee, nonvue };
+  return { reussie, ratee, nonvue, marquee };
 }
 
 /**
@@ -579,38 +582,33 @@ async function initStats() {
     afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques :", error);
-    afficherStats({ reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 });
+    afficherStats({ reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 });
   }
 }
 
 /**
- * afficherStats() – Affiche les statistiques sur stats.html
+ * afficherStats() – Affiche les statistiques sur stats.html, y compris les marquées
  */
 function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor) {
   console.log(">>> afficherStats()");
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
-  const totalRadio = statsRadio.reussie + statsRadio.ratee + statsRadio.nonvue;
-  const totalOp = statsOp.reussie + statsOp.ratee + statsOp.nonvue;
-  const totalRegl = statsRegl.reussie + statsRegl.ratee + statsRegl.nonvue;
-  const totalConv = statsConv.reussie + statsConv.ratee + statsConv.nonvue;
-  const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue;
-  const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue;
-  const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue;
+  const totalRadio = statsRadio.reussie + statsRadio.ratee + statsRadio.nonvue + statsRadio.marquee;
+  const totalOp = statsOp.reussie + statsOp.ratee + statsOp.nonvue + statsOp.marquee;
+  const totalRegl = statsRegl.reussie + statsRegl.ratee + statsRegl.nonvue + statsRegl.marquee;
+  const totalConv = statsConv.reussie + statsConv.ratee + statsConv.nonvue + statsConv.marquee;
+  const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue + statsInstr.marquee;
+  const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue + statsMasse.marquee;
+  const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue + statsMotor.marquee;
 
   const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor;
   const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
                          statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
+  const marqueesGlobal = statsRadio.marquee + statsOp.marquee + statsRegl.marquee + statsConv.marquee +
+                         statsInstr.marquee + statsMasse.marquee + statsMotor.marquee;
 
-  let percRadio = totalRadio ? Math.round((statsRadio.reussie * 100) / totalRadio) : 0;
-  let percOp    = totalOp    ? Math.round((statsOp.reussie   * 100) / totalOp)    : 0;
-  let percRegl  = totalRegl  ? Math.round((statsRegl.reussie * 100) / totalRegl) : 0;
-  let percConv  = totalConv  ? Math.round((statsConv.reussie * 100) / totalConv) : 0;
-  let percInstr = totalInstr ? Math.round((statsInstr.reussie * 100) / totalInstr) : 0;
-  let percMasse = totalMasse ? Math.round((statsMasse.reussie * 100) / totalMasse) : 0;
-  let percMotor = totalMotor ? Math.round((statsMotor.reussie * 100) / totalMotor) : 0;
-  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+  let percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
 
   cont.innerHTML = `
     <h2>Catégorie : PROCÉDURE RADIO</h2>
@@ -618,7 +616,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsRadio.reussie}</p>
     <p>❌ Ratées : ${statsRadio.ratee}</p>
     <p>👀 Non vues : ${statsRadio.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percRadio}%;"></div></div>
+    <p>📌 Marquées : ${statsRadio.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
@@ -626,7 +625,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsOp.reussie}</p>
     <p>❌ Ratées : ${statsOp.ratee}</p>
     <p>👀 Non vues : ${statsOp.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percOp}%;"></div></div>
+    <p>📌 Marquées : ${statsOp.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : RÉGLEMENTATION</h2>
@@ -634,7 +634,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsRegl.reussie}</p>
     <p>❌ Ratées : ${statsRegl.ratee}</p>
     <p>👀 Non vues : ${statsRegl.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percRegl}%;"></div></div>
+    <p>📌 Marquées : ${statsRegl.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
@@ -642,7 +643,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsConv.reussie}</p>
     <p>❌ Ratées : ${statsConv.ratee}</p>
     <p>👀 Non vues : ${statsConv.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percConv}%;"></div></div>
+    <p>📌 Marquées : ${statsConv.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : INSTRUMENTATION</h2>
@@ -650,7 +652,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsInstr.reussie}</p>
     <p>❌ Ratées : ${statsInstr.ratee}</p>
     <p>👀 Non vues : ${statsInstr.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percInstr}%;"></div></div>
+    <p>📌 Marquées : ${statsInstr.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : MASSE ET CENTRAGE</h2>
@@ -658,7 +661,8 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsMasse.reussie}</p>
     <p>❌ Ratées : ${statsMasse.ratee}</p>
     <p>👀 Non vues : ${statsMasse.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percMasse}%;"></div></div>
+    <p>📌 Marquées : ${statsMasse.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : MOTORISATION</h2>
@@ -666,12 +670,14 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>✅ Réussies : ${statsMotor.reussie}</p>
     <p>❌ Ratées : ${statsMotor.ratee}</p>
     <p>👀 Non vues : ${statsMotor.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percMotor}%;"></div></div>
+    <p>📌 Marquées : ${statsMotor.marquee}</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Global</h2>
     <p>Total cumulé : ${totalGlobal}</p>
     <p>Réussies cumulées : ${reussiesGlobal}</p>
+    <p>📌 Marquées cumulées : ${marqueesGlobal}</p>
     <p>Pourcentage global : ${percGlobal}%</p>
     <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
   `;
