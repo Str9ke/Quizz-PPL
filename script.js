@@ -491,10 +491,13 @@ async function initStats() {
   }
 
   if (!auth.currentUser) {
-    alert("Vous devez être connecté pour voir vos statistiques.");
     console.error("Utilisateur non authentifié, impossible de charger les statistiques");
+    alert("Vous devez être connecté pour voir vos statistiques.");
+    window.location = 'index.html';
     return;
   }
+
+  console.log("Utilisateur authentifié :", auth.currentUser.uid);
 
   await chargerQuestions("PROCÉDURE RADIO");
   const arrRadio = [...questions];
