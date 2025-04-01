@@ -313,11 +313,11 @@ function toggleMarquerQuestion(questionId, button) {
   }
 
   const key = `question_${selectedCategory}_${questionId}`;
-  const currentResponse = currentResponses[key] || { status: 'nonvue' }; // Par défaut, non vue
+  const currentResponse = currentResponses[key] || {}; // Par défaut, vide
   const isMarked = currentResponse.status === 'marquée';
 
   if (isMarked) {
-    // Supprimer la question marquée et restaurer son statut initial
+    // Supprimer la question marquée et restaurer son statut initial (réussie ou ratée)
     const restoredStatus = currentResponse.previousStatus || 'ratée'; // Par défaut, "ratée" si aucune valeur initiale
     db.collection('quizProgress').doc(uid).set(
       {
@@ -338,10 +338,11 @@ function toggleMarquerQuestion(questionId, button) {
       .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
   } else {
     // Marquer la question tout en sauvegardant son statut initial
+    const previousStatus = currentResponse.status || 'ratée'; // Si aucune réponse, considérer comme "ratée"
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { ...currentResponse, previousStatus: currentResponse.status, status: 'marquée' }
+          [key]: { ...currentResponse, previousStatus, status: 'marquée' }
         }
       },
       { merge: true }
@@ -350,7 +351,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question marquée :", key);
         button.textContent = "Supprimer";
         button.className = "delete-button";
-        currentResponses[key] = { ...currentResponse, previousStatus: currentResponse.status, status: 'marquée' };
+        currentResponses[key] = { ...currentResponse, previousStatus, status: 'marquée' };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors du marquage de la question :", error));
@@ -617,7 +618,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsRadio.ratee}</p>
     <p>👀 Non vues : ${statsRadio.nonvue}</p>
     <p>📌 Marquées : ${statsRadio.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
@@ -626,7 +627,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsOp.ratee}</p>
     <p>👀 Non vues : ${statsOp.nonvue}</p>
     <p>📌 Marquées : ${statsOp.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : RÉGLEMENTATION</h2>
@@ -635,7 +636,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsRegl.ratee}</p>
     <p>👀 Non vues : ${statsRegl.nonvue}</p>
     <p>📌 Marquées : ${statsRegl.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
@@ -644,7 +645,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsConv.ratee}</p>
     <p>👀 Non vues : ${statsConv.nonvue}</p>
     <p>📌 Marquées : ${statsConv.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : INSTRUMENTATION</h2>
@@ -653,7 +654,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsInstr.ratee}</p>
     <p>👀 Non vues : ${statsInstr.nonvue}</p>
     <p>📌 Marquées : ${statsInstr.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : MASSE ET CENTRAGE</h2>
@@ -662,7 +663,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsMasse.ratee}</p>
     <p>👀 Non vues : ${statsMasse.nonvue}</p>
     <p>📌 Marquées : ${statsMasse.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Catégorie : MOTORISATION</h2>
@@ -671,7 +672,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsMotor.ratee}</p>
     <p>👀 Non vues : ${statsMotor.nonvue}</p>
     <p>📌 Marquées : ${statsMotor.marquee}</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
     <h2>Global</h2>
@@ -679,7 +680,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>Réussies cumulées : ${reussiesGlobal}</p>
     <p>📌 Marquées cumulées : ${marqueesGlobal}</p>
     <p>Pourcentage global : ${percGlobal}%</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
   `;
 }
 
