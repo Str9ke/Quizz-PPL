@@ -19,6 +19,7 @@ if (typeof db === 'undefined' || !db) {
 // Tableaux globaux pour toutes les questions et pour le quiz en cours
 let questions = [];
 let currentQuestions = [];
+let currentResponses = {};
 
 // Variables de configuration initiale
 let selectedCategory = "PROCÉDURE RADIO"; // Par défaut
@@ -160,23 +161,29 @@ function categoryChanged() {
 function updateModeCounts() {
   console.log('>>> updateModeCounts()');
   let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0;
+  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+
   questions.forEach(q => {
-    const st = localStorage.getItem(getKeyFor(q));
-    if (!st) {
+    const key = `question_${q.categorie}_${q.id}`;
+    const response = currentResponses[key];
+    if (!response) {
       nbNonvues++;
-    } else if (st === 'ratée') {
+    } else if (response.status === 'ratée') {
       nbRatees++;
+    } else if (response.status === 'marquée') {
+      nbMarquees++;
     }
   });
+
   const nbRateesNonvues = nbRatees + nbNonvues;
 
   const modeSelect = document.getElementById('mode');
   modeSelect.innerHTML = `
+    <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
+    <option value="marquees">Marquées (${nbMarquees})</option>
     <option value="toutes">Toutes (${total})</option>
     <option value="ratees">Ratées (${nbRatees})</option>
     <option value="nonvues">Non vues (${nbNonvues})</option>
-    <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
   `;
 }
 
@@ -253,19 +260,56 @@ function filtrerQuestions(mode, nb) {
   if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   } else if (mode === "ratees") {
-    const arr = shuffled.filter(q => localStorage.getItem(getKeyFor(q)) === 'ratée');
+    const arr = shuffled.filter(q => {
+      const key = `question_${q.categorie}_${q.id}`;
+      return currentResponses[key]?.status === 'ratée';
+    });
     currentQuestions = arr.slice(0, nb);
   } else if (mode === "nonvues") {
-    const arr = shuffled.filter(q => !localStorage.getItem(getKeyFor(q)));
+    const arr = shuffled.filter(q => {
+      const key = `question_${q.categorie}_${q.id}`;
+      return !currentResponses[key];
+    });
     currentQuestions = arr.slice(0, nb);
   } else if (mode === "ratees_nonvues") {
     const arr = shuffled.filter(q => {
-      const st = localStorage.getItem(getKeyFor(q));
-      return (st === 'ratée' || !st);
+      const key = `question_${q.categorie}_${q.id}`;
+      const status = currentResponses[key]?.status;
+      return status === 'ratée' || !status;
+    });
+    currentQuestions = arr.slice(0, nb);
+  } else if (mode === "marquees") {
+    const arr = shuffled.filter(q => {
+      const key = `question_${q.categorie}_${q.id}`;
+      return currentResponses[key]?.status === 'marquée';
     });
     currentQuestions = arr.slice(0, nb);
   }
   console.log("    Nombre de questions filtrées:", currentQuestions.length);
+}
+
+/**
+ * marquerQuestion() – Marque une question pour la retrouver plus tard
+ */
+function marquerQuestion(questionId) {
+  console.log(">>> marquerQuestion(questionId=" + questionId + ")");
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    alert("Vous devez être connecté pour marquer une question.");
+    return;
+  }
+
+  const key = `question_${selectedCategory}_${questionId}`;
+  db.collection('quizProgress').doc(uid).set(
+    {
+      responses: {
+        [key]: { category: selectedCategory, questionId, status: 'marquée' }
+      }
+    },
+    { merge: true }
+  )
+    .then(() => console.log("Question marquée :", key))
+    .catch(error => console.error("Erreur lors du marquage de la question :", error));
 }
 
 /**
@@ -317,6 +361,7 @@ function afficherQuiz() {
              </label>`
           ).join('')}
         </div>
+        <button onclick="marquerQuestion(${q.id})">Marquer</button>
       </div>
     `;
   });
