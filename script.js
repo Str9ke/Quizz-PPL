@@ -505,6 +505,49 @@ function getKeyFor(q) {
 }
 
 /**
+ * synchroniserStatistiques() – Récupère les données de Firestore et met à jour localStorage
+ */
+async function synchroniserStatistiques() {
+  console.log(">>> synchroniserStatistiques()");
+
+  if (typeof auth === 'undefined' || !auth) {
+    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+    alert("Erreur : Firebase Auth n'est pas initialisé.");
+    return;
+  }
+
+  if (!auth.currentUser) {
+    console.error("Utilisateur non authentifié, impossible de synchroniser les statistiques");
+    alert("Vous devez être connecté pour synchroniser vos statistiques.");
+    return;
+  }
+
+  const uid = auth.currentUser.uid;
+
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      console.log("Données récupérées depuis Firestore :", data);
+
+      // Synchroniser les réponses dans localStorage
+      if (data.responses) {
+        Object.keys(data.responses).forEach(key => {
+          localStorage.setItem(key, data.responses[key]);
+        });
+      }
+
+      console.log("Statistiques synchronisées avec Firestore.");
+    } else {
+      console.log("Aucune donnée trouvée dans Firestore pour cet utilisateur.");
+    }
+  } catch (error) {
+    console.error("Erreur lors de la synchronisation des statistiques :", error);
+    alert("Erreur lors de la synchronisation des statistiques : " + error.message);
+  }
+}
+
+/**
  * initStats() – Chargement initial sur stats.html pour afficher les statistiques
  */
 async function initStats() {
@@ -525,26 +568,8 @@ async function initStats() {
 
   console.log("Utilisateur authentifié :", auth.currentUser.uid);
 
-  // Charger les statistiques depuis Firestore
-  const uid = auth.currentUser.uid;
-  try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
-    if (doc.exists) {
-      const data = doc.data();
-      console.log("Statistiques récupérées depuis Firestore :", data);
-
-      // Synchroniser les réponses dans localStorage
-      if (data.responses) {
-        Object.keys(data.responses).forEach(key => {
-          localStorage.setItem(key, JSON.stringify(data.responses[key]));
-        });
-      }
-    } else {
-      console.log("Aucune statistique trouvée pour cet utilisateur.");
-    }
-  } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques :", error);
-  }
+  // Synchroniser les statistiques avec Firestore
+  await synchroniserStatistiques();
 
   // Charger les questions pour chaque catégorie
   await chargerQuestions("PROCÉDURE RADIO");
