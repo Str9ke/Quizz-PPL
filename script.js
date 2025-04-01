@@ -180,10 +180,10 @@ function updateModeCounts() {
   const modeSelect = document.getElementById('mode');
   modeSelect.innerHTML = `
     <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
-    <option value="marquees">Marquées (${nbMarquees})</option>
     <option value="toutes">Toutes (${total})</option>
     <option value="ratees">Ratées (${nbRatees})</option>
     <option value="nonvues">Non vues (${nbNonvues})</option>
+    <option value="marquees">Marquées (${nbMarquees})</option>
   `;
 }
 
@@ -361,7 +361,6 @@ function afficherQuiz() {
              </label>`
           ).join('')}
         </div>
-        <button onclick="marquerQuestion(${q.id})">Marquer</button>
       </div>
     `;
   });
@@ -392,7 +391,11 @@ async function validerReponses() {
       status: sel && parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée'
     };
 
-    localStorage.setItem(key, JSON.stringify(responseData));
+    // Si aucune réponse n'est sélectionnée, considérer comme "ratée"
+    if (!sel) {
+      responseData.status = 'ratée';
+    }
+
     responsesToSave[key] = responseData;
 
     if (responseData.status === 'réussie') {
@@ -424,6 +427,25 @@ async function validerReponses() {
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des réponses dans Firestore :", error);
   }
+
+  // Afficher les boutons "Marquer" après validation
+  afficherBoutonsMarquer();
+}
+
+/**
+ * afficherBoutonsMarquer() – Affiche les boutons "Marquer" pour chaque question après validation
+ */
+function afficherBoutonsMarquer() {
+  console.log(">>> afficherBoutonsMarquer()");
+  const questionBlocks = document.querySelectorAll('.question-block');
+  questionBlocks.forEach((block, idx) => {
+    const questionId = currentQuestions[idx].id;
+    const markButton = document.createElement('button');
+    markButton.textContent = "Marquer";
+    markButton.className = "mark-button";
+    markButton.onclick = () => marquerQuestion(questionId);
+    block.appendChild(markButton);
+  });
 }
 
 /**
