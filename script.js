@@ -312,7 +312,13 @@ function toggleMarquerQuestion(questionId, button) {
     return;
   }
 
-  const key = `question_${selectedCategory}_${questionId}`;
+  // Utiliser la catégorie correcte pour la clé
+  const question = currentQuestions.find(q => q.id === questionId);
+  if (!question) {
+    console.error("Question introuvable dans la catégorie sélectionnée.");
+    return;
+  }
+  const key = `question_${question.categorie}_${questionId}`;
   const currentResponse = currentResponses[key] || {}; // Par défaut, vide
   const isMarked = currentResponse.status === 'marquée';
 
@@ -322,7 +328,7 @@ function toggleMarquerQuestion(questionId, button) {
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { category: selectedCategory, questionId, status: restoredStatus }
+          [key]: { category: question.categorie, questionId, status: restoredStatus }
         }
       },
       { merge: true }
@@ -331,7 +337,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question supprimée des marquées :", key);
         button.textContent = "Marquer";
         button.className = "mark-button";
-        currentResponses[key] = { category: selectedCategory, questionId, status: restoredStatus };
+        currentResponses[key] = { category: question.categorie, questionId, status: restoredStatus };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
@@ -341,7 +347,7 @@ function toggleMarquerQuestion(questionId, button) {
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { category: selectedCategory, questionId, previousStatus, status: 'marquée' }
+          [key]: { category: question.categorie, questionId, previousStatus, status: 'marquée' }
         }
       },
       { merge: true }
@@ -350,7 +356,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question marquée :", key);
         button.textContent = "Supprimer";
         button.className = "delete-button";
-        currentResponses[key] = { category: selectedCategory, questionId, previousStatus, status: 'marquée' };
+        currentResponses[key] = { category: question.categorie, questionId, previousStatus, status: 'marquée' };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors du marquage de la question :", error));
