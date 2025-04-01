@@ -28,9 +28,21 @@
 
     console.log("Firebase initialisé :", firebase.apps.length > 0);
     console.log("Auth attaché à window :", !!window.auth);
+
+    // Vérifier l'état de connexion avant de charger les statistiques
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("Utilisateur connecté :", user.uid);
+        initStats();
+      } else {
+        console.error("Utilisateur non authentifié, redirection vers l'accueil.");
+        alert("Vous devez être connecté pour voir vos statistiques.");
+        window.location = 'index.html';
+      }
+    });
   </script>
 </head>
-<body onload="initStats()">
+<body>
   <h1>Quiz Aviation - Statistiques</h1>
   <div class="container" id="statsContainer">
     <!-- Les statistiques seront affichées ici -->
