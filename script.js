@@ -289,13 +289,13 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * toggleMarquerQuestion() – Marque ou démarque une question
+ * toggleMarquerQuestion() – Marque ou supprime une question marquée
  */
 function toggleMarquerQuestion(questionId, button) {
   console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
   const uid = auth.currentUser?.uid;
   if (!uid) {
-    alert("Vous devez être connecté pour marquer ou démarquer une question.");
+    alert("Vous devez être connecté pour marquer ou supprimer une question.");
     return;
   }
 
@@ -303,7 +303,7 @@ function toggleMarquerQuestion(questionId, button) {
   const isMarked = currentResponses[key]?.status === 'marquée';
 
   if (isMarked) {
-    // Démarquer la question
+    // Supprimer la question marquée
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
@@ -313,13 +313,13 @@ function toggleMarquerQuestion(questionId, button) {
       { merge: true }
     )
       .then(() => {
-        console.log("Question démarquée :", key);
+        console.log("Question supprimée :", key);
         button.textContent = "Marquer";
         button.className = "mark-button";
         delete currentResponses[key];
         updateModeCounts();
       })
-      .catch(error => console.error("Erreur lors du démarquage de la question :", error));
+      .catch(error => console.error("Erreur lors de la suppression de la question :", error));
   } else {
     // Marquer la question
     db.collection('quizProgress').doc(uid).set(
@@ -332,8 +332,8 @@ function toggleMarquerQuestion(questionId, button) {
     )
       .then(() => {
         console.log("Question marquée :", key);
-        button.textContent = "Démarquer";
-        button.className = "mark-button mark-button-disabled";
+        button.textContent = "Supprimer";
+        button.className = "delete-button";
         currentResponses[key] = { category: selectedCategory, questionId, status: 'marquée' };
         updateModeCounts();
       })
@@ -342,7 +342,7 @@ function toggleMarquerQuestion(questionId, button) {
 }
 
 /**
- * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Démarquer" pour chaque question après validation
+ * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
 function afficherBoutonsMarquer() {
   console.log(">>> afficherBoutonsMarquer()");
@@ -353,8 +353,8 @@ function afficherBoutonsMarquer() {
     const isMarked = currentResponses[key]?.status === 'marquée';
 
     const markButton = document.createElement('button');
-    markButton.textContent = isMarked ? "Démarquer" : "Marquer";
-    markButton.className = isMarked ? "mark-button mark-button-disabled" : "mark-button";
+    markButton.textContent = isMarked ? "Supprimer" : "Marquer";
+    markButton.className = isMarked ? "delete-button" : "mark-button";
     markButton.onclick = () => toggleMarquerQuestion(questionId, markButton);
     block.appendChild(markButton);
   });
@@ -474,6 +474,13 @@ async function validerReponses() {
     console.log("Réponses sauvegardées dans Firestore :", responsesToSave);
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des réponses dans Firestore :", error);
+  }
+
+  // Désactiver le bouton "Valider les réponses"
+  const validateButton = document.querySelector('button[onclick="validerReponses()"]');
+  if (validateButton) {
+    validateButton.disabled = true;
+    validateButton.classList.add('disabled-button');
   }
 
   // Afficher les boutons "Marquer" après validation
