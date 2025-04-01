@@ -483,6 +483,19 @@ function getKeyFor(q) {
  */
 async function initStats() {
   console.log(">>> initStats()");
+
+  if (typeof auth === 'undefined' || !auth) {
+    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+    alert("Erreur : Firebase Auth n'est pas initialisé.");
+    return;
+  }
+
+  if (!auth.currentUser) {
+    alert("Vous devez être connecté pour voir vos statistiques.");
+    console.error("Utilisateur non authentifié, impossible de charger les statistiques");
+    return;
+  }
+
   await chargerQuestions("PROCÉDURE RADIO");
   const arrRadio = [...questions];
   
