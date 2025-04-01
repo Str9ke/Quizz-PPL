@@ -138,21 +138,17 @@ function updateCategorySelect() {
 /**
  * categoryChanged() – Charge les questions selon la catégorie sélectionnée
  */
-function categoryChanged() {
+async function categoryChanged() {
   const catSelect = document.getElementById("categorie");
   const selected = catSelect.value;
-  
+
   if (selected === "TOUTES") {
-    (async function() {
-      await loadAllQuestions();
-      updateModeCounts();
-    })();
+    await loadAllQuestions();
   } else {
-    (async function() {
-      await chargerQuestions(selected);
-      updateModeCounts();
-    })();
+    await chargerQuestions(selected);
   }
+
+  updateModeCounts();
 }
 
 /**
