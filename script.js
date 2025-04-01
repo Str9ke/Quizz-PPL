@@ -387,19 +387,20 @@ async function validerReponses() {
 function computeStatsFor(category, responses) {
   let reussie = 0, ratee = 0, nonvue = 0;
 
-  questions
-    .filter(q => q.categorie === category)
-    .forEach(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      const response = responses[key];
-      if (!response) {
-        nonvue++;
-      } else if (response.status === 'réussie') {
-        reussie++;
-      } else if (response.status === 'ratée') {
-        ratee++;
-      }
-    });
+  // Filtrer les questions par catégorie
+  const categoryQuestions = questions.filter(q => q.categorie === category);
+
+  categoryQuestions.forEach(q => {
+    const key = `question_${q.categorie}_${q.id}`;
+    const response = responses[key];
+    if (!response) {
+      nonvue++;
+    } else if (response.status === 'réussie') {
+      reussie++;
+    } else if (response.status === 'ratée') {
+      ratee++;
+    }
+  });
 
   return { reussie, ratee, nonvue };
 }
@@ -433,7 +434,7 @@ async function initStats() {
       const data = doc.data();
       console.log("Données récupérées depuis Firestore :", data);
 
-      // Charger les questions pour chaque catégorie
+      // Charger toutes les questions pour chaque catégorie
       await chargerQuestions("PROCÉDURE RADIO");
       const statsRadio = computeStatsFor("PROCÉDURE RADIO", data.responses);
 
@@ -455,6 +456,7 @@ async function initStats() {
       await chargerQuestions("MOTORISATION");
       const statsMotor = computeStatsFor("MOTORISATION", data.responses);
 
+      // Afficher les statistiques
       afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
     } else {
       console.log("Aucune donnée trouvée dans Firestore pour cet utilisateur.");
