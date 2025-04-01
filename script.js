@@ -483,10 +483,8 @@ async function validerReponses() {
       Vous avez <strong>${correctCount}</strong> bonnes réponses 
       sur <strong>${currentQuestions.length}</strong>.
     `;
-    // Faire défiler la page vers le haut (compatible avec tous les navigateurs)
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.body.scrollTop = 0; // Pour Safari
-    document.documentElement.scrollTop = 0; // Pour Chrome, Firefox, IE et Opera
+    // Faire défiler la page vers le haut et ajuster pour Firefox et smartphones
+    rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // Sauvegarder les réponses dans Firestore
