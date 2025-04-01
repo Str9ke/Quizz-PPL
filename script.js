@@ -4,6 +4,19 @@
 const auth = window.auth;
 const db = window.db;
 
+// Vérification de l'initialisation de Firebase Auth et Firestore
+if (typeof auth === 'undefined' || !auth) {
+  console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+  alert("Erreur : Firebase Auth n'est pas initialisé.");
+  return;
+}
+
+if (typeof db === 'undefined' || !db) {
+  console.error("Firestore n'est pas initialisé. Vérifiez la configuration Firebase.");
+  alert("Erreur : Firestore n'est pas initialisé.");
+  return;
+}
+
 // Tableaux globaux pour toutes les questions et pour le quiz en cours
 let questions = [];
 let currentQuestions = [];
