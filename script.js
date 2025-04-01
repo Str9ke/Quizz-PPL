@@ -624,18 +624,44 @@ function computeStatsFor(arr) {
 }
 
 /**
- * resetStats() – Réinitialise les statistiques stockées dans le localStorage
+ * resetStats() – Réinitialise les statistiques stockées dans le localStorage et Firestore
  */
-function resetStats() {
+async function resetStats() {
   console.log(">>> resetStats()");
+
+  if (typeof auth === 'undefined' || !auth) {
+    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+    alert("Erreur : Firebase Auth n'est pas initialisé.");
+    return;
+  }
+
+  if (!auth.currentUser) {
+    alert("Vous devez être connecté pour réinitialiser vos statistiques.");
+    console.error("Utilisateur non authentifié, impossible de réinitialiser les statistiques");
+    return;
+  }
+
+  const uid = auth.currentUser.uid;
+
+  // Supprimer les données locales
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (k && k.startsWith("question_")) toRemove.push(k);
   }
   toRemove.forEach(k => localStorage.removeItem(k));
-  alert("Les stats ont été réinitialisées !");
-  window.location.reload();
+  console.log("Statistiques locales réinitialisées.");
+
+  // Supprimer les données dans Firestore
+  try {
+    await db.collection('quizProgress').doc(uid).delete();
+    console.log("Statistiques supprimées dans Firestore !");
+    alert("Les statistiques ont été réinitialisées !");
+    window.location.reload();
+  } catch (error) {
+    console.error("Erreur lors de la suppression des statistiques dans Firestore :", error);
+    alert("Erreur lors de la réinitialisation des statistiques : " + error.message);
+  }
 }
 
 /**
