@@ -27,6 +27,7 @@
     window.db = firebase.firestore();
 
     console.log("Firebase initialisé :", firebase.apps.length > 0);
+    console.log("Auth attaché à window :", !!window.auth);
   </script>
 </head>
 <body onload="initQuiz()">

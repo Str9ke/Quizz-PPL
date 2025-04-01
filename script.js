@@ -8,6 +8,7 @@ const db = window.db;
 if (typeof auth === 'undefined' || !auth) {
   console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
   alert("Erreur : Firebase Auth n'est pas initialisé.");
+  throw new Error("Firebase Auth n'est pas initialisé.");
 }
 
 if (typeof db === 'undefined' || !db) {
