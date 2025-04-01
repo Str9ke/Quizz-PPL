@@ -289,27 +289,75 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * marquerQuestion() – Marque une question pour la retrouver plus tard
+ * toggleMarquerQuestion() – Marque ou démarque une question
  */
-function marquerQuestion(questionId) {
-  console.log(">>> marquerQuestion(questionId=" + questionId + ")");
+function toggleMarquerQuestion(questionId, button) {
+  console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
   const uid = auth.currentUser?.uid;
   if (!uid) {
-    alert("Vous devez être connecté pour marquer une question.");
+    alert("Vous devez être connecté pour marquer ou démarquer une question.");
     return;
   }
 
   const key = `question_${selectedCategory}_${questionId}`;
-  db.collection('quizProgress').doc(uid).set(
-    {
-      responses: {
-        [key]: { category: selectedCategory, questionId, status: 'marquée' }
-      }
-    },
-    { merge: true }
-  )
-    .then(() => console.log("Question marquée :", key))
-    .catch(error => console.error("Erreur lors du marquage de la question :", error));
+  const isMarked = currentResponses[key]?.status === 'marquée';
+
+  if (isMarked) {
+    // Démarquer la question
+    db.collection('quizProgress').doc(uid).set(
+      {
+        responses: {
+          [key]: firebase.firestore.FieldValue.delete()
+        }
+      },
+      { merge: true }
+    )
+      .then(() => {
+        console.log("Question démarquée :", key);
+        button.textContent = "Marquer";
+        button.className = "mark-button";
+        delete currentResponses[key];
+        updateModeCounts();
+      })
+      .catch(error => console.error("Erreur lors du démarquage de la question :", error));
+  } else {
+    // Marquer la question
+    db.collection('quizProgress').doc(uid).set(
+      {
+        responses: {
+          [key]: { category: selectedCategory, questionId, status: 'marquée' }
+        }
+      },
+      { merge: true }
+    )
+      .then(() => {
+        console.log("Question marquée :", key);
+        button.textContent = "Démarquer";
+        button.className = "mark-button mark-button-disabled";
+        currentResponses[key] = { category: selectedCategory, questionId, status: 'marquée' };
+        updateModeCounts();
+      })
+      .catch(error => console.error("Erreur lors du marquage de la question :", error));
+  }
+}
+
+/**
+ * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Démarquer" pour chaque question après validation
+ */
+function afficherBoutonsMarquer() {
+  console.log(">>> afficherBoutonsMarquer()");
+  const questionBlocks = document.querySelectorAll('.question-block');
+  questionBlocks.forEach((block, idx) => {
+    const questionId = currentQuestions[idx].id;
+    const key = `question_${selectedCategory}_${questionId}`;
+    const isMarked = currentResponses[key]?.status === 'marquée';
+
+    const markButton = document.createElement('button');
+    markButton.textContent = isMarked ? "Démarquer" : "Marquer";
+    markButton.className = isMarked ? "mark-button mark-button-disabled" : "mark-button";
+    markButton.onclick = () => toggleMarquerQuestion(questionId, markButton);
+    block.appendChild(markButton);
+  });
 }
 
 /**
@@ -433,22 +481,6 @@ async function validerReponses() {
 }
 
 /**
- * afficherBoutonsMarquer() – Affiche les boutons "Marquer" pour chaque question après validation
- */
-function afficherBoutonsMarquer() {
-  console.log(">>> afficherBoutonsMarquer()");
-  const questionBlocks = document.querySelectorAll('.question-block');
-  questionBlocks.forEach((block, idx) => {
-    const questionId = currentQuestions[idx].id;
-    const markButton = document.createElement('button');
-    markButton.textContent = "Marquer";
-    markButton.className = "mark-button";
-    markButton.onclick = () => marquerQuestion(questionId);
-    block.appendChild(markButton);
-  });
-}
-
-/**
  * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues) pour une catégorie
  */
 function computeStatsFor(category, responses) {
@@ -486,7 +518,6 @@ async function initStats() {
 
   if (!auth.currentUser) {
     console.error("Utilisateur non authentifié, impossible de charger les statistiques");
-    alert("Vous devez être connecté pour voir vos statistiques.");
     window.location = 'index.html';
     return;
   }
@@ -497,41 +528,36 @@ async function initStats() {
 
   try {
     const doc = await db.collection('quizProgress').doc(uid).get();
-    if (doc.exists) {
-      const data = doc.data();
-      console.log("Données récupérées depuis Firestore :", data);
+    const data = doc.exists ? doc.data() : { responses: {} };
+    console.log("Données récupérées depuis Firestore :", data);
 
-      // Charger toutes les questions pour chaque catégorie
-      await chargerQuestions("PROCÉDURE RADIO");
-      const statsRadio = computeStatsFor("PROCÉDURE RADIO", data.responses);
+    // Charger toutes les questions pour chaque catégorie
+    await chargerQuestions("PROCÉDURE RADIO");
+    const statsRadio = computeStatsFor("PROCÉDURE RADIO", data.responses);
 
-      await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
-      const statsOp = computeStatsFor("PROCÉDURES OPÉRATIONNELLES", data.responses);
+    await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
+    const statsOp = computeStatsFor("PROCÉDURES OPÉRATIONNELLES", data.responses);
 
-      await chargerQuestions("RÉGLEMENTATION");
-      const statsRegl = computeStatsFor("RÉGLEMENTATION", data.responses);
+    await chargerQuestions("RÉGLEMENTATION");
+    const statsRegl = computeStatsFor("RÉGLEMENTATION", data.responses);
 
-      await chargerQuestions("CONNAISSANCE DE L’AVION");
-      const statsConv = computeStatsFor("CONNAISSANCE DE L’AVION", data.responses);
+    await chargerQuestions("CONNAISSANCE DE L’AVION");
+    const statsConv = computeStatsFor("CONNAISSANCE DE L’AVION", data.responses);
 
-      await chargerQuestions("INSTRUMENTATION");
-      const statsInstr = computeStatsFor("INSTRUMENTATION", data.responses);
+    await chargerQuestions("INSTRUMENTATION");
+    const statsInstr = computeStatsFor("INSTRUMENTATION", data.responses);
 
-      await chargerQuestions("MASSE ET CENTRAGE");
-      const statsMasse = computeStatsFor("MASSE ET CENTRAGE", data.responses);
+    await chargerQuestions("MASSE ET CENTRAGE");
+    const statsMasse = computeStatsFor("MASSE ET CENTRAGE", data.responses);
 
-      await chargerQuestions("MOTORISATION");
-      const statsMotor = computeStatsFor("MOTORISATION", data.responses);
+    await chargerQuestions("MOTORISATION");
+    const statsMotor = computeStatsFor("MOTORISATION", data.responses);
 
-      // Afficher les statistiques
-      afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
-    } else {
-      console.log("Aucune donnée trouvée dans Firestore pour cet utilisateur.");
-      alert("Aucune donnée trouvée.");
-    }
+    // Afficher les statistiques
+    afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques :", error);
-    alert("Erreur lors de la récupération des statistiques : " + error.message);
+    afficherStats({ reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 }, { reussie: 0, ratee: 0, nonvue: 0 });
   }
 }
 
