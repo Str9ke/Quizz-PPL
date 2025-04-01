@@ -312,12 +312,13 @@ function toggleMarquerQuestion(questionId, button) {
     return;
   }
 
-  // Utiliser la catégorie correcte pour la clé
+  // Trouver la question dans la liste actuelle pour obtenir sa catégorie correcte
   const question = currentQuestions.find(q => q.id === questionId);
   if (!question) {
     console.error("Question introuvable dans la catégorie sélectionnée.");
     return;
   }
+
   const key = `question_${question.categorie}_${questionId}`;
   const currentResponse = currentResponses[key] || {}; // Par défaut, vide
   const isMarked = currentResponse.status === 'marquée';
