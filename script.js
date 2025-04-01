@@ -156,35 +156,48 @@ function categoryChanged() {
 }
 
 /**
- * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales
+ * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
-function updateModeCounts() {
+async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
   let total = questions.length;
   let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
 
-  questions.forEach(q => {
-    const key = `question_${q.categorie}_${q.id}`;
-    const response = currentResponses[key];
-    if (!response) {
-      nbNonvues++;
-    } else if (response.status === 'ratée') {
-      nbRatees++;
-    } else if (response.status === 'marquée') {
-      nbMarquees++;
-    }
-  });
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
+    return;
+  }
 
-  const nbRateesNonvues = nbRatees + nbNonvues;
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    const responses = doc.exists ? doc.data().responses : {};
 
-  const modeSelect = document.getElementById('mode');
-  modeSelect.innerHTML = `
-    <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
-    <option value="toutes">Toutes (${total})</option>
-    <option value="ratees">Ratées (${nbRatees})</option>
-    <option value="nonvues">Non vues (${nbNonvues})</option>
-    <option value="marquees">Marquées (${nbMarquees})</option>
-  `;
+    questions.forEach(q => {
+      const key = `question_${q.categorie}_${q.id}`;
+      const response = responses[key];
+      if (!response) {
+        nbNonvues++;
+      } else if (response.status === 'ratée') {
+        nbRatees++;
+      } else if (response.status === 'marquée') {
+        nbMarquees++;
+      }
+    });
+
+    const nbRateesNonvues = nbRatees + nbNonvues;
+
+    const modeSelect = document.getElementById('mode');
+    modeSelect.innerHTML = `
+      <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
+      <option value="toutes">Toutes (${total})</option>
+      <option value="ratees">Ratées (${nbRatees})</option>
+      <option value="nonvues">Non vues (${nbNonvues})</option>
+      <option value="marquees">Marquées (${nbMarquees})</option>
+    `;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des modes :", error);
+  }
 }
 
 /**
