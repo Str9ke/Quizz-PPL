@@ -382,32 +382,33 @@ async function validerReponses() {
 }
 
 /**
- * computeProgress() – Calcule la progression complète (statistiques) à partir de currentQuestions
+ * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues) pour une catégorie
  */
-function computeProgress() {
-  let total = currentQuestions.length;
-  let countReussies = 0, countRatees = 0, countNonvues = 0;
-  
-  currentQuestions.forEach(q => {
-    const st = localStorage.getItem(getKeyFor(q));
-    if (!st) countNonvues++;
-    else if (st === 'réussie') countReussies++;
-    else if (st === 'ratée') countRatees++;
-  });
-  
-  return {
-    total,
-    reussies: countReussies,
-    ratees: countRatees,
-    nonvues: countNonvues
-  };
+function computeStatsFor(category, responses) {
+  let reussie = 0, ratee = 0, nonvue = 0;
+
+  questions
+    .filter(q => q.categorie === category)
+    .forEach(q => {
+      const key = `question_${q.categorie}_${q.id}`;
+      const response = responses[key];
+      if (!response) {
+        nonvue++;
+      } else if (response.status === 'réussie') {
+        reussie++;
+      } else if (response.status === 'ratée') {
+        ratee++;
+      }
+    });
+
+  return { reussie, ratee, nonvue };
 }
 
 /**
- * sauvegarderProgression() – Enregistre la progression complète (réponses et stats) dans Firestore
+ * initStats() – Chargement initial sur stats.html pour afficher les statistiques
  */
-async function sauvegarderProgression() {
-  console.log(">>> sauvegarderProgression()");
+async function initStats() {
+  console.log(">>> initStats()");
 
   if (typeof auth === 'undefined' || !auth) {
     console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
@@ -416,44 +417,147 @@ async function sauvegarderProgression() {
   }
 
   if (!auth.currentUser) {
-    alert("Vous devez être connecté pour sauvegarder votre progression.");
-    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
+    console.error("Utilisateur non authentifié, impossible de charger les statistiques");
+    alert("Vous devez être connecté pour voir vos statistiques.");
+    window.location = 'index.html';
     return;
   }
 
-  let progressData = {
-    category: selectedCategory,
-    currentQuestionIndex: 0, // À ajuster selon la logique de reprise
-    responses: {},
-    stats: {}
-  };
-
-  currentQuestions.forEach(q => {
-    const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
-    if (sel) {
-      progressData.responses[q.id] = parseInt(sel.value);
-    }
-  });
-
-  // Calculer les statistiques complètes
-  progressData.stats = computeProgress();
+  console.log("Utilisateur authentifié :", auth.currentUser.uid);
 
   const uid = auth.currentUser.uid;
-  console.log("Données à sauvegarder :", progressData);
 
   try {
-    await db.collection('quizProgress').doc(uid).set({
-      category: progressData.category,
-      currentQuestionIndex: progressData.currentQuestionIndex,
-      responses: progressData.responses,
-      stats: progressData.stats,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    console.log("Progression complète sauvegardée dans Firestore !");
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      console.log("Données récupérées depuis Firestore :", data);
+
+      // Charger les questions pour chaque catégorie
+      await chargerQuestions("PROCÉDURE RADIO");
+      const statsRadio = computeStatsFor("PROCÉDURE RADIO", data.responses);
+
+      await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
+      const statsOp = computeStatsFor("PROCÉDURES OPÉRATIONNELLES", data.responses);
+
+      await chargerQuestions("RÉGLEMENTATION");
+      const statsRegl = computeStatsFor("RÉGLEMENTATION", data.responses);
+
+      await chargerQuestions("CONNAISSANCE DE L’AVION");
+      const statsConv = computeStatsFor("CONNAISSANCE DE L’AVION", data.responses);
+
+      await chargerQuestions("INSTRUMENTATION");
+      const statsInstr = computeStatsFor("INSTRUMENTATION", data.responses);
+
+      await chargerQuestions("MASSE ET CENTRAGE");
+      const statsMasse = computeStatsFor("MASSE ET CENTRAGE", data.responses);
+
+      await chargerQuestions("MOTORISATION");
+      const statsMotor = computeStatsFor("MOTORISATION", data.responses);
+
+      afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
+    } else {
+      console.log("Aucune donnée trouvée dans Firestore pour cet utilisateur.");
+      alert("Aucune donnée trouvée.");
+    }
   } catch (error) {
-    console.error("Erreur lors de la sauvegarde de la progression :", error);
-    alert("Erreur lors de la sauvegarde de la progression : " + error.message);
+    console.error("Erreur lors de la récupération des statistiques :", error);
+    alert("Erreur lors de la récupération des statistiques : " + error.message);
   }
+}
+
+/**
+ * afficherStats() – Affiche les statistiques sur stats.html
+ */
+function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor) {
+  console.log(">>> afficherStats()");
+  const cont = document.getElementById('statsContainer');
+  if (!cont) return;
+
+  const totalRadio = statsRadio.reussie + statsRadio.ratee + statsRadio.nonvue;
+  const totalOp = statsOp.reussie + statsOp.ratee + statsOp.nonvue;
+  const totalRegl = statsRegl.reussie + statsRegl.ratee + statsRegl.nonvue;
+  const totalConv = statsConv.reussie + statsConv.ratee + statsConv.nonvue;
+  const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue;
+  const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue;
+  const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue;
+
+  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor;
+  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
+                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
+
+  let percRadio = totalRadio ? Math.round((statsRadio.reussie * 100) / totalRadio) : 0;
+  let percOp    = totalOp    ? Math.round((statsOp.reussie   * 100) / totalOp)    : 0;
+  let percRegl  = totalRegl  ? Math.round((statsRegl.reussie * 100) / totalRegl) : 0;
+  let percConv  = totalConv  ? Math.round((statsConv.reussie * 100) / totalConv) : 0;
+  let percInstr = totalInstr ? Math.round((statsInstr.reussie * 100) / totalInstr) : 0;
+  let percMasse = totalMasse ? Math.round((statsMasse.reussie * 100) / totalMasse) : 0;
+  let percMotor = totalMotor ? Math.round((statsMotor.reussie * 100) / totalMotor) : 0;
+  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+
+  cont.innerHTML = `
+    <h2>Catégorie : PROCÉDURE RADIO</h2>
+    <p>Total : ${totalRadio} questions</p>
+    <p>✅ Réussies : ${statsRadio.reussie}</p>
+    <p>❌ Ratées : ${statsRadio.ratee}</p>
+    <p>👀 Non vues : ${statsRadio.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percRadio}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
+    <p>Total : ${totalOp} questions</p>
+    <p>✅ Réussies : ${statsOp.reussie}</p>
+    <p>❌ Ratées : ${statsOp.ratee}</p>
+    <p>👀 Non vues : ${statsOp.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percOp}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : RÉGLEMENTATION</h2>
+    <p>Total : ${totalRegl} questions</p>
+    <p>✅ Réussies : ${statsRegl.reussie}</p>
+    <p>❌ Ratées : ${statsRegl.ratee}</p>
+    <p>👀 Non vues : ${statsRegl.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percRegl}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
+    <p>Total : ${totalConv} questions</p>
+    <p>✅ Réussies : ${statsConv.reussie}</p>
+    <p>❌ Ratées : ${statsConv.ratee}</p>
+    <p>👀 Non vues : ${statsConv.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percConv}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : INSTRUMENTATION</h2>
+    <p>Total : ${totalInstr} questions</p>
+    <p>✅ Réussies : ${statsInstr.reussie}</p>
+    <p>❌ Ratées : ${statsInstr.ratee}</p>
+    <p>👀 Non vues : ${statsInstr.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percInstr}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : MASSE ET CENTRAGE</h2>
+    <p>Total : ${totalMasse} questions</p>
+    <p>✅ Réussies : ${statsMasse.reussie}</p>
+    <p>❌ Ratées : ${statsMasse.ratee}</p>
+    <p>👀 Non vues : ${statsMasse.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percMasse}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : MOTORISATION</h2>
+    <p>Total : ${totalMotor} questions</p>
+    <p>✅ Réussies : ${statsMotor.reussie}</p>
+    <p>❌ Ratées : ${statsMotor.ratee}</p>
+    <p>👀 Non vues : ${statsMotor.nonvue}</p>
+    <div class="progressbar"><div class="progress" style="width:${percMotor}%;"></div></div>
+
+    <hr>
+    <h2>Global</h2>
+    <p>Total cumulé : ${totalGlobal}</p>
+    <p>Réussies cumulées : ${reussiesGlobal}</p>
+    <p>Pourcentage global : ${percGlobal}%</p>
+    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
+  `;
 }
 
 /**
@@ -548,10 +652,10 @@ async function synchroniserStatistiques() {
 }
 
 /**
- * initStats() – Chargement initial sur stats.html pour afficher les statistiques
+ * sauvegarderProgression() – Enregistre la progression complète (réponses et stats) dans Firestore
  */
-async function initStats() {
-  console.log(">>> initStats()");
+async function sauvegarderProgression() {
+  console.log(">>> sauvegarderProgression()");
 
   if (typeof auth === 'undefined' || !auth) {
     console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
@@ -560,156 +664,44 @@ async function initStats() {
   }
 
   if (!auth.currentUser) {
-    console.error("Utilisateur non authentifié, impossible de charger les statistiques");
-    alert("Vous devez être connecté pour voir vos statistiques.");
-    window.location = 'index.html';
+    alert("Vous devez être connecté pour sauvegarder votre progression.");
+    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
     return;
   }
 
-  console.log("Utilisateur authentifié :", auth.currentUser.uid);
+  let progressData = {
+    category: selectedCategory,
+    currentQuestionIndex: 0, // À ajuster selon la logique de reprise
+    responses: {},
+    stats: {}
+  };
 
-  // Synchroniser les statistiques avec Firestore
-  await synchroniserStatistiques();
-
-  // Charger les questions pour chaque catégorie
-  await chargerQuestions("PROCÉDURE RADIO");
-  const arrRadio = [...questions];
-  
-  await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
-  const arrOp = [...questions];
-  
-  await chargerQuestions("RÉGLEMENTATION");
-  const arrRegl = [...questions];
-  
-  await chargerQuestions("CONNAISSANCE DE L’AVION");
-  const arrConv = [...questions];
-  
-  await chargerQuestions("INSTRUMENTATION");
-  const arrInstr = [...questions];
-  
-  await chargerQuestions("MASSE ET CENTRAGE");
-  const arrMasse = [...questions];
-  
-  await chargerQuestions("MOTORISATION");
-  const arrMotor = [...questions];
-
-  afficherStats(arrRadio, arrOp, arrRegl, arrConv, arrInstr, arrMasse, arrMotor);
-}
-
-/**
- * afficherStats() – Affiche les statistiques sur stats.html
- */
-function afficherStats(radioArr, opArr, reglArr, convArr, instrArr, masseArr, motorArr) {
-  console.log(">>> afficherStats()");
-  const cont = document.getElementById('statsContainer');
-  if (!cont) return;
-
-  const statsRadio = computeStatsFor(radioArr);
-  const statsOp = computeStatsFor(opArr);
-  const statsRegl = computeStatsFor(reglArr);
-  const statsConv = computeStatsFor(convArr);
-  const statsInstr = computeStatsFor(instrArr);
-  const statsMasse = computeStatsFor(masseArr);
-  const statsMotor = computeStatsFor(motorArr);
-
-  const totalRadio = radioArr.length;
-  const totalOp = opArr.length;
-  const totalRegl = reglArr.length;
-  const totalConv = convArr.length;
-  const totalInstr = instrArr.length;
-  const totalMasse = masseArr.length;
-  const totalMotor = motorArr.length;
-
-  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor;
-  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
-                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
-
-  let percRadio = totalRadio ? Math.round((statsRadio.reussie * 100) / totalRadio) : 0;
-  let percOp    = totalOp    ? Math.round((statsOp.reussie   * 100) / totalOp)    : 0;
-  let percRegl  = totalRegl  ? Math.round((statsRegl.reussie * 100) / totalRegl) : 0;
-  let percConv  = totalConv  ? Math.round((statsConv.reussie * 100) / totalConv) : 0;
-  let percInstr = totalInstr ? Math.round((statsInstr.reussie * 100) / totalInstr) : 0;
-  let percMasse = totalMasse ? Math.round((statsMasse.reussie * 100) / totalMasse) : 0;
-  let percMotor = totalMotor ? Math.round((statsMotor.reussie * 100) / totalMotor) : 0;
-  let percGlobal= totalGlobal? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
-
-  cont.innerHTML = `
-    <h2>Catégorie : PROCÉDURE RADIO</h2>
-    <p>Total : ${totalRadio} questions</p>
-    <p>✅ Réussies : ${statsRadio.reussie}</p>
-    <p>❌ Ratées : ${statsRadio.ratée}</p>
-    <p>👀 Non vues : ${statsRadio.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percRadio}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
-    <p>Total : ${totalOp} questions</p>
-    <p>✅ Réussies : ${statsOp.reussie}</p>
-    <p>❌ Ratées : ${statsOp.ratée}</p>
-    <p>👀 Non vues : ${statsOp.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percOp}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : RÉGLEMENTATION</h2>
-    <p>Total : ${totalRegl} questions</p>
-    <p>✅ Réussies : ${statsRegl.reussie}</p>
-    <p>❌ Ratées : ${statsRegl.ratée}</p>
-    <p>👀 Non vues : ${statsRegl.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percRegl}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
-    <p>Total : ${totalConv} questions</p>
-    <p>✅ Réussies : ${statsConv.reussie}</p>
-    <p>❌ Ratées : ${statsConv.ratée}</p>
-    <p>👀 Non vues : ${statsConv.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percConv}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : INSTRUMENTATION</h2>
-    <p>Total : ${totalInstr} questions</p>
-    <p>✅ Réussies : ${statsInstr.reussie}</p>
-    <p>❌ Ratées : ${statsInstr.ratée}</p>
-    <p>👀 Non vues : ${statsInstr.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percInstr}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : MASSE ET CENTRAGE</h2>
-    <p>Total : ${totalMasse} questions</p>
-    <p>✅ Réussies : ${statsMasse.reussie}</p>
-    <p>❌ Ratées : ${statsMasse.ratée}</p>
-    <p>👀 Non vues : ${statsMasse.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percMasse}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : MOTORISATION</h2>
-    <p>Total : ${totalMotor} questions</p>
-    <p>✅ Réussies : ${statsMotor.reussie}</p>
-    <p>❌ Ratées : ${statsMotor.ratée}</p>
-    <p>👀 Non vues : ${statsMotor.nonvue}</p>
-    <div class="progressbar"><div class="progress" style="width:${percMotor}%;"></div></div>
-
-    <hr>
-    <h2>Global</h2>
-    <p>Total cumulé : ${totalGlobal}</p>
-    <p>Réussies cumulées : ${reussiesGlobal}</p>
-    <p>Pourcentage global : ${percGlobal}%</p>
-    <div class="progressbar"><div class="progress" style="width:${percGlobal}%;"></div></div>
-  `;
-}
-
-/**
- * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues) pour un tableau de questions
- */
-function computeStatsFor(arr) {
-  let reussie = 0, ratee = 0, nonvue = 0;
-  arr.forEach(q => {
-    const st = localStorage.getItem(getKeyFor(q));
-    if (!st) nonvue++;
-    else if (st === 'réussie') reussie++;
-    else if (st === 'ratée') ratee++;
+  currentQuestions.forEach(q => {
+    const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+    if (sel) {
+      progressData.responses[q.id] = parseInt(sel.value);
+    }
   });
-  return { reussie, ratée: ratee, nonvue };
+
+  // Calculer les statistiques complètes
+  progressData.stats = computeProgress();
+
+  const uid = auth.currentUser.uid;
+  console.log("Données à sauvegarder :", progressData);
+
+  try {
+    await db.collection('quizProgress').doc(uid).set({
+      category: progressData.category,
+      currentQuestionIndex: progressData.currentQuestionIndex,
+      responses: progressData.responses,
+      stats: progressData.stats,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    console.log("Progression complète sauvegardée dans Firestore !");
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde de la progression :", error);
+    alert("Erreur lors de la sauvegarde de la progression : " + error.message);
+  }
 }
 
 /**
