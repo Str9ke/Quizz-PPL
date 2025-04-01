@@ -687,7 +687,8 @@ function afficherCorrection() {
 
   let html = "";
   currentQuestions.forEach((q, idx) => {
-    const st = localStorage.getItem(getKeyFor(q));
+    const key = getKeyFor(q);
+    const response = currentResponses[key];
     const checkedVal = document.querySelector(`input[name="q${q.id}"]:checked`)?.value;
 
     let ansHtml = "";
@@ -701,13 +702,15 @@ function afficherCorrection() {
       </div>`;
     });
 
+    const nonReponduHtml = !checkedVal
+      ? `<span style="color:red; font-weight:bold;">NON RÉPONDU</span>`
+      : "";
+
     html += `
       <div class="question-block">
         <div class="question-title">
-          ${idx+1}. ${q.question}
-          <span style="color:#999;font-size:0.9em;">
-            (${st ? st.toUpperCase() : 'NON REPONDU'})
-          </span>
+          ${idx + 1}. ${q.question}
+          ${nonReponduHtml}
         </div>
         <div class="answer-list">
           ${ansHtml}
