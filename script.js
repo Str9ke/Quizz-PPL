@@ -302,7 +302,7 @@ function filtrerQuestions(mode, nb) {
 }
 
 /**
- * toggleMarquerQuestion() – Marque ou supprime une question marquée
+ * toggleMarquerQuestion() – Marque ou supprime une question marquée tout en conservant son statut précédent
  */
 function toggleMarquerQuestion(questionId, button) {
   console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
@@ -313,32 +313,34 @@ function toggleMarquerQuestion(questionId, button) {
   }
 
   const key = `question_${selectedCategory}_${questionId}`;
-  const isMarked = currentResponses[key]?.status === 'marquée';
+  const currentResponse = currentResponses[key] || { status: 'nonvue' }; // Par défaut, non vue
+  const isMarked = currentResponse.status === 'marquée';
 
   if (isMarked) {
-    // Supprimer la question marquée
+    // Supprimer la question marquée et restaurer son statut précédent
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: firebase.firestore.FieldValue.delete()
+          [key]: { ...currentResponse, status: currentResponse.previousStatus || 'nonvue' }
         }
       },
       { merge: true }
     )
       .then(() => {
-        console.log("Question supprimée :", key);
+        console.log("Question supprimée des marquées :", key);
         button.textContent = "Marquer";
         button.className = "mark-button";
-        delete currentResponses[key];
+        currentResponses[key].status = currentResponses[key].previousStatus || 'nonvue';
+        delete currentResponses[key].previousStatus;
         updateModeCounts();
       })
-      .catch(error => console.error("Erreur lors de la suppression de la question :", error));
+      .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
   } else {
-    // Marquer la question
+    // Marquer la question tout en sauvegardant son statut précédent
     db.collection('quizProgress').doc(uid).set(
       {
         responses: {
-          [key]: { category: selectedCategory, questionId, status: 'marquée' }
+          [key]: { ...currentResponse, previousStatus: currentResponse.status, status: 'marquée' }
         }
       },
       { merge: true }
@@ -347,7 +349,7 @@ function toggleMarquerQuestion(questionId, button) {
         console.log("Question marquée :", key);
         button.textContent = "Supprimer";
         button.className = "delete-button";
-        currentResponses[key] = { category: selectedCategory, questionId, status: 'marquée' };
+        currentResponses[key] = { ...currentResponse, previousStatus: currentResponse.status, status: 'marquée' };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors du marquage de la question :", error));
