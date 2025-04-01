@@ -341,13 +341,17 @@ async function validerReponses() {
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
-    if (sel && parseInt(sel.value) === q.bonne_reponse) {
-      localStorage.setItem(key, 'réussie');
-      responsesToSave[key] = 'réussie';
+    const responseData = {
+      category: q.categorie,
+      questionId: q.id,
+      status: sel && parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée'
+    };
+
+    localStorage.setItem(key, JSON.stringify(responseData));
+    responsesToSave[key] = responseData;
+
+    if (responseData.status === 'réussie') {
       correctCount++;
-    } else {
-      localStorage.setItem(key, 'ratée');
-      responsesToSave[key] = 'ratée';
     }
   });
 
@@ -497,7 +501,7 @@ function afficherCorrection() {
  * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
  */
 function getKeyFor(q) {
-  return "question_" + q.categorie + "_" + q.id;
+  return `question_${q.categorie}_${q.id}`;
 }
 
 /**
@@ -532,7 +536,7 @@ async function initStats() {
       // Synchroniser les réponses dans localStorage
       if (data.responses) {
         Object.keys(data.responses).forEach(key => {
-          localStorage.setItem(key, data.responses[key] === 'ratée' ? 'ratée' : 'réussie');
+          localStorage.setItem(key, JSON.stringify(data.responses[key]));
         });
       }
     } else {
@@ -722,13 +726,6 @@ async function resetStats() {
     console.error("Erreur lors de la suppression des statistiques dans Firestore :", error);
     alert("Erreur lors de la réinitialisation des statistiques : " + error.message);
   }
-}
-
-/**
- * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
- */
-function getKeyFor(q) {
-  return "question_" + q.categorie + "_" + q.id;
 }
 
 /**
