@@ -96,7 +96,7 @@ async function initIndex() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA Procedures"
+    "EASA PROCEDURES"
   ];
   const categoryCount = categories.length;
   document.getElementById('categoryCount').textContent = categoryCount;
@@ -125,7 +125,7 @@ async function loadAllQuestions() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA Procedures"
+    "EASA PROCEDURES"
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
