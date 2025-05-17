@@ -773,20 +773,27 @@ function afficherCorrection() {
   currentQuestions.forEach((q, idx) => {
     const key = getKeyFor(q);
     const response = currentResponses[key];
-    const checkedVal = document.querySelector(`input[name="q${q.id}"]:checked`)?.value;
+    const checkedInput = document.querySelector(`input[name="q${q.id}"]:checked`);
+    const checkedVal = checkedInput ? parseInt(checkedInput.value) : null;
 
     let ansHtml = "";
     q.choix.forEach((choixText, i) => {
       let styleCls = "";
-      if (i === q.bonne_reponse) styleCls = "correct";
-      else if (checkedVal && parseInt(checkedVal) === i) styleCls = "wrong";
-
+      // Surligne la bonne réponse en vert
+      if (i === q.bonne_reponse) {
+        styleCls = "correct";
+      }
+      // Surligne la mauvaise réponse choisie en rouge
+      if (checkedVal !== null && checkedVal === i && checkedVal !== q.bonne_reponse) {
+        styleCls = "wrong";
+      }
       ansHtml += `<div style="margin-bottom:4px;">
         <span class="${styleCls}">${choixText}</span>
       </div>`;
     });
 
-    const nonReponduHtml = !checkedVal
+    // Affiche "NON RÉPONDU" si aucune réponse sélectionnée
+    const nonReponduHtml = checkedVal === null
       ? `<span style="color:red; font-weight:bold;">NON RÉPONDU</span>`
       : "";
 
