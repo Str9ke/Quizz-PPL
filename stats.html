@@ -26,16 +26,12 @@
     window.auth = firebase.auth();
     window.db = firebase.firestore();
 
-    console.log("Firebase initialisé :", firebase.apps.length > 0);
-    console.log("Auth attaché à window :", !!window.auth);
-
     // Vérifier l'état de connexion avant de charger les statistiques
     auth.onAuthStateChanged(user => {
       if (user) {
-        console.log("Utilisateur connecté :", user.uid);
+        // Appel unique ici
         initStats();
       } else {
-        console.error("Utilisateur non authentifié, redirection vers l'accueil.");
         alert("Vous devez être connecté pour voir vos statistiques.");
         window.location = 'index.html';
       }
