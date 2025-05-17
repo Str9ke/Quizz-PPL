@@ -34,6 +34,7 @@ let countConv = 0;
 let countInstr = 0;
 let countMasse = 0;
 let countMotor = 0;
+let countEasa = 0;
 let totalGlobal = 0;
 
 /**
@@ -64,45 +65,53 @@ async function initIndex() {
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
 
-  totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor;
-  
-  updateCategorySelect();
-
-  // Par défaut, on sélectionne "TOUTES"
-  const catSelect = document.getElementById("categorie");
-  catSelect.value = "TOUTES";
-  selectedCategory = "TOUTES";
-  
-  // Charger toutes les questions
-  await loadAllQuestions();
-  
-  updateModeCounts();
-
-  const p = document.getElementById('totalGlobalInfo');
-  p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
-
-  document.getElementById('btnStart').disabled = false;
-
-  // Mettre à jour le compteur de catégories
-  const categories = [
-    "PROCÉDURE RADIO",
-    "PROCÉDURES OPÉRATIONNELLES",
-    "RÉGLEMENTATION",
-    "CONNAISSANCE DE L’AVION",
-    "INSTRUMENTATION",
-    "MASSE ET CENTRAGE",
-    "MOTORISATION",
-    "EASA Procedures"
-  ];
-  const categoryCount = categories.length;
-  document.getElementById('categoryCount').textContent = categoryCount;
-
   // Charger et afficher le nombre de procédures EASA
   fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
     .then(response => response.json())
     .then(easaData => {
-      categories.find(cat => cat.name === "EASA Procedures").count = easaData.length;
-      document.getElementById('easaProcedureCount').textContent = easaData.length;
+      countEasa = easaData.length;
+      categories.find(cat => cat.name === "EASA Procedures").count = countEasa;
+      totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countEasa;
+      
+      updateCategorySelect();
+
+      // Par défaut, on sélectionne "TOUTES"
+      const catSelect = document.getElementById("categorie");
+      catSelect.value = "TOUTES";
+      selectedCategory = "TOUTES";
+      
+      // Charger toutes les questions
+      await loadAllQuestions();
+      
+      updateModeCounts();
+
+      const p = document.getElementById('totalGlobalInfo');
+      p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
+
+      document.getElementById('btnStart').disabled = false;
+
+      // Mettre à jour le compteur de catégories
+      const categories = [
+        "PROCÉDURE RADIO",
+        "PROCÉDURES OPÉRATIONNELLES",
+        "RÉGLEMENTATION",
+        "CONNAISSANCE DE L’AVION",
+        "INSTRUMENTATION",
+        "MASSE ET CENTRAGE",
+        "MOTORISATION",
+        "EASA Procedures"
+      ];
+      const categoryCount = categories.length;
+      document.getElementById('categoryCount').textContent = categoryCount;
+
+      // Charger et afficher le nombre de procédures EASA
+      fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
+        .then(response => response.json())
+        .then(easaData => {
+          categories.find(cat => cat.name === "EASA Procedures").count = easaData.length;
+          document.getElementById('easaProcedureCount').textContent = easaData.length;
+        })
+        .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
