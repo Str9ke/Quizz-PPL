@@ -34,6 +34,7 @@ let countConv = 0;
 let countInstr = 0;
 let countMasse = 0;
 let countMotor = 0;
+let countEasa = 0;
 let totalGlobal = 0;
 
 /**
@@ -64,7 +65,10 @@ async function initIndex() {
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
 
-  totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor;
+  await chargerQuestions("EASA PROCEDURES");
+  countEasa = questions.length;
+
+  totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countEasa;
   
   updateCategorySelect();
 
@@ -150,7 +154,7 @@ function updateCategorySelect() {
     { name: "INSTRUMENTATION", count: countInstr },
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
-    { name: "EASA PROCEDURES", count: 0 } // Compte temporaire, sera mis à jour
+    { name: "EASA PROCEDURES", count: countEasa }
   ];
 
   categories.forEach(cat => {
