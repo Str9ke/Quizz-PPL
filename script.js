@@ -82,6 +82,20 @@ async function initIndex() {
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
   document.getElementById('btnStart').disabled = false;
+
+  // Mettre à jour le compteur de catégories
+  const categories = [
+    "PROCÉDURE RADIO",
+    "PROCÉDURES OPÉRATIONNELLES",
+    "RÉGLEMENTATION",
+    "CONNAISSANCE DE L’AVION",
+    "INSTRUMENTATION",
+    "MASSE ET CENTRAGE",
+    "MOTORISATION",
+    "EASA Procedures"
+  ];
+  const categoryCount = categories.length;
+  document.getElementById('categoryCount').textContent = categoryCount;
 }
 
 /**
