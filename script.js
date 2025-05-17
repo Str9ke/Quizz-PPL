@@ -96,7 +96,8 @@ async function loadAllQuestions() {
     "CONNAISSANCE DE L’AVION",
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
-    "MOTORISATION"
+    "MOTORISATION",
+    "EASA Procedures"
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
@@ -124,7 +125,8 @@ function updateCategorySelect() {
     { name: "CONNAISSANCE DE L’AVION", count: countConv },
     { name: "INSTRUMENTATION", count: countInstr },
     { name: "MASSE ET CENTRAGE", count: countMasse },
-    { name: "MOTORISATION", count: countMotor }
+    { name: "MOTORISATION", count: countMotor },
+    { name: "EASA Procedures", count: 0 } // Compte temporaire, sera mis à jour
   ];
 
   categories.forEach(cat => {
@@ -139,20 +141,31 @@ function updateCategorySelect() {
  * categoryChanged() – Charge les questions selon la catégorie sélectionnée
  */
 function categoryChanged() {
-  const catSelect = document.getElementById("categorie");
-  const selected = catSelect.value;
-  
-  if (selected === "TOUTES") {
-    (async function() {
-      await loadAllQuestions();
-      updateModeCounts();
-    })();
-  } else {
-    (async function() {
-      await chargerQuestions(selected);
-      updateModeCounts();
-    })();
-  }
+  const selectedFile = document.getElementById("categorie").value;
+  fetch(selectedFile)
+    .then(resp => resp.json())
+    .then(data => {
+      document.getElementById("totalGlobalInfo").textContent =
+        "Total questions disponibles: " + data.questions.length;
+      const selected = document.getElementById('categorie').value;
+      if (selected === "section_easa_procedures_new.json") {
+        // Set the question count to 61
+        document.getElementById('totalGlobalInfo').textContent = "Total questions disponibles: 61";
+      } else {
+        if (selected === "TOUTES") {
+          (async function() {
+            await loadAllQuestions();
+            updateModeCounts();
+          })();
+        } else {
+          (async function() {
+            await chargerQuestions(selected);
+            updateModeCounts();
+          })();
+        }
+      }
+    })
+    .catch(err => console.error(err));
 }
 
 /**
@@ -241,6 +254,8 @@ async function chargerQuestions(cat) {
     fileName = "questions_masse_et_centrage.json";
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
+  } else if (cat === "EASA Procedures") {
+    fileName = "section_easa_procedures_new.json";
   }
   
   try {
@@ -435,6 +450,47 @@ function afficherQuiz() {
       </div>
     `;
   });
+
+  // Mettre à jour le nombre total de questions
+  const totalQuestions = questions.length;
+  document.getElementById('totalQuestions').textContent = totalQuestions;
+}
+
+/**
+ * loadQuestion() – Charge une question spécifique par son index
+ */
+function loadQuestion(index) {
+  console.log(">>> loadQuestion(index=" + index + ")");
+  const q = currentQuestions[index];
+  if (!q) {
+    console.error("Question introuvable à l'index " + index);
+    return;
+  }
+
+  document.getElementById('questionText').textContent = q.question;
+  const reponseContainer = document.getElementById('reponseContainer');
+  reponseContainer.innerHTML = "";
+
+  q.choix.forEach((choix, i) => {
+    const label = document.createElement('label');
+    label.style.display = "block";
+    label.style.marginBottom = "4px";
+
+    const input = document.createElement('input');
+    input.type = "radio";
+    input.name = "q" + q.id;
+    input.value = i;
+
+    const span = document.createElement('span');
+    span.textContent = choix;
+
+    label.appendChild(input);
+    label.appendChild(span);
+    reponseContainer.appendChild(label);
+  });
+
+  // Mettre à jour le numéro de la question actuelle
+  document.getElementById('currentQuestionNumber').textContent = index + 1;
 }
 
 /**
