@@ -656,18 +656,30 @@ async function initStats() {
     await chargerQuestions("MOTORISATION");
     const statsMotor = computeStatsFor("MOTORISATION", data.responses);
 
-    // Afficher les statistiques
-    afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor);
+    await chargerQuestions("EASA PROCEDURES");
+    const statsEasa = computeStatsFor("EASA PROCEDURES", data.responses);
+
+    // Afficher les statistiques (ajoute statsEasa)
+    afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor, statsEasa);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques :", error);
-    afficherStats({ reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }, { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 });
+    afficherStats(
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }
+    );
   }
 }
 
 /**
  * afficherStats() – Affiche les statistiques sur stats.html, y compris les marquées
  */
-function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor) {
+function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor, statsEasa) {
   console.log(">>> afficherStats()");
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
@@ -679,15 +691,17 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
   const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue + statsInstr.marquee;
   const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue + statsMasse.marquee;
   const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue + statsMotor.marquee;
+  const totalEasa = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee;
 
-  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor;
+  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor + totalEasa;
   const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
-                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie;
+                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie + statsEasa.reussie;
   const marqueesGlobal = statsRadio.marquee + statsOp.marquee + statsRegl.marquee + statsConv.marquee +
-                         statsInstr.marquee + statsMasse.marquee + statsMotor.marquee;
+                         statsInstr.marquee + statsMasse.marquee + statsMotor.marquee + statsEasa.marquee;
 
   let percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
 
+  // Ajoute la section EASA PROCEDURES
   cont.innerHTML = `
     <h2>Catégorie : PROCÉDURE RADIO</h2>
     <p>Total : ${totalRadio} questions</p>
@@ -749,6 +763,15 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <p>❌ Ratées : ${statsMotor.ratee}</p>
     <p>👀 Non vues : ${statsMotor.nonvue}</p>
     <p>📌 Marquées : ${statsMotor.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA PROCEDURES</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
     <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
