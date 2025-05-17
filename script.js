@@ -608,6 +608,27 @@ function computeStatsFor(category, responses) {
 }
 
 /**
+ * computeStatsForFirestore() – Calcule les stats pour une catégorie à partir des réponses Firestore
+ */
+function computeStatsForFirestore(categoryQuestions, responses) {
+  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0;
+  categoryQuestions.forEach(q => {
+    const key = `question_${q.categorie}_${q.id}`;
+    const response = responses[key];
+    if (!response) {
+      nonvue++;
+    } else if (response.status === 'réussie') {
+      reussie++;
+    } else if (response.status === 'ratée') {
+      ratee++;
+    } else if (response.status === 'marquée') {
+      marquee++;
+    }
+  });
+  return { reussie, ratee, nonvue, marquee };
+}
+
+/**
  * initStats() – Chargement initial sur stats.html pour afficher les statistiques
  */
 async function initStats() {
@@ -634,33 +655,28 @@ async function initStats() {
     const data = doc.exists ? doc.data() : { responses: {} };
     console.log("Données récupérées depuis Firestore :", data);
 
-    // Charger toutes les questions pour chaque catégorie
-    await chargerQuestions("PROCÉDURE RADIO");
-    const statsRadio = computeStatsFor("PROCÉDURE RADIO", data.responses);
+    // Pour chaque catégorie, charge les questions et calcule les stats à partir des réponses Firestore
+    const categoriesList = [
+      "PROCÉDURE RADIO",
+      "PROCÉDURES OPÉRATIONNELLES",
+      "RÉGLEMENTATION",
+      "CONNAISSANCE DE L’AVION",
+      "INSTRUMENTATION",
+      "MASSE ET CENTRAGE",
+      "MOTORISATION",
+      "EASA PROCEDURES"
+    ];
 
-    await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
-    const statsOp = computeStatsFor("PROCÉDURES OPÉRATIONNELLES", data.responses);
+    const statsArr = [];
+    for (const cat of categoriesList) {
+      await chargerQuestions(cat);
+      // Copie locale pour éviter l'écrasement
+      const catQuestions = [...questions];
+      statsArr.push(computeStatsForFirestore(catQuestions, data.responses));
+    }
 
-    await chargerQuestions("RÉGLEMENTATION");
-    const statsRegl = computeStatsFor("RÉGLEMENTATION", data.responses);
-
-    await chargerQuestions("CONNAISSANCE DE L’AVION");
-    const statsConv = computeStatsFor("CONNAISSANCE DE L’AVION", data.responses);
-
-    await chargerQuestions("INSTRUMENTATION");
-    const statsInstr = computeStatsFor("INSTRUMENTATION", data.responses);
-
-    await chargerQuestions("MASSE ET CENTRAGE");
-    const statsMasse = computeStatsFor("MASSE ET CENTRAGE", data.responses);
-
-    await chargerQuestions("MOTORISATION");
-    const statsMotor = computeStatsFor("MOTORISATION", data.responses);
-
-    await chargerQuestions("EASA PROCEDURES");
-    const statsEasa = computeStatsFor("EASA PROCEDURES", data.responses);
-
-    // Afficher les statistiques (ajoute statsEasa)
-    afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor, statsEasa);
+    // Affiche les stats pour toutes les catégories (spread)
+    afficherStats(...statsArr);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques :", error);
     afficherStats(
