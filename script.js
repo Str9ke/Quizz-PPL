@@ -35,6 +35,7 @@ let countInstr = 0;
 let countMasse = 0;
 let countMotor = 0;
 let countEasa = 0;
+let countAer = 0;      // ← nouveau compteur pour EASA AERODYNAMIQUE
 let totalGlobal = 0;
 
 /**
@@ -68,7 +69,12 @@ async function initIndex() {
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
 
-  totalGlobal = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countEasa;
+  await chargerQuestions("EASA AERODYNAMIQUE");      // ← charger et compter
+  countAer = questions.length;
+
+  totalGlobal = countRadio + countOp + countRegl + countConv +
+                countInstr + countMasse + countMotor +
+                countEasa + countAer;
   
   updateCategorySelect();
 
@@ -96,7 +102,8 @@ async function initIndex() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA PROCEDURES"
+    "EASA PROCEDURES",
+    "EASA AERODYNAMIQUE"   // ← inclure ici
   ];
   const categoryCount = categories.length;
   document.getElementById('categoryCount').textContent = categoryCount;
@@ -125,7 +132,8 @@ async function loadAllQuestions() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA PROCEDURES"
+    "EASA PROCEDURES",
+    "EASA AERODYNAMIQUE"   // ← inclure ici
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
@@ -154,7 +162,8 @@ function updateCategorySelect() {
     { name: "INSTRUMENTATION", count: countInstr },
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
-    { name: "EASA PROCEDURES", count: countEasa }
+    { name: "EASA PROCEDURES", count: countEasa },
+    { name: "EASA AERODYNAMIQUE", count: countAer }   // ← nouvelle catégorie
   ];
 
   categories.forEach(cat => {
@@ -176,7 +185,6 @@ async function categoryChanged() {
     await chargerQuestions(selected);
   }
   updateModeCounts();
-  // Met à jour l'affichage du nombre total de questions pour la catégorie sélectionnée
   document.getElementById("totalGlobalInfo").textContent =
     "Total questions disponibles: " + questions.length;
 }
@@ -269,6 +277,8 @@ async function chargerQuestions(cat) {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
     fileName = "section_easa_procedures_new.json";
+  } else if (cat === "EASA AERODYNAMIQUE") {  // ← mapping JSON
+    fileName = "section_easa_aerodynamique.json";
   }
   
   try {
@@ -664,7 +674,8 @@ async function initStats() {
       "INSTRUMENTATION",
       "MASSE ET CENTRAGE",
       "MOTORISATION",
-      "EASA PROCEDURES"
+      "EASA PROCEDURES",
+      "EASA AERODYNAMIQUE"   // ← inclure ici
     ];
 
     const statsArr = [];
@@ -783,6 +794,15 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
 
     <hr>
     <h2>Catégorie : EASA PROCEDURES</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA AERODYNAMIQUE</h2>
     <p>Total : ${totalEasa} questions</p>
     <p>✅ Réussies : ${statsEasa.reussie}</p>
     <p>❌ Ratées : ${statsEasa.ratee}</p>
@@ -1057,7 +1077,8 @@ const categories = [
   { name: "INSTRUMENTATION", count: 0 },
   { name: "MASSE ET CENTRAGE", count: 0 },
   { name: "MOTORISATION", count: 0 },
-  { name: "EASA PROCEDURES", count: 0 }
+  { name: "EASA PROCEDURES", count: 0 },
+  { name: "EASA AERODYNAMIQUE", count: 0 }
 ];
 
 function displayCategories() {
