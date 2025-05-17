@@ -102,8 +102,7 @@ async function initIndex() {
     .then(resp => resp.json())
     .then(data => {
       categories.find(cat => cat.name === "EASA PROCEDURES").count = data.length;
-      document.getElementById('easaProcedureCount').textContent = data.length;
-      updateCategoryDropdown(); // Ensure the dropdown is updated
+      updateCategoryDropdown(); // or similar function that refreshes category display
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
