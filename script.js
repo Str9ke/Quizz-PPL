@@ -150,7 +150,7 @@ function updateCategorySelect() {
     { name: "INSTRUMENTATION", count: countInstr },
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
-    { name: "EASA Procedures", count: 0 } // Compte temporaire, sera mis à jour
+    { name: "EASA Procedures", count: countEasa } // Compte temporaire, sera mis à jour
   ];
 
   categories.forEach(cat => {
