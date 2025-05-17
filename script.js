@@ -101,8 +101,9 @@ async function initIndex() {
   fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
     .then(resp => resp.json())
     .then(data => {
-      categories.find(cat => cat.name === "EASA PROCEDURES").count = data.length;
-      updateCategoryDropdown(); // or similar function that refreshes category display
+      const countEasa = data.length;
+      categories.find(cat => cat.name === "EASA PROCEDURES").count = countEasa;
+      updateCategoryDropdown(); // same function used for other categories
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
