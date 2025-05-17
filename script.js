@@ -168,32 +168,17 @@ function updateCategorySelect() {
 /**
  * categoryChanged() – Charge les questions selon la catégorie sélectionnée
  */
-function categoryChanged() {
-  const selectedFile = document.getElementById("categorie").value;
-  fetch(selectedFile)
-    .then(resp => resp.json())
-    .then(data => {
-      document.getElementById("totalGlobalInfo").textContent =
-        "Total questions disponibles: " + data.questions.length;
-      const selected = document.getElementById('categorie').value;
-      if (selected === "section_easa_procedures_new.json") {
-        // Set the question count to 61
-        document.getElementById('totalGlobalInfo').textContent = "Total questions disponibles: 61";
-      } else {
-        if (selected === "TOUTES") {
-          (async function() {
-            await loadAllQuestions();
-            updateModeCounts();
-          })();
-        } else {
-          (async function() {
-            await chargerQuestions(selected);
-            updateModeCounts();
-          })();
-        }
-      }
-    })
-    .catch(err => console.error(err));
+async function categoryChanged() {
+  const selected = document.getElementById("categorie").value;
+  if (selected === "TOUTES") {
+    await loadAllQuestions();
+  } else {
+    await chargerQuestions(selected);
+  }
+  updateModeCounts();
+  // Met à jour l'affichage du nombre total de questions pour la catégorie sélectionnée
+  document.getElementById("totalGlobalInfo").textContent =
+    "Total questions disponibles: " + questions.length;
 }
 
 /**
