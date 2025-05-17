@@ -1011,3 +1011,76 @@ async function afficherProgression() {
     alert("Erreur lors de la récupération de la progression : " + error.message);
   }
 }
+
+// Réinitialiser les catégories et afficher les catégories et modes
+const categories = [
+  { name: "PROCÉDURE RADIO", count: 0 },
+  { name: "PROCÉDURES OPÉRATIONNELLES", count: 0 },
+  { name: "RÉGLEMENTATION", count: 0 },
+  { name: "CONNAISSANCE DE L’AVION", count: 0 },
+  { name: "INSTRUMENTATION", count: 0 },
+  { name: "MASSE ET CENTRAGE", count: 0 },
+  { name: "MOTORISATION", count: 0 },
+  { name: "EASA PROCEDURES", count: 0 }
+];
+
+function displayCategories() {
+  const catSelect = document.getElementById("categorie");
+  catSelect.innerHTML = "";
+
+  const optionToutes = document.createElement("option");
+  optionToutes.value = "TOUTES";
+  optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
+  catSelect.appendChild(optionToutes);
+
+  categories.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = `${cat.name} (${cat.count})`;
+    catSelect.appendChild(opt);
+  });
+}
+
+function displayMode() {
+  let total = questions.length;
+  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
+    return;
+  }
+
+  db.collection('quizProgress').doc(uid).get()
+    .then(doc => {
+      const responses = doc.exists ? doc.data().responses : {};
+
+      questions.forEach(q => {
+        const key = `question_${q.categorie}_${q.id}`;
+        const response = responses[key];
+        if (!response) {
+          nbNonvues++;
+        } else if (response.status === 'ratée') {
+          nbRatees++;
+        } else if (response.status === 'marquée') {
+          nbMarquees++;
+        }
+      });
+
+      const nbRateesNonvues = nbRatees + nbNonvues;
+
+      const modeSelect = document.getElementById('mode');
+      modeSelect.innerHTML = `
+        <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
+        <option value="toutes">Toutes (${total})</option>
+        <option value="ratees">Ratées (${nbRatees})</option>
+        <option value="nonvues">Non vues (${nbNonvues})</option>
+        <option value="marquees">Marquées (${nbMarquees})</option>
+      `;
+    })
+    .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
+}
+
+// Appeler les fonctions d'affichage des catégories et des modes
+displayCategories();
+displayMode();
