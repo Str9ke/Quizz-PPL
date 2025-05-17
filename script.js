@@ -96,6 +96,14 @@ async function initIndex() {
   ];
   const categoryCount = categories.length;
   document.getElementById('categoryCount').textContent = categoryCount;
+
+  // Charger et afficher le nombre de procédures EASA
+  fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('easaProcedureCount').textContent = data.length;
+    })
+    .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
 
 /**
