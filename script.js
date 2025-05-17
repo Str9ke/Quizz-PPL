@@ -149,7 +149,7 @@ function updateCategorySelect() {
     { name: "INSTRUMENTATION", count: countInstr },
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
-    { name: "EASA Procedures", count: countEasa } // Compte temporaire, sera mis à jour
+    { name: "EASA PROCEDURES", count: 0 } // Compte temporaire, sera mis à jour
   ];
 
   categories.forEach(cat => {
@@ -277,7 +277,7 @@ async function chargerQuestions(cat) {
     fileName = "questions_masse_et_centrage.json";
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
-  } else if (cat === "EASA Procedures") {
+  } else if (cat === "EASA PROCEDURES") {
     fileName = "section_easa_procedures_new.json";
   }
   
