@@ -100,9 +100,10 @@ async function initIndex() {
   // Charger et afficher le nombre de procédures EASA
   fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
     .then(resp => resp.json())
-    .then(easaData => {
-      categories.find(cat => cat.name === "EASA PROCEDURES").count = easaData.length;
-      document.getElementById('easaProcedureCount').textContent = easaData.length;
+    .then(data => {
+      categories.find(cat => cat.name === "EASA PROCEDURES").count = data.length;
+      document.getElementById('easaProcedureCount').textContent = data.length;
+      updateCategoryDropdown(); // Ensure the dropdown is updated
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
