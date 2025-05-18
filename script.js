@@ -290,33 +290,28 @@ async function updateModeCounts() {
       : questions.filter(q => q.categorie === normalizedSel);
     
     const total = currentArray.length;
-    let nbReussies = 0, nbRatees = 0, nbMarquees = 0;
-
-    // fetch latest responses from Firestore
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
-      return;
-    }
-
-    const doc = await db.collection("quizProgress").doc(uid).get();
-    currentResponses = normalizeResponses(doc.data().responses);
-    
+    let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
     currentArray.forEach(q => {
       const r = currentResponses[getKeyFor(q)] || {};
-      if (r.status === 'réussie') nbReussies++;
-      else nbRatees++;
-      if (r.marked) nbMarquees++;
+      if (r.marked) {
+        nbMarquees++;
+      } else if (r.status === 'réussie') {
+        nbReussies++;
+      } else if (r.status === 'ratée') {
+        nbRatees++;
+      } else {
+        nbNonvues++;
+      }
     });
 
     // Simple example updating the dropdown counts; adjust as needed
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
         modeSelect.innerHTML = `
-          <option value="ratees_nonvues">Ratées (${nbRatees})</option>
+          <option value="ratees_nonvues">Ratées (${nbRatees + nbNonvues})</option>
           <option value="toutes">Toutes (${total})</option>
           <option value="ratees">Ratées (${nbRatees})</option>
-          <option value="nonvues">Non vues (0)</option>
+          <option value="nonvues">Non vues (${nbNonvues})</option>
           <option value="reussies">Réussies (${nbReussies})</option>
           <option value="marquees">Marquées (${nbMarquees})</option>
         `;
@@ -695,11 +690,16 @@ async function validerReponses() {
     }
 
     try {
+        // fetch all existing responses
+        const doc = await db.collection('quizProgress').doc(uid).get();
+        const existing = doc.exists ? doc.data().responses : {};
+        // merge: preserve old marks/categories for keys not in currentQuestions
+        const merged = { ...existing, ...responsesToSave };
         await db.collection('quizProgress').doc(uid).set(
-            { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+            { responses: merged, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
             { merge: true }
         );
-        // re-fetch and normalize all responses
+        // re-fetch & normalize
         const fresh = await db.collection('quizProgress').doc(uid).get();
         currentResponses = normalizeResponses(fresh.data().responses);
     } catch (e) {
