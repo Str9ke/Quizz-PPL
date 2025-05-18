@@ -221,28 +221,19 @@ function fixQuotes(str) {
 
 function getNormalizedCategory(cat) {
   if (!cat) return "TOUTES";
+  // Unify curly quotes, underscores, casing, etc.
   cat = fixQuotes(cat)
     .replace(/_/g, ' ')
     .trim()
-    .toUpperCase();
-  switch (cat) {
-    case "SECTION EASA METEOROLOGIE": 
-    case "EASA METEOROLOGIE":
-      return "EASA METEOROLOGIE";
-    case "SECTION EASA CONNAISSANCE AVION": 
-    case "EASA CONNAISSANCE DE L'AVION":
-      return "EASA CONNAISSANCE DE L'AVION";
-    case "SECTION EASA PERFORMANCE PLANIFICATION": 
-    case "EASA PERFORMANCE ET PLANIFICATION":
-      return "EASA PERFORMANCE ET PLANIFICATION";
-    case "SECTION EASA REGLEMENTATION": 
-    case "EASA REGLEMENTATION":
-      return "EASA REGLEMENTATION";
-    case "TOUTES": 
-      return "TOUTES";
-    default:
-      return cat; 
-  }
+    .toLowerCase();
+
+  // Force these four EASA subcat strings to match JSON data
+  if (cat.includes("meteorologie")) return "EASA METEOROLOGIE";
+  if (cat.includes("connaissance avion")) return "EASA CONNAISSANCE DE L'AVION";
+  if (cat.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
+  if (cat.includes("reglementation")) return "EASA REGLEMENTATION";
+  
+  return cat.toUpperCase();
 }
 
 /**
@@ -252,7 +243,7 @@ async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
   const normalizedSelected = getNormalizedCategory(selectedCategory);
 
-  // Filter only matching questions, or all if TOUTES
+  // Filter only matching questions if not TOUTES
   const currentArray = (normalizedSelected === "TOUTES")
     ? questions
     : questions.filter(q => getNormalizedCategory(q.categorie) === normalizedSelected);
