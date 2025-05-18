@@ -570,6 +570,8 @@ async function initQuiz() {
     } else {
       await chargerQuestions(selectedCategory);
     }
+    // ensure currentQuestions is filled
+    await filtrerQuestions(modeQuiz, nbQuestions);
     // Load & normalize stored responses for marking buttons
     const uid = auth.currentUser.uid;
     const docResp = await db.collection('quizProgress').doc(uid).get();
