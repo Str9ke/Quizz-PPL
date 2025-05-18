@@ -139,8 +139,12 @@ async function loadAllQuestions() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA PROCEDURES",
-    "EASA AERODYNAMIQUE"   // ← inclure ici
+    "EASA PROCEDURES",              // Ajouté pour EASA PROCEDURES
+    "EASA AERODYNAMIQUE",
+    "section_easa_connaissance_avion",
+    "section_easa_meteorologie",
+    "section_easa_performance_planification",
+    "section_easa_reglementation"
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
