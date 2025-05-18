@@ -123,6 +123,15 @@
 
       document.getElementById("statsContainer").innerHTML = html;
     }
+
+    function updateStats() {
+      // ...existing code...
+      // Exemple d'ajout pour considérer les questions non répondues comme ratées
+      if (question.isMissed) {
+          missedCount++;
+      }
+      // ...existing code...
+    }
   </script>
 </head>
 <body>
