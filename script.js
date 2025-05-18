@@ -558,6 +558,10 @@ async function initQuiz() {
   const stored = localStorage.getItem('currentQuestions');
   if (stored) {
     currentQuestions = JSON.parse(stored);
+    // Normalize stored progress for marking buttons
+    const uid = auth.currentUser.uid;
+    const docResp = await db.collection('quizProgress').doc(uid).get();
+    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
     afficherQuiz();
   } else {
     selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
@@ -566,10 +570,10 @@ async function initQuiz() {
     } else {
       await chargerQuestions(selectedCategory);
     }
-    // Load stored responses for marking buttons
+    // Load & normalize stored responses for marking buttons
     const uid = auth.currentUser.uid;
     const docResp = await db.collection('quizProgress').doc(uid).get();
-    currentResponses = docResp.exists ? docResp.data().responses : {};
+    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
     afficherQuiz();
   }
 }
