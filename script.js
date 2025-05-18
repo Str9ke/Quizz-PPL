@@ -539,14 +539,17 @@ function afficherBoutonsMarquer() {
   console.log(">>> afficherBoutonsMarquer()");
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
+    // remove any existing mark-button to avoid duplicates
+    const existingBtn = block.querySelector('.mark-button, .delete-button');
+    if (existingBtn) existingBtn.remove();
     const q   = currentQuestions[idx];
     const key = getKeyFor(q);
-    const isMarked = currentResponses[key]?.marked;
-    const btn = block.querySelector('.mark-button,.delete-button') || document.createElement('button');
+    const isMarked = (currentResponses[key] && currentResponses[key].marked === true);
+    const btn = document.createElement('button');
     btn.textContent = isMarked ? "Supprimer" : "Marquer";
     btn.className   = isMarked ? "delete-button" : "mark-button";
     btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
-    if(!block.contains(btn)) block.appendChild(btn);
+    block.appendChild(btn);
   });
 }
 
@@ -658,13 +661,14 @@ async function validerReponses() {
   const uid = auth.currentUser?.uid;
   if (!uid) return;
 
-  const responsesToSave = {};
+  let responsesToSave = {};
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
-    // sauvegarde du status existant et du flag marked
-    const wasMarked = currentResponses[key]?.marked || false;
-    const status = sel && parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée';
+    // always treat unanswered as "ratée", but preserve any previous marked flag
+    const prev = currentResponses[key] || {};
+    const wasMarked = (prev.marked === true);
+    const status = (sel && parseInt(sel.value) === q.bonne_reponse) ? 'réussie' : 'ratée';
     responsesToSave[key] = { category: q.categorie, questionId: q.id, status, marked: wasMarked };
     if (status === 'réussie') correctCount++;
   });
@@ -683,13 +687,23 @@ async function validerReponses() {
   }
 
   // Sauvegarder les réponses dans Firestore
-  let mergedResponses = { ...currentResponses, ...responsesToSave };
   try {
     await db.collection('quizProgress').doc(uid).set(
-      { responses: mergedResponses, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+      { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    Object.assign(currentResponses, mergedResponses);
+    // update local cache to preserve marks (do not overwrite mark if question remains unanswered)
+    Object.keys(responsesToSave).forEach(key => {
+      if (!currentResponses[key] || !currentResponses[key].marked) {
+        currentResponses[key] = responsesToSave[key];
+      } else {
+        // if already marked, force mark true
+        currentResponses[key].marked = true;
+        // ensure status is updated to 'ratée' if unanswered
+        if (!document.querySelector(`input[name="q${currentResponses[key].questionId}"]:checked`))
+          currentResponses[key].status = 'ratée';
+      }
+    });
   } catch (e) {
     console.error("Erreur sauvegarde validerReponses:", e);
   }
@@ -702,8 +716,8 @@ async function validerReponses() {
   }
 
   // Afficher les boutons "Marquer" après validation
-  updateModeCounts();               // refresh counts
-  afficherBoutonsMarquer();         // show correct mark/unmark state
+  updateModeCounts();
+  afficherBoutonsMarquer();
 }
 
 /**
