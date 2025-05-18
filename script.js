@@ -212,27 +212,36 @@ async function categoryChanged() {
     "Total questions disponibles: " + questions.length;
 }
 
-/**
- * getNormalizedCategory(cat) – Retourne la clé de stockage pour une question donnée
- */
+// Replace curly apostrophes etc. with straight apostrophes for consistency
+function fixQuotes(str) {
+  return str
+    .replace(/[‘’]/g, "'")    // fix single quotes
+    .replace(/[“”]/g, '"');   // fix double quotes if any
+}
+
 function getNormalizedCategory(cat) {
-  // Unify EASA sub-categories to match how they appear in selectedCategory
-  switch (cat.toLowerCase()) {
-    case "section_easa_connaissance_avion":
-    case "easa connaissance de l'avion":
-      return "EASA CONNAISSANCE DE L'AVION";
-    case "section_easa_meteorologie":
-    case "easa meteorologie":
+  if (!cat) return "TOUTES";
+  cat = fixQuotes(cat)
+    .replace(/_/g, ' ')
+    .trim()
+    .toUpperCase();
+  switch (cat) {
+    case "SECTION EASA METEOROLOGIE": 
+    case "EASA METEOROLOGIE":
       return "EASA METEOROLOGIE";
-    case "section_easa_performance_planification":
-    case "easa performance et planification":
+    case "SECTION EASA CONNAISSANCE AVION": 
+    case "EASA CONNAISSANCE DE L'AVION":
+      return "EASA CONNAISSANCE DE L'AVION";
+    case "SECTION EASA PERFORMANCE PLANIFICATION": 
+    case "EASA PERFORMANCE ET PLANIFICATION":
       return "EASA PERFORMANCE ET PLANIFICATION";
-    case "section_easa_reglementation":
-    case "easa reglementation":
+    case "SECTION EASA REGLEMENTATION": 
+    case "EASA REGLEMENTATION":
       return "EASA REGLEMENTATION";
+    case "TOUTES": 
+      return "TOUTES";
     default:
-      // Replace underscores with spaces, uppercase possible
-      return cat.replace(/_/g, ' ').toUpperCase();
+      return cat; 
   }
 }
 
@@ -240,13 +249,10 @@ function getNormalizedCategory(cat) {
  * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
 async function updateModeCounts() {
-  console.log('>>> updateModeCounts()');
-  // Normalize the currently selected category
-  const normalizedSelected = selectedCategory 
-    ? getNormalizedCategory(selectedCategory) 
-    : "TOUTES";
+  console.log(">>> updateModeCounts()");
+  const normalizedSelected = getNormalizedCategory(selectedCategory);
 
-  // Filter questions if not "TOUTES"
+  // Filter only matching questions, or all if TOUTES
   const currentArray = (normalizedSelected === "TOUTES")
     ? questions
     : questions.filter(q => getNormalizedCategory(q.categorie) === normalizedSelected);
@@ -261,25 +267,24 @@ async function updateModeCounts() {
   }
 
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await db.collection("quizProgress").doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
 
     currentArray.forEach(q => {
-      const key = getKeyFor(q);
+      const key = getKeyFor(q); // assume getKeyFor also uses fixQuotes if needed
       const resp = responses[key];
       if (resp) {
-        if (resp.status === 'réussie') nbReussies++;
-        else if (resp.status === 'ratée') nbRatees++;
-        else if (resp.status === 'marquée') nbMarquees++;
+        if (resp.status === "réussie") nbReussies++;
+        else if (resp.status === "ratée") nbRatees++;
+        else if (resp.status === "marquée") nbMarquees++;
       } else {
         nbNonvues++;
       }
     });
 
-    // “Ratées+Non vues” is explicitly ratees + nonvues
     const nbRateesNonvues = nbRatees + nbNonvues;
 
-    const modeSelect = document.getElementById('mode');
+    const modeSelect = document.getElementById("mode");
     modeSelect.innerHTML = `
       <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
       <option value="toutes">Toutes (${total})</option>
