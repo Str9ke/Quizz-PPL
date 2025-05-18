@@ -647,35 +647,18 @@ function loadQuestion(index) {
 async function validerReponses() {
   console.log(">>> validerReponses()");
   let correctCount = 0;
-
   const uid = auth.currentUser?.uid;
-  if (!uid) {
-    alert("Vous devez être connecté pour sauvegarder votre progression.");
-    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
-    return;
-  }
+  if (!uid) return;
 
   const responsesToSave = {};
-
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
-    const responseData = {
-      category: q.categorie,
-      questionId: q.id,
-      status: sel && parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée'
-    };
-
-    // Si aucune réponse n'est sélectionnée, considérer comme "ratée"
-    if (!sel) {
-      responseData.status = 'ratée';
-    }
-
-    responsesToSave[key] = responseData;
-
-    if (responseData.status === 'réussie') {
-      correctCount++;
-    }
+    // sauvegarde du status existant et du flag marked
+    const wasMarked = currentResponses[key]?.marked || false;
+    const status = sel && parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée';
+    responsesToSave[key] = { category: q.categorie, questionId: q.id, status, marked: wasMarked };
+    if (status === 'réussie') correctCount++;
   });
 
   afficherCorrection();
@@ -694,15 +677,14 @@ async function validerReponses() {
   // Sauvegarder les réponses dans Firestore
   try {
     await db.collection('quizProgress').doc(uid).set(
-      {
-        responses: responsesToSave,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      },
+      { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    console.log("Réponses sauvegardées dans Firestore :", responsesToSave);
-  } catch (error) {
-    console.error("Erreur lors de la sauvegarde des réponses dans Firestore :", error);
+    // Mettre à jour le cache local pour inclure marked
+    Object.assign(currentResponses, responsesToSave);
+    console.log("Réponses sauvegardées avec marked :", responsesToSave);
+  } catch (e) {
+    console.error("Erreur sauvegarde validerReponses:", e);
   }
 
   // Désactiver le bouton "Valider les réponses"
