@@ -292,16 +292,16 @@ async function updateModeCounts() {
     const total = currentArray.length;
     let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
     currentArray.forEach(q => {
-      const r = currentResponses[getKeyFor(q)] || {};
-      if (r.marked) {
-        nbMarquees++;
-      } else if (r.status === 'réussie') {
-        nbReussies++;
-      } else if (r.status === 'ratée') {
-        nbRatees++;
-      } else {
-        nbNonvues++;
-      }
+        const r = currentResponses[getKeyFor(q)] || {};
+        if (r.status === 'marquée' || r.marked) {
+            nbMarquees++;
+        } else if (r.status === 'réussie') {
+            nbReussies++;
+        } else if (r.status === 'ratée') {
+            nbRatees++;
+        } else {
+            nbNonvues++;
+        }
     });
 
     // Simple example updating the dropdown counts; adjust as needed
@@ -694,7 +694,20 @@ async function validerReponses() {
         const doc = await db.collection('quizProgress').doc(uid).get();
         const existing = doc.exists ? doc.data().responses : {};
         // merge: preserve old marks/categories for keys not in currentQuestions
-        const merged = { ...existing, ...responsesToSave };
+        const merged = {};
+
+        Object.keys(responsesToSave).forEach(key => {
+            if (existing[key]) {
+                merged[key] = { ...existing[key], ...responsesToSave[key] };
+            } else {
+                merged[key] = responsesToSave[key];
+            }
+        });
+
+        Object.keys(existing).forEach(key => {
+            if (!merged[key]) merged[key] = existing[key];
+        });
+
         await db.collection('quizProgress').doc(uid).set(
             { responses: merged, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
             { merge: true }
