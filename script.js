@@ -570,9 +570,9 @@ async function initQuiz() {
     } else {
       await chargerQuestions(selectedCategory);
     }
-    // ensure currentQuestions is filled
+    // Populate currentQuestions based on mode & nbQuestions
     await filtrerQuestions(modeQuiz, nbQuestions);
-    // Load & normalize stored responses for marking buttons
+    // Load stored responses for marking buttons
     const uid = auth.currentUser.uid;
     const docResp = await db.collection('quizProgress').doc(uid).get();
     currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
