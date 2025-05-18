@@ -331,6 +331,12 @@ async function demarrerQuiz() {
 
 async function initQuiz() {
   console.log(">>> initQuiz()");
+  // redirect if not logged in
+  if (!auth.currentUser) {
+    window.location = 'index.html';
+    return;
+  }
+
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');
 
@@ -363,6 +369,15 @@ async function initQuiz() {
   const doc = await db.collection('quizProgress').doc(uid).get();
   currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   afficherQuiz();
+}
+
+// Guard old unused listener
+const selectEl = document.getElementById("categorie-select");
+if (selectEl) {
+  selectEl.addEventListener("change", (e) => {
+    const filePath = categoryFiles[e.target.value];
+    if (filePath) loadQuestions(filePath);
+  });
 }
 
 /**
@@ -581,6 +596,12 @@ function afficherBoutonsMarquer() {
  */
 async function initQuiz() {
   console.log(">>> initQuiz()");
+  // redirect if not logged in
+  if (!auth.currentUser) {
+    window.location = 'index.html';
+    return;
+  }
+
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');
 

@@ -29,8 +29,14 @@
     console.log("Firebase initialisé :", firebase.apps.length > 0);
     console.log("Auth attaché à window :", !!window.auth);
   </script>
+  <script>
+    auth.onAuthStateChanged(user => {
+      if (user) initQuiz();
+      else window.location = 'index.html';
+    });
+  </script>
 </head>
-<body onload="initQuiz()">
+<body>
   <div id="resultContainer" style="display: none;"></div>
   <h1>Quiz Aviation - Quiz</h1>
   <div class="container" id="quizContainer">
