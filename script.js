@@ -507,20 +507,40 @@ function toggleMarquerQuestion(questionId, button) {
       .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
   } else {
     // Marquer la question tout en sauvegardant son statut initial
-    const previousStatus = currentResponse.status || 'ratée'; // Si aucune réponse, considérer comme "ratée"
-    db.collection('quizProgress').doc(uid).set(
-      {
-        responses: {
-          [key]: { category: question.categorie, questionId, previousStatus, status: 'marquée' }
-        }
-      },
-      { merge: true }
-    )
+    const key = `question_${question.categorie}_${questionId}`;
+    const currentResponse = currentResponses[key] || {};
+
+    // Récupérer le statut existant en base pour ne pas écraser un 'réussie'
+    db.collection('quizProgress').doc(uid).get()
+      .then(doc => {
+        const stored = doc.exists ? doc.data().responses : {};
+        const prev = currentResponse.status
+                  || stored[key]?.status
+                  || 'ratée';
+        return db.collection('quizProgress').doc(uid).set(
+          {
+            responses: {
+              [key]: {
+                category: question.categorie,
+                questionId,
+                previousStatus: prev,
+                status: 'marquée'
+              }
+            }
+          },
+          { merge: true }
+        );
+      })
       .then(() => {
         console.log("Question marquée :", key);
         button.textContent = "Supprimer";
         button.className = "delete-button";
-        currentResponses[key] = { category: question.categorie, questionId, previousStatus, status: 'marquée' };
+        currentResponses[key] = {
+          category: question.categorie,
+          questionId,
+          previousStatus: currentResponse.status || stored[key]?.status || 'ratée',
+          status: 'marquée'
+        };
         updateModeCounts();
       })
       .catch(error => console.error("Erreur lors du marquage de la question :", error));
