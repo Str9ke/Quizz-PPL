@@ -346,20 +346,29 @@ async function initQuiz() {
   modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
-  const catNorm = getNormalizedCategory(selectedCategory);
-  console.log("Chosen category:", selectedCategory, "Normalized:", catNorm);
-  // load questions based on selection
+  // ← add this line to avoid "stored is not defined"
+  const stored = localStorage.getItem('currentQuestions');
+
   if (stored) {
-    // ...existing code for resuming quiz...
+    // resume with previously filtered questions
+    currentQuestions = JSON.parse(stored);
   } else {
+    // no stored list ⇒ load & filter now
+    const catNorm = getNormalizedCategory(selectedCategory);
     if (catNorm === "TOUTES") {
       await loadAllQuestions();
     } else {
       await chargerQuestions(catNorm);
     }
     await filtrerQuestions(modeQuiz, nbQuestions);
+    // cache for next reload
+    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
-  console.log("Filtered questions:", currentQuestions?.length || 0);
+
+  // load & normalize responses, then display
+  const uid = auth.currentUser.uid;
+  const doc = await db.collection('quizProgress').doc(uid).get();
+  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   afficherQuiz();
 }
 
@@ -584,20 +593,29 @@ async function initQuiz() {
   modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
-  const catNorm = getNormalizedCategory(selectedCategory);
-  console.log("Chosen category:", selectedCategory, "Normalized:", catNorm);
-  // load questions based on selection
+  // ← add this line to avoid "stored is not defined"
+  const stored = localStorage.getItem('currentQuestions');
+
   if (stored) {
-    // ...existing code for resuming quiz...
+    // resume with previously filtered questions
+    currentQuestions = JSON.parse(stored);
   } else {
+    // no stored list ⇒ load & filter now
+    const catNorm = getNormalizedCategory(selectedCategory);
     if (catNorm === "TOUTES") {
       await loadAllQuestions();
     } else {
       await chargerQuestions(catNorm);
     }
     await filtrerQuestions(modeQuiz, nbQuestions);
+    // cache for next reload
+    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
-  console.log("Filtered questions:", currentQuestions?.length || 0);
+
+  // load & normalize responses, then display
+  const uid = auth.currentUser.uid;
+  const doc = await db.collection('quizProgress').doc(uid).get();
+  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   afficherQuiz();
 }
 
