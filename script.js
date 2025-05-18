@@ -303,11 +303,10 @@ async function updateModeCounts() {
     currentResponses = normalizeResponses(doc.data().responses);
     
     currentArray.forEach(q => {
-      const key = getKeyFor(q);
-      const r = currentResponses[key];
-      if (r?.status === "réussie") nbReussies++;
+      const r = currentResponses[getKeyFor(q)] || {};
+      if (r.status === 'réussie') nbReussies++;
       else nbRatees++;
-      if (r?.marked) nbMarquees++;
+      if (r.marked) nbMarquees++;
     });
 
     // Simple example updating the dropdown counts; adjust as needed
@@ -736,16 +735,16 @@ function computeStatsFor(category, responses) {
 function computeStatsForFirestore(categoryQuestions, responses) {
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0;
   categoryQuestions.forEach(q => {
-    const key = `question_${q.categorie}_${q.id}`;
-    const response = responses[key];
-    if (!response) {
-      nonvue++;
-    } else if (response.status === 'réussie') {
-      reussie++;
-    } else if (response.status === 'ratée') {
-      ratee++;
-    } else if (response.status === 'marquée') {
+    const key = getKeyFor(q);
+    const r = responses[key] || {};
+    if (r.marked) {
       marquee++;
+    } else if (r.status === 'réussie') {
+      reussie++;
+    } else if (r.status === 'ratée') {
+      ratee++;
+    } else {
+      nonvue++;
     }
   });
   return { reussie, ratee, nonvue, marquee };

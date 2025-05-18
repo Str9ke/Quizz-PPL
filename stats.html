@@ -62,10 +62,21 @@
       }
     });
 
+    function normalizeResponses(responses) {
+      const normalized = {};
+      for (const key in responses) {
+        const r = responses[key];
+        // si l'état est "marquée", on définit marked à true
+        normalized[key] = { ...r, marked: r.status === "marquée" };
+      }
+      return normalized;
+    }
+
     async function initStats() {
       const uid = auth.currentUser.uid;
       const doc = await db.collection("quizProgress").doc(uid).get();
-      const responses = doc.exists ? doc.data().responses : {};
+      // normalize so status="marquée" ⇒ marked=true
+      const responses = normalizeResponses(doc.exists ? doc.data().responses : {});
       let html = "";
       let sumRe=0, sumRa=0, sumNv=0, sumMa=0;
 
@@ -79,7 +90,10 @@
           // use same normalization & key logic as script.js
           const key = getKeyFor({ categorie: cat, id: q.id });
           const r = responses[key] || {};
-          if(r.marked) { ma++; } else if(r.status==="réussie") re++; else if(r.status==="ratée") ra++; else nv++;
+          if (r.marked)         ma++;
+          else if (r.status==='réussie') re++;
+          else if (r.status==='ratée')   ra++;
+          else                            nv++;
         });
         const total = re+ra+nv+ma;
         const perc  = total? Math.round((re*100)/total):0;
@@ -92,7 +106,7 @@
           <p>📌 Marquées : ${ma}</p>
           <div class="progressbar"><div class="progress" style="width:${perc}%;"></div></div><hr>
         `;
-        sumMa+=ma; sumRe+=re; sumRa+=ra; sumNv+=nv;
+        sumMa += ma; sumRe += re; sumRa += ra; sumNv += nv;
       }
       const sumTotal = sumRe + sumRa + sumNv + sumMa;
       const sumPerc  = sumTotal? Math.round((sumRe*100)/sumTotal) : 0;
