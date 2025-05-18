@@ -264,12 +264,12 @@ function getNormalizedSelectedCategory(selected) {
  */
 async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
-  // Use getModeCategory on the selectedCategory
-  const selectedKey = (selectedCategory === "TOUTES") ? "TOUTES" : getModeCategory(selectedCategory);
-  // Filter questions using getModeCategory so the four problematic categories are handled correctly
-  const currentArray = (selectedKey === "TOUTES")
+  // Normalize the selectedCategory using getModeCategory
+  const normalizedSelected = (selectedCategory === "TOUTES") ? "TOUTES" : getModeCategory(selectedCategory);
+  // Filter questions that match the normalized category (or all if "TOUTES")
+  const currentArray = (normalizedSelected === "TOUTES")
     ? questions
-    : questions.filter(q => getModeCategory(q.categorie) === selectedKey);
+    : questions.filter(q => getModeCategory(q.categorie) === normalizedSelected);
     
   const total = currentArray.length;
   let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
@@ -292,10 +292,8 @@ async function updateModeCounts() {
         nbNonvues++;
       }
     });
-    // Compute "ratées+non vues" directly as answered non-réussies
     const nbRateesNonvues = nbRatees + nbNonvues;
-    const modeSelect = document.getElementById("mode");
-    modeSelect.innerHTML = `
+    document.getElementById("mode").innerHTML = `
       <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
       <option value="toutes">Toutes (${total})</option>
       <option value="ratees">Ratées (${nbRatees})</option>
@@ -1303,10 +1301,10 @@ function displayMode() {
     .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
 }
 
-// New helper used for mode counting and key generation
+// New helper for normalizing category names for mode counting
 function getModeCategory(cat) {
   if (!cat) return "TOUTES";
-  // Standardize the string: remove curly quotes, underscores and lower-case it
+  // Remove curly quotes, underscores, trim and lower-case the string
   const fixed = fixQuotes(cat).replace(/_/g, ' ').trim().toLowerCase();
   if (fixed.indexOf("meteorologie") !== -1) return "EASA METEOROLOGIE";
   if (fixed.indexOf("connaissance avion") !== -1) return "EASA CONNAISSANCE DE L'AVION";
@@ -1315,7 +1313,7 @@ function getModeCategory(cat) {
   return fixed.toUpperCase();
 }
 
-// Redefine getKeyFor() for mode counting to use getModeCategory()
+// Redefine getKeyFor() so it uses getModeCategory
 function getKeyFor(q) {
   return `question_${getModeCategory(q.categorie)}_${q.id}`;
 }
