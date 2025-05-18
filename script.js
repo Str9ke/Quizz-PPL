@@ -281,10 +281,12 @@ async function updateModeCounts() {
     const respData = doc.exists ? doc.data().responses : {};
     currentArray.forEach(q => {
       const key = getKeyFor(q);
-      const r = respData[key];
-      if      (r?.status === "réussie") nbReussies++;
-      else if (r?.status === "ratée")   nbRatees++;
-      else if (r?.status === "marquée") nbMarquees++;
+      const r = respData[key] || {};
+      if      (r.status === "réussie") nbReussies++;
+      else if (r.status === "ratée")   nbRatees++;
+      // mark count by r.marked flag
+      if      (r.marked)                nbMarquees++;
+      else if (!r.status)               nbNonvues++;
       else                              nbNonvues++;
     });
     const nbRateesNonvues = nbRatees + nbNonvues;
@@ -469,7 +471,7 @@ async function filtrerQuestions(mode, nb) {
   }
   else if (mode === "marquees") {
     currentQuestions = shuffled
-      .filter(q => responses[getKeyFor(q)]?.status === 'marquée')
+      .filter(q => responses[getKeyFor(q)]?.marked)
       .slice(0, nb);
   }
 
@@ -494,69 +496,35 @@ function toggleMarquerQuestion(questionId, button) {
     return;
   }
 
-  const key = `question_${question.categorie}_${questionId}`;
-  const currentResponse = currentResponses[key] || {}; // Par défaut, vide
-  const isMarked = currentResponse.status === 'marquée';
-
-  if (isMarked) {
-    // Supprimer la question marquée et restaurer son statut initial (réussie ou ratée)
-    const restoredStatus = currentResponse.previousStatus || 'ratée'; // Par défaut, "ratée" si aucune valeur initiale
-    db.collection('quizProgress').doc(uid).set(
-      {
+  const key = getKeyFor(question);
+  // fetch existing
+  db.collection('quizProgress').doc(uid).get()
+    .then(doc => {
+      const stored = doc.exists ? doc.data().responses : {};
+      const prev = stored[key] || {};
+      const newMarked = !prev.marked;
+      const payload = {
         responses: {
-          [key]: { category: question.categorie, questionId, status: restoredStatus }
+          [key]: {
+            status: prev.status || currentResponses[key]?.status || 'ratée',
+            marked: newMarked
+          }
         }
-      },
-      { merge: true }
-    )
-      .then(() => {
-        console.log("Question supprimée des marquées :", key);
-        button.textContent = "Marquer";
-        button.className = "mark-button";
-        currentResponses[key] = { category: question.categorie, questionId, status: restoredStatus };
-        updateModeCounts();
-      })
-      .catch(error => console.error("Erreur lors de la suppression de la question marquée :", error));
-  } else {
-    // Marquer la question tout en sauvegardant son statut initial
-    const key = `question_${question.categorie}_${questionId}`;
-    const currentResponse = currentResponses[key] || {};
-
-    // Récupérer le statut existant en base pour ne pas écraser un 'réussie'
-    db.collection('quizProgress').doc(uid).get()
-      .then(doc => {
-        const stored = doc.exists ? doc.data().responses : {};
-        const prev = currentResponse.status
-                  || stored[key]?.status
-                  || 'ratée';
-        return db.collection('quizProgress').doc(uid).set(
-          {
-            responses: {
-              [key]: {
-                category: question.categorie,
-                questionId,
-                previousStatus: prev,
-                status: 'marquée'
-              }
-            }
-          },
-          { merge: true }
-        );
-      })
-      .then(() => {
-        console.log("Question marquée :", key);
-        button.textContent = "Supprimer";
-        button.className = "delete-button";
-        currentResponses[key] = {
-          category: question.categorie,
-          questionId,
-          previousStatus: currentResponse.status || stored[key]?.status || 'ratée',
-          status: 'marquée'
-        };
-        updateModeCounts();
-      })
-      .catch(error => console.error("Erreur lors du marquage de la question :", error));
-  }
+      };
+      return db.collection('quizProgress').doc(uid).set(payload, { merge: true });
+    })
+    .then(() => {
+      // update local cache & button
+      currentResponses[key] = {
+        ...currentResponses[key],
+        status: currentResponses[key]?.status || 'ratée',
+        marked: !currentResponses[key]?.marked
+      };
+      button.textContent = currentResponses[key].marked ? "Supprimer" : "Marquer";
+      button.className = currentResponses[key].marked ? "delete-button" : "mark-button";
+      updateModeCounts();
+    })
+    .catch(console.error);
 }
 
 /**
@@ -568,7 +536,7 @@ function afficherBoutonsMarquer() {
   questionBlocks.forEach((block, idx) => {
     const questionId = currentQuestions[idx].id;
     const key = `question_${selectedCategory}_${questionId}`;
-    const isMarked = currentResponses[key]?.status === 'marquée';
+    const isMarked = currentResponses[key]?.marked;
 
     const markButton = document.createElement('button');
     markButton.textContent = isMarked ? "Supprimer" : "Marquer";
