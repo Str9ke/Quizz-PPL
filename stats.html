@@ -67,6 +67,7 @@
       const doc = await db.collection("quizProgress").doc(uid).get();
       const responses = doc.exists ? doc.data().responses : {};
       let html = "";
+      let sumRe=0, sumRa=0, sumNv=0, sumMa=0;
 
       for (const cat of categoriesList) {
         // load questions for this category
@@ -77,24 +78,39 @@
         qs.forEach(q => {
           // use same normalization & key logic as script.js
           const key = getKeyFor({ categorie: cat, id: q.id });
-          const r = responses[key];
-          if (!r) nv++;
-          else if (r.status==="réussie") re++;
-          else if (r.status==="ratée") ra++;
-          else if (r.status==="marquée") ma++;
+          const r = responses[key] || {};
+          if (r.marked) {
+            ma++;
+          } else if      (r.status==="réussie") re++;
+          else if (r.status==="ratée")          ra++;
+          else                                   nv++;
         });
         const total = re+ra+nv+ma;
         const perc  = total? Math.round((re*100)/total):0;
         html += `
           <h2>Catégorie : ${cat}</h2>
-          <p>Total : ${total} questions</p>
+          <p>Total : ${total}</p>
           <p>✅ Réussies : ${re}</p>
           <p>❌ Ratées : ${ra}</p>
           <p>👀 Non vues : ${nv}</p>
           <p>📌 Marquées : ${ma}</p>
           <div class="progressbar"><div class="progress" style="width:${perc}%;"></div></div><hr>
         `;
+        sumRe += re; sumRa += ra; sumNv += nv; sumMa += ma;
       }
+
+      // add global summary
+      const sumTotal = sumRe+sumRa+sumNv+sumMa;
+      const sumPerc  = sumTotal? Math.round((sumRe*100)/sumTotal):0;
+      html += `
+        <h2>Global</h2>
+        <p>Total cumulé : ${sumTotal}</p>
+        <p>✅ Réussies cumulées : ${sumRe}</p>
+        <p>❌ Ratées cumulées : ${sumRa}</p>
+        <p>👀 Non vues cumulées : ${sumNv}</p>
+        <p>📌 Marquées cumulées : ${sumMa}</p>
+        <div class="progressbar"><div class="progress" style="width:${sumPerc}%;"></div></div>
+      `;
 
       document.getElementById("statsContainer").innerHTML = html;
     }
