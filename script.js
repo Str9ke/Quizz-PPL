@@ -445,21 +445,21 @@ async function filtrerQuestions(mode, nb) {
     return;
   }
 
-  // fetch up-to-date responses
+  // fetch and normalize up-to-date responses
   const uid = auth.currentUser?.uid;
   let responses = {};
   if (uid) {
-    try {
-      const doc = await db.collection('quizProgress').doc(uid).get();
-      responses = doc.exists ? doc.data().responses : {};
-    } catch (e) {
-      console.error("Erreur fetch responses:", e);
-    }
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    responses = normalizeResponses(doc.exists ? doc.data().responses : {});
   }
 
   const shuffled = [...questions].sort(() => 0.5 - Math.random());
-
-  if (mode === "toutes") {
+  if (mode === "marquees") {
+    currentQuestions = shuffled
+      .filter(q => responses[getKeyFor(q)]?.marked)
+      .slice(0, nb);
+  }
+  else if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   }
   else if (mode === "ratees") {
