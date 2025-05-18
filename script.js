@@ -326,59 +326,57 @@ async function demarrerQuiz() {
  * chargerQuestions() – Charge le fichier JSON correspondant à la catégorie
  */
 async function chargerQuestions(cat) {
-  console.log(">>> chargerQuestions() cat=", cat);
-  let fileName = "";
-  if (cat === "PROCÉDURE RADIO") {
-    fileName = "questions_procedure_radio.json";
-  } else if (cat === "PROCÉDURES OPÉRATIONNELLES") {
-    fileName = "questions_procedure_operationnelles.json";
-  } else if (cat === "RÉGLEMENTATION") {
-    fileName = "questions_reglementation.json";
-  } else if (cat === "CONNAISSANCE DE L’AVION") {
-    fileName = "questions_connaissance_avion.json";
-  } else if (cat === "INSTRUMENTATION") {
-    fileName = "questions_instrumentation.json";
-  } else if (cat === "MASSE ET CENTRAGE") {
-    fileName = "questions_masse_et_centrage.json";
-  } else if (cat === "MOTORISATION") {
-    fileName = "questions_motorisation.json";
-  } else if (cat === "EASA PROCEDURES") {
-    // Updated mapping for accurate count
-    fileName = "section_easa_procedures_new.json";
-  } else if (cat === "EASA AERODYNAMIQUE") {
-    fileName = "section_easa_aerodynamique.json";
-  } else if (cat === "EASA NAVIGATION") {
-    fileName = "section_easa_navigation.json";
-  } else if (cat === "section_easa_connaissance_avion") {
-    fileName = "section_easa_connaissance_avion.json";
-  } else if (cat === "section_easa_meteorologie") {
-    fileName = "section_easa_meteorologie.json";
-  } else if (cat === "section_easa_performance_planification") {
-    fileName = "section_easa_performance_planification.json";
-  } else if (cat === "section_easa_reglementation") {
-    fileName = "section_easa_reglementation.json";
-  } else if (cat === "TOUTES") {
-    return;
-  } else {
-    console.warn("Catégorie inconnue:", cat);
-    return;
-  }
-  
-  try {
-    const res = await fetch(fileName);
-    if (!res.ok) {
-      console.error("Erreur HTTP", res.status);
-      questions = [];
-      return;
+    console.log(">>> chargerQuestions() cat=", cat);
+    let fileName = "";
+    if (cat === "PROCÉDURE RADIO") {
+        fileName = "questions_procedure_radio.json";
+    } else if (cat === "PROCÉDURES OPÉRATIONNELLES") {
+        fileName = "questions_procedure_operationnelles.json";
+    } else if (cat === "RÉGLEMENTATION") {
+        fileName = "questions_reglementation.json";
+    } else if (cat === "CONNAISSANCE DE L’AVION") {
+        fileName = "questions_connaissance_avion.json";
+    } else if (cat === "INSTRUMENTATION") {
+        fileName = "questions_instrumentation.json";
+    } else if (cat === "MASSE ET CENTRAGE") {
+        fileName = "questions_masse_et_centrage.json";
+    } else if (cat === "MOTORISATION") {
+        fileName = "questions_motorisation.json";
+    } else if (cat === "EASA PROCEDURES") {
+        fileName = "section_easa_procedures_new.json";
+    } else if (cat === "EASA AERODYNAMIQUE") {
+        fileName = "section_easa_aerodynamique.json";
+    } else if (cat === "EASA NAVIGATION") {
+        fileName = "section_easa_navigation.json";
+    } else if (cat === "EASA METEOROLOGIE" || cat === "section_easa_meteorologie") {
+        fileName = "section_easa_meteorologie.json";
+    } else if (cat === "EASA PERFORMANCE ET PLANIFICATION" || cat === "section_easa_performance_planification") {
+        fileName = "section_easa_performance_planification.json";
+    } else if (cat === "EASA CONNAISSANCE DE L'AVION" || cat === "section_easa_connaissance_avion") {
+        fileName = "section_easa_connaissance_avion.json";
+    } else if (cat === "EASA REGLEMENTATION" || cat === "section_easa_reglementation") {
+        fileName = "section_easa_reglementation.json";
+    } else if (cat === "TOUTES") {
+        return;
+    } else {
+        console.warn("Catégorie inconnue:", cat);
+        return;
     }
-    questions = await res.json();
-    // Réinitialiser les IDs pour commencer à 1
-    questions.forEach((q, i) => q.id = i + 1);
-    console.log("    questions chargées:", questions.length);
-  } catch (error) {
-    console.error("Erreur fetch pour", fileName, error);
-    questions = [];
-  }
+    try {
+        const res = await fetch(fileName);
+        if (!res.ok) {
+            console.error("Erreur HTTP", res.status);
+            questions = [];
+            return;
+        }
+        questions = await res.json();
+        // Réinitialiser les IDs pour commencer à 1
+        questions.forEach((q, i) => q.id = i + 1);
+        console.log("    questions chargées:", questions.length);
+    } catch (error) {
+        console.error("Erreur fetch pour", fileName, error);
+        questions = [];
+    }
 }
 
 // Update file path mapping to use the JSON files at the server root
