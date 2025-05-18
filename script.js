@@ -333,10 +333,42 @@ async function demarrerQuiz() {
     await chargerQuestions(selectedCategory);
   }
 
-  await filtrerQuestions(modeQuiz, nbQuestions);   // ← added await
+  await filtrerQuestions(modeQuiz, nbQuestions);
+
+  // store parameters for quiz page
   localStorage.setItem('quizCategory', selectedCategory);
+  localStorage.setItem('quizMode', modeQuiz);
+  localStorage.setItem('quizNbQuestions', nbQuestions);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+
   window.location = 'quiz.html';
+}
+
+async function initQuiz() {
+  console.log(">>> initQuiz()");
+  // restore mode and question count
+  modeQuiz = localStorage.getItem('quizMode') || modeQuiz;
+  nbQuestions = parseInt(localStorage.getItem('quizNbQuestions')) || nbQuestions;
+
+  const stored = localStorage.getItem('currentQuestions');
+  if (stored) {
+    currentQuestions = JSON.parse(stored);
+  } else {
+    selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
+    if (selectedCategory === "TOUTES") {
+      await loadAllQuestions();
+    } else {
+      await chargerQuestions(selectedCategory);
+    }
+    await filtrerQuestions(modeQuiz, nbQuestions);
+    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+  }
+
+  // load and normalize responses, then display
+  const uid = auth.currentUser.uid;
+  const docResp = await db.collection('quizProgress').doc(uid).get();
+  currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
+  afficherQuiz();
 }
 
 /**
@@ -555,14 +587,13 @@ function afficherBoutonsMarquer() {
  */
 async function initQuiz() {
   console.log(">>> initQuiz()");
+  // restore mode and question count
+  modeQuiz = localStorage.getItem('quizMode') || modeQuiz;
+  nbQuestions = parseInt(localStorage.getItem('quizNbQuestions')) || nbQuestions;
+
   const stored = localStorage.getItem('currentQuestions');
   if (stored) {
     currentQuestions = JSON.parse(stored);
-    // Normalize stored progress for marking buttons
-    const uid = auth.currentUser.uid;
-    const docResp = await db.collection('quizProgress').doc(uid).get();
-    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
-    afficherQuiz();
   } else {
     selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
     if (selectedCategory === "TOUTES") {
@@ -570,14 +601,15 @@ async function initQuiz() {
     } else {
       await chargerQuestions(selectedCategory);
     }
-    // Populate currentQuestions based on mode & nbQuestions
     await filtrerQuestions(modeQuiz, nbQuestions);
-    // Load stored responses for marking buttons
-    const uid = auth.currentUser.uid;
-    const docResp = await db.collection('quizProgress').doc(uid).get();
-    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
-    afficherQuiz();
+    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
+
+  // load and normalize responses, then display
+  const uid = auth.currentUser.uid;
+  const docResp = await db.collection('quizProgress').doc(uid).get();
+  currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
+  afficherQuiz();
 }
 
 /**
