@@ -63,19 +63,18 @@ async function initIndex() {
   countMasse = questions.length;
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
-  // Pour EASA PROCEDURES
+  // Pour les catégories EASA : utilisez les clés telles qu'elles figurent dans index.html
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
-  await chargerQuestions("EASA AERODYNAMIQUE");
+  await chargerQuestions("section_easa_aerodynamique");
   countAer = questions.length;
-  // Nouvelles catégories EASA avec nouveaux libellés
-  await chargerQuestions("EASA CONNAISSANCE DE L'AVION");
+  await chargerQuestions("section_easa_connaissance_avion");
   countEasaConnaissance = questions.length;
-  await chargerQuestions("EASA METEOROLOGIE");
+  await chargerQuestions("section_easa_meteorologie");
   countEasaMeteorologie = questions.length;
-  await chargerQuestions("EASA PERFORMANCE ET PLANIFICATION");
+  await chargerQuestions("section_easa_performance_planification");
   countEasaPerformance = questions.length;
-  await chargerQuestions("EASA REGLEMENTATION");
+  await chargerQuestions("section_easa_reglementation");
   countEasaReglementation = questions.length;
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
@@ -175,11 +174,11 @@ function updateCategorySelect() {
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
     { name: "EASA PROCEDURES", count: countEasa },
-    { name: "EASA AERODYNAMIQUE", count: countAer },
-    { name: "EASA CONNAISSANCE DE L'AVION", count: countEasaConnaissance },
-    { name: "EASA METEOROLOGIE", count: countEasaMeteorologie },
-    { name: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
-    { name: "EASA REGLEMENTATION", count: countEasaReglementation }
+    { name: "section_easa_aerodynamique", count: countAer },
+    { name: "section_easa_connaissance_avion", count: countEasaConnaissance },
+    { name: "section_easa_meteorologie", count: countEasaMeteorologie },
+    { name: "section_easa_performance_planification", count: countEasaPerformance },
+    { name: "section_easa_reglementation", count: countEasaReglementation }
   ];
 
   categories.forEach(cat => {
