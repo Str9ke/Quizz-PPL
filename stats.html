@@ -75,8 +75,8 @@
         // compute stats
         let re=0, ra=0, nv=0, ma=0;
         qs.forEach(q => {
-          const key = `question_${cat.replace(/'/g,"")} _${q.id}` // no apostrophes
-            .replace(/ /g, '_');
+          // use same normalization & key logic as script.js
+          const key = getKeyFor({ categorie: cat, id: q.id });
           const r = responses[key];
           if (!r) nv++;
           else if (r.status==="réussie") re++;
