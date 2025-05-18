@@ -292,7 +292,8 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
-    fileName = "questions_easa_procedures_op.json";
+    // Updated mapping to use the correct file containing the questions
+    fileName = "section_easa_procedures_new.json";
   } else if (cat === "EASA AERODYNAMIQUE") {
     fileName = "section_easa_aerodynamique.json";
   } else if (cat === "EASA CONNAISSANCE DE L'AVION") {
@@ -300,7 +301,7 @@ async function chargerQuestions(cat) {
   } else if (cat === "EASA METEOROLOGIE") {
     fileName = "section_easa_meteorologie.json";
   } else if (cat === "EASA PERFORMANCE ET PLANIFICATION") {
-    fileName = "section_easa_performance_planification.json";
+    fileName = "section_performance_planification.json";
   } else if (cat === "EASA REGLEMENTATION") {
     fileName = "section_easa_reglementation.json";
   } else if (cat === "TOUTES") {
@@ -310,6 +311,7 @@ async function chargerQuestions(cat) {
     console.warn("Catégorie inconnue:", cat);
     return;
   }
+  
   try {
     const res = await fetch(fileName);
     if (!res.ok) {
