@@ -264,32 +264,28 @@ function getNormalizedSelectedCategory(selected) {
  */
 async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
-  const normalizedSelected = (selectedCategory === "TOUTES") ? "TOUTES" : getModeCategory(selectedCategory);
-  // Filter questions to count only those whose normalized category matches
-  const currentArray = (normalizedSelected === "TOUTES")
+  const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+  const currentArray = (normalizedSel === "TOUTES")
     ? questions
-    : questions.filter(q => getModeCategory(q.categorie) === normalizedSelected);
-    
+    : questions.filter(q => q.categorie === normalizedSel);
+
   const total = currentArray.length;
   let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
   const uid = auth.currentUser?.uid;
   if (!uid) {
-    console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
+    console.error("Utilisateur non authentifié");
     return;
   }
   try {
     const doc = await db.collection("quizProgress").doc(uid).get();
-    const responses = doc.exists ? doc.data().responses : {};
+    const respData = doc.exists ? doc.data().responses : {};
     currentArray.forEach(q => {
       const key = getKeyFor(q);
-      const resp = responses[key];
-      if (resp) {
-        if (resp.status === "réussie") { nbReussies++; }
-        else if (resp.status === "ratée") { nbRatees++; }
-        else if (resp.status === "marquée") { nbMarquees++; }
-      } else {
-        nbNonvues++;
-      }
+      const r = respData[key];
+      if      (r?.status === "réussie") nbReussies++;
+      else if (r?.status === "ratée")   nbRatees++;
+      else if (r?.status === "marquée") nbMarquees++;
+      else                              nbNonvues++;
     });
     const nbRateesNonvues = nbRatees + nbNonvues;
     document.getElementById("mode").innerHTML = `
@@ -300,8 +296,8 @@ async function updateModeCounts() {
       <option value="reussies">Réussies (${nbReussies})</option>
       <option value="marquees">Marquées (${nbMarquees})</option>
     `;
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour des modes :", error);
+  } catch (e) {
+    console.error("Erreur updateModeCounts:", e);
   }
 }
 
