@@ -264,10 +264,12 @@ function getNormalizedSelectedCategory(selected) {
  */
 async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
-  const normalizedSelected = getNormalizedSelectedCategory(selectedCategory);
-  const currentArray = (normalizedSelected === "TOUTES")
+  // Use getModeCategory on the selectedCategory
+  const selectedKey = (selectedCategory === "TOUTES") ? "TOUTES" : getModeCategory(selectedCategory);
+  // Filter questions using getModeCategory so the four problematic categories are handled correctly
+  const currentArray = (selectedKey === "TOUTES")
     ? questions
-    : questions.filter(q => getFirestoreCategory(q.categorie) === normalizedSelected);
+    : questions.filter(q => getModeCategory(q.categorie) === selectedKey);
     
   const total = currentArray.length;
   let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
@@ -290,7 +292,7 @@ async function updateModeCounts() {
         nbNonvues++;
       }
     });
-    // "Ratées+Non vues" is computed from those answered as ratée plus unanswered.
+    // Compute "ratées+non vues" directly as answered non-réussies
     const nbRateesNonvues = nbRatees + nbNonvues;
     const modeSelect = document.getElementById("mode");
     modeSelect.innerHTML = `
@@ -1037,7 +1039,7 @@ function afficherCorrection() {
  */
 // Modify getKeyFor() to always use the normalized category so that Firestore keys match
 function getKeyFor(q) {
-  return `question_${getFirestoreCategory(q.categorie)}_${q.id}`;
+  return `question_${getModeCategory(q.categorie)}_${q.id}`;
 }
 
 /**
@@ -1301,6 +1303,19 @@ function displayMode() {
     .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
 }
 
-// Appeler les fonctions d'affichage des catégories et des modes
-displayCategories();
-displayMode();
+// New helper used for mode counting and key generation
+function getModeCategory(cat) {
+  if (!cat) return "TOUTES";
+  // Standardize the string: remove curly quotes, underscores and lower-case it
+  const fixed = fixQuotes(cat).replace(/_/g, ' ').trim().toLowerCase();
+  if (fixed.indexOf("meteorologie") !== -1) return "EASA METEOROLOGIE";
+  if (fixed.indexOf("connaissance avion") !== -1) return "EASA CONNAISSANCE DE L'AVION";
+  if (fixed.indexOf("performance planification") !== -1) return "EASA PERFORMANCE ET PLANIFICATION";
+  if (fixed.indexOf("reglementation") !== -1) return "EASA REGLEMENTATION";
+  return fixed.toUpperCase();
+}
+
+// Redefine getKeyFor() for mode counting to use getModeCategory()
+function getKeyFor(q) {
+  return `question_${getModeCategory(q.categorie)}_${q.id}`;
+}
