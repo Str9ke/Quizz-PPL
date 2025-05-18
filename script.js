@@ -583,7 +583,6 @@ async function initQuiz() {
  */
 function afficherQuiz() {
   console.log(">>> afficherQuiz()");
-  currentQuestions = JSON.parse(localStorage.getItem('currentQuestions')) || [];
   console.log("    currentQuestions=", currentQuestions);
 
   const cont = document.getElementById('quizContainer');
