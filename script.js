@@ -276,20 +276,18 @@ async function updateModeCounts() {
     
     const total = currentArray.length;
     let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
+    
     currentArray.forEach(q => {
-        const r = currentResponses[getKeyFor(q)] || {};
-        if (r.status === 'marquée' || r.marked) {
-            nbMarquees++;
-        } else if (r.status === 'réussie') {
-            nbReussies++;
-        } else if (r.status === 'ratée') {
-            nbRatees++;
-        } else {
+        const r = currentResponses[getKeyFor(q)];
+        if (!r) {
             nbNonvues++;
+        } else {
+            if (r.status === 'réussie') nbReussies++;
+            if (r.status === 'ratée')   nbRatees++;
+            if (r.marked)               nbMarquees++;
         }
     });
 
-    // Simple example updating the dropdown counts; adjust as needed
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
         modeSelect.innerHTML = `
