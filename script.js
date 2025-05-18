@@ -48,7 +48,7 @@ let totalGlobal = 0;
 async function initIndex() {
   console.log(">>> initIndex()");
   
-  // Chargement des autres catégories
+  // Chargement des catégories classiques
   await chargerQuestions("PROCÉDURE RADIO");
   countRadio = questions.length;
   await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
@@ -63,18 +63,19 @@ async function initIndex() {
   countMasse = questions.length;
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
+  // Pour EASA PROCEDURES
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
   await chargerQuestions("EASA AERODYNAMIQUE");
   countAer = questions.length;
-  // Chargement des nouvelles catégories avec clés identiques à celles du select
-  await chargerQuestions("section_easa_connaissance_avion");
+  // Nouvelles catégories EASA avec nouveaux libellés
+  await chargerQuestions("EASA CONNAISSANCE DE L'AVION");
   countEasaConnaissance = questions.length;
-  await chargerQuestions("section_easa_meteorologie");
+  await chargerQuestions("EASA METEOROLOGIE");
   countEasaMeteorologie = questions.length;
-  await chargerQuestions("section_easa_performance_planification");
+  await chargerQuestions("EASA PERFORMANCE ET PLANIFICATION");
   countEasaPerformance = questions.length;
-  await chargerQuestions("section_easa_reglementation");
+  await chargerQuestions("EASA REGLEMENTATION");
   countEasaReglementation = questions.length;
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
@@ -139,12 +140,12 @@ async function loadAllQuestions() {
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
-    "EASA PROCEDURES",              // Ajouté pour EASA PROCEDURES
+    "EASA PROCEDURES",
     "EASA AERODYNAMIQUE",
-    "section_easa_connaissance_avion",
-    "section_easa_meteorologie",
-    "section_easa_performance_planification",
-    "section_easa_reglementation"
+    "EASA CONNAISSANCE DE L'AVION",
+    "EASA METEOROLOGIE",
+    "EASA PERFORMANCE ET PLANIFICATION",
+    "EASA REGLEMENTATION"
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
@@ -175,10 +176,10 @@ function updateCategorySelect() {
     { name: "MOTORISATION", count: countMotor },
     { name: "EASA PROCEDURES", count: countEasa },
     { name: "EASA AERODYNAMIQUE", count: countAer },
-    { name: "section_easa_connaissance_avion", count: countEasaConnaissance },
-    { name: "section_easa_meteorologie", count: countEasaMeteorologie },
-    { name: "section_easa_performance_planification", count: countEasaPerformance },
-    { name: "section_easa_reglementation", count: countEasaReglementation }
+    { name: "EASA CONNAISSANCE DE L'AVION", count: countEasaConnaissance },
+    { name: "EASA METEOROLOGIE", count: countEasaMeteorologie },
+    { name: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
+    { name: "EASA REGLEMENTATION", count: countEasaReglementation }
   ];
 
   categories.forEach(cat => {
@@ -294,13 +295,13 @@ async function chargerQuestions(cat) {
     fileName = "questions_easa_procedures_op.json";
   } else if (cat === "EASA AERODYNAMIQUE") {
     fileName = "section_easa_aerodynamique.json";
-  } else if (cat === "section_easa_connaissance_avion") {
+  } else if (cat === "EASA CONNAISSANCE DE L'AVION") {
     fileName = "section_easa_connaissance_avion.json";
-  } else if (cat === "section_easa_meteorologie") {
+  } else if (cat === "EASA METEOROLOGIE") {
     fileName = "section_easa_meteorologie.json";
-  } else if (cat === "section_easa_performance_planification") {
+  } else if (cat === "EASA PERFORMANCE ET PLANIFICATION") {
     fileName = "section_easa_performance_planification.json";
-  } else if (cat === "section_easa_reglementation") {
+  } else if (cat === "EASA REGLEMENTATION") {
     fileName = "section_easa_reglementation.json";
   } else if (cat === "TOUTES") {
     // "TOUTES" sera géré par loadAllQuestions()
@@ -312,10 +313,12 @@ async function chargerQuestions(cat) {
   try {
     const res = await fetch(fileName);
     if (!res.ok) {
-      throw new Error("HTTP error " + res.status);
+      console.error("Erreur HTTP", res.status);
+      questions = [];
+      return;
     }
     questions = await res.json();
-    // Réinitialiser les id pour do commencer à 1
+    // Réinitialiser les ids
     questions.forEach((q, i) => q.id = i + 1);
     console.log("    questions chargées:", questions.length);
   } catch (error) {
