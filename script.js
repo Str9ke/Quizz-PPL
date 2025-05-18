@@ -36,6 +36,7 @@ let countMasse = 0;
 let countMotor = 0;
 let countEasa = 0;
 let countAer = 0;      // ← nouveau compteur pour EASA AERODYNAMIQUE
+let countEasaAero = 0; // ← compteur pour EASA AERODYNAMIQUE
 let countEasaConnaissance = 0;
 let countEasaMeteorologie = 0;
 let countEasaPerformance = 0;
@@ -66,8 +67,9 @@ async function initIndex() {
   // Pour les catégories EASA : utilisez les clés telles qu'elles figurent dans index.html
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
-  await chargerQuestions("section_easa_aerodynamique");
-  countAer = questions.length;
+  // Ajouter EASA AERODYNAMIQUE : charger à partir du fichier section_easa_navigation.json
+  await chargerQuestions("EASA AERODYNAMIQUE");
+  countEasaAero = questions.length;
   await chargerQuestions("section_easa_connaissance_avion");
   countEasaConnaissance = questions.length;
   await chargerQuestions("section_easa_meteorologie");
@@ -79,7 +81,7 @@ async function initIndex() {
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
                 countInstr + countMasse + countMotor +
-                countEasa + countAer +
+                countEasa + countEasaAero +
                 countEasaConnaissance + countEasaMeteorologie +
                 countEasaPerformance + countEasaReglementation;
   
@@ -175,11 +177,11 @@ function updateCategorySelect() {
     { value: "MASSE ET CENTRAGE", display: "MASSE ET CENTRAGE", count: countMasse },
     { value: "MOTORISATION", display: "MOTORISATION", count: countMotor },
     { value: "EASA PROCEDURES", display: "EASA PROCEDURES", count: countEasa },
-    { value: "section_easa_aerodynamique", display: "EASA AERODYNAMIQUE", count: countAer },
-    { value: "section_easa_connaissance_avion", display: "EASA CONNAISSANCE AVION", count: countEasaConnaissance },
-    { value: "section_easa_meteorologie", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
-    { value: "section_easa_performance_planification", display: "EASA PERFORMANCE PLANIFICATION", count: countEasaPerformance },
-    { value: "section_easa_reglementation", display: "EASA REGLEMENTATION", count: countEasaReglementation }
+    { value: "EASA AERODYNAMIQUE", display: "EASA AERODYNAMIQUE", count: countEasaAero },
+    { value: "EASA CONNAISSANCE DE L'AVION", display: "EASA CONNAISSANCE DE L'AVION", count: countEasaConnaissance },
+    { value: "EASA METEOROLOGIE", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
+    { value: "EASA PERFORMANCE ET PLANIFICATION", display: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
+    { value: "EASA REGLEMENTATION", display: "EASA REGLEMENTATION", count: countEasaReglementation }
   ];
   
   categories.forEach(cat => {
@@ -292,9 +294,9 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
-    fileName = "section_easa_procedures_new.json";
-  } else if (cat === "section_easa_aerodynamique") {
-    fileName = "section_easa_aerodynamique.json";
+    fileName = "questions_easa_procedures_op.json";
+  } else if (cat === "EASA AERODYNAMIQUE") {
+    fileName = "section_easa_navigation.json";
   } else if (cat === "section_easa_connaissance_avion") {
     fileName = "section_easa_connaissance_avion.json";
   } else if (cat === "section_easa_meteorologie") {
