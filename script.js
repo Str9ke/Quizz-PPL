@@ -218,7 +218,7 @@ async function categoryChanged() {
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
   let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+  let nbReussies = 0, nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
 
   const uid = auth.currentUser?.uid;
   if (!uid) {
@@ -230,15 +230,17 @@ async function updateModeCounts() {
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
 
+    // Comptabilisation par question, en utilisant la clé générée pour chaque question
     questions.forEach(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      const response = responses[key];
-      if (!response) {
+      const key = getKeyFor(q);
+      const resp = responses[key];
+      if (resp) {
+        if (resp.status === 'réussie') nbReussies++;
+        else if (resp.status === 'ratée') nbRatees++;
+        else if (resp.status === 'marquée') nbMarquees++;
+        // Considérez les questions sans réponse comme non vues
+      } else {
         nbNonvues++;
-      } else if (response.status === 'ratée') {
-        nbRatees++;
-      } else if (response.status === 'marquée') {
-        nbMarquees++;
       }
     });
 
@@ -250,6 +252,7 @@ async function updateModeCounts() {
       <option value="toutes">Toutes (${total})</option>
       <option value="ratees">Ratées (${nbRatees})</option>
       <option value="nonvues">Non vues (${nbNonvues})</option>
+      <option value="reussies">Réussies (${nbReussies})</option>
       <option value="marquees">Marquées (${nbMarquees})</option>
     `;
   } catch (error) {
