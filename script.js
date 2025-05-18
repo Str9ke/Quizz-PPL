@@ -236,33 +236,51 @@ function getNormalizedCategory(cat) {
   return cat.toUpperCase();
 }
 
+// Add an explicit mapping for the four problematic EASA sub‑categories.
+const easaMapping = {
+  "section_easa_connaissance_avion": "EASA CONNAISSANCE DE L'AVION",
+  "section_easa_meteorologie": "EASA METEOROLOGIE",
+  "section_easa_performance_planification": "EASA PERFORMANCE ET PLANIFICATION",
+  "section_easa_reglementation": "EASA REGLEMENTATION"
+};
+
+// For questions stored in Firestore we assume their 'categorie' is already in uppercase.
+function getFirestoreCategory(cat) {
+  return cat ? cat.trim().toUpperCase() : "";
+}
+
+// Return the normalized string for the selected category as used in Firestore keys.
+function getNormalizedSelectedCategory(selected) {
+  if (!selected || selected === "TOUTES") return "TOUTES";
+  // If the selected category is one of the four, use mapping.
+  if (selected.startsWith("section_easa_")) {
+    return easaMapping[selected] || selected.toUpperCase();
+  }
+  return selected.toUpperCase();
+}
+
 /**
  * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
 async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
-  const normalizedSelected = getNormalizedCategory(selectedCategory);
-
-  // Filter only matching questions if not TOUTES
+  const normalizedSelected = getNormalizedSelectedCategory(selectedCategory);
   const currentArray = (normalizedSelected === "TOUTES")
     ? questions
-    : questions.filter(q => getNormalizedCategory(q.categorie) === normalizedSelected);
-
+    : questions.filter(q => getFirestoreCategory(q.categorie) === normalizedSelected);
+    
   const total = currentArray.length;
   let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
-
   const uid = auth.currentUser?.uid;
   if (!uid) {
     console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
     return;
   }
-
   try {
     const doc = await db.collection("quizProgress").doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
-
     currentArray.forEach(q => {
-      const key = getKeyFor(q); // assume getKeyFor also uses fixQuotes if needed
+      const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
         if (resp.status === "réussie") nbReussies++;
@@ -272,9 +290,8 @@ async function updateModeCounts() {
         nbNonvues++;
       }
     });
-
+    // "Ratées+Non vues" is computed from those answered as ratée plus unanswered.
     const nbRateesNonvues = nbRatees + nbNonvues;
-
     const modeSelect = document.getElementById("mode");
     modeSelect.innerHTML = `
       <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
@@ -1020,7 +1037,7 @@ function afficherCorrection() {
  */
 // Modify getKeyFor() to always use the normalized category so that Firestore keys match
 function getKeyFor(q) {
-  return `question_${getNormalizedCategory(q.categorie)}_${q.id}`;
+  return `question_${getFirestoreCategory(q.categorie)}_${q.id}`;
 }
 
 /**
