@@ -218,7 +218,7 @@ async function categoryChanged() {
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
   let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+  let nbReussies = 0, nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
 
   const uid = auth.currentUser?.uid;
   if (!uid) {
@@ -227,30 +227,25 @@ async function updateModeCounts() {
   }
 
   try {
-    // Récupérer le document de progression du quiz pour l'utilisateur
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
 
-    // Pour les questions affichées, comptons ratées, marquées et non vues
+    // For each displayed question, use the normalized key.
     questions.forEach(q => {
       const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
-        if (resp.status === 'ratée') nbRatees++;
-        if (resp.status === 'marquée') nbMarquees++;
+        if (resp.status === 'réussie') nbReussies++;
+        else if (resp.status === 'ratée') nbRatees++;
+        else if (resp.status === 'marquée') nbMarquees++;
       } else {
         nbNonvues++;
       }
     });
-    const nbRateesNonvues = nbRatees + nbNonvues;
 
-    // Comptabiliser le nombre de réponses réussies directement à partir des données Firestore
-    let nbReussies = 0;
-    for (const key in responses) {
-      if (responses[key].status === 'réussie') {
-        nbReussies++;
-      }
-    }
+    // Instead of adding nbRatees+nbNonvues (which may exceed total), define ratées+non vues as
+    // the questions not réussies.
+    const nbRateesNonvues = total - nbReussies;
 
     const modeSelect = document.getElementById('mode');
     modeSelect.innerHTML = `
@@ -993,10 +988,21 @@ function afficherCorrection() {
 }
 
 /**
- * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
+ * getNormalizedCategory(cat) – Retourne le nom de catégorie normalisé pour la génération de clé
  */
+function getNormalizedCategory(cat) {
+  // Pour les 4 sous-catégories EASA problématiques, mappez-les comme dans le menu des modes.
+  if (cat === "section_easa_connaissance_avion") return "EASA CONNAISSANCE DE L'AVION";
+  if (cat === "section_easa_meteorologie") return "EASA METEOROLOGIE";
+  if (cat === "section_easa_performance_planification") return "EASA PERFORMANCE ET PLANIFICATION";
+  if (cat === "section_easa_reglementation") return "EASA REGLEMENTATION";
+  // Sinon, si la catégorie contient des underscores (pour certains fichiers EASA), remplacez-les par des espaces.
+  return cat.replace(/_/g, ' ');
+}
+
+// Update getKeyFor to use the normalized category.
 function getKeyFor(q) {
-  return `question_${q.categorie}_${q.id}`;
+  return `question_${getNormalizedCategory(q.categorie)}_${q.id}`;
 }
 
 /**
