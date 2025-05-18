@@ -165,26 +165,27 @@ function updateCategorySelect() {
   optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
   catSelect.appendChild(optionToutes);
 
+  // Use friendly display names for EASA categories
   const categories = [
-    { name: "PROCÉDURE RADIO", count: countRadio },
-    { name: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
-    { name: "RÉGLEMENTATION", count: countRegl },
-    { name: "CONNAISSANCE DE L’AVION", count: countConv },
-    { name: "INSTRUMENTATION", count: countInstr },
-    { name: "MASSE ET CENTRAGE", count: countMasse },
-    { name: "MOTORISATION", count: countMotor },
-    { name: "EASA PROCEDURES", count: countEasa },
-    { name: "section_easa_aerodynamique", count: countAer },
-    { name: "section_easa_connaissance_avion", count: countEasaConnaissance },
-    { name: "section_easa_meteorologie", count: countEasaMeteorologie },
-    { name: "section_easa_performance_planification", count: countEasaPerformance },
-    { name: "section_easa_reglementation", count: countEasaReglementation }
+    { value: "PROCÉDURE RADIO", display: "PROCÉDURE RADIO", count: countRadio },
+    { value: "PROCÉDURES OPÉRATIONNELLES", display: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
+    { value: "RÉGLEMENTATION", display: "RÉGLEMENTATION", count: countRegl },
+    { value: "CONNAISSANCE DE L’AVION", display: "CONNAISSANCE DE L’AVION", count: countConv },
+    { value: "INSTRUMENTATION", display: "INSTRUMENTATION", count: countInstr },
+    { value: "MASSE ET CENTRAGE", display: "MASSE ET CENTRAGE", count: countMasse },
+    { value: "MOTORISATION", display: "MOTORISATION", count: countMotor },
+    { value: "EASA PROCEDURES", display: "EASA PROCEDURES", count: countEasa },
+    { value: "section_easa_aerodynamique", display: "EASA AERODYNAMIQUE", count: countAer },
+    { value: "section_easa_connaissance_avion", display: "EASA CONNAISSANCE AVION", count: countEasaConnaissance },
+    { value: "section_easa_meteorologie", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
+    { value: "section_easa_performance_planification", display: "EASA PERFORMANCE PLANIFICATION", count: countEasaPerformance },
+    { value: "section_easa_reglementation", display: "EASA REGLEMENTATION", count: countEasaReglementation }
   ];
-
+  
   categories.forEach(cat => {
     const opt = document.createElement("option");
-    opt.value = cat.name;
-    opt.textContent = `${cat.name} (${cat.count})`;
+    opt.value = cat.value;
+    opt.textContent = `${cat.display} (${cat.count})`;
     catSelect.appendChild(opt);
   });
 }
