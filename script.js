@@ -63,12 +63,6 @@ function normalizeResponses(raw) {
  * initIndex() – Chargement initial sur index.html
  */
 async function initIndex() {
-  const el = document.getElementById("missingElement");
-  if (!el) {
-    console.warn("missingElement not found, skipping initIndex");
-    return;
-  }
-
   console.log(">>> initIndex()");
   
   // Chargement des catégories classiques
@@ -132,19 +126,15 @@ async function initIndex() {
   document.getElementById('btnStart').disabled = false;
 
   // Mettre à jour le compteur de catégories
-  const categories = [
-    "PROCÉDURE RADIO",
-    "PROCÉDURES OPÉRATIONNELLES",
-    "RÉGLEMENTATION",
-    "CONNAISSANCE DE L'AVION",
-    "INSTRUMENTATION",
-    "MASSE ET CENTRAGE",
-    "MOTORISATION",
-    "EASA PROCEDURES",
-    "EASA AERODYNAMIQUE"   // ← inclure ici
-  ];
-  const categoryCount = categories.length;
-  document.getElementById('categoryCount').textContent = categoryCount;
+  const catCountElem = document.getElementById('categoryCount');
+  if (catCountElem) {
+    const categories = [
+      "PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
+      "CONNAISSANCE DE L'AVION","INSTRUMENTATION","MASSE ET CENTRAGE",
+      "MOTORISATION","EASA PROCEDURES","EASA AERODYNAMIQUE"
+    ];
+    catCountElem.textContent = categories.length;
+  }
 
   // Charger et afficher le nombre de procédures EASA
   fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
