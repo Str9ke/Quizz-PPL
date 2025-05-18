@@ -657,10 +657,15 @@ function afficherQuiz() {
     cont.innerHTML += `
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
+        ${ q.image 
+          ? `<div class="question-image">
+               <img src="${q.image}" alt="Question ${q.id} illustration" />
+             </div>`
+          : "" }
         <div class="answer-list">
           ${q.choix.map((c, i) => 
             `<label style="display:block;margin-bottom:4px;">
-                <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
+               <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
              </label>`
           ).join('')}
         </div>
