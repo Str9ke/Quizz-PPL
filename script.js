@@ -292,17 +292,17 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
-    // Updated mapping to use the correct file containing the questions
     fileName = "section_easa_procedures_new.json";
-  } else if (cat === "EASA AERODYNAMIQUE") {
+  } else if (cat === "section_easa_aerodynamique") {
     fileName = "section_easa_aerodynamique.json";
-  } else if (cat === "EASA CONNAISSANCE DE L'AVION") {
+  } else if (cat === "section_easa_connaissance_avion") {
     fileName = "section_easa_connaissance_avion.json";
-  } else if (cat === "EASA METEOROLOGIE") {
+  } else if (cat === "section_easa_meteorologie") {
     fileName = "section_easa_meteorologie.json";
-  } else if (cat === "EASA PERFORMANCE ET PLANIFICATION") {
+  } else if (cat === "section_easa_performance_planification") {
+    // Updated mapping: using the correct file for performance et planification
     fileName = "section_performance_planification.json";
-  } else if (cat === "EASA REGLEMENTATION") {
+  } else if (cat === "section_easa_reglementation") {
     fileName = "section_easa_reglementation.json";
   } else if (cat === "TOUTES") {
     // "TOUTES" sera géré par loadAllQuestions()
@@ -320,7 +320,7 @@ async function chargerQuestions(cat) {
       return;
     }
     questions = await res.json();
-    // Réinitialiser les ids
+    // Réinitialiser les IDs pour commencer à 1
     questions.forEach((q, i) => q.id = i + 1);
     console.log("    questions chargées:", questions.length);
   } catch (error) {
