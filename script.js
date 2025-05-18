@@ -218,7 +218,7 @@ async function categoryChanged() {
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
   let total = questions.length;
-  let nbReussies = 0, nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
 
   const uid = auth.currentUser?.uid;
   if (!uid) {
@@ -227,24 +227,30 @@ async function updateModeCounts() {
   }
 
   try {
+    // Récupérer le document de progression du quiz pour l'utilisateur
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
 
-    // Comptabilisation par question, en utilisant la clé générée pour chaque question
+    // Pour les questions affichées, comptons ratées, marquées et non vues
     questions.forEach(q => {
       const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
-        if (resp.status === 'réussie') nbReussies++;
-        else if (resp.status === 'ratée') nbRatees++;
-        else if (resp.status === 'marquée') nbMarquees++;
-        // Considérez les questions sans réponse comme non vues
+        if (resp.status === 'ratée') nbRatees++;
+        if (resp.status === 'marquée') nbMarquees++;
       } else {
         nbNonvues++;
       }
     });
-
     const nbRateesNonvues = nbRatees + nbNonvues;
+
+    // Comptabiliser le nombre de réponses réussies directement à partir des données Firestore
+    let nbReussies = 0;
+    for (const key in responses) {
+      if (responses[key].status === 'réussie') {
+        nbReussies++;
+      }
+    }
 
     const modeSelect = document.getElementById('mode');
     modeSelect.innerHTML = `
