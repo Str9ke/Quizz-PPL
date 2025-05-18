@@ -79,11 +79,7 @@
           // use same normalization & key logic as script.js
           const key = getKeyFor({ categorie: cat, id: q.id });
           const r = responses[key] || {};
-          if (r.marked) {
-            ma++;
-          } else if      (r.status==="réussie") re++;
-          else if (r.status==="ratée")          ra++;
-          else                                   nv++;
+          if(r.marked) { ma++; } else if(r.status==="réussie") re++; else if(r.status==="ratée") ra++; else nv++;
         });
         const total = re+ra+nv+ma;
         const perc  = total? Math.round((re*100)/total):0;
@@ -96,19 +92,17 @@
           <p>📌 Marquées : ${ma}</p>
           <div class="progressbar"><div class="progress" style="width:${perc}%;"></div></div><hr>
         `;
-        sumRe += re; sumRa += ra; sumNv += nv; sumMa += ma;
+        sumMa+=ma; sumRe+=re; sumRa+=ra; sumNv+=nv;
       }
-
-      // add global summary
-      const sumTotal = sumRe+sumRa+sumNv+sumMa;
-      const sumPerc  = sumTotal? Math.round((sumRe*100)/sumTotal):0;
+      const sumTotal = sumRe + sumRa + sumNv + sumMa;
+      const sumPerc  = sumTotal? Math.round((sumRe*100)/sumTotal) : 0;
       html += `
         <h2>Global</h2>
-        <p>Total cumulé : ${sumTotal}</p>
-        <p>✅ Réussies cumulées : ${sumRe}</p>
-        <p>❌ Ratées cumulées : ${sumRa}</p>
-        <p>👀 Non vues cumulées : ${sumNv}</p>
-        <p>📌 Marquées cumulées : ${sumMa}</p>
+        <p>Total : ${sumTotal}</p>
+        <p>✅ Réussies : ${sumRe}</p>
+        <p>❌ Ratées : ${sumRa}</p>
+        <p>👀 Non vues : ${sumNv}</p>
+        <p>📌 Marquées : ${sumMa}</p>
         <div class="progressbar"><div class="progress" style="width:${sumPerc}%;"></div></div>
       `;
 

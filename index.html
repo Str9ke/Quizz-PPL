@@ -91,6 +91,8 @@
     <br><br>
     <!-- Bouton de déconnexion -->
     <button id="btnLogout">Déconnexion</button>
+    <br><br>
+    <span>Marquées: <span id="markedCountElement">0</span></span>
   </div>
 
   <!-- Inclusion de votre script principal -->
@@ -135,6 +137,15 @@
       } catch (error) {
         console.error("Erreur lors de la déconnexion :", error);
       }
+    });
+
+    function updateMarkedCount() {
+      const markedCount = Object.values(currentResponses).filter(r => r.marked).length;
+      document.getElementById("markedCountElement").textContent = markedCount;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateMarkedCount();
     });
   </script>
 </body>

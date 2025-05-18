@@ -539,14 +539,14 @@ function afficherBoutonsMarquer() {
   console.log(">>> afficherBoutonsMarquer()");
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
-    const q = currentQuestions[idx];
-    const key = getKeyFor(q);                           // use normalized key
+    const q   = currentQuestions[idx];
+    const key = getKeyFor(q);
     const isMarked = currentResponses[key]?.marked;
-    const btn = document.createElement('button');
+    const btn = block.querySelector('.mark-button,.delete-button') || document.createElement('button');
     btn.textContent = isMarked ? "Supprimer" : "Marquer";
     btn.className   = isMarked ? "delete-button" : "mark-button";
     btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
-    block.appendChild(btn);
+    if(!block.contains(btn)) block.appendChild(btn);
   });
 }
 
@@ -688,7 +688,6 @@ async function validerReponses() {
       { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    // update local cache including marked
     Object.assign(currentResponses, responsesToSave);
     console.log("Réponses sauvegardées avec marked :", responsesToSave);
   } catch (e) {
