@@ -137,7 +137,7 @@ async function initIndex() {
   }
 
   // Charger et afficher le nombre de procédures EASA
-  fetch('g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_procedures_new.json')
+  fetch('section_easa_procedures_new.json')
     .then(resp => resp.json())
     .then(data => {
       const countEasa = data.length;
@@ -455,13 +455,16 @@ const categoryFiles = {
     "section_easa_reglementation": "section_easa_reglementation.json"
 };
 // Lors du changement de la sélection, on charge le fichier adéquat
-document.getElementById("categorie-select").addEventListener("change", (e) => {
+const catSel = document.getElementById("categorie-select");
+if (catSel) {
+  catSel.addEventListener("change", e => {
     const selected = e.target.value;
     const filePath = categoryFiles[selected];
     if (filePath) {
         loadQuestions(filePath);
     }
-});
+  });
+}
 // Fonction loadQuestions modifiée pour réinitialiser le compteur si besoin
 function loadQuestions(file) {
     // ...existing code pour charger le JSON...
@@ -1404,4 +1407,10 @@ function getModeCategory(cat) {
 // Force getKeyFor() to use getModeCategory so that keys match
 function getKeyFor(q) {
     return `question_${getModeCategory(q.categorie)}_${q.id}`;
+}
+
+// Provide a simple placeholder to avoid errors
+function updateMarkedCount() {
+  // TODO: implement the logic if needed
+  console.log("updateMarkedCount called");
 }
