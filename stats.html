@@ -91,10 +91,12 @@
           // use same normalization & key logic as script.js
           const key = getKeyFor({ categorie: cat, id: q.id });
           const r = responses[key] || {};
-          if (r.marked)         ma++;
-          else if (r.status==='réussie') re++;
+          // toujours compter réussite/échec/non-vue
+          if      (r.status==='réussie') re++;
           else if (r.status==='ratée')   ra++;
           else                            nv++;
+          // marquée en supplément
+          if (r.marked)                  ma++;
         });
         const total = re+ra+nv+ma;
         const perc  = total? Math.round((re*100)/total):0;
