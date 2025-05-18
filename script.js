@@ -142,7 +142,7 @@ async function initIndex() {
     .then(data => {
       const countEasa = data.length;
       categories.find(cat => cat.name === "EASA PROCEDURES").count = countEasa;
-      updateCategoryDropdown(); // same function used for other categories
+      updateCategorySelect(); // same function used for other categories
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
 }
@@ -372,9 +372,9 @@ async function initQuiz() {
 }
 
 // Guard old unused listener
-const selectEl = document.getElementById("categorie-select");
-if (selectEl) {
-  selectEl.addEventListener("change", (e) => {
+const oldSelect = document.getElementById("categorie-select");
+if (oldSelect) {
+  oldSelect.addEventListener("change", e => {
     const filePath = categoryFiles[e.target.value];
     if (filePath) loadQuestions(filePath);
   });
