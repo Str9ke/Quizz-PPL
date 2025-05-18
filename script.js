@@ -217,36 +217,38 @@ async function categoryChanged() {
  */
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
-  let total = questions.length;
-  let nbReussies = 0, nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
-
+  // Use the selectedCategory (global) to filter the questions for mode statistics.
+  const currentArray = (selectedCategory === "TOUTES") 
+      ? questions 
+      : questions.filter(q => getNormalizedCategory(q.categorie) === selectedCategory);
+  const total = currentArray.length;
+  let nbReussies = 0, nbRatees = 0, nbMarquees = 0;
+  
   const uid = auth.currentUser?.uid;
   if (!uid) {
     console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
     return;
   }
-
+  
   try {
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
-
-    // For each displayed question, use the normalized key.
-    questions.forEach(q => {
+    
+    currentArray.forEach(q => {
       const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
         if (resp.status === 'réussie') nbReussies++;
         else if (resp.status === 'ratée') nbRatees++;
         else if (resp.status === 'marquée') nbMarquees++;
-      } else {
-        nbNonvues++;
       }
     });
-
-    // Instead of adding nbRatees+nbNonvues (which may exceed total), define ratées+non vues as
-    // the questions not réussies.
+    
+    // Les questions non vues dans ce set sont celles qui n'ont pas de réponse
+    const nbNonvues = total - (nbReussies + nbRatees + nbMarquees);
+    // Ratées + non vues est the total minus réussies.
     const nbRateesNonvues = total - nbReussies;
-
+    
     const modeSelect = document.getElementById('mode');
     modeSelect.innerHTML = `
       <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
