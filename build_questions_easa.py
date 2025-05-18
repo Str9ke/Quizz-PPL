@@ -6,6 +6,7 @@
 
 import sys, re, json
 from pathlib import Path
+from unidecode import unidecode
 
 # 1) Fichier Markdown en entrée (obligatoire)
 if len(sys.argv) < 2:
@@ -72,11 +73,18 @@ while i < len(q_lines):
         "bonne_reponse": idx
     })
 
-# 8) Écrire le JSON
-with open(out_path, "w", encoding="utf-8") as f:
+# 8) Génération slug sans accents
+base = md_path.stem.lower()
+# retire "questionnaire easa " et tout accent
+slug = unidecode(base.replace("questionnaire easa ", "")) \
+       .strip().replace(" ", "_")
+json_out = Path(f"section_easa_{slug}.json")
+
+# 9) Écrire le JSON
+with open(json_out, "w", encoding="utf-8") as f:
     json.dump(questions, f, ensure_ascii=False, indent=2)
 
-print(f"✅  {len(questions)} questions exportées → {out_path}")
+print(f"✅  {len(questions)} questions exportées → {json_out}")
 
 if __name__ == "__main__":
     # Exemple d'utilisation : python build_questions_easa.py "Questionnaire EASA Aérodynamique principes du vol.md"

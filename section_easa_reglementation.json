@@ -1,11 +1,1166 @@
 [
-  // ... Génère ici la liste des questions au format :
-  // {
-  //   "id": <numéro>,
-  //   "categorie": "EASA REGLEMENTATION",
-  //   "question": "<texte question>",
-  //   "choix": ["<choix 1>", "<choix 2>", "<choix 3>", "<choix 4>"],
-  //   "bonne_reponse": <index 0-3>
-  // }
-  // ... pour chaque question du fichier Questionnaire_EASA_Reglementation.md ...
+  {
+    "id": 1,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Parmi les documents énumérés, lesquels doivent être à bord pour un vol international ?",
+    "choix": [
+      "2, 3, 4, 5, 6, 7",
+      "1, 2, 3, 5, 6",
+      "1, 2, 5, 7",
+      "4, 6, 7"
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 2,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle zone peut être traversée avec certaines restrictions ?",
+    "choix": [
+      "Zones de non-vol.",
+      "Zones réglementées.",
+      "Zones interdites.",
+      "Zones dangereuses."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 3,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Où peut-on trouver le type de restriction pour un espace réglementé ?",
+    "choix": [
+      "Dans les NOTAM.",
+      "Dans l’AIC.",
+      "Sur la carte ICAO 1 :500 000.",
+      "Dans les AIP."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 4,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quels sont les statuts des règles et des procédures créées par l’EASA ?",
+    "choix": [
+      "Elles ont le même statut que les Annexes de l’OACI.",
+      "Elles sont liées légalement seulement après ratification par chaque membre de l’UE.",
+      "Elles ne sont pas juridiquement liées, elles servent seulement de guide.",
+      "Elles font partie du règlement de l’UE et sont juridiquement liées à chaque État membre de l’UE."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 5,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la validité d’un certificat de navigabilité ?",
+    "choix": [
+      "6 mois.",
+      "12 mois.",
+      "Illimitée.",
+      "12 mois."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 6,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie l’abréviation « ARC » ?",
+    "choix": [
+      "Airwothiness Recurring Control.",
+      "Airspace Rulemaking Committee.",
+      "Airspace Restriction Criteria.",
+      "Airworthness Review Certificate."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 7,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Le Certificat de Navigabilité est émis par l’état…",
+    "choix": [
+      "Dans lequel l’aéronef est immatriculé.",
+      "De résidence du propriétaire.",
+      "Dans lequel l’aéronef a été fabriqué.",
+      "Dans lequel l’examen de navigabilité est fait."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 8,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "La licence d’un pilote émise selon l’Annexe 1 de l’OACI est valable dans :",
+    "choix": [
+      "Les pays qui ont accepté l’application de cette licence.",
+      "Le pays dans lequel la licence a été émise.",
+      "Tous les pays de l’OACI.",
+      "Le pays où la licence a été acquise."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 9,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "De quoi parle l’Annexe 1 de l’OACI ?",
+    "choix": [
+      "Des services du trafic aérien.",
+      "Des licences du personnel navigant.",
+      "Des règles de l’air.",
+      "Des opérations des aéronefs."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 10,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la période de validité d’une licence de pilote privé (PPL) ?",
+    "choix": [
+      "Illimitée.",
+      "24 mois.",
+      "48 mois.",
+      "18 mois."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 11,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est l’âge minimum pour obtenir une licence de pilote privé ?",
+    "choix": [
+      "17 ans.",
+      "21 ans.",
+      "16 ans.",
+      "18 ans."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 12,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quels sont les exigences minimales, entre autres, pour obtenir une qualification VFR de nuit ?",
+    "choix": [
+      "Au moins 10 heures de vol supplémentaires de nuit, dont 3 avec un instructeur plus 5 décollages et atterrissages solo.",
+      "Au moins 5 heures de vol supplémentaires de nuit, dont 4 avec un instructeur plus 5 décollages et atterrissages solo.",
+      "Au moins 5 heures de vol supplémentaires de nuit, dont 3 avec un instructeur plus 1h de nav plus 5 décollages et atterrissages solo.",
+      "Au moins 5 heures de vol supplémentaires de nuit, dont 3 avec un instructeur plus 1h de nav plus 10 décollages et atterrissages solo."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 13,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la durée de validité d’un certificat médical de classe 2 pour un pilote âgé de 62 ans ?",
+    "choix": [
+      "60 mois.",
+      "48mois.",
+      "24 mois.",
+      "12 mois."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 14,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "De quelle manière une qualification SEP (land) est renouvelée si vous n’aviez pas le nombre d’heures de vol requis ?",
+    "choix": [
+      "Un vol de maintien de compétence avec un examinateur.",
+      "Selon l’expérience de vol, il faut différents vols d’entraînement sous supervision d’une ATO.",
+      "L’ATO peut renouveler une qualification après un vol d’entraînement avec un instructeur.",
+      "L’expérience de vol requise doit être acquise sous la supervision d’un instructeur de vol."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 15,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "La possession d’une PPL(A) européenne permet au détenteur de :",
+    "choix": [
+      "Voler comme pilote sur un vol commercial quand il y a au maximum 4 personnes à bord.",
+      "Voler comme pilote dans des vols commerciaux et non commerciaux sur avion monomoteur.",
+      "Voler comme PIC, seulement sur avions avec un MTOW maximum de 2000 kg en recevant une indemnité.",
+      "Voler comme PIC sur des vols non commerciaux sans indemnité ni indemnité en tant qu’instructeur de vol."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 16,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est l’âge minimum pour commencer l’écolage de pilote privé dans une école de vol ?",
+    "choix": [
+      "16 ans.",
+      "17 ans.",
+      "21 ans.",
+      "18 ans."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 17,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que veut dire l’abréviation « SERA » ?",
+    "choix": [
+      "Selective Radar altimeter.",
+      "Standardized European Rules of the Air.",
+      "Specialized Radat Approach.",
+      "Standard European Routes of the Air."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 18,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que veut dire l’abréviation « TRA » ?",
+    "choix": [
+      "Temporary Reserved Airspace.",
+      "Temporary Radar Routing Area.",
+      "Tansponder Area.",
+      "Terminal Area."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 19,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que faut-il considérer lorsqu’on entre dans une RMZ ?",
+    "choix": [
+      "Écouter la radio en permanence et si possible établir un contact radio.",
+      "Obtenir une autorisation de l’autorité aérienne locale.",
+      "Le transpondeur doit être allumé en Mode C et afficher 7000.",
+      "Obtenir une autorisation d’entrer dans cette zone."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 20,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle condition faut-il durant un vol en VFR Spécial ?",
+    "choix": [
+      "Référence visuelle sur le terrain.",
+      "Vitesse inférieure à 115 kt IAS.",
+      "Au moins 500 m de visibilité sol.",
+      "À une distance minimum de 2000 m des nuages."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 21,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que faut-il faire avant d’entrer dans une TMZ ?",
+    "choix": [
+      "Allumer le transpondeur et activer le mode A et C ou le mode S.",
+      "Demander une autorisation avant d’entrer.",
+      "Allumer le transpondeur, activer le mode A, et afficher « IDENT ».",
+      "Remplir un plan de vol avant le vol."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 22,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est la signification d’une zone marquée comme « TMZ » ?",
+    "choix": [
+      "Transportation Management Zone.",
+      "Touring Motorglider Zone.",
+      "Traffic Management Zone.",
+      "Tansponder Mandatory Zone."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 23,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie l’abréviation « IFR » ?",
+    "choix": [
+      "Instrument Flight Rules.",
+      "Instrument Meteorological Conditions.",
+      "Bad Weather Flight Rules.",
+      "Commercial Flight Rules."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 24,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Un vol est considéré « vol à vue » si :",
+    "choix": [
+      "La visibilité en vol est supérieure à 8 km.",
+      "Le vol est conduit suivant les règles de vol à vue.",
+      "La visibilité en vol est supérieure à 5 km.",
+      "Le vol est conduit dans des conditions de vol à vue."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 25,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification de l’abréviation « VMC » ?",
+    "choix": [
+      "Instrument Flight Conditions.",
+      "Variable Meteorological Conditions.",
+      "Visual Meteorological Conditions.",
+      "Visual Flight Rules."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 26,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Deux avions à moteurs volent suivant des trajectoires convergentes à la même altitude.  Lequel doit s’écarter ?",
+    "choix": [
+      "Le plus léger doit monter.",
+      "Les deux doivent s’écarter sur leur droite.",
+      "Le plus lourd doit monter.",
+      "Les deux doivent s’écarter sur leur gauche."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 27,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Deux avions volent sur des trajectoires convergentes.  Lequel doit s’écarter ?",
+    "choix": [
+      "L’avion qui vole de gauche vers la droite a la priorité.",
+      "Les deux doivent s’écarter sur la droite.",
+      "L’avion qui vole de droite vers la gauche a la priorité.",
+      "Les deux doivent s’écarter sur la gauche."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 28,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Dans un espace de classe « D », un Boeing 737 et un Cessna 152 volent sur des routes convergentes.  Quel avion doit s’écarter ?",
+    "choix": [
+      "Le Cessna 152 parce que les vols commerciaux en IFR ont la priorité.",
+      "Le control du trafic aérien (ATC) doit décider lequel doit s’écarter.",
+      "L’avion volant de droite vers la gauche a priorité, l’autre doit s’écarter.",
+      "Le Boeing 737, parce qu’un avion de ligne a plus de réserve de puissance."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 29,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Laquelle des options suivantes n’est PAS une raison suffisante pour voler en dessous de la hauteur minimum requise ?",
+    "choix": [
+      "Décoller ou atterrir à un aérodrome.",
+      "Une approche sans atterrissage à un aérodrome.",
+      "Mauvaises conditions météorologiques dans le voisinage d’un aérodrome.",
+      "Le largage d’objets remorqués à un aérodrome."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 30,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Un avion monomoteur à pistons et un avion à turbopropulseur approchent face à face même altitude.  Quel avion doit changer sa trajectoire ?",
+    "choix": [
+      "L’avion à turbopropulseur doit céder le passage à l’avion monomoteur.",
+      "Les deux avions doivent modifier leur trajectoire vers la gauche.",
+      "Les deux avions doivent modifier leur trajectoire vers la droite.",
+      "L’avion monomoteur doit céder le passage à l’avion à turbopropulseur."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 31,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles distances par rapport aux nuages doivent être maintenues en vol VFR dans les espaces aériens de classe C, D et E ?",
+    "choix": [
+      "1500 m horizontalement, 1000 pieds verticalement.",
+      "1500 m horizontalement, 1000 m verticalement.",
+      "1000 m horizontalement, 1500 pieds verticalement.",
+      "1000 m horizontalement, 300 m verticalement."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 32,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "La visibilité vol minimum à 5000 pieds MSL dans les espaces B pour les vols VFR est :",
+    "choix": [
+      "8000 m",
+      "1500 m",
+      "3000 m",
+      "5000 m"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 33,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la visibilité vol minimum dans les espaces « C » pour un avion en vol VFR à 5000 pieds MSL ?",
+    "choix": [
+      "8000 m",
+      "1500 m",
+      "3000 m",
+      "5000 m"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 34,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la visibilité vol minimum dans les espaces « E » pour un avion en vol VFR au FL75 ?",
+    "choix": [
+      "8000 m",
+      "1500 m",
+      "3000 m",
+      "5000 m"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 35,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la visibilité vol minimum en espace « C » pour un avion en vol VFR au FL110 ?",
+    "choix": [
+      "5000 m",
+      "1500 m",
+      "3000 m",
+      "8000 m"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 36,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la visibilité vol minimum en espace « C » pour un avion en VFR au FL125 ?",
+    "choix": [
+      "5000 m",
+      "3000 m",
+      "1500 m",
+      "8000 m"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 37,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles sont les distances minimum par rapport aux nuages pour un vol VFR en espace « B » ?",
+    "choix": [
+      "Horizontalement 1500 m, verticalement 1000 m.",
+      "Horizontalement 1500 m, verticalement 300 m.",
+      "Horizontalement 1000 m, verticalement 1500 pieds.",
+      "Horizontalement 1000 m, verticalement 300 m."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 38,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles est la visibilité vol minimum en espace « C » en dessous du FL 100 pour un avion en VFR ?",
+    "choix": [
+      "5 km.",
+      "10 km.",
+      "1,5 km.",
+      "8 km."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 39,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la visibilité vol minimum en espace « C » à et au-dessus du FL 100 pour un avion qui vole en VFR ?",
+    "choix": [
+      "1,5 km.",
+      "5 km.",
+      "10 km.",
+      "8 km."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 40,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Le terme « plafond » (ceiling) est défini comme :",
+    "choix": [
+      "L’altitude de la base de la couche de nuages la plus basse.",
+      "La hauteur de la base de la couche de nuages qui couvre plus de la moitié du ciel en-dessous de 10 000 pieds.",
+      "La hauteur de la base de la couche de nuages la plus haute qui couvre plus de la moitié du ciel en dessous de 20 000 pieds.",
+      "La hauteur de la base de la couche de nuages la plus basse qui couvre plus de la moitié du ciel en dessous de 20 000 pieds."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 41,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Étant intercepté par un avion militaire durant le jour, quelle est la signification du signal suivant : mouvement alternatif des ailerons, suivi d’un virage lent à gauche ?",
+    "choix": [
+      "Préparez-vous pour un atterrissage de sécurité, vous êtes entré dans une zone interdite.",
+      "Vous entrez dans une zone réglementée, quittez l’espace immédiatement.",
+      "Suivez-moi.",
+      "Vous êtes hors de tout espace règlementé, vous pouvez continuer."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 42,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Etant intercepté de jour par un avion militaire, quelle est la signification du signal : changement soudain de cap de 90° ou plus et montée sans couper la trajectoire ?",
+    "choix": [
+      "Vous entrez dans une zone réglementée, quittez cet espace immédiatement.",
+      "Vous pouvez continuer votre vol.",
+      "Suivez-moi, je vais vous guider.",
+      "Préparez-vous pour un atterrissage de sécurité."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 43,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "L’altimètre est changé du QNH local à 1013.25 hPa…",
+    "choix": [
+      "À la hauteur de décision.",
+      "À 4000 pieds.",
+      "Lorsqu’on monte au-dessus de l’altitude de transition.",
+      "Lorsqu’on descend en dessous du FL 100."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 44,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Durant un vol au FL 80, l’altimètre doit être calibré sur :",
+    "choix": [
+      "1030.25 hPa.",
+      "1013.25 hPa.",
+      "Le QFE local.",
+      "Le QNH local."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 45,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est le but de la règle semi-circulaire ?",
+    "choix": [
+      "Éviter les collisions en réduisant la probabilité d’un trafic en sens opposé à la même altitude.",
+      "Voler sans plan de vol dans des zones publiées.",
+      "Permettre une montée ou descente en sécurité dans un circuit d’attente.",
+      "Éviter les collisions en suspendant les manœuvres de virage."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 46,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Parmi les options suivantes, quelles sont celles des modes transpondeur SSR ?",
+    "choix": [
+      "A, C, S",
+      "A, C, R",
+      "B, C, V",
+      "B, R, S"
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 47,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Un transpondeur qui a la capacité d’envoyer le niveau de pression actuel est :",
+    "choix": [
+      "Un décodeur pression.",
+      "Un transpondeur mode C ou S.",
+      "Un transpondeur mode A.",
+      "Un transpondeur approuvé pour les espaces « B »."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 48,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel code transpondeur indique une perte de communication radio ?",
+    "choix": [
+      "2000",
+      "7700",
+      "7000",
+      "7600"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 49,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel code transpondeur doit être affiché lors d’une panne radio sans aucune demande ?",
+    "choix": [
+      "7600",
+      "7700",
+      "7000",
+      "7500"
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 50,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel code transpondeur doit être affiché sans être demandé pendant une détresse ?",
+    "choix": [
+      "7600",
+      "7000",
+      "7700",
+      "7500"
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 51,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel service de trafic aérien est responsable pour la conduite sûre des vols ?",
+    "choix": [
+      "ALT (alerting service).",
+      "FIS (flight information service).",
+      "ATC (air traffic control)",
+      "AIS (aeronautical information service)."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 52,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quels services sont fournis par le service du contrôle du trafic aérien ?",
+    "choix": [
+      "TWR, APP, ACC.",
+      "APP, ACC, FIS.",
+      "ALR, SAR, TWR.",
+      "FIS, AIS, AFS."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 53,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle réponse est correcte concernant la séparation en espace aérien « E » ?",
+    "choix": [
+      "Le trafic IFR est séparé uniquement du trafic VFR.",
+      "Le trafic VFR est séparé du trafic VFR et du trafic IFR.",
+      "Le trafic VFR est séparé uniquement du trafic IFR.",
+      "Le trafic VFR n’est pas séparé de tout autre trafic."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 54,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quels services du trafic aérien peuvent être fournis dans une FIR (flight information region) ?",
+    "choix": [
+      "ATC, FIS.",
+      "FIS, ALR.",
+      "AIS, SAR.",
+      "ATC, AIS."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 55,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Un pilote peut contacter le FIS (flight information service) …",
+    "choix": [
+      "Par téléphone.",
+      "Par internet.",
+      "Par la visite en personne.",
+      "Par communication radio."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 56,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la phrase correcte en regard des turbulences de sillage ?",
+    "choix": [
+      "Danger jet blast.",
+      "Be careful wake winds.",
+      "Attention propwach.",
+      "Caution wake turbulence."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 57,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Laquelle des propositions suivantes indique un report de position correct ?",
+    "choix": [
+      "DEABC reaching « N ».",
+      "FJIDQ over « N » in FL 2500 ft.",
+      "GNTDX « N », 2500 ft.",
+      "OOMDX over « N » at 35"
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 58,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie l’abréviation « AIREP » ?",
+    "choix": [
+      "Aircraft report.",
+      "Aeronautical instrument requirement report.",
+      "Automatic identification report.",
+      "Aeronautical information report."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 59,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles informations sont fournies dans la partie générale (GEN) des AIP ?",
+    "choix": [
+      "Table des matières, classification des aérodromes...",
+      "Les icones de cartes, la liste des aides à la radio nav...",
+      "Les avertissements pour l’aviation, espaces ATS...",
+      "Les restrictions d’accès aux aéroports, ..."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 60,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quels sont les différentes parties des Publications d’Informations Aéronautiques (AIP) ?",
+    "choix": [
+      "GEN, MET, RAC.",
+      "GEN, COM, MET.",
+      "GEN, AGA, COM.",
+      "GEN, ENR, AD."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 61,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que trouve-t-on dans la partie « AD » des AIP ?",
+    "choix": [
+      "Des avertissements pour l’aviation, ...",
+      "La table des matières, la classification des aérodromes...",
+      "Les icones des cartes, aides radio, taxes...",
+      "Les restrictions d’accès aux aéroports, ..."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 62,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Le NOTAM ci-joint est valide jusqu’à : A1024/13 A) LOWW B) 1305211200 C) 1305211400 E)...",
+    "choix": [
+      "21/05/2013 14 :00 UTC.",
+      "13/10/2013 00 :00 UTC.",
+      "13-05/2013 12 :00 UTC.",
+      "21/05/2014 13 :00 UTC."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 63,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Un Pre-Flight Information Bulletin (PIB) est une présentation actuelle :",
+    "choix": [
+      "Informations OACI après le vol.",
+      "Informations AIP avant le vol.",
+      "Informations AIC après le vol.",
+      "NOTAM avant le vol."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 64,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Le terme « aerodrome elevation » est défini comme :",
+    "choix": [
+      "Le point le plus élevé de la zone d’atterrissage.",
+      "Le point le plus bas de la zone d’atterrissage.",
+      "Le point le plus élevé du parking.",
+      "La valeur moyenne de la hauteur de l’aire de manœuvre."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 65,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Le terme « runway » (piste) est défini comme :",
+    "choix": [
+      "Zone circulaire sur un aérodrome...",
+      "Zone rectangulaire sur un aérodrome terrestre préparé...",
+      "Zone rectangulaire préparée sur terre ou eau...",
+      "Zone rectangulaire sur un aérodrome préparé pour hélicoptères."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 66,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle proposition est correcte en regard de « taxi holding point » ?",
+    "choix": [
+      "Un point d’attente zone où l’avion doit arrêter à moins qu’une autorisation...",
+      "Un point d’attente observé pour le trafic IFR si conditions attentives...",
+      "Un point d’attente où un avion doit stopper sauf autorisation...",
+      "Un point d’attente indiquant la zone de sécurité..."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 67,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie une condition de piste reportée « WET » ?",
+    "choix": [
+      "Des taches d’eau visibles.",
+      "La surface de la piste est trempée, pas d’eau stagnante importante.",
+      "Une grande partie de la surface est inondée.",
+      "La piste est dégagée d’eau, de glace et de neige."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 68,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie une condition de piste reportée « DAMP » ?",
+    "choix": [
+      "Surface humide, mais pas de flaques importantes.",
+      "Changement de couleur sur la surface dû à l’humidité.",
+      "La piste est dégagée d’eau, de glace et de neige.",
+      "Une grande partie de la surface est inondée."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 69,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Qu’est-ce que « WATER PATCHES » signifient concernant l’état de la piste ?",
+    "choix": [
+      "Une grande partie de la surface est inondée.",
+      "Des taches d’eau stagnante sont visibles.",
+      "Surface mouillée, mais aucune tâche importante.",
+      "La piste est dégagée d’eau, de glace et de neige."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 70,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Comment un indicateur de direction de vent peut-il être marqué pour une meilleure visibilité ?",
+    "choix": [
+      "Monté au-dessus de la tour de contrôle.",
+      "Matériaux verts.",
+      "Entouré d’un cercle blanc.",
+      "Situé sur une grande surface noire."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 71,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification d’un signal lumineux rouge clignotant à un aérodrome en direction d’un avion en vol ?",
+    "choix": [
+      "Aérodrome dangereux, n’atterrissez pas.",
+      "Revenez pour atterrir...",
+      "Autorisé à atterrir.",
+      "Cédez le passage à un autre aéronef..."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 72,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification d’un signal lumineux vert clignotant à un aérodrome contrôlé vers un aéronef en vol ?",
+    "choix": [
+      "Retournez pour atterrir...",
+      "Autorisé à atterrir.",
+      "Céder le passage à un autre aéronef...",
+      "Aérodrome dangereux, ne pas atterrir."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 73,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie un signal lumineux vert continu à un aérodrome vers un avion en vol ?",
+    "choix": [
+      "Cédez le passage...",
+      "Autorisé à atterrir.",
+      "Revenez pour atterrir...",
+      "Aérodrome dangereux, n’atterrissez pas."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 74,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie un signal lumineux blanc clignotant à un aérodrome contrôlé vers un avion au sol ?",
+    "choix": [
+      "Autorisé à rouler.",
+      "Dégagez du taxiway ou de la piste.",
+      "Autorisé à décoller.",
+      "Retournez à votre point de départ."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 75,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification d’un signal lumineux rouge clignotant à un aérodrome contrôlé vers un avion au sol ?",
+    "choix": [
+      "Autorisé à décoller.",
+      "Autorisé à rouler.",
+      "Libérez rapidement la piste.",
+      "Revenez à votre point de départ."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 76,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification d’un signal lumineux vert clignotant à un aérodrome contrôlé vers un avion au sol ?",
+    "choix": [
+      "Autorisé à rouler.",
+      "Revenez à votre point de départ.",
+      "Atterrissez et dirigez-vous au parking.",
+      "Autorisé à décoller."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 77,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles est la forme d’un indicateur de direction d’atterrissage ?",
+    "choix": [
+      "L",
+      "Une flèche tout droit",
+      "Une flèche coudée",
+      "T"
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 78,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est le but de l’aire à signaux carrée sur un aérodrome ?",
+    "choix": [
+      "Elle contient des symboles pour indiquer les conditions de l’aérodrome.",
+      "Une zone éclairée...",
+      "L’avion taxi pour recevoir signaux lumineux...",
+      "Une zone pour ramasser ou déposer..."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 79,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Comment un pilote doit-il accuser réception des signaux reçus en vol ?",
+    "choix": [
+      "Modifier le régime moteur.",
+      "Pousser le gouvernail plusieurs fois.",
+      "Balancer les ailes (de jour).",
+      "Changer rapidement le pas de l’hélice."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 80,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que signifie un signal lumineux rouge constant vers un avion au sol ?",
+    "choix": [
+      "Atterrissez et dirigez-vous au parking.",
+      "Libérez le taxiway / la piste.",
+      "Revenez à votre point de départ.",
+      "Stop."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 81,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Comment deux pistes parallèles sont-elles désignées ?",
+    "choix": [
+      "La piste gauche a le suffixe « L », la piste droite « R ».",
+      "La piste gauche a le suffixe « L », l’autre reste inchangée.",
+      "La piste gauche a le suffixe « -1 », la droite « -2 ».",
+      "La piste gauche reste inchangée, la droite est +1."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 82,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Selon l’annexe 14 de l’OACI, de quelle couleur sont marquées les pistes ?",
+    "choix": [
+      "Bleu.",
+      "Blanc.",
+      "Jaune.",
+      "Vert."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 83,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Qu’est-ce qui est indiqué par des bandes longitudinales uniformes symétriques de part et d’autre de l’axe de piste ?",
+    "choix": [
+      "C’est l’endroit où la pente ILS touche la piste.",
+      "Ne touchez pas le sol avant elles.",
+      "Ne touchez pas le sol après elles.",
+      "On peut commencer à rouler à partir de cette position."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 84,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelles désignations pour 2 pistes parallèles sont correctes ?",
+    "choix": [
+      "06L et 06R",
+      "18 et 18-2",
+      "26 et 26R",
+      "24 et 25"
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 85,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Qu’est-ce qu’un PAPI (Precision Approach Path Indicator) ?",
+    "choix": [
+      "Une aide visuelle pour aider un contrôleur de tour...",
+      "Une aide visuelle pour guider les pilotes sur la bonne pente d’approche.",
+      "Un aide instrumentale pour acquérir l’approche correcte...",
+      "Une aide visuelle pour maintenir la bonne trajectoire de départ..."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 86,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Une balise d’aérodrome (ABN) est :",
+    "choix": [
+      "Une balise tournante sur un aéroport indiquant sa position aux pilotes au sol.",
+      "Une balise tournante au début de l’approche finale...",
+      "Une balise tournante installée sur un aéroport pour indiquer sa position aux pilotes en vol.",
+      "Une balise fixe installée sur un aéroport pour indiquer sa position..."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 87,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la couleur des feux de balisage latéraux des pistes ?",
+    "choix": [
+      "Rouges.",
+      "Blancs.",
+      "Bleus.",
+      "Verts."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 88,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la couleur des feux de fin de piste ?",
+    "choix": [
+      "Rouges.",
+      "Blancs.",
+      "Bleus.",
+      "Verts."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 89,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que montre le signal ALW-019 ci-contre ?",
+    "choix": [
+      "Point A sur une voie de circulation taxi.",
+      "La partie A d’une piste.",
+      "Le taxiway A.",
+      "La position de parking A"
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 90,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que montre le signal ALW-020 ci-dessous ?",
+    "choix": [
+      "La zone de parking est à 2500 m...",
+      "À partir de cette intersection, 2500 m de piste disponible.",
+      "La longueur totale de la piste est 2500 m...",
+      "2500 m pour atteindre le point de départ..."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 91,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification du signal ALW-011 sur un aérodrome ?",
+    "choix": [
+      "Atterrissages interdits pour une période plus longue.",
+      "Activité de planeurs en cours.",
+      "Attention, zone de manœuvre en mauvais état.",
+      "Tous les virages doivent être faits à droite."
+    ],
+    "bonne_reponse": 1
+  },
+  {
+    "id": 92,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quelle est la signification du signal au sol ALW-012 ci-dessous ?",
+    "choix": [
+      "Attention, zone de manœuvre en mauvais état.",
+      "Interdiction d’atterrir pour une période prolongée.",
+      "Après décollage/avant atterrissage, virages à droite.",
+      "Restriction des mouvements au sol sur dur."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 93,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Que veut dire « DETRESFA » ?",
+    "choix": [
+      "Phase d’incertitude.",
+      "Phase de recherche.",
+      "Phase de détresse.",
+      "Phase d’alerte."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 94,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Qui fournit le service de recherche et sauvetage ?",
+    "choix": [
+      "Seulement les organisations militaires.",
+      "Les organisations internationales approuvées.",
+      "Seulement les organisations civiles.",
+      "Les organisations militaires et civiles."
+    ],
+    "bonne_reponse": 3
+  },
+  {
+    "id": 95,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "De quelle manière un pilote peut-il confirmer un signal de recherche et sauvetage au sol en vol ?",
+    "choix": [
+      "Balancer les ailes.",
+      "Pousser le gouvernail de direction dans les deux sens...",
+      "Voler plusieurs fois une trajectoire parabolique...",
+      "Déployer/rétracter les volets plusieurs fois."
+    ],
+    "bonne_reponse": 0
+  },
+  {
+    "id": 96,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "En ce qui concerne l’enquête sur les accidents et incidents d’aéronefs, quels sont les trois catégories ?",
+    "choix": [
+      "Événement, crash, catastrophe.",
+      "Mésaventure, événement, événement grave.",
+      "Incident, incident sérieux, accident.",
+      "Événement, événement sérieux, accident."
+    ],
+    "bonne_reponse": 2
+  },
+  {
+    "id": 97,
+    "categorie": "EASA REGLEMENTATION",
+    "question": "Quel est le but premier d’une enquête sur un accident d’avion ?",
+    "choix": [
+      "Déterminer le coupable et conséquences juridiques.",
+      "Clarifier questions de responsabilité pour l’indemnisation.",
+      "Identifier les raisons et formuler des recommandations.",
+      "Travailler pour le ministère public..."
+    ],
+    "bonne_reponse": 2
+  }
 ]
