@@ -348,8 +348,6 @@ async function demarrerQuiz() {
  * chargerQuestions() – Charge le fichier JSON correspondant à la catégorie
  */
 async function chargerQuestions(cat) {
-    console.log(">>> chargerQuestions() cat=", cat);
-    // Normalize using our helper so that EASA sub‑categories match exactly
     const norm = getNormalizedCategory(cat);
     let fileName = "";
     switch (norm) {
@@ -377,6 +375,21 @@ async function chargerQuestions(cat) {
         case "EASA PROCEDURES":
             fileName = "section_easa_procedures_new.json";
             break;
+        case "EASA AERODYNAMIQUE":
+            fileName = "section_easa_aerodynamique.json";
+            break;
+        case "EASA NAVIGATION":
+            fileName = "section_easa_navigation.json";
+            break;
+        case "EASA CONNAISSANCE DE L'AVION":
+            fileName = "section_easa_connaissance_avion.json";
+            break;
+        case "EASA METEOROLOGIE":
+            fileName = "section_easa_meteorologie.json";
+            break;
+        case "EASA PERFORMANCE ET PLANIFICATION":
+            fileName = "section_easa_performance_planification.json";
+            break;
         case "EASA REGLEMENTATION":
             fileName = "section_easa_reglementation.json";
             break;
@@ -384,21 +397,14 @@ async function chargerQuestions(cat) {
             return;
         default:
             console.warn("Catégorie inconnue:", cat);
+            questions = [];
             return;
     }
     try {
         const res = await fetch(fileName);
-        if (!res.ok) {
-            console.error("Erreur HTTP", res.status);
-            questions = [];
-            return;
-        }
-        questions = await res.json();
-        // Réinitialiser les IDs pour commencer à 1
+        questions = res.ok ? await res.json() : [];
         questions.forEach((q, i) => q.id = i + 1);
-        console.log("    questions chargées:", questions.length);
-    } catch (error) {
-        console.error("Erreur fetch pour", fileName, error);
+    } catch {
         questions = [];
     }
 }
