@@ -66,8 +66,9 @@
       const normalized = {};
       for (const key in responses) {
         const r = responses[key];
-        // si l'état est "marquée", on définit marked à true
-        normalized[key] = { ...r, marked: r.status === "marquée" };
+        // use the DB 'marked' property or fallback to status==='marquée'
+        const isMarked = (r.marked === true) || (r.status === "marquée");
+        normalized[key] = { ...r, marked: isMarked };
       }
       return normalized;
     }

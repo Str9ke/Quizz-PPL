@@ -610,6 +610,10 @@ function afficherQuiz() {
   // Mettre à jour le nombre total de questions
   const totalQuestions = questions.length;
   document.getElementById('totalQuestions').textContent = totalQuestions;
+
+  // restore mark buttons on quiz display
+  afficherBoutonsMarquer();
+  updateMarkedCount();
 }
 
 /**
@@ -1045,6 +1049,10 @@ function afficherCorrection() {
     `;
   });
   cont.innerHTML = html;
+
+  // re-attach mark buttons on corrected view
+  afficherBoutonsMarquer();
+  updateMarkedCount();
 }
 
 /**
