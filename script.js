@@ -36,6 +36,10 @@ let countMasse = 0;
 let countMotor = 0;
 let countEasa = 0;
 let countAer = 0;      // ← nouveau compteur pour EASA AERODYNAMIQUE
+let countEasaConnaissance = 0;
+let countEasaMeteorologie = 0;
+let countEasaPerformance = 0;
+let countEasaReglementation = 0;
 let totalGlobal = 0;
 
 /**
@@ -69,12 +73,27 @@ async function initIndex() {
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
 
-  await chargerQuestions("EASA AERODYNAMIQUE");      // ← charger et compter
+  await chargerQuestions("EASA AERODYNAMIQUE");      // ← inclure ici
   countAer = questions.length;
+
+  // AJOUT DES NOUVELLES CATÉGORIES :
+  await chargerQuestions("EASA CONNAISSANCE AVION");
+  countEasaConnaissance = questions.length;
+
+  await chargerQuestions("EASA METEOROLOGIE");      // ← charger et compter
+  countEasaMeteorologie = questions.length;
+
+  await chargerQuestions("EASA PERFORMANCE PLANIFICATION");      // ← charger et compter
+  countEasaPerformance = questions.length;
+
+  await chargerQuestions("EASA REGLEMENTATION");      // ← charger et compter
+  countEasaReglementation = questions.length;
 
   totalGlobal = countRadio + countOp + countRegl + countConv +
                 countInstr + countMasse + countMotor +
-                countEasa + countAer;
+                countEasa + countAer +
+                countEasaConnaissance + countEasaMeteorologie +
+                countEasaPerformance + countEasaReglementation;
   
   updateCategorySelect();
 
@@ -262,7 +281,7 @@ async function chargerQuestions(cat) {
   console.log(">>> chargerQuestions() cat=", cat);
   let fileName = "";
   if (cat === "PROCÉDURE RADIO") {
-    fileName = "questions_procedure_radio.json"; 
+    fileName = "questions_procedure_radio.json";
   } else if (cat === "PROCÉDURES OPÉRATIONNELLES") {
     fileName = "questions_procedure_operationnelles.json";
   } else if (cat === "RÉGLEMENTATION") {
@@ -276,24 +295,64 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
-    fileName = "section_easa_procedures_new.json";
-  } else if (cat === "EASA AERODYNAMIQUE") {  // ← mapping JSON
+    fileName = "questions_easa_procedures_op.json";
+  } else if (cat === "EASA AERODYNAMIQUE") {
     fileName = "section_easa_aerodynamique.json";
+  } else if (cat === "EASA CONNAISSANCE AVION") {
+    fileName = "section_easa_connaissance_avion.json";
+  } else if (cat === "EASA METEOROLOGIE") {
+    fileName = "section_easa_meteorologie.json";
+  } else if (cat === "EASA NAVIGATION") {
+    fileName = "section_easa_navigation.json";
+  } else if (cat === "EASA PERFORMANCE PLANIFICATION") {
+    fileName = "section_easa_performance_planification.json";
+  } else if (cat === "EASA REGLEMENTATION") {
+    fileName = "section_easa_reglementation.json";
+  } else if (cat === "TOUTES") {
+    // "TOUTES" sera géré par loadAllQuestions()
+    return;
+  } else {
+    console.warn("Catégorie inconnue:", cat);
+    return;
   }
-  
   try {
     const res = await fetch(fileName);
     if (!res.ok) {
-      console.error("Erreur lors du chargement du fichier:", fileName, "status:", res.status);
-      questions = [];
-      return;
+      throw new Error("HTTP error " + res.status);
     }
     questions = await res.json();
+    // Réinitialiser les en-têtes de question pour qu'ils commencent à 1
+    questions.forEach((q, i) => q.id = i + 1);
     console.log("    questions chargées:", questions.length);
   } catch (error) {
     console.error("Erreur fetch pour", fileName, error);
     questions = [];
   }
+}
+
+// Ajout de la correspondance entre la valeur de la sélection et le chemin du fichier JSON
+const categoryFiles = {
+    "section_easa_aerodynamique": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_aerodynamique.json",
+    "section_easa_connaissance_avion": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_connaissance_avion.json",
+    "section_easa_meteorologie": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_meteorologie.json",
+    "section_easa_navigation": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_navigation.json",
+    "section_easa_performance_planification": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_performance_planification.json",
+    "section_easa_reglementation": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_reglementation.json"
+};
+// Lors du changement de la sélection, on charge le fichier adéquat
+document.getElementById("categorie-select").addEventListener("change", (e) => {
+    const selected = e.target.value;
+    const filePath = categoryFiles[selected];
+    if (filePath) {
+        loadQuestions(filePath);
+    }
+});
+// Fonction loadQuestions modifiée pour réinitialiser le compteur si besoin
+function loadQuestions(file) {
+    // ...existing code pour charger le JSON...
+    // Par exemple, une fois récupéré le JSON, vous pouvez réinitialiser/valider que chaque question a un id séquentiel :
+    // questions.forEach((q, i) => q.id = i+1);
+    // ...existing code...
 }
 
 /**
@@ -719,6 +778,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
   const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue + statsMasse.marquee;
   const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue + statsMotor.marquee;
   const totalEasa = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee;
+  const totalAer = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee; // Utiliser les mêmes stats que EASA AERODYNAMIQUE pour l'instant
 
   const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor + totalEasa;
   const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
@@ -803,6 +863,42 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
 
     <hr>
     <h2>Catégorie : EASA AERODYNAMIQUE</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA CONNAISSANCE AVION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA METEOROLOGIE</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA PERFORMANCE PLANIFICATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA REGLEMENTATION</h2>
     <p>Total : ${totalEasa} questions</p>
     <p>✅ Réussies : ${statsEasa.reussie}</p>
     <p>❌ Ratées : ${statsEasa.ratee}</p>

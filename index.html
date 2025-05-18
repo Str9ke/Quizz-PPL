@@ -62,7 +62,14 @@
     <!-- Sélection de la catégorie -->
     <label for="categorie">Catégorie :</label>
     <select id="categorie" onchange="categoryChanged()">
-      <!-- Options remplies dynamiquement par script.js -->
+      <option value="TOUTES">TOUTES LES QUESTIONS</option>
+      <option value="section_easa_aerodynamique">EASA AERODYNAMIQUE</option>
+      <option value="section_easa_connaissance_avion">EASA CONNAISSANCE AVION</option>
+      <option value="section_easa_meteorologie">EASA METEOROLOGIE</option>
+      <option value="section_easa_navigation">EASA NAVIGATION</option>
+      <option value="section_easa_performance_planification">EASA PERFORMANCE PLANIFICATION</option>
+      <option value="section_easa_reglementation">EASA REGLEMENTATION</option>
+      <!-- ... autres options déjà existantes ... -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
