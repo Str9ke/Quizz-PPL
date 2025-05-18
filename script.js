@@ -98,6 +98,11 @@ async function initIndex() {
   // Charger toutes les questions
   await loadAllQuestions();
   
+  // Load stored responses so marked flags are available
+  const uid = auth.currentUser.uid;
+  const docResp = await db.collection('quizProgress').doc(uid).get();
+  currentResponses = docResp.exists ? docResp.data().responses : {};
+  
   updateModeCounts();
 
   const p = document.getElementById('totalGlobalInfo');
@@ -534,14 +539,14 @@ function afficherBoutonsMarquer() {
   console.log(">>> afficherBoutonsMarquer()");
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
-    const questionId = currentQuestions[idx].id;
-    const key = `question_${selectedCategory}_${questionId}`;
+    const q = currentQuestions[idx];
+    const key = getKeyFor(q);
     const isMarked = currentResponses[key]?.marked;
 
     const markButton = document.createElement('button');
     markButton.textContent = isMarked ? "Supprimer" : "Marquer";
     markButton.className = isMarked ? "delete-button" : "mark-button";
-    markButton.onclick = () => toggleMarquerQuestion(questionId, markButton);
+    markButton.onclick = () => toggleMarquerQuestion(q.id, markButton);
     block.appendChild(markButton);
   });
 }
@@ -562,6 +567,10 @@ async function initQuiz() {
     } else {
       await chargerQuestions(selectedCategory);
     }
+    // Load stored responses for marking buttons
+    const uid = auth.currentUser.uid;
+    const docResp = await db.collection('quizProgress').doc(uid).get();
+    currentResponses = docResp.exists ? docResp.data().responses : {};
     afficherQuiz();
   }
 }
