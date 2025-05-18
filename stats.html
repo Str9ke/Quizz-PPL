@@ -38,16 +38,35 @@
     });
 
     async function afficherStats() {
-      // ...existing code that computes stats for non-EASA categories...
-      // For example, assume the non‐EASA stats HTML is built into:
-      let htmlNonEASA = "...existing non‐EASA stats HTML...";
-      
-      // Now compute the EASA sub‐category stats from Firestore.
+      // ...existing code that builds non-EASA stats HTML...
+      let htmlNonEASA = "...existing non-EASA stats HTML...";
+
       const uid = auth.currentUser?.uid;
       if (!uid) {
           console.error("Utilisateur non authentifié");
           return;
       }
+      let doc = await db.collection("quizProgress").doc(uid).get();
+      let responses = doc.exists ? doc.data().responses : {};
+
+      // Helper to normalize Firestore category values for EASA sub‑categories
+      function normalizeEASACategory(cat) {
+          if (!cat) return "";
+          let c = cat.trim().toUpperCase();
+          // Mapping if stored keys use a prefix (e.g., "SECTION_EASA_...")
+          if (c.startsWith("SECTION_EASA_")) {
+              if (c === "SECTION_EASA_AERODYNAMIQUE") return "EASA AERODYNAMIQUE";
+              if (c === "SECTION_EASA_NAVIGATION") return "EASA NAVIGATION";
+              if (c === "SECTION_EASA_CONNAISSANCE_AVION") return "EASA CONNAISSANCE DE L'AVION";
+              if (c === "SECTION_EASA_METEOROLOGIE") return "EASA METEOROLOGIE";
+              if (c === "SECTION_EASA_PERFORMANCE_PLANIFICATION") return "EASA PERFORMANCE ET PLANIFICATION";
+              if (c === "SECTION_EASA_REGLEMENTATION") return "EASA REGLEMENTATION";
+          }
+          // Otherwise, assume the stored value is already normalized
+          return c;
+      }
+
+      // Initialize counters for each EASA sub‑category
       let easaCats = {
         "EASA AERODYNAMIQUE": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
         "EASA NAVIGATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
@@ -56,32 +75,30 @@
         "EASA PERFORMANCE ET PLANIFICATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
         "EASA REGLEMENTATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }
       };
-      
-      try {
-          const doc = await db.collection("quizProgress").doc(uid).get();
-          const responses = doc.exists ? doc.data().responses : {};
-          for (let key in responses) {
-              const r = responses[key];
-              // Normalize the stored category using trimming and uppercase
-              let rCat = r.categorie ? r.categorie.trim().toUpperCase() : "";
-              // If Firestore stored raw keys differ (e.g. "SECTION_EASA_METEOROLOGIE") you can map them here:
-              // if (rCat.startsWith("SECTION_EASA_")) { rCat = easaMapping[rCat] || rCat; }
-              if (easaCats.hasOwnProperty(rCat)) {
-                if (r.status === "réussie") easaCats[rCat].reussie++;
-                else if (r.status === "ratée") easaCats[rCat].ratee++;
-                else if (r.status === "marquée") easaCats[rCat].marquee++;
-                else easaCats[rCat].nonvue++;
+
+      // Iterate over Firestore responses and aggregate stats using normalized category
+      for (let key in responses) {
+          let r = responses[key];
+          let cat = normalizeEASACategory(r.categorie);
+          if (easaCats.hasOwnProperty(cat)) {
+              if (r.status === "réussie") {
+                  easaCats[cat].reussie++;
+              } else if (r.status === "ratée") {
+                  easaCats[cat].ratee++;
+              } else if (r.status === "marquée") {
+                  easaCats[cat].marquee++;
+              } else {
+                  easaCats[cat].nonvue++;
               }
           }
-      } catch (e) {
-          console.error("Erreur lors de la récupération des stats EASA:", e);
       }
-      
+
+      // Build HTML for each EASA sub‑category based on Firestore data
       let htmlEASA = "";
       for (let cat in easaCats) {
-        const stats = easaCats[cat];
-        const total = stats.reussie + stats.ratee + stats.nonvue + stats.marquee;
-        const perc = total ? Math.round((stats.reussie * 100) / total) : 0;
+        let stats = easaCats[cat];
+        let total = stats.reussie + stats.ratee + stats.nonvue + stats.marquee;
+        let perc = total ? Math.round((stats.reussie * 100) / total) : 0;
         htmlEASA += `
           <h2>Catégorie : ${cat}</h2>
           <p>Total : ${total} questions</p>
@@ -93,7 +110,7 @@
           <hr>
         `;
       }
-      // Concatenate non‐EASA stats with the EASA blocks
+      // Concatenate non-EASA and EASA HTML
       document.getElementById("statsContainer").innerHTML = htmlNonEASA + htmlEASA;
     }
   </script>
