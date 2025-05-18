@@ -665,11 +665,11 @@ async function validerReponses() {
   currentQuestions.forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
     const key = getKeyFor(q);
-    // always treat unanswered as "ratée", but preserve any previous marked flag
-    const prev = currentResponses[key] || {};
-    const wasMarked = (prev.marked === true);
-    const status = (sel && parseInt(sel.value) === q.bonne_reponse) ? 'réussie' : 'ratée';
-    responsesToSave[key] = { category: q.categorie, questionId: q.id, status, marked: wasMarked };
+    // Preserve any already marked flag; default to false if absent.
+    const prevMarked = currentResponses[key]?.marked === true;
+    // If no selection, then status is 'ratée'
+    const status = sel ? (parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée') : 'ratée';
+    responsesToSave[key] = { category: q.categorie, questionId: q.id, status, marked: prevMarked };
     if (status === 'réussie') correctCount++;
   });
 
@@ -682,40 +682,33 @@ async function validerReponses() {
       Vous avez <strong>${correctCount}</strong> bonnes réponses 
       sur <strong>${currentQuestions.length}</strong>.
     `;
-    // Faire défiler la page vers le haut et ajuster pour Firefox et smartphones
     rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Sauvegarder les réponses dans Firestore
   try {
     await db.collection('quizProgress').doc(uid).set(
       { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    // update local cache to preserve marks (do not overwrite mark if question remains unanswered)
+    // Merge: if a question was already marked, ensure it stays marked.
     Object.keys(responsesToSave).forEach(key => {
-      if (!currentResponses[key] || !currentResponses[key].marked) {
-        currentResponses[key] = responsesToSave[key];
-      } else {
-        // if already marked, force mark true
-        currentResponses[key].marked = true;
-        // ensure status is updated to 'ratée' if unanswered
-        if (!document.querySelector(`input[name="q${currentResponses[key].questionId}"]:checked`))
-          currentResponses[key].status = 'ratée';
+      if (currentResponses[key]?.marked) {
+        responsesToSave[key].marked = true;
       }
+      currentResponses[key] = responsesToSave[key];
     });
+    console.log("Réponses sauvegardées (marked conservé):", responsesToSave);
   } catch (e) {
     console.error("Erreur sauvegarde validerReponses:", e);
   }
 
-  // Désactiver le bouton "Valider les réponses"
+  // Désactiver le bouton "Valider les réponses", mettre à jour les compteurs et re-afficher les boutons.
   const validateButton = document.querySelector('button[onclick="validerReponses()"]');
   if (validateButton) {
     validateButton.disabled = true;
     validateButton.classList.add('disabled-button');
   }
 
-  // Afficher les boutons "Marquer" après validation
   updateModeCounts();
   afficherBoutonsMarquer();
 }
