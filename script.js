@@ -825,15 +825,12 @@ function computeStatsForFirestore(categoryQuestions, responses) {
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
     const r = responses[key] || {};
-    if (r.marked) {
-      marquee++;
-    } else if (r.status === 'réussie') {
-      reussie++;
-    } else if (r.status === 'ratée') {
-      ratee++;
-    } else {
-      nonvue++;
-    }
+    // compter toujours réussite/échec/non-vu
+    if (r.status === 'réussie')      reussie++;
+    else if (r.status === 'ratée')    ratee++;
+    else                               nonvue++;
+    // marquée en supplément
+    if (r.marked)                     marquee++;
   });
   return { reussie, ratee, nonvue, marquee };
 }
@@ -1192,20 +1189,8 @@ async function sauvegarderProgression() {
 
   let progressData = {
     category: selectedCategory,
-    currentQuestionIndex: 0, // À ajuster selon la logique de reprise
-    responses: {},
-    stats: {}
+    currentQuestionIndex: 0 // À ajuster selon la logique de reprise
   };
-
-  currentQuestions.forEach(q => {
-    const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
-    if (sel) {
-      progressData.responses[q.id] = parseInt(sel.value);
-    }
-  });
-
-  // Calculer les statistiques complètes
-  progressData.stats = computeProgress();
 
   const uid = auth.currentUser.uid;
   console.log("Données à sauvegarder :", progressData);
