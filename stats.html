@@ -8,7 +8,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="script.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA571OMe9w5ldJLcIwkT9bN6zd_Qn_Y9GU",
@@ -26,7 +25,9 @@
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-
+  </script>
+  <script src="script.js"></script>
+  <script>
     const categoriesList = [
       "PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
       "CONNAISSANCE DE L’AVION","INSTRUMENTATION","MASSE ET CENTRAGE","MOTORISATION",
