@@ -683,13 +683,13 @@ async function validerReponses() {
   }
 
   // Sauvegarder les réponses dans Firestore
+  let mergedResponses = { ...currentResponses, ...responsesToSave };
   try {
     await db.collection('quizProgress').doc(uid).set(
-      { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+      { responses: mergedResponses, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    Object.assign(currentResponses, responsesToSave);
-    console.log("Réponses sauvegardées avec marked :", responsesToSave);
+    Object.assign(currentResponses, mergedResponses);
   } catch (e) {
     console.error("Erreur sauvegarde validerReponses:", e);
   }
