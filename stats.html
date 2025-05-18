@@ -36,6 +36,60 @@
         window.location = 'index.html';
       }
     });
+
+    async function afficherStats() {
+      // ...existing code that computes stats for non-EASA categories...
+      // Assume these are rendered into htmlNonEASA:
+      let htmlNonEASA = "...existing non-EASA stats HTML...";
+
+      // Now, compute statistics for the EASA sub-categories using Firestore
+      const uid = auth.currentUser?.uid;
+      let easaCategories = {
+        "EASA AERODYNAMIQUE": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+        "EASA NAVIGATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+        "EASA CONNAISSANCE DE L’AVION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+        "EASA METEOROLOGIE": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+        "EASA PERFORMANCE ET PLANIFICATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
+        "EASA REGLEMENTATION": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }
+      };
+      
+      try {
+          let doc = await db.collection("quizProgress").doc(uid).get();
+          let responses = doc.exists ? doc.data().responses : {};
+          for (let key in responses) {
+            let r = responses[key];
+            // Ensure the category is in uppercase for proper matching
+            let cat = r.categorie ? r.categorie.trim().toUpperCase() : "";
+            if (easaCategories.hasOwnProperty(cat)) {
+              if (r.status === "réussie") easaCategories[cat].reussie++;
+              else if (r.status === "ratée") easaCategories[cat].ratee++;
+              else if (r.status === "marquée") easaCategories[cat].marquee++;
+              else easaCategories[cat].nonvue++;
+            }
+          }
+      } catch(e) {
+          console.error("Erreur lors de la récupération des stats EASA:", e);
+      }
+      
+      let htmlEASA = "";
+      for (let cat in easaCategories) {
+        let stats = easaCategories[cat];
+        let total = stats.reussie + stats.ratee + stats.nonvue + stats.marquee;
+        let perc = total ? Math.round((stats.reussie * 100) / total) : 0;
+        htmlEASA += `
+          <h2>Catégorie : ${cat}</h2>
+          <p>Total : ${total} questions</p>
+          <p>✅ Réussies : ${stats.reussie}</p>
+          <p>❌ Ratées : ${stats.ratee}</p>
+          <p>👀 Non vues : ${stats.nonvue}</p>
+          <p>📌 Marquées : ${stats.marquee}</p>
+          <div class="progressbar"><div class="progress" style="height:10px; background-color:yellow; width:${perc}%;"></div></div>
+          <hr>
+        `;
+      }
+      // Concatenate the non-EASA stats with the EASA blocks
+      document.getElementById("statsContainer").innerHTML = htmlNonEASA + htmlEASA;
+    }
   </script>
 </head>
 <body>
