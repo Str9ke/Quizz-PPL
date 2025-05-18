@@ -327,40 +327,57 @@ async function demarrerQuiz() {
  */
 async function chargerQuestions(cat) {
     console.log(">>> chargerQuestions() cat=", cat);
+    // Normalize using our helper so that EASA sub‑categories match exactly
+    const norm = getNormalizedCategory(cat);
     let fileName = "";
-    if (cat === "PROCÉDURE RADIO") {
-        fileName = "questions_procedure_radio.json";
-    } else if (cat === "PROCÉDURES OPÉRATIONNELLES") {
-        fileName = "questions_procedure_operationnelles.json";
-    } else if (cat === "RÉGLEMENTATION") {
-        fileName = "questions_reglementation.json";
-    } else if (cat === "CONNAISSANCE DE L’AVION") {
-        fileName = "questions_connaissance_avion.json";
-    } else if (cat === "INSTRUMENTATION") {
-        fileName = "questions_instrumentation.json";
-    } else if (cat === "MASSE ET CENTRAGE") {
-        fileName = "questions_masse_et_centrage.json";
-    } else if (cat === "MOTORISATION") {
-        fileName = "questions_motorisation.json";
-    } else if (cat === "EASA PROCEDURES") {
-        fileName = "section_easa_procedures_new.json";
-    } else if (cat === "EASA AERODYNAMIQUE") {
-        fileName = "section_easa_aerodynamique.json";
-    } else if (cat === "EASA NAVIGATION") {
-        fileName = "section_easa_navigation.json";
-    } else if (cat === "EASA METEOROLOGIE" || cat === "section_easa_meteorologie") {
-        fileName = "section_easa_meteorologie.json";
-    } else if (cat === "EASA PERFORMANCE ET PLANIFICATION" || cat === "section_easa_performance_planification") {
-        fileName = "section_easa_performance_planification.json";
-    } else if (cat === "EASA CONNAISSANCE DE L'AVION" || cat === "section_easa_connaissance_avion") {
-        fileName = "section_easa_connaissance_avion.json";
-    } else if (cat === "EASA REGLEMENTATION" || cat === "section_easa_reglementation") {
-        fileName = "section_easa_reglementation.json";
-    } else if (cat === "TOUTES") {
-        return;
-    } else {
-        console.warn("Catégorie inconnue:", cat);
-        return;
+    switch (norm) {
+        case "PROCÉDURE RADIO":
+            fileName = "questions_procedure_radio.json";
+            break;
+        case "PROCÉDURES OPÉRATIONNELLES":
+            fileName = "questions_procedure_operationnelles.json";
+            break;
+        case "RÉGLEMENTATION":
+            fileName = "questions_reglementation.json";
+            break;
+        case "CONNAISSANCE DE L’AVION":
+            fileName = "questions_connaissance_avion.json";
+            break;
+        case "INSTRUMENTATION":
+            fileName = "questions_instrumentation.json";
+            break;
+        case "MASSE ET CENTRAGE":
+            fileName = "questions_masse_et_centrage.json";
+            break;
+        case "MOTORISATION":
+            fileName = "questions_motorisation.json";
+            break;
+        case "EASA PROCEDURES":
+            fileName = "section_easa_procedures_new.json";
+            break;
+        case "EASA AERODYNAMIQUE":
+            fileName = "section_easa_aerodynamique.json";
+            break;
+        case "EASA NAVIGATION":
+            fileName = "section_easa_navigation.json";
+            break;
+        case "EASA METEOROLOGIE":
+            fileName = "section_easa_meteorologie.json";
+            break;
+        case "EASA PERFORMANCE ET PLANIFICATION":
+            fileName = "section_easa_performance_planification.json";
+            break;
+        case "EASA CONNAISSANCE DE L'AVION":
+            fileName = "section_easa_connaissance_avion.json";
+            break;
+        case "EASA REGLEMENTATION":
+            fileName = "section_easa_reglementation.json";
+            break;
+        case "TOUTES":
+            return;
+        default:
+            console.warn("Catégorie inconnue:", cat);
+            return;
     }
     try {
         const res = await fetch(fileName);
