@@ -340,22 +340,19 @@ async function initQuiz() {
   modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
+  const catNorm = getNormalizedCategory(selectedCategory);
   // load questions based on selection
-  if (selectedCategory === "TOUTES") {
-    await loadAllQuestions();
+  if (stored) {
+    // ...existing code for resuming quiz...
   } else {
-    await chargerQuestions(selectedCategory);
+    if (catNorm === "TOUTES") {
+      await loadAllQuestions();
+    } else {
+      await chargerQuestions(catNorm);
+    }
+    await filtrerQuestions(modeQuiz, nbQuestions);
   }
-
-  // filter into currentQuestions
-  await filtrerQuestions(modeQuiz, nbQuestions);
-
-  // fetch & normalize responses
-  const uid = auth.currentUser.uid;
-  const doc = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
-
-  // display
+  console.log("Loaded questions:", currentQuestions?.length || 0);
   afficherQuiz();
 }
 
@@ -580,22 +577,19 @@ async function initQuiz() {
   modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
+  const catNorm = getNormalizedCategory(selectedCategory);
   // load questions based on selection
-  if (selectedCategory === "TOUTES") {
-    await loadAllQuestions();
+  if (stored) {
+    // ...existing code for resuming quiz...
   } else {
-    await chargerQuestions(selectedCategory);
+    if (catNorm === "TOUTES") {
+      await loadAllQuestions();
+    } else {
+      await chargerQuestions(catNorm);
+    }
+    await filtrerQuestions(modeQuiz, nbQuestions);
   }
-
-  // filter into currentQuestions
-  await filtrerQuestions(modeQuiz, nbQuestions);
-
-  // fetch & normalize responses
-  const uid = auth.currentUser.uid;
-  const doc = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
-
-  // display
+  console.log("Loaded questions:", currentQuestions?.length || 0);
   afficherQuiz();
 }
 
