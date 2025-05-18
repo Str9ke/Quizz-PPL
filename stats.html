@@ -126,9 +126,12 @@
 
     function updateStats() {
       // ...existing code...
-      // Exemple d'ajout pour considérer les questions non répondues comme ratées
-      if (question.isMissed) {
-          missedCount++;
+      // Adapter la condition pour intégrer les questions marquées
+      // dans successCount ou failCount selon la bonne_reponse
+      if (question.isCorrect /* ...existing condition... */) {
+        successCount++;
+      } else {
+        failCount++;
       }
       // ...existing code...
     }
