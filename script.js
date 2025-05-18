@@ -72,7 +72,7 @@ async function initIndex() {
   countOp = questions.length;
   await chargerQuestions("RÉGLEMENTATION");
   countRegl = questions.length;
-  await chargerQuestions("CONNAISSANCE DE L’AVION");
+  await chargerQuestions("CONNAISSANCE DE L'AVION");
   countConv = questions.length;
   await chargerQuestions("INSTRUMENTATION");
   countInstr = questions.length;
@@ -130,7 +130,7 @@ async function initIndex() {
     "PROCÉDURE RADIO",
     "PROCÉDURES OPÉRATIONNELLES",
     "RÉGLEMENTATION",
-    "CONNAISSANCE DE L’AVION",
+    "CONNAISSANCE DE L'AVION",
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
@@ -160,7 +160,7 @@ async function loadAllQuestions() {
     "PROCÉDURE RADIO",
     "PROCÉDURES OPÉRATIONNELLES",
     "RÉGLEMENTATION",
-    "CONNAISSANCE DE L’AVION",
+    "CONNAISSANCE DE L'AVION",
     "INSTRUMENTATION",
     "MASSE ET CENTRAGE",
     "MOTORISATION",
@@ -196,7 +196,7 @@ function updateCategorySelect() {
     { value: "PROCÉDURE RADIO", display: "PROCÉDURE RADIO", count: countRadio },
     { value: "PROCÉDURES OPÉRATIONNELLES", display: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
     { value: "RÉGLEMENTATION", display: "RÉGLEMENTATION", count: countRegl },
-    { value: "CONNAISSANCE DE L’AVION", display: "CONNAISSANCE DE L’AVION", count: countConv },
+    { value: "CONNAISSANCE DE L'AVION", display: "CONNAISSANCE DE L’AVION", count: countConv },
     { value: "INSTRUMENTATION", display: "INSTRUMENTATION", count: countInstr },
     { value: "MASSE ET CENTRAGE", display: "MASSE ET CENTRAGE", count: countMasse },
     { value: "MOTORISATION", display: "MOTORISATION", count: countMotor },
@@ -360,7 +360,7 @@ async function chargerQuestions(cat) {
         case "RÉGLEMENTATION":
             fileName = "questions_reglementation.json";
             break;
-        case "CONNAISSANCE DE L’AVION":
+        case "CONNAISSANCE DE L'AVION":
             fileName = "questions_connaissance_avion.json";
             break;
         case "INSTRUMENTATION":
@@ -788,7 +788,7 @@ async function initStats() {
       "PROCÉDURE RADIO",
       "PROCÉDURES OPÉRATIONNELLES",
       "RÉGLEMENTATION",
-      "CONNAISSANCE DE L’AVION",
+      "CONNAISSANCE DE L'AVION",
       "INSTRUMENTATION",
       "MASSE ET CENTRAGE",
       "MOTORISATION",
@@ -876,7 +876,7 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
-    <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
+    <h2>Catégorie : CONNAISSANCE DE L'AVION</h2>
     <p>Total : ${totalConv} questions</p>
     <p>✅ Réussies : ${statsConv.reussie}</p>
     <p>❌ Ratées : ${statsConv.ratee}</p>
@@ -1238,7 +1238,7 @@ const categories = [
   { name: "PROCÉDURE RADIO", count: 0 },
   { name: "PROCÉDURES OPÉRATIONNELLES", count: 0 },
   { name: "RÉGLEMENTATION", count: 0 },
-  { name: "CONNAISSANCE DE L’AVION", count: 0 },
+  { name: "CONNAISSANCE DE L'AVION", count: 0 },
   { name: "INSTRUMENTATION", count: 0 },
   { name: "MASSE ET CENTRAGE", count: 0 },
   { name: "MOTORISATION", count: 0 },
