@@ -217,8 +217,13 @@ async function categoryChanged() {
  */
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
-  let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+  // For the current category or "TOUTES"
+  const currentArray = (selectedCategory === "TOUTES")
+    ? questions
+    : questions.filter(q => getNormalizedCategory(q.categorie) === selectedCategory);
+
+  const total = currentArray.length;
+  let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
 
   const uid = auth.currentUser?.uid;
   if (!uid) {
@@ -227,30 +232,23 @@ async function updateModeCounts() {
   }
 
   try {
-    // Récupérer le document de progression du quiz pour l'utilisateur
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses : {};
 
-    // Pour les questions affichées, comptons ratées, marquées et non vues
-    questions.forEach(q => {
+    currentArray.forEach(q => {
       const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
-        if (resp.status === 'ratée') nbRatees++;
-        if (resp.status === 'marquée') nbMarquees++;
+        if (resp.status === 'réussie') nbReussies++;
+        else if (resp.status === 'ratée') nbRatees++;
+        else if (resp.status === 'marquée') nbMarquees++;
       } else {
         nbNonvues++;
       }
     });
-    const nbRateesNonvues = nbRatees + nbNonvues;
 
-    // Comptabiliser le nombre de réponses réussies directement à partir des données Firestore
-    let nbReussies = 0;
-    for (const key in responses) {
-      if (responses[key].status === 'réussie') {
-        nbReussies++;
-      }
-    }
+    // “Ratées+Non vues” is explicitly ratees + nonvues
+    const nbRateesNonvues = nbRatees + nbNonvues;
 
     const modeSelect = document.getElementById('mode');
     modeSelect.innerHTML = `
