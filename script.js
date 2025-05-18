@@ -41,6 +41,7 @@ let countEasaConnaissance = 0;
 let countEasaMeteorologie = 0;
 let countEasaPerformance = 0;
 let countEasaReglementation = 0;
+let countEasaNavigation = 0; // ← compteur pour EASA NAVIGATION
 let totalGlobal = 0;
 
 /**
@@ -70,6 +71,8 @@ async function initIndex() {
   // Ajouter EASA AERODYNAMIQUE : charger à partir du fichier section_easa_navigation.json
   await chargerQuestions("EASA AERODYNAMIQUE");
   countEasaAero = questions.length;
+  await chargerQuestions("EASA NAVIGATION");
+  countEasaNavigation = questions.length;
   await chargerQuestions("section_easa_connaissance_avion");
   countEasaConnaissance = questions.length;
   await chargerQuestions("section_easa_meteorologie");
@@ -81,7 +84,7 @@ async function initIndex() {
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
                 countInstr + countMasse + countMotor +
-                countEasa + countEasaAero +
+                countEasa + countEasaAero + countEasaNavigation +
                 countEasaConnaissance + countEasaMeteorologie +
                 countEasaPerformance + countEasaReglementation;
   
@@ -143,6 +146,7 @@ async function loadAllQuestions() {
     "MOTORISATION",
     "EASA PROCEDURES",
     "EASA AERODYNAMIQUE",
+    "EASA NAVIGATION",
     "EASA CONNAISSANCE DE L'AVION",
     "EASA METEOROLOGIE",
     "EASA PERFORMANCE ET PLANIFICATION",
@@ -178,6 +182,7 @@ function updateCategorySelect() {
     { value: "MOTORISATION", display: "MOTORISATION", count: countMotor },
     { value: "EASA PROCEDURES", display: "EASA PROCEDURES", count: countEasa },
     { value: "EASA AERODYNAMIQUE", display: "EASA AERODYNAMIQUE", count: countEasaAero },
+    { value: "EASA NAVIGATION", display: "EASA NAVIGATION", count: countEasaNavigation },
     { value: "EASA CONNAISSANCE DE L'AVION", display: "EASA CONNAISSANCE DE L'AVION", count: countEasaConnaissance },
     { value: "EASA METEOROLOGIE", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
     { value: "EASA PERFORMANCE ET PLANIFICATION", display: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
@@ -296,13 +301,13 @@ async function chargerQuestions(cat) {
   } else if (cat === "EASA PROCEDURES") {
     fileName = "questions_easa_procedures_op.json";
   } else if (cat === "EASA AERODYNAMIQUE") {
+    fileName = "section_easa_aerodynamique.json";
+  } else if (cat === "EASA NAVIGATION") {
     fileName = "section_easa_navigation.json";
   } else if (cat === "section_easa_connaissance_avion") {
     fileName = "section_easa_connaissance_avion.json";
   } else if (cat === "section_easa_meteorologie") {
     fileName = "section_easa_meteorologie.json";
-  } else if (cat === "section_easa_navigation") {
-    fileName = "section_easa_navigation.json";
   } else if (cat === "section_easa_performance_planification") {
     fileName = "section_easa_performance_planification.json";
   } else if (cat === "section_easa_reglementation") {
@@ -872,6 +877,15 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
     <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
 
     <hr>
+    <h2>Catégorie : EASA NAVIGATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
     <h2>Catégorie : EASA CONNAISSANCE AVION</h2>
     <p>Total : ${totalEasa} questions</p>
     <p>✅ Réussies : ${statsEasa.reussie}</p>
@@ -1175,7 +1189,8 @@ const categories = [
   { name: "MASSE ET CENTRAGE", count: 0 },
   { name: "MOTORISATION", count: 0 },
   { name: "EASA PROCEDURES", count: 0 },
-  { name: "EASA AERODYNAMIQUE", count: 0 }
+  { name: "EASA AERODYNAMIQUE", count: 0 },
+  { name: "EASA NAVIGATION", count: 0 }
 ];
 
 function displayCategories() {
