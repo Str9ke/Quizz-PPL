@@ -241,41 +241,30 @@ function fixQuotes(str) {
 
 function getNormalizedCategory(cat) {
   if (!cat) return "TOUTES";
-  // Unify curly quotes, underscores, casing, etc.
-  cat = fixQuotes(cat)
-    .replace(/_/g, ' ')
-    .trim()
-    .toLowerCase();
+  cat = fixQuotes(cat).replace(/_/g,' ').trim().toLowerCase();
 
-  // Force these four EASA subcat strings to match JSON data
-  if (cat.includes("meteorologie")) return "EASA METEOROLOGIE";
-  if (cat.includes("connaissance avion")) return "EASA CONNAISSANCE DE L'AVION";
+  // map section_easa_* keys
+  if (cat.includes("procedures"))      return "EASA PROCEDURES";
+  if (cat.includes("aerodynamique"))   return "EASA AERODYNAMIQUE";
+  if (cat.includes("navigation"))      return "EASA NAVIGATION";
+  if (cat.includes("connaissance avion"))   return "EASA CONNAISSANCE DE L'AVION";
+  if (cat.includes("meteorologie"))    return "EASA METEOROLOGIE";
   if (cat.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
-  if (cat.includes("reglementation")) return "EASA REGLEMENTATION";
-  
+  if (cat.includes("reglementation"))  return "EASA REGLEMENTATION";
+
   return cat.toUpperCase();
 }
 
-// Add an explicit mapping for the four problematic EASA sub‑categories.
-const easaMapping = {
-  "section_easa_connaissance_avion": "EASA CONNAISSANCE DE L'AVION",
-  "section_easa_meteorologie": "EASA METEOROLOGIE",
-  "section_easa_performance_planification": "EASA PERFORMANCE ET PLANIFICATION",
-  "section_easa_reglementation": "EASA REGLEMENTATION"
-};
-
-// For questions stored in Firestore we assume their 'categorie' is already in uppercase.
-function getFirestoreCategory(cat) {
-  return cat ? cat.trim().toUpperCase() : "";
-}
-
-// Return the normalized string for the selected category as used in Firestore keys.
 function getNormalizedSelectedCategory(selected) {
-  if (!selected || selected === "TOUTES") return "TOUTES";
-  // If the selected category is one of the four, use mapping.
-  if (selected.startsWith("section_easa_")) {
-    return easaMapping[selected] || selected.toUpperCase();
-  }
+  if (!selected || selected==="TOUTES") return "TOUTES";
+  const s=selected.replace(/_/g,' ').trim().toLowerCase();
+  if (s.includes("procedures"))      return "EASA PROCEDURES";
+  if (s.includes("aerodynamique"))   return "EASA AERODYNAMIQUE";
+  if (s.includes("navigation"))      return "EASA NAVIGATION";
+  if (s.includes("connaissance avion"))   return "EASA CONNAISSANCE DE L'AVION";
+  if (s.includes("meteorologie"))    return "EASA METEOROLOGIE";
+  if (s.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
+  if (s.includes("reglementation"))  return "EASA REGLEMENTATION";
   return selected.toUpperCase();
 }
 
