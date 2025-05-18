@@ -48,47 +48,35 @@ let totalGlobal = 0;
 async function initIndex() {
   console.log(">>> initIndex()");
   
-  // Charger les questions pour chaque catégorie
+  // Chargement des autres catégories
   await chargerQuestions("PROCÉDURE RADIO");
   countRadio = questions.length;
-
   await chargerQuestions("PROCÉDURES OPÉRATIONNELLES");
   countOp = questions.length;
-
   await chargerQuestions("RÉGLEMENTATION");
   countRegl = questions.length;
-
   await chargerQuestions("CONNAISSANCE DE L’AVION");
   countConv = questions.length;
-  
   await chargerQuestions("INSTRUMENTATION");
   countInstr = questions.length;
-  
   await chargerQuestions("MASSE ET CENTRAGE");
   countMasse = questions.length;
-  
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
-
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
-
-  await chargerQuestions("EASA AERODYNAMIQUE");      // ← inclure ici
+  await chargerQuestions("EASA AERODYNAMIQUE");
   countAer = questions.length;
-
-  // AJOUT DES NOUVELLES CATÉGORIES :
-  await chargerQuestions("EASA CONNAISSANCE AVION");
+  // Chargement des nouvelles catégories avec clés identiques à celles du select
+  await chargerQuestions("section_easa_connaissance_avion");
   countEasaConnaissance = questions.length;
-
-  await chargerQuestions("EASA METEOROLOGIE");      // ← charger et compter
+  await chargerQuestions("section_easa_meteorologie");
   countEasaMeteorologie = questions.length;
-
-  await chargerQuestions("EASA PERFORMANCE PLANIFICATION");      // ← charger et compter
+  await chargerQuestions("section_easa_performance_planification");
   countEasaPerformance = questions.length;
-
-  await chargerQuestions("EASA REGLEMENTATION");      // ← charger et compter
+  await chargerQuestions("section_easa_reglementation");
   countEasaReglementation = questions.length;
-
+  
   totalGlobal = countRadio + countOp + countRegl + countConv +
                 countInstr + countMasse + countMotor +
                 countEasa + countAer +
@@ -182,7 +170,11 @@ function updateCategorySelect() {
     { name: "MASSE ET CENTRAGE", count: countMasse },
     { name: "MOTORISATION", count: countMotor },
     { name: "EASA PROCEDURES", count: countEasa },
-    { name: "EASA AERODYNAMIQUE", count: countAer }   // ← nouvelle catégorie
+    { name: "EASA AERODYNAMIQUE", count: countAer },
+    { name: "section_easa_connaissance_avion", count: countEasaConnaissance },
+    { name: "section_easa_meteorologie", count: countEasaMeteorologie },
+    { name: "section_easa_performance_planification", count: countEasaPerformance },
+    { name: "section_easa_reglementation", count: countEasaReglementation }
   ];
 
   categories.forEach(cat => {
@@ -298,15 +290,13 @@ async function chargerQuestions(cat) {
     fileName = "questions_easa_procedures_op.json";
   } else if (cat === "EASA AERODYNAMIQUE") {
     fileName = "section_easa_aerodynamique.json";
-  } else if (cat === "EASA CONNAISSANCE AVION") {
+  } else if (cat === "section_easa_connaissance_avion") {
     fileName = "section_easa_connaissance_avion.json";
-  } else if (cat === "EASA METEOROLOGIE") {
+  } else if (cat === "section_easa_meteorologie") {
     fileName = "section_easa_meteorologie.json";
-  } else if (cat === "EASA NAVIGATION") {
-    fileName = "section_easa_navigation.json";
-  } else if (cat === "EASA PERFORMANCE PLANIFICATION") {
+  } else if (cat === "section_easa_performance_planification") {
     fileName = "section_easa_performance_planification.json";
-  } else if (cat === "EASA REGLEMENTATION") {
+  } else if (cat === "section_easa_reglementation") {
     fileName = "section_easa_reglementation.json";
   } else if (cat === "TOUTES") {
     // "TOUTES" sera géré par loadAllQuestions()
@@ -321,7 +311,7 @@ async function chargerQuestions(cat) {
       throw new Error("HTTP error " + res.status);
     }
     questions = await res.json();
-    // Réinitialiser les en-têtes de question pour qu'ils commencent à 1
+    // Réinitialiser les id pour do commencer à 1
     questions.forEach((q, i) => q.id = i + 1);
     console.log("    questions chargées:", questions.length);
   } catch (error) {
@@ -330,14 +320,14 @@ async function chargerQuestions(cat) {
   }
 }
 
-// Ajout de la correspondance entre la valeur de la sélection et le chemin du fichier JSON
+// Update file path mapping to use the JSON files at the server root
 const categoryFiles = {
-    "section_easa_aerodynamique": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_aerodynamique.json",
-    "section_easa_connaissance_avion": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_connaissance_avion.json",
-    "section_easa_meteorologie": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_meteorologie.json",
-    "section_easa_navigation": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_navigation.json",
-    "section_easa_performance_planification": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_performance_planification.json",
-    "section_easa_reglementation": "g:\\Questionnaires\\save\\Final\\1\\Quizz-PPL\\section_easa_reglementation.json"
+    "section_easa_aerodynamique": "section_easa_aerodynamique.json",
+    "section_easa_connaissance_avion": "section_easa_connaissance_avion.json",
+    "section_easa_meteorologie": "section_easa_meteorologie.json",
+    "section_easa_navigation": "section_easa_navigation.json",
+    "section_easa_performance_planification": "section_easa_performance_planification.json",
+    "section_easa_reglementation": "section_easa_reglementation.json"
 };
 // Lors du changement de la sélection, on charge le fichier adéquat
 document.getElementById("categorie-select").addEventListener("change", (e) => {
