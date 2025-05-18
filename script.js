@@ -213,14 +213,43 @@ async function categoryChanged() {
 }
 
 /**
+ * getNormalizedCategory(cat) – Retourne la clé de stockage pour une question donnée
+ */
+function getNormalizedCategory(cat) {
+  // Unify EASA sub-categories to match how they appear in selectedCategory
+  switch (cat.toLowerCase()) {
+    case "section_easa_connaissance_avion":
+    case "easa connaissance de l'avion":
+      return "EASA CONNAISSANCE DE L'AVION";
+    case "section_easa_meteorologie":
+    case "easa meteorologie":
+      return "EASA METEOROLOGIE";
+    case "section_easa_performance_planification":
+    case "easa performance et planification":
+      return "EASA PERFORMANCE ET PLANIFICATION";
+    case "section_easa_reglementation":
+    case "easa reglementation":
+      return "EASA REGLEMENTATION";
+    default:
+      // Replace underscores with spaces, uppercase possible
+      return cat.replace(/_/g, ' ').toUpperCase();
+  }
+}
+
+/**
  * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
 async function updateModeCounts() {
   console.log('>>> updateModeCounts()');
-  // For the current category or "TOUTES"
-  const currentArray = (selectedCategory === "TOUTES")
+  // Normalize the currently selected category
+  const normalizedSelected = selectedCategory 
+    ? getNormalizedCategory(selectedCategory) 
+    : "TOUTES";
+
+  // Filter questions if not "TOUTES"
+  const currentArray = (normalizedSelected === "TOUTES")
     ? questions
-    : questions.filter(q => getNormalizedCategory(q.categorie) === selectedCategory);
+    : questions.filter(q => getNormalizedCategory(q.categorie) === normalizedSelected);
 
   const total = currentArray.length;
   let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
