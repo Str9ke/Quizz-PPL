@@ -1018,8 +1018,9 @@ function afficherCorrection() {
 /**
  * getKeyFor(q) – Retourne la clé de stockage pour une question donnée
  */
+// Modify getKeyFor() to always use the normalized category so that Firestore keys match
 function getKeyFor(q) {
-  return `question_${q.categorie}_${q.id}`;
+  return `question_${getNormalizedCategory(q.categorie)}_${q.id}`;
 }
 
 /**
