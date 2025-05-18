@@ -341,6 +341,7 @@ async function initQuiz() {
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
   const catNorm = getNormalizedCategory(selectedCategory);
+  console.log("Chosen category:", selectedCategory, "Normalized:", catNorm);
   // load questions based on selection
   if (stored) {
     // ...existing code for resuming quiz...
@@ -352,7 +353,7 @@ async function initQuiz() {
     }
     await filtrerQuestions(modeQuiz, nbQuestions);
   }
-  console.log("Loaded questions:", currentQuestions?.length || 0);
+  console.log("Filtered questions:", currentQuestions?.length || 0);
   afficherQuiz();
 }
 
@@ -578,6 +579,7 @@ async function initQuiz() {
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
   const catNorm = getNormalizedCategory(selectedCategory);
+  console.log("Chosen category:", selectedCategory, "Normalized:", catNorm);
   // load questions based on selection
   if (stored) {
     // ...existing code for resuming quiz...
@@ -589,7 +591,7 @@ async function initQuiz() {
     }
     await filtrerQuestions(modeQuiz, nbQuestions);
   }
-  console.log("Loaded questions:", currentQuestions?.length || 0);
+  console.log("Filtered questions:", currentQuestions?.length || 0);
   afficherQuiz();
 }
 
