@@ -28,21 +28,30 @@
     window.db = firebase.firestore();
 
     const categoriesList = [
-      "PROCÉDURE RADIO",
-      "PROCÉDURES OPÉRATIONNELLES",
-      "RÉGLEMENTATION",
-      "CONNAISSANCE DE L’AVION",
-      "INSTRUMENTATION",
-      "MASSE ET CENTRAGE",
-      "MOTORISATION",
-      "EASA PROCEDURES",
-      "EASA AERODYNAMIQUE",
-      "EASA NAVIGATION",
-      "EASA CONNAISSANCE DE L'AVION",
-      "EASA METEOROLOGIE",
-      "EASA PERFORMANCE ET PLANIFICATION",
-      "EASA REGLEMENTATION"
+      "PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
+      "CONNAISSANCE DE L’AVION","INSTRUMENTATION","MASSE ET CENTRAGE","MOTORISATION",
+      "EASA PROCEDURES","EASA AERODYNAMIQUE","EASA NAVIGATION",
+      "EASA CONNAISSANCE DE L'AVION","EASA METEOROLOGIE",
+      "EASA PERFORMANCE ET PLANIFICATION","EASA REGLEMENTATION"
     ];
+
+    // map each category to its JSON file
+    const fileMap = {
+      "PROCÉDURE RADIO": "questions_procedure_radio.json",
+      "PROCÉDURES OPÉRATIONNELLES": "questions_procedure_operationnelles.json",
+      "RÉGLEMENTATION": "questions_reglementation.json",
+      "CONNAISSANCE DE L’AVION": "questions_connaissance_avion.json",
+      "INSTRUMENTATION": "questions_instrumentation.json",
+      "MASSE ET CENTRAGE": "questions_masse_et_centrage.json",
+      "MOTORISATION": "questions_motorisation.json",
+      "EASA PROCEDURES": "section_easa_procedures_new.json",
+      "EASA AERODYNAMIQUE": "section_easa_aerodynamique.json",
+      "EASA NAVIGATION": "section_easa_navigation.json",
+      "EASA CONNAISSANCE DE L'AVION": "section_easa_connaissance_avion.json",
+      "EASA METEOROLOGIE": "section_easa_meteorologie.json",
+      "EASA PERFORMANCE ET PLANIFICATION": "section_easa_performance_planification.json",
+      "EASA REGLEMENTATION": "section_easa_reglementation.json"
+    };
 
     auth.onAuthStateChanged(user => {
       if (user) initStats();
@@ -59,23 +68,30 @@
       let html = "";
 
       for (const cat of categoriesList) {
-        await chargerQuestions(cat);
-        const catQs = [...questions];
-        const stats = computeStatsForFirestore(catQs, responses);
-        const total = stats.reussie + stats.ratee + stats.nonvue + stats.marquee;
-        const perc  = total ? Math.round((stats.reussie * 100) / total) : 0;
-
+        // load questions for this category
+        const resQ = await fetch(fileMap[cat]);
+        const qs = await resQ.json();
+        // compute stats
+        let re=0, ra=0, nv=0, ma=0;
+        qs.forEach(q => {
+          const key = `question_${cat.replace(/'/g,"")} _${q.id}` // no apostrophes
+            .replace(/ /g, '_');
+          const r = responses[key];
+          if (!r) nv++;
+          else if (r.status==="réussie") re++;
+          else if (r.status==="ratée") ra++;
+          else if (r.status==="marquée") ma++;
+        });
+        const total = re+ra+nv+ma;
+        const perc  = total? Math.round((re*100)/total):0;
         html += `
           <h2>Catégorie : ${cat}</h2>
           <p>Total : ${total} questions</p>
-          <p>✅ Réussies : ${stats.reussie}</p>
-          <p>❌ Ratées : ${stats.ratee}</p>
-          <p>👀 Non vues : ${stats.nonvue}</p>
-          <p>📌 Marquées : ${stats.marquee}</p>
-          <div class="progressbar">
-            <div class="progress" style="width:${perc}%;"></div>
-          </div>
-          <hr>
+          <p>✅ Réussies : ${re}</p>
+          <p>❌ Ratées : ${ra}</p>
+          <p>👀 Non vues : ${nv}</p>
+          <p>📌 Marquées : ${ma}</p>
+          <div class="progressbar"><div class="progress" style="width:${perc}%;"></div></div><hr>
         `;
       }
 
