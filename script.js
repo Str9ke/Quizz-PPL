@@ -308,9 +308,9 @@ async function updateModeCounts() {
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
         modeSelect.innerHTML = `
-          <option value="ratees_nonvues">Ratées (${nbRatees + nbNonvues})</option>
           <option value="toutes">Toutes (${total})</option>
           <option value="ratees">Ratées (${nbRatees})</option>
+          <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
           <option value="nonvues">Non vues (${nbNonvues})</option>
           <option value="reussies">Réussies (${nbReussies})</option>
           <option value="marquees">Marquées (${nbMarquees})</option>
@@ -503,31 +503,28 @@ function toggleMarquerQuestion(questionId, button) {
   }
 
   const key = getKeyFor(question);
-  // fetch existing
-  db.collection('quizProgress').doc(uid).get()
-    .then(doc => {
-      const stored = doc.exists ? doc.data().responses : {};
-      const prev = stored[key] || {};
-      const newMarked = !prev.marked;
-      const payload = {
-        responses: {
-          [key]: {
-            status: prev.status || currentResponses[key]?.status || 'ratée',
-            marked: newMarked
-          }
-        }
-      };
-      return db.collection('quizProgress').doc(uid).set(payload, { merge: true });
-    })
-    .then(async () => {
-      const fresh = await db.collection('quizProgress').doc(uid).get();
-      currentResponses = normalizeResponses(fresh.data().responses);
-      // update this button text after normalization
-      const key = getKeyFor(question);
-      const isMarked = currentResponses[key]?.marked;
-      button.textContent = isMarked ? "Supprimer" : "Marquer";
-      button.className   = isMarked ? "delete-button" : "mark-button";
+  // use local state to preserve status
+  const prev = currentResponses[key] || {};
+  const newMarked = !prev.marked;
+  const payload = {
+    responses: {
+      [key]: {
+        status: prev.status || 'ratée',
+        marked: newMarked
+      }
+    }
+  };
+  db.collection('quizProgress').doc(uid)
+    .set(payload, { merge: true })
+    .then(() => {
+      // update in-memory
+      currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
+      // update button text/style
+      button.textContent = newMarked ? "Supprimer" : "Marquer";
+      button.className   = newMarked ? "delete-button" : "mark-button";
+      // refresh counts and global marked counter
       updateModeCounts();
+      updateMarkedCount();
     })
     .catch(console.error);
 }
@@ -720,6 +717,8 @@ async function validerReponses() {
     }
     updateModeCounts();
     afficherBoutonsMarquer();
+    // mettre à jour le compteur de marquées dans l’interface
+    if (typeof updateMarkedCount === 'function') updateMarkedCount();
 }
 
 /**
@@ -1307,9 +1306,9 @@ function displayMode() {
 
       const modeSelect = document.getElementById('mode');
       modeSelect.innerHTML = `
-        <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
         <option value="toutes">Toutes (${total})</option>
         <option value="ratees">Ratées (${nbRatees})</option>
+        <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
         <option value="nonvues">Non vues (${nbNonvues})</option>
         <option value="marquees">Marquées (${nbMarquees})</option>
       `;
