@@ -540,14 +540,13 @@ function afficherBoutonsMarquer() {
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
     const q = currentQuestions[idx];
-    const key = getKeyFor(q);
+    const key = getKeyFor(q);                           // use normalized key
     const isMarked = currentResponses[key]?.marked;
-
-    const markButton = document.createElement('button');
-    markButton.textContent = isMarked ? "Supprimer" : "Marquer";
-    markButton.className = isMarked ? "delete-button" : "mark-button";
-    markButton.onclick = () => toggleMarquerQuestion(q.id, markButton);
-    block.appendChild(markButton);
+    const btn = document.createElement('button');
+    btn.textContent = isMarked ? "Supprimer" : "Marquer";
+    btn.className   = isMarked ? "delete-button" : "mark-button";
+    btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
+    block.appendChild(btn);
   });
 }
 
@@ -689,7 +688,7 @@ async function validerReponses() {
       { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
       { merge: true }
     );
-    // Mettre à jour le cache local pour inclure marked
+    // update local cache including marked
     Object.assign(currentResponses, responsesToSave);
     console.log("Réponses sauvegardées avec marked :", responsesToSave);
   } catch (e) {
@@ -704,7 +703,8 @@ async function validerReponses() {
   }
 
   // Afficher les boutons "Marquer" après validation
-  afficherBoutonsMarquer();
+  updateModeCounts();               // refresh counts
+  afficherBoutonsMarquer();         // show correct mark/unmark state
 }
 
 /**
