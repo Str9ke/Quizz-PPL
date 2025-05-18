@@ -58,6 +58,17 @@
         "section_easa_reglementation": "EASA REGLEMENTATION"
       };
 
+      // Additional EASA sub-categories to handle direct naming:
+      const easaList = [
+        "EASA CONNAISSANCE DE L'AVION",
+        "EASA METEOROLOGIE",
+        "EASA PERFORMANCE ET PLANIFICATION",
+        "EASA REGLEMENTATION",
+        "EASA PROCEDURES",
+        "EASA AERODYNAMIQUE",
+        "EASA NAVIGATION"
+      ];
+      
       // Initialize counters for each distinct EASA sub-category (plus those already stored with proper names)
       let easaCats = {
           "EASA PROCEDURES": { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
@@ -72,18 +83,17 @@
       // Aggregate Firestore responses using proper normalization
       for (let key in responses) {
           let r = responses[key];
-          let rawCat = r.categorie ? r.categorie.trim() : "";
-          // If the stored value is one of the section keys, use our mapping; otherwise, use uppercase version.
-          let normalizedCat = easaMapping.hasOwnProperty(rawCat) ? easaMapping[rawCat] : rawCat.toUpperCase();
-          if (easaCats.hasOwnProperty(normalizedCat)) {
+          let raw = r.categorie ? r.categorie.trim().toUpperCase() : "";
+          let normalized = easaMapping[raw] || (raw.includes("EASA") ? raw : raw);
+          if (easaCats.hasOwnProperty(normalized)) {
               if (r.status === "réussie") {
-                  easaCats[normalizedCat].reussie++;
+                  easaCats[normalized].reussie++;
               } else if (r.status === "ratée") {
-                  easaCats[normalizedCat].ratee++;
+                  easaCats[normalized].ratee++;
               } else if (r.status === "marquée") {
-                  easaCats[normalizedCat].marquee++;
+                  easaCats[normalized].marquee++;
               } else {
-                  easaCats[normalizedCat].nonvue++;
+                  easaCats[normalized].nonvue++;
               }
           }
       }
