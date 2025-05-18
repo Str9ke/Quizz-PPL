@@ -63,6 +63,12 @@ function normalizeResponses(raw) {
  * initIndex() – Chargement initial sur index.html
  */
 async function initIndex() {
+  const el = document.getElementById("missingElement");
+  if (!el) {
+    console.warn("missingElement not found, skipping initIndex");
+    return;
+  }
+
   console.log(">>> initIndex()");
   
   // Chargement des catégories classiques
