@@ -299,7 +299,8 @@ async function chargerQuestions(cat) {
   } else if (cat === "MOTORISATION") {
     fileName = "questions_motorisation.json";
   } else if (cat === "EASA PROCEDURES") {
-    fileName = "questions_easa_procedures_op.json";
+    // Updated mapping for accurate count
+    fileName = "section_easa_procedures_new.json";
   } else if (cat === "EASA AERODYNAMIQUE") {
     fileName = "section_easa_aerodynamique.json";
   } else if (cat === "EASA NAVIGATION") {
