@@ -831,65 +831,164 @@ async function initStats() {
 /**
  * afficherStats() – Affiche les statistiques sur stats.html, y compris les marquées
  */
-async function afficherStats() {
-    console.log(">>> afficherStats()");
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-        console.error("Utilisateur non authentifié");
-        return;
-    }
-    try {
-        // Récupérer les réponses Firestore
-        const doc = await db.collection("quizProgress").doc(uid).get();
-        const responses = doc.exists ? doc.data().responses : {};
-        // Définir la liste des catégories EASA pour lesquelles on veut des stats précises
-        const easaCategories = [
-            "EASA AERODYNAMIQUE",
-            "EASA NAVIGATION",
-            "EASA CONNAISSANCE DE L'AVION",
-            "EASA METEOROLOGIE",
-            "EASA PERFORMANCE ET PLANIFICATION",
-            "EASA REGLEMENTATION"
-        ];
-        // Initialiser les compteurs pour chacune
-        let easaStats = {};
-        easaCategories.forEach(cat => {
-            easaStats[cat] = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 };
-        });
-        // Parcourir les réponses et incrémenter les compteurs pour les catégories EASA
-        for (let key in responses) {
-            const res = responses[key];
-            const cat = res.categorie ? res.categorie.trim().toUpperCase() : "";
-            if (easaStats.hasOwnProperty(cat)) {
-                if (res.status === "réussie") easaStats[cat].reussie++;
-                else if (res.status === "ratée") easaStats[cat].ratee++;
-                else if (res.status === "marquée") easaStats[cat].marquee++;
-                else easaStats[cat].nonvue++;
-            }
-        }
-        // Construire l'affichage HTML pour les EASA
-        const cont = document.getElementById('statsContainer');
-        let html = "";
-        easaCategories.forEach(cat => {
-            const stats = easaStats[cat];
-            const total = stats.reussie + stats.ratee + stats.nonvue + stats.marquee;
-            const perc = total ? Math.round((stats.reussie * 100) / total) : 0;
-            html += `
-                <h2>Catégorie : ${cat}</h2>
-                <p>Total : ${total} questions</p>
-                <p>✅ Réussies : ${stats.reussie}</p>
-                <p>❌ Ratées : ${stats.ratee}</p>
-                <p>👀 Non vues : ${stats.nonvue}</p>
-                <p>📌 Marquées : ${stats.marquee}</p>
-                <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${perc}%;"></div></div>
-                <hr>
-            `;
-        });
-        // ...existing code for les autres catégories si nécessaire...
-        cont.innerHTML = html;
-    } catch (e) {
-        console.error("Erreur afficherStats:", e);
-    }
+function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor, statsEasa) {
+  console.log(">>> afficherStats()");
+  const cont = document.getElementById('statsContainer');
+  if (!cont) return;
+
+  const totalRadio = statsRadio.reussie + statsRadio.ratee + statsRadio.nonvue + statsRadio.marquee;
+  const totalOp = statsOp.reussie + statsOp.ratee + statsOp.nonvue + statsOp.marquee;
+  const totalRegl = statsRegl.reussie + statsRegl.ratee + statsRegl.nonvue + statsRegl.marquee;
+  const totalConv = statsConv.reussie + statsConv.ratee + statsConv.nonvue + statsConv.marquee;
+  const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue + statsInstr.marquee;
+  const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue + statsMasse.marquee;
+  const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue + statsMotor.marquee;
+  const totalEasa = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee;
+  const totalAer = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee; // Utiliser les mêmes stats que EASA AERODYNAMIQUE pour l'instant
+
+  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor + totalEasa;
+  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
+                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie + statsEasa.reussie;
+  const marqueesGlobal = statsRadio.marquee + statsOp.marquee + statsRegl.marquee + statsConv.marquee +
+                         statsInstr.marquee + statsMasse.marquee + statsMotor.marquee + statsEasa.marquee;
+
+  let percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+
+  // Ajoute la section EASA PROCEDURES
+  cont.innerHTML = `
+    <h2>Catégorie : PROCÉDURE RADIO</h2>
+    <p>Total : ${totalRadio} questions</p>
+    <p>✅ Réussies : ${statsRadio.reussie}</p>
+    <p>❌ Ratées : ${statsRadio.ratee}</p>
+    <p>👀 Non vues : ${statsRadio.nonvue}</p>
+    <p>📌 Marquées : ${statsRadio.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
+    <p>Total : ${totalOp} questions</p>
+    <p>✅ Réussies : ${statsOp.reussie}</p>
+    <p>❌ Ratées : ${statsOp.ratee}</p>
+    <p>👀 Non vues : ${statsOp.nonvue}</p>
+    <p>📌 Marquées : ${statsOp.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : RÉGLEMENTATION</h2>
+    <p>Total : ${totalRegl} questions</p>
+    <p>✅ Réussies : ${statsRegl.reussie}</p>
+    <p>❌ Ratées : ${statsRegl.ratee}</p>
+    <p>👀 Non vues : ${statsRegl.nonvue}</p>
+    <p>📌 Marquées : ${statsRegl.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : CONNAISSANCE DE L’AVION</h2>
+    <p>Total : ${totalConv} questions</p>
+    <p>✅ Réussies : ${statsConv.reussie}</p>
+    <p>❌ Ratées : ${statsConv.ratee}</p>
+    <p>👀 Non vues : ${statsConv.nonvue}</p>
+    <p>📌 Marquées : ${statsConv.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : INSTRUMENTATION</h2>
+    <p>Total : ${totalInstr} questions</p>
+    <p>✅ Réussies : ${statsInstr.reussie}</p>
+    <p>❌ Ratées : ${statsInstr.ratee}</p>
+    <p>👀 Non vues : ${statsInstr.nonvue}</p>
+    <p>📌 Marquées : ${statsInstr.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : MASSE ET CENTRAGE</h2>
+    <p>Total : ${totalMasse} questions</p>
+    <p>✅ Réussies : ${statsMasse.reussie}</p>
+    <p>❌ Ratées : ${statsMasse.ratee}</p>
+    <p>👀 Non vues : ${statsMasse.nonvue}</p>
+    <p>📌 Marquées : ${statsMasse.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : MOTORISATION</h2>
+    <p>Total : ${totalMotor} questions</p>
+    <p>✅ Réussies : ${statsMotor.reussie}</p>
+    <p>❌ Ratées : ${statsMotor.ratee}</p>
+    <p>👀 Non vues : ${statsMotor.nonvue}</p>
+    <p>📌 Marquées : ${statsMotor.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA PROCEDURES</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA AERODYNAMIQUE</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA NAVIGATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA CONNAISSANCE AVION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA METEOROLOGIE</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA PERFORMANCE PLANIFICATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA REGLEMENTATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Global</h2>
+    <p>Total cumulé : ${totalGlobal}</p>
+    <p>Réussies cumulées : ${reussiesGlobal}</p>
+    <p>📌 Marquées cumulées : ${marqueesGlobal}</p>
+    <p>Pourcentage global : ${percGlobal}%</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+  `;
 }
 
 /**
