@@ -299,13 +299,13 @@ async function chargerQuestions(cat) {
     fileName = "section_easa_connaissance_avion.json";
   } else if (cat === "section_easa_meteorologie") {
     fileName = "section_easa_meteorologie.json";
+  } else if (cat === "section_easa_navigation") {
+    fileName = "section_easa_navigation.json";
   } else if (cat === "section_easa_performance_planification") {
-    // Updated mapping: using the correct file for performance et planification
-    fileName = "section_performance_planification.json";
+    fileName = "section_easa_performance_planification.json";
   } else if (cat === "section_easa_reglementation") {
     fileName = "section_easa_reglementation.json";
   } else if (cat === "TOUTES") {
-    // "TOUTES" sera géré par loadAllQuestions()
     return;
   } else {
     console.warn("Catégorie inconnue:", cat);
