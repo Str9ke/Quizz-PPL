@@ -264,9 +264,8 @@ function getNormalizedSelectedCategory(selected) {
  */
 async function updateModeCounts() {
   console.log(">>> updateModeCounts()");
-  // Normalize the selectedCategory using getModeCategory
   const normalizedSelected = (selectedCategory === "TOUTES") ? "TOUTES" : getModeCategory(selectedCategory);
-  // Filter questions that match the normalized category (or all if "TOUTES")
+  // Filter questions to count only those whose normalized category matches
   const currentArray = (normalizedSelected === "TOUTES")
     ? questions
     : questions.filter(q => getModeCategory(q.categorie) === normalizedSelected);
@@ -285,9 +284,9 @@ async function updateModeCounts() {
       const key = getKeyFor(q);
       const resp = responses[key];
       if (resp) {
-        if (resp.status === "réussie") nbReussies++;
-        else if (resp.status === "ratée") nbRatees++;
-        else if (resp.status === "marquée") nbMarquees++;
+        if (resp.status === "réussie") { nbReussies++; }
+        else if (resp.status === "ratée") { nbRatees++; }
+        else if (resp.status === "marquée") { nbMarquees++; }
       } else {
         nbNonvues++;
       }
@@ -1301,19 +1300,23 @@ function displayMode() {
     .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
 }
 
-// New helper for normalizing category names for mode counting
+// NEW: Helper to normalize category names for mode counting
 function getModeCategory(cat) {
-  if (!cat) return "TOUTES";
-  // Remove curly quotes, underscores, trim and lower-case the string
-  const fixed = fixQuotes(cat).replace(/_/g, ' ').trim().toLowerCase();
-  if (fixed.indexOf("meteorologie") !== -1) return "EASA METEOROLOGIE";
-  if (fixed.indexOf("connaissance avion") !== -1) return "EASA CONNAISSANCE DE L'AVION";
-  if (fixed.indexOf("performance planification") !== -1) return "EASA PERFORMANCE ET PLANIFICATION";
-  if (fixed.indexOf("reglementation") !== -1) return "EASA REGLEMENTATION";
-  return fixed.toUpperCase();
+    if (!cat) return "TOUTES";
+    const fixed = fixQuotes(cat).replace(/_/g, ' ').trim().toLowerCase();
+    if (fixed.indexOf("meteorologie") !== -1) {
+        return "EASA METEOROLOGIE";
+    } else if (fixed.indexOf("connaissance avion") !== -1) {
+        return "EASA CONNAISSANCE DE L'AVION";
+    } else if (fixed.indexOf("performance planification") !== -1) {
+        return "EASA PERFORMANCE ET PLANIFICATION";
+    } else if (fixed.indexOf("reglementation") !== -1) {
+        return "EASA REGLEMENTATION";
+    }
+    return fixed.toUpperCase();
 }
 
-// Redefine getKeyFor() so it uses getModeCategory
+// Force getKeyFor() to use getModeCategory so that keys match
 function getKeyFor(q) {
-  return `question_${getModeCategory(q.categorie)}_${q.id}`;
+    return `question_${getModeCategory(q.categorie)}_${q.id}`;
 }
