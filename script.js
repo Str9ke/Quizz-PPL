@@ -45,6 +45,21 @@ let countEasaNavigation = 0; // ← compteur pour EASA NAVIGATION
 let totalGlobal = 0;
 
 /**
+ * Helper: normalize raw Firestore responses into { status, marked }
+ */
+function normalizeResponses(raw) {
+  const out = {};
+  Object.entries(raw||{}).forEach(([key, r]) => {
+    const isMarked = (r.status === 'marquée') || (r.marked === true);
+    const status = r.status === 'marquée'
+      ? (r.previousStatus || 'ratée')
+      : (r.status || 'ratée');
+    out[key] = { ...r, status, marked: isMarked };
+  });
+  return out;
+}
+
+/**
  * initIndex() – Chargement initial sur index.html
  */
 async function initIndex() {
@@ -101,7 +116,7 @@ async function initIndex() {
   // Load stored responses so marked flags are available
   const uid = auth.currentUser.uid;
   const docResp = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = docResp.exists ? docResp.data().responses : {};
+  currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
   
   updateModeCounts();
 
@@ -277,16 +292,22 @@ async function updateModeCounts() {
     const total = currentArray.length;
     let nbReussies = 0, nbRatees = 0, nbMarquees = 0;
 
+    // fetch latest responses from Firestore
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
+      return;
+    }
+
+    const doc = await db.collection("quizProgress").doc(uid).get();
+    currentResponses = normalizeResponses(doc.data().responses);
+    
     currentArray.forEach(q => {
-        const key = getKeyFor(q);
-        const r = currentResponses[key];
-        if (r) {
-            if (r.status === 'réussie') nbReussies++;
-            else nbRatees++;
-            if (r.marked) nbMarquees++;
-        } else {
-            nbRatees++;
-        }
+      const key = getKeyFor(q);
+      const r = currentResponses[key];
+      if (r?.status === "réussie") nbReussies++;
+      else nbRatees++;
+      if (r?.marked) nbMarquees++;
     });
 
     // Simple example updating the dropdown counts; adjust as needed
@@ -356,21 +377,6 @@ async function chargerQuestions(cat) {
             break;
         case "EASA PROCEDURES":
             fileName = "section_easa_procedures_new.json";
-            break;
-        case "EASA AERODYNAMIQUE":
-            fileName = "section_easa_aerodynamique.json";
-            break;
-        case "EASA NAVIGATION":
-            fileName = "section_easa_navigation.json";
-            break;
-        case "EASA METEOROLOGIE":
-            fileName = "section_easa_meteorologie.json";
-            break;
-        case "EASA PERFORMANCE ET PLANIFICATION":
-            fileName = "section_easa_performance_planification.json";
-            break;
-        case "EASA CONNAISSANCE DE L'AVION":
-            fileName = "section_easa_connaissance_avion.json";
             break;
         case "EASA REGLEMENTATION":
             fileName = "section_easa_reglementation.json";
@@ -513,15 +519,14 @@ function toggleMarquerQuestion(questionId, button) {
       };
       return db.collection('quizProgress').doc(uid).set(payload, { merge: true });
     })
-    .then(() => {
-      // update local cache & button
-      currentResponses[key] = {
-        ...currentResponses[key],
-        status: currentResponses[key]?.status || 'ratée',
-        marked: !currentResponses[key]?.marked
-      };
-      button.textContent = currentResponses[key].marked ? "Supprimer" : "Marquer";
-      button.className = currentResponses[key].marked ? "delete-button" : "mark-button";
+    .then(async () => {
+      const fresh = await db.collection('quizProgress').doc(uid).get();
+      currentResponses = normalizeResponses(fresh.data().responses);
+      // update this button text after normalization
+      const key = getKeyFor(question);
+      const isMarked = currentResponses[key]?.marked;
+      button.textContent = isMarked ? "Supprimer" : "Marquer";
+      button.className   = isMarked ? "delete-button" : "mark-button";
       updateModeCounts();
     })
     .catch(console.error);
@@ -689,22 +694,12 @@ async function validerReponses() {
             { responses: responsesToSave, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
             { merge: true }
         );
-        Object.keys(responsesToSave).forEach(key => {
-            if (currentResponses[key]?.marked) {
-                responsesToSave[key].marked = true;
-            }
-            currentResponses[key] = responsesToSave[key];
-        });
+        // re-fetch and normalize all responses
+        const fresh = await db.collection('quizProgress').doc(uid).get();
+        currentResponses = normalizeResponses(fresh.data().responses);
     } catch (e) {
-        console.error("Erreur validerReponses:", e);
+        console.error("Erreur sauvegarde validerReponses:", e);
     }
-
-    const validateButton = document.querySelector('button[onclick="validerReponses()"]');
-    if (validateButton) {
-        validateButton.disabled = true;
-        validateButton.classList.add('disabled-button');
-    }
-
     updateModeCounts();
     afficherBoutonsMarquer();
 }
