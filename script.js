@@ -270,34 +270,33 @@ function getNormalizedSelectedCategory(selected) {
 async function updateModeCounts() {
     console.log(">>> updateModeCounts()");
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-    const currentArray = (normalizedSel === "TOUTES")
+    const list = normalizedSel === "TOUTES"
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
-    
-    const total = currentArray.length;
-    let nbReussies = 0, nbRatees = 0, nbMarquees = 0, nbNonvues = 0;
-    
-    currentArray.forEach(q => {
-        const r = currentResponses[getKeyFor(q)];
-        if (!r) {
-            nbNonvues++;
-        } else {
-            if (r.status === 'réussie') nbReussies++;
-            if (r.status === 'ratée')   nbRatees++;
-            if (r.marked)               nbMarquees++;
-        }
+
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0;
+    list.forEach(q => {
+      const r = currentResponses[getKeyFor(q)];
+      total++;
+      if (!r) {
+        nbNonvues++;
+      } else {
+        if (r.status==="réussie") nbReussies++;
+        if (r.status==="ratée")   nbRatees++;
+        if (r.marked)             nbMarquees++;
+      }
     });
 
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
-        modeSelect.innerHTML = `
-          <option value="toutes">Toutes (${total})</option>
-          <option value="ratees">Ratées (${nbRatees})</option>
-          <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
-          <option value="nonvues">Non vues (${nbNonvues})</option>
-          <option value="reussies">Réussies (${nbReussies})</option>
-          <option value="marquees">Marquées (${nbMarquees})</option>
-        `;
+      modeSelect.innerHTML = `
+        <option value="toutes">Toutes (${total})</option>
+        <option value="ratees">Ratées (${nbRatees})</option>
+        <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
+        <option value="nonvues">Non vues (${nbNonvues})</option>
+        <option value="reussies">Réussies (${nbReussies})</option>
+        <option value="marquees">Marquées (${nbMarquees})</option>
+      `;
     }
 }
 
