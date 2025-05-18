@@ -316,7 +316,7 @@ async function demarrerQuiz() {
     await chargerQuestions(selectedCategory);
   }
 
-  filtrerQuestions(modeQuiz, nbQuestions);
+  await filtrerQuestions(modeQuiz, nbQuestions);   // ← added await
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   window.location = 'quiz.html';
@@ -424,43 +424,55 @@ function loadQuestions(file) {
 /**
  * filtrerQuestions() – Filtre le tableau "questions" selon le mode et le nombre demandé
  */
-function filtrerQuestions(mode, nb) {
-  console.log('>>> filtrerQuestions(mode=' + mode + ', nb=' + nb + ')');
+async function filtrerQuestions(mode, nb) {
+  console.log(`>>> filtrerQuestions(mode=${mode}, nb=${nb})`);
   if (!questions.length) {
     console.warn("    questions[] est vide");
     currentQuestions = [];
     return;
   }
+
+  // fetch up-to-date responses
+  const uid = auth.currentUser?.uid;
+  let responses = {};
+  if (uid) {
+    try {
+      const doc = await db.collection('quizProgress').doc(uid).get();
+      responses = doc.exists ? doc.data().responses : {};
+    } catch (e) {
+      console.error("Erreur fetch responses:", e);
+    }
+  }
+
   const shuffled = [...questions].sort(() => 0.5 - Math.random());
 
   if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
-  } else if (mode === "ratees") {
-    const arr = shuffled.filter(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      return currentResponses[key]?.status === 'ratée';
-    });
-    currentQuestions = arr.slice(0, nb);
-  } else if (mode === "nonvues") {
-    const arr = shuffled.filter(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      return !currentResponses[key];
-    });
-    currentQuestions = arr.slice(0, nb);
-  } else if (mode === "ratees_nonvues") {
-    const arr = shuffled.filter(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      const status = currentResponses[key]?.status;
-      return status === 'ratée' || !status;
-    });
-    currentQuestions = arr.slice(0, nb);
-  } else if (mode === "marquees") {
-    const arr = shuffled.filter(q => {
-      const key = `question_${q.categorie}_${q.id}`;
-      return currentResponses[key]?.status === 'marquée';
-    });
-    currentQuestions = arr.slice(0, nb);
   }
+  else if (mode === "ratees") {
+    currentQuestions = shuffled
+      .filter(q => responses[getKeyFor(q)]?.status === 'ratée')
+      .slice(0, nb);
+  }
+  else if (mode === "nonvues") {
+    currentQuestions = shuffled
+      .filter(q => !responses[getKeyFor(q)])
+      .slice(0, nb);
+  }
+  else if (mode === "ratees_nonvues") {
+    currentQuestions = shuffled
+      .filter(q => {
+         const s = responses[getKeyFor(q)]?.status;
+         return s === 'ratée' || !s;
+      })
+      .slice(0, nb);
+  }
+  else if (mode === "marquees") {
+    currentQuestions = shuffled
+      .filter(q => responses[getKeyFor(q)]?.status === 'marquée')
+      .slice(0, nb);
+  }
+
   console.log("    Nombre de questions filtrées:", currentQuestions.length);
 }
 
