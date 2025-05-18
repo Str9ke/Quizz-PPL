@@ -80,7 +80,7 @@ Liste des fichiers d’illustration des questions EASA Météorologie :
 ### IMAGES_EASA_NAVIGATION/
 Liste des fichiers d’illustration des questions EASA Navigation :
 - manifest.json  
-- EASA_NAVIGATION.jpg
+- EASA_NAVIGATION110.jpg
 - EASA_NAVIGATION06.jpg
 - EASA_NAVIGATION40.jpg
 - EASA_NAVIGATION47.jpg
