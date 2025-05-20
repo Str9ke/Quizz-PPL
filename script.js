@@ -42,6 +42,7 @@ let countEasaMeteorologie = 0;
 let countEasaPerformance = 0;
 let countEasaReglementation = 0;
 let countEasaNavigation = 0; // ← compteur pour EASA NAVIGATION
+let countEasaPerfHumaines = 0; // ← compteur pour EASA PERFORMANCES HUMAINES
 let totalGlobal = 0;
 
 /**
@@ -96,12 +97,16 @@ async function initIndex() {
   countEasaPerformance = questions.length;
   await chargerQuestions("section_easa_reglementation");
   countEasaReglementation = questions.length;
+  // Nouvelle catégorie EASA PERFORMANCES HUMAINES
+  await chargerQuestions("EASA PERFORMANCES HUMAINES");
+  countEasaPerfHumaines = questions.length;
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
                 countInstr + countMasse + countMotor +
                 countEasa + countEasaAero + countEasaNavigation +
                 countEasaConnaissance + countEasaMeteorologie +
-                countEasaPerformance + countEasaReglementation;
+                countEasaPerformance + countEasaReglementation +
+                countEasaPerfHumaines;
   
   updateCategorySelect();
 
@@ -166,7 +171,8 @@ async function loadAllQuestions() {
     "EASA CONNAISSANCE DE L'AVION",
     "EASA METEOROLOGIE",
     "EASA PERFORMANCE ET PLANIFICATION",
-    "EASA REGLEMENTATION"
+    "EASA REGLEMENTATION",
+    "EASA PERFORMANCES HUMAINES" // Nouvelle catégorie
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
@@ -202,7 +208,8 @@ function updateCategorySelect() {
     { value: "EASA CONNAISSANCE DE L'AVION", display: "EASA CONNAISSANCE DE L'AVION", count: countEasaConnaissance },
     { value: "EASA METEOROLOGIE", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
     { value: "EASA PERFORMANCE ET PLANIFICATION", display: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
-    { value: "EASA REGLEMENTATION", display: "EASA REGLEMENTATION", count: countEasaReglementation }
+    { value: "EASA REGLEMENTATION", display: "EASA REGLEMENTATION", count: countEasaReglementation },
+    { value: "EASA PERFORMANCES HUMAINES", display: "EASA PERFORMANCES HUMAINES", count: countEasaPerfHumaines }
   ];
   
   categories.forEach(cat => {
@@ -247,6 +254,7 @@ function getNormalizedCategory(cat) {
   if (cat.includes("meteorologie"))    return "EASA METEOROLOGIE";
   if (cat.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
   if (cat.includes("reglementation"))  return "EASA REGLEMENTATION";
+  if (cat.includes("performances humaines")) return "EASA PERFORMANCES HUMAINES";
 
   return cat.toUpperCase();
 }
@@ -261,6 +269,7 @@ function getNormalizedSelectedCategory(selected) {
   if (s.includes("meteorologie"))    return "EASA METEOROLOGIE";
   if (s.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
   if (s.includes("reglementation"))  return "EASA REGLEMENTATION";
+  if (s.includes("performances humaines")) return "EASA PERFORMANCES HUMAINES";
   return selected.toUpperCase();
 }
 
@@ -426,6 +435,9 @@ async function chargerQuestions(cat) {
         case "EASA REGLEMENTATION":
             fileName = "section_easa_reglementation.json";
             break;
+        case "EASA PERFORMANCES HUMAINES":
+            fileName = "section_easa_perf_humaines.json";
+            break;
         case "TOUTES":
             return;
         default:
@@ -449,7 +461,8 @@ const categoryFiles = {
     "section_easa_meteorologie": "section_easa_meteorologie.json",
     "section_easa_navigation": "section_easa_navigation.json",
     "section_easa_performance_planification": "section_easa_performance_planification.json",
-    "section_easa_reglementation": "section_easa_reglementation.json"
+    "section_easa_reglementation": "section_easa_reglementation.json",
+    "section_easa_perf_humaines": "section_easa_perf_humaines.json"
 };
 // Lors du changement de la sélection, on charge le fichier adéquat
 const catSel = document.getElementById("categorie-select");
@@ -872,7 +885,13 @@ async function initStats() {
       "MASSE ET CENTRAGE",
       "MOTORISATION",
       "EASA PROCEDURES",
-      "EASA AERODYNAMIQUE"   // ← inclure ici
+      "EASA AERODYNAMIQUE",   // ← inclure ici
+      "EASA NAVIGATION",
+      "EASA CONNAISSANCE DE L'AVION",
+      "EASA METEOROLOGIE",
+      "EASA PERFORMANCE ET PLANIFICATION",
+      "EASA REGLEMENTATION",
+      "EASA PERFORMANCES HUMAINES" // Nouvelle catégorie
     ];
 
     const statsArr = [];
@@ -1046,6 +1065,15 @@ function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, st
 
     <hr>
     <h2>Catégorie : EASA REGLEMENTATION</h2>
+    <p>Total : ${totalEasa} questions</p>
+    <p>✅ Réussies : ${statsEasa.reussie}</p>
+    <p>❌ Ratées : ${statsEasa.ratee}</p>
+    <p>👀 Non vues : ${statsEasa.nonvue}</p>
+    <p>📌 Marquées : ${statsEasa.marquee}</p>
+    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+
+    <hr>
+    <h2>Catégorie : EASA PERFORMANCES HUMAINES</h2>
     <p>Total : ${totalEasa} questions</p>
     <p>✅ Réussies : ${statsEasa.reussie}</p>
     <p>❌ Ratées : ${statsEasa.ratee}</p>
@@ -1304,7 +1332,12 @@ const categories = [
   { name: "MOTORISATION", count: 0 },
   { name: "EASA PROCEDURES", count: 0 },
   { name: "EASA AERODYNAMIQUE", count: 0 },
-  { name: "EASA NAVIGATION", count: 0 }
+  { name: "EASA NAVIGATION", count: 0 },
+  { name: "EASA CONNAISSANCE DE L'AVION", count: 0 },
+  { name: "EASA METEOROLOGIE", count: 0 },
+  { name: "EASA PERFORMANCE ET PLANIFICATION", count: 0 },
+  { name: "EASA REGLEMENTATION", count: 0 },
+  { name: "EASA PERFORMANCES HUMAINES", count: 0 } // Nouvelle catégorie
 ];
 
 function displayCategories() {
@@ -1376,6 +1409,8 @@ function getModeCategory(cat) {
         return "EASA PERFORMANCE ET PLANIFICATION";
     } else if (fixed.indexOf("reglementation") !== -1) {
         return "EASA REGLEMENTATION";
+    } else if (fixed.indexOf("performances humaines") !== -1) {
+        return "EASA PERFORMANCES HUMAINES";
     }
     return fixed.toUpperCase();
 }
