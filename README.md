@@ -29,7 +29,8 @@ Quiz PPL d’aviation – repo contenant le quiz, ses données et ses scripts.
 ├── IMAGES_EASA_CONNAISSANCE_AVION/  
 ├── IMAGES_EASA_METEOROLOGIE/  
 ├── IMAGES_EASA_NAVIGATION/  
-└── IMAGES_EASA_PERFORMANCE_PLANIFICATION/
+├── IMAGES_EASA_PERFORMANCE_PLANIFICATION/  
+└── IMAGES_EASA_PERF_HUMAINE/
 
 ## Détails des dossiers
 
@@ -125,6 +126,13 @@ Liste des fichiers d’illustration des questions EASA Performance et Planificat
 - Performanceplanification99.jpg
 - Performanceplanification100.jpg
 - Performanceplanification101.jpg
+
+## Dossier d'images
+
+Un dossier nommé **IMAGES_EASA_PERF_HUMAINE** a été ajouté à la racine.  
+Il contient les images suivantes:
+- image55.jpg
+- image56.jpeg
 
 ## Fichiers principaux
 
