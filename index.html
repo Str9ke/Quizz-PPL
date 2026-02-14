@@ -18,29 +18,34 @@
         const nb = localStorage.getItem('quizNbQuestions');
         const current = localStorage.getItem('currentQuestions');
         
-        console.log('%c[EARLY-DEBUG]', 'color:red;font-weight:bold', {
+        const debugInfo = {
           isStandalone: standalone,
           url: window.location.href,
           urlHasAccueil: window.location.search.includes('accueil'),
-          localStorageKeys: Object.keys(localStorage),
           quizCategory: cat,
           quizMode: mode,
           quizNbQuestions: nb,
           currentQuestionsExists: !!current,
           currentQuestionsLength: current ? JSON.parse(current).length : 0
-        });
+        };
+        
+        console.log('%c[EARLY-DEBUG]', 'color:red;font-weight:bold', debugInfo);
+        console.error('[EARLY-DEBUG-ERROR]', debugInfo);
+        alert('[EARLY-DEBUG]\n' + JSON.stringify(debugInfo, null, 2));
         
         // Si on est en mode standalone, configuration existe, et pas de ?accueil dans l'URL
         if (standalone && !window.location.search.includes('accueil')) {
           // Si au moins une configuration ou questions existent, rediriger
           if (current || (cat && mode && nb)) {
             console.log('%c[EARLY-REDIRECT]', 'color:green;font-weight:bold', 'Redirection vers quiz.html');
+            alert('[EARLY-REDIRECT] Redirection vers quiz.html');
             // Délai court pour laisser le temps au log de s'afficher
             setTimeout(() => {
               window.location = 'quiz.html';
             }, 100);
           } else {
             console.log('%c[EARLY-NO-CONFIG]', 'color:orange', 'Mode standalone détecté mais pas de config quiz trouvée');
+            alert('[EARLY-NO-CONFIG] Mode standalone mais pas de config');
           }
         } else if (!standalone) {
           console.log('%c[EARLY-NOT-STANDALONE]', 'color:blue', 'Mode browser classique');
