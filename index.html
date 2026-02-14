@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <script>
-      // REDIRECTION AUTOMATIQUE EN MODE STANDALONE (exécuté très tôt, avant Firebase)
+      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exécuté très tôt, avant Firebase)
       (function() {
         const autoStartQuiz = localStorage.getItem('autoStartQuiz') === 'true';
         const cat = localStorage.getItem('quizCategory');
@@ -24,8 +24,10 @@
         // Si autoStartQuiz est activé, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
           console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
-          if (current || (cat && mode && nb)) {
-            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection immédiate vers quiz.html');
+          if (cat && mode && nb) {
+            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection immédiate vers quiz.html avec regénération');
+            // Marquer qu'on doit régénérer les questions (pas utiliser currentQuestions stockées)
+            localStorage.setItem('regenerateQuestions', 'true');
             // Redirection IMMÉDIATE sans setTimeout
             window.location = 'quiz.html';
           } else {
