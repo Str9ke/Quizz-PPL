@@ -16,9 +16,9 @@
         if (isStandalone() && !window.location.search.includes('accueil')) {
           // On attend que Firebase soit prêt et que l'utilisateur soit connecté
           const unsubscribe = window.auth && window.auth.onAuthStateChanged ?
-            window.auth.onAuthStateChanged(function(user) {
+            window.auth.onAuthStateChanged(async function(user) {
               if (user) {
-                // Si une config quiz existe, on va directement sur quiz.html
+                // Si une config quiz existe déjà, on va directement sur quiz.html
                 if (localStorage.getItem('currentQuestions')) {
                   window.location = 'quiz.html';
                 } else {
@@ -27,7 +27,33 @@
                   const mode = localStorage.getItem('quizMode');
                   const nb = localStorage.getItem('quizNbQuestions');
                   if (cat && mode && nb) {
-                    // On simule un démarrage quiz automatique
+                    // On génère automatiquement le quiz dans localStorage puis on redirige
+                    try {
+                      // Charger le script principal si besoin
+                      if (typeof chargerQuestions !== 'function') {
+                        await new Promise((resolve, reject) => {
+                          const s = document.createElement('script');
+                          s.src = 'script.js';
+                          s.onload = resolve;
+                          s.onerror = reject;
+                          document.head.appendChild(s);
+                        });
+                      }
+                      // Normaliser la catégorie
+                      let catNorm = (typeof getNormalizedCategory === 'function') ? getNormalizedCategory(cat) : cat;
+                      if (catNorm === "TOUTES") {
+                        if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+                      } else {
+                        if (typeof chargerQuestions === 'function') await chargerQuestions(catNorm);
+                      }
+                      if (typeof filtrerQuestions === 'function') await filtrerQuestions(mode, parseInt(nb));
+                      if (typeof currentQuestions !== 'undefined') {
+                        localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+                      }
+                    } catch (e) {
+                      // Si erreur, on laisse l'utilisateur sur l'accueil
+                      console.error('Erreur auto-génération quiz:', e);
+                    }
                     window.location = 'quiz.html';
                   } else {
                     // Sinon, on reste sur l'accueil
