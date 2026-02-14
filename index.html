@@ -11,10 +11,33 @@
         );
       }
       // Si on est en mode standalone ET qu'on n'a pas explicitement demandé l'accueil
-      if (isStandalone() && !window.location.search.includes('accueil')) {
-        // On redirige directement vers le quiz
-        window.location = 'quiz.html';
-      }
+      // On attend que Firebase soit prêt pour vérifier l'utilisateur
+      document.addEventListener('DOMContentLoaded', function() {
+        if (isStandalone() && !window.location.search.includes('accueil')) {
+          // On attend que Firebase soit prêt et que l'utilisateur soit connecté
+          const unsubscribe = window.auth && window.auth.onAuthStateChanged ?
+            window.auth.onAuthStateChanged(function(user) {
+              if (user) {
+                // Si une config quiz existe, on va directement sur quiz.html
+                if (localStorage.getItem('currentQuestions')) {
+                  window.location = 'quiz.html';
+                } else {
+                  // Sinon, on tente de restaurer la dernière config quiz
+                  const cat = localStorage.getItem('quizCategory');
+                  const mode = localStorage.getItem('quizMode');
+                  const nb = localStorage.getItem('quizNbQuestions');
+                  if (cat && mode && nb) {
+                    // On simule un démarrage quiz automatique
+                    window.location = 'quiz.html';
+                  } else {
+                    // Sinon, on reste sur l'accueil
+                  }
+                }
+                if (unsubscribe) unsubscribe();
+              }
+            }) : null;
+        }
+      });
     </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
