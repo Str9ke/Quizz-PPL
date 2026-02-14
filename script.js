@@ -143,7 +143,8 @@ async function displayDailyStats() {
     
     // Compter les réponses d'aujourd'hui
     let answeredToday = 0;
-    const oldResponses = []; // DEBUG
+    const oldResponses = [];
+    const noTimestampResponses = []; // DEBUG - réponses sans timestamp
     Object.entries(responses).forEach(([key, response]) => {
       // Les réponses peuvent avoir un timestamp (Firestore FieldValue)
       let respTime = null;
@@ -177,11 +178,24 @@ async function displayDailyStats() {
             daysOld: Math.round((todayStartMs - respTime) / (1000 * 60 * 60 * 24))
           });
         }
+      } else {
+        // Pas de timestamp du tout
+        if (noTimestampResponses.length < 5) {
+          noTimestampResponses.push({
+            key: key,
+            response: response,
+            hasTimestamp: !!response.timestamp,
+            hasLastUpdated: !!response.lastUpdated
+          });
+        }
       }
     });
     
     if (oldResponses.length > 0) {
       console.log('[displayDailyStats-OLD-RESPONSES]', 'Exemples de réponses plus anciennes:', oldResponses);
+    }
+    if (noTimestampResponses.length > 0) {
+      console.log('[displayDailyStats-NO-TIMESTAMP]', 'Réponses SANS timestamp:', noTimestampResponses);
     }
     
     // Afficher le compteur
@@ -936,7 +950,8 @@ async function validerReponses() {
             category: q.categorie,
             questionId: q.id,
             status,
-            marked: wasMarked
+            marked: wasMarked,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (status === 'réussie') correctCount++;
     });
