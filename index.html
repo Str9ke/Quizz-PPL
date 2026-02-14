@@ -2,75 +2,38 @@
 <html lang="fr">
 <head>
     <script>
-      // Détection du mode standalone (PWA ou Chrome app)
-      function isStandalone() {
-        return (
-          window.matchMedia('(display-mode: standalone)').matches ||
-          window.navigator.standalone === true ||
-          window.matchMedia('(display-mode: window-controls-overlay)').matches
-        );
-      }
-      // Si on est en mode standalone ET qu'on n'a pas explicitement demandé l'accueil
-      // On attend que Firebase soit prêt pour vérifier l'utilisateur
-      document.addEventListener('DOMContentLoaded', function() {
-        // DEBUG : Affiche le contenu du localStorage au démarrage
-        console.log('DEBUG localStorage:', {
+      // REDIRECTION AUTOMATIQUE EN MODE STANDALONE (exécuté très tôt, avant Firebase)
+      (function() {
+        function isStandalone() {
+          return (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            window.matchMedia('(display-mode: window-controls-overlay)').matches
+          );
+        }
+        
+        console.log('[Early] isStandalone:', isStandalone());
+        console.log('[Early] localStorage:', {
           quizCategory: localStorage.getItem('quizCategory'),
           quizMode: localStorage.getItem('quizMode'),
           quizNbQuestions: localStorage.getItem('quizNbQuestions'),
-          currentQuestions: localStorage.getItem('currentQuestions')
+          currentQuestions: !!localStorage.getItem('currentQuestions')
         });
+        
+        // Si on est en mode standalone, configuration existe, et pas de ?accueil dans l'URL
         if (isStandalone() && !window.location.search.includes('accueil')) {
-          // On attend que Firebase soit prêt et que l'utilisateur soit connecté
-          const unsubscribe = window.auth && window.auth.onAuthStateChanged ?
-            window.auth.onAuthStateChanged(async function(user) {
-              if (user) {
-                // Si une config quiz existe déjà, on va directement sur quiz.html
-                if (localStorage.getItem('currentQuestions')) {
-                  window.location = 'quiz.html';
-                } else {
-                  // Sinon, on tente de restaurer la dernière config quiz
-                  const cat = localStorage.getItem('quizCategory');
-                  const mode = localStorage.getItem('quizMode');
-                  const nb = localStorage.getItem('quizNbQuestions');
-                  if (cat && mode && nb) {
-                    // On génère automatiquement le quiz dans localStorage puis on redirige
-                    try {
-                      // Charger le script principal si besoin
-                      if (typeof chargerQuestions !== 'function') {
-                        await new Promise((resolve, reject) => {
-                          const s = document.createElement('script');
-                          s.src = 'script.js';
-                          s.onload = resolve;
-                          s.onerror = reject;
-                          document.head.appendChild(s);
-                        });
-                      }
-                      // Normaliser la catégorie
-                      let catNorm = (typeof getNormalizedCategory === 'function') ? getNormalizedCategory(cat) : cat;
-                      if (catNorm === "TOUTES") {
-                        if (typeof loadAllQuestions === 'function') await loadAllQuestions();
-                      } else {
-                        if (typeof chargerQuestions === 'function') await chargerQuestions(catNorm);
-                      }
-                      if (typeof filtrerQuestions === 'function') await filtrerQuestions(mode, parseInt(nb));
-                      if (typeof currentQuestions !== 'undefined') {
-                        localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
-                      }
-                    } catch (e) {
-                      // Si erreur, on laisse l'utilisateur sur l'accueil
-                      console.error('Erreur auto-génération quiz:', e);
-                    }
-                    window.location = 'quiz.html';
-                  } else {
-                    // Sinon, on reste sur l'accueil
-                  }
-                }
-                if (unsubscribe) unsubscribe();
-              }
-            }) : null;
+          const cat = localStorage.getItem('quizCategory');
+          const mode = localStorage.getItem('quizMode');
+          const nb = localStorage.getItem('quizNbQuestions');
+          const current = localStorage.getItem('currentQuestions');
+          
+          // Si au moins une configuration ou questions existent, rediriger
+          if (current || (cat && mode && nb)) {
+            console.log('[Early] Redirection vers quiz.html (mode standalone)');
+            window.location = 'quiz.html';
+          }
         }
-      });
+      })();
     </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
