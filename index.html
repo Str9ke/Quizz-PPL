@@ -12,24 +12,27 @@
         
         const debugInfo = {
           autoStartQuiz: autoStartQuiz,
-          url: window.location.href,
-          urlHasAccueil: window.location.search.includes('accueil'),
           quizCategory: cat,
           quizMode: mode,
           quizNbQuestions: nb,
-          currentQuestionsExists: !!current
+          currentQuestionsExists: !!current,
+          allLocalStorageKeys: Object.keys(localStorage)
         };
         
-        console.log('%c[EARLY-DEBUG]', 'color:red;font-weight:bold', debugInfo);
+        console.log('%c[EARLY-DEBUG-AUTOSTART]', 'color:red;font-weight:bold;font-size:16px', debugInfo);
         
         // Si autoStartQuiz est activé, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
+          console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
           if (current || (cat && mode && nb)) {
-            console.log('%c[EARLY-REDIRECT]', 'color:green;font-weight:bold', 'Redirection auto vers quiz.html');
-            setTimeout(() => {
-              window.location = 'quiz.html';
-            }, 100);
+            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection immédiate vers quiz.html');
+            // Redirection IMMÉDIATE sans setTimeout
+            window.location = 'quiz.html';
+          } else {
+            console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activé mais pas de config trouvée');
           }
+        } else {
+          console.log('%c[EARLY-AUTOSTART-DISABLED]', 'color:blue', 'autoStartQuiz désactivé ou URL avec ?accueil');
         }
       })();
     </script>
