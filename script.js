@@ -104,20 +104,53 @@ async function displayDailyStats() {
     const doc = await db.collection('quizProgress').doc(uid).get();
     const responses = doc.exists ? doc.data().responses || {} : {};
     
-    // Aujourd'hui minuit UTC
+    // DEBUG : Afficher toutes les réponses brutes pour comprendre la structure
+    console.log('[displayDailyStats-RAW-RESPONSES]', {
+      totalResponses: Object.keys(responses).length,
+      sampleResponses: Object.entries(responses).slice(0, 3).map(([k, v]) => ({
+        key: k,
+        response: v,
+        hasTimestamp: !!v.timestamp,
+        hasLastUpdated: !!v.lastUpdated
+      }))
+    });
+    
+    // Aujourd'hui à minuit (heure locale)
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayStartTime = todayStart.getTime() / 1000; // en secondes Firebase
+    const todayStartMs = todayStart.getTime();
+    
+    console.log('[displayDailyStats-TIME-DEBUG]', {
+      now: now.toISOString(),
+      todayStart: todayStart.toISOString(),
+      todayStartMs: todayStartMs
+    });
     
     // Compter les réponses d'aujourd'hui
     let answeredToday = 0;
     Object.entries(responses).forEach(([key, response]) => {
-      // Les réponses ont un timestamp lastUpdated s'il existe
+      // Les réponses peuvent avoir un timestamp (Firestore FieldValue)
+      let respTime = null;
+      
       if (response.timestamp) {
-        const respTime = response.timestamp.seconds || 0;
-        if (respTime >= todayStartTime) {
-          answeredToday++;
+        // Si c'est un timestamp Firestore (a .seconds et .nanoseconds)
+        if (response.timestamp.seconds !== undefined) {
+          respTime = response.timestamp.seconds * 1000;
+        } else if (typeof response.timestamp === 'number') {
+          respTime = response.timestamp;
         }
+      } else if (response.lastUpdated) {
+        if (response.lastUpdated.seconds !== undefined) {
+          respTime = response.lastUpdated.seconds * 1000;
+        } else if (typeof response.lastUpdated === 'number') {
+          respTime = response.lastUpdated;
+        }
+      }
+      
+      // Si on a un timestamp et qu'il est >= à aujourd'hui minuit
+      if (respTime && respTime >= todayStartMs) {
+        answeredToday++;
+        console.log('[displayDailyStats-MATCH]', key, 'respTime:', new Date(respTime).toISOString());
       }
     });
     
@@ -128,6 +161,8 @@ async function displayDailyStats() {
       countElem.textContent = answeredToday;
       statsBar.style.display = 'block';
       console.log('[displayDailyStats] Questions répondues aujourd\'hui:', answeredToday);
+    } else {
+      console.warn('[displayDailyStats] Éléments HTML statsBar ou countElem non trouvés');
     }
   } catch (error) {
     console.error('[displayDailyStats] Erreur:', error);
