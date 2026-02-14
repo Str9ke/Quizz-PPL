@@ -12,26 +12,38 @@
           );
         }
         
-        console.log('[Early] isStandalone:', isStandalone());
-        console.log('[Early] localStorage:', {
-          quizCategory: localStorage.getItem('quizCategory'),
-          quizMode: localStorage.getItem('quizMode'),
-          quizNbQuestions: localStorage.getItem('quizNbQuestions'),
-          currentQuestions: !!localStorage.getItem('currentQuestions')
+        const standalone = isStandalone();
+        const cat = localStorage.getItem('quizCategory');
+        const mode = localStorage.getItem('quizMode');
+        const nb = localStorage.getItem('quizNbQuestions');
+        const current = localStorage.getItem('currentQuestions');
+        
+        console.log('%c[EARLY-DEBUG]', 'color:red;font-weight:bold', {
+          isStandalone: standalone,
+          url: window.location.href,
+          urlHasAccueil: window.location.search.includes('accueil'),
+          localStorageKeys: Object.keys(localStorage),
+          quizCategory: cat,
+          quizMode: mode,
+          quizNbQuestions: nb,
+          currentQuestionsExists: !!current,
+          currentQuestionsLength: current ? JSON.parse(current).length : 0
         });
         
         // Si on est en mode standalone, configuration existe, et pas de ?accueil dans l'URL
-        if (isStandalone() && !window.location.search.includes('accueil')) {
-          const cat = localStorage.getItem('quizCategory');
-          const mode = localStorage.getItem('quizMode');
-          const nb = localStorage.getItem('quizNbQuestions');
-          const current = localStorage.getItem('currentQuestions');
-          
+        if (standalone && !window.location.search.includes('accueil')) {
           // Si au moins une configuration ou questions existent, rediriger
           if (current || (cat && mode && nb)) {
-            console.log('[Early] Redirection vers quiz.html (mode standalone)');
-            window.location = 'quiz.html';
+            console.log('%c[EARLY-REDIRECT]', 'color:green;font-weight:bold', 'Redirection vers quiz.html');
+            // Délai court pour laisser le temps au log de s'afficher
+            setTimeout(() => {
+              window.location = 'quiz.html';
+            }, 100);
+          } else {
+            console.log('%c[EARLY-NO-CONFIG]', 'color:orange', 'Mode standalone détecté mais pas de config quiz trouvée');
           }
+        } else if (!standalone) {
+          console.log('%c[EARLY-NOT-STANDALONE]', 'color:blue', 'Mode browser classique');
         }
       })();
     </script>
