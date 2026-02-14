@@ -13,6 +13,13 @@
       // Si on est en mode standalone ET qu'on n'a pas explicitement demandé l'accueil
       // On attend que Firebase soit prêt pour vérifier l'utilisateur
       document.addEventListener('DOMContentLoaded', function() {
+        // DEBUG : Affiche le contenu du localStorage au démarrage
+        console.log('DEBUG localStorage:', {
+          quizCategory: localStorage.getItem('quizCategory'),
+          quizMode: localStorage.getItem('quizMode'),
+          quizNbQuestions: localStorage.getItem('quizNbQuestions'),
+          currentQuestions: localStorage.getItem('currentQuestions')
+        });
         if (isStandalone() && !window.location.search.includes('accueil')) {
           // On attend que Firebase soit prêt et que l'utilisateur soit connecté
           const unsubscribe = window.auth && window.auth.onAuthStateChanged ?
