@@ -396,6 +396,13 @@ async function demarrerQuiz() {
 
 async function initQuiz() {
   console.log(">>> initQuiz()");
+  
+  // DEBUG détaillé
+  console.log('[initQuiz-DEBUG] localStorage.getItem("currentQuestions"):', localStorage.getItem('currentQuestions'));
+  console.log('[initQuiz-DEBUG] localStorage.getItem("quizCategory"):', localStorage.getItem('quizCategory'));
+  console.log('[initQuiz-DEBUG] localStorage.getItem("quizMode"):', localStorage.getItem('quizMode'));
+  console.log('[initQuiz-DEBUG] localStorage.getItem("quizNbQuestions"):', localStorage.getItem('quizNbQuestions'));
+  
   // redirect if not logged in
   if (!auth.currentUser) {
     window.location = 'index.html';
@@ -404,6 +411,7 @@ async function initQuiz() {
 
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');
+  console.log('[initQuiz-CHECK] stored existe?', !!stored);
 
   // guard quiz container
   const quizContainer = document.getElementById('quizContainer');
@@ -418,10 +426,10 @@ async function initQuiz() {
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
   if (stored) {
-    console.log(">>> initQuiz() - Restauration des questions stockées");
+    console.log(">>> initQuiz() - RESTAURATION DES QUESTIONS STOCKÉES (length=" + JSON.parse(stored).length + ")");
     currentQuestions = JSON.parse(stored);
   } else {
-    console.log(">>> initQuiz() - Génération de nouvelles questions");
+    console.log(">>> initQuiz() - GÉNÉRATION DE NOUVELLES QUESTIONS");
     const catNorm = getNormalizedCategory(selectedCategory);
     if (catNorm === "TOUTES") {
       await loadAllQuestions();
@@ -429,6 +437,7 @@ async function initQuiz() {
       await chargerQuestions(catNorm);
     }
     await filtrerQuestions(modeQuiz, nbQuestions);
+    console.log('[initQuiz-GENERATED] Nouvelles questions générées (length=' + currentQuestions.length + ')');
     localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
 
