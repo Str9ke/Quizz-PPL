@@ -402,12 +402,8 @@ async function initQuiz() {
     return;
   }
 
-  // Vérifier si on doit régénérer les questions (mode autostart)
-  const regenerate = localStorage.getItem('regenerateQuestions') === 'true';
-  localStorage.removeItem('regenerateQuestions'); // Nettoyer le flag
-  
   // ← avoid ReferenceError
-  const stored = !regenerate ? localStorage.getItem('currentQuestions') : null;
+  const stored = localStorage.getItem('currentQuestions');
 
   // guard quiz container
   const quizContainer = document.getElementById('quizContainer');
@@ -421,11 +417,11 @@ async function initQuiz() {
   modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
-  if (stored && !regenerate) {
+  if (stored) {
     console.log(">>> initQuiz() - Restauration des questions stockées");
     currentQuestions = JSON.parse(stored);
   } else {
-    console.log(">>> initQuiz() - Régénération de nouvelles questions (regenerate=" + regenerate + ")");
+    console.log(">>> initQuiz() - Génération de nouvelles questions");
     const catNorm = getNormalizedCategory(selectedCategory);
     if (catNorm === "TOUTES") {
       await loadAllQuestions();

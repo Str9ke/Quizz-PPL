@@ -8,15 +8,12 @@
         const cat = localStorage.getItem('quizCategory');
         const mode = localStorage.getItem('quizMode');
         const nb = localStorage.getItem('quizNbQuestions');
-        const current = localStorage.getItem('currentQuestions');
         
         const debugInfo = {
           autoStartQuiz: autoStartQuiz,
           quizCategory: cat,
           quizMode: mode,
-          quizNbQuestions: nb,
-          currentQuestionsExists: !!current,
-          allLocalStorageKeys: Object.keys(localStorage)
+          quizNbQuestions: nb
         };
         
         console.log('%c[EARLY-DEBUG-AUTOSTART]', 'color:red;font-weight:bold;font-size:16px', debugInfo);
@@ -25,9 +22,10 @@
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
           console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
           if (cat && mode && nb) {
-            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection immédiate vers quiz.html avec regénération');
-            // Marquer qu'on doit régénérer les questions (pas utiliser currentQuestions stockées)
-            localStorage.setItem('regenerateQuestions', 'true');
+            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec RÉGÉNÉRATION des questions');
+            // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
+            localStorage.removeItem('currentQuestions');
+            console.log('[EARLY-ACTION] currentQuestions supprimé du localStorage');
             // Redirection IMMÉDIATE sans setTimeout
             window.location = 'quiz.html';
           } else {
