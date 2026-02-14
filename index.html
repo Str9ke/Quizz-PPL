@@ -83,6 +83,13 @@
 <body>
   <h1>Quiz Aviation - Accueil</h1>
 
+  <!-- Compteur de questions répondues aujourd'hui -->
+  <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin: 1rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Aujourd'hui</div>
+    <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;" id="answeredTodayCount">0</div>
+    <div style="font-size: 0.9rem; opacity: 0.9;">question(s) répondue(s)</div>
+  </div>
+
   <!-- Formulaire de connexion/inscription -->
   <div id="loginContainer" class="container">
     <h2>Connexion / Inscription</h2>

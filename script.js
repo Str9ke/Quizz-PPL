@@ -94,6 +94,47 @@ function normalizeResponses(raw) {
 }
 
 /**
+ * displayDailyStats() – Affiche le nombre de questions répondues aujourd'hui
+ */
+async function displayDailyStats() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    const responses = doc.exists ? doc.data().responses || {} : {};
+    
+    // Aujourd'hui minuit UTC
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStartTime = todayStart.getTime() / 1000; // en secondes Firebase
+    
+    // Compter les réponses d'aujourd'hui
+    let answeredToday = 0;
+    Object.entries(responses).forEach(([key, response]) => {
+      // Les réponses ont un timestamp lastUpdated s'il existe
+      if (response.timestamp) {
+        const respTime = response.timestamp.seconds || 0;
+        if (respTime >= todayStartTime) {
+          answeredToday++;
+        }
+      }
+    });
+    
+    // Afficher le compteur
+    const statsBar = document.getElementById('dailyStatsBar');
+    const countElem = document.getElementById('answeredTodayCount');
+    if (statsBar && countElem) {
+      countElem.textContent = answeredToday;
+      statsBar.style.display = 'block';
+      console.log('[displayDailyStats] Questions répondues aujourd\'hui:', answeredToday);
+    }
+  } catch (error) {
+    console.error('[displayDailyStats] Erreur:', error);
+  }
+}
+
+/**
  * toggleAutoStart() – Active/désactive le démarrage automatique du quiz
  */
 function toggleAutoStart() {
@@ -209,6 +250,9 @@ async function initIndex() {
       updateCategorySelect(); // same function used for other categories
     })
     .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
+  
+  // Afficher les statistiques du jour
+  await displayDailyStats();
 }
 
 /**
@@ -444,6 +488,10 @@ async function initQuiz() {
   const uid = auth.currentUser.uid;
   const doc = await db.collection('quizProgress').doc(uid).get();
   currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+  
+  // Afficher les statistiques du jour
+  await displayDailyStats();
+  
   afficherQuiz();
 }
 
