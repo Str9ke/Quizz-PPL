@@ -94,6 +94,29 @@ function normalizeResponses(raw) {
 }
 
 /**
+ * toggleAutoStart() – Active/désactive le démarrage automatique du quiz
+ */
+function toggleAutoStart() {
+  const checkbox = document.getElementById('autoStartCheckbox');
+  if (checkbox) {
+    const isChecked = checkbox.checked;
+    localStorage.setItem('autoStartQuiz', isChecked ? 'true' : 'false');
+    console.log('autoStartQuiz:', isChecked);
+  }
+}
+
+/**
+ * initAutoStartCheckbox() – Initialise l'état du checkbox au chargement de la page d'accueil
+ */
+function initAutoStartCheckbox() {
+  const checkbox = document.getElementById('autoStartCheckbox');
+  if (checkbox) {
+    const autoStart = localStorage.getItem('autoStartQuiz') === 'true';
+    checkbox.checked = autoStart;
+  }
+}
+
+/**
  * initIndex() – Chargement initial sur index.html
  */
 async function initIndex() {
@@ -162,6 +185,9 @@ async function initIndex() {
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
   document.getElementById('btnStart').disabled = false;
+  
+  // Initialiser le checkbox de démarrage automatique
+  initAutoStartCheckbox();
 
   // Mettre à jour le compteur de catégories
   const catCountElem = document.getElementById('categoryCount');
