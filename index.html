@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <script>
+      // Détection du mode standalone (PWA ou Chrome app)
+      function isStandalone() {
+        return (
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true ||
+          window.matchMedia('(display-mode: window-controls-overlay)').matches
+        );
+      }
+      // Si on est en mode standalone ET qu'on n'a pas explicitement demandé l'accueil
+      if (isStandalone() && !window.location.search.includes('accueil')) {
+        // On redirige directement vers le quiz
+        window.location = 'quiz.html';
+      }
+    </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz Aviation - Accueil</title>
