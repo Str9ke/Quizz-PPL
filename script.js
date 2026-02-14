@@ -1,3 +1,36 @@
+// Reset le quiz avec les mêmes paramètres (catégorie, mode, nbQuestions, sous-catégorie)
+function resetQuiz() {
+  // On relance le quiz avec les mêmes paramètres stockés
+  // (catégorie, mode, nbQuestions, sous-catégorie si applicable)
+  // Les paramètres sont déjà dans localStorage
+  // On refiltre et recharge les questions
+  const cat = localStorage.getItem('quizCategory') || "TOUTES";
+  const mode = localStorage.getItem('quizMode') || "toutes";
+  const nb = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
+  // Si une sous-catégorie existe, la conserver
+  const sousCat = localStorage.getItem('quizSousCategorie');
+
+  // Nettoyer les réponses précédentes du quiz en cours
+  localStorage.removeItem('currentQuestions');
+  // Optionnel: nettoyer les réponses utilisateur pour ce quiz
+  // (laisser la progression générale intacte)
+
+  // Recharger les questions et relancer le quiz
+  (async () => {
+    let catNorm = getNormalizedCategory(cat);
+    if (catNorm === "TOUTES") {
+      await loadAllQuestions();
+    } else {
+      await chargerQuestions(catNorm);
+    }
+    await filtrerQuestions(mode, nb);
+    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+    // Si sous-catégorie, la remettre
+    if (sousCat) localStorage.setItem('quizSousCategorie', sousCat);
+    // Recharger la page pour afficher le nouveau quiz
+    window.location.reload();
+  })();
+}
 // script.js
 
 // Récupérer les variables globales depuis window

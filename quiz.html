@@ -46,11 +46,28 @@
     <button onclick="validerReponses()">Valider les Réponses</button>
     <button onclick="window.location='stats.html'">Voir les Statistiques</button>
     <button onclick="window.location='index.html'">Retour Accueil</button>
+    <button id="resetQuizBtn" style="margin-left:1em;">Reset</button>
   </div>
   <div>
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <script src="script.js"></script>
+  <script>
+    // Ajout du gestionnaire pour le bouton Reset
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('resetQuizBtn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (typeof resetQuiz === 'function') {
+            resetQuiz();
+          } else {
+            // fallback: reload page
+            window.location.reload();
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
 
