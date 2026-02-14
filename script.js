@@ -105,14 +105,29 @@ async function displayDailyStats() {
     const responses = doc.exists ? doc.data().responses || {} : {};
     
     // DEBUG : Afficher toutes les réponses brutes pour comprendre la structure
+    const sampleResponses = Object.entries(responses).slice(0, 3).map(([k, v]) => {
+      let ts = null;
+      if (v.timestamp?.seconds !== undefined) {
+        ts = v.timestamp.seconds * 1000;
+      } else if (typeof v.timestamp === 'number') {
+        ts = v.timestamp;
+      } else if (v.lastUpdated?.seconds !== undefined) {
+        ts = v.lastUpdated.seconds * 1000;
+      } else if (typeof v.lastUpdated === 'number') {
+        ts = v.lastUpdated;
+      }
+      return {
+        key: k,
+        hasTimestamp: !!v.timestamp,
+        hasLastUpdated: !!v.lastUpdated,
+        extractedTimestamp: ts,
+        extractedDate: ts ? new Date(ts).toISOString() : 'N/A',
+        fullResponse: v
+      };
+    });
     console.log('[displayDailyStats-RAW-RESPONSES]', {
       totalResponses: Object.keys(responses).length,
-      sampleResponses: Object.entries(responses).slice(0, 3).map(([k, v]) => ({
-        key: k,
-        response: v,
-        hasTimestamp: !!v.timestamp,
-        hasLastUpdated: !!v.lastUpdated
-      }))
+      sampleResponses: sampleResponses
     });
     
     // Aujourd'hui à minuit (heure locale)
@@ -128,6 +143,7 @@ async function displayDailyStats() {
     
     // Compter les réponses d'aujourd'hui
     let answeredToday = 0;
+    const oldResponses = []; // DEBUG
     Object.entries(responses).forEach(([key, response]) => {
       // Les réponses peuvent avoir un timestamp (Firestore FieldValue)
       let respTime = null;
@@ -151,8 +167,22 @@ async function displayDailyStats() {
       if (respTime && respTime >= todayStartMs) {
         answeredToday++;
         console.log('[displayDailyStats-MATCH]', key, 'respTime:', new Date(respTime).toISOString());
+      } else if (respTime) {
+        // DEBUG : Montrer quelques réponses qui NE correspondent PAS
+        if (oldResponses.length < 5) {
+          oldResponses.push({
+            key: key,
+            respTime: respTime,
+            respDate: new Date(respTime).toISOString(),
+            daysOld: Math.round((todayStartMs - respTime) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
     });
+    
+    if (oldResponses.length > 0) {
+      console.log('[displayDailyStats-OLD-RESPONSES]', 'Exemples de réponses plus anciennes:', oldResponses);
+    }
     
     // Afficher le compteur
     const statsBar = document.getElementById('dailyStatsBar');
