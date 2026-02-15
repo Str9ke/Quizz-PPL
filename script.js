@@ -71,6 +71,7 @@ function showBuildTag(targetId = 'buildInfo') {
     }
   }
   el.textContent = `Build: ${APP_BUILD_TAG}`;
+  console.log('[buildTag]', APP_BUILD_TAG);
 }
 
 // Variables de configuration initiale
@@ -116,10 +117,27 @@ function normalizeResponses(raw) {
  * displayDailyStats() – Affiche le nombre de questions répondues aujourd'hui
  */
 function ensureDailyStatsBarVisible() {
-  const statsBar = document.getElementById('dailyStatsBar');
-  if (statsBar) {
-    statsBar.style.display = 'block';
+  let statsBar = document.getElementById('dailyStatsBar');
+  if (!statsBar) {
+    // recrée la barre si jamais absente du DOM
+    statsBar = document.createElement('div');
+    statsBar.id = 'dailyStatsBar';
+    statsBar.style.cssText = 'display:block;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:1rem;border-radius:8px;margin:1rem auto;max-width:600px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    statsBar.innerHTML = `
+      <div style="font-size:0.9rem;opacity:0.9;">Aujourd'hui</div>
+      <div style="font-size:2rem;font-weight:bold;margin:0.5rem 0;" id="answeredTodayCount">…</div>
+      <div style="font-size:0.9rem;opacity:0.9;">question(s) répondue(s)</div>
+    `;
+    const anchor = document.querySelector('h1');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(statsBar, anchor.nextSibling);
+    } else {
+      document.body.prepend(statsBar);
+    }
+    console.warn('[dailyStatsBar] recreated dynamically');
   }
+  statsBar.style.display = 'block';
+  console.log('[dailyStatsBar] visible=', !!statsBar);
 }
 
 async function displayDailyStats(forcedUid) {
@@ -135,7 +153,11 @@ async function displayDailyStats(forcedUid) {
       });
     });
   }
-  if (!uid) return;
+  if (!uid) {
+    console.warn('[displayDailyStats] no uid, abort');
+    return;
+  }
+  console.log('[displayDailyStats] uid=', uid);
   
   try {
     const doc = await db.collection('quizProgress').doc(uid).get();
