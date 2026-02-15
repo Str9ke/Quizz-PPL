@@ -43,6 +43,7 @@
 <body>
   <div id="resultContainer" style="display:none;"></div>
   <h1>Quiz Aviation - Quiz</h1>
+  <div id="buildInfo" style="text-align:center;font-size:12px;color:#555;margin-top:-6px;"></div>
 
   <!-- Compteur de questions répondues aujourd'hui -->
   <div id="dailyStatsBar" style="display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin: 1rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -64,7 +65,7 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="script.js?v=20240215"></script>
+  <script src="script.js?v=20240215c"></script>
   <script>
     // Ajout du gestionnaire pour le bouton Reset
     document.addEventListener('DOMContentLoaded', function() {

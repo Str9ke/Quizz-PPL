@@ -55,6 +55,24 @@ let currentQuestions = [];
 let currentResponses = {};
 let quizInitTriggered = false; // évite un double init sur quiz.html
 
+const APP_BUILD_TAG = '2024-02-15-quiz-counter-v3';
+
+function showBuildTag(targetId = 'buildInfo') {
+  let el = document.getElementById(targetId);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = targetId;
+    el.style.cssText = 'text-align:center;font-size:12px;margin:4px;color:#555;';
+    const anchor = document.querySelector('h1');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(el, anchor.nextSibling);
+    } else {
+      document.body.prepend(el);
+    }
+  }
+  el.textContent = `Build: ${APP_BUILD_TAG}`;
+}
+
 // Variables de configuration initiale
 let selectedCategory = "PROCÉDURE RADIO"; // Par défaut
 let modeQuiz = "toutes";
@@ -540,6 +558,7 @@ async function initQuiz() {
   console.log(">>> initQuiz()");
   
   ensureDailyStatsBarVisible();
+  showBuildTag();
 
   // DEBUG détaillé
   console.log('[initQuiz-DEBUG] localStorage.getItem("currentQuestions"):', localStorage.getItem('currentQuestions'));
@@ -834,6 +853,7 @@ async function initQuiz() {
   }
 
   ensureDailyStatsBarVisible();
+  showBuildTag();
 
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');
