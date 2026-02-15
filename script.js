@@ -97,7 +97,16 @@ function normalizeResponses(raw) {
 /**
  * displayDailyStats() – Affiche le nombre de questions répondues aujourd'hui
  */
+function ensureDailyStatsBarVisible() {
+  const statsBar = document.getElementById('dailyStatsBar');
+  if (statsBar) {
+    statsBar.style.display = 'block';
+  }
+}
+
 async function displayDailyStats(forcedUid) {
+  ensureDailyStatsBarVisible();
+
   // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
   let uid = forcedUid || auth.currentUser?.uid;
   if (!uid) {
@@ -530,6 +539,8 @@ async function demarrerQuiz() {
 async function initQuiz() {
   console.log(">>> initQuiz()");
   
+  ensureDailyStatsBarVisible();
+
   // DEBUG détaillé
   console.log('[initQuiz-DEBUG] localStorage.getItem("currentQuestions"):', localStorage.getItem('currentQuestions'));
   console.log('[initQuiz-DEBUG] localStorage.getItem("quizCategory"):', localStorage.getItem('quizCategory'));
@@ -821,6 +832,8 @@ async function initQuiz() {
     window.location = 'index.html';
     return;
   }
+
+  ensureDailyStatsBarVisible();
 
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');
