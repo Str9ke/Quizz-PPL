@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz Aviation - Statistiques</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
+  <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <!-- Chargement optionnel de la configuration locale (config.js) -->
-  <script src="config.js"></script>
   <script>
     // NOTE: apiKey is read from window.FIREBASE_CONFIG if provided (see config.example.js)
     const firebaseConfig = {
-      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'REPLACE_WITH_YOUR_API_KEY',
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
       authDomain: "quizaviation-b79ff.firebaseapp.com",
       projectId: "quizaviation-b79ff",
       storageBucket: "quizaviation-b79ff.firebasestorage.app",
