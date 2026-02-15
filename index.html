@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <script>
+      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exécuté très tôt, avant Firebase)
+      (function() {
+        const autoStartQuiz = localStorage.getItem('autoStartQuiz') === 'true';
+        const cat = localStorage.getItem('quizCategory');
+        const mode = localStorage.getItem('quizMode');
+        const nb = localStorage.getItem('quizNbQuestions');
+        
+        const debugInfo = {
+          autoStartQuiz: autoStartQuiz,
+          quizCategory: cat,
+          quizMode: mode,
+          quizNbQuestions: nb
+        };
+        
+        console.log('%c[EARLY-DEBUG-AUTOSTART]', 'color:red;font-weight:bold;font-size:16px', debugInfo);
+        
+        // Si autoStartQuiz est activé, redirection vers le quiz
+        if (autoStartQuiz && !window.location.search.includes('accueil')) {
+          console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
+          if (cat && mode && nb) {
+            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec RÉGÉNÉRATION des questions');
+            // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
+            localStorage.removeItem('currentQuestions');
+            console.log('[EARLY-ACTION] currentQuestions supprimé du localStorage');
+            // Redirection IMMÉDIATE sans setTimeout
+            window.location = 'quiz.html';
+          } else {
+            console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activé mais pas de config trouvée');
+          }
+        } else {
+          console.log('%c[EARLY-AUTOSTART-DISABLED]', 'color:blue', 'autoStartQuiz désactivé ou URL avec ?accueil');
+        }
+      })();
+    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Aviation - Accueil</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Inclusion des SDK Firebase en mode compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Configuration Firebase obtenue depuis la console Firebase
+    // NOTE: apiKey is read from window.FIREBASE_CONFIG if provided (see config.example.js)
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'REPLACE_WITH_YOUR_API_KEY',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    // Attacher Auth et Firestore à window pour les rendre globalement accessibles
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+
+    // Surveille l'état de connexion de l'utilisateur
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("Utilisateur connecté :", user.uid);
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("quizContainer").style.display = "block";
+        if (typeof initIndex === 'function') {
+          initIndex();
+        }
+      } else {
+        console.log("Aucun utilisateur connecté");
+        document.getElementById("loginContainer").style.display = "block";
+        document.getElementById("quizContainer").style.display = "none";
+      }
+    });
+  </script>
+</head>
+<body>
+  <h1>Quiz Aviation - Accueil</h1>
+
+  <!-- Compteur de questions répondues aujourd'hui -->
+  <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin: 1rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Aujourd'hui</div>
+    <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;" id="answeredTodayCount">0</div>
+    <div style="font-size: 0.9rem; opacity: 0.9;">question(s) répondue(s)</div>
+  </div>
+
+  <!-- Formulaire de connexion/inscription -->
+  <div id="loginContainer" class="container">
+    <h2>Connexion / Inscription</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Mot de passe (min. 6 caractères)" required>
+      <button type="submit">Se connecter / S'inscrire</button>
+    </form>
+  </div>
+
+  <!-- Interface du quiz, affichée après authentification -->
+  <div id="quizContainer" class="container" style="display: none;">
+    <!-- Sélection de la catégorie -->
+    <label for="categorie">Catégorie :</label>
+    <select id="categorie" onchange="categoryChanged()">
+      <option value="TOUTES">TOUTES LES QUESTIONS</option>
+      <option value="EASA PROCEDURES">EASA PROCEDURES</option>
+      <option value="section_easa_aerodynamique">EASA AERODYNAMIQUE</option>
+      <option value="section_easa_connaissance_avion">EASA CONNAISSANCE AVION</option>
+      <option value="section_easa_meteorologie">EASA METEOROLOGIE</option>
+      <option value="section_easa_navigation">EASA NAVIGATION</option>
+      <option value="section_easa_performance_planification">EASA PERFORMANCE PLANIFICATION</option>
+      <option value="section_easa_reglementation">EASA REGLEMENTATION</option>
+      <option value="questions_easa_procedures_op.json">EASA PERFORMANCES HUMAINES (xx questions)</option>
+      <!-- ... autres options déjà existantes ... -->
+    </select>
+    <br><br>
+    <!-- Choix du nombre de questions -->
+    <label for="nbQuestions">Nombre de questions :</label>
+    <input type="number" id="nbQuestions" value="10" min="1">
+    <br><br>
+    <!-- Choix du mode -->
+    <label for="mode">Mode :</label>
+    <select id="mode">
+      <!-- Options mises à jour par updateModeCounts() -->
+    </select>
+    <br><br>
+    <p id="totalGlobalInfo" style="color: #444;"></p>
+    
+    <!-- Option Démarrage automatique -->
+    <label for="autoStartCheckbox" style="margin-top: 1rem; display: block;">
+      <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
+      <strong>Démarrage automatique</strong> (au prochain lancement, le quiz se lancera automatiquement avec cette configuration)
+    </label>
+    <br><br>
+    
+    <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
+    <button onclick="window.location='stats.html'">Voir les Statistiques</button>
+    <br><br>
+    <div id="progressionContainer" style="margin-top: 1rem; background: #f1f1f1; padding: 1rem; border-radius: 4px;"></div>
+    <br><br>
+    <!-- Bouton de déconnexion -->
+    <button id="btnLogout">Déconnexion</button>
+    <br><br>
+  </div>
+
+  <!-- Placeholder pour l'élément manquant -->
+  <div id="missingElement"></div>
+
+  <!-- Inclusion de votre script principal -->
+  <script src="script.js"></script>
+
+  <!-- Gestion de la connexion et déconnexion -->
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (password.length < 6) {
+        alert("Le mot de passe doit contenir au moins 6 caractères.");
+        return;
+      }
+
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log("Connecté :", userCredential.user.uid);
+      } catch (error) {
+        console.error("Erreur lors de la connexion :", error);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
+          try {
+            const newUser = await auth.createUserWithEmailAndPassword(email, password);
+            console.log("Utilisateur créé et connecté :", newUser.user.uid);
+          } catch (creationError) {
+            console.error("Erreur lors de la création du compte :", creationError);
+            alert("Erreur lors de la création du compte : " + creationError.message);
+          }
+        } else {
+          alert("Erreur de connexion : " + error.message);
+        }
+      }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        console.log("Déconnecté !");
+        window.location.reload();
+      } catch (error) {
+        console.error("Erreur lors de la déconnexion :", error);
+      }
+    });
+  </script>
+</body>
+</html>

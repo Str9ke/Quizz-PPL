@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Aviation - Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    // NOTE: apiKey is read from window.FIREBASE_CONFIG if provided (see config.example.js)
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'REPLACE_WITH_YOUR_API_KEY',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+
+    // Initialiser Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+
+    console.log("Firebase initialisé :", firebase.apps.length > 0);
+    console.log("Auth attaché à window :", !!window.auth);
+  </script>
+  <script>
+    auth.onAuthStateChanged(user => {
+      if (user) initQuiz();
+      else window.location = 'index.html';
+    });
+  </script>
+</head>
+<body>
+  <div id="resultContainer" style="display:none;"></div>
+  <h1>Quiz Aviation - Quiz</h1>
+
+  <!-- Compteur de questions répondues aujourd'hui -->
+  <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin: 1rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="font-size: 0.9rem; opacity: 0.9;">Aujourd'hui</div>
+    <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;" id="answeredTodayCount">0</div>
+    <div style="font-size: 0.9rem; opacity: 0.9;">question(s) répondue(s)</div>
+  </div>
+
+  <div class="container" id="quizContainer">
+    <!-- Les questions seront affichées ici -->
+  </div>
+  <div class="container" style="text-align: center; margin-top: 1rem;">
+    <button onclick="validerReponses()">Valider les Réponses</button>
+    <button onclick="window.location='stats.html'">Voir les Statistiques</button>
+    <button onclick="window.location='index.html?accueil=1'">Retour Accueil</button>
+    <button id="resetQuizBtn" style="margin-left:1em;">Reset</button>
+  </div>
+  <div>
+    Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
+  </div>
+  <script src="script.js"></script>
+  <script>
+    // Ajout du gestionnaire pour le bouton Reset
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('resetQuizBtn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (typeof resetQuiz === 'function') {
+            resetQuiz();
+          } else {
+            // fallback: reload page
+            window.location.reload();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
+

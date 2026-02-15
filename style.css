@@ -1,0 +1,220 @@
+/* ----- Global layout ----- */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0; 
+  padding: 0;
+  background: #eceff1;
+  color: #333;
+}
+
+h1 {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.container {
+  width: 80%;
+  max-width: 800px;
+  margin: 1rem auto;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Formulaires et boutons */
+label {
+  margin-right: 4px;
+  font-weight: bold;
+}
+
+/* --- Mise en page pour les réponses du quiz avec Flexbox --- */
+.answer-list label {
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
+  width: 100%;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.answer-list label input[type="radio"] {
+  flex: 0 0 auto;
+  margin-right: 8px;
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+}
+
+.answer-list label span {
+  flex: 1;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+/* Éléments de formulaire */
+select, input {
+  margin-right: 10px;
+  padding: 4px 6px;
+}
+
+button {
+  margin-top: 8px;
+  margin-right: 8px;
+  padding: 6px 12px;
+  border: none;
+  color: #fff;
+  background: #0277bd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #015c91;
+}
+
+button:disabled {
+  background: #b0bec5;
+  cursor: not-allowed;
+}
+
+/* Style pour le bouton de marquage */
+.mark-button {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.mark-button:hover {
+  background: #e68900;
+}
+
+.mark-button-disabled {
+  background: #b0bec5;
+  color: #fff;
+  cursor: default; /* Pas de symbole interdit */
+}
+
+.mark-button-disabled:hover {
+  background: #b0bec5;
+}
+
+/* Distinction question/réponse */
+.question-block {
+  margin-bottom: 1rem;
+  border: 2px solid #b0bec5;
+  border-radius: 4px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.question-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #37474f;
+}
+
+.answer-list {
+  margin-left: 20px;
+  color: #455a64;
+}
+
+/* Correction: texte vert / rouge */
+.correct {
+  color: green;
+  font-weight: bold;
+}
+
+.wrong {
+  color: red;
+  font-weight: bold;
+}
+
+/* Résultat global du quiz */
+#resultContainer {
+  background: #ffc107;
+  color: #212121;
+  font-weight: bold;
+  text-align: center;
+  border: 2px solid #ffb300;
+  border-radius: 4px;
+  margin-bottom: 1rem; /* Ajustement pour qu'il soit bien espacé */
+  margin-top: 1rem; /* Ajoute un espace pour éviter qu'elle soit masquée */
+  padding: 0.5rem; /* Réduit l'épaisseur comme au début */
+  height: auto; /* Ajuste automatiquement la hauteur */
+  position: sticky; /* Reste visible en haut */
+  top: 0;
+  z-index: 1000;
+}
+
+/* Barre de progression */
+.progressbar {
+  width: 100%;
+  height: 20px;
+  background: #cfd8dc;
+  border-radius: 10px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.progress {
+  height: 20px;
+  background: #4caf50;
+  transition: width 0.6s ease;
+}
+
+/* Style pour les boutons désactivés */
+.disabled-button {
+  background: #b0bec5;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+/* Style pour le bouton "Supprimer" */
+.delete-button {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.delete-button:hover {
+  background: #b71c1c;
+}
+
+/* ----- Responsive design ----- */
+@media (max-width: 600px) {
+  .container {
+    width: 95%;
+    padding: 1rem;
+  }
+  
+  label, select, input {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  button {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  .answer-list {
+    margin-left: 10px;
+  }
+  
+  .answer-list label {
+    display: flex !important;
+    align-items: center !important;
+    width: 100%;
+  }
+}
+
