@@ -52,6 +52,58 @@
     <div style="font-size: 0.9rem; opacity: 0.9;">question(s) répondue(s)</div>
   </div>
 
+  <script>
+    // Fallback ultra-simple pour afficher le compteur même si le script principal n'est pas chargé
+    (function() {
+      const waitForAuth = () => new Promise(resolve => {
+        const u = auth.currentUser;
+        if (u) return resolve(u);
+        const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+      });
+
+      const countToday = (responses) => {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        let count = 0;
+        Object.values(responses || {}).forEach(r => {
+          let ts = null;
+          if (r.timestamp?.seconds !== undefined) ts = r.timestamp.seconds * 1000;
+          else if (typeof r.timestamp === 'number') ts = r.timestamp;
+          else if (r.lastUpdated?.seconds !== undefined) ts = r.lastUpdated.seconds * 1000;
+          else if (typeof r.lastUpdated === 'number') ts = r.lastUpdated;
+          if (ts && ts >= todayStart) count++;
+        });
+        return count;
+      };
+
+      const renderCount = (n) => {
+        const bar = document.getElementById('dailyStatsBar');
+        const num = document.getElementById('answeredTodayCount');
+        if (bar) bar.style.display = 'block';
+        if (num) num.textContent = n;
+      };
+
+      const run = async () => {
+        try {
+          const user = await waitForAuth();
+          if (!user) return;
+          const doc = await db.collection('quizProgress').doc(user.uid).get();
+          const responses = doc.exists ? doc.data().responses || {} : {};
+          const n = countToday(responses);
+          renderCount(n);
+          console.log('[fallback-dailyStats] uid=', user.uid, 'count=', n);
+        } catch (e) {
+          console.warn('[fallback-dailyStats] error', e);
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(run, 400);
+        setTimeout(run, 1400);
+      });
+    })();
+  </script>
+
   <div class="container" id="quizContainer">
     <!-- Les questions seront affichées ici -->
   </div>
@@ -65,7 +117,7 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="script.js?v=20240215e"></script>
+  <script src="script.js?v=20240215f"></script>
   <script>
     // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
     document.addEventListener('DOMContentLoaded', () => {
