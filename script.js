@@ -843,6 +843,8 @@ async function initQuiz() {
   const uid = auth.currentUser.uid;
   const doc = await db.collection('quizProgress').doc(uid).get();
   currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+  // Affiche le compteur quotidien sur la page du quiz
+  await displayDailyStats();
   afficherQuiz();
 }
 
@@ -1000,6 +1002,8 @@ async function validerReponses() {
     afficherBoutonsMarquer();
     // mettre à jour le compteur de marquées dans l’interface
     if (typeof updateMarkedCount === 'function') updateMarkedCount();
+    // mettre à jour le compteur de questions répondues aujourd'hui
+    await displayDailyStats();
 }
 
 /**
