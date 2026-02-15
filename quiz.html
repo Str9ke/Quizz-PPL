@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <title>Quiz Aviation - Quiz</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
@@ -62,7 +63,8 @@
   <div>
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
-  <script src="script.js"></script>
+  <!-- Cache-bust to forcer le chargement de la dernière version du script -->
+  <script src="script.js?v=20240215"></script>
   <script>
     // Ajout du gestionnaire pour le bouton Reset
     document.addEventListener('DOMContentLoaded', function() {
