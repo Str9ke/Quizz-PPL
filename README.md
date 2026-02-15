@@ -154,3 +154,10 @@ Il contient les images suivantes:
 Si vous voulez, je peux :
 - générer les commandes `git filter-repo` / BFG pour supprimer la clé de l'historique, ou
 - vous guider pas à pas pour régénérer et restreindre la clé dans Google Cloud.
+
+### Déploiement sécurisé sur GitHub Pages 🔁
+
+- Pour que la **version hébergée** fonctionne sans mettre de clé en clair, ajoutez un secret `FIREBASE_API_KEY` dans les _Settings → Secrets → Actions_.
+- J’ai ajouté une GitHub Action (`.github/workflows/deploy-pages.yml`) qui génère `config.js` au moment du déploiement en lisant ce secret — **pas de clé dans le repo**.
+- Après avoir ajouté le secret, lancez l’action manuellement (onglet Actions → "Deploy Pages (inject FIREBASE_API_KEY)") ou poussez sur `main` pour redéployer automatiquement.
+

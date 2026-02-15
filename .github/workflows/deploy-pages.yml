@@ -1,0 +1,43 @@
+name: Deploy Pages (inject FIREBASE_API_KEY)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare site with secret config
+        run: |
+          set -e
+          mkdir -p site
+          # copy files but exclude .git, .github and local-only config.js
+          rsync -av --exclude='.git' --exclude='.github' --exclude='config.js' --exclude='node_modules' ./ site/
+
+          # create config.js from repository secret
+          cat > site/config.js <<'EOF'
+          window.FIREBASE_CONFIG = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}"
+          };
+          EOF
+
+          echo "Created site/config.js (first 5 lines):"
+          head -n 5 site/config.js || true
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
