@@ -47,8 +47,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script>
     // Configuration Firebase obtenue depuis la console Firebase
+    // NOTE: apiKey is read from window.FIREBASE_CONFIG if provided (see config.example.js)
     const firebaseConfig = {
-      apiKey: "AIzaSyA571OMe9w5ldJLcIwkT9bN6zd_Qn_Y9GU",
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'REPLACE_WITH_YOUR_API_KEY',
       authDomain: "quizaviation-b79ff.firebaseapp.com",
       projectId: "quizaviation-b79ff",
       storageBucket: "quizaviation-b79ff.firebasestorage.app",

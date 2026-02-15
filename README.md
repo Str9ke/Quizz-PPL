@@ -141,3 +141,16 @@ Il contient les images suivantes:
 - **stats.html** : affichage des statistiques  
 - **style.css** : styles globaux  
 - **script.js** : logique du quiz et intégration Firestore
+
+## Sécurité — Clés API 🔐
+
+- Les clés sensibles ne doivent jamais être commitées en clair dans le dépôt. Le projet lit désormais la clé Firebase depuis `window.FIREBASE_CONFIG` si présent (voir `config.example.js`).
+- Procédure recommandée après une fuite :
+  1. **Révoquer / régénérer** la clé compromise dans la console Google Cloud immédiatement.
+  2. Remplacer la clé dans votre environnement local (`config.js`) et **ne pas** committer `config.js`.
+  3. Nettoyer l'historique Git si nécessaire (ex : `git filter-repo` ou BFG) — voir la doc Google/GitHub pour la procédure complète.
+  4. Ajouter des **restrictions** (référents HTTP, IPs, APIs autorisées) à la clé dans la console GCP.
+
+Si vous voulez, je peux :
+- générer les commandes `git filter-repo` / BFG pour supprimer la clé de l'historique, ou
+- vous guider pas à pas pour régénérer et restreindre la clé dans Google Cloud.
