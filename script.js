@@ -53,6 +53,7 @@ if (typeof db === 'undefined' || !db) {
 let questions = [];
 let currentQuestions = [];
 let currentResponses = {};
+let quizInitTriggered = false; // évite un double init sur quiz.html
 
 // Variables de configuration initiale
 let selectedCategory = "PROCÉDURE RADIO"; // Par défaut
@@ -96,8 +97,17 @@ function normalizeResponses(raw) {
 /**
  * displayDailyStats() – Affiche le nombre de questions répondues aujourd'hui
  */
-async function displayDailyStats() {
-  const uid = auth.currentUser?.uid;
+async function displayDailyStats(forcedUid) {
+  // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
+  let uid = forcedUid || auth.currentUser?.uid;
+  if (!uid) {
+    uid = await new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(u => {
+        unsub();
+        resolve(u?.uid || null);
+      });
+    });
+  }
   if (!uid) return;
   
   try {
@@ -569,7 +579,7 @@ async function initQuiz() {
   currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   
   // Afficher les statistiques du jour
-  await displayDailyStats();
+  await displayDailyStats(uid);
   
   afficherQuiz();
 }
@@ -844,7 +854,7 @@ async function initQuiz() {
   const doc = await db.collection('quizProgress').doc(uid).get();
   currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   // Affiche le compteur quotidien sur la page du quiz
-  await displayDailyStats();
+  await displayDailyStats(auth.currentUser?.uid);
   afficherQuiz();
 }
 
@@ -1003,7 +1013,7 @@ async function validerReponses() {
     // mettre à jour le compteur de marquées dans l’interface
     if (typeof updateMarkedCount === 'function') updateMarkedCount();
     // mettre à jour le compteur de questions répondues aujourd'hui
-    await displayDailyStats();
+    await displayDailyStats(uid);
 }
 
 /**
@@ -1626,4 +1636,14 @@ function getKeyFor(q) {
 function updateMarkedCount() {
   // TODO: implement the logic if needed
   console.log("updateMarkedCount called");
+}
+
+// Sécurise l'init sur la page quiz en évitant les doublons et les problèmes de timing Auth
+if (window.location.pathname.endsWith('quiz.html')) {
+  auth.onAuthStateChanged(user => {
+    if (user && !quizInitTriggered) {
+      quizInitTriggered = true;
+      initQuiz();
+    }
+  });
 }
