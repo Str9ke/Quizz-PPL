@@ -55,7 +55,7 @@ let currentQuestions = [];
 let currentResponses = {};
 let quizInitTriggered = false; // évite un double init sur quiz.html
 
-const APP_BUILD_TAG = '2024-02-15-quiz-counter-v3';
+const APP_BUILD_TAG = '2024-02-15-quiz-counter-v4';
 
 function showBuildTag(targetId = 'buildInfo') {
   let el = document.getElementById(targetId);

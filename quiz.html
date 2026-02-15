@@ -65,7 +65,28 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="script.js?v=20240215d"></script>
+  <script src="script.js?v=20240215e"></script>
+  <script>
+    // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        if (typeof showBuildTag === 'function') showBuildTag();
+        if (typeof ensureDailyStatsBarVisible === 'function') ensureDailyStatsBarVisible();
+        const kick = async () => {
+          if (typeof displayDailyStats === 'function') {
+            console.log('[inline] forcing displayDailyStats');
+            await displayDailyStats();
+          } else {
+            console.warn('[inline] displayDailyStats not available');
+          }
+        };
+        setTimeout(kick, 500);
+        setTimeout(kick, 1500); // second essai au cas où auth arriverait plus tard
+      } catch (e) {
+        console.error('[inline] daily stats bootstrap error', e);
+      }
+    });
+  </script>
   <script>
     // Ajout du gestionnaire pour le bouton Reset
     document.addEventListener('DOMContentLoaded', function() {
