@@ -10,7 +10,9 @@
       "distance parcourue / vitesse verticale."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il existe plusieurs façons de définir la finesse : - le rapport Portance / Traînée. - le rapport distance parcourue / hauteur perdue en plané - le rapport vitesse horizontale / vitesse verticale.",
+    "explication_images": []
   },
   {
     "id": 2,
@@ -23,7 +25,9 @@
       "du même ordre de grandeur."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "QCM mal rédigé : effectivement, la portance est de l'ordre de 10 fois plus grande que la traînée, mais il faudrait préciser que c'est à l'incidence de finesse maximale, et ce n'est pas \"au moins\" car de nombreux aéronefs ont une finesse maximale inférieure à 10, par exemple le DR400 (9), le CTLS (8,5), le Rallye, etc.",
+    "explication_images": []
   },
   {
     "id": 3,
@@ -36,7 +40,9 @@
       "l'incidence augmente et la portance diminue."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La portance équilibre le poids, donc elle est constante (on va admettre que la consommation de carburant lors de l'arrondi est négligeable). En revanche, puisqu'on ralentit, pour conserver la portance constante, il faut augmenter l'incidence.",
+    "explication_images": []
   },
   {
     "id": 4,
@@ -49,7 +55,9 @@
       "virage engagé à droite."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En provoquant une dissymétrie, vous allez masquer l'aile gauche avec le fuselage. Comme vous êtes proche du décrochage, l'aile gauche va décrocher avant l'aile droite, et l'avion va partir en vrille à gauche.",
+    "explication_images": []
   },
   {
     "id": 5,
@@ -62,7 +70,9 @@
       "une forte inclinaison."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vrille est un décrochage dissymétrique. L'avion tourne sur lui-même autour d'un axe vertical, et ça descend très vite : rotation en lacet importante. Dans le virage engagé, l'avion n'est pas décroché, mais on est en piqué et en virage, avec une vitesse qui augmente rapidement : inclinaison, taux de chute et vitesse importante.",
+    "explication_images": []
   },
   {
     "id": 6,
@@ -75,7 +85,9 @@
       "1, 3, 5."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 7,
@@ -88,7 +100,9 @@
       "une diminution de la distance d'atterrissage et un allongement de la distance de décollage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'effet de sol diminue la traînée quand l'aile est proche de la surface. A l'atterrissage, l'avion va ralentir moins vite, et donc la distance va s'allonger. En revanche, au décollage, l'avion va accélérer plus vite et donc décoller plus rapidement que si l'effet de sol n'existait pas.",
+    "explication_images": []
   },
   {
     "id": 8,
@@ -101,7 +115,9 @@
       "uniquement du rayon de virage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La formule qui permet de déterminer le facteur de charge en virage est : n = 1 / cos Φ avec : n : facteur de charge Φ : inclinaison de l'avion. Un A380 incliné à 45° aura le même facteur de charge qu'un C150 :-)",
+    "explication_images": []
   },
   {
     "id": 9,
@@ -114,7 +130,9 @@
       "diminue, à l'inverse du facteur de charge."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le facteur de charge augmente, donc la vitesse de décrochage augmente.",
+    "explication_images": []
   },
   {
     "id": 10,
@@ -127,7 +145,9 @@
       "un décrochage dynamique."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lors d'un fort dérapage, le fuselage masque une partie de l'aile sous le vent relatif. Elle va donc décrocher avant sa consoeur, et un décrochage dissymétrique mène à la vrille.",
+    "explication_images": []
   },
   {
     "id": 11,
@@ -140,7 +160,9 @@
       "1,15."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La formule qui permet de déterminer le facteur de charge en virage est : n = 1 / cos Φ avec : n : facteur de charge Φ : inclinaison de l'avion. n = 1 / cos(30) = 1,15",
+    "explication_images": []
   },
   {
     "id": 12,
@@ -153,7 +175,9 @@
       "ne peut se faire qu'au-delà de la VLO."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La sortie du train génère une forte traînée. Sans toucher aux paramètres moteurs, l'aéronef étant compensé pour conserver une incidence donnée, et donc une vitesse donnée, il va automatiquement se mettre en descente.",
+    "explication_images": []
   },
   {
     "id": 13,
@@ -166,7 +190,9 @@
       "à la même incidence, mais à des vitesses différentes."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'incidence de décrochage est déterminée par le profil de l'aile. C'est donc une constante quelle que soit la masse de l'aéronef, le centrage ou l'âge du capitaine. En revanche, la charge alaire, c'est à dire la masse de l'aéronef, aura une influence sur la vitesse de décrochage.",
+    "explication_images": []
   },
   {
     "id": 14,
@@ -179,7 +205,9 @@
       "l'augmentation du facteur de charge."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les dispositifs hypersustentateurs, volets de bord de fuite ou plus rarement becs de bord d'attaque, ont pour but d'abaisser la vitesse de décrochage de façon à pouvoir décoller et atterrir à des vitesses faibles. Pour cela, ils sont conçus pour augmenter la portance, mais comme on n'a rien sans rien, ça augmente aussi la traînée.",
+    "explication_images": []
   },
   {
     "id": 15,
@@ -192,7 +220,9 @@
       "diminuée de 15 %."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le facteur de charge en virage est : n = 1 / cos φ avec φ l'angle d'inclinaison. A 45° en palier, n = 1,4. Le poids apparent augmente de 40 %, donc la portance aussi.",
+    "explication_images": []
   },
   {
     "id": 16,
@@ -205,7 +235,9 @@
       "à une vitesse proche de la VNO, une brusque variation d'assiette à cabrer."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vrille est un décrochage dissymétrique : une aile décroche avant l'autre. Ca va donc se concrétiser par une inclinaison brusque, et puisqu'il y a décrochage, une variation d'assiette à piquer.",
+    "explication_images": []
   },
   {
     "id": 17,
@@ -218,7 +250,9 @@
       "1,1 Vs."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à ne pas confondre avec la vitesse en approche, qui est de 1,3 Vs. Lorsqu'on début l'arrondi, on réduit les gaz et on aplatit la trajectoire. L'aéronef va ralentir, on va cabrer de plus en plus pour maintenir la trajectoire et se poser sur le train principal (pour les tricycles) ou 3 points pour les trains classiques. De fait, juste avant le posé des roues, on sera juste au-dessus du décrochage. Note : surtout ne croyez pas les horreurs qui circulent parfois au bar de l'aéroclub, comme quoi lors de l'atterrissage, on est en décrochage. Si, si, je l'ai déjà entendu ;-)",
+    "explication_images": []
   },
   {
     "id": 18,
@@ -231,7 +265,9 @@
       "l'incidence augmente."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le facteur de charge en virage ne dépend que de l'angle d'inclinaison : n = 1 / cos Φ Si vous maintenez l'inclinaison constante, le facteur de charge ne change pas. L'augmentation de vitesse va par contre avoir un effet sur le rayon de virage : plus vous allez vite, plus le rayon de virage va être grand.",
+    "explication_images": []
   },
   {
     "id": 19,
@@ -244,7 +280,9 @@
       "1, 2, 5."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 20,
@@ -257,7 +295,9 @@
       "uniquement l'inertie."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'écoulement de l'air autour d'un corps provoque des modifications de la pression locale, c'est un peu grâce à ça qu'on vole. Les frottements sont bien évidemment présents, les molécules d'air fricotant avec le corps en question !",
+    "explication_images": []
   },
   {
     "id": 21,
@@ -270,7 +310,9 @@
       "plus grande vitesse et plus grande incidence."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En virage, le facteur de charge augmente : n = 1/cosφ Or, la vitesse de décrochage est proportionnelle à la racine carrée du facteur de charge : Vs en virage = Vs en palier x racine de n",
+    "explication_images": []
   },
   {
     "id": 22,
@@ -283,7 +325,9 @@
       "1,225 m3/g."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La masse volumique, comme son nom l'indique, est la masse d'un certain volume d'air. En atmosphère standard, un mètre cube d'air pèse 1,225 kg. La densité est le rapport entre la masse volumique de l'air à l'altitude où vous vous trouvez et la masse volumique standard.",
+    "explication_images": []
   },
   {
     "id": 23,
@@ -296,7 +340,9 @@
       "le rapport portance sur traînée est minimal."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le maximum de portance avec le minimum de traînée correspond à la vitesse de finesse max de votre avion.",
+    "explication_images": []
   },
   {
     "id": 24,
@@ -309,7 +355,9 @@
       "la portance et la traînée diminuent."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les équations de portance et de traînée sont les suivantes : Rz = 1/2ρSV²Cz Rx = 1/2ρSV²Cx où : ρ = densité de l'air. S = surface alaire. V² = carré de la vitesse. Cx = coefficient de traînée, et Cz = coefficient de portance, qui dépendent essentiellement de l'incidence et de la forme du profil. Une augmentation de température se traduit par une diminution de la densité, ce qui diminue la portance et la traînée.",
+    "explication_images": []
   },
   {
     "id": 25,
@@ -322,7 +370,9 @@
       "d'une augmentation de l'incidence de l'aile lors d'une réduction de vitesse."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le décrochage dynamique est un décrochage sous facteur de charge, donc avant la vitesse de décrochage \"classique\". Le fait de tirer sur le manche comme un mulet augmente l'incidence, et si on le fait suffisamment brutalement, et/ou à basse vitesse, on provoque un décrochage dynamique.",
+    "explication_images": []
   },
   {
     "id": 26,
@@ -335,7 +385,11 @@
       "reste verticale, c'est la force centrifuge qui crée la force déviatrice."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La portance est perpendiculaire au plan des ailes. En inclinant l'avion, on incline la portance, qui se décompose donc en une composante verticale, qui équilibre le poids, et une composante horizontale, qui est la force qui fait tourner l'avion.",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_e95bf86e1723.jpg"
+    ]
   },
   {
     "id": 27,
@@ -348,7 +402,9 @@
       "le point D."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD/polaire.jpg"
+    "image_url": "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD/polaire.jpg",
+    "explication": "Le Cx en abscisse représentant la traînée, ce n'est pas très compliqué de trouver le point de traînée minimale : c'est le point le plus à gauche ! Ou pour les puristes : c'est le point de la courbe où la tangente est verticale.",
+    "explication_images": []
   },
   {
     "id": 28,
@@ -361,7 +417,9 @@
       "la charge alaire est élevée."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le coefficient de portance dépend de plusieurs facteurs, dont la forme du profil. En l'occurrence, toutes choses égales par ailleurs, le Cz est d'autant plus grand que le profil est cambré.",
+    "explication_images": []
   },
   {
     "id": 29,
@@ -374,7 +432,11 @@
       "de la portance sur le poids."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En vol normal en palier, la portance équilibre le poids, les deux sont donc égaux, ce qui procure un facteur de charge de 1. Mais en ressource ou en virage, la portance doit être supérieure au poids de l'avion, ce qui augmente le facteur de charge et provoque la sensation de tassement sur le siège.",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_d6fae3fff14e.jpg"
+    ]
   },
   {
     "id": 30,
@@ -387,7 +449,11 @@
       "de la composante du poids parallèle à la trajectoire."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le principe du planeur est de toujours descendre, de façon justement à créer une composante du poids qui fait office de traction. Après il ne reste plus qu'à trouver une ascendance plus puissante que le taux de descente du planeur. Les avions ne sont pas conçus pour planer (finesse entre 8 et 10 contre 30 à 60), il est donc rare de pouvoir trouver une ascendance suffisante pour vous maintenir en l'air. C'est possible sous les bons gros cumulonimbus, mais si vous vous trouvez dans un orage violent tout en étant en panne moteur, c'est que ce n'était vraiment pas le jour pour voler.",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_93f63976208c.jpg"
+    ]
   },
   {
     "id": 31,
@@ -400,7 +466,11 @@
       "l'incidence et la vitesse de décrochage augmentent."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Reprenons l'équation de sustentation : Rz = 1/2 ρ S V2 Cz Si la masse augmente, il faut augmenter la portance, et donc augmenter soit la vitesse, soit le Cz c'est à dire l'incidence. La plupart du temps, on se contente d'adapter l'incidence sans changer la vitesse. Pour une même vitesse, on a donc une incidence de vol plus élevée que pour une masse plus faible. Autrement dit : pour une incidence donnée, il sera nécessaire d'avoir une plus grande vitesse. Si on continue d'augmenter l'incidence, on va bien évidemment atteindre l'incidence de décrochage au bout d'un moment. Cette incidence max ne change pas, c'est une donnée aérodynamique de l'aile. En revanche, la vitesse à laquelle on va l'atteindre va varier en fonction de la masse, puisqu'on vient de voir que pour une incidence donnée, la vitesse sera plus grande.",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_eedb12f2fd64.jpg"
+    ]
   },
   {
     "id": 32,
@@ -413,7 +483,9 @@
       "vous ne réglez pas le compensateur, puisque vous n'avez pas changé que la vitesse."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le compensateur a pour but de conserver une incidence et donc une vitesse. Si vous augmentez la puissance, l'avion va se mettre en montée pour conserver son incidence / sa vitesse. Il faudra donc faire un effort sur le manche (pousser dessus) pour maintenir le palier, ou compenser l'avion pour la nouvelle vitesse. Le pilote intelligent évitant l'effort inutile, on choisira la deuxième solution.",
+    "explication_images": []
   },
   {
     "id": 33,
@@ -426,7 +498,9 @@
       "même vitesse qu'en ligne droite et même incidence."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vitesse de décrochage est proportionnelle à la racine carrée du facteur de charge. En virage, elle sera donc plus élevée qu'en vol rectiligne. En revanche, l'incidence de décrochage est une donnée aérodynamique du profil, et reste toujours la même. C'est la vitesse correspondant à cette incidence qui varie selon le facteur de charge.",
+    "explication_images": []
   },
   {
     "id": 34,
@@ -439,7 +513,9 @@
       "+3,8 et -1,5."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La certification des avions légers impose des facteurs de charge limite de : +3,8 / -1,5 en lisse +2 / 0 volets sortis.",
+    "explication_images": []
   },
   {
     "id": 35,
@@ -452,7 +528,9 @@
       "l'incidence de décrochage et la VNE."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour la limite basse, on parle de l'incidence de décrochage et pas de la vitesse de décrochage car celle-ci varie en fonction de la masse, du facteur de charge, du braquage des volets. La limite haute est une vitesse aérodynamique. Si un avion dépasse la VNE, il vaut le poids de la ferraille.",
+    "explication_images": []
   },
   {
     "id": 36,
@@ -465,7 +543,9 @@
       "est plus forte en virage qu'en ligne droite."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En virage, pour garder le palier, il faut augmenter la portance, soit en augmentant la vitesse, soit en augmentant l'incidence. Dans tous les cas, quand on augmente la portance, on augmente la traînée. La traînée en virage sera donc plus forte qu'en ligne droite.",
+    "explication_images": []
   },
   {
     "id": 37,
@@ -478,7 +558,11 @@
       "80 cm."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD/031-3219.jpg"
+    "image_url": "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD/031-3219.jpg",
+    "explication": "D'abord, trouvez les moments individuels en multipliant la masse par le bras de levier pour chaque ligne. Ensuite, faire le total de la masse et le total des moments. Puis diviser le moment total par la masse totale, ce qui nous donne 0,60 m.",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_28fe2546ebc6.jpg"
+    ]
   },
   {
     "id": 38,
@@ -491,7 +575,9 @@
       "le centre d'inertie."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le foyer est un point aérodynamique sur l'aile qui représente le point d'application de la portance de l'aile seule. Quand on considère l'avion entier, avec l'empennage, ce n'est plus le point d'application de la portance, mais quand une variation de portance se produit, c'est au foyer qu'elle se produira.",
+    "explication_images": []
   },
   {
     "id": 39,
@@ -504,7 +590,9 @@
       "la vitesse."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vrille est un décrochage dissymétrique. L'avion tourne sur lui-même autour d'un axe vertical, et ça descend très vite. Dans le virage engagé, l'avion n'est pas décroché, mais on est en piqué et en virage, avec une vitesse qui augmente rapidement. Hormis dans le cas de la vrille à plat, l'assiette n'est pas ce qui distingue la vrille du virage engagé. Le taux de chute est au contraire le point commun entre les deux. L'inclinaison pourrait être la bonne réponse, mais c'est la vitesse le plus flagrant. Dans la vrille, l'incidence est très importante, donc la vitesse indiquée très faible.",
+    "explication_images": []
   },
   {
     "id": 40,
@@ -517,7 +605,9 @@
       "la racine carrée de la vitesse."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Dans les formules, on trouve l'élément V2, ce qui signifie que la portance et la traînée varient en fonction du carré de la vitesse, entre autre. Si la vitesse est multipliée par 2, la portance et la traînée sont multipliées par 4.",
+    "explication_images": []
   },
   {
     "id": 41,
@@ -530,7 +620,9 @@
       "2, 3, 5."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 42,
@@ -543,7 +635,11 @@
       "équilibrer la composante du poids perpendiculaire au vent relatif."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "En montée, la portance n'est plus alignée avec le poids, ce qui induit une composante du poids parallèle à la traînée, et donc qui s'ajoute à celle-ci",
+    "explication_images": [
+      "IMAGES_GLIGLI_PRINCIPES_DU_VOL_HARD_EXPL/expl_5b6069bf95b9.png"
+    ]
   },
   {
     "id": 43,
@@ -556,7 +652,9 @@
       "est d'autant meilleure que sa stabilité est bonne."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Selon que la position du centre de gravité de l'avion, celui-ci va être plus ou moins maniable, plus ou moins stable. La position du centre de gravité étant directement lié au chargement de l'avion, il faut veiller à faire ça correctement.",
+    "explication_images": []
   },
   {
     "id": 44,
@@ -569,7 +667,9 @@
       "B subit un facteur de charge supérieur au facteur de charge de A."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le facteur de charge en virage ne dépend que de l'inclinaison. La formule pour le calculer est : n = 1/cos(inclinaison) En revanche, la vitesse va influencer le rayon de virage, qui sera plus grand pour l'avion plus rapide.",
+    "explication_images": []
   },
   {
     "id": 45,
@@ -582,6 +682,8 @@
       "la portance diminue."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une augmentation d'incidence, lorsque tout le reste est constant notamment la vitesse, provoque une augmentation de portance et de traînée.",
+    "explication_images": []
   }
 ]

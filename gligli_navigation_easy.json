@@ -10,7 +10,9 @@
       "le cap vrai."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La dérive est l'angle entre le cap et la route. Ensuite, tout est une question de référence commune : magnétique ou vraie.",
+    "explication_images": []
   },
   {
     "id": 2,
@@ -23,7 +25,9 @@
       "à la mémorisation cartographique de la surface terrestre."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le système GPS est constitué de 24 satellites en orbite autour de la Terre sur des orbites différentes, ce qui permet théoriquement de toujours pouvoir capter au moins 4 satellites n'importe où sur Terre.",
+    "explication_images": []
   },
   {
     "id": 3,
@@ -36,7 +40,9 @@
       "QNH."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Afficher zéro à l'altimètre revient à mesurer la pression atmosphérique à l'endroit où se situe l'avion, c'est à dire le QFE.",
+    "explication_images": []
   },
   {
     "id": 4,
@@ -49,7 +55,9 @@
       "AFIS."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'ATIS est un message enregistré par les contrôleurs, donnant les paramètres de l'aérodrome.",
+    "explication_images": []
   },
   {
     "id": 5,
@@ -62,7 +70,9 @@
       "un parallèle."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte normalement constituée, 1 minute d'angle sur un méridien représente 1 NM.",
+    "explication_images": []
   },
   {
     "id": 6,
@@ -75,7 +85,11 @@
       "supérieure."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les méridiens sont tous des grands cercles alors que les parallèles, sauf l'équateur, sont des petits cercles : leur circonférence est inférieure à la circonférence de la Terre. 10 degrés mesurés sur un parallèle autre que l'équateur correspondent donc à une distance inférieure que celle correspondant à 10 degrés mesurés sur un méridien (grand cercle).",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_cec71d82a704.jpg"
+    ]
   },
   {
     "id": 7,
@@ -88,7 +102,9 @@
       "K."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3410.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3410.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 8,
@@ -101,7 +117,11 @@
       "magnétique et compas."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le pôle Nord magnétique et le pôle Nord géographique ne sont pas confondus, car le Nm bouge tout le temps. La différence angulaire entre les deux est appelée déclinaison magnétique.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_ed0e167149ce.jpg"
+    ]
   },
   {
     "id": 9,
@@ -114,7 +134,11 @@
       "356°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm = 356 - (-28) = 356 + 28 = 384° Comme les caps et les routes ne peuvent dépasser 360° : Rm = 384 - 360 = 024°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_fc9f5d6fa857.jpg"
+    ]
   },
   {
     "id": 10,
@@ -127,7 +151,9 @@
       "D."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3147.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3147.jpg",
+    "explication": "Le DME situe l'avion à 20 NM, ce qui d'après l'échelle désigne B ou C. Ensuite, le VOR nous dit que l'avion se trouve 4° à droite du radial 045 : ça ne peut être que le B.",
+    "explication_images": []
   },
   {
     "id": 11,
@@ -140,7 +166,9 @@
       "QFU."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Afficher zéro à l'altimètre revient à mesurer la pression atmosphérique à l'endroit où se situe l'avion, c'est à dire le QFE.",
+    "explication_images": []
   },
   {
     "id": 12,
@@ -153,7 +181,9 @@
       "4"
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3123.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3123.jpg",
+    "explication": "Les ADF de base ont bien une couronne de caps, mais celle-ci n'est pas magnétique, elle se règle à la main. C'est pourquoi la plupart du temps, on ne s'embête pas avec et elle reste sur zéro. Dans l'annexe à cette question, il s'agit d'un RMI/ADF. C'est à dire un instrument qui combine les indications du conservateur de cap et de l'ADF. On y lit donc le cap suivi et la direction du NDB. On voit donc que l'aéronef suit le cap 045° et seul l'avion 1 correspond à ça. C'est confirmé par la direction de la station 15° à droite, sur la route 060. NOTE : cette question a été mise à jour en décembre 2014 suite à la modification de l'annexe. Auparavant, elle était beaucoup plus tordu et la bonne réponse était l'avion 4.",
+    "explication_images": []
   },
   {
     "id": 13,
@@ -166,7 +196,9 @@
       "une hauteur."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 14,
@@ -179,7 +211,9 @@
       "la déviation"
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm",
+    "explication_images": []
   },
   {
     "id": 15,
@@ -192,7 +226,11 @@
       "Rv 318° / D : 78 NM."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3360.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3360.jpg",
+    "explication": "Pour trouver la route magnétique, il suffit de tracer une droite parallèle à la route sur le VOR BGA et d'utiliser la rose de celui-ci. Pour déterminer la route vraie, il faudrait connaître la déclinaison magnétique, qu'on ne trouve pas sur cette carte. Le doute entre 138° et 142° sera levé par la distance, qu'on mesure en reportant la distance sur un méridien : 1 minute d'angle (les petits traits) = 1 NM.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_4c35deb22358.jpg"
+    ]
   },
   {
     "id": 16,
@@ -205,7 +243,11 @@
       "la pression atmosphérique a augmenté, annonçant l'arrivée d'une masse d'air chaud."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si l'altitude indiquée a diminué, c'est que la pression atmosphérique a augmenté. Cela peut indiquer l'approche d'un anticyclone et donc d'un air plus chaud car de l'air \"compressé\" est plus chaud.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_4e744b0ad59b.jpg"
+    ]
   },
   {
     "id": 17,
@@ -218,7 +260,9 @@
       "0 NM."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les deux points sont situés sur le même méridien (002°E) et sont séparés de 1° (entre 30°N et 31°N). Or, une minute d'angle sur un méridien mesure 1 NM, donc 1° mesure 60 NM.",
+    "explication_images": []
   },
   {
     "id": 18,
@@ -231,7 +275,9 @@
       "votre hauteur est de 2300 ft."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un altimètre calé au QNH indique une altitude. Pour connaître la hauteur, il faut soustraire l'altitude du terrain : 2300 - 1350 = 950 ft.",
+    "explication_images": []
   },
   {
     "id": 19,
@@ -244,7 +290,9 @@
       "12 NM."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "A 100 kt, vous parcourez 100 / 60 = 1,7 NM par minute environ. 1,7 x 5 = 8,3 NM",
+    "explication_images": []
   },
   {
     "id": 20,
@@ -257,7 +305,9 @@
       "km (kilomètre)."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Très curieusement, l'OACI a décrété que l'aviation civile devait utilisez les unités du SI. En pratique, on utilise les unités alternatives au SI, pour la simple raison qu'après la 2ème Guerre Mondiale, ce sont les anglo-saxons qui ont imposé leur mesures (parfois bizarres : il y a 12 pouces dans un pied).",
+    "explication_images": []
   },
   {
     "id": 21,
@@ -270,7 +320,9 @@
       "234°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm = 230 - (-6) = 236° La Dm est négative quand elle est Ouest. Le vent vient de la gauche. Il faut donc adopter un cap 10° plus à gauche pour le contrer : 236 - 10 = 226°",
+    "explication_images": []
   },
   {
     "id": 22,
@@ -283,7 +335,9 @@
       "dépend de l'installation de l'anémomètre sur l'avion."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vitesse conventionnelle est la vitesse indiquée, corrigée de l'erreur de position et de l'erreur instrumentale. La vitesse vraie est la vitesse réelle de l'avion. La différence entre les deux vient du fait que l'anémomètre est étalonné par rapport à l'atmosphère standard, alors que l'avion vole dans l'atmosphère réelle.",
+    "explication_images": []
   },
   {
     "id": 23,
@@ -296,7 +350,9 @@
       "perpendiculaire à la route vraie."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le vent est parallèle à la route, cela signifie qu'il vient exactement de face ou de dos : donc, pas de dérive. Notez qu'il existe plusieurs questions dans le PPL ou l'ULM sur ce thème, et certaines parlent de route vraie, d'autres de route magnétique. Ce sont donc des questions mal fichues, car tout dépend de la référence qu'on prend : quand on vole, on suit une route magnétique, mais le vent que la météo nous donne est par rapport au nord vrai.",
+    "explication_images": []
   },
   {
     "id": 24,
@@ -309,7 +365,9 @@
       "la route magnétique et le cap magnétique."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La dérive est l'angle entre la route et le cap. Ici c'est la Rm et le Cm, mais ça pourrait aussi être la Rv et le Cv.",
+    "explication_images": []
   },
   {
     "id": 25,
@@ -322,7 +380,11 @@
       "354°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_4719b411f27c.jpg"
+    ]
   },
   {
     "id": 26,
@@ -335,7 +397,9 @@
       "3."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3149.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3149.jpg",
+    "explication": "La première indication, qui d'ailleurs suffit à répondre à la question, est celle du VOR : il nous dit qu'on sur le QDM 045, c'est à dire qu'on se dirige vers la station en suivant la route magnétique 045°. Le seul avion représenté qui correspond est l'avion 4. L'avion 2 s'éloigne de la station sur le radial 045° : son VOR doit indiquer FROM et non TO.",
+    "explication_images": []
   },
   {
     "id": 27,
@@ -348,7 +412,9 @@
       "une ligne isogone."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3266.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3266.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 28,
@@ -361,7 +427,9 @@
       "ne peut vous renseigner dans certaines zones où il n'y a pas de couverture satellite."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "J'avoue que j'hésite entre la réponse \"3 satellites\" et la réponse \"ne peut vous renseigner dans certaines zones où il n'y a pas de couverture satellite\". Elles me semblent justes toutes les deux : - pour déterminer une position en 2D, il faut un minimum de 3 satellites, - mais si vous êtes dans une zone ou le GPS ne \"voit\" pas de satellites, vous n'aurez aucune information.",
+    "explication_images": []
   },
   {
     "id": 29,
@@ -374,7 +442,9 @@
       "l'émission du code d'identification, sans aucune émission du niveau de vol."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Stand-by = prêt à l'emploi.",
+    "explication_images": []
   },
   {
     "id": 30,
@@ -387,7 +457,9 @@
       "plus faible que votre route."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ce QCM est probablement une mise à jour du QCM 1566... en pire. En effet, dire que le cap est \"plus fort\" ou \"plus faible\", c'est moins précis que \"supérieur\" ou \"inférieur\".",
+    "explication_images": []
   },
   {
     "id": 31,
@@ -400,7 +472,9 @@
       "deux satellites différents."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le GPS mesure la distance par rapport à un satellite. Si vous ne capter qu'un satellite, l'éventail de positions possibles sera représenté par une sphère autour du satellite. Avec un deuxième GPS, cette sphère se réduit à un cercle, intersection des deux sphères des deux satellites. Un troisième satellite permet de ramener les deux positions possibles à deux points, dont un est éliminé d'office car complètement farfelu.",
+    "explication_images": []
   },
   {
     "id": 32,
@@ -413,7 +487,9 @@
       "045°, et vous inversez la route sélectée avec l'OBS."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3044.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3044.jpg",
+    "explication": "Sur l'instrument, le radial sélectionné est le 045, et nous sommes dessus en FROM. Pour rejoindre la station, il faut suivre la route magnétique 225, ce qui sera nettement plus facile en réglant le VOR sur 225.",
+    "explication_images": []
   },
   {
     "id": 33,
@@ -426,7 +502,11 @@
       "inférieure à votre cap."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le vent vient de la droite, il faut prendre un cap plus à droite pour rester sur la route. Comme les caps augmentent dans le sens des aiguilles d'une montre, votre nouveau cap sera donc supérieur à la route, ou inversement la route sera inférieure au cap.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_a735727d843f.jpg"
+    ]
   },
   {
     "id": 34,
@@ -439,7 +519,9 @@
       "1,2 km."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte, 1 cm représente 500 000 cm, c'est à dire 5 km. 4,2 cm x 5 = 21 km. Attention : ce QCM a été mis à jour avec 4,2 cm. Auparavant, il était présenté avec \"42 mm\".",
+    "explication_images": []
   },
   {
     "id": 35,
@@ -452,7 +534,9 @@
       "tout aérodrome équipé d'une VHF."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un gonio, c'est quelque chose d'assez basique sur le principe : lorsque vous émettez, le contrôleur voit sur un écran ou un cadran la direction d'où provient l'émission. Il ne peut donc que vous donner un QDM vers la station gonio.",
+    "explication_images": []
   },
   {
     "id": 36,
@@ -465,7 +549,9 @@
       "100 kt."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Voler à 100 kt dans une masse d'air qui se déplace à 20 kt dans la même direction donne une vitesse par rapport au sol de 100 + 20 = 120 kt.",
+    "explication_images": []
   },
   {
     "id": 37,
@@ -478,7 +564,11 @@
       "fonction de l'hémisphère."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les parallèles ont cette particularité qu'ils rétrécissent à mesure que la latitude augmente, pour arriver à une circonférence nulle aux Pôles. L'Equateur est le seul parallèle qui soit un grand cercle, et à ce titre, il est le plus grand des parallèles. Tout trajet suivant un parallèle autre que l'Equateur sur un arc de cercle de même degré sera forcément plus court.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_af1408f19bc2.jpg"
+    ]
   },
   {
     "id": 38,
@@ -491,7 +581,9 @@
       "lorsque cela est possible, de voler au-dessus pour éviter les turbulences."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les cumulus sont des nuages convectifs, donc synonymes de masse d'air instable en-dessous. S'ils ne sont pas trop développés, en fonction de votre vol, il est préférable de voler au-dessus afin d'être dans un air (plus) calme. Bien évidemment, il faut penser aux autres considérations (VFR on top, espaces aériens, etc.)",
+    "explication_images": []
   },
   {
     "id": 39,
@@ -504,7 +596,9 @@
       "80 NM."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/20476.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/20476.jpg",
+    "explication": "Chaque graduation sur cette annexe représente 10 minutes d'angle. La distance entre les deux aérodromes est donc de 80 NM, soit 8 graduations.",
+    "explication_images": []
   },
   {
     "id": 40,
@@ -517,7 +611,11 @@
       "sud-est."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_a9e413633e07.jpg"
+    ]
   },
   {
     "id": 41,
@@ -530,7 +628,9 @@
       "de 1 NM sur les méridiens et les parallèles."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une minute d'angle correspond à 1 NM sur un grand cercle, comme les méridiens. REVOIR L'ANIMATION",
+    "explication_images": []
   },
   {
     "id": 42,
@@ -543,7 +643,11 @@
       "une autoroute."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3267.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3267.jpg",
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_ab3cc8c5c9ef.jpg"
+    ]
   },
   {
     "id": 43,
@@ -556,7 +660,9 @@
       "loxodromique."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La projection Mercator est une des façon de représenter la Terre sur une carte. Elle a la propriété d'être conforme : elle conserve les angles, ce qui implique notamment que les droites tracées sur la carte sont des loxodromies. En revanche, les distances et les surfaces ne sont pas conservées. Voir Wikipedia",
+    "explication_images": []
   },
   {
     "id": 44,
@@ -569,7 +675,9 @@
       "9 litres plus la réserve de sécurité."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Facteur de base : 60 / 100 = 0,6 Temps sans vent pour parcourir 75 km : 75 x 0,6 = 45 minutes ou 0,75 heure Consommation prévue : 0,75 x 12 = 9 litres, à quoi on ajoute les réserves réglementaires et de bon sens.",
+    "explication_images": []
   },
   {
     "id": 45,
@@ -582,7 +690,9 @@
       "1 heure 8 minutes."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsqu'une heure est donnée en décimal, il suffit de multiplier la décimale par 60 : 0,3 x 60 = 18.",
+    "explication_images": []
   },
   {
     "id": 46,
@@ -595,7 +705,9 @@
       "180° de latitude."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un méridien est une référence de longitude. Greenwich étant le méridien origine ou méridien de référence, il est noté 0°.",
+    "explication_images": []
   },
   {
     "id": 47,
@@ -608,7 +720,9 @@
       "100 km."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte 1/500 000, 1 cm sur le papier = 5 km sur la Terre, donc 20 cm = 5 x 20 = 100 km.",
+    "explication_images": []
   },
   {
     "id": 48,
@@ -621,7 +735,9 @@
       "dépendant de la longitude."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Quelle que soit la carte utilisée, 10° représenteront toujours 10°. En revanche, la distance sur la carte entre les deux points sera différente bien sûr, à cause de la différence d'échelle.",
+    "explication_images": []
   },
   {
     "id": 49,
@@ -634,7 +750,9 @@
       "vous affichez 7600 au transpondeur et vous suivez les consignes particulières de la VAC."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/lfmp.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/lfmp.jpg",
+    "explication": "Il faut toujours regarder les consignes particulières de la carte VAC lorsque vous tombez en panne radio après avoir établi le contact. Il existe des règles générales, mais les aérodromes ont bien souvent leur particularités (d'où le nom \"consignes particulières\").",
+    "explication_images": []
   },
   {
     "id": 50,
@@ -647,7 +765,9 @@
       "3h50."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour trouver le temps en minute que ça prendra pour parcourir une distance en NM, il faut utiliser le facteur de base : Fb = 60 / Vp Note : TAS (True Air Speed) est la version anglaise de Vp (Vitesse propre) Temps = Distance x Fb => T = 490 x 60 /140 Maintenant, pour ceux qui paniquent à l'idée de devoir calculer sans calculette (si, si, je sais que vous êtes nombreux ;-) ), voici comment trouver le résultat sans être obligé de compter sur ses doigts (limités à 20, pieds compris). Fb = 60 / 140, ce qui ce simplifie en 6 / 14 qu'on peut encore simplifier en 3 / 7. Or, 490 est un multiple de 7 car 7 x 7 = 49 donc 7 x 70 = 490 L'équation T = 490 x 3 / 7 devient donc 70 x 3 = 210 (par contre, ouais, faut connaître ses tables de multiplication...) Ce sont des minutes, qu'il faut convertir en heures et minutes, et on arrive à 3h30.",
+    "explication_images": []
   },
   {
     "id": 51,
@@ -660,7 +780,11 @@
       "48°03'N - 003°05'E."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4779.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4779.jpg",
+    "explication": "On voit que Pontivy se trouve entre le 2°W et le 3°W. Sa longitude est donc 002°55'W.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_e140184234ed.jpg"
+    ]
   },
   {
     "id": 52,
@@ -673,7 +797,9 @@
       "une bonne bière."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La pression standard est 1013,25 hPa.",
+    "explication_images": []
   },
   {
     "id": 53,
@@ -686,7 +812,11 @@
       "169°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm = 164 - (-5) = 169° Ensuite, avec une route 169°, le vent du Nord vient de la gauche : il faut donc corriger le cap de 5° à gauche... ce qui nous ramène à 164°.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_91e6cbafd170.jpg"
+    ]
   },
   {
     "id": 54,
@@ -699,7 +829,11 @@
       "radial."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le relèvement de la station par l'avion est la route (magnétique ou vraie selon la référence) qu'il faudrait suivre pour rejoindre la station à partir de la position de l'avion. La différence avec le gisement, c'est que ce dernier a comme référence le cap de l'aéronef, et non le nord.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_a48bb21dd9a2.png"
+    ]
   },
   {
     "id": 55,
@@ -712,7 +846,9 @@
       "9 h 45."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "11h45 - 2h = 9h45",
+    "explication_images": []
   },
   {
     "id": 56,
@@ -725,7 +861,9 @@
       "24 NM."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "1 NM = 1,852 km 37 km = 37 / 1,852 = 20 NM",
+    "explication_images": []
   },
   {
     "id": 57,
@@ -738,7 +876,9 @@
       "133°/50 NM et 035°/39 NM."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3303.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3303.jpg",
+    "explication": "Un peu de bon sens : on voit clairement que la distance Pamiers - Castres est plus courte que la distance Castres - Montauban. Cela élimine la réponse \"133°/50 NM et 035°/39 NM.\" Ensuite, entre Pamiers et Castres, c'est une route au Nord-est, et Castres - Montauban au Nord-Ouest, ce qui ne laisse que la réponse \"043°/39 NM et 305°/50 NM.\" La méthode officielle pour répondre à cette question consiste à mesurer les distance à l'aide d'un papier ou d'un crayon, pour la reporter sur un méridien et compter le nombre de minutes correspondantes, car 1' d'angle sur un méridien égale 1 NM. Pour les routes, on peut s'aider des roses VOR présentes sur la carte.",
+    "explication_images": []
   },
   {
     "id": 58,
@@ -751,7 +891,9 @@
       "250 mètres."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "1 cm = 500 000 cm = 5 km 2,5 cm = 2,5 x 5 = 12,5 km",
+    "explication_images": []
   },
   {
     "id": 59,
@@ -764,7 +906,9 @@
       "12 h 12."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'heure UTC (temps universel coordonné) est la référence en aéronautique. En France, l'heure légale est UTC + 1 en hiver, UTC + 2 en été.",
+    "explication_images": []
   },
   {
     "id": 60,
@@ -777,7 +921,11 @@
       "1280 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Entre le niveau de la mer et l'altitude de l'aérodrome, il y a 364 ft, qu'on divise par 28 (car 1 hPa = 28 ft dans les basses couches) pour trouver le nombre d'hPa entre le niveau de l'aérodrome et la mer : 364 / 28 = 13 hPa. Le QNH est donc 1010 + 13 = 1023 hPa. Pour trouver l'écart d'altitude entre les deux avions, il faut comparer les altitudes (forcément) : on va donc transformer le FL 45 en altitude. Le FL 45 est exprimé par rapport à 1013 hPa. Entre la surface 1013 hPa et le QNH de 1023 hPa, il y a 10 hPa, ce qui correspond à environ 280 ft (1 hPa = 28 ft). En altitude, le FL 45 correspond donc ce jour-là à 4500 + 280 = 4780 ft. L'écart vertical entre les avions est donc de 4780 - 3500 = 1280 ft.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_8a9c458934ba.jpg"
+    ]
   },
   {
     "id": 61,
@@ -790,7 +938,9 @@
       "9 h 30."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'heure UTC (temps universel coordonné) est la référence en aéronautique. En France, l'heure légale est UTC + 1 en hiver, UTC + 2 en été.",
+    "explication_images": []
   },
   {
     "id": 62,
@@ -803,7 +953,9 @@
       "nord-est."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "44°09'N est inférieur à 44°18'N, le point d'entrée est donc plus au Sud. 001°53'E est plus petit que 002°04'E, donc plus à l'ouest.",
+    "explication_images": []
   },
   {
     "id": 63,
@@ -816,7 +968,9 @@
       "12 h 45."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En juin, Heure Locale = UTC + 2. UTC = Heure Locale - 2 = 11h45 - 2 = 9h45",
+    "explication_images": []
   },
   {
     "id": 64,
@@ -829,7 +983,9 @@
       "274°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour suivre une Rm 274 avec un vent qui vous pousse vers la droite, il vous faut adopter le cap magnétique Cm = 274 - 10 = 264° La déviation n'étant pas précisée dans cette question, on se contentera de ça.",
+    "explication_images": []
   },
   {
     "id": 65,
@@ -842,7 +998,9 @@
       "un parallèle."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Cette question m'a été rapportée avec \"cap magnétique\", mais la loxodromie est une route vraie constante. Dans le cadre du PPL théorique, l'approximation est cependant tolérable, car on ne va pas avoir d'écart énorme de déclinaison magnétique, et on considère qu'il n'y a pas de vent.",
+    "explication_images": []
   },
   {
     "id": 66,
@@ -855,7 +1013,9 @@
       "3, 4."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 67,
@@ -868,7 +1028,9 @@
       "un méridien sachant que 1 minute égale 1 NM."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un grand cercle, 1 minute d'angle est égale à 1 NM.",
+    "explication_images": []
   },
   {
     "id": 68,
@@ -881,7 +1043,11 @@
       "055°."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4778.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4778.jpg",
+    "explication": "Un candidat à l'examen nous a signalé en juillet 2020 que la carte avait été mise à jour, en couleurs, bien propre, bien jolie... mais sans le VOR MBY qui a disparu. Il est donc impossible de répondre à la question. Si vous avez cette question lors de votre examen avec la nouvelle carte sans le VOR, je vous invite à le signaler à l'examinateur.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_84f35400dc83.jpg"
+    ]
   },
   {
     "id": 69,
@@ -894,7 +1060,9 @@
       "2, 3, 4."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 70,
@@ -907,7 +1075,9 @@
       "1,852 km."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "C'est un très grand mystère qu'on nous parle encore de Statute Mile, qui n'est plus utilisé depuis très longtemps dans les unités aéro.",
+    "explication_images": []
   },
   {
     "id": 71,
@@ -920,7 +1090,11 @@
       "votre hauteur est de 400 ft."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Altitude topographique de l'aérodrome + hauteur de l'avion = altitude Altitude de l'avion = 1200 + 800 = 2000 ft",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_28a931a5ffe4.jpg"
+    ]
   },
   {
     "id": 72,
@@ -933,7 +1107,9 @@
       "300°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le QDR est le radial qui s'éloigne de la station. Pour la rejoindre il faut donc suivre une route magnétique inverse.",
+    "explication_images": []
   },
   {
     "id": 73,
@@ -946,7 +1122,9 @@
       "500 kilomètres."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "1 cm sur la carte représentent 1 000 000 cm sur la terre. 1 000 000 cm = 10 000 m = 10 km. Donc 5 cm sur la carte représentent 5 x 10 km = 50 km.",
+    "explication_images": []
   },
   {
     "id": 74,
@@ -959,7 +1137,9 @@
       "du nord magnétique."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il me semble bien que sur toutes les cartes, quel que soit leur type, les méridiens indiquent le nord vrai, mais sur la carte 1/500 000 OACI, ceux-ci sont rectilignes, ce qui est plus pratique pour nous pilotes.",
+    "explication_images": []
   },
   {
     "id": 75,
@@ -972,7 +1152,9 @@
       "4."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3148.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3148.jpg",
+    "explication": "D'après l'échelle, chaque cercle autour du VOR correspond à 5 NM. L'indication du DME nous situant à 20 NM, on peut déjà éliminer l'avion 1, qui est à 15 NM. Ensuite, l'indication du VOR nous place sur le QDM 315°, c'est à dire la route magnétique qui se dirige vers le centre du VOR en suivant le 315°. Il s'agit donc de l'avion 3.",
+    "explication_images": []
   },
   {
     "id": 76,
@@ -985,7 +1167,9 @@
       "un quart d'heure après le coucher du soleil."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à la notion de nuit aéronautique ! Oui, on a le droit de voler jusqu'à 30 minutes après le coucher su soleil, mais il faut considérer ce délai comme une sécurité. Prévoyez d'arriver à destination à l'heure du coucher du soleil, et si vous avez du retard, il vous reste une demi-heure de rab. En cas de couverture nuageuse importante, dès le coucher du soleil, il va commencer à faire très sombre.",
+    "explication_images": []
   },
   {
     "id": 77,
@@ -998,7 +1182,9 @@
       "3, 4."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 78,
@@ -1011,7 +1197,9 @@
       "latitude S, longitude E."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/carte_australie.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/carte_australie.jpg",
+    "explication": "Les longitudes sont comptées Est ou Ouest par rapport au méridien de Greenwich, et les latitudes Nord ou Sud par rapport à l'équateur.",
+    "explication_images": []
   },
   {
     "id": 79,
@@ -1024,7 +1212,11 @@
       "l'angle compris entre le cap magnétique et la route magnétique."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le Nord vrai est le point autour duquel tourne la Terre. Le Nord magnétique dépend des masses en fusion à l'intérieur de la Terre. C'est pourquoi les deux ne sont pas confondus. La différence s'appelle la déclinaison magnétique.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_ed0e167149ce.jpg"
+    ]
   },
   {
     "id": 80,
@@ -1037,7 +1229,9 @@
       "perpendiculaire à la route vraie."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le vent est parallèle à la route, cela signifie qu'il vient exactement de face ou de dos : donc, pas de dérive. Notez qu'il existe plusieurs questions dans le PPL ou l'ULM sur ce thème, et certaines parlent de route vraie, d'autres de route magnétique. Ce sont donc des questions mal fichues, car tout dépend de la référence qu'on prend : quand on vole, on suit une route magnétique, mais le vent que la météo nous donne est par rapport au nord vrai.",
+    "explication_images": []
   },
   {
     "id": 81,
@@ -1050,7 +1244,9 @@
       "augmente quand leur longitude diminue."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le parallèle le plus grand est l'équateur, latitude 0° et les plus petits sont les pôles, latitude 90°, puisqu'ils se résument à un point.",
+    "explication_images": []
   },
   {
     "id": 82,
@@ -1063,7 +1259,9 @@
       "vous majorez votre vitesse d'approche si le vent est de face et vous la minorez si le vent est de travers."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les turbulences sont des variations d'incidence. Or, à l'atterrissage, vous êtes à faible vitesse, donc proche du décrochage. Les turbulences vont donc vous rapprocher ou vous éloigner du décrochage. Il est recommandé de prendre une vitesse d'approche plus élevée que d'habitude, de façon à garder une marge convenable par rapport au décrochage.",
+    "explication_images": []
   },
   {
     "id": 83,
@@ -1076,7 +1274,9 @@
       "vous choisissez des repères de préférence au fond des vallées."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il suffit de passer quelques centaines de mètres trop à côté pour rater le joli repère en fond de vallée. Il est donc judicieux de choisir des repères situés sur les sommets.",
+    "explication_images": []
   },
   {
     "id": 84,
@@ -1089,7 +1289,9 @@
       "la CTR de CAEN est de classe D et sa limite supérieure est à 1500 ft au-dessus de l'aérodrome."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Grossière erreur dans la bonne réponse, qui reste malgré tout la bonne réponse : c'est une indication d'altitude et non de hauteur. La CTR de Caen part donc du sol, comme théoriquement toutes les CTR, et s'arrête à 1500 ft AMSL... et pas 1500 ft QFE.",
+    "explication_images": []
   },
   {
     "id": 85,
@@ -1102,7 +1304,11 @@
       "356°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_8c889ac60a80.jpg"
+    ]
   },
   {
     "id": 86,
@@ -1115,7 +1321,11 @@
       "20° gauche."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si l'aiguille du RMI indique 190° 15° à droite, c'est que le cap actuel est 190 - 15 = 175°. La Rm est Rv - Dm = 165° La dérive est donc de 10° gauche, car il faut prendre un cap 10° plus à droite pour la contrer.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_0f21e340a2b0.jpg"
+    ]
   },
   {
     "id": 87,
@@ -1128,7 +1338,11 @@
       "350°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le gisement est de 350°, ça signifie que la balise se trouve 10° à gauche de notre route. 090 - 10 = 080°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_165eca41ebba.jpg"
+    ]
   },
   {
     "id": 88,
@@ -1141,7 +1355,9 @@
       "du niveau du sol jusqu'à 1500 pieds au-dessus de la surface du sol."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsqu'il y a deux altitudes ou hauteurs indiquées, elle représentent la base et le plafond de la zone. Un signe + indique que le plafond dépasse la limite des informations de la carte (FL115 ou 3000 ft ASFC pour la 1/500 000 IGN). Une seule altitude / hauteur signifie que la zone commence au sol et le chiffre représente le plafond.",
+    "explication_images": []
   },
   {
     "id": 89,
@@ -1154,7 +1370,9 @@
       "est limitée par la tombée de la nuit."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le relief, ainsi que la rotondité de la Terre, masquent les aéronefs au radar. Donc, plus vous volez haut, plus vous aurez de chance d'être \"visible\" par le radar. Quant au terme \"cible\", ne vous affolez pas, personne ne va vous tirer dessus a priori.",
+    "explication_images": []
   },
   {
     "id": 90,
@@ -1167,7 +1385,9 @@
       "0° à 360° E ou W et de 0° à 90° N ou S."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les latitudes sont comptées de l'Equateur (0°) aux pôles (90° N ou S) ; les longitudes sont comptées à partir du méridien de Greenwich (0°) jusqu'au méridien opposé (180° E ou W).",
+    "explication_images": []
   },
   {
     "id": 91,
@@ -1180,7 +1400,9 @@
       "le temps du fuseau horaire."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sauf précision contraire, toutes les heures données en aviation sont des heures UTC. Les carnets de route devraient même être remplis en heure UTC, mais dans les clubs, c'est plus souvent l'heure légale qui est notée.",
+    "explication_images": []
   },
   {
     "id": 92,
@@ -1193,7 +1415,9 @@
       "le nord magnétique et l'axe longitudinal de l'aéronef."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'angle entre l'axe longitudinal de l'avion et le Nord s'appelle le cap. Si la référence est le Nord Magnétique, on parlera alors de cap magnétique (Cm).",
+    "explication_images": []
   },
   {
     "id": 93,
@@ -1206,7 +1430,9 @@
       "2 - 4 - 6."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 94,
@@ -1219,7 +1445,9 @@
       "le radial sur lequel se trouve l'avion."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsque vous centrez l'aiguille à l'aide de la molette du VOR (l'OBS : Omni Bearing Selector), vous determinez le rayon sur lequel vous vous trouvez. Si vous êtes en FROM, ce rayon est un radial ou QDR. Si vous êtes en TO, ce rayon est un QDM.",
+    "explication_images": []
   },
   {
     "id": 95,
@@ -1232,7 +1460,11 @@
       "060°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un gisement 30° gauche indique que la direction de la station est 30° à gauche du cap suivi : 090 - 30 = 060°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_2aa19185e37e.jpg"
+    ]
   },
   {
     "id": 96,
@@ -1245,7 +1477,9 @@
       "une trajectoire à route vraie constante."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'orthodromie est la route qui relie deux points en suivant un grand cercle. Il s'agit donc de la distance la plus courte entre deux points.",
+    "explication_images": []
   },
   {
     "id": 97,
@@ -1258,7 +1492,9 @@
       "au méridien d'origine et à la latitude du lieu."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le méridien d'origine est le méridien de Greenwich.",
+    "explication_images": []
   },
   {
     "id": 98,
@@ -1271,7 +1507,9 @@
       "le QFE."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un altimètre calé au QNH indique une altitude. Si vous êtes au sol, il indiquera donc l'altitude du lieu.",
+    "explication_images": []
   },
   {
     "id": 99,
@@ -1284,7 +1522,9 @@
       "un parc ou une réserve naturelle étendus."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/22243.png"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/22243.png",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 100,
@@ -1297,7 +1537,9 @@
       "toujours inférieur à la pression standard."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à bien lire l'énoncé : EN DESSOUS du niveau de la mer. C'est une situation qu'on ne rencontre pas en France, mais dans d'autres endroits du monde on trouve des aérodromes dans ce cas. La pression au niveau de l'aérodrome est donc forcément supérieur à celle du niveau de la mer.",
+    "explication_images": []
   },
   {
     "id": 101,
@@ -1310,7 +1552,11 @@
       "078°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm La déclinaison magnétique est négative quand elle est Ouest. Rm = 050 - (-28) = 050 + 28 = 078.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_898a497fc25e.jpg"
+    ]
   },
   {
     "id": 102,
@@ -1323,7 +1569,9 @@
       "à gauche avec indication TO."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si les QDR augmentent, c'est à dire les rayons partant de la balise vers vous, c'est que cette balise se trouve à votre droite. En revanche, on manque d'informations dans cette question pour déterminer FROM ou TO. On va supposer que pour constater l'augmentation des QDR, le pilote (qui apparemment n'a rien d'autre à faire) va tripoter son VOR pour garder l'aiguille au milieu et afficher les QDR successifs. On sera alors en FROM. D'ailleurs, si vous êtes bien attentifs, vous constaterez que l'animation que vous voyez en explication présente un VOR en TO. C'est évidemment une erreur, que je ne peux pas corriger, car je n'ai plus le logiciel qui va bien :-)",
+    "explication_images": []
   },
   {
     "id": 103,
@@ -1336,7 +1584,9 @@
       "vraie."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les méridiens se rejoignent au Nord vrai, donc les routes mesurées par rapport à un méridien sont des routes vraies. Il faut appliquer la déclinaison magnétique pour obtenir la route magnétique.",
+    "explication_images": []
   },
   {
     "id": 104,
@@ -1349,7 +1599,9 @@
       "magnétique."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur les cartes, les routes sont mesurées par rapport aux méridiens, qui rejoignent tous le Nord vrai. Ce sont donc des routes vraies.",
+    "explication_images": []
   },
   {
     "id": 105,
@@ -1362,7 +1614,9 @@
       "supérieure."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les méridiens sont tous des grands cercles, c'est à dire qu'ils sont une circonférence de la Terre. En parcourant 10° sur un méridien, la distance sera la même sur n'importe quel autre méridien.",
+    "explication_images": []
   },
   {
     "id": 106,
@@ -1375,7 +1629,9 @@
       "130 km."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte de cette échelle, 1 cm représente 1 km en réel. 13 cm représentent donc 13 x 1 = 13 km.",
+    "explication_images": []
   },
   {
     "id": 107,
@@ -1388,7 +1644,11 @@
       "votre hauteur est de 800 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un altimètre calé au QNH indique une altitude. Pour connaître la hauteur, il faut soustraire l'altitude du terrain : 2000 - 1200 = 800 ft.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_49ab6f6fbb59.jpg"
+    ]
   },
   {
     "id": 108,
@@ -1401,7 +1661,9 @@
       "une orthodromie."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les méridiens sont tous des grands cercles, c'est-à-dire que leur circonférence est égale à celle de la Terre. Or, une trajectoire qui suit un grand cercle est la trajectoire la plus courte pour relier deux points. Cette trajectoire s'appelle orthodromie.",
+    "explication_images": []
   },
   {
     "id": 109,
@@ -1414,7 +1676,9 @@
       "1,852 ft."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 110,
@@ -1427,7 +1691,9 @@
       "aux instruments."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En pratique, on cumule la navigation à l'estime et à vue : vous calculez le cap et le temps prévu pour rejoindre le prochain point, et vous contrôlez votre navigation avec les repères que vous rencontrez pendant le vol.",
+    "explication_images": []
   },
   {
     "id": 111,
@@ -1440,7 +1706,9 @@
       "1."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3587.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3587.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 112,
@@ -1453,7 +1721,9 @@
       "500 ft au-dessus du niveau moyen de la mer."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-5013.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-5013.jpg",
+    "explication": "Accolé au circuit hélico, on voit la mention 900 (500), qui signifie que le tour de piste se fait à 900 ft AMSL, soit 500 ft AAL.",
+    "explication_images": []
   },
   {
     "id": 113,
@@ -1466,7 +1736,9 @@
       "sur la carte 1/1 000 000."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les cartes VAC d'un aérodrome ont toujours un volet \"Consignes particulières\" qui détaillent, comme son nom l'indique, les particularités propres à cet aérodrome.",
+    "explication_images": []
   },
   {
     "id": 114,
@@ -1479,7 +1751,9 @@
       "dans la CTR de classe D, la piste de l'aéroport de CAEN a une longueur de 2500 m."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-1897.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-1897.jpg",
+    "explication": "L'auteur de cette question devrait songer à repasser son théorique à l'aide de ce merveilleux site que vous connaissez bien : le 2500 n'est pas une hauteur, mais une altitude !",
+    "explication_images": []
   },
   {
     "id": 115,
@@ -1492,7 +1766,9 @@
       "48 min."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "150 kt de Vp moins 30 kt de vent = Vitesse sol de 120 kt. 120 NM à 120 kt = 1 heure.",
+    "explication_images": []
   },
   {
     "id": 116,
@@ -1505,7 +1781,9 @@
       "récepteur ADF (radio compas)."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le gonio nécessite une VHF, pour communiquer avec un contrôleur équipé d'un VDF qui lui permet de vous donner des QDM.",
+    "explication_images": []
   },
   {
     "id": 117,
@@ -1518,7 +1796,9 @@
       "sur le radial 280."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3042.gif"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3042.gif",
+    "explication": "Par définition, un radial est une demi-droite partant d'un point, en l'occurrence le VOR. Or, nous voyons que celui-ci est en TO 280, c'est à dire que nous nous trouvons sur le QDM 280, la route magnétique qui mène à la station. Une fois passée la station, cela deviendra le radial (ou QDR) 280. Pour savoir sur quel radial nous nous trouvons actuellement, il suffit de regarder l'opposé du radial sélectionné, à l'opposé de la flèche donc, qui est le 100, ce qui est très logique, car l'opposé de 280 est 280 - 180 = 100°. On peut donc dire que nous nous trouvons à la fois sur le QDM 280 et le QDR (radial) 100, qui sont confondus mais qui n'ont pas le même sens.",
+    "explication_images": []
   },
   {
     "id": 118,
@@ -1531,7 +1811,9 @@
       "288°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour suivre une Rm 274 avec un vent qui vous pousse vers la droite, il vous faut adopter le cap magnétique Cm = 274 - 10 = 264° Et puisque Cm - d = Cc, on obtient finalement un Cap Compas Cc = 264 - (-4) = 264 + 4 = 268°",
+    "explication_images": []
   },
   {
     "id": 119,
@@ -1544,7 +1826,11 @@
       "votre avion soit hors de portée d'utilisation VDF."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3204.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3204.jpg",
+    "explication": "Sur la carte d'approche, on voit que Bram se situe approximativement sur le radial 290 par rapport à l'aérodrome de Carcassonne. Le gonio vous donnera donc probablement le QDM 100, c'est à dire la route à suivre pour rejoindre le terrain à partir de votre position actuelle.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_8eeb686f8e77.jpg"
+    ]
   },
   {
     "id": 120,
@@ -1557,7 +1843,9 @@
       "supérieure."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "C'est comme en vélo : le vent arrière, ça aide à avancer !",
+    "explication_images": []
   },
   {
     "id": 121,
@@ -1570,7 +1858,9 @@
       "160 kt."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Vitesse dans la masse d'air : Vp = 150 kt. Vitesse de déplacement de la masse d'air dans le même sens que vous : 20 kt. VItesse sol : 150 + 20 = 170 kt.",
+    "explication_images": []
   },
   {
     "id": 122,
@@ -1583,7 +1873,9 @@
       "1 mile nautique."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un grand cercle, comme un méridien, 1° degré correspond à 60 NM.",
+    "explication_images": []
   },
   {
     "id": 123,
@@ -1596,7 +1888,9 @@
       "le parallèle le plus proche."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une minute d'angle mesurée sur un grand cercle équivaut à 1 NM. Les méridiens sont tous des grands cercles.",
+    "explication_images": []
   },
   {
     "id": 124,
@@ -1609,7 +1903,9 @@
       "6,9 km."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte, 1 cm représente 500 000 cm, c'est à dire 5 km. 13,8 x 5 = 69 km.",
+    "explication_images": []
   },
   {
     "id": 125,
@@ -1622,7 +1918,9 @@
       "sur le radial 300."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3039.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3039.jpg",
+    "explication": "Le radial se lit en haut de l'instrument, sous le triangle indicateur. Les radials sont indiqués en dizaines de degrés.",
+    "explication_images": []
   },
   {
     "id": 126,
@@ -1635,7 +1933,9 @@
       "4."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 127,
@@ -1648,7 +1948,9 @@
       "d'autant plus forte que la vitesse air est faible."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La dérive maximale est calculée par la formule : X = Vw x Fb Le facteur de base Fb étant lui-même défini comme égal à 60 / Vp, il en résulte que la dérive est inversement proportionnelle à la vitesse propre.",
+    "explication_images": []
   },
   {
     "id": 128,
@@ -1661,7 +1963,9 @@
       "la limite latérale d'une zone P."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/zone_r.png"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/zone_r.png",
+    "explication": "Attention : la formulation de ce QCM reste à préciser. La candidate qui me l'a ramené ne se souvenait que du thème de la question et de deux des réponses, et j'ai dû créer le QCM à partir de ça.",
+    "explication_images": []
   },
   {
     "id": 129,
@@ -1674,7 +1978,9 @@
       "vous recalez vos éléments (cap et durée) sur des repères caractéristiques environ toutes les 30 minutes."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "On appelle ça la navigation à l'estime contrôlée par le cheminement : théoriquement, avec le bon cap et au bout d'un certain temps, on arrive là où on voulait arriver. Hélas, ce bas monde n'est fait que de déceptions, et c'est rarement le cas ! Il faut donc contrôler sa navigation à l'aide des repères au sol.",
+    "explication_images": []
   },
   {
     "id": 130,
@@ -1687,7 +1993,9 @@
       "de radionavigation VFR au 1/1 000 000."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3261.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3261.jpg",
+    "explication": "Entres autres indices qui distinguent la carte 1/1 000 000 de la 1/500 000, on peut noter : - les points IFR, sous la forme de petits triangles, - les altitudes de transition quand elles sont différentes de 5000 ft (ici TA:5500).",
+    "explication_images": []
   },
   {
     "id": 131,
@@ -1700,7 +2008,11 @@
       "votre altitude est de 2040 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Altitude topographique de l'aérodrome + hauteur de l'avion = altitude Altitude de l'avion = 1210 + 830 = 2040 ft",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_d6c0cbfce43c.jpg"
+    ]
   },
   {
     "id": 132,
@@ -1713,7 +2025,9 @@
       "214°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv = 230° Dm = 6°E donc Rm = 224° Le vent vient de la droite, donc il faut augmenter le cap de 10°. Cm = 224 + 10 = 234°",
+    "explication_images": []
   },
   {
     "id": 133,
@@ -1726,7 +2040,9 @@
       "confondus."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 134,
@@ -1739,7 +2055,9 @@
       "d'altitude."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'alticodeur transmet l'altitude-pression de l'aéronef, c'est-à-dire sa position verticale par rapport à la surface 1013 hPa.",
+    "explication_images": []
   },
   {
     "id": 135,
@@ -1752,7 +2070,11 @@
       "026°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv - Dm = Cm => Cm = 025 - (-3) = 025 + 3 = 028° Cm - d = Cc => Cc = 028 - 2 = 026°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_e09dd9c1d029.jpg"
+    ]
   },
   {
     "id": 136,
@@ -1765,7 +2087,11 @@
       "inférieur à votre route."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le vent vient de la droite, il faut prendre un cap plus à droite pour rester sur la route. Comme les caps augmentent dans le sens des aiguilles d'une montre, votre nouveau cap sera donc supérieur à la route, ou inversement la route sera inférieure au cap.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_a735727d843f.jpg"
+    ]
   },
   {
     "id": 137,
@@ -1778,7 +2104,9 @@
       "plus tôt qu'à Bordeaux."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La course apparente du Soleil dans le ciel allant de l'est vers l'ouest, il se couche forcément plus tôt à Lyon qui se situe à l'est de Bordeaux.",
+    "explication_images": []
   },
   {
     "id": 138,
@@ -1791,7 +2119,9 @@
       "à l'heure du lever du soleil."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La définition exacte de la nuit aéronautique est : commence lorsque le centre du disque solaire se situe 6° sous l'horizon après le coucher du soleil et se termine lorsque le centre du disque solaire arrive à 6° de l'horizon lors du lever. Comme c'est assez peu pratique à utiliser dans la vraie vie, on considère en France métropolitaine que la nuit aéro commence 30 minutes après l'heure de coucher du soleil et se termine 30 minutes avant l'heure de lever du soleil.",
+    "explication_images": []
   },
   {
     "id": 139,
@@ -1804,7 +2134,9 @@
       "la limite d'un espace aérien."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/22244.png"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/22244.png",
+    "explication": "Le méridien 0° est également appelé méridien de Greenwich ou méridien origine.",
+    "explication_images": []
   },
   {
     "id": 140,
@@ -1817,7 +2149,9 @@
       "la vitesse de l'aéronef."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La dérive maximale est calculée par la formule : X = Vw x Fb Le facteur de base Fb étant lui-même défini comme égal à 60 / Vp, il en résulte que la dérive est inversement proportionnelle à la vitesse propre.",
+    "explication_images": []
   },
   {
     "id": 141,
@@ -1830,7 +2164,11 @@
       "ne change pas si la température ne varie pas."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le QNH à Paris est inférieur à celui de Lyon, ça signifie que le champ de pression est incliné, et que les surfaces de pression ne sont pas horizontales. En volant au FL85, on se trouve à 8500 ft au-dessus de la surface 1013 hPa. Cette surface se trouvera plus bas à Paris qu'à Lyon, donc notre aéronef se trouvera lui aussi plus bas par rapport au niveau de la mer qui lui est bien à l'horizontale.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_681450f10c95.jpg"
+    ]
   },
   {
     "id": 142,
@@ -1843,7 +2181,9 @@
       "045°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les gisements s'expriment dans le sens des aiguilles d'une montre. En théorie, on dira donc que le gisement de ce repère est 315°. (En pratique, parce que justement c'est plus pratique, on dira qu'il est 45° à gauche :-) )",
+    "explication_images": []
   },
   {
     "id": 143,
@@ -1856,7 +2196,9 @@
       "90°N et 18°W."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le parallèle de référence étant l'équateur, les pôles sont respectivement situés à 90°N et 90°S. Ensuite, pour la longitude, c'est un peu particulier, car le Pôle Nord étant un point par lequel passent tous les méridiens, toutes les longitudes sont valables. Par convention, on dira que le Pôle Nord se situe sur le méridien 00°W.",
+    "explication_images": []
   },
   {
     "id": 144,
@@ -1869,7 +2211,9 @@
       "1/500 000 IGN OACI."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte OACI au 1/500 000ème avant 2013, les renseignements aéronautiques s'arrêtent à 5000 ft AMSL ou 2000 ft ASFC (le plus élevé des deux). Elle était donc inutilisable seule au-dessus de ces niveaux. Il fallait se servir de la carte au 1/1 000 000ème, qui couvre tout l'espace aérien inférieur (jusqu'au FL 195). Depuis l'édition 2013, les cartes IGN OACI au 1/500 000ème sont renseignées jusqu'au FL115 ou 3000 ft ASFC si supérieur. Cette question reste cependant pertinente, car la carte au 1/500 000ème est bien plus adaptée au vol à vue.",
+    "explication_images": []
   },
   {
     "id": 145,
@@ -1882,7 +2226,9 @@
       "altitude."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Du grec iso, pareil et gone, enfant de Lyon.",
+    "explication_images": []
   },
   {
     "id": 146,
@@ -1895,7 +2241,9 @@
       "barrage."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3421.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3421.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 147,
@@ -1908,7 +2256,9 @@
       "remplacer réglementairement les autres instruments de navigation."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour être considéré comme moyen primaire de navigation, un GPS doit être certifié et installé dans l'avion. Un GPS portable ne répond pas à cette définition, il ne peut donc être considéré que comme une aide. En revanche, c'est un appareil qui émet des ondes électromagnétiques, et à ce titre, peut perturber les autres instruments. En pratique, ça ne leur fait ni chaud ni froid, à vrai dire.",
+    "explication_images": []
   },
   {
     "id": 148,
@@ -1921,7 +2271,9 @@
       "la fréquence du locator - la fréquence tour, AFIS, A/A."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-32552.gif"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-32552.gif",
+    "explication": "Ces indications, qui sont apparues relativement récemment sur les cartes IGN, sont bien utiles en cas de déroutement où on a autre chose à faire que de chercher dans le classeur des cartes VAC. On a l'altitude du terrain et la fréquence à contacter, c'est le minimum vital en cas d'urgence.",
+    "explication_images": []
   },
   {
     "id": 149,
@@ -1934,7 +2286,9 @@
       "trois chiffres pour les degrés, deux pour les minutes et deux pour les secondes, en latitude."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les minutes et les secondes vont jusqu'à 60, elles s'expriment donc avec deux chiffres. En ce qui concerne les degrés, les latitudes vont de 0° (l'équateur) à 90° (les pôles), et sont donc exprimées aussi avec deux chiffres seulement. Seules les longitudes, qui vont jusqu'à 180°, sont exprimées avec trois chiffres.",
+    "explication_images": []
   },
   {
     "id": 150,
@@ -1947,7 +2301,9 @@
       "65 km."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte de cette échelle, 1 cm représente 5 km en réel. 13 cm représentent donc 13 x 5 = 65 km.",
+    "explication_images": []
   },
   {
     "id": 151,
@@ -1960,7 +2316,9 @@
       "votre hauteur est de 800 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un altimètre calé au QFE mesurera une hauteur au-dessus de la surface de référence à laquelle le QFE a été mesuré.",
+    "explication_images": []
   },
   {
     "id": 152,
@@ -1973,7 +2331,9 @@
       "une méthode qui consiste à altérer volontairement sa route pour rejoindre un repère caractéristique."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'erreur systématique consiste à altérer volontairement sa route à droite ou à gauche, de façon à lever le doute quand on arrive sur un repère. Exemple vécu : ma première nav solo m'a amenée de Pontoise à Saint-Valéry, au bord de la manche. Lorsque je suis arrivé à la cote, pas de terrain en dessous, ce qui est somme toute normal pour une première nav solo. Gros doute : il est à droite ou à gauche ??? L'erreur systématique m'aurait permis de prendre par exemple une route 10° plus à gauche, comme ça en arrivant sur la cote, j'aurais su que le terrain se trouvait forcément à droite et il m'aurait suffit de suivre la cote vers le Nord pour tomber dessus.",
+    "explication_images": []
   },
   {
     "id": 153,
@@ -1986,7 +2346,11 @@
       "la déclinaison magnétique."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le pôle Nord magnétique et le pôle Nord géographique ne sont pas confondus, car le Nm bouge tout le temps. La différence angulaire entre les deux est appelée déclinaison magnétique.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_ed0e167149ce.jpg"
+    ]
   },
   {
     "id": 154,
@@ -1999,7 +2363,9 @@
       "des méridiens."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Tous les méridiens convergent vers les pôles.",
+    "explication_images": []
   },
   {
     "id": 155,
@@ -2012,7 +2378,11 @@
       "sur l'équateur."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_399d19c7884f.jpg"
+    ]
   },
   {
     "id": 156,
@@ -2025,7 +2395,9 @@
       "une ligne isogone."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3269.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3269.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 157,
@@ -2038,7 +2410,11 @@
       "6300 ft."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le FL65 correspond à 6500 ft par rapport à la surface 1013 hPa. En passant au QNH 1023, vous déplacez la surface de référence de votre altimètre vers le bas, de 30 ft/hPa x 10 hPa = 300 ft. L'altitude lue sera donc de 6800 ft. Notez qu'à ces altitudes, il est préférable d'arrondir la valeur de 28 ft/hPa à 30.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_8e5d30130541.jpg"
+    ]
   },
   {
     "id": 158,
@@ -2051,7 +2427,9 @@
       "1 mile nautique."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'échelle 1/250 000 signifie que 1 cm sur la carte représente 250 000 cm sur la Terre, soit 2,5 km. 4 cm représentent donc 4 x 2,5 km = 10 km.",
+    "explication_images": []
   },
   {
     "id": 159,
@@ -2064,7 +2442,9 @@
       "statute mile."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "MPH signifie Mile Per Hour = mile terrestre par heure, autrement appelé Statute Mile, qui vaut 1,609 km.",
+    "explication_images": []
   },
   {
     "id": 160,
@@ -2077,7 +2457,9 @@
       "16h23."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En France, pendant les horaires d'hiver (entre le dernier week-end d'octobre et le dernier week-end de mars), l'heure légale est UTC+1. S'il est 17h23 en heure légale, il est donc 16h23 UTC. Note : l'heure légale, c'est l'heure officielle du pays concerné. L'heure locale c'est l'heure du lieu, c'est à dire en fonction de la position du soleil par rapport au méridien local. Le bon terme dans la question devrait être \"légale\" et non \"locale\".",
+    "explication_images": []
   },
   {
     "id": 161,
@@ -2090,7 +2472,9 @@
       "3."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3587.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3587.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 162,
@@ -2103,7 +2487,11 @@
       "votre cap est inférieur à votre route."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le vent vient de la gauche, il vous pousse vers la droite. Il faut donc prendre un cap plus à gauche pour conserver votre route. Le cap est donc inférieur à la route, car sur la rose des caps, les valeurs augmentent vers la droite.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_35d2605dbe9c.jpg"
+    ]
   },
   {
     "id": 163,
@@ -2116,7 +2504,9 @@
       "3500 mètres sur un altimètre calé à 1013 hPa."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "FL 35 = 3500 ft sur un altimètre calé à 1013 hPa.",
+    "explication_images": []
   },
   {
     "id": 164,
@@ -2129,7 +2519,11 @@
       "200 km."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3474.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3474.jpg",
+    "explication": "Puisque vous ne pouvez pas utiliser votre rapporteur carré dans la salle d'examen, il reste la technique Mac Gyver : vous prenez une feuille de papier, sur le bord de laquelle vous reportez les distances entre chaque aérodrome. Vous placez ensuite cette feuille le long du méridien afin de compter les NM car sur un méridien, 1° = 60 NM, donc 1' = 1 NM. ATTENTION : sur le méridien (ligne verticale), pas sur le parallèle (ligne horizontale).",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_2196b015a6fe.gif"
+    ]
   },
   {
     "id": 165,
@@ -2142,7 +2536,11 @@
       "130°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv = 117 Dm = 13°E = +13 Rv - Dm = Rm 117 - 13 = 104°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_e13d4bd90150.jpg"
+    ]
   },
   {
     "id": 166,
@@ -2155,7 +2553,9 @@
       "de l'altitude."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vitesse propre est la vitesse de l'avion par rapport à l'air. La différence avec la vitesse sol est bien évidemment le sens et la vitesse de déplacement de la masse d'air dans laquelle on vole, ou dit plus simplement : le vent.",
+    "explication_images": []
   },
   {
     "id": 167,
@@ -2168,7 +2568,9 @@
       "un cap 80° + 180° soit 260°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le QDM donné par le contrôleur ne tient pas compte du vent, c'est donc la route à suivre pour rejoindre l'aérodrome ou la station. Vous devez bien évidemment tenir compte du vent pour suivre cette ROUTE 080°",
+    "explication_images": []
   },
   {
     "id": 168,
@@ -2181,7 +2583,9 @@
       "un aérodrome ouvert à la CAP( circulation aérienne publique) et un aérodrome d'Etat."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3258.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-3258.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 169,
@@ -2194,7 +2598,9 @@
       "à la route vraie."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 170,
@@ -2207,7 +2613,9 @@
       "50 km."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte, 1 cm représente 500 000 cm en vrai, c'est-à-dire 5 km. Donc, 10 cm sur la carte = 50 km en vrai.",
+    "explication_images": []
   },
   {
     "id": 171,
@@ -2220,7 +2628,9 @@
       "13,5 km."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte, 1 cm représente 500 000 cm, c'est à dire 5 km. 27 x 5 = 135 km.",
+    "explication_images": []
   },
   {
     "id": 172,
@@ -2233,7 +2643,9 @@
       "la longitude augmente."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les latitudes sont comptées à partir de l'équateur (0°) vers les pôles (90°).",
+    "explication_images": []
   },
   {
     "id": 173,
@@ -2246,7 +2658,9 @@
       "246°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm = Rv - Dm = 230 - (-6) = 236° La Dm est négative quand elle est Ouest. Le vent vient de la droite. Il faut donc adopter un cap 10° plus à droite pour le contrer : 236 + 10 = 246°",
+    "explication_images": []
   },
   {
     "id": 174,
@@ -2259,7 +2673,9 @@
       "un cheminement."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les méridiens se rejoignent au Nord vrai, donc les routes mesurées par rapport à un méridien sont des routes vraies. Il faut appliquer la déclinaison magnétique pour obtenir la route magnétique.",
+    "explication_images": []
   },
   {
     "id": 175,
@@ -2272,7 +2688,9 @@
       "l'aire à signaux et un seuil décalé."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4725.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-4725.jpg",
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 176,
@@ -2285,7 +2703,9 @@
       "282°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour suivre une Rm 274 avec un vent qui vous pousse vers la droite, il vous faut adopter le cap magnétique Cm = 274 - 10 = 264° Et puisque Cm - d = Cc, on obtient finalement un Cap Compas Cc = 264 - (-2) = 264 + 2 = 266°",
+    "explication_images": []
   },
   {
     "id": 177,
@@ -2298,7 +2718,9 @@
       "27 km."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte au 1/100 000, 1 cm sur la carte équivaut à 100 000 cm sur la Terre, soit 1 km. 27 cm = 27 km.",
+    "explication_images": []
   },
   {
     "id": 178,
@@ -2311,7 +2733,9 @@
       "10h45."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En France métropolitaine, du dernier week-end d'octobre jusqu'au dernier week-end de mars, on est en heure d'hiver : UTC+1.",
+    "explication_images": []
   },
   {
     "id": 179,
@@ -2324,7 +2748,11 @@
       "augmente."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si le QNH à Paris est supérieur à celui de Lyon, ça signifie que le champ de pression est incliné, et que les surfaces de pression ne sont pas horizontales. En volant au FL85, on se trouve à 8500 ft au-dessus de la surface 1013 hPa. Cette surface se trouvera plus haute à Paris qu'à Lyon, donc notre aéronef se trouvera lui aussi plus haut par rapport au niveau de la mer qui lui est bien à l'horizontale.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_bf975e22d0bb.jpg"
+    ]
   },
   {
     "id": 180,
@@ -2337,7 +2765,9 @@
       "2,5 kilomètres."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte au 1/1 000 000, 1 cm représente 1 000 000 cm, soit 10 km. 2,5 cm = 2,5 x 10 km = 25 km.",
+    "explication_images": []
   },
   {
     "id": 181,
@@ -2350,7 +2780,9 @@
       "45 l."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "A 90 kt, avec un vent de face de 10 kt, notre vitesse sol devient 80 kt. Notre facteur de base est donc de : 60/80 = 3/4 Pour parcourir 120 NM, on va mettre : 120 x 3/4 = 90 minutes = 1h30 = 1,5 h Notre consommation hors roulage sera donc sur cette branche de : 34 x 1,5 = 51 l.",
+    "explication_images": []
   },
   {
     "id": 182,
@@ -2363,7 +2795,11 @@
       "050°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_4644a4afb5ca.jpg"
+    ]
   },
   {
     "id": 183,
@@ -2376,7 +2812,9 @@
       "30 l."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vitesse sol est de 80 - 20 = 60 kt. Pour parcourir 60 NM, on va donc mettre 1 heure. La consommation sera de 24 l.",
+    "explication_images": []
   },
   {
     "id": 184,
@@ -2389,7 +2827,9 @@
       "1 NM."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "120 kt = 120 NM en 60 minutes. En une minute : 120 / 60 = 2 NM.",
+    "explication_images": []
   },
   {
     "id": 185,
@@ -2402,7 +2842,11 @@
       "60 NM."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le degré de latitude qui sépare 2 parallèles correspondra toujours à 60 NM, car les méridiens sont des grands cercles. Notez que l'échelle de la carte ne change rien à la question.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_6dbfc28b56e3.jpg"
+    ]
   },
   {
     "id": 186,
@@ -2415,7 +2859,9 @@
       "055°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv de A vers B = 235° Rm de A vers B = 235° - 3° = 232° Rm de B vers A = 232 - 180 = 052°",
+    "explication_images": []
   },
   {
     "id": 187,
@@ -2428,7 +2874,11 @@
       "100°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rm vers la balise = Cm actuel + Gt = 090 + 10 = 100°.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_b5b0cbe3ff0d.jpg"
+    ]
   },
   {
     "id": 188,
@@ -2441,7 +2891,9 @@
       "322°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv = 335 Dm = 3°W Rm = Rv - Dm = 335 - (-3) = 335 + 3 = 338 Le vent vient de la droite, donc il faut prendre un cap supérieur à la route. Cm = 338 + 10 = 348",
+    "explication_images": []
   },
   {
     "id": 189,
@@ -2454,7 +2906,9 @@
       "15 minutes avant le coucher du soleil."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à la notion de nuit aéronautique ! Oui, on a le droit de voler jusqu'à 30 minutes après le coucher su soleil, mais il faut considérer ce délai comme une sécurité. Prévoyez d'arriver à destination à l'heure du coucher du soleil, et si vous avez du retard, il vous reste une demi-heure de rab. En cas de couverture nuageuse importante, dès le coucher du soleil, il va commencer à faire très sombre.",
+    "explication_images": []
   },
   {
     "id": 190,
@@ -2467,7 +2921,9 @@
       "le nord magnétique."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le quadrillage de la carte correspond aux méridiens, qui sont donc tous orientés vers le Nord vrai.",
+    "explication_images": []
   },
   {
     "id": 191,
@@ -2480,7 +2936,11 @@
       "180°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_12d7b91bfdd1.png"
+    ]
   },
   {
     "id": 192,
@@ -2493,7 +2953,9 @@
       "1, 3 et 5."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 193,
@@ -2506,7 +2968,9 @@
       "110°."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3049.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3049.jpg",
+    "explication": "L'aiguille est à gauche. Il faut donc prendre un cap plus faible que le radial sélectionné. L'interception d'un radial se faisant traditionnellement sous 30°, le cap à suivre est : 110 - 30 = 080°",
+    "explication_images": []
   },
   {
     "id": 194,
@@ -2519,7 +2983,9 @@
       "de courbe de niveau."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une projection conforme, comme les cartes Lambert que vous utilisez en vol, conserve les angles, ce qui est bien pratique quand on veut calculer des caps.",
+    "explication_images": []
   },
   {
     "id": 195,
@@ -2532,7 +2998,9 @@
       "à mi-chemin entre l'équateur et le pôle nord et à l'ouest du méridien de Greenwich."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les latitudes s'échelonnent de 0° à l'Equateur jusqu'à 90° Nord ou Sud aux pôles. Les longitudes sont comptées à partir du méridien de Greenwich, jusqu'à 180° Est ou Ouest.",
+    "explication_images": []
   },
   {
     "id": 196,
@@ -2545,7 +3013,9 @@
       "00°N - 090°E."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'équateur est le parallèle 0°. Les méridiens se comptent à partir du méridien de Greenwich (000°) à 180° Est (E) ou Ouest (W).",
+    "explication_images": []
   },
   {
     "id": 197,
@@ -2558,7 +3028,9 @@
       "magnétique."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les routes sont mesurées par rapport aux méridiens, qui pointent tous vers le Nord vrai. Ce sont donc des routes vraies.",
+    "explication_images": []
   },
   {
     "id": 198,
@@ -2571,7 +3043,9 @@
       "20 NM."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un grand cercle, comme les méridiens, 1° = 60 NM.",
+    "explication_images": []
   },
   {
     "id": 199,
@@ -2584,7 +3058,9 @@
       "droite, et vous tournez à droite pour rejoindre le radial affiché."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3052.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3052.jpg",
+    "explication": "Puisque vous êtes au cap 080 et que le VOR est réglé sur le 080 en FROM, vous pouvez lire directement votre position par rapport au radial voulu : vous êtes à gauche. Attention, les indications du VOR étant indépendantes du cap de l'avion, il n'y a que dans ce cas que la lecture directe est possible. Il vous suffit de prendre un cap plus à droite pour rejoindre votre radial.",
+    "explication_images": []
   },
   {
     "id": 200,
@@ -2597,7 +3073,9 @@
       "VOR."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le radar secondaire interroge les transpondeurs afin de déterminer la position des aéronefs. Si votre transpondeur est éteint, ou que vous affichez un code qui est filtré sur le radar, vous ne serez pas vu.",
+    "explication_images": []
   },
   {
     "id": 201,
@@ -2610,7 +3088,9 @@
       "plusieurs kilomètres du pôle nord géographique et sa position est fixe dans le temps."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le pôle nord géographique et le point sur la surface où passe l'axe de rotation de la Terre. Le pôle nord magnétique dépend des masses ferreuses du noyau terrestre, qui sont en perpétuel mouvement car en partie liquides. Le pôle nord magnétique se déplace donc lentement mais sûrement, et n'est pas confondu avec le pôle nord géographique.",
+    "explication_images": []
   },
   {
     "id": 202,
@@ -2623,7 +3103,9 @@
       "20 kt."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "il semblerait que certains croient encore que la manche à air se gonfle sur un certain nombre de bandes, et pend lamentablement ensuite, ce qui permet de compter le vent. Or, si vous observez une manche à air, vous verrez qu'elle monte selon un certain angle. La seule certitude que vous pouvez avoir, c'est que lorsque la manche à air est à l'horizontale, le vent est supérieur à 25 kt. Pour estimer le vent en dessous de ça, un peu d'expérience suffit.",
+    "explication_images": []
   },
   {
     "id": 203,
@@ -2636,7 +3118,9 @@
       "15 h 12."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En mai, l'heure locale en France métropolitaine est UTC + 2.",
+    "explication_images": []
   },
   {
     "id": 204,
@@ -2649,7 +3133,9 @@
       "2500 mètres."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'échelle 1 : 1 000 000 signifie que 1 cm sur la carte représente 1 000 000 de cm en vrai, c'est à dire 10 km. 25 cm = 250 km.",
+    "explication_images": []
   },
   {
     "id": 205,
@@ -2662,7 +3148,9 @@
       "1 - 4 - 6."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "",
+    "explication_images": []
   },
   {
     "id": 206,
@@ -2675,7 +3163,9 @@
       "ouest."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si on aperçoit le repère à droite, c'est que le vent nous a poussé sur la gauche. Sur une route 135°, ça signifie que le vent vient soit du sud, soit de l'ouest. On a mis 14 minutes pour arriver au niveau du repère. Or, à 60 kt, pour parcourir 10 NM, il faut 10 minutes. Nous sommes en retard, donc le vent vient en partie de l'avant. C'est donc un vent du sud.",
+    "explication_images": []
   },
   {
     "id": 207,
@@ -2688,7 +3178,9 @@
       "à l'erreur instrumentale."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'aéronef se déplace dans une masse d'air, qui elle-même se déplace sous l'action du vent. La différence entre vitesse air et vitesse sol est donc due au vent.",
+    "explication_images": []
   },
   {
     "id": 208,
@@ -2701,7 +3193,9 @@
       "025°."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Rv = 043° Rm = 043 + 3 = 046° Cm = 046 + 15 = 061°",
+    "explication_images": []
   },
   {
     "id": 209,
@@ -2714,7 +3208,11 @@
       "250°."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3047.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3047.jpg",
+    "explication": "L'aiguille est à droite, il faudra donc prendre un cap plus grand que le radial sélectionné. L'angle d'interception d'un radial est traditionnellement de 30°. Donc : radial + 30 = cap à suivre. 220 + 30 = 250°",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_84ff07e0d71d.jpg"
+    ]
   },
   {
     "id": 210,
@@ -2727,7 +3225,9 @@
       "un nord quelconque et la trajectoire de l'aéronef."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le cap est l'angle entre le nord et l'axe longitudinal de l'aéronef. Après, on choisit le nord dont on a besoin (nord vrai, nord magnétique), ce qui nous donnera le cap vrai ou le cap magnétique.",
+    "explication_images": []
   },
   {
     "id": 211,
@@ -2740,7 +3240,9 @@
       "juste avant la mise sur arrêt du transpondeur."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La fonction IDENT a pour but de modifier l'affichage de votre écho radar sur l'écran du contrôleur, ce qui l'aide à mieux vous repérer. Donc, pour éviter de mettre une joyeuse pagaille sur sa télé, vous devez attendre qu'il vous demande d'appuyer sur ident pour le faire.",
+    "explication_images": []
   },
   {
     "id": 212,
@@ -2753,7 +3255,9 @@
       "7 h 30."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'heure UTC (temps universel coordonné) est la référence en aéronautique. En France, l'heure légale est UTC + 1 en hiver, UTC + 2 en été.",
+    "explication_images": []
   },
   {
     "id": 213,
@@ -2766,7 +3270,9 @@
       "suivre des lignes naturelles caractéristiques."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le cheminement consiste à suivre des repères au sol, naturels ou pas : les autoroutes par exemple forment d'excellents repères à suivre, à condition de suivre la bonne bien sûr.",
+    "explication_images": []
   },
   {
     "id": 214,
@@ -2779,7 +3285,9 @@
       "rayon d'action."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Autonomie : temps de vol possible avec une quantité de carburant donnée. Rayon d'action : distance maximale à laquelle on peut aller et revenir avec une quantité de carburant donnée. Délestage : consommation de carburant sur une distance donnée. Distance franchissable : distance que l'on peut parcourir avec une quantité de carburant donnée.",
+    "explication_images": []
   },
   {
     "id": 215,
@@ -2792,7 +3300,9 @@
       "70 kt."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La vitesse propre est la vitesse de l'avion dans la masse d'air. Si vous avancez à 80 kt dans cette masse d'air, mais que pendant ce temps-là cette masse d'air se déplace en sens inverse à 20 kt, votre vitesse sol n'est plus que de 80 - 20 = 60 kt.",
+    "explication_images": []
   },
   {
     "id": 216,
@@ -2805,7 +3315,11 @@
       "l'augmentation annuelle de l'intensité du champ magnétique terrestre."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le Nord vrai est le point autour duquel tourne la Terre. Le Nord magnétique dépend des masses en fusion à l'intérieur de la Terre. C'est pourquoi les deux ne sont pas confondus. La différence s'appelle la déclinaison magnétique.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_ed0e167149ce.jpg"
+    ]
   },
   {
     "id": 217,
@@ -2818,7 +3332,9 @@
       "85 m."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur une carte de cette échelle, 1 cm représente 5 km en réel. 1,7 cm représente donc 1,7 x 5 = 8,5 km.",
+    "explication_images": []
   },
   {
     "id": 218,
@@ -2831,7 +3347,11 @@
       "5740 ft."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention, il y a une astuce ! Vous vous êtes probablement (comme moi), précipité sur la conversion 1 hPa = 28 ft pour calculer la différence entre l'altitude et l'altitude-pression... mais ça ne tombe pas juste ! Et c'est normal :-) Cette conversion n'est valable que dans les basses couches de l'atmosphère, car la décroissance de pression n'est pas linéaire. Lorsqu'on commence à vouloir convertir un peu plus haut, comme c'est le cas ici, il vaut mieux prendre 1 hPa = 30 ft. Et là, ô miracle, on tombe pile poil sur 5340 ft, l'une des réponses proposées. La surface 1013 hPa se trouve 10 hPa au-dessus de la surface 1023 hPa : 10 x 30 = 300 ft. L'altitude-pression est donc de 5640 - 300 = 5340 ft. NOTE : ce QCM a été mis à jour, car initialement on me l'avait ramené de manière imprécise, avec 5360 ft comme bonne réponse. Or, 3 personnes différentes me l'ont signalé depuis, avec ces nouvelles valeurs.",
+    "explication_images": [
+      "IMAGES_GLIGLI_NAVIGATION_EASY_EXPL/expl_89224388edc3.jpg"
+    ]
   },
   {
     "id": 219,
@@ -2844,7 +3364,9 @@
       "1250 kilomètres."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur la carte, 1 cm représentent 500 000 cm, c'est à dire 5 km. 25 cm x 5 = 125 km.",
+    "explication_images": []
   },
   {
     "id": 220,
@@ -2857,7 +3379,9 @@
       "7500."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le code transpondeur pour signifier une panne radio est 7600, pas de variations possibles.",
+    "explication_images": []
   },
   {
     "id": 221,
@@ -2870,7 +3394,9 @@
       "3 NM 25."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "1 degré équivaut à 60 NM ; 1 minute d'angle équivaut à 1 NM. 3 x 60 + 25 = 205 NM.",
+    "explication_images": []
   },
   {
     "id": 222,
@@ -2883,7 +3409,9 @@
       "longitude Est et de latitude Sud."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le méridien origine (Greenwich) sert de référence aux longitudes, qui vont jusqu'à 180° vers l'Est ou l'Ouest ; l'équateur est la latitude 0°, les latitudes étant ensuite comptées Nord ou Sud jusqu'à 90° (les pôles).",
+    "explication_images": []
   },
   {
     "id": 223,
@@ -2896,7 +3424,9 @@
       "3."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5204.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5204.jpg",
+    "explication": "L'étape de base droite est la dernière ligne droite avant le dernier virage qui se fera à droite et la finale.",
+    "explication_images": []
   },
   {
     "id": 224,
@@ -2909,7 +3439,9 @@
       "5 NM."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour perdre 1500 ft en descendant à 500 ft/min, cela va prendre 1500 / 500 = 3 minutes. Bonus pour ceux qui me poseraient la question de la distance que ça va prendre (si, si, je sais que vous allez le faire parce que ça fait partie des réponses) : A 120 kt, on parcourt 2 NM par minutes. En 3 minutes, nous allons donc parcourir 6 NM.",
+    "explication_images": []
   },
   {
     "id": 225,
@@ -2922,7 +3454,9 @@
       "supérieure à celle du parallèle 30° nord."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'Equateur est le seul parallèle qui soit un grand cercle, et dont la circonférence est égale à la circonférence de la Terre. Tous les autres parallèles auront une circonférence inférieure à celle de l'Equateur, pour finalement arriver à 0 aux pôles, qui sont des points de latitude 90°.",
+    "explication_images": []
   },
   {
     "id": 226,
@@ -2935,7 +3469,9 @@
       "3."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5204.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5204.jpg",
+    "explication": "L'étape de base gauche est la dernière ligne droite avant le dernier virage qui se fera à gauche et la finale.",
+    "explication_images": []
   },
   {
     "id": 227,
@@ -2948,7 +3484,9 @@
       "sur le radial 150."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3040.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/062-3040.jpg",
+    "explication": "L'indication FROM confirme qu'on est bien sur un radial, et non sur un QDM. Le radial sélectionné est le 150, l'OBI (l'aiguille) est centrée, vous êtes donc sur le radial 150.",
+    "explication_images": []
   },
   {
     "id": 228,
@@ -2961,7 +3499,9 @@
       "un avion régime de vol IFR est prioritaire dans tous les cas ."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5392.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/010-5392.jpg",
+    "explication": "En espace aérien de classe C, les VFR sont séparés des IFR par le contrôle.",
+    "explication_images": []
   },
   {
     "id": 229,
@@ -2974,6 +3514,8 @@
       "prévol 121,725 MHz."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-6174.jpg"
+    "image_url": "IMAGES_GLIGLI_NAVIGATION_EASY/061-6174.jpg",
+    "explication": "Lorsqu'il existe une fréquence prévol, vous devez la contacter avant la fréquence sol.",
+    "explication_images": []
   }
 ]
