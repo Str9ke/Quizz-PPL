@@ -570,26 +570,26 @@ function updateCategorySelect() {
     { value: "EASA REGLEMENTATION", display: "EASA REGLEMENTATION", count: countEasaReglementation },
     { value: "EASA PERFORMANCES HUMAINES", display: "EASA PERFORMANCES HUMAINES", count: countEasaPerfHumaines },
     { value: "GLIGLI COMMUNICATIONS HARD", display: "GLIGLI COMMUNICATIONS (HARD)", count: countGligliComm },
-    { value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD", display: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (HARD)", count: countGligliConnaissance },
-    { value: "GLIGLI EPREUVE COMMUNE HARD", display: "GLIGLI ÉPREUVE COMMUNE (HARD)", count: countGligliEpreuveCommune },
-    { value: "GLIGLI EPREUVE SPECIFIQUE HARD", display: "GLIGLI ÉPREUVE SPÉCIFIQUE (HARD)", count: countGligliEpreuveSpecifique },
-    { value: "GLIGLI METEOROLOGIE HARD", display: "GLIGLI MÉTÉOROLOGIE (HARD)", count: countGligliMeteo },
-    { value: "GLIGLI NAVIGATION HARD", display: "GLIGLI NAVIGATION (HARD)", count: countGligliNavigation },
-    { value: "GLIGLI PERFORMANCE HUMAINE HARD", display: "GLIGLI PERFORMANCE HUMAINE (HARD)", count: countGligliPerfHumaine },
-    { value: "GLIGLI PERFORMANCES PREPARATION VOL HARD", display: "GLIGLI PERFORMANCES & PRÉP. VOL (HARD)", count: countGligliPerfPrepVol },
-    { value: "GLIGLI PRINCIPES DU VOL HARD", display: "GLIGLI PRINCIPES DU VOL (HARD)", count: countGligliPrincipesVol },
-    { value: "GLIGLI PROCEDURES OPERATIONNELLES HARD", display: "GLIGLI PROCÉDURES OPÉRATIONNELLES (HARD)", count: countGligliProcedures },
-    { value: "GLIGLI REGLEMENTATION HARD", display: "GLIGLI RÉGLEMENTATION (HARD)", count: countGligliReglementation },
     { value: "GLIGLI COMMUNICATIONS EASY", display: "GLIGLI COMMUNICATIONS (EASY)", count: countGligliCommEasy },
+    { value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD", display: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (HARD)", count: countGligliConnaissance },
     { value: "GLIGLI CONNAISSANCES GENERALES AERONEF EASY", display: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (EASY)", count: countGligliConnaissanceEasy },
+    { value: "GLIGLI EPREUVE COMMUNE HARD", display: "GLIGLI ÉPREUVE COMMUNE (HARD)", count: countGligliEpreuveCommune },
     { value: "GLIGLI EPREUVE COMMUNE EASY", display: "GLIGLI ÉPREUVE COMMUNE (EASY)", count: countGligliEpreuveCommuneEasy },
+    { value: "GLIGLI EPREUVE SPECIFIQUE HARD", display: "GLIGLI ÉPREUVE SPÉCIFIQUE (HARD)", count: countGligliEpreuveSpecifique },
     { value: "GLIGLI EPREUVE SPECIFIQUE EASY", display: "GLIGLI ÉPREUVE SPÉCIFIQUE (EASY)", count: countGligliEpreuveSpecifiqueEasy },
+    { value: "GLIGLI METEOROLOGIE HARD", display: "GLIGLI MÉTÉOROLOGIE (HARD)", count: countGligliMeteo },
     { value: "GLIGLI METEOROLOGIE EASY", display: "GLIGLI MÉTÉOROLOGIE (EASY)", count: countGligliMeteoEasy },
+    { value: "GLIGLI NAVIGATION HARD", display: "GLIGLI NAVIGATION (HARD)", count: countGligliNavigation },
     { value: "GLIGLI NAVIGATION EASY", display: "GLIGLI NAVIGATION (EASY)", count: countGligliNavigationEasy },
+    { value: "GLIGLI PERFORMANCE HUMAINE HARD", display: "GLIGLI PERFORMANCE HUMAINE (HARD)", count: countGligliPerfHumaine },
     { value: "GLIGLI PERFORMANCE HUMAINE EASY", display: "GLIGLI PERFORMANCE HUMAINE (EASY)", count: countGligliPerfHumaineEasy },
+    { value: "GLIGLI PERFORMANCES PREPARATION VOL HARD", display: "GLIGLI PERFORMANCES & PRÉP. VOL (HARD)", count: countGligliPerfPrepVol },
     { value: "GLIGLI PERFORMANCES PREPARATION VOL EASY", display: "GLIGLI PERFORMANCES & PRÉP. VOL (EASY)", count: countGligliPerfPrepVolEasy },
+    { value: "GLIGLI PRINCIPES DU VOL HARD", display: "GLIGLI PRINCIPES DU VOL (HARD)", count: countGligliPrincipesVol },
     { value: "GLIGLI PRINCIPES DU VOL EASY", display: "GLIGLI PRINCIPES DU VOL (EASY)", count: countGligliPrincipesVolEasy },
+    { value: "GLIGLI PROCEDURES OPERATIONNELLES HARD", display: "GLIGLI PROCÉDURES OPÉRATIONNELLES (HARD)", count: countGligliProcedures },
     { value: "GLIGLI PROCEDURES OPERATIONNELLES EASY", display: "GLIGLI PROCÉDURES OPÉRATIONNELLES (EASY)", count: countGligliProceduresEasy },
+    { value: "GLIGLI REGLEMENTATION HARD", display: "GLIGLI RÉGLEMENTATION (HARD)", count: countGligliReglementation },
     { value: "GLIGLI REGLEMENTATION EASY", display: "GLIGLI RÉGLEMENTATION (EASY)", count: countGligliReglementationEasy }
   ];
   
@@ -759,7 +759,10 @@ function getNormalizedSelectedCategory(selected) {
 async function updateModeCounts() {
     console.log(">>> updateModeCounts()");
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-    const list = normalizedSel === "TOUTES"
+    // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
+    // because chargerQuestions already loaded the right set with correct individual categories
+    const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+    const list = isAggregate
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
@@ -1020,23 +1023,23 @@ async function chargerQuestions(cat) {
           fileName = "gligli_reglementation_easy.json";
           break;
         case "EASA ALL": {
-          const files = [
-            "section_easa_procedures_new.json",
-            "section_easa_aerodynamique.json",
-            "section_easa_navigation.json",
-            "section_easa_connaissance_avion.json",
-            "section_easa_meteorologie.json",
-            "section_easa_performance_planification.json",
-            "section_easa_reglementation.json",
-            "section_easa_perf_humaines.json"
+          const easaCategories = [
+            "EASA PROCEDURES",
+            "EASA AERODYNAMIQUE",
+            "EASA NAVIGATION",
+            "EASA CONNAISSANCE DE L'AVION",
+            "EASA METEOROLOGIE",
+            "EASA PERFORMANCE ET PLANIFICATION",
+            "EASA REGLEMENTATION",
+            "EASA PERFORMANCES HUMAINES"
           ];
           try {
             const all = [];
-            for (const f of files) {
-              const part = await loadFile(f);
-              all.push(...part);
+            for (const subCat of easaCategories) {
+              await chargerQuestions(subCat);
+              all.push(...questions);
             }
-            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+            questions = all;
           } catch (err) {
             console.error("Erreur de chargement EASA ALL", err);
             questions = [];
@@ -1044,37 +1047,37 @@ async function chargerQuestions(cat) {
           return;
         }
         case "GLIGLI ALL": {
-          const files = [
-            "gligli_communications_hard.json",
-            "gligli_connaissances_generales_aeronef_hard.json",
-            "gligli_epreuve_commune_hard.json",
-            "gligli_epreuve_specifique_hard.json",
-            "gligli_meteorologie_hard.json",
-            "gligli_navigation_hard.json",
-            "gligli_performance_humaine_hard.json",
-            "gligli_performances_preparation_vol_hard.json",
-            "gligli_principes_du_vol_hard.json",
-            "gligli_procedures_operationnelles_hard.json",
-            "gligli_reglementation_hard.json",
-            "gligli_communications_easy.json",
-            "gligli_connaissances_generales_aeronef_easy.json",
-            "gligli_epreuve_commune_easy.json",
-            "gligli_epreuve_specifique_easy.json",
-            "gligli_meteorologie_easy.json",
-            "gligli_navigation_easy.json",
-            "gligli_performance_humaine_easy.json",
-            "gligli_performances_preparation_vol_easy.json",
-            "gligli_principes_du_vol_easy.json",
-            "gligli_procedures_operationnelles_easy.json",
-            "gligli_reglementation_easy.json"
+          const gligliCategories = [
+            "GLIGLI COMMUNICATIONS HARD",
+            "GLIGLI COMMUNICATIONS EASY",
+            "GLIGLI CONNAISSANCES GENERALES AERONEF HARD",
+            "GLIGLI CONNAISSANCES GENERALES AERONEF EASY",
+            "GLIGLI EPREUVE COMMUNE HARD",
+            "GLIGLI EPREUVE COMMUNE EASY",
+            "GLIGLI EPREUVE SPECIFIQUE HARD",
+            "GLIGLI EPREUVE SPECIFIQUE EASY",
+            "GLIGLI METEOROLOGIE HARD",
+            "GLIGLI METEOROLOGIE EASY",
+            "GLIGLI NAVIGATION HARD",
+            "GLIGLI NAVIGATION EASY",
+            "GLIGLI PERFORMANCE HUMAINE HARD",
+            "GLIGLI PERFORMANCE HUMAINE EASY",
+            "GLIGLI PERFORMANCES PREPARATION VOL HARD",
+            "GLIGLI PERFORMANCES PREPARATION VOL EASY",
+            "GLIGLI PRINCIPES DU VOL HARD",
+            "GLIGLI PRINCIPES DU VOL EASY",
+            "GLIGLI PROCEDURES OPERATIONNELLES HARD",
+            "GLIGLI PROCEDURES OPERATIONNELLES EASY",
+            "GLIGLI REGLEMENTATION HARD",
+            "GLIGLI REGLEMENTATION EASY"
           ];
           try {
             const all = [];
-            for (const f of files) {
-              const part = await loadFile(f);
-              all.push(...part);
+            for (const subCat of gligliCategories) {
+              await chargerQuestions(subCat);
+              all.push(...questions);
             }
-            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+            questions = all;
           } catch (err) {
             console.error("Erreur de chargement GLIGLI ALL", err);
             questions = [];
@@ -1082,23 +1085,23 @@ async function chargerQuestions(cat) {
           return;
         }
         case "AUTRES": {
-          const files = [
-            "questions_procedure_radio.json",
-            "questions_procedure_operationnelles.json",
-            "questions_reglementation.json",
-            "questions_connaissance_avion.json",
-            "questions_instrumentation.json",
-            "questions_masse_et_centrage.json",
-            "questions_motorisation.json",
-            "questions_aerodynamique.json"
+          const autresCategories = [
+            "PROCÉDURE RADIO",
+            "PROCÉDURES OPÉRATIONNELLES",
+            "RÉGLEMENTATION",
+            "CONNAISSANCE DE L'AVION",
+            "INSTRUMENTATION",
+            "MASSE ET CENTRAGE",
+            "MOTORISATION",
+            "AERODYNAMIQUE PRINCIPES DU VOL"
           ];
           try {
             const all = [];
-            for (const f of files) {
-              const part = await loadFile(f);
-              all.push(...part);
+            for (const subCat of autresCategories) {
+              await chargerQuestions(subCat);
+              all.push(...questions);
             }
-            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+            questions = all;
           } catch (err) {
             console.error("Erreur de chargement AUTRES", err);
             questions = [];
@@ -2030,19 +2033,8 @@ function displayMode() {
 // NEW: Helper to normalize category names for mode counting
 function getModeCategory(cat) {
     if (!cat) return "TOUTES";
-    const fixed = fixQuotes(cat).replace(/_/g, ' ').trim().toLowerCase();
-    if (fixed.indexOf("meteorologie") !== -1) {
-        return "EASA METEOROLOGIE";
-    } else if (fixed.indexOf("connaissance avion") !== -1) {
-        return "EASA CONNAISSANCE DE L'AVION";
-    } else if (fixed.indexOf("performance planification") !== -1) {
-        return "EASA PERFORMANCE ET PLANIFICATION";
-    } else if (fixed.indexOf("reglementation") !== -1) {
-        return "EASA REGLEMENTATION";
-    } else if (fixed.indexOf("performances humaines") !== -1) {
-        return "EASA PERFORMANCES HUMAINES";
-    }
-    return fixed.toUpperCase();
+    // Use the full normalization to get the correct canonical category name
+    return getNormalizedCategory(cat);
 }
 
 // Force getKeyFor() to use getModeCategory so that keys match
