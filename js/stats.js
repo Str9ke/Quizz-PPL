@@ -128,7 +128,7 @@ function displayHomeProgressBar(responses) {
     }
   });
   const total = reussie + ratee + nonvue;
-  const perc = total ? Math.round((reussie * 100) / total) : 0;
+  const perc = total ? (reussie * 100 / total).toFixed(2) : '0.00';
   function percColor(p) {
     if (p >= 80) return '#4caf50';
     if (p >= 50) return '#ff9800';
@@ -533,7 +533,7 @@ function afficherStats(groupsData) {
     gIm += c.stats.importante || 0;
   }));
   const gTotal = gRe + gRa + gNv;
-  const gPerc = gTotal ? Math.round((gRe * 100) / gTotal) : 0;
+  const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
 
   // Carte globale
   let html = `
