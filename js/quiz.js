@@ -1,5 +1,28 @@
 // === quiz.js === Quiz display, validation, immediate correction ===
 
+/**
+ * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
+ */
+function _buildExplicationHtml(q) {
+  if (!q.explication && !q.explication_images) return '';
+  let html = '<div class="explication-block">';
+  html += '<strong>\uD83D\uDCA1 Explication :</strong><br>';
+  if (q.explication) {
+    // Escape HTML but preserve newlines
+    const escaped = q.explication
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    html += escaped;
+  }
+  if (q.explication_images && q.explication_images.length) {
+    q.explication_images.forEach(imgPath => {
+      html += `<br><img src="${imgPath}" alt="Explication illustration" loading="lazy">`;
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
 async function demarrerQuiz() {
   selectedCategory = document.getElementById('categorie').value;
   modeQuiz = document.getElementById('mode').value;
@@ -319,6 +342,18 @@ function handleImmediateAnswer(q, selectedRadio) {
     }
   });
 
+  // Afficher l'explication si disponible
+  const questionBlock = selectedRadio.closest('.question-block');
+  if (questionBlock && (q.explication || q.explication_images)) {
+    // Vérifier qu'on n'a pas déjà ajouté l'explication
+    if (!questionBlock.querySelector('.explication-block')) {
+      const explDiv = document.createElement('div');
+      explDiv.innerHTML = _buildExplicationHtml(q);
+      const explEl = explDiv.firstElementChild;
+      if (explEl) questionBlock.appendChild(explEl);
+    }
+  }
+
   // Si toutes les questions sont répondues, afficher un résumé
   if (window._immediateScore.answered === window._immediateScore.total) {
     const pct = Math.round(100 * window._immediateScore.correct / window._immediateScore.total);
@@ -491,6 +526,7 @@ function afficherCorrection() {
         <div class="answer-list">
           ${ansHtml}
         </div>
+        ${_buildExplicationHtml(q)}
       </div>
     `;
   });

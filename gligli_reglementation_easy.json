@@ -10,7 +10,8 @@
       "le dégagement de la piste après l'atterrissage s'effectue par la droite."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1755.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1755.jpg",
+    "explication": "Le circuit standard se fait par la gauche. Lorsque des contraintes environnementales (agglomérations, reliefs, etc.) imposent de faire le circuit par la droite, ce signal l'indique aux pilotes qui ne préparent pas bien leur nav et ne lisent pas les cartes VAC."
   },
   {
     "id": 2,
@@ -23,7 +24,8 @@
       "votre transit est soumis à une autorisation du contrôle et vous bénéficiez d'informations de trafic."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien contrôlé de classe D, une autorisation du contrôle est nécessaire pour pénétrer ainsi que pour tout changement de trajectoire. Il vous sera fourni des informations de trafic sur les autres aéronefs. La séparation n'est assurée qu'entre les IFR."
   },
   {
     "id": 3,
@@ -36,7 +38,8 @@
       "précédée de la marque de nationalité."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'identification d'un avion est formée de la marque de nationalité (F en France) suivie de la marque d'immatriculation."
   },
   {
     "id": 4,
@@ -49,7 +52,8 @@
       "au contrôleur d'aérodrome."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La règle de base du VFR, c'est VOIR ET EVITER.\n\nMême si le contrôle donne parfois une fausse impression de sécurité, c'est au CdB d'assurer la sécurité."
   },
   {
     "id": 5,
@@ -62,7 +66,11 @@
       "pair."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour les routes magnétiques comprises entre 000°et 179°, la route doit être \"impaire + 5\", c'est à dire les niveaux de vol 35, 55, 75, etc.\n\nPour les Rm comprises entre 180° et 359°, c'est \"pair + 5\", donc FL45, FL65, FL85, etc.\n\nLes IFR utilisent la même règle mais le niveau de vol se termine par zéro. Exemple : FL60.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q5_easy_7c691f113ca8.jpg"
+    ]
   },
   {
     "id": 6,
@@ -75,7 +83,10 @@
       "aérodrome dangereux, n'atterrissez pas."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q6_easy_395d0e96d3a6.png"
+    ]
   },
   {
     "id": 7,
@@ -88,7 +99,8 @@
       "prorogée."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour proroger sa classe SEP, il faut, dans les 12 mois qui précèdent l'expiration :\n\n- 12 heures de vol dont au moins 6 en commandant de bord ;\n\n- 12 décollages et atterrissages ;\n\n- 1 heure de vol entière avec un FI.\n\nSi ces conditions ne sont pas remplies, il faut faire un vol de contrôle de compétence avec un FE.\n\nSi votre SEP est périmée, après la date d'expiration, il faut faire un vol de renouvellement avec un FE."
   },
   {
     "id": 8,
@@ -101,7 +113,8 @@
       "500 mètres."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\n \n\nb) ailleurs quaux endroits spécifiés en a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque pour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence."
   },
   {
     "id": 9,
@@ -114,7 +127,8 @@
       "civile."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La commission de discipline statue sur votre licence. Les sanctions vont du blâme au retrait définitif de la licence."
   },
   {
     "id": 10,
@@ -127,7 +141,8 @@
       "dont l'accès est interdit."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait du SCA :\n\n2.5.2.4. Zones dangereuses, réglementées, interdites et zones de ségrégation temporaire\n\nDes volumes particuliers peuvent être délimités à l'intérieur des régions d'information de vol, ce sont :\n\na) les zones dangereuses à l'intérieur desquelles peuvent se dérouler des activités dangereuses pour les vols des aéronefs durant des périodes spécifiées.\n\nb) au dessus du territoire national et des eaux territoriales:\n\n- les zones réglementées dans les limites desquelles les vols des aéronefs sont subordonnés à certaines conditions spécifiées ;\n\n- les zones interdites dans les limites desquelles le vol des aéronefs est interdit sauf autorisation de l'autorité compétente ;\n\n- les zones de ségrégation temporaire (TSA) réservées à l'usage exclusif d'usagers spécifiques pendant une durée déterminée ;\n\nc) au dessus de frontières internationales:\n\n- les zones de ségrégation temporaire transfrontalières (CBA) réservées à l'usage exclusif d'usagers spécifiques pendant une durée déterminée."
   },
   {
     "id": 11,
@@ -153,7 +168,8 @@
       "500 ft."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Hauteurs minimales fixées par Arrêté du 10 octobre 1957 et arrêté du 17 novembre 1958 pour les avions et les hélicoptères.\n\nVoir l'arrêté du 10 octobre 1957"
   },
   {
     "id": 13,
@@ -179,7 +195,8 @@
       "15 heures."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La formation doit compter un minimum de 45 heures de vol, dont un maximum de 5 heures sur simulateur agrée (non, Flight Simulator ne compte pas).\n\nDans ces 45 heures, vous devez avoir un minimum de 25 heures en double commande, et 10 heures en solo.\n\nUn esprit attentif aura remarqué qu'il manque 10 heures pour arriver à 45 :-)\n\nCes 10 heures sont laissées à l'appréciation de votre instructeur."
   },
   {
     "id": 15,
@@ -192,7 +209,8 @@
       "interdite et vous vous posez sur le terrain le plus proche."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Conformément au code de l'aviation civile (art. L. 131-3), l'aéronef qui s'engage dans la zone interdite sans y être autorisé doit, dès qu'il s'en aperçoit, atterrir sur l'aérodrome le plus proche situé en dehors de cette zone. S'il est aperçu en vol, il doit se conformer à la première injonction, ralentir son allure, descendre à l'altitude imposée et atterrir sur l'aérodrome indiqué."
   },
   {
     "id": 16,
@@ -205,7 +223,8 @@
       "une clairance de séparation avec les autres VFR et IFR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les services assurés en espace de classe D pour les VFR sont : information de trafic entre vols VFR et vols IFR et entre vols VFR (et suggestion de  manuvre dévitement sur demande)."
   },
   {
     "id": 17,
@@ -218,7 +237,8 @@
       "6 mois."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "ATTENTION ! En cette période de transition du JAR-FCL vers le PART-FCL, les validités médicales changent.\n\nDans le cadre du JAR-FCL (examen théorique à 5 modules), la validité est :\n\nPour les pilotes privés, le certificat est valable jusquau dernier jour du 60ème mois (5 ans) qui suit la visite médicale pour les pilotes de moins de 40 ans et pour les pilotes de 40 ans et plus : le certificat est valable jusquau dernier jour du 24ème mois (2 ans) qui suit la visite médicale.\n\nDans le cadre du PART-FCL (examen théorique en 2 modules), la validité est :\n\nPour le PPL :\n\n- 60 mois jusqu'à ce que le titulaire de la licence atteigne l'âge de 40 ans. Un certificat médical délivré à un titulaire de licence n'ayant pas 40 ans cesse d'être valable quand celui-ci atteint l'âge de 42 ans ;\n\n- 24 mois si le titulaire de la licence a entre 40 et 50 ans. Un certificat médical délivré à un titulaire de licence n'ayant pas 50 ans cesse d'être valable quand celui-ci atteint l'âge de 51 ans ; et\n\n- 12 mois à partir de l'âge de 50 ans.\n\nPour le LAPL :\n\n- 60 mois jusqu'à ce que le titulaire de la licence atteigne l'âge de 40 ans. Un certificat médical délivré à un titulaire de licence n'ayant pas 40 ans cesse d'être valable quand celui-ci atteint l'âge de 42 ans ;\n\n- 24 mois après l'âge de 40 ans."
   },
   {
     "id": 18,
@@ -231,7 +251,11 @@
       "la piste 01."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Cette piste orientée au 001°/181° nous donnera une piste 36 et une piste 18. Comme le vent vient du 050°, c'est la piste 36 qui sera le plus face au vent.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q18_easy_fef203b3c3ff.jpg"
+    ]
   },
   {
     "id": 19,
@@ -257,7 +281,8 @@
       "300 m (1000 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des Règles de l'Air :\n\nSauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\n \n\nb) ailleurs quaux endroits spécifiés en 4.6 a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque pour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence.\n\nNOTE IMPORTANTE :\n\nDes recoupements indiquent que la réponse attendue est \"sécurité\". Si on regarde bien la réglementation, celle-ci parle d'une hauteur de 150 m, mais pas d'une distance. On peut donc interpréter ça ainsi : \"on peut frôler tout ce qu'on veut du moment que ça touche pas et que ça fait pas peur, mais sous l'avion : toujours 150 m de gaz !\"\n\nLa mention \"distance de 150 m\" se trouve dans le paragraphe concernant les entraînements à l'atterrissage forcé en vol d'instruction.\n\nMISE A JOUR DE LA NOTE IMPORTANTE :-)\n\nDepuis la mise en application des nouvelles règles de l'air SERA, la valeur de 150 m est de nouveau à la mode !"
   },
   {
     "id": 21,
@@ -270,7 +295,8 @@
       "A-B-C-D-E."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à ne pas confondre séparation et information de trafic.\n\nQuand la séparation est assuré par le contrôleur, celui-ci vous donne des instructions pour que votre trajectoire n'interfère pas avec celles des autres.\n\nL'information de trafic, c'est quand le contrôleur vous signale un autre appareil, en vous donnant sa position le plus précisément possible, et c'est alors à vous de le voir pour assurer visuellement l'espacement."
   },
   {
     "id": 22,
@@ -283,7 +309,8 @@
       "nord compas."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le Nord de référence pour les pistes est le Nord magnétique. C'est pour ça que de temps en temps, une piste change de numéro, en fonction de l'évolution de la déclinaison magnétique."
   },
   {
     "id": 23,
@@ -296,7 +323,8 @@
       "horizontalement 1000 m, verticalement 300 m (1000 ft)."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 24,
@@ -309,7 +337,8 @@
       "est possible à la seule condition de détenir une qualification IR valide."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le vol aux instruments ne s'improvise pas. Ce n'est pas pour rien que ça demande une formation poussée.\n\nIl faut donc avoir la qualification, l'entraînement, et l'avion équipé."
   },
   {
     "id": 25,
@@ -335,7 +364,8 @@
       "IFR et VFR de nuit."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La qualification de vol aux instruments (IR) est nécessaire pour voler en IFR."
   },
   {
     "id": 27,
@@ -348,7 +378,8 @@
       "VFR."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les niveaux de vol IFR se terminent par zéro : FL30, 40, 50, 60, etc.\n\nLes niveaux de vol VFR se terminent par cinq : FL35, 45, 55, 65, etc."
   },
   {
     "id": 28,
@@ -361,7 +392,8 @@
       "354°."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les orientations magnétiques des pistes sont arrondies pour donner le QFU. Ainsi, une piste 36 peut être orientée entre le 355° et le 004°.\n\nA 005° ça devient une piste 01, à 354°, c'est une piste 35."
   },
   {
     "id": 29,
@@ -374,7 +406,8 @@
       "D."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "P : zones interdites\n\nD : zones dangereuses\n\nR : zones réglementées\n\nI : ça n'existe pas, comme zone."
   },
   {
     "id": 30,
@@ -387,7 +420,8 @@
       "E."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe F et G sont des espaces aériens non contrôlés.\n\nLes espaces aériens de classe D et E sont des espaces aériens contrôlés, mais la classe E a la particularité de ne pas imposer le contact radio et la clairance aux VFR quand les conditions sont VMC."
   },
   {
     "id": 31,
@@ -413,7 +447,8 @@
       "aucun plan de vol n'est nécessaire."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le plan de vol déposé (FPL) est le formulaire que vous remplissez en donnant le détail de votre vol. Il n'est obligatoire que pour le survol maritime, le voyage de nuit, les vols transfrontaliers et en IFR.\n\nLe plan de vol réduit, ce sont les informations que vous donnez au contrôleur lors du premier contact."
   },
   {
     "id": 33,
@@ -426,7 +461,8 @@
       "rien de spécial à part des lunettes de soleil."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "NCO.OP.190 Utilisation de loxygène de subsistance\n\na) Le pilote commandant de bord s'assure que, pendant l'exécution des tâches essentielles au fonctionnement sûr d'un aéronef en vol, tous les membres de l'équipage de conduite utilisent de manière continue l'équipement d'oxygène de subsistance lorsqu'il considère qu'à l'altitude du vol prévu, le manque d'oxygène risque de porter atteinte aux facultés des membres d'équipage et il veille à ce que les passagers disposent d'oxygène de subsistance lorsque le manque d'oxygène risque d'avoir des conséquences négatives pour eux.\n\nb) Dans tous les autres cas, lorsque le pilote commandant de bord ne peut déterminer les conséquences que le manque d'oxygène risque d'avoir pour tous les occupants à bord, il s'assure que :\n\n1. pendant l'exécution des tâches essentielles au fonctionnement sûr d'un aéronef en vol, tous les membres d'équipage utilisent l'oxygène de subsistance pendant toute période supérieure à 30 minutes au cours de laquelle l'altitude-pression du compartiment passagers se situe entre 10 000 ft et 13 000 ft ; et\n\n2. tous les occupants utilisent l'oxygène de subsistance pendant toute période au cours de laquelle l'altitude- pression dans le compartiment passagers est supérieure à 13 000 ft."
   },
   {
     "id": 34,
@@ -439,7 +475,8 @@
       "30 minutes avant le départ estimé du poste de stationnement."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Depuis décembre 2014 et la mise en place de la nouvelle réglementation SERA qui remplace les Règles de l'Air, le délai de communication du plan de vol est passé de 30 minutes à 60 minutes dans le cas d'un vol transfrontalier."
   },
   {
     "id": 35,
@@ -452,7 +489,8 @@
       "est interdit."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La formulation de cette question est tirée par les cheveux, pour ne pas dire trompeuse ! Si c'est une zone D, ce n'est pas une zone réglementée, mais une zone dangereuse. \"zone réglementée du type D\", ça n'existe pas. Il aurait fallu dire : zone à statut particulier de type D.\n\nBref. On peut traverser une zone dangereuse, sous la responsabilité du commandant de bord, et à coté de ça, on nous interdit de passer trop près d'une centrale nucléaire."
   },
   {
     "id": 36,
@@ -465,7 +503,8 @@
       "60 minutes avant le départ pour tout vol de nuit."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En VFR de jour, le plan de vol doit être déposé au moins 30 minutes avant l'heure prévue de départ du poste de stationnement, avec un maximum de 24 h."
   },
   {
     "id": 37,
@@ -478,7 +517,8 @@
       "vous ne faites rien puisque vous êtes séparés par le contrôle."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe C, les VFR ne sont pas séparés par le contrôle, c'est-à-dire que le contrôleur ne va pas vous donner d'instructions de cap ou d'altitude pour éviter les collisions. En revanche, il va vous donner des informations de trafic, qui vont vous permettre de savoir où chercher l'autre aéronef, et une fois repéré éventuellement de manoeuvrer pour assurer l'intégrité corporelle de tout le monde."
   },
   {
     "id": 38,
@@ -491,7 +531,8 @@
       "vous pouvez regrouper ces deux enfants avec la même ceinture sur le siège avant et placer un adulte sur chaque siège restant à l'arrière."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "NOTE : ce QCM a été modifié par mes soins pour tenir compte de la nouvelle réglementation PART NCO.\n\nDepuis le 25 août 2016, le regroupement d'enfants sur un même siège n'est plus autorisé : c'est un siège chacun, les enfants de moins de 24 mois devant bénéficier d'un système de retenue adapté, comme un siège auto par exemple.\n\nNCO.IDE.A.140 Sièges, ceintures de sécurité, systèmes de retenue et dispositifs de retenue pour enfants\n\na) Les avions sont équipés :\n\n1) dun siège ou dune couchette pour toute personne à bord âgée dau moins vingt-quatre mois ;\n\n2) dune ceinture de sécurité pour chaque siège passager et de ceintures de retenue pour chaque couchette ;\n\n3) dun dispositif de retenue enfant pour chaque personne à bord de moins de vingt-quatre mois ; et\n\n4) d'une ceinture de sécurité avec système de retenue de la partie supérieure du torse sur chaque siège de l'équipage de conduite à point de détachement unique pour les avions dont le premier certificat de navigabilité a été délivré à partir du 25 août 2016."
   },
   {
     "id": 39,
@@ -504,7 +545,8 @@
       "SEP."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour être valide, votre licence doit être assortie d'une qualification de classe ou de type. Lorsque vous passez l'examen PPL, vous passez en même temps la qualification associée à l'aéronef utilisé, en règle générale SEP."
   },
   {
     "id": 40,
@@ -517,7 +559,8 @@
       "B-C-D."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à ne pas confondre séparation et information de trafic.\n\nQuand la séparation est assuré par le contrôleur, celui-ci vous donne des instructions pour que votre trajectoire n'interfère pas avec celles des autres.\n\nL'information de trafic, c'est quand le contrôleur vous signale un autre appareil, en vous donnant sa position le plus précisément possible, et c'est alors à vous de le voir pour assurer visuellement la séparation."
   },
   {
     "id": 41,
@@ -543,7 +586,11 @@
       "cédez le passage à un autre aéronef et restez dans le circuit."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ces signaux lumineux ne servent que dans un cas bien précis : si vous tombez en panne radio alors que vous avez déjà intégré le tour de piste.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q42_easy_c31ad23e7981.jpg"
+    ]
   },
   {
     "id": 43,
@@ -556,7 +603,8 @@
       "le chef d'aérodrome."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un aérodrome contrôlé, toutes les manoeuvres d'un avion sont soumises à une clairance du contrôleur."
   },
   {
     "id": 44,
@@ -569,7 +617,8 @@
       "15 h 12."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Heure légale = UTC + 1, donc UTC = Heure légale -1 = 14h12 - 1 = 13h12"
   },
   {
     "id": 45,
@@ -582,7 +631,8 @@
       "3 décollages et 3 atterrissages dans les 6 mois précédant le vol."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "FCL.060 Expérience récente\n\n[...]          \n\nb) Avions, hélicoptères, aéronefs à sustentation motorisée, dirigeables et planeurs. \n\nUn pilote ne pourra exploiter un aéronef pour le transport aérien commercial ou le transport de passagers :\n\n1) en tant que PIC ou copilote, que sil a effectué, au cours des 90 jours qui précèdent, au moins 3 décollages, approches et atterrissages sur un aéronef de même type ou classe ou dans un FFS qui représente ce type ou cette classe. Les 3 décollages et atterrissages seront effectués en exploitations multipilotes ou monopilotes, en fonction des privilèges détenus par le pilote."
   },
   {
     "id": 46,
@@ -595,7 +645,8 @@
       "un point d'attente de voie de circulation."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-4748.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-4748.jpg",
+    "explication": "Notez que fin 2017 a eu lieu un changement de phraséologie : on ne dit plus \"point d'arrêt\", mais \"point d'attente\"."
   },
   {
     "id": 47,
@@ -608,7 +659,8 @@
       "par la droite."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3170.gif"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3170.gif",
+    "explication": "Sur la carte VAC, les amorces de circuit sont signalées par des flèches. Elles indiquent le sens du dernier virage.\n\nLorsque le circuit est tracé dans son intégralité, cela signifie que la trajectoire doit être respectée. Alors que les amorces de circuit laissent au commandant de bord l'estimation de sa trajectoire."
   },
   {
     "id": 48,
@@ -621,7 +673,8 @@
       "par la droite et à 1000 ft."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le circuit standard se fait par virages à gauche et à 300 m (1000 ft) de hauteur."
   },
   {
     "id": 49,
@@ -647,7 +700,8 @@
       "horizontalement 1500 m, verticalement 300 m (1000 ft)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 51,
@@ -660,7 +714,8 @@
       "le certificat de navigabilité."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le Manuel de Vol est le mode d'emploi de l'avion, et contient donc ce qu'on peut faire ou ne pas faire avec."
   },
   {
     "id": 52,
@@ -673,7 +728,8 @@
       "3."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il y a 5 FIR, subdivisées en Secteurs d'Information de Vol."
   },
   {
     "id": 53,
@@ -686,7 +742,8 @@
       "vous devez lui céder la priorité s'il est plus rapide."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des règles de l'air :\n\nLorsque deux aéronefs se trouvant à peu près au même niveau suivent des routes convergentes, celui qui voit lautre à sa droite sen écarte ; toutefois :\n\na) les aérodynes motopropulsés cèdent le passage aux dirigeables, aux planeurs et aux ballons ;\n\nb) les dirigeables cèdent le passage aux planeurs et aux ballons ;\n\nc) les planeurs cèdent le passage aux ballons ;\n\nd) les aéronefs motopropulsés céderont le passage aux aéronefs qui sont vus remorquant dautres aéronefs ou objets."
   },
   {
     "id": 54,
@@ -712,7 +769,8 @@
       "c'est le code à utiliser en cas de panne radio."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un transpondeur n'affiche que les chiffres de 0 à 7, ce qui permet 4096 codes différents."
   },
   {
     "id": 56,
@@ -738,7 +796,8 @@
       "vous vous intégrez dans la circulation de l'aérodrome sans gêner le trafic IFR."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La manoeuvre à vue imposée (VPT) s'impose à un aéronef en IFR quand l'approche aux instrument se fait sur une piste alors que c'est l'autre qui est en service.\n\nA l'issue de son approche aux instruments, l'IFR fera alors une manoeuvre à vue, libre (MVL) ou imposée (VPT), pour se poser sur la piste en service.\n\nLa manoeuvre à vue libre (MVL) lui laisse liberté de manoeuvre, alors que la manoeuvre à vue imposée (VPT) lui impose de suivre une trajectoire bien précise."
   },
   {
     "id": 58,
@@ -751,7 +810,8 @@
       "au plus tard avant le roulage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Depuis décembre 2014 et la mise en place de la nouvelle réglementation SERA qui remplace les Règles de l'Air, le délai de communication du plan de vol est passé de 30 minutes à 60 minutes dans le cas d'un vol transfrontalier."
   },
   {
     "id": 59,
@@ -764,7 +824,8 @@
       "1000 mètres."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'arrêté du 10 octobre 1957 relatif au survol des agglomérations et des rassemblements de personnes ou danimaux :\n\nPour le survol de toute agglomération dont la largeur moyenne ne dépasse pas 1 200 mètres, ainsi que pour le survol de tout rassemblement de personnes ou danimaux (plages, stades, réunions publiques, hippodromes, parcs à bestiaux, etc.) :\n\n500 mètres (environ 1650 ft) pour les aéronefs équipés dun moteur à pistons."
   },
   {
     "id": 60,
@@ -777,7 +838,8 @@
       "vous pouvez vous intégrer en étape de base."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'intégration dans un circuit d'aérodrome, après avoir pris connaissance des paramètres, doit se faire en début de vent arrière, sauf :\n\n- sur terrain contrôlé, si le contrôleur vous autorise à intégrer différemment ;\n\n- sur terrain AFIS, si l'agent AFIS est en service et vous a passé les paramètres, si le terrain est interdit aux aéronefs sans radio, et s'il n'y a personne dans le circuit."
   },
   {
     "id": 61,
@@ -790,7 +852,8 @@
       "en régime de vol VFR."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les niveaux de vol IFR se terminent par zéro : FL30, 40, 50, 60, etc.\n\nLes niveaux de vol VFR se terminent par cinq : FL35, 45, 55, 65, etc."
   },
   {
     "id": 62,
@@ -803,7 +866,8 @@
       "24 mois."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à la nuance : lorsque vous réussissez une épreuve, commune ou spécifique, de votre examen théorique, vous avez 18 mois pour obtenir l'autre. Sinon, il faut repasser la première.\n\nUne fois que vous avez obtenu la dernière épreuve, vous avez 24 mois pour réussir l'examen pratique en vol. Sinon, il faut repasser le théorique en entier."
   },
   {
     "id": 63,
@@ -816,7 +880,8 @@
       "il faut respecter des conditions météorologiques minimales."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'espace aérien de classe E a la particularité d'être perméable au VFR sans autorisation ni contact radio, à condition de maintenir VMC."
   },
   {
     "id": 64,
@@ -829,7 +894,8 @@
       "FIR."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "FIR = Flight Information Region"
   },
   {
     "id": 65,
@@ -842,7 +908,8 @@
       "les zones dangereuses, les zones interdites, les zones réglementées, les TMA, les CTR."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ne pas confondre avec les classes d'espace aérien (A, B, C, D, E, F et G).\n\nZone P (\"prohibited\") : interdites.\n\nZone D (dangereuses) : la pénétration n'est pas interdite, mais des activités dangereuses peuvent s'y dérouler (champ de tir, etc.)\n\nZone R (réglementée) : il n'y a pas vraiment de règle générale. Certaines zones R sont en pratique des zones P puisque la pénétration est interdite lorsqu'elles sont actives ; dans d'autres, il suffit de contacter l'organisme gestionnaire.\n\nZone de ségrégation temporaire (TSA) :\n\nEspace aérien réservé à lusage exclusif d'usagers spécifiques pendant une durée déterminée."
   },
   {
     "id": 66,
@@ -855,7 +922,8 @@
       "le chef pilote."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "NCO.GEN.105 Responsabilités et autorité du pilote commandant de bord\n\n[...]\n\n8) denregistrer les données dutilisation et tous les défauts connus ou présumés de laéronef à la fin du vol ou dune série de vols dans le compte rendu matériel ou le carnet de route de laéronef."
   },
   {
     "id": 67,
@@ -868,7 +936,8 @@
       "canadienne."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'Etat dans lequel est immatriculé un aéronef détermine sa nationalité."
   },
   {
     "id": 68,
@@ -881,7 +950,8 @@
       "150 m. (500 ft.)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La hauteur minimale de vol au-dessus de la surface en VFR est de 150 m (500 ft)."
   },
   {
     "id": 69,
@@ -894,7 +964,8 @@
       "le dégagement de la piste après l'atterrissage s'effectue par la droite."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le circuit standard se fait par la gauche. Lorsque des contraintes environnementales (agglomérations, reliefs, etc.) imposent de faire le circuit par la droite, ce signal l'indique aux pilotes qui ne préparent pas bien leur nav et ne lisent pas les cartes VAC."
   },
   {
     "id": 70,
@@ -907,7 +978,8 @@
       "le carnet de route."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le certificat d'immatriculation est à l'avion ce que la carte grise est à la voiture."
   },
   {
     "id": 71,
@@ -920,7 +992,8 @@
       "VFR."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg",
+    "explication": "L'heure de départ du parking est en effet la seule heure que le pilote maîtrise à peu près."
   },
   {
     "id": 72,
@@ -933,7 +1006,8 @@
       "l'atterrissage doit se faire avant le seuil décalé et que le décollage peut être entrepris en amont du seuil décalé."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le seuil décalé est là pour permettre une marge de franchissement d'obstacle convenable en finale tout en conservant la pente d'approche traditionnelle. Il est donc interdit d'atterrir avant, ce qui signifierait que vous n'avez pas respecté cette marge en finale. En revanche, les obstacles en finale, on s'en moque un peu pour le décollage. Vous pouvez donc commencer le décollage avant le seuil décalé."
   },
   {
     "id": 73,
@@ -946,7 +1020,8 @@
       "le retrait temporaire des licences et qualifications."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les sanctions vont du simple avertissement au retrait définitif des licences et qualifications. Cela dit, pour en arriver là, il faut être un habitué de la commission, ou alors avoir réussi une bonne grosse infraction du premier coup."
   },
   {
     "id": 74,
@@ -959,7 +1034,8 @@
       "100 m. (300 ft.)."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'arrêté du 10 octobre 1957 relatif aux hauteurs de survol :\n\nSauf pour les besoins du décollage ou de latterrissage et des manoeuvres qui sy rattachent, les aéronefs motopropulsés, à lexclusion des hélicoptères, doivent se maintenir à une hauteur minima au-dessus du sol définie comme suit :\n\nA. - Pour le survol :\n\nDusines isolées ;\n\nDe toutes autres installations à caractère industriel ;\n\nDhôpitaux, de centres de repos ou de tout autre établissement ou exploitation portant une marque distincte ;\n\nAinsi que pour les vols suivant une direction parallèle à une autoroute et à proximité de celle-ci :\n\n300 mètres (1000 ft) pour les aéronefs équipés dun moteurs à pistons."
   },
   {
     "id": 75,
@@ -972,7 +1048,8 @@
       "vous devez prendre des précautions lors de l'utilisation de la piste dans ses deux sens d'utilisation."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Des croix blanches sur la piste ou jaunes sur les taxiways signalent des parties (ou la totalité) sur lesquelles on ne peut pas circuler.\n\nEn décembre 2017, la mention \"en forme de X\" a été ajoutée à cette question. Je suppose que la DGAC a estimé que de trop nombreux pilotes avaient du mal à s'imaginer la forme d'une croix..."
   },
   {
     "id": 76,
@@ -985,7 +1062,8 @@
       "259."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsqu'une piste est désignée 25, cela signifie qu'elle est orientée grosso modo au 250°, ce qui est une approximation largement suffisante compte tenu de la précision en finale de la majorité des pilotes. Cependant, si on veut être plus précis, on peut dire qu'elle est orientée entre le 245° et le 254°. Le tout en magnétique, bien évidemment.\n\nAlors, vous allez me dire : \"mais il y a 2 bonnes réponses dans cette question, alors ???\"\n\nBen oui, il doit y avoir un relecteur à la DGAC qui devait être fatigué, ce jour-là...\n\nJe vous invite donc, si vous tombez sur cette question avec ses 2 bonnes réponses, à le signaler à votre DSAC locale."
   },
   {
     "id": 77,
@@ -998,7 +1076,8 @@
       "quatre chiffres."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'indicateur d'emplacement d'un aérodrome est ce code à 4 lettres qui commence par LF en France, par exemple LFBO pour Toulouse-Blagnac."
   },
   {
     "id": 78,
@@ -1011,7 +1090,11 @@
       "montée initiale - vent arrière - vent traversier - base - dernier virage - finale."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "1 - Montée initiale\n\nJusqu'à 500 ft traditionnellement.\n\n2 - Vent traversier\n\nDans le cas d'un tour de piste, c'est la branche qui permet de rejoindre la branche vent arrière.\n\n3 - Vent arrière\n\nSauf indications contraires, se fait à 1000 ft AAL.\n\n4 - Etape de base\n\nMise en descente.\n\n5 - Dernier virage\n\nComme son nom l'indique...\n\n6 - Finale\n\nPlusieurs possibilités à l'issue de la finale :\n\n- l'atterrissage ;\n\n- le toucher ;\n\n- la remise des gaz ;\n\n- le crash sur la piste (le pilote intelligent optera plutôt pour la solution précédente).",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q78_easy_253684299097.png"
+    ]
   },
   {
     "id": 79,
@@ -1024,7 +1107,8 @@
       "précautions à prendre à l'atterrissage."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Des croix blanches sur la piste ou jaunes sur les taxiways signalent des parties (ou la totalité) sur lesquelles on ne peut pas circuler."
   },
   {
     "id": 80,
@@ -1037,7 +1121,8 @@
       "le QNH."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Depuis le 1er janvier 2007, la surface de changement de calage altimétrique en espace aérien non contrôlé est 3000 ft ASFC : en dessous QNH, au dessus 1013 hPa."
   },
   {
     "id": 81,
@@ -1050,7 +1135,8 @@
       "vous ne pouvez vous poser sur ce terrain que le week-end."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3169.gif"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3169.gif",
+    "explication": "Dans les consignes particulières, on voit que le terrain est restreint et réservé aux aéronefs basés et à ceux basés sur les aérodromes voisins, dont fait partie Chalon. Vous pouvez donc vous poser."
   },
   {
     "id": 82,
@@ -1063,7 +1149,8 @@
       "le propriétaire."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'identification d'un aéronef est composé de la marque de nationalité (F pour la France) attribuée par l'OACI aux Etats, suivi de la marque d'immatriculation (Bxxx ou Gxxx ou Hxxx pour les aéronefs d'aviation générale en France) attribuée par l'Etat d'immatriculation."
   },
   {
     "id": 83,
@@ -1076,7 +1163,11 @@
       "200°."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le numéro de la piste correspond à son orientation magnétique (QFU) arrondi à la dizaine la plus proche. Une piste 11 est donc orientée entre le 105° et le 114°.\n\nLe tour de piste se faisant par la gauche, le premier virage se terminera, sans vent, au cap 110 - 090 = 020°.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q83_easy_fa2517bdb7f2.jpg"
+    ]
   },
   {
     "id": 84,
@@ -1089,7 +1180,8 @@
       "50 m (170 ft)."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La grosse subtilité de la question, hormis sa rédaction approximative, réside dans la lecture de la réglementation : \n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 1 000 ft au-dessus de l'obstacle le plus élevé situé dans un rayon de 600 m autour de l'aéronef ;\n\nCes fameuses autres agglomérations sont définies dans un bulletin officiel de la DGAC :\n\nIl sagit des villes ou agglomérations autres que celles définies ci-dessus (cf. note 1), cest-à-dire toutes celles non représentées sur la carte aéronautique au 1/500 000 AACI et celles représentées sur ladite carte par un cercle blanc (petites agglomérations)."
   },
   {
     "id": 85,
@@ -1102,7 +1194,8 @@
       "FL 25."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Cm + X = Rm\n\n010 + 10 = 020\n\nLa route magnétique est comprise entre 000° et 179°, le premier FL utilisable est donc le FL 35."
   },
   {
     "id": 86,
@@ -1115,7 +1208,8 @@
       "avoir déposé un plan de vol 24 heures à l'avance."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les seuls espaces aériens interdits au VFR sont les espaces de classe A.\n\nPour pénétrer dans un espace aérien de classe D, votre avion doit en plus être équipé d'un transpondeur mode A+C."
   },
   {
     "id": 87,
@@ -1128,7 +1222,8 @@
       "d'un incident."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Voir les définitions (et tout le reste qui est très intéressant) sur le site du Bureau Enquètes Accidents : https://www.bea.aero"
   },
   {
     "id": 88,
@@ -1154,7 +1249,8 @@
       "30 minutes."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Bien que la réglementation n'impose pas de délai en VFR sans franchissement de frontière, le Service de la Navigation Aérienne demande un délai de 30 minutes afin d'avoir le temps de traiter le plan de vol."
   },
   {
     "id": 90,
@@ -1180,7 +1276,8 @@
       "nécessite une clairance \"VFR spécial\" et un transit à votre choix."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-6114.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-6114.jpg",
+    "explication": "On voit dans les pages de textes que les consignes diffèrent selon que des vols IFR sont en cours ou non. Lorsque des IFR traînent dans le coin, la visibilité minimale exigée est de 3000 m. Les conditions météo permettent donc le VFR spécial, à la condition bien sûr d'obtenir une clairance et de suivre les itinéraires, comme partout.\n\nAttention ! Vous êtes nombreux à vous arrêter à la phrase \"Pas de vols IFR en cours\" et à interpréter ça comme \"s'il y a des IFR, pas le droit de faire du VFR spécial\". C'est une erreur :-)\n\nDans ce passage sur les conditions météo, on voit simplement des conditions différentes selon qu'il y a des IFR en vol ou pas. Le premier tableau concerne donc le cas où il n'y a pas d'IFR, le second s'il y en a."
   },
   {
     "id": 92,
@@ -1193,7 +1290,8 @@
       "P."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "P : zones interdites\n\nD : zones dangereuses\n\nR : zones réglementées\n\nI : ça n'existe pas, comme zone."
   },
   {
     "id": 93,
@@ -1219,7 +1317,11 @@
       "pair + 5."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les VFR doivent emprunter des niveaux de vol \"pair\" ou \"impair\", plus 500 ft en fonction de la route suivie :\n\nPour une route comprise entre 000° et 179°, ce sera un niveau \"impair + 5\".\n\nPour une route comprise entre 180° et 359°, ce sera un niveau \"pair + 5\".\n\nMoyen mnémotechnique pour s'en souvenir : il suffit de visualiser la France. En suivant une route à l'Est (entre 000° et 179°), on se rapproche de l'Italie = I pour Impair.\n\nEn suivant une route à l'Ouest (180° à 359°), on se rapproche du Portugal = P pour Pair.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q94_easy_7c691f113ca8.jpg"
+    ]
   },
   {
     "id": 95,
@@ -1232,7 +1334,8 @@
       "si une portion de piste est inutilisable."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le panneau carré rouge à une diagonale jaune est placé sur l'aire à signaux."
   },
   {
     "id": 96,
@@ -1245,7 +1348,8 @@
       "dans tous les cas."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour être vraiment plus précis, le CdN n'est associé qu'aux aéronefs certifiés comme les avions (pas les ULM, par exemple)."
   },
   {
     "id": 97,
@@ -1258,7 +1362,8 @@
       "infléchir votre trajectoire vers la gauche."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les évitements se font toujours par la droite."
   },
   {
     "id": 98,
@@ -1271,7 +1376,8 @@
       "le certificat de navigabilité."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le certificat d'immatriculation est l'équivalent de la carte grise pour les voitures. cela détermine la nationalité de l'aéronef ainsi que son propriétaire."
   },
   {
     "id": 99,
@@ -1284,7 +1390,8 @@
       "le contrôle régional (CCR)."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Règlementairement, l'appellation Tour de Contrôle désigne l'organisme du contrôle aérien, et non le bâtiment lui-même, qui est appelé \"vigie\"."
   },
   {
     "id": 100,
@@ -1297,7 +1404,8 @@
       "un bord d'attaque touché par un caillou au roulage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Définition selon l'Annexe 13 OACI :\n\nAccident : Événement lié à l'utilisation d'un aéronef, qui se produit entre le moment où une personne monte à bord avec l'intention d'effectuer un vol et le moment où toutes les personnes qui sont montées dans cette intention sont descendues, et au cours duquel :\n\na) une personne est mortellement ou grièvement blessée du fait qu'elle se trouve :\n\n- dans l'aéronef, ou\n\n- en contact direct avec une partie quelconque de l'aéronef, y compris les parties qui s'en sont détachées, ou\n\n- directement exposée au souffle des réacteurs,\n\nsauf s'il s'agit de lésions dues à des causes naturelles, de blessures infligées à la personne par elle-même ou par d'autres ou de blessures subies par un passager clandestin caché hors des zones auxquelles les passagers et l'équipage ont normalement accès; ou\n\nb) l'aéronef subit des dommages ou une rupture structurelle :\n\n- qui altèrent ses caractéristiques de résistance structurelle, de performances ou de vol, et\n\n- qui normalement devraient nécessiter une réparation importante ou le remplacement de l'élément endommagé,\n\nsauf s'il s'agit d'une panne de moteur ou d'avaries de moteur, lorsque les dommages sont limités au moteur, à ses capotages ou à ses accessoires, ou encore de dommages limités aux hélices, aux extrémités d'ailes, aux antennes, aux pneus, aux freins, aux carénages, ou à de petites entailles ou perforations du revêtement ; ou\n\nc) l'aéronef a disparu ou est totalement inaccessible ."
   },
   {
     "id": 101,
@@ -1310,7 +1418,8 @@
       "1,5 km."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), sous la surface 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m ou 30 secondes de vol.\n\nAu-dessus de la surface 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 102,
@@ -1323,7 +1432,8 @@
       "11."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1241.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1241.jpg",
+    "explication": "Il y a 5 FIR, subdivisées en Secteurs d'Information de Vol."
   },
   {
     "id": 103,
@@ -1336,7 +1446,8 @@
       "au QFE."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Grosse mise à jour de ce QCM, qu'on m'avait rapporté initialement avec le niveau de transition au lieu de l'altitude de transition. Maintenant, il n'y a plus aucun doute sur la bonne réponse : en descente, on passe du calage 1013 hPa au QNH, ce qui fait que lorsqu'on atteint l'altitude transition, qui se situe en dessous du niveau de transition, on est bien au QNH."
   },
   {
     "id": 104,
@@ -1349,7 +1460,8 @@
       "d'une formation spécifique du pilote et des passagers."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'Arrêté du 22 septembre 1958 réglementant le survol des régions maritimes par les aéronefs en vol VFR :\n\nArticle 1er : Les dispositions du présent arrêté s'appliquent aux aéronefs de la circulation aérienne générale qui s'éloignent de la côte à une distance supérieure à la plus faible des deux distances suivantes :\n\n- distance leur permettant en cas de panne d'un moteur d'atteindre la terre ferme ;\n\n- distance égale à quinze fois l'altitude de l'aéronef.\n\nArt. 2 : Les vols VFR effectués au-dessus des étendues maritimes doivent faire l'objet d'un plan de vol."
   },
   {
     "id": 105,
@@ -1362,7 +1474,8 @@
       "de voler en VFR, sans la vue du sol dans un espace de classe D."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une clairance VFR spécial n'est délivrée que dans une CTR par le contrôleur.\n\nUne CTR est déclarée en VFR spécial quand la visibilité est inférieure à  5 km ou que le plafond est en dessous de 1500 ft de hauteur."
   },
   {
     "id": 106,
@@ -1388,7 +1501,8 @@
       "que les atterrissages sont interdits."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1420.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1420.jpg",
+    "explication": "Remarque amusante : ce panneau interdit les atterrissages, mais pas les décollages."
   },
   {
     "id": 108,
@@ -1401,7 +1515,8 @@
       "vous avez la priorité car cet aéronef vient de votre gauche."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Priorité de passage\n\nUn aéronef qui est prioritaire selon les règles ci-après doit conserver son cap et sa vitesse. Bien évidemment, ça ne vous interdit pas de manuvrer pour éviter une collision si lautre aéronef ne vous a pas vu ou ne respecte pas les règles de priorité.\n\nSi vous devez céder la priorité, vous devez éviter de passer au-dessus ou en dessous de lautre aéronef, ainsi que devant lui, sauf à une distance raisonnable. Vous devez également tenir compte de la turbulence de sillage lorsque vous passerez derrière.\n\nVous connaissez la priorité à droite sur la route ? En avion, cest pareil : lavion qui vient de la droite est prioritaire.\n\nCependant, certains aéronefs sont moins manoeuvrants que dautres, et ont donc droit à la priorité indépendamment des positions respectives :\n\na) les aérodynes motopropulsés cèdent le passage aux dirigeables, aux planeurs et aux ballons ;\n\nb) les dirigeables cèdent le passage aux planeurs et aux ballons ;\n\nc) les planeurs cèdent le passage aux ballons ;\n\nd) les aéronefs motopropulsés céderont le passage aux aéronefs qui sont vus remorquant dautres aéronefs ou objets.\n\nDans cette question, l'ULM et l'avion font partie de la même catégorie : aérodynes motopropulsés. La règle qui s'applique est donc la priorité à droite."
   },
   {
     "id": 109,
@@ -1427,7 +1542,8 @@
       "l'ATC assure uniquement la séparation entre VFR dans ce type d'espace."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien de classe C, la séparation est assurée entre VFR et IFR. Le contrôle donnera donc des instructions pour que vos trajectoires ne soient pas conflictuelles... ce qui n'empêche pas de rester vigilant !"
   },
   {
     "id": 111,
@@ -1440,7 +1556,8 @@
       "horizontalement 3000 m, verticalement 450 m (1500 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien non contrôlé (F ou G) au-dessus de la surface 3000 ft AMSL ou 1000 ft AGL, les conditions VMC sont les mêmes qu'en espace aérien contrôlé :\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus ;\n\n- distance par rapport aux nuages de 1500 m horizontalement, 300 m verticalement."
   },
   {
     "id": 112,
@@ -1453,7 +1570,11 @@
       "de navigation au 1/500 000 IGN OACI."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur cet exemple, la voie aérienne J34 part du VOR MOU, Rm 119°, le plancher est le FL065, et ce tronçon fait 52 NM.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q112_easy_28daaf4abe9e.jpg"
+    ]
   },
   {
     "id": 113,
@@ -1466,7 +1587,8 @@
       "en VFR spécial, dans un espace aérien de classe E."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe E sont un peu particulier, et souvent les élèves pilotes ont un peu de mal à comprendre. \n\n Ce sont par définition des espaces aériens contrôlés. Mais quand il fait beau (conditions VMC), on peut y pénétrer en VFR sans rien demander à personne, sans prendre contact radio avec l'organisme gestionnaire. Or, forcément, si vous ne contactez personne, le contrôle va avoir du mal à vous contrôler. Vous êtes donc un vol non contrôlé dans un espace aérien contrôlé."
   },
   {
     "id": 114,
@@ -1479,7 +1601,8 @@
       "08 car c'est l'orientation magnétique de la piste, en dizaines de degrés, arrondie à la dizaine inférieure."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La piste est numérotée en fonction de son orientation magnétique, arrondi à la dizaine la plus proche.\n\nDans cette question, la dizaine la plus proche est 090. La piste sera donc la 09.\n\nSi le QFU avait été compris entre 080 et 084, elle se fût appelée 08."
   },
   {
     "id": 115,
@@ -1492,7 +1615,8 @@
       "B-C-D."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention à ne pas confondre séparation et information de trafic.\n\nQuand la séparation est assurée par le contrôleur, celui-ci vous donne des instructions pour que votre trajectoire n'interfère pas avec celles des autres.\n\nL'information de trafic, c'est quand le contrôleur vous signale un autre appareil, en vous donnant sa position le plus précisément possible, et c'est alors à vous de le voir pour assurer visuellement l'espacement."
   },
   {
     "id": 116,
@@ -1518,7 +1642,8 @@
       "1031,25"
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les niveaux de vol (FL) sont des altitudes pression particulières. Ils ont donc pour référence la pression standard : 1013,25 hPa."
   },
   {
     "id": 118,
@@ -1544,7 +1669,8 @@
       "25 heures."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "FCL 1.120 Expérience et prise en compte du temps de vol effectué\n\nTout candidat à une licence PPL(A) doit avoir accompli au moins 45 heures de vol en tant que pilote davion, dont 5 heures au maximum peuvent avoir été accomplies sur un BITD dans les conditions définies à lAppendice 1 au FCL 1.125, un FNPT ou sur un simulateur de vol. Les heures de vol accomplies par les titulaires du brevet et de la licence de base de pilote davion, de licence de pilote sur un hélicoptère, un planeur autre qu'un TMG , un moto-planeur à moteur rétractable ou un motoplaneur dont le moteur ne permet pas le décollage, sont prises en compte jusqu'à concurrence de 10% du temps de vol total en tant que pilote commandant de bord sur de tels aéronefs et dans la limite de 10 heures, en vue de la délivrance du PPL(A)."
   },
   {
     "id": 120,
@@ -1557,7 +1683,8 @@
       "interdiction d'atterrir après la croisée des pistes."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Interdiction datterrir\n\nUn panneau carré rouge horizontal à diagonales jaunes indique, lorsquil est disposé sur laire à signaux, que les atterrissages sont interdits et que linterdiction peut se prolonger."
   },
   {
     "id": 121,
@@ -1570,7 +1697,8 @@
       "vous devez obtenir une clairance avant d'entrer dans cet espace."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les seuls espaces aériens interdits au VFR sont les espaces de classe A.\n\nPour pénétrer dans un espace aérien de classe D, votre avion doit en plus être équipé d'un transpondeur mode A+C."
   },
   {
     "id": 122,
@@ -1583,7 +1711,8 @@
       "un vol effectué par un élève pilote qui effectue un test final."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsqu'un élève effectue un vol solo, son instructeur supervise l'ensemble : préparation du vol, conditions météo, etc."
   },
   {
     "id": 123,
@@ -1596,7 +1725,8 @@
       "d'une séparation par rapport aux vols en IFR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Tout l'espace aérien d'un Etat est contenu dans une  ou plusieurs régions d'information de vol (FIR). On peut donc bénéficier à tout moment du service d'information de vol en appelant la fréquence adéquate, et du service d'alerte."
   },
   {
     "id": 124,
@@ -1609,7 +1739,8 @@
       "1,5 km."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), sous la surface 3000 ft AMSL ou 1000 ft AGL, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m ou 30 secondes de vol.\n\nAu-dessus de la surface 3000 ft AMSL ou 1000 ft AGL :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 125,
@@ -1622,7 +1753,8 @@
       "N0100."
     ],
     "bonne_reponse": 3,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg",
+    "explication": "La vitesse demandée sur le plan de vol est la vitesse propre de l'avion, pas la vitesse sol."
   },
   {
     "id": 126,
@@ -1635,7 +1767,8 @@
       "les zones dangereuses, les zones interdites, les zones réglementées, les CTR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ne pas confondre avec les classes d'espace aérien (A, B, C, D, E, F et G).\n\nZone P (\"prohibited\") : interdites.\n\nZone D (dangereuses) : la pénétration n'est pas interdite, mais des activités dangereuses peuvent s'y dérouler (champ de tir, etc.)\n\nZone R (réglementée) : il n'y a pas vraiment de règle générale. Certaines zones R sont en pratique des zones P puisque la pénétration est interdite lorsqu'elles sont actives ; dans d'autres, il suffit de contacter l'organisme gestionnaire.\n\nZone de ségrégation temporaire (TSA) :\n\nEspace aérien réservé à lusage exclusif d'usagers spécifiques pendant une durée déterminée."
   },
   {
     "id": 127,
@@ -1648,7 +1781,8 @@
       "contrôlé sa vitesse au roulage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une piste est considérée comme libre si :\n\n- l'aéronef précédent a dépassé l'extrémité de la piste,\n\n- ou il a tourné et dégagé l'axe de piste,\n\n- au sol, il a passé les marques de point d'arrêt en roulant hors de la piste.\n\nIl existe une possibilité d'atterrir alors que la piste n'est pas libre, c'est la clairance d'atterrissage derrière.\n\nSi la procédure est autorisée sur le terrain, qui doit donc être contrôlé, et qu'il reste suffisamment de piste en fonction des performances de votre avion, vous pouvez être autorisé à vous poser avec un autre avion sur la piste, plus loin."
   },
   {
     "id": 128,
@@ -1674,7 +1808,8 @@
       "5 NM."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La visibilité minimale en espace aérien contrôlé est de 5 km. \n\nLe VFR spécial, qui se déroule en CTR, donc en espace aérien contrôlé, est une dérogation pour voler en dessous des VMC. De même, les conditions à prendre en compte pour l'examen théorique étant entre autres \"en dessous du FL100\", on ne tient pas compte de la visibilité minimale de 8 km applicable au-dessus du FL 100."
   },
   {
     "id": 130,
@@ -1687,7 +1822,8 @@
       "4 feux blancs."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le PAPI est constitué de 4 feux qui peuvent être rouge ou blanc en fonction de l'angle sous lequel on les voit. L'idéal est le juste milieu : 2 rouges et 2 blancs."
   },
   {
     "id": 131,
@@ -1700,7 +1836,8 @@
       "vous restez en palier mais vous modifiez votre trajectoire pour passer à une distance horizontale d'au moins 150 mètres par rapport à l'antenne."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les règles de l'air stipulent qu'il faut rester à 150 mètres des obstacles. Comme la couche nuageuse ne vous permet pas de passer au-dessus de cette antenne, il faut la contourner."
   },
   {
     "id": 132,
@@ -1713,7 +1850,8 @@
       "visibilité en vol 800 m, distance horizontale des nuages 1500 m, distance verticale des nuages 1000 ft."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 133,
@@ -1726,7 +1864,8 @@
       "par dessous le circuit de piste."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'intégration d'un circuit de piste se fait TOUJOURS par l'extérieur et à la hauteur du circuit. Toute autre intégration, c'est mal ! A l'exception bien sûr des autorisations d'intégration en étape de base et en finale sur terrain contrôlé."
   },
   {
     "id": 134,
@@ -1739,7 +1878,8 @@
       "L."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les catégories de turbulence de sillage sont : \n\nL (light) : masse maximale au décollage inférieure ou égale à 7000 kg\n\nM (medium) : masse maximale au décollage supérieure à 7000 kg et inférieure à 136000 kg\n\nH (heavy) : masse maximale au décollage supérieure ou égale à 136000 kg\n\nUne catégorie J (super) a été définie spécialement pour l'A380."
   },
   {
     "id": 135,
@@ -1752,7 +1892,8 @@
       "l'Etat de domiciliation du propriétaire."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Comme tout véhicule, ou presque, un avion doit être immatriculé. Pour les voitures, la carte grise est le document qui prouve qu'elle est enregistrée par l'Etat français. Pour les avions, c'est le certificat d'immatriculation (qui est bleu) qui détermine la nationalité d'un aéronef."
   },
   {
     "id": 136,
@@ -1765,7 +1906,8 @@
       "bleu."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Comme disait Coluche... suivez la ligne jaune :-)"
   },
   {
     "id": 137,
@@ -1778,7 +1920,8 @@
       "500 mètres."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'arrêté du 10 octobre 1957 relatif aux hauteurs de survol :\n\nSauf pour les besoins du décollage ou de latterrissage et des manoeuvres qui sy rattachent, les aéronefs motopropulsés, à lexclusion des hélicoptères, doivent se maintenir à une hauteur minima au-dessus du sol définie comme suit :\n\nA. - Pour le survol :\n\nDusines isolées ;\n\nDe toutes autres installations à caractère industriel ;\n\nDhôpitaux, de centres de repos ou de tout autre établissement ou exploitation portant une marque distincte ;\n\nAinsi que pour les vols suivant une direction parallèle à une autoroute et à proximité de celle-ci :\n\n300 mètres (1000 ft) pour les aéronefs équipés dun moteurs à pistons."
   },
   {
     "id": 138,
@@ -1791,7 +1934,8 @@
       "le carnet de route."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Seul un mécanicien agréé est apte à remettre un avion en vol. Il engage sa responsabilité en signant l'APRS."
   },
   {
     "id": 139,
@@ -1804,7 +1948,8 @@
       "géographique."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les pistes sont nommées en fonction de leur orientation par rapport au Nord magnétique. En France métropolitaine, ça ne représente pas une grande différence par rapport au Nord vrai, mais dans d'autres régions du monde, c'est beaucoup plus sensible. Or, les conservateurs de cap sont réglés sur le Nord magnétique ; il est donc cohérent que les pistes aient la même référence."
   },
   {
     "id": 140,
@@ -1817,7 +1962,8 @@
       "vous devez effectuer 2 vols (1 adulte et 1 enfant par vol)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "NOTE : Ce QCM est devenu obsolète suite à l'introduction de la nouvelle réglementation PART NCO le 25 août 2016. Le regroupement d'enfants sur un même siège n'est plus autorisé. Je l'ai modifié en conséquence, mais il est fort probable qu'il soit retiré des examens.\n\nNCO.IDE.A.140 Sièges, ceintures de sécurité, systèmes de retenue et dispositifs de retenue pour enfants\n\na) Les avions sont équipés :\n\n1) dun siège ou dune couchette pour toute personne à bord âgée dau moins vingt-quatre mois ;\n\n2) dune ceinture de sécurité pour chaque siège passager et de ceintures de retenue pour chaque couchette ;\n\n3) dun dispositif de retenue enfant pour chaque personne à bord de moins de vingt-quatre mois ; et\n\n4) d'une ceinture de sécurité avec système de retenue de la partie supérieure du torse sur chaque siège de l'équipage de conduite à point de détachement unique pour les avions dont le premier certificat de navigabilité a été délivré à partir du 25 août 2016."
   },
   {
     "id": 141,
@@ -1830,7 +1976,8 @@
       "45 min."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le coucher du soleil étant à 20h00, la nuit aéronautique débute à 20h30. Il faudra donc se poser avant cette heure en VFR de jour, ce qui nous laisse 1h15 de vol possible."
   },
   {
     "id": 142,
@@ -1843,7 +1990,8 @@
       "horizontalement une distance correspondant à 30 secondes de vol, verticalement 100 m (330 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC en espace aérien contrôlé sont :\n\n- distance aux nuages de 1500 m horizontalement et 300 m verticalement\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus.\n\nNote : cette question ne mentionne que les espaces aériens de classe C, D et E. Depuis le 1er janvier 2007, ces conditions s'appliquent également aux espaces aériens de classe B."
   },
   {
     "id": 143,
@@ -1856,7 +2004,8 @@
       "de pénétrer et de vous déplacer sur l'aire de manoeuvre."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un aérodrome contrôlé, chaque manoeuvre de l'aéronef doit faire l'objet d'une clairance."
   },
   {
     "id": 144,
@@ -1869,7 +2018,8 @@
       "le QFE au-dessus de l'altitude de transition et 1013 en dessous."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien contrôlé, on reste au QNH jusqu'à l'altitude de transition (TA). Au-dessus, on passe en niveau de vol (FL), donc on règle l'altimètre à 1013,2 hPa.\n\nL'altitude de transition est par défaut définie à 5000 ft, sauf précision contraire sur les cartes au 1/1 000 000ème."
   },
   {
     "id": 145,
@@ -1882,7 +2032,8 @@
       "peut se poser et repartir de n'importe quel aérodrome."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Convention de Chicago :\n\nArticle 10 -Atterrissage sur un aéroport douanier\n\nSauf dans le cas où, aux termes de la présente Convention ou d'une autorisation spéciale, il est permis à des aéronefs de traverser le territoire d'un État contractant sans y atterrir, tout aéronef qui pénètre sur le territoire d'un État contractant doit, si les règlements dudit État l'exigent, atterrir sur un aéroport désigné par cet État aux fins d'inspections douanière et autres.\n\nEn quittant le territoire d'un État contractant, ledit aéronef doit partir d'un aéroport douanier désigné aux mêmes  fins.\n\nLes caractéristiques de tous les  aéroports douaniers désignés doivent être publiées par l'État et transmises à  l'Organisation de l'aviation civile internationale, instituée en vertu de la deuxième partie de la présente Convention, pour communication à tous les autres États contractants."
   },
   {
     "id": 146,
@@ -1895,7 +2046,8 @@
       "après chaque atterrissage."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le carnet de route doit être tenu à jour et convenablement rempli, au plus tard en fin de journée et/ou après toute anomalie, incident ou accident."
   },
   {
     "id": 147,
@@ -1908,7 +2060,8 @@
       "100 heures de vol."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "APPENDICE 1 AUX FCL 1.130 & 1.135\n\nExamen théorique et épreuve pratique daptitude en vue de la délivrance de la licence PPL(A)\n\n[...]\n\n6. Tout candidat à lépreuve pratique daptitude en vue de lobtention de la licence de pilote privé (PPL(A) doit avoir reçu une formation sur un avion de même classe ou de même type ou sur un même TMG que celui utilisé pour lépreuve. Le candidat peut choisir de passer lépreuve sur un avion monomoteur, sur un TMG ou sur avion multimoteur sous réserve pour ce dernier de justifier dune expérience de 70 heures de vol en tant que pilote commandant de bord sur les avions visés aux FCL 1.255(a) ou 1260 (a). Lavion utilisé ou le TMG utilisé pour lépreuve pratique daptitude doit être conforme aux conditions concernant les avions  école."
   },
   {
     "id": 148,
@@ -1921,7 +2074,8 @@
       "celle du propriétaire."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "C'est le pays dans lequel est immatriculé un aéronef qui détermine sa nationalité."
   },
   {
     "id": 149,
@@ -1934,7 +2088,8 @@
       "interdit aux aéronefs en VFR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ca paraît logique. Pour bénéficier du service du contrôle, il faut être contrôlé."
   },
   {
     "id": 150,
@@ -1947,7 +2102,8 @@
       "aucune règle spécifique."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Au moment où un aéronef en dépasse un autre, ce dernier a la priorité de passage. Cela signifie qu'il ne doit pas avoir à changer sa trajectoire ou sa vitesse en raison du dépassement.\n\nLaéronef dépassant, quil soit en montée, en descente ou en palier, sécarte de la trajectoire de lautre aéronef en obliquant vers la droite. Il doit manoeuvrer en s'assurant qu'il ne gênera pas l'aéronef dépassé, et surtout être très attentif lors du dépassement si le dépassé entame un virage à droite sans assurer la sécurité avant."
   },
   {
     "id": 151,
@@ -1960,7 +2116,8 @@
       "le dégagement de la piste après l'atterrissage s'effectue par la droite."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1755.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1755.jpg",
+    "explication": "Le circuit standard se fait par la gauche. Lorsque des contraintes environnementales (agglomérations, reliefs, etc.) imposent de faire le circuit par la droite, ce signal l'indique aux pilotes qui ne préparent pas bien leur nav et ne lisent pas les cartes VAC."
   },
   {
     "id": 152,
@@ -1986,7 +2143,11 @@
       "revenez pour atterrir."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il n'y a qu'un seul cas dans lequel vous serez amené à avoir à comprendre les signaux lumineux : si vous tombez en panne radio dans la circulation d'un gros aérodrome.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q153_easy_c31ad23e7981.jpg"
+    ]
   },
   {
     "id": 154,
@@ -1999,7 +2160,8 @@
       "pouvant établir une liaison radio avec la tour de contrôle."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le contact radio et la clairance sont obligatoires pour intégrer le circuit d'un aérodrome contrôlé."
   },
   {
     "id": 155,
@@ -2012,7 +2174,8 @@
       "300 m (1000 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des règles de l'air :\n\nHauteur minimale de vol en VFR\n\nSauf pour les besoins du décollage et de l'atterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR nest effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 1 000 ft au-dessus de l'obstacle le plus élevé situé dans un rayon de 600 m autour de l'aéronef ;\n\nb) ailleurs qu'aux endroits spécifiés en a), à une hauteur inférieure à 500 ft au-dessus du sol ou de l'eau ; toutefois :\n\n- les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de nentraîner aucun risque pour les personnes ou les biens à la surface ;\n\n- dans le cadre d'un vol d'instruction en avion, cette hauteur est ramenée à 150 ft pour les entraînements aux atterrissages forcés ; dautre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence."
   },
   {
     "id": 156,
@@ -2025,7 +2188,8 @@
       "de poursuivre l'atterrissage car vous êtes seul en finale."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "J'avoue avoir un gros doute sur cette question : des recoupements de la part des candidats indiquent que la réponse attendue est bien \"de remettre les gaz et de rejoindre la vent arrière.\" mais je ne vois pas l'intérêt d'aller encombrer le circuit de nouveau en cas de panne radio de la tour par exemple. J'aurais tendance à atterrir puisque la piste est dégagée, mais la formulation des réponses proposant ce cas est douteuse."
   },
   {
     "id": 157,
@@ -2051,7 +2215,8 @@
       "25 heures"
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La formation doit compter un minimum de 45 heures de vol, dont un maximum de 5 heures sur simulateur agrée (non, Flight Simulator ne compte pas).\n\nDans ces 45 heures, vous devez avoir un minimum de 25 heures en double commande, et 10 heures en solo.\n\nUn esprit attentif aura remarqué qu'il manque 10 heures pour arriver à 45 :-)\n\nCes 10 heures sont laissées à l'appréciation de votre instructeur."
   },
   {
     "id": 159,
@@ -2064,7 +2229,8 @@
       "1200 m."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3190.gif"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3190.gif",
+    "explication": "On demande simplement la longueur de la piste, et non une distance disponible. Il faut donc chercher dans le cadre \"Dimensions\", et non dans les cadres TODA, ASDA ou LDA... encore que dans le cas de cette piste, ce soit la même chose à l'exception de la LDA en 12."
   },
   {
     "id": 160,
@@ -2077,7 +2243,8 @@
       "du contrôle."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Quand on parle de Tour de Contrôle (TWR), il s'agit de l'organisme de la circulation aérienne qui contrôle l'aérodrome. Comme tout organisme ATS, il rend les services de contrôle, d'information de vol et d'alerte.\n\nA ne pas confondre avec le bâtiment qu'on appelle parfois à tort \"tour de contrôle\". Par exemple, un agent AFIS peut être installé dans une \"tour de contrôle\"... mais ne contrôle pas. Le terme exact alors pour le bâtiment est \"vigie\"."
   },
   {
     "id": 161,
@@ -2090,7 +2257,8 @@
       "la visibilité est d'au moins 8 km, vous êtes hors nuages."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Précisons que c'est 5 km en dessous du FL 100, et 8 km au-dessus."
   },
   {
     "id": 162,
@@ -2103,7 +2271,8 @@
       "j'ai le droit de rester à 3000 ft avec un calage QNH conforme au secteur survolé."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien non contrôlé, on passe en niveau de vol au-dessus de 3000 ft ASFC. Ici, nous sommes à 3000 - 600 = 2400 ft ASFC. On reste donc calé au QNH."
   },
   {
     "id": 163,
@@ -2116,7 +2285,8 @@
       "1500 m."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les airways sont considérées comme des espaces aériens de classe E, et donc les VMC afférentes s'appliquent."
   },
   {
     "id": 164,
@@ -2129,7 +2299,8 @@
       "29."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le petit nom des pistes dépend de leur orientation magnétique, arrondi à la dizaine la plus proche. Dans cet exemple, les pistes orientées entre le 295° et le 304° seront des pistes 30."
   },
   {
     "id": 165,
@@ -2142,7 +2313,8 @@
       "que l'aérodrome est réservé aux aéronefs basés."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention : le Té ne signifie plus rien aujourd'hui, pour la bonne et simple raison que personne ne s'en occupe !\n\nSauf peut-être sur quelques terrains contrôlés, le Té est toujours replié. Fiez-vous plutôt à la manche à air pour déterminer le sens d'atterrissage."
   },
   {
     "id": 166,
@@ -2168,7 +2340,8 @@
       "identiques dans tout l'espace aérien."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 168,
@@ -2181,7 +2354,8 @@
       "200 kt."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il existe une limitation de vitesse en dessous du niveau de vol 100 : 250 kt. Bien évidemment, on est rarement concerné en avion léger d'aéroclub :-)"
   },
   {
     "id": 169,
@@ -2220,7 +2394,8 @@
       "12 mois."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'examen théorique est valable 2 ans. Si dans ces 2 ans, vous n'avez pas réussi la pratique, vous devrez repasser un examen théorique."
   },
   {
     "id": 172,
@@ -2233,7 +2408,8 @@
       "vous devez impérativement effectuer la visite de 100 heures le jour de votre retour."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si la dernière visite 100 h a eu lieu à 1189, la prochaine devra avoir lieu à 1189 + 100 = 1289. L'aéronef a 1254 et prévoit d'en faire 30 en vadrouille : 1254 + 30 = 1284. On est dans les clous !\n\n... sauf si on considère que la périodicité réelle c'est 100 h ou 1 an. Cette question posée en 2013, avec la dernière visite en 2003... ça dépasse un peu :-)"
   },
   {
     "id": 173,
@@ -2246,7 +2422,8 @@
       "horizontalement 1500 m, verticalement 300 m (1000 ft)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "La distance aux nuages dans les espaces aériens contrôlés et dans les espaces aériens non contrôlés au dessus de la surface 3000 ft AMSL ou 1000 ft AGL est la même : horizontalement 1500 m et verticalement 300 m."
   },
   {
     "id": 174,
@@ -2259,7 +2436,8 @@
       "50 ft en respectant une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des Règles de l'Air :\n\n4.6 Sauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\nb) ailleurs quaux endroits spécifiés en 4.6 a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque\n\npour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence."
   },
   {
     "id": 175,
@@ -2272,7 +2450,8 @@
       "votre aéronef doit être équipé d'un moyen de radionavigation."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'espace aérien de classe E a la particularité d'être perméable au VFR sans autorisation ni contact radio, à condition de maintenir VMC."
   },
   {
     "id": 176,
@@ -2285,7 +2464,8 @@
       "vous atterrissez si votre aéronef est plus rapide."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "SERA. 3210 Priorité de passage\n\nLorsque deux ou plusieurs aérodynes se rapprochent dun aérodrome ou dun site dexploitation afin dy atterrir, laérodyne se trouvant au niveau le plus élevé cède le passage à celui qui se trouve au niveau inférieur, mais ce dernier ne se prévaut pas de cette règle pour se placer devant un autre aérodyne en train dexécuter les phases finales dune approche, ou pour le dépasser.\n\nBien que cette question ne le précise pas, on peut raisonnablement considérer qu'en base, vous êtes plus haut que l'aéronef en finale. Vous devez donc lui céder la priorité."
   },
   {
     "id": 177,
@@ -2298,7 +2478,8 @@
       "H."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/061-026.jpg",
+    "explication": "H : gros porteur, poids maximal certifié au décollage égal ou supérieur à 136000 kg.  \n\nM : moyen tonnage, poids maximal certifié au décollage inférieur à 136000 kg mais supérieur à 7000 kg.  \n\nL : faible tonnage, poids maximal certifié au décollage inférieur à 7000 kg."
   },
   {
     "id": 178,
@@ -2324,7 +2505,8 @@
       "demander les documents et à visiter les aéronefs d'un autre Etat membre seulement si l'aéronef transporte des passagers dans un but commercial."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Convention de Chicago : \n\nVisite des aéronefs\n\nLes autorités compétentes de chacun des Etats contractants ont le droit de visiter, à l'atterrissage et au départ, sans causer de retard déraisonnable, les aéronefs des autres Etats contractants et d'examiner les certificats et autres documents prescrits par la présente Convention."
   },
   {
     "id": 180,
@@ -2337,7 +2519,8 @@
       "vous avez la priorité."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des règles de l'air :\n\nLorsque deux aéronefs se trouvant à peu près au même niveau suivent des routes convergentes, celui qui voit lautre à sa droite sen écarte ; toutefois :\n\na) les aérodynes motopropulsés cèdent le passage aux dirigeables, aux planeurs et aux ballons ;\n\nb) les dirigeables cèdent le passage aux planeurs et aux ballons ;\n\nc) les planeurs cèdent le passage aux ballons ;\n\nd) les aéronefs motopropulsés céderont le passage aux aéronefs qui sont vus remorquant dautres aéronefs ou objets."
   },
   {
     "id": 181,
@@ -2350,7 +2533,8 @@
       "vous êtes espacés vis-à-vis des vols IFR et VFR, et vous bénéficiez de l'information de trafic."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe D, le contact radio et la clairance sont obligatoires.\n\nLe contrôleur vous délivre des information de trafic, et c'est à vous de voir et d'éviter les autres aéronefs."
   },
   {
     "id": 182,
@@ -2363,7 +2547,8 @@
       "traversez une zone réglementée, dangereuse ou interdite, sans autorisation."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des Règles de l'Air : \n\n3. SIGNAUX VISUELS EMPLOYÉS POUR AVERTIR UN AÉRONEF QUIL VOLE, SANS AUTORISATION, DANS UNE ZONE RÉGLEMENTÉE, INTERDITE OU DANGEREUSE, OU QUIL EST SUR LE POINT DE PÉNÉTRER DANS UNE TELLE ZONE\n\nDe jour ou de nuit, une série de projectiles tirés du sol à des intervalles de dix secondes, et produisant à léclatement des étoiles ou des feux rouges et verts, indique à un aéronef quil vole sans autorisation dans une zone interdite, réglementée ou dangereuse ou quil est sur le point de pénétrer dans une telle zone et quil doit prendre les dispositions qui simposent."
   },
   {
     "id": 183,
@@ -2389,7 +2574,8 @@
       "gauche."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsqu'un aérodrome possède des pistes parallèles, elles sont différenciées par des lettres ajoutées au numéro de piste :\n\nL pour gauche,\n\nC pour centrale,\n\nR pour droite."
   },
   {
     "id": 185,
@@ -2402,7 +2588,8 @@
       "les zones dangereuses, les zones interdites, les zones réglementées et les CTR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les FIR englobent la totalité de l'espace aérien national. On y trouve donc tous les volumes d'espace aérien particuliers."
   },
   {
     "id": 186,
@@ -2428,7 +2615,8 @@
       "aérodrome dangereux, n'atterrissez pas."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ces signaux lumineux ne servent que dans un cas bien précis : si vous tombez en panne radio alors que vous avez déjà intégré le tour de piste."
   },
   {
     "id": 188,
@@ -2441,7 +2629,8 @@
       "tournez à gauche pour le laisser passer."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "En tant que dépassé, vous êtes prioritaire. Vous ne changez donc rien à votre trajectoire."
   },
   {
     "id": 189,
@@ -2454,7 +2643,8 @@
       "un triangle rouge."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsque le circuit se fait à gauche, il n'y a pas de flèche sur l'aire à signaux car c'est le sens par défaut."
   },
   {
     "id": 190,
@@ -2467,7 +2657,8 @@
       "vous vous alignez pour décoller, car seuls les planeurs sont prioritaires à l'atterrissage."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un aéronef en vol à toujours la priorité sur un aéronef au sol."
   },
   {
     "id": 191,
@@ -2480,7 +2671,11 @@
       "de l'aire à signaux."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'altitude de référence de l'aérodrome est l'altitude du point le plus élevé de l'aire d'atterrissage. A ne pas confondre avec le point de référence de l'aérodrome, symbolisé par une croix (voir ci-dessous) qui est le centre géométrique de l'aérodrome.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q191_easy_f2573689ed83.jpg"
+    ]
   },
   {
     "id": 192,
@@ -2493,7 +2688,8 @@
       "à l'issue de chaque vol dans tous les cas."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "NCO.GEN.135 Documents, manuels et informations devant se trouver à bord\n\na) Les documents, informations et manuels suivants sont transportés à bord de chaque vol, sous la forme doriginaux ou de copies, sauf indication contraire :\n\n[...]\n\n8) le carnet de route de laéronef, ou équivalent;\n\n[...]\n\nLe carnet de route est rempli sous la responsabilité du commandant de bord, à l'issue d'un vol ou d'une série de vol avec le même CdB. Au plus tard, il est rempli en fin de journée.\n\nLe carnet de route contient de plus les approbations pour remise en service après les opérations de maintenance."
   },
   {
     "id": 193,
@@ -2506,7 +2702,8 @@
       "un aéronef en attente de décollage au seuil de piste."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les aéronefs en vol ont priorité sur les aéronefs au sol sauf si ces derniers sont alignés sur la piste (au seuil de piste). En phase d'atterrissage, notamment en finale, c'est l'aéronef le plus bas qui a priorité. Attention, ceci ne veut pas dire que vous pouvez doubler le précédent par en dessous pour obtenir la priorité à l'atterrissage ! C'est mal !"
   },
   {
     "id": 194,
@@ -2519,7 +2716,8 @@
       "50 m (170 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des Règles de l'Air :\n\nSauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\n \n\nb) ailleurs quaux endroits spécifiés en 4.6 a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque pour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence.\n\nNOTE IMPORTANTE :\n\nDes recoupements indiquent que la réponse attendue est \"sécurité\". Si on regarde bien la réglementation, celle-ci parle d'une hauteur de 150 m, mais pas d'une distance. On peut donc interpréter ça ainsi : \"on peut frôler tout ce qu'on veut du moment que ça touche pas et que ça fait pas peur, mais sous l'avion : toujours 150 m de gaz !\"\n\nLa mention \"distance de 150 m\" se trouve dans le paragraphe concernant les entraînements à l'atterrissage forcé en vol d'instruction.\n\nMISE A JOUR DE LA NOTE IMPORTANTE :-)\n\nDepuis la mise en application des nouvelles règles de l'air SERA, la valeur de 150 m est de nouveau à la mode !"
   },
   {
     "id": 195,
@@ -2532,7 +2730,8 @@
       "en VFR, dans les espaces aériens de classe G."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe G sont des espaces aériens non contrôlés."
   },
   {
     "id": 196,
@@ -2545,7 +2744,8 @@
       "de contrôle et d'alerte seulement."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les services de la circulation aérienne (ATS) se divisent en 3 :\n\n- le service d'information de vol, qui est rendu dans les FIR, c'est-à-dire partout ;\n\n- le service d'alerte, lui aussi rendu partout ;\n\n- le service du contrôle, qui est rendu dans les espaces aériens contrôlés et sur les aérodromes contrôlés."
   },
   {
     "id": 197,
@@ -2558,7 +2758,8 @@
       "dont l'accès est interdit pendant l'activité."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En règle générale, le pilote intelligent évitera quand même les zones dangereuses où les militaires s'entraînent au tir."
   },
   {
     "id": 198,
@@ -2571,7 +2772,10 @@
       "quelles que soient les instructions antérieures, n'atterrissez pas pour le moment."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q198_easy_c31ad23e7981.jpg"
+    ]
   },
   {
     "id": 199,
@@ -2584,7 +2788,8 @@
       "horizontalement 1500 m, verticalement 300 m."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC en espace aérien contrôlé sont :\n\n- distance aux nuages de 1500 m horizontalement et 300 m verticalement\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus.\n\nNote : cette question ne mentionne que les espaces aériens de classe C, D et E. Depuis le 1er janvier 2007, ces conditions s'appliquent également aux espaces aériens de classe B."
   },
   {
     "id": 200,
@@ -2597,7 +2802,8 @@
       "votre aéronef n'est pas équipé d'un transpondeur."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'accès à un aérodrome contrôlé est soumis à clairance. Il vous faut donc une radio pour la demander et la recevoir."
   },
   {
     "id": 201,
@@ -2610,7 +2816,8 @@
       "5000 ft AMSL ou 1000 ft ASFC."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Cette surface, autrefois appelée surface S en France, sert à distinguer les conditions météorologiques de vol à vue en espace aérien non contrôlé :\n\n- au-dessus, les VMC sont visibilité 5 km (8 km au-dessus du FL100), espacement par rapport aux nuages 1500 m horizontalement et 300 m verticalement;\n\n- en dessous, hors des nuages et en vue de la surface, visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol), visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)"
   },
   {
     "id": 202,
@@ -2623,7 +2830,8 @@
       "bleus - blancs."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Vu dans le sens de l'approche, les feux de seuil de piste sont verts, et les feux d'extrémité de piste sont rouges.\n\nComme il s'agit de feux unidirectionnels, dans l'autre sens ce sera la même chose."
   },
   {
     "id": 203,
@@ -2636,7 +2844,8 @@
       "500 mètres."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\n \n\nb) ailleurs quaux endroits spécifiés en a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque pour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence."
   },
   {
     "id": 204,
@@ -2649,7 +2858,11 @@
       "VAC de l'aérodrome correspondant."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les points de report se trouvent sur les cartes VAC des terrains concernés. Ils sont nommés en fonction de leur emplacement par rapport à la piste : par exemple, le point NW se trouve au nord-ouest.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q204_easy_353cda81ce8d.jpg"
+    ]
   },
   {
     "id": 205,
@@ -2662,7 +2875,8 @@
       "la mise en route du moteur."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sur un aérodrome contrôlé, chaque manoeuvre de l'aéronef doit faire l'objet d'une clairance."
   },
   {
     "id": 206,
@@ -2675,7 +2889,8 @@
       "vous permet d'obtenir en vol des informations météorologiques ou des renseignements sur l'état des aérodromes."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Partout en France, vous pouvez contacter une fréquence info qui vous délivrera ces informations. Notez que cela ne vous dispense pas de préparer votre vol."
   },
   {
     "id": 207,
@@ -2688,7 +2903,8 @@
       "tout vol."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Article 29\n\nDocuments de bord des aéronefs\n\nTout aéronef d'un État contractant employé à la navigation internationale doit, conformément aux conditions prescrites par la présente Convention, avoir à bord les documents suivants:\n\n(a) son certificat d'immatriculation;\n\n(b) son certificat de navigabilité;\n\n(c) les licences appropriées pour chaque membre de l'équipage;\n\n(d) son carnet de route;\n\n(e) s'il est muni d'appareils radioélectriques, la licence de la station radio de l'aéronef;\n\n(f) s'il transporte des passagers, la liste de leurs noms et lieux d'embarquement et de destination;\n\n(g) s'il transporte du fret, un manifeste et des déclarations détaillées de ce fret."
   },
   {
     "id": 208,
@@ -2701,7 +2917,8 @@
       "un incident ou une situation airprox selon le cas."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En entrant dans une zone réglementée sans la clairance nécessaire, vous enfreignez les règles de l'air, et donc vous commettez une infraction."
   },
   {
     "id": 209,
@@ -2727,7 +2944,8 @@
       "une région supérieure d'information de vol."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "FIR = Flight Information Region\n\nIl en existe 5 en France métropolitaine, qui couvrent la totalité du territoire : Paris, Brest, Bordeaux, Marseille et Reims."
   },
   {
     "id": 211,
@@ -2740,7 +2958,8 @@
       "au-dessous."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "On considère que vous êtes sur la même route lorsque votre route fait un angle de moins de 70° avec celle de l'avion dépassé.\n\nOn dépasse toujours par la droite, en faisant attention aux manoeuvres de l'avion dépassé, car il reste prioritaire."
   },
   {
     "id": 212,
@@ -2753,7 +2972,8 @@
       "004°."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le nom des pistes est arrondi à la dizaine la plus proche. Ainsi, une piste 36 peut avoir une orientation qui va du 355° au 004°."
   },
   {
     "id": 213,
@@ -2766,7 +2986,8 @@
       "45."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "S'il faut voler au cap 175° pour contrer une dérive de 5°, c'est qu'on veut suivre une route 180°. Le niveau de vol à choisir sera donc PAIR+5. Ce qui nous facilite la vie, c'est que le QNH est égal à 1013 hPa. Le premier niveau utilisable en suivant cette route est donc le 45.\n\nNote importante : depuis la nouvelle édition des Règles de l'Air (janvier 2007), on ne passe en FL qu'au-dessus de 3000 ft ASFC."
   },
   {
     "id": 214,
@@ -2779,7 +3000,8 @@
       "par le dessous."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Règles de l'Air : \n\nUn aéronef dépassant est un aéronef qui sapproche dun autre aéronef par larrière suivant une trajectoire formant un angle de moins de 70° avec le plan de symétrie de ce dernier, cest-à-dire dans une position telle, par rapport à lautre aéronef, que, de nuit, il serait dans limpossibilité de voir lun quelconque des feux de position gauche (bâbord) ou droit (tribord). Au moment où un aéronef en dépasse un autre, ce dernier a la priorité de passage et laéronef dépassant, quil soit en montée, en descente ou en palier, sécarte de la trajectoire de lautre aéronef en obliquant vers la droite. Aucune modification ultérieure des positions relatives des deux aéronefs ne dispense laéronef dépassant de cette obligation jusquà ce quil ait entièrement dépassé et distancé lautre aéronef."
   },
   {
     "id": 215,
@@ -2792,7 +3014,8 @@
       "virez vers la gauche pour le laisser passer."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'aéronef dépassé est prioritaire, vous n'avez donc pas à changer de trajectoire. C'est à celui qui dépasse de s'arranger pour ne pas gêner le dépassé."
   },
   {
     "id": 216,
@@ -2805,7 +3028,8 @@
       "d'alerte et utilise l'information de trafic au profit des aéronefs qui évoluent dans la circulation d'aérodrome."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'AFIS n'est pas un contrôleur. Son rôle est de transmettre des informations de vol et d'assurer le service d'alerte en cas de besoin. Il peut éventuellement relayer une clairance qu'un organisme de contrôle lui aura transmise à l'attention d'un aéronef IFR au départ, mais en aucun cas il ne peut donner de clairance lui-même."
   },
   {
     "id": 217,
@@ -2818,7 +3042,8 @@
       "vous arrêter puis reprendre le roulage."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Personnellement, je n'ai jamais pu retenir ces signaux lumineux.\n\nMais si ça vous arrive un jour de tomber en panne radio, vérifiez que vous avez bien le numéro de téléphone de la tour de contrôle enregistré dans votre portable :-)"
   },
   {
     "id": 218,
@@ -2831,7 +3056,8 @@
       "autorisée sans contact radio, sous réserve de respecter certaines conditions météorologiques."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En VFR, la pénétration d'un espace de classe E est autorisée sans clairance préalable. En revanche, lorsque les conditions météorologiques sont inférieures aux VMC, et que cet espace est une CTR, il est nécessaire d'obtenir une clairance VFR spécial, ou d'éviter cet espace."
   },
   {
     "id": 219,
@@ -2844,7 +3070,8 @@
       "trop bas par rapport au plan de descente."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le PAPI est constitué de 4 feux qui peuvent être rouge ou blanc en fonction de l'angle sous lequel on les voit. L'idéal est le juste milieu : 2 rouges et 2 blancs."
   },
   {
     "id": 220,
@@ -2857,7 +3084,8 @@
       "atterrir et décoller avant le seuil décalé."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le seuil décalé est mis en place quand il y a des obstacles dans l'approche finale, afin que l'avion passe plus haut au-dessus des ces obstacles.\n\nEvidemment, les obstacles en finale n'ont pas beaucoup d'influence sur le décollage. On peut donc décoller avant le seuil décalé, mais on ne doit pas atterrir avant."
   },
   {
     "id": 221,
@@ -2870,7 +3098,8 @@
       "1650 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'arrêté du 10 octobre 1957 relatif au survol des agglomérations et des rassemblements de personnes ou danimaux :\n\nPour le survol de toute agglomération dont la largeur moyenne ne dépasse pas 1 200 mètres, ainsi que pour le survol de tout rassemblement de personnes ou danimaux (plages, stades, réunions publiques, hippodromes, parcs à bestiaux, etc.) :\n\n500 mètres (environ 1650 ft) pour les aéronefs équipés dun moteur à pistons."
   },
   {
     "id": 222,
@@ -2883,7 +3112,8 @@
       "au moins 45 minutes avant l'heure estimée de départ du poste de stationnement pour tout survol d'une zone urbanisée."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Mise à jour : la bonne réponse à cette question était initialement 30 minutes. Cependant, depuis la mise en place de SERA en décembre 2014, ce délai est passé à 60 minutes. J'ai donc modifié la question pour tenir compte de la nouvelle réglementation."
   },
   {
     "id": 223,
@@ -2896,7 +3126,8 @@
       "interdite."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "La clairance et le contact radio en classe E est facultatif, tant qu'on conserve les conditions VMC, à savoir :\n\n- 5 km de visibilité\n\n- écart aux nuages de 1500 m horizontalement, et 300 m verticalement."
   },
   {
     "id": 224,
@@ -2909,7 +3140,8 @@
       "hauteur au-dessus du niveau de la mer."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Au-dessus du niveau de transition, on se calera toujours à 1013 hPa. Le passage au QNH se fera en dessous du niveau de transition lors de la descente."
   },
   {
     "id": 225,
@@ -2922,7 +3154,8 @@
       "la direction d'où vient le vent (210°)."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3159.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3159.jpg",
+    "explication": "Un groupe de deux chiffres, placés verticalement sur la tour de contrôle daérodrome ou près de celle-ci, indique aux aéronefs sur laire de manuvre la direction du décollage, exprimée en dizaines de degrés du compas magnétique, arrondie à la dizaine la plus proche, ou en d'autres termes plus simples : la piste en service."
   },
   {
     "id": 226,
@@ -2935,7 +3168,8 @@
       "de maintenir la vitesse au-dessus de 120 kt en finale lorsque le trafic est important."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une clairance VFR spécial n'est délivrée que dans une CTR par le contrôleur.\n\nUne CTR est déclarée en VFR spécial quand la visibilité est inférieure à  5 km ou que le plafond est en dessous de 1500 ft de hauteur."
   },
   {
     "id": 227,
@@ -2948,7 +3182,8 @@
       "15/05/2012."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "La SEP a une durée de validité de 24 mois, comptée à partir du dernier jour du mois pendant lequel a eu lieu le vol de prorogation."
   },
   {
     "id": 228,
@@ -2961,7 +3196,8 @@
       "dont la pénétration est subordonnée à des conditions spécifiées."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les zones à statut particulier sont :\n\nLes zones interdites (P pour Prohibited, ou encore Pas Pénétrer);\n\nLes zones dangereuses (D pour Dangerous, mais ça marche aussi pour Dangereuses);\n\nLes zones réglementées (R pour Restricted mais aussi Réglementées, facile).\n\nCes dernières années, sont apparues en plus :\n\nZIT (Zones Interdites Temporaires)\n\nZRT (Zones Réglementées Temporaires)\n\nTSA (Zones de Ségrégations Témporaires)\n\nZones réservées à l'usage exclusifs d'usagers spécifiques pendant une durée déterminée.\n\nCBA (Zones transfrontalières)\n\nZones de ségrégation temporaire établies au-dessus de frontières internationales."
   },
   {
     "id": 229,
@@ -2974,7 +3210,8 @@
       "vous pouvez y pénétrer sous réserve que votre aéronef soit équipé d'un transpondeur."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe A sont interdits aux VFR, sauf dérogation particulière."
   },
   {
     "id": 230,
@@ -2987,7 +3224,8 @@
       "une distance au moins égale à celle parcourue en 30 secondes de vol."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC en espace aérien contrôlé sont :\n\n- distance aux nuages de 1500 m horizontalement et 300 m verticalement\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus.\n\nNote : cette question ne mentionne que les espaces aériens de classe C, D et E. Depuis le 1er janvier 2007, ces conditions s'appliquent également aux espaces aériens de classe B."
   },
   {
     "id": 231,
@@ -3000,7 +3238,8 @@
       "c'est un AIRPROX."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Définition de l'accident : \n\nEvénement, lié à l'utilisation d'un aéronef, qui se produit entre le moment où une personne monte à bord avec l'intention d'effectuer un vol et le moment où toutes les personnes, qui sont montées dans cette intention, sont descendues, et au cours duquel : \n\n1. une personne est mortellement ou grièvement blessée du fait qu'elle se trouve: \n\n- dans l'aéronef, ou \n\n- en contact direct avec une partie quelconque de l'aéronef, y compris les parties qui s'en sont détachées, ou \n\n- directement exposée au souffle des réacteurs, sauf s'il s'agit des lésions dues à des causes naturelles, de blessures infligées à la personne par elle-même ou par d'autres ou de blessures subies par un passager clandestin caché hors des zones auxquelles les passagers et l'équipage ont normalement accès; \n\n2. ou l'aéronef subit des dommages ou une rupture structurelle : \n\n- qui altèrent ses caractéristiques de résistance structurelle, de performances ou de vol, et \n\n- qui devraient normalement nécessiter une réparation importante ou le remplacement de l'élément endommagé, sauf s'il s'agit d'une panne de moteur ou d'avarie de moteur lorsque des dommages sont limités au moteur, à ses capotages ou à ses accessoires, ou encore de dommages limités aux hélices, aux extrémités d'ailes, aux antennes, aux pneumatiques, aux freins, aux carénages ou à de petites entailles ou perforations du revêtement; ou \n\n3. l'aéronef a disparu ou est totalement inaccessible."
   },
   {
     "id": 232,
@@ -3013,7 +3252,8 @@
       "d'un espace aérien de classe D."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC sont définies en fonction de la classe d'espace aérien. Les zones P, R et D ne sont pas des classes d'espace, elles dépendent donc de celle dans laquelle elles se trouvent."
   },
   {
     "id": 233,
@@ -3026,7 +3266,8 @@
       "avoir déposé un plan de vol 24 heures à l'avance."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les seuls espaces aériens interdits au VFR sont les espaces de classe A.\n\nPour pénétrer dans un espace aérien de classe D, votre avion doit en plus être équipé d'un transpondeur mode A+C."
   },
   {
     "id": 234,
@@ -3039,7 +3280,8 @@
       "vrai."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "C'est pour ça que les pistes changent de petit nom de temps en temps. Comme le Nord magnétique change de place continuellement, la déclinaison magnétique varie d'année en année, et les alignements de piste, qui sont toujours les mêmes par rapport au Nord vrai, changent par rapport au Nord magnétique."
   },
   {
     "id": 235,
@@ -3052,7 +3294,8 @@
       "dans tous les pays d'Europe."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "A l'issue de l'épreuve pratique d'aptitude et si le candidat est apte, l'examinateur, après avoir contrôlé que le candidat remplit toutes les conditions exigées pour la délivrance de la licence PPL (A), délivre à celui-ci un certificat provisoire valable deux mois lui permettant d'exercer sur le territoire national les privilèges attachés à cette licence dans l'attente de l'établissement de sa licence par l'Autorité."
   },
   {
     "id": 236,
@@ -3065,7 +3308,8 @@
       "10 fois l'altitude de l'aéronef."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Arrêté du 20 décembre 2012 réglementant le survol des régions maritimes :\n\nArticle 1 \n\nLes dispositions du présent arrêté sappliquent aux aéronefs évoluant en circulation aérienne générale suivant les règles de vol à vue au-dessus des étendues maritimes et séloignant de la côte dune distance supérieure à la plus faible des deux distances suivantes : \n\n1° La distance maximale permettant à laéronef, un moteur en panne, datteindre une terre se prêtant à un atterrissage durgence ;\n\n2° La distance égale à quinze fois laltitude de laéronef."
   },
   {
     "id": 237,
@@ -3078,7 +3322,8 @@
       "refaire une formation réglementaire en fonction de l'expérience du pilote."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsque votre qualification de classe SEP est périmée, un renouvellement est nécessaire. Il s'agit d'un vol avec un examinateur à qui vous devez montrer que vous n'avez pas perdu la main."
   },
   {
     "id": 238,
@@ -3091,7 +3336,8 @@
       "maintenez votre cap et votre altitude, l'avion vous dépassera par la gauche."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En tant que dépassé, vous êtes prioritaire. Vous ne changez donc rien à votre trajectoire."
   },
   {
     "id": 239,
@@ -3104,7 +3350,8 @@
       "500 m (1600 ft)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sauf pour les besoins du décollage et de latterrissage, ou sauf autorisation des autorités compétentes, aucun vol VFR n'est effectué :\n\na) au-dessus des zones à forte densité des villes ou autres agglomérations ou de rassemblements de personnes en plein air à moins de 300 m (1 000 ft) au-dessus de lobstacle le plus élevé situé dans un rayon de 600 m autour de laéronef ;\n\n \n\nb) ailleurs quaux endroits spécifiés en a), à une hauteur inférieure à 150 m (500 ft) au-dessus du sol ou de leau ; toutefois :\n\n-  les planeurs effectuant des vols de pente ainsi que les ballons et les PUL peuvent faire exception à cette règle sous réserve de n'entraîner aucun risque pour les personnes ou les biens à la surface ;\n\n-  dans le cadre dun vol dinstruction en avion, cette hauteur est ramenée à 50 m (150 ft) pour les entraînements aux atterrissages forcés ; d'autre part, une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel est respectée en permanence."
   },
   {
     "id": 240,
@@ -3117,7 +3364,8 @@
       "visibilité en vol 1500 m ou distance correspondant à 30 secondes de vol, hors des nuages et en vue de la surface."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 241,
@@ -3130,7 +3378,8 @@
       "vous permet de rentrer dans les espaces de classe D et E."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Partout en France, vous pouvez contacter une fréquence info qui vous délivrera ces informations."
   },
   {
     "id": 242,
@@ -3143,7 +3392,8 @@
       "vous faire rémunérer pour votre travail de pilote."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour pouvoir être rémunéré en tant que pilote, il faut être pilote professionnel (CPL)."
   },
   {
     "id": 243,
@@ -3156,7 +3406,8 @@
       "le pays dont il porte la marque de nationalité."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "De façon générale, le certificat d'immatriculation est délivrée par l'Autorité de l'Aviation Civile du pays concerné. En France, l'Autorité est la DGAC."
   },
   {
     "id": 244,
@@ -3169,7 +3420,8 @@
       "descendez à une hauteur de 1500 ft."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien contrôlé, vous devez garder un espacement vertical avec les nuages de 300 m (1000 ft).\n\nPour respecter ceci, vous devez descendre de 500 ft."
   },
   {
     "id": 245,
@@ -3182,7 +3434,8 @@
       "le manuel de vol."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'aptitude réglementaire d'un aéronef est attestée par deux documents :\n\nLe Certificat de Navigabilité (CDN) qui est délivré une fois pour toute lorsque l'aéronef sort d'usine.\n\nLe Certificat d'Examen de Navigabilité (CEN), qui lui est d'une validité d'un an, et doit être renouvelé. Si la date d'expiration figurant sur le CEN est passée... l'avion n'a plus le droit de voler. Il vaut mieux donc anticiper la date, et prendre rendez-vous avec l'OSAC dont le rôle consiste essentiellement à facturer extrêmement cher une étude des papiers de l'avion et le coup de tampon sur le CEN."
   },
   {
     "id": 246,
@@ -3195,7 +3448,8 @@
       "si vous détenez une qualification IR valide."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour voler en IMC, il faut passer en régime de vol IFR, ce qui n'est possible que si vous avez la qualification IR valide, et que votre avion est équipé et certifié pour le vol aux instruments."
   },
   {
     "id": 247,
@@ -3208,7 +3462,8 @@
       "route magnétique."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien non contrôlé, les aéronefs doivent voler en niveau de vol (FL) et adopter la règle semi-circulaire."
   },
   {
     "id": 248,
@@ -3221,7 +3476,8 @@
       "vous contactez un des organismes de la circulation aérienne de la FIR dans laquelle vous volez."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le dépôt d'un plan de vol en cours de vol est possible. Il suffit de contacter un organisme de la circulation aérienne (fréquence info, TMA, terrain à proximité, etc.) pour lui fournir les éléments.\n\nJ'avoue cependant que je ne vois pas dans quelles circonstances un ULM en vol voudrait poser un plan de vol..."
   },
   {
     "id": 249,
@@ -3247,7 +3503,8 @@
       "FL065."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Niveau de croisière (maximum 5 caractères)\n\nInsérer le niveau de croisière prévu pour la première partie ou la totalité de la route à parcourir, dans lune des formes suivantes :\n\nNiveau de vol exprimé par la lettre F suivie de 3 chiffres (exemple : F085 ; F330) ;\n\nOu\n\nNiveau métrique standard en dizaines de mètres exprimé par la lettre S suivie de 4 chiffres (exemple : S1130) ; lorsque les autorités ATS compétentes le prescrivent ;\n\nOu\n\nAltitude en centaines de pieds exprimée par la lettre A suivie de 3 chiffres (exemples : A045 ; A100) ;\n\naltitude en dizaines de mètres exprimée par la lettre M suivie de 4 chiffres (exemple : M0840) ;\n\nOu\n\npour les vols VFR\n\n- soit, VFR, sil nest pas prévu que le vol doit seffectuer à un niveau de croisière déterminé ;\n\n- soit, le niveau de vol semi circulaire VFR ;\n\n- soit laltitude, selon le cas."
   },
   {
     "id": 251,
@@ -3260,7 +3517,8 @@
       "le planeur est prioritaire."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le planeur est prioritaire car il est moins manoeuvrant que vous."
   },
   {
     "id": 252,
@@ -3273,7 +3531,8 @@
       "est un espace supérieur (A = above)."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Sauf dérogation, les espaces aériens de classe A sont interdits aux VFR."
   },
   {
     "id": 253,
@@ -3299,7 +3558,8 @@
       "5 NM."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien non contrôlé (F ou G) au-dessus de la surface 3000 ft AMSL ou 1000 ft AGL, les conditions VMC sont les mêmes qu'en espace aérien contrôlé :\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus ;\n\n- distance par rapport aux nuages de 1500 m horizontalement, 300 m verticalement."
   },
   {
     "id": 255,
@@ -3312,7 +3572,8 @@
       "du service d'alerte uniquement."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Tout l'espace aérien d'un Etat est contenu dans une  ou plusieurs régions d'information de vol (FIR). On peut donc bénéficier à tout moment du service d'information de vol en appelant la fréquence adéquate, et du service d'alerte."
   },
   {
     "id": 256,
@@ -3338,7 +3599,8 @@
       "visibilité en vol 5 km, distance horizontale des nuages 1500 m, distance verticale des nuages 300 ft."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 258,
@@ -3351,7 +3613,8 @@
       "5 km."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Précisons que c'est 5 km en dessous du FL 100, et 8 km au-dessus."
   },
   {
     "id": 259,
@@ -3377,7 +3640,8 @@
       "visibilité en vol 5 km,\n- distance horizontale des nuages 1500 m\n- distance verticale des nuages 300 m."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), en dessous du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m si la vitesse est inférieure à 140 kt (recommandation d'une visibilité équivalente à 30 secondes de vol)\n\n- visibilité 5 km si la vitesse est supérieure à 140 kt (si la visibilité est inférieure à 5 km : obligation d'une visibilité équivalente à 30 secondes de vol et être à plus de 15 km de tout aérodrome)\n\nAu-dessus du plus haut des 2 niveaux, 3000 ft AMSL ou 1000 ft ASFC :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 261,
@@ -3390,7 +3654,8 @@
       "n'est plus utilisable."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "S'il n'y a plus personne pour s'occuper d'un espace aérien de classe D, celui-ci est automatiquement rétrogradé en classe G."
   },
   {
     "id": 262,
@@ -3403,7 +3668,8 @@
       "d'un espace de classe E."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les zones à statut particulier dont les zones D (dangereuses), P (interdites) et R (réglementées). Elles sont incluses dans un espace aérien, et les conditions VMC à respecter sont celles de cet espace aérien.\n\nCes dernières années, sont apparues en plus :\n\nZIT (Zones Interdites Temporaires)\n\nZRT (Zones Réglementées Temporaires)\n\nTSA (Zones de Ségrégations Témporaires)\n\nZones réservées à l'usage exclusifs d'usagers spécifiques pendant une durée déterminée.\n\nCBA (Zones transfrontalières)\n\nZones de ségrégation temporaire établies au-dessus de frontières internationales."
   },
   {
     "id": 263,
@@ -3416,7 +3682,8 @@
       "le carnet de route."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il ne faut pas appliquer ceci bêtement. Il faut savoir qu'une inscription d'anomalie sur le carnet de route bloque l'avion au sol jusqu'à ce que le mécano ait signé l'approbation pour remise en service (APRS).\n\nIl est conseillé de ne noter que les anomalies compromettant réellement la sécurité des vols.\n\nPar exemple, si un phare est grillé, il est inutile de bloquer l'avion au sol en le signalant dans le carnet de route."
   },
   {
     "id": 264,
@@ -3429,7 +3696,8 @@
       "vous vous reportez à la verticale du terrain en procédant à l'examen de l'aérodrome puis vous vous reportez directement en étape de base."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si vous arrivez en dehors des horaires de l'AFIS, le terrain devient un aérodrome en auto-information. Vous devez donc prendre connaissance des paramètres et observer le terrain par un passage verticale, puis vous éloigner du circuit pour vous mettre en descente et revenir vers le début de la vent arrière à l'altitude du circuit."
   },
   {
     "id": 265,
@@ -3442,7 +3710,8 @@
       "300 m. (1000 ft)."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Ces agglomérations sont représentées par des ronds jaunes sur les cartes au 1/500 000ème."
   },
   {
     "id": 266,
@@ -3455,7 +3724,8 @@
       "en vol."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour bénéficier du service d'alerte, il faut que les services de la circulation aérienne soient déjà au courant que vous étiez en l'air. Votre présence sera connue soit par contact radio avec un organisme, soit par le dépôt d'un plan de vol."
   },
   {
     "id": 267,
@@ -3468,7 +3738,8 @@
       "vous avez la priorité, parce qu'il vient de votre gauche."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Lorsque deux aéronefs se trouvant à peu près au même niveau suivent des routes convergentes, celui qui voit lautre à sa droite sen écarte ; toutefois :\n\na) les aérodynes motopropulsés cèdent le passage aux dirigeables, aux planeurs et aux ballons ;\n\nb) les dirigeables cèdent le passage aux planeurs et aux ballons ;\n\nc) les planeurs cèdent le passage aux ballons ;\n\nd) les aéronefs motopropulsés céderont le passage aux aéronefs qui sont vus remorquant dautres aéronefs ou objets."
   },
   {
     "id": 268,
@@ -3494,7 +3765,8 @@
       "une hauteur de 500 m."
     ],
     "bonne_reponse": 2,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/lfoz.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/lfoz.jpg",
+    "explication": "Sur la carte, on voit 2 nombres accolés au circuit hélico en vert : 900 et (500). Le premier représente l'altitude du circuit, le second la hauteur du circuit."
   },
   {
     "id": 270,
@@ -3507,7 +3779,8 @@
       "qu'un nouveau NOTAM redéfinit les arrivées."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le VFR spécial est une autorisation accordée uniquement en CTR pour voler en VFR dans des conditions inférieures aux VMC, à savoir lorsque la visibilité est inférieure à 5 km et/ou que le plafond est inférieur à 1500 ft QFE."
   },
   {
     "id": 271,
@@ -3533,7 +3806,8 @@
       "20."
     ],
     "bonne_reponse": 0,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3489.gif"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3489.gif",
+    "explication": "Si la piste est désignée 20 c'est qu'elle est grosso modo orientée au 200°. L'autre extrémité sera donc orientée au 200 - 180 = 020, et donc désignée 02. Attention : ceci ne fonctionne que sur les pistes rectilignes, mais il faut reconnaître que c'est le cas de la très grande majorité des pistes."
   },
   {
     "id": 273,
@@ -3546,7 +3820,8 @@
       "de classe E, une clairance n'est pas nécessaire."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour entrer dans un espace aérien de classe E, la clairance n'est obligatoire qu'en VFR spécial. Or, la question ne précisant rien, vous devez considérer que vous êtes en VFR."
   },
   {
     "id": 274,
@@ -3572,7 +3847,8 @@
       "vous pouvez vous reporter directement en finale si vous êtes sûr de l'absence de trafic."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Si vous arrivez en dehors des horaires de l'AFIS, le terrain devient un aérodrome en auto-information. Vous devez donc prendre connaissance des paramètres et observer le terrain par un passage verticale, puis vous éloigner du circuit pour vous mettre en descente et revenir vers le début de la vent arrière à l'altitude du circuit."
   },
   {
     "id": 276,
@@ -3585,7 +3861,8 @@
       "le PAPI."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le PAPI (Precision Approach Path Indicator) est un système lumineux à 4 feux, qui peuvent être blanc ou rouge selon votre position par rapport au plan d'approche idéal."
   },
   {
     "id": 277,
@@ -3598,7 +3875,8 @@
       "horizontalement 1500 m, verticalement 300 m (1000 ft)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC en espace aérien contrôlé sont :\n\n- distance aux nuages de 1500 m horizontalement et 300 m verticalement\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus.\n\nNote : cette question ne mentionne que les espaces aériens de classe C, D et E. Depuis le 1er janvier 2007, ces conditions s'appliquent également aux espaces aériens de classe B."
   },
   {
     "id": 278,
@@ -3611,7 +3889,8 @@
       "vous devez changer de route, cet espace étant interdit au VFR."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les seuls espaces aériens interdits au VFR sont les espaces de classe A.\n\nPour pénétrer dans un espace aérien de classe C, votre avion doit en plus être équipé d'un transpondeur mode A+C."
   },
   {
     "id": 279,
@@ -3637,7 +3916,8 @@
       "le QNH."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Au-dessus du niveau de transition, on se calera toujours à 1013 hPa. Le passage au QNH se fera en dessous du niveau de transition lors de la descente."
   },
   {
     "id": 281,
@@ -3676,7 +3956,10 @@
       "n'atterrissez pas pour le moment, mettez vous en attente."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q283_easy_395d0e96d3a6.png"
+    ]
   },
   {
     "id": 284,
@@ -3689,7 +3972,8 @@
       "vous devez lui céder la priorité, parce que c'est un hélicoptère."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Entre aérodynes motopropulsés, la priorité à droite s'applique."
   },
   {
     "id": 285,
@@ -3715,7 +3999,8 @@
       "vous vous alignez et vous décollez car vous avez la priorité."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un aéronef en finale est prioritaire sur les aéronefs au sol sur le point de décoller."
   },
   {
     "id": 287,
@@ -3728,7 +4013,8 @@
       "le QFE."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "En dessous de l'altitude de transition en espace aérien contrôlé, ce sera toujours le QNH."
   },
   {
     "id": 288,
@@ -3741,7 +4027,8 @@
       "est en dessous du plan nominal de descente."
     ],
     "bonne_reponse": 1,
-    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3234.jpg"
+    "image_url": "IMAGES_GLIGLI_REGLEMENTATION_EASY/010-3234.jpg",
+    "explication": "Même si vous n'avez jamais vu autre chose qu'un PAPI lors de vos vols (ce qui est plus que probable vu que les autres n'existent pratiquement plus), sachez que le code couleur des aides à l'approche est toujours le même :\n\n- blanc = trop haut\n\n- rouge = trop bas\n\n- les deux = bien !"
   },
   {
     "id": 289,
@@ -3780,7 +4067,8 @@
       "le sens du tour de piste."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "La manche à air est un moyen simple d'avoir une estimation grossière de la force et de la direction du vent."
   },
   {
     "id": 292,
@@ -3806,7 +4094,8 @@
       "vous n'avez pas déposé de plan de vol à destination de cet aérodrome."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'accès à un aérodrome contrôlé est soumis à clairance. Il vous faut donc une radio pour la demander et la recevoir."
   },
   {
     "id": 294,
@@ -3819,7 +4108,8 @@
       "3 à 5 minutes."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Entre 7 et 136 tonnes, un avion est classé dans la catégorie Moyen Porteur pour la turbulence de sillage. Un avion léger (moins de 7 tonnes en ce qui concerne la turbulence de sillage) devra donc attendre 2 ou 3 minutes en fonction des circonstances avant de pouvoir décoller ou atterrir."
   },
   {
     "id": 295,
@@ -3832,7 +4122,8 @@
       "partout, quelles que soient les règles locales."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Cela revient à dire qu'il faut appliquer les règles les plus restrictives.\n\nExemple : vous volez dans un pays où la hauteur minimale de survol est de 300 ft. Malgré ça, vous devez respecter les règles de l'air françaises qui vous imposent une hauteur minimale de survol de 500 ft.\n\nSi au contraire, les règles du pays imposent 1000 ft de hauteur minimale, vous devez respecter ces 1000 ft."
   },
   {
     "id": 296,
@@ -3845,7 +4136,8 @@
       "à l'issue de chaque vol dans tous les cas."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "NCO.GEN.135 Documents, manuels et informations devant se trouver à bord\n\na) Les documents, informations et manuels suivants sont transportés à bord de chaque vol, sous la forme doriginaux ou de copies, sauf indication contraire :\n\n[...]\n\n8) le carnet de route de laéronef, ou équivalent;\n\n[...]\n\nLe carnet de route est rempli sous la responsabilité du commandant de bord, à l'issue d'un vol ou d'une série de vol avec le même CdB. Au plus tard, il est rempli en fin de journée.\n\nLe carnet de route contient de plus les approbations pour remise en service après les opérations de maintenance."
   },
   {
     "id": 297,
@@ -3858,7 +4150,8 @@
       "le temps du fuseau."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'aviation étant un moyen de transport international, destiné à croiser des fuseaux horaires en un temps relativement réduit, il est important de disposer d'une référence temporelle internationale : l'heure UTC, ou encore heure de Greenwich."
   },
   {
     "id": 298,
@@ -3871,7 +4164,8 @@
       "la gauche."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Règles de l'Air : \n\nUn aéronef dépassant est un aéronef qui sapproche dun autre aéronef par larrière suivant une trajectoire formant un angle de moins de 70° avec le plan de symétrie de ce dernier, cest-à-dire dans une position telle, par rapport à lautre aéronef, que, de nuit, il serait dans limpossibilité de voir lun quelconque des feux de position gauche (bâbord) ou droit (tribord). Au moment où un aéronef en dépasse un autre, ce dernier a la priorité de passage et laéronef dépassant, quil soit en montée, en descente ou en palier, sécarte de la trajectoire de lautre aéronef en obliquant vers la droite. Aucune modification ultérieure des positions relatives des deux aéronefs ne dispense laéronef dépassant de cette obligation jusquà ce quil ait entièrement dépassé et distancé lautre aéronef."
   },
   {
     "id": 299,
@@ -3884,7 +4178,8 @@
       "verte."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les véhicules de services seront signalés par des feux à éclats de couleur jaune (gyrophare).\n\nLes véhicules de sécurité (police et pompiers) seront signalés par des feux à éclats de couleur bleue."
   },
   {
     "id": 300,
@@ -3897,7 +4192,8 @@
       "requiert une autorisation de transit qui doit être demandée par radio à l'organisme gestionnaire 10 minutes avant l'entrée de la zone."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Voici un exemple de la logique administrative : \n\non peut traverser une zone dangereuse, sous la responsabilité du commandant de bord, et à coté de ça, on nous interdit de passer trop près d'une centrale nucléaire."
   },
   {
     "id": 301,
@@ -3910,7 +4206,8 @@
       "le certificat d'immatriculation."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le certificat d'immatriculation est à l'avion ce que la carte grise est à la voiture."
   },
   {
     "id": 302,
@@ -3923,7 +4220,8 @@
       "les vols sont subordonnés à certaines conditions."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les zones à statut particulier sont :\n\nLes zones interdites (P pour Prohibited, ou encore Pas Pénétrer);\n\nLes zones dangereuses (D pour Dangerous, mais ça marche aussi pour Dangereuses);\n\nLes zones réglementées (R pour Restricted mais aussi Réglementées, facile).\n\nCes dernières années, sont apparues en plus :\n\nZIT (Zones Interdites Temporaires)\n\nZRT (Zones Réglementées Temporaires)\n\nTSA (Zones de Ségrégations Témporaires)\n\nZones réservées à l'usage exclusifs d'usagers spécifiques pendant une durée déterminée.\n\nCBA (Zones transfrontalières)\n\nZones de ségrégation temporaire établies au-dessus de frontières internationales."
   },
   {
     "id": 303,
@@ -3949,7 +4247,8 @@
       "visibilité en vol : 1500 m (800 m pour les hélicoptères) ou la distance parcourue en 30 secondes de vol."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En classe F ou G (non contrôlé), sous la surface 3000 ft AMSL ou 1000 ft AGL, les conditions VMC sont :\n\n- hors des nuages\n\n- en vue de la surface\n\n- visibilité 1500 m ou 30 secondes de vol.\n\nAu-dessus de la surface 3000 ft AMSL ou 1000 ft AGL :\n\n- distance horizontale aux nuages 1500 m\n\n- distance verticale aux nuages 300 m\n\n- visibilité 5 km en dessous du FL100, 8 km au-dessus du FL100."
   },
   {
     "id": 305,
@@ -3962,7 +4261,8 @@
       "dans tous les cas."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "NCO.IDE.A.140 Sièges, ceintures de sécurité, systèmes de retenue et dispositifs de retenue pour enfants\n\na) Les avions sont équipés :\n\n1) dun siège ou dune couchette pour toute personne à bord âgée dau moins vingt-quatre mois ;\n\n2) dune ceinture de sécurité pour chaque siège passager et de ceintures de retenue pour chaque couchette ;\n\n3) dun dispositif de retenue enfant pour chaque personne à bord de moins de vingt-quatre mois ; et\n\n4) d'une ceinture de sécurité avec système de retenue de la partie supérieure du torse sur chaque siège de l'équipage de conduite à point de détachement unique pour les avions dont le premier certificat de navigabilité a été délivré à partir du 25 août 2016."
   },
   {
     "id": 306,
@@ -3975,7 +4275,11 @@
       "vous descendez au FL 25."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il est possible que cette question ne soit plus à jour depuis les nouvelles Règles de l'Air.\n\nEn supposant donc que le FL 35 soit au dessus de 3000 ft AGL, une route au 352° ne peut permettre qu'un niveau de vol pair supérieur : FL 45. A noter que le FL 25 peut exister dans certaines conditions de haute pression atmosphérique.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q306_easy_7c691f113ca8.jpg"
+    ]
   },
   {
     "id": 307,
@@ -3988,7 +4292,8 @@
       "AIRPROCH."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "L'AIRPROX est la procédure qui consiste à signaler un risque de collision. Une enquête sera menée afin de déterminer ce qui a pu conduire à ce risque, et les éventuelles actions à entreprendre afin que ça ne se reproduise plus."
   },
   {
     "id": 308,
@@ -4014,7 +4319,8 @@
       "de fournir un rapport détaillé aux assurances."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'Annexe 13 OACI :\n\nOBJECTIF DE L'ENQUÊTE\n\n3.1 L'enquête sur un accident ou un incident a pour seul objectif la prévention de futurs accidents ou incidents . Cette activité ne vise nullement à la détermination des fautes ou des responsabilités."
   },
   {
     "id": 310,
@@ -4027,7 +4333,10 @@
       "de couloir dont les limites verticales inférieure et supérieure sont le sol et le FL 195."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q310_easy_6a162a65d0e4.jpg"
+    ]
   },
   {
     "id": 311,
@@ -4040,7 +4349,8 @@
       "marque d'immatriculation suivie de la marque du constructeur."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Une erreur commune est de parler de l'identification de l'avion comme de son immatriculation. Or, l'identification est composée de la marque de nationalité (le F pour la France) suivie de la marque d'immatriculation (délivrée par l'administration)."
   },
   {
     "id": 312,
@@ -4053,7 +4363,8 @@
       "AIRPROX."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Attention, ça va être super long : \n\nUn NOTAM sera établi et publié dans le cas des renseignements ci-après :\n\na) mise en service, fermeture ou importantes modifications dans l'exploitation d'aérodromes/hélistations ou de pistes ;\n\nb) mise en service, retrait ou importantes modifications dans le fonctionnement des services aéronautiques (AGA, AIS, ATS, COM, MET, SAR, etc.) ;\n\nc) mise en service ou retrait d'aides radioélectriques ou autres à la navigation aérienne, ainsi que d'aérodromes/hélistations, y compris : interruption ou rétablissement du service, modification de fréquences, changement dans les heures de service notifiées, changement d'indicatif, changement d'orientation (aides directionnelles), modification de l'emplacement, variations de puissance d'au moins 50 %, changement d'horaire ou de teneur des émissions, irrégularité ou incertitude du fonctionnement de toute aide radio à la navigation aérienne ou des services de communication air-sol ;\n\nd) mise en service, retrait ou modification importante d'aides visuelles ;\n\ne) interruption ou remise en service d'éléments majeurs des dispositifs de balisage lumineux d'aérodrome ;\n\nf) institution, suppression ou modification importante de procédures pour les services de navigation aérienne ;\n\ng) apparition ou correction de défauts ou d'entraves majeurs dans l'aire de manoeuvre ;\n\nh) modifications et limitations dans la disponibilité de carburant, d'huile et d'oxygène ;\n\ni) changements importants dans les moyens et services de recherche et de sauvetage ;\n\nj) installation, retrait ou remise en service de phares de danger balisant les obstacles à la navigation aérienne ;\n\nk) modifications apportées aux règlements et nécessitant des mesures immédiates, par exemple zones interdites à cause d'opérations SAR ;\n\nl) existence de dangers affectant la navigation aérienne (y compris obstacles, exercices militaires, manifestations aériennes, courses et activités majeures de parachutisme hors des emplacements promulgués) ;\n\nm) érection, suppression ou modification d'obstacles à la navigation aérienne dans les aires de décollage/montée, d'approche interrompue, d'approche ainsi que dans la bande de piste ;\n\nn) institution ou suppression (mise en activité ou hors d'activité) de zones interdites, réglementées ou dangereuses, ou changement de classification de ces zones ;\n\no) établissement ou suppression de zones ou de routes ou de parties de zones ou de routes où il y a possibilité d'interception et où il est nécessaire d'assurer la veille sur la fréquence d'urgence VHF 121,5 MHz ;\n\np) désignation, annulation ou changement d'indicateur d'emplacement ;\n\nq) changements significatifs du niveau de protection normalement disponible à un aérodrome aux fins du sauvetage et de la lutte contre l'incendie ; un NOTAM ne sera établi que s'il y a changement de catégorie et ce changement sera clairement spécifié ;\n\nr) existence, élimination ou importantes modifications de conditions dangereuses dues à la neige, la neige fondante, l'eau ou la glace sur l'aire de mouvement ;\n\ns) apparition d'épidémies nécessitant des changements dans les règlements notifiés en matière de vaccination et dans les dispositions relatives au contrôle sanitaire ;\n\nt) prévisions de rayonnement cosmique d'origine solaire, lorsqu'elles sont fournies ;\n\nu) changement d'activité volcanique, lieu, date et heure d'une éruption volcanique et/ou étendue horizontale et verticale d'un nuage de cendres volcaniques, y compris direction de son déplacement, niveaux de vol et routes ou portions de route qui pourraient être concernés ;\n\nv) dégagement dans l'atmosphère de matières radioactives ou de produits chimiques toxiques à la suite d'un incident nucléaire ou chimique ; lieu, date et heure de l'incident ; niveaux de vol et routes ou portions de route qui pourraient être affectés, et direction du déplacement ;\n\nw) établissement de missions de secours humanitaires, comme celles qui sont réalisées sous les auspices des Nations Unies, avec les procédures et/ou les limitations concernant la navigation aérienne ;\n\nx) application de mesures d'exception à court terme en cas de perturbation générale ou partielle des services de la circulation aérienne ou des services de soutien connexes."
   },
   {
     "id": 313,
@@ -4079,7 +4390,8 @@
       "autorisé à atterrir."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "En théorie, ces signaux lumineux ne servent que dans un cas bien précis : si vous tombez en panne radio alors que vous avez déjà intégré le tour de piste.\n\nEn pratique, ces signaux lumineux ne servent qu'à emmerder les candidats aux examens théoriques, car il est quasiment impossible de les rencontrer en vrai. Il faut en effet remplir plusieurs conditions pour les apercevoir. Il faut :\n\n- tomber en panne radio\n\n- que le contrôleur s'en aperçoive à temps\n\n- qu'il se souvienne où est rangé le pistolet à signaux\n\n- qu'il se souvienne où est rangé la rallonge qui lui permettra de sortir de la tour car les vitres polarisées font que les signaux ne se voient pas à travers\n\n- qu'il se souvienne des signaux\n\n- qu'il n'ait que ça à faire, et pas d'autres avions à contrôler\n\n- que tout ça se produise dans un temps suffisamment court pour que vous puissiez voir les signaux avant d'être posé."
   },
   {
     "id": 315,
@@ -4092,7 +4404,8 @@
       "le QDM."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les airways se trouvant toujours au-dessus de l'altitude de transition, le calage est forcément 1013 hPa, sauf rares exceptions."
   },
   {
     "id": 316,
@@ -4105,7 +4418,8 @@
       "6200 ft."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour les calculs à ces altitudes, on peut arrondir 1 hPa = 30 ft au lieu de 28. L'écart entre la surface 1013 et la surface 1023 est donc de 10 x 30 = 300 ft."
   },
   {
     "id": 317,
@@ -4118,7 +4432,8 @@
       "est réservé aux avions de transport."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Partout en France, vous pouvez contacter une fréquence info qui vous délivrera ces informations."
   },
   {
     "id": 318,
@@ -4131,7 +4446,8 @@
       "vous vous écartez à une distance suffisante pour assurer votre sécurité."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des règles de l'air :\n\nFRA.5005 f) 2)\n\ni) Les aéronefs qui circulent sans personne à bord, les planeurs effectuant des vols de pente, les ballons et les planeurs ultralégers peuvent évoluer à une hauteur inférieure à la hauteur minimale fixée par les dispositions de SERA.5005 f) 2) sous réserve de nentraîner aucun risque pour les personnes ou les biens à la surface.\n\nii) Dans le cadre d'un vol d'instruction, la hauteur minimale fixée par les dispositions de SERA 5005 f) 2) est abaissée à 50 m (150 ft) pour les entraînements aux atterrissages forcés.\n\niii) Les aéronefs habités mentionnés au i) et ii) maintiennent en permanence une distance de 150 m par rapport à toute personne, tout véhicule, tout navire à la surface et tout obstacle artificiel.\n\nNote : la version précédente de ce QCM parlait de la distance de sécurité. Or, depuis la mise en place de SERA, la valeur de 150 m est revenue à la mode."
   },
   {
     "id": 319,
@@ -4144,7 +4460,8 @@
       "vous vous alignez pour décoller, car seuls les planeurs sont prioritaires à l'atterrissage."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait des Règles de l'Air :\n\n3.2.2.5 Atterrissage\n\n3.2.2.5.1 Un aéronef en vol ou manoeuvrant au sol ou sur leau cède le passage aux aéronefs en train datterrir ou en train dexécuter les phases finales dune approche.\n\nTraduction : les atterrissages sont prioritaires."
   },
   {
     "id": 320,
@@ -4170,7 +4487,8 @@
       "le QFE du terrain d'arrivée."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Depuis le 1er janvier 2007, la surface de changement de calage altimétrique en espace aérien non contrôlé est 3000 ft ASFC : en dessous QNH, au dessus 1013 hPa."
   },
   {
     "id": 322,
@@ -4183,7 +4501,8 @@
       "si le panneau \"C\" se trouve sur la tour (TWR)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un aérodrome contrôlé est au minimum équipé d'une tour de contrôle (TWR). Attention, on parle de l'organisme \"tour de contrôle\" et non du bâtiment. En effet, un AFIS se trouve aussi dans une tour, sans être un contrôleur, mais c'est un abus de langage. Le terme officiel pour le bâtiment est \"vigie\".\n\nMaintenant qu'on a une tour TWR, il faut encore qu'elle soit active : le service du contrôle doit être assuré, celui-ci ayant lieu dans la TWR pendant les heures d'activité."
   },
   {
     "id": 323,
@@ -4196,7 +4515,8 @@
       "certificat d'immatriculation."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Il n'y a plus de date de validité sur les CdN, mais ceux-ci sont accompagnés du certificat d'examen de navigabilité CEN, qui indique une limite de validité."
   },
   {
     "id": 324,
@@ -4209,7 +4529,8 @@
       "n'atterrissez pas pour le moment."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Personnellement, je n'ai jamais pu retenir ces signaux lumineux.\n\nMais si ça vous arrive un jour de tomber en panne radio, vérifiez que vous avez bien le numéro de téléphone de la tour de contrôle enregistré dans votre portable :-)"
   },
   {
     "id": 325,
@@ -4222,7 +4543,8 @@
       "vol d'hélicoptère."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Interdiction datterrir\n\nUn panneau carré rouge horizontal à diagonales jaunes indique, lorsquil est disposé sur laire à signaux, que les atterrissages sont interdits et que linterdiction peut se prolonger."
   },
   {
     "id": 326,
@@ -4235,7 +4557,11 @@
       "200 m (700 ft)."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Extrait de l'Arrêté du 17 juillet 1992 relatif aux procédures générales de circulation aérienne pour lutilisation des aérodromes par les aéronefs\n\nCircuit type\n\n3.3.1\tEn règle générale les circuits daérodrome nont pas de dimensions strictement définies. Il incombe au pilote commandant de bord dadapter le trajet en fonction des possibilités manoeuvrières de son aéronef et des circonstances afin de ne pas gêner les autres aéronefs évoluant dans la circulation daérodrome ou passant à proximité. Toutefois, afin de limiter les nuisances phoniques, des consignes particulières peuvent prévoir :\n\n- certaines zones dont il est recommandé déviter le survol ; \n\n- de respecter, dans la mesure du possible, le circuit daérodrome quand, à titre exceptionnel, il est publié dans\n\nson intégralité.\n\n3.3.2\tDans la mesure où des dispositions différentes ne figurent pas dans les consignes particulières, le pilote commandant de bord doit, lorsquil évolue dans un circuit daérodrome : \n\n- effectuer le vent arrière à 300 mètres (1000 pieds) au-dessus de laltitude de laérodrome lorsque la hauteur des\n\nnuages le permet ; une hauteur différente peut être utilisée pour des besoins de formation au pilotage, à condition de ne pas gêner les autres usagers de laérodrome ; \n\n- effectuer les virages par la gauche ;\n\n- en cas de remise de gaz, manoeuvrer de façon à ne pas gêner les autres aéronefs évoluant dans la circulation daérodrome.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q326_easy_253684299097.png"
+    ]
   },
   {
     "id": 327,
@@ -4248,7 +4574,8 @@
       "le centre d'information de vol (CIV)."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "D'un point de vue réglementation, la Tour de Contrôle n'est pas seulement le bâtiment qui surplombe tout le reste sur le terrain, c'est surtout le nom de l'organisme de la circulation aérienne qui assure le service de contrôle sur un aérodrome."
   },
   {
     "id": 328,
@@ -4261,7 +4588,8 @@
       "cet aéronef sera désormais réservé aux pilotes titulaires d'une licence professionnelle."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Un éminent membre du corps des Pin's m'a transmis le texte réglementaire qui permet de répondre à cette question. Ne cherchez pas, c'est bien caché parmi les textes européens en anglais, aucune trace sur le site de la DGAC et encore moins du SIA à ce jour.\n\nLes glass-cockpits nécessitent désormais une formation de familiarisation."
   },
   {
     "id": 329,
@@ -4274,7 +4602,8 @@
       "déposer un plan de vol avant votre départ."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe C sont des espaces aériens contrôlés qui nécessitent une clairance pour pouvoir y pénétrer. Pour obtenir la clairance, on contacte le contrôle pour l'informer qu'on veut passer, sinon il ne va pas le deviner tout seul."
   },
   {
     "id": 330,
@@ -4287,7 +4616,8 @@
       "à 1013,2 hPa."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "En espace aérien contrôlé, on reste au QNH jusqu'à l'altitude de transition (TA). Au-dessus, on passe en niveau de vol (FL), donc on règle l'altimètre à 1013,2 hPa.\n\nL'altitude de transition est par défaut définie à 5000 ft, sauf précision contraire sur les cartes au 1/1 000 000ème."
   },
   {
     "id": 331,
@@ -4300,7 +4630,8 @@
       "vous n'avez pas à signaler ce changement."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Dans les espaces aériens de classe C, qui sont des espaces aériens contrôlés, tout changement de trajectoire doit faire l'objet d'une clairance."
   },
   {
     "id": 332,
@@ -4313,7 +4644,8 @@
       "les services d'information et d'alerte uniquement."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Organisme AFIS : Organisme rendant le service d'information de vol et le service d'alerte au bénéfice des aéronefs évoluant dans la circulation d'aérodrome de certains aérodromes non contrôlés."
   },
   {
     "id": 333,
@@ -4326,7 +4658,11 @@
       "impair."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le niveau de vol est choisi en fonction de la route magnétique. Il faut donc convertir notre Rv en Rm :\n\nRv = 178°\n\nDm = 6°W = -6°\n\nRm = Rv - Dm = 178 - (-6) = 184° => niveau de vol pair + 5.",
+    "explication_images": [
+      "IMAGES_GLIGLI_REGLEMENTATION_EASY_EXPL/q333_easy_7c691f113ca8.jpg"
+    ]
   },
   {
     "id": 334,
@@ -4339,7 +4675,8 @@
       "sous le nez de l'appareil."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Moyen mnémotechnique, basé sur la politique : c'est à gauche qu'on trouve les rouges."
   },
   {
     "id": 335,
@@ -4352,7 +4689,8 @@
       "établi autour de certains aérodromes en vue de protéger le trafic."
     ],
     "bonne_reponse": 1,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les zones à statut particulier sont :\n\nLes zones interdites (P pour Prohibited, ou encore Pas Pénétrer);\n\nLes zones dangereuses (D pour Dangerous, mais ça marche aussi pour Dangereuses);\n\nLes zones réglementées (R pour Restricted mais aussi Réglementées, facile).\n\nCes dernières années, sont apparues en plus :\n\nZIT (Zones Interdites Temporaires)\n\nZRT (Zones Réglementées Temporaires)\n\nTSA (Zones de Ségrégations Témporaires)\n\nZones réservées à l'usage exclusifs d'usagers spécifiques pendant une durée déterminée.\n\nCBA (Zones transfrontalières)\n\nZones de ségrégation temporaire établies au-dessus de frontières internationales."
   },
   {
     "id": 336,
@@ -4365,7 +4703,8 @@
       "horizontalement 1500 m, verticalement 300 m (1000 ft)."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les conditions VMC en espace aérien contrôlé sont :\n\n- distance aux nuages de 1500 m horizontalement et 300 m verticalement\n\n- visibilité de 5 km en dessous du FL 100, 8 km au-dessus.\n\nNote : cette question ne mentionne que les espaces aériens de classe C, D et E. Depuis le 1er janvier 2007, ces conditions s'appliquent également aux espaces aériens de classe B."
   },
   {
     "id": 337,
@@ -4378,7 +4717,8 @@
       "vous êtes en infraction."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les espaces aériens de classe A sont interdit aux VFR. Si vous vous y trouvez, vous êtes probablement en infraction.\n\nNotez que certaines classes A peuvent avoir des itinéraires VFR dérogatoires, mais ce sont des cas exceptionnels."
   },
   {
     "id": 338,
@@ -4391,7 +4731,8 @@
       "18 mois."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Seule la SEP et la SET sont valable 24 mois, tout le reste c'est 12 mois."
   },
   {
     "id": 339,
@@ -4404,7 +4745,8 @@
       "au-dessus du FL115."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Le VFR on top permet de perdre la vue du sol (vol au dessus d'une couche nuageuse, ne fermez pas les yeux !), à condition de respecter certaines conditions :\n\n- posséder un équipement de radionavigation et s'en servir pour suivre sa route ;\n\n- la couche nuageuse n'est pas un plafond au départ et à l'arrivée, de façon à pouvoir redescendre dessous ;\n\n- être équipé d'une VHF."
   },
   {
     "id": 340,
@@ -4430,7 +4772,8 @@
       "peut être autorisé à un pilote non qualifié IR, dans un espace de classe E."
     ],
     "bonne_reponse": 2,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour voler en IMC, il faut passer en régime de vol IFR, ce qui n'est possible que si vous avez la qualification IR valide, et que votre avion est équipé et certifié pour le vol aux instruments."
   },
   {
     "id": 342,
@@ -4443,7 +4786,8 @@
       "continu jaune."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "Pour ceux d'entre vous qui pratiquent les pistes en dur, il s'agit de la ligne autour de laquelle la répartition du fessier doit être impeccable de façon à satisfaire votre instructeur lors du roulage au décollage et à l'atterrissage."
   },
   {
     "id": 343,
@@ -4482,7 +4826,8 @@
       "montez pour lui céder le passage."
     ],
     "bonne_reponse": 0,
-    "image_url": null
+    "image_url": null,
+    "explication": "En tant que dépassé, vous êtes prioritaire. Vous ne changez donc rien à votre trajectoire."
   },
   {
     "id": 346,
@@ -4495,6 +4840,7 @@
       "R."
     ],
     "bonne_reponse": 3,
-    "image_url": null
+    "image_url": null,
+    "explication": "Les zones à statut particulier sont :\n\nP (prohibited) : interdites ;\n\nD (dangerous) : dangereuses ;\n\nR (restricted) : réglementées.\n\nCes dernières années, sont apparues en plus :\n\nZIT (Zones Interdites Temporaires)\n\nZRT (Zones Réglementées Temporaires)\n\nTSA (Zones de Ségrégations Témporaires)\n\nZones réservées à l'usage exclusifs d'usagers spécifiques pendant une durée déterminée.\n\nCBA (Zones transfrontalières)\n\nZones de ségrégation temporaire établies au-dessus de frontières internationales."
   }
 ]
