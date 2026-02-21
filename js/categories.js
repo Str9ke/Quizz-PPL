@@ -410,9 +410,7 @@ async function chargerQuestions(cat) {
     }
 }
 
-/**
- * filtrerQuestions() – Filtre le tableau "questions" selon le mode et le nombre demandé
-
+/** loadAllQuestions — Charge toutes les questions de toutes les catégories */
 async function loadAllQuestions() {
   let allQuestions = [];
   const categories = [
