@@ -163,20 +163,30 @@ async function initIndex() {
 
 // Sécurise l'init sur la page quiz en évitant les doublons et les problèmes de timing Auth
 if (window.location.pathname.endsWith('quiz.html')) {
+  let authTimeout;
   auth.onAuthStateChanged(user => {
+    clearTimeout(authTimeout);
     if (user && !quizInitTriggered) {
       localStorage.setItem('cachedUid', user.uid);
       quizInitTriggered = true;
       initQuiz();
     } else if (!user) {
-      if (!navigator.onLine && localStorage.getItem('cachedUid') && !quizInitTriggered) {
-        // Hors-ligne + UID en cache → démarrer le quiz offline
+      if (localStorage.getItem('cachedUid') && !quizInitTriggered) {
+        // Auth null + UID en cache → démarrer le quiz (navigator.onLine peut mentir)
         console.log('[offline] quiz.html: Auth null, UID en cache, démarrage offline');
         quizInitTriggered = true;
         initQuiz();
-      } else if (navigator.onLine || !localStorage.getItem('cachedUid')) {
+      } else if (!localStorage.getItem('cachedUid')) {
         window.location = 'index.html';
       }
     }
   });
+  // Sécurité : si auth ne fire pas dans les 3s et qu'on a un cachedUid, démarrer quand même
+  authTimeout = setTimeout(() => {
+    if (!quizInitTriggered && localStorage.getItem('cachedUid')) {
+      console.log('[offline] quiz.html: Auth timeout, démarrage avec cachedUid');
+      quizInitTriggered = true;
+      initQuiz();
+    }
+  }, 3000);
 }

@@ -8,16 +8,29 @@ function resetQuiz() {
   const sousCat = localStorage.getItem('quizSousCategorie');
   localStorage.removeItem('currentQuestions');
   (async () => {
-    let catNorm = getNormalizedCategory(cat);
-    if (catNorm === "TOUTES") {
-      await loadAllQuestions();
-    } else {
-      await chargerQuestions(catNorm);
+    try {
+      let catNorm = getNormalizedCategory(cat);
+      if (catNorm === "TOUTES") {
+        await loadAllQuestions();
+      } else {
+        await chargerQuestions(catNorm);
+      }
+      await filtrerQuestions(mode, nb);
+      localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+      if (sousCat) localStorage.setItem('quizSousCategorie', sousCat);
+      // Éviter un reload complet (lent offline) : ré-afficher le quiz directement
+      if (typeof afficherQuiz === 'function') {
+        // Masquer le résultat précédent
+        const rc = document.getElementById('resultContainer');
+        if (rc) { rc.style.display = 'none'; rc.innerHTML = ''; }
+        afficherQuiz();
+      } else {
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error('[resetQuiz] error:', e);
+      window.location.reload();
     }
-    await filtrerQuestions(mode, nb);
-    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
-    if (sousCat) localStorage.setItem('quizSousCategorie', sousCat);
-    window.location.reload();
   })();
 }
 
@@ -48,7 +61,7 @@ function showBuildTag(targetId = 'buildInfo') {
   if (!el) {
     el = document.createElement('div');
     el.id = targetId;
-    el.style.cssText = 'text-align:center;font-size:12px;margin:4px;color:#555;';
+    el.style.cssText = 'text-align:center;font-size:12px;margin:4px;color:var(--text-secondary);';
     const anchor = document.querySelector('h1');
     if (anchor && anchor.parentNode) {
       anchor.parentNode.insertBefore(el, anchor.nextSibling);

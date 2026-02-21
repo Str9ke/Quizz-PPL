@@ -160,7 +160,7 @@ function afficherBoutonsMarquer() {
 async function initQuiz() {
   console.log(">>> initQuiz()");
   // redirect if not logged in (sauf si offline avec UID en cache)
-  if (!auth.currentUser && !(localStorage.getItem('cachedUid') && !navigator.onLine)) {
+  if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
     window.location = 'index.html';
     return;
   }

@@ -337,24 +337,60 @@ function updateOnlineStatus() {
   const bar = document.getElementById('offlineStatusBar');
   if (!bar) return;
   
-  if (navigator.onLine) {
-    bar.style.background = '#4caf50';
-    bar.style.color = 'white';
-    bar.textContent = '✓ En ligne';
-    bar.style.display = 'block';
-    // Cacher après 3 secondes si en ligne
-    setTimeout(() => {
-      if (navigator.onLine) bar.style.display = 'none';
-    }, 3000);
-    // Lancer la sync
-    syncPendingWrites();
-  } else {
-    bar.style.background = '#e53935';
-    bar.style.color = 'white';
-    bar.textContent = '✈ Hors ligne';
-    bar.style.display = 'block';
+  if (!navigator.onLine) {
+    // navigator.onLine dit false → on est sûrement offline
+    _showOfflineBar(bar);
+    return;
   }
+  
+  // navigator.onLine dit true → vérifier avec un vrai fetch (peut mentir sur mobile)
+  bar.style.background = '#78909c';
+  bar.style.color = 'white';
+  bar.textContent = '⏳ Vérification...';
+  bar.style.display = 'block';
+  
+  _checkRealConnectivity().then(isOnline => {
+    if (isOnline) {
+      bar.style.background = '#4caf50';
+      bar.style.color = 'white';
+      bar.textContent = '✓ En ligne';
+      bar.style.display = 'block';
+      // Cacher après 3 secondes si en ligne
+      setTimeout(() => {
+        bar.style.display = 'none';
+      }, 3000);
+      // Lancer la sync
+      syncPendingWrites();
+    } else {
+      _showOfflineBar(bar);
+    }
+    updateOfflineBadge();
+  });
+}
+
+function _showOfflineBar(bar) {
+  bar.style.background = '#e53935';
+  bar.style.color = 'white';
+  bar.textContent = '✈ Hors ligne';
+  bar.style.display = 'block';
   updateOfflineBadge();
+}
+
+async function _checkRealConnectivity() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    await fetch('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js', {
+      method: 'HEAD',
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function updateOfflineBadge() {

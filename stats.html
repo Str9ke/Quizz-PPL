@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#667eea">
+  <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Statistiques</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
@@ -31,18 +31,23 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260221f"></script>
-  <script src="js/helpers.js?v=20260221f"></script>
-  <script src="js/categories.js?v=20260221f"></script>
-  <script src="js/stats.js?v=20260221f"></script>
-  <script src="js/quiz.js?v=20260221f"></script>
-  <script src="js/init.js?v=20260221f"></script>
-  <script src="js/offline.js?v=20260221f"></script>
+  <script src="js/globals.js?v=20260222a"></script>
+  <script src="js/helpers.js?v=20260222a"></script>
+  <script src="js/categories.js?v=20260222a"></script>
+  <script src="js/stats.js?v=20260222a"></script>
+  <script src="js/quiz.js?v=20260222a"></script>
+  <script src="js/init.js?v=20260222a"></script>
+  <script src="js/offline.js?v=20260222a"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     auth.onAuthStateChanged(user => {
-      if (user) initStats();
-      else {
+      if (user) {
+        localStorage.setItem('cachedUid', user.uid);
+        initStats();
+      } else if (localStorage.getItem('cachedUid')) {
+        console.log('[offline] stats.html: Auth null, UID en cache, démarrage offline');
+        initStats();
+      } else {
         alert("Vous devez être connecté pour voir vos statistiques.");
         window.location = 'index.html';
       }
@@ -50,9 +55,18 @@
   </script>
 </head>
 <body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
   <h1>Quiz Aviation - Statistiques</h1>
   <div class="container" id="statsContainer">
-    <p style="text-align:center;color:#888;">Chargement des statistiques...</p>
+    <p style="text-align:center;color:var(--text-secondary);">Chargement des statistiques...</p>
   </div>
   <div class="container" style="text-align: center; margin-top: 1rem;">
     <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">

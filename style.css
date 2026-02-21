@@ -1,25 +1,86 @@
+/* ----- Dark/Light mode variables ----- */
+:root {
+  --bg-body: #121218;
+  --bg-container: #1e1e2d;
+  --bg-question: #252538;
+  --text-primary: #e0e0e8;
+  --text-secondary: #a0a0b8;
+  --text-heading: #ffffff;
+  --border-color: #333350;
+  --input-bg: #1a1a30;
+  --input-text: #e0e0e8;
+  --input-border: #3a3a5a;
+  --button-bg: #1976d2;
+  --button-hover: #1565c0;
+  --button-disabled: #3a3a50;
+  --card-shadow: rgba(0,0,0,0.4);
+  --correct-bg: #1b3a1b;
+  --wrong-bg: #3a1b1b;
+  --result-bg: #332b00;
+  --result-border: #665500;
+  --result-text: #ffd54f;
+  --progressbar-bg: #2a2a40;
+  --link-color: #64b5f6;
+  --stats-group-bg: #1a1a2d;
+  --stats-group-border: #2a2a45;
+  --stats-cat-text: #a0a0b8;
+  --mark-bg: #e65100;
+  --delete-bg: #c62828;
+}
+
+body.light {
+  --bg-body: #eceff1;
+  --bg-container: #ffffff;
+  --bg-question: #f8fafc;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-heading: #212121;
+  --border-color: #b0bec5;
+  --input-bg: #ffffff;
+  --input-text: #333333;
+  --input-border: #b0bec5;
+  --button-bg: #0277bd;
+  --button-hover: #015c91;
+  --button-disabled: #b0bec5;
+  --card-shadow: rgba(0,0,0,0.1);
+  --correct-bg: #d4edda;
+  --wrong-bg: #f8d7da;
+  --result-bg: #ffc107;
+  --result-border: #ffb300;
+  --result-text: #212121;
+  --progressbar-bg: #cfd8dc;
+  --link-color: #0277bd;
+  --stats-group-bg: #fafafa;
+  --stats-group-border: #e0e0e0;
+  --stats-cat-text: #555555;
+  --mark-bg: #ff9800;
+  --delete-bg: #d32f2f;
+}
+
 /* ----- Global layout ----- */
 body {
   font-family: Arial, sans-serif;
   margin: 0; 
   padding: 0;
-  background: #eceff1;
-  color: #333;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
 }
 
 h1 {
   text-align: center;
   margin: 1rem 0;
+  color: var(--text-heading);
 }
 
 .container {
   width: 80%;
   max-width: 800px;
   margin: 1rem auto;
-  background: #ffffff;
+  background: var(--bg-container);
   border-radius: 6px;
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px var(--card-shadow);
 }
 
 /* Formulaires et boutons */
@@ -56,6 +117,10 @@ label {
 select, input {
   margin-right: 10px;
   padding: 4px 6px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
 }
 
 button {
@@ -64,23 +129,23 @@ button {
   padding: 6px 12px;
   border: none;
   color: #fff;
-  background: #0277bd;
+  background: var(--button-bg);
   border-radius: 4px;
   cursor: pointer;
 }
 
 button:hover {
-  background: #015c91;
+  background: var(--button-hover);
 }
 
 button:disabled {
-  background: #b0bec5;
+  background: var(--button-disabled);
   cursor: not-allowed;
 }
 
 /* Style pour le bouton de marquage */
 .mark-button {
-  background: #ff9800;
+  background: var(--mark-bg);
   color: #fff;
   border: none;
   padding: 4px 8px;
@@ -90,57 +155,48 @@ button:disabled {
 }
 
 .mark-button:hover {
-  background: #e68900;
+  opacity: 0.85;
 }
 
 .mark-button-disabled {
-  background: #b0bec5;
+  background: var(--button-disabled);
   color: #fff;
-  cursor: default; /* Pas de symbole interdit */
+  cursor: default;
 }
 
 .mark-button-disabled:hover {
-  background: #b0bec5;
+  background: var(--button-disabled);
 }
 
 /* Distinction question/réponse */
 .question-block {
   margin-bottom: 1rem;
-  border: 2px solid #b0bec5;
+  border: 2px solid var(--border-color);
   border-radius: 4px;
   padding: 8px;
-  background: #f8fafc;
+  background: var(--bg-question);
 }
 
 .question-title {
   font-weight: bold;
   margin-bottom: 6px;
-  color: #37474f;
+  color: var(--text-heading);
 }
 
 .answer-list {
   margin-left: 20px;
-  color: #455a64;
+  color: var(--text-secondary);
 }
 
-/* Correction: texte vert / rouge */
-.correct {
-  color: green;
-  font-weight: bold;
-}
-
-.wrong {
-  color: red;
-  font-weight: bold;
-}
+/* Correction: moved to end of file (dark-aware) */
 
 /* Résultat global du quiz */
 #resultContainer {
-  background: #ffc107;
-  color: #212121;
+  background: var(--result-bg);
+  color: var(--result-text);
   font-weight: bold;
   text-align: center;
-  border: 2px solid #ffb300;
+  border: 2px solid var(--result-border);
   border-radius: 4px;
   margin-bottom: 1rem; /* Ajustement pour qu'il soit bien espacé */
   margin-top: 1rem; /* Ajoute un espace pour éviter qu'elle soit masquée */
@@ -155,7 +211,7 @@ button:disabled {
 .progressbar {
   width: 100%;
   height: 20px;
-  background: #cfd8dc;
+  background: var(--progressbar-bg);
   border-radius: 10px;
   margin: 0.5rem 0;
   overflow: hidden;
@@ -169,14 +225,14 @@ button:disabled {
 
 /* Style pour les boutons désactivés */
 .disabled-button {
-  background: #b0bec5;
+  background: var(--button-disabled);
   color: #fff;
   cursor: not-allowed;
 }
 
 /* Style pour le bouton "Supprimer" */
 .delete-button {
-  background: #d32f2f;
+  background: var(--delete-bg);
   color: #fff;
   border: none;
   padding: 4px 8px;
@@ -186,7 +242,7 @@ button:disabled {
 }
 
 .delete-button:hover {
-  background: #b71c1c;
+  opacity: 0.85;
 }
 
 /* ----- Responsive design ----- */
@@ -262,10 +318,10 @@ button:disabled {
 /* Group container */
 .stats-group {
   margin-bottom: 14px;
-  background: #fafafa;
+  background: var(--stats-group-bg);
   border-radius: 6px;
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--stats-group-border);
 }
 .stats-group-header {
   display: flex;
@@ -276,11 +332,11 @@ button:disabled {
 .stats-group-name {
   font-weight: bold;
   font-size: 1em;
-  color: #0277bd;
+  color: var(--link-color);
 }
 .stats-group-summary {
   font-size: 0.8em;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Category row */
@@ -314,18 +370,18 @@ button:disabled {
 }
 .stats-cat-nums {
   white-space: nowrap;
-  color: #555;
+  color: var(--stats-cat-text);
 }
 .stats-cat-marks {
   white-space: nowrap;
-  color: #555;
+  color: var(--stats-cat-text);
 }
 
 /* Mini progress bar for category rows */
 .progressbar-mini {
   width: 100%;
   height: 8px;
-  background: #e0e0e0;
+  background: var(--progressbar-bg);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -367,13 +423,13 @@ button:disabled {
 }
 .daily-bar-count {
   font-size: 0.55em;
-  color: #888;
+  color: var(--text-secondary);
   margin-bottom: 1px;
   white-space: nowrap;
 }
 .daily-bar-label {
   font-size: 0.55em;
-  color: #999;
+  color: var(--text-secondary);
   margin-top: 2px;
   white-space: nowrap;
   position: absolute;
@@ -394,5 +450,52 @@ button:disabled {
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ===== Theme toggle button ===== */
+#themeToggle {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10001;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-container);
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--card-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: background 0.3s;
+}
+#themeToggle:hover {
+  opacity: 0.85;
+}
+
+/* ===== Correction colors (dark-aware) ===== */
+.correct {
+  color: #4caf50;
+  font-weight: bold;
+}
+.wrong {
+  color: #ef5350;
+  font-weight: bold;
+}
+body.light .correct {
+  color: green;
+}
+body.light .wrong {
+  color: red;
+}
+
+/* ===== Links ===== */
+a {
+  color: var(--link-color);
 }
 

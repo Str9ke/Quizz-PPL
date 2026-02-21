@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <script>
@@ -38,7 +38,7 @@
     </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#667eea">
+  <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Accueil</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
@@ -87,8 +87,8 @@
         if (typeof initIndex === 'function') {
           initIndex();
         }
-      } else if (!navigator.onLine && localStorage.getItem('cachedUid')) {
-        // Hors-ligne + utilisateur connu en cache → démarrer en mode offline
+      } else if (localStorage.getItem('cachedUid')) {
+        // Auth null mais UID en cache → démarrer en mode offline (navigator.onLine peut mentir)
         console.log("[offline] Auth null mais UID en cache, démarrage offline");
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
@@ -104,6 +104,16 @@
   </script>
 </head>
 <body>
+  <!-- Theme toggle -->
+  <script>
+    // Appliquer le thème sauvegardé (dark par défaut)
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
   <h1>Quiz Aviation - Accueil</h1>
 
   <!-- Compteur de questions répondues aujourd'hui -->
@@ -139,7 +149,7 @@
       <!-- Options mises à jour par updateModeCounts() -->
     </select>
     <br><br>
-    <p id="totalGlobalInfo" style="color: #444;"></p>
+    <p id="totalGlobalInfo" style="color: var(--text-secondary);"></p>
     
     <!-- Option Démarrage automatique -->
     <label for="autoStartCheckbox" style="margin-top: 1rem; display: block;">
@@ -155,7 +165,7 @@
     <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
     <button onclick="window.location='stats.html'">Voir les Statistiques</button>
     <br><br>
-    <div id="progressionContainer" style="margin-top: 1rem; background: #f1f1f1; padding: 1rem; border-radius: 4px;"></div>
+    <div id="progressionContainer" style="margin-top: 1rem; background: var(--bg-question); padding: 1rem; border-radius: 4px;"></div>
     <br><br>
     <!-- Bouton de déconnexion -->
     <button id="btnLogout">Déconnexion</button>
@@ -166,13 +176,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260221f"></script>
-  <script src="js/helpers.js?v=20260221f"></script>
-  <script src="js/categories.js?v=20260221f"></script>
-  <script src="js/stats.js?v=20260221f"></script>
-  <script src="js/quiz.js?v=20260221f"></script>
-  <script src="js/init.js?v=20260221f"></script>
-  <script src="js/offline.js?v=20260221f"></script>
+  <script src="js/globals.js?v=20260222a"></script>
+  <script src="js/helpers.js?v=20260222a"></script>
+  <script src="js/categories.js?v=20260222a"></script>
+  <script src="js/stats.js?v=20260222a"></script>
+  <script src="js/quiz.js?v=20260222a"></script>
+  <script src="js/init.js?v=20260222a"></script>
+  <script src="js/offline.js?v=20260222a"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>

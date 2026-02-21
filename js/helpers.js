@@ -5,10 +5,10 @@
  * Si hors-ligne (navigator.onLine === false) → lecture directe du cache Firestore.
  * Si en ligne → lecture réseau avec timeout de 4s, puis fallback cache.
  * @param {firebase.firestore.DocumentReference} docRef
- * @param {number} timeoutMs – Délai max avant fallback cache (défaut 4000ms)
+ * @param {number} timeoutMs – Délai max avant fallback cache (défaut 2000ms)
  * @returns {Promise<firebase.firestore.DocumentSnapshot>}
  */
-async function getDocWithTimeout(docRef, timeoutMs = 4000) {
+async function getDocWithTimeout(docRef, timeoutMs = 2000) {
   // Hors-ligne → lecture cache immédiate (pas de timeout réseau)
   if (!navigator.onLine) {
     try {

@@ -168,7 +168,7 @@ function displayHomeProgressBar(responses) {
     <div class="progressbar" style="height:14px;margin:4px 0">
       <div class="progress" style="height:14px;width:${perc}%;background:${percColor(perc)}"></div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.85em;color:#555;margin-top:4px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.85em;color:var(--text-secondary);margin-top:4px">
       <span>${total} questions</span>
       <span>✅ ${reussie}</span>
       <span>❌ ${ratee}</span>
@@ -310,7 +310,7 @@ async function initStats() {
     return;
   }
 
-  if (!auth.currentUser && !(localStorage.getItem('cachedUid') && !navigator.onLine)) {
+  if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
     console.error("Utilisateur non authentifié");
     window.location = 'index.html';
     return;
@@ -554,7 +554,7 @@ function afficherDailyChart(dailyHistory) {
   let html = `
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
       <strong>Activité quotidienne</strong>
-      <div style="font-size:0.8em;color:#666">
+      <div style="font-size:0.8em;color:var(--text-secondary)">
         7j: <b>${last7}</b> · 60j: <b>${total60}</b> · moy/7j: <b>${avg7}/j</b>
       </div>
     </div>
@@ -621,7 +621,7 @@ function afficherSessionChart(sessionHistory) {
   if (!sessions.length) {
     chartCont.innerHTML = `
       <div style="margin-bottom:10px"><strong>Historique des sessions</strong></div>
-      <p style="color:#aaa;text-align:center;">Aucune session enregistrée</p>`;
+      <p style="color:var(--text-secondary);text-align:center;">Aucune session enregistrée</p>`;
     return;
   }
 
@@ -636,7 +636,7 @@ function afficherSessionChart(sessionHistory) {
   let html = `
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
       <strong>Historique des sessions</strong>
-      <div style="font-size:0.8em;color:#666">
+      <div style="font-size:0.8em;color:var(--text-secondary)">
         ${totalSessions} session${totalSessions > 1 ? 's' : ''} · moy: <b>${avgPct}%</b> · 5 dern.: <b>${avgLast5}%</b>
       </div>
     </div>
