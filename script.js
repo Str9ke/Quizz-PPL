@@ -1609,6 +1609,44 @@ async function getDailyHistory(uid) {
 }
 
 /**
+ * enrichDailyHistoryFromResponses() – Complète les données dailyHistory
+ * en scannant les timestamps des réponses Firestore.
+ * Cela garantit que même si dailyHistory est vide (nouvellement ajouté),
+ * les jours avec des réponses apparaissent dans le graphique.
+ */
+function enrichDailyHistoryFromResponses(dailyHistory, responses) {
+  const countsFromTimestamps = {};
+  
+  Object.values(responses).forEach(r => {
+    let respTime = null;
+    if (r.timestamp) {
+      if (r.timestamp.seconds !== undefined) respTime = r.timestamp.seconds * 1000;
+      else if (typeof r.timestamp === 'number') respTime = r.timestamp;
+    } else if (r.lastUpdated) {
+      if (r.lastUpdated.seconds !== undefined) respTime = r.lastUpdated.seconds * 1000;
+      else if (typeof r.lastUpdated === 'number') respTime = r.lastUpdated;
+    }
+    if (!respTime) return;
+    
+    const d = new Date(respTime);
+    const key = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+    countsFromTimestamps[key] = (countsFromTimestamps[key] || 0) + 1;
+  });
+  
+  // Fusionner : prendre le max entre dailyHistory et les timestamps
+  // (dailyHistory est incrémental et plus fiable quand il existe,
+  //  mais pour les anciens jours sans dailyHistory on utilise les timestamps)
+  const merged = { ...countsFromTimestamps };
+  Object.entries(dailyHistory).forEach(([key, val]) => {
+    merged[key] = Math.max(merged[key] || 0, val);
+  });
+  
+  return merged;
+}
+
+/**
  * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues, marquées) pour une catégorie
  */
 function computeStatsFor(category, responses) {
@@ -1759,9 +1797,11 @@ async function initStats() {
 
     afficherStats(groupsData);
 
-    // Charger et afficher l'historique quotidien
+    // Charger l'historique quotidien et le compléter depuis les timestamps des réponses
     const dailyHistory = await getDailyHistory(uid);
-    afficherDailyChart(dailyHistory);
+    // Compléter/corriger dailyHistory avec les timestamps réels des réponses
+    const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses || {});
+    afficherDailyChart(enrichedHistory);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
@@ -1915,7 +1955,7 @@ function afficherDailyChart(dailyHistory) {
   `;
 
   days.forEach((day, idx) => {
-    const h = day.count ? Math.max(Math.round((day.count / maxCount) * maxBarH), 3) : 0;
+    const h = day.count ? Math.max(Math.round((day.count / maxCount) * maxBarH), 6) : 0;
     const isToday = idx === days.length - 1;
     const dd = day.date.getDate();
     const isFirstOfMonth = dd === 1;
@@ -1926,9 +1966,11 @@ function afficherDailyChart(dailyHistory) {
       String(day.date.getMonth() + 1).padStart(2, '0');
     
     let bottomLabel = '';
-    if (isFirstOfMonth) {
+    if (isToday) {
+      bottomLabel = "Auj.";
+    } else if (isFirstOfMonth) {
       bottomLabel = monthNames[day.date.getMonth()];
-    } else if (idx % 7 === 0 || isToday) {
+    } else if (idx % 7 === 0) {
       bottomLabel = dayLabel;
     }
 
