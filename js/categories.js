@@ -57,7 +57,7 @@ async function prefetchAllJsonFiles() {
       _jsonCache.set(files[i], Array.isArray(r.value) ? r.value : []);
     }
   });
-  console.log(`[prefetch] ${_jsonCache.size}/${files.length} fichiers JSON chargés en ${Math.round(performance.now() - t0)}ms`);
+  console.log(`[prefetch] ${_jsonCache.size}/${files.length} JSON chargés`);
 }
 
 function getNormalizedCategory(cat) {
@@ -194,7 +194,6 @@ function getNormalizedSelectedCategory(selected) {
  * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
 async function updateModeCounts() {
-    console.log(">>> updateModeCounts()");
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
     // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
     // because chargerQuestions already loaded the right set with correct individual categories
@@ -616,7 +615,6 @@ async function categoryChanged() {
 
 
 async function filtrerQuestions(mode, nb) {
-  console.log(`>>> filtrerQuestions(mode=${mode}, nb=${nb})`);
   if (!questions.length) {
     console.warn("    questions[] est vide");
     currentQuestions = [];
@@ -663,8 +661,6 @@ async function filtrerQuestions(mode, nb) {
       .filter(q => responses[getKeyFor(q)]?.marked)
       .slice(0, nb);
   }
-
-  console.log("    Nombre de questions filtrées:", currentQuestions.length);
 }
 
 /**

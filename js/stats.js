@@ -29,53 +29,17 @@ async function displayDailyStats(forcedUid) {
     console.warn('[displayDailyStats] no uid, abort');
     return;
   }
-  console.log('[displayDailyStats] uid=', uid);
-  
   try {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const responses = doc.exists ? doc.data().responses || {} : {};
-    
-    // DEBUG : Afficher toutes les réponses brutes pour comprendre la structure
-    const sampleResponses = Object.entries(responses).slice(0, 3).map(([k, v]) => {
-      let ts = null;
-      if (v.timestamp?.seconds !== undefined) {
-        ts = v.timestamp.seconds * 1000;
-      } else if (typeof v.timestamp === 'number') {
-        ts = v.timestamp;
-      } else if (v.lastUpdated?.seconds !== undefined) {
-        ts = v.lastUpdated.seconds * 1000;
-      } else if (typeof v.lastUpdated === 'number') {
-        ts = v.lastUpdated;
-      }
-      return {
-        key: k,
-        hasTimestamp: !!v.timestamp,
-        hasLastUpdated: !!v.lastUpdated,
-        extractedTimestamp: ts,
-        extractedDate: ts ? new Date(ts).toISOString() : 'N/A',
-        fullResponse: v
-      };
-    });
-    console.log('[displayDailyStats-RAW-RESPONSES]', {
-      totalResponses: Object.keys(responses).length,
-      sampleResponses: sampleResponses
-    });
     
     // Aujourd'hui à minuit (heure locale)
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayStartMs = todayStart.getTime();
     
-    console.log('[displayDailyStats-TIME-DEBUG]', {
-      now: now.toISOString(),
-      todayStart: todayStart.toISOString(),
-      todayStartMs: todayStartMs
-    });
-    
     // Compter les réponses d'aujourd'hui
     let answeredToday = 0;
-    const oldResponses = [];
-    const noTimestampResponses = []; // DEBUG - réponses sans timestamp
     Object.entries(responses).forEach(([key, response]) => {
       // Les réponses peuvent avoir un timestamp (Firestore FieldValue)
       let respTime = null;
@@ -98,36 +62,8 @@ async function displayDailyStats(forcedUid) {
       // Si on a un timestamp et qu'il est >= à aujourd'hui minuit
       if (respTime && respTime >= todayStartMs) {
         answeredToday++;
-        console.log('[displayDailyStats-MATCH]', key, 'respTime:', new Date(respTime).toISOString());
-      } else if (respTime) {
-        // DEBUG : Montrer quelques réponses qui NE correspondent PAS
-        if (oldResponses.length < 5) {
-          oldResponses.push({
-            key: key,
-            respTime: respTime,
-            respDate: new Date(respTime).toISOString(),
-            daysOld: Math.round((todayStartMs - respTime) / (1000 * 60 * 60 * 24))
-          });
-        }
-      } else {
-        // Pas de timestamp du tout
-        if (noTimestampResponses.length < 5) {
-          noTimestampResponses.push({
-            key: key,
-            response: response,
-            hasTimestamp: !!response.timestamp,
-            hasLastUpdated: !!response.lastUpdated
-          });
-        }
       }
     });
-    
-    if (oldResponses.length > 0) {
-      console.log('[displayDailyStats-OLD-RESPONSES]', 'Exemples de réponses plus anciennes:', oldResponses);
-    }
-    if (noTimestampResponses.length > 0) {
-      console.log('[displayDailyStats-NO-TIMESTAMP]', 'Réponses SANS timestamp:', noTimestampResponses);
-    }
     
     // Lire aussi le compteur direct localStorage (fiable offline même si Firestore pas prêt)
     const todayDate = new Date().toISOString().slice(0, 10);
@@ -138,7 +74,6 @@ async function displayDailyStats(forcedUid) {
     const todayKey = 'dailyCountRatchet_' + todayDate;
     const previousMax = parseInt(localStorage.getItem(todayKey)) || 0;
     if (answeredToday < previousMax) {
-      console.log('[displayDailyStats] Ratchet: affiché', previousMax, 'au lieu de', answeredToday);
       answeredToday = previousMax;
     } else {
       localStorage.setItem(todayKey, answeredToday);
@@ -148,7 +83,6 @@ async function displayDailyStats(forcedUid) {
     if (statsBar && countElem) {
       countElem.textContent = answeredToday;
       statsBar.style.display = 'block';
-      console.log('[displayDailyStats] Questions répondues aujourd\'hui:', answeredToday);
     } else {
       console.warn('[displayDailyStats] Éléments HTML statsBar ou countElem non trouvés');
     }
@@ -233,7 +167,6 @@ async function saveDailyCount(uid, answeredCount) {
     existing[dateKey] = (existing[dateKey] || 0) + answeredCount;
     
     await docRef.set({ dailyHistory: existing }, { merge: true });
-    console.log('[saveDailyCount]', dateKey, ':', existing[dateKey]);
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
     throw e; // Propager pour que saveDailyCountOffline tombe dans le fallback IndexedDB
@@ -369,8 +302,6 @@ function computeStatsForFirestore(categoryQuestions, responses) {
  * Organise les catégories en groupes pour un affichage compact.
  */
 async function initStats() {
-  console.log(">>> initStats()");
-  const t0 = performance.now();
 
   // INSTANT : afficher les sessions et le compteur quotidien depuis localStorage
   // AVANT toute opération Firestore (qui peut prendre 10-15s offline sur Android)
@@ -407,7 +338,6 @@ async function initStats() {
   try {
     // Pré-charger tous les JSON en parallèle (depuis le cache SW = quasi-instantané)
     await prefetchAllJsonFiles();
-    console.log(`[initStats] prefetch done in ${Math.round(performance.now() - t0)}ms`);
 
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const data = doc.exists ? doc.data() : { responses: {} };
@@ -506,7 +436,6 @@ async function initStats() {
     // Trier par date (arrayUnion ne garantit pas l'ordre)
     sessionHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     afficherSessionChart(sessionHistory);
-    console.log(`[initStats] terminé en ${Math.round(performance.now() - t0)}ms`);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
@@ -524,10 +453,7 @@ function _saveSessionToLocalBackup(correct, total, category, sessionDate) {
     const backup = JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
     const date = sessionDate || new Date().toISOString();
     // Dédupliquer : ne pas ajouter si une session avec la même date existe déjà
-    if (backup.some(s => s.date === date)) {
-      console.log('[_saveSessionToLocalBackup] session déjà présente, ignorée');
-      return;
-    }
+    if (backup.some(s => s.date === date)) return;
     backup.push({
       date,
       correct,
@@ -538,7 +464,6 @@ function _saveSessionToLocalBackup(correct, total, category, sessionDate) {
     // Garder les 60 dernières max
     if (backup.length > 60) backup.splice(0, backup.length - 60);
     localStorage.setItem('offlineSessionBackup', JSON.stringify(backup));
-    console.log('[_saveSessionToLocalBackup] session ajoutée au backup localStorage');
   } catch (e) {
     console.warn('[_saveSessionToLocalBackup] erreur:', e.message);
   }
@@ -577,14 +502,12 @@ function _cleanLocalSessionBackup(firestoreSessions) {
     const remaining = backup.filter(s => !firestoreDates.has(s.date));
     if (remaining.length !== backup.length) {
       localStorage.setItem('offlineSessionBackup', JSON.stringify(remaining));
-      console.log(`[_cleanLocalSessionBackup] nettoyé: ${backup.length - remaining.length} sessions déjà dans Firestore`);
     }
   } catch (e) { /* ignore */ }
 }
 
 /** afficherStats — Affiche les statistiques par groupe */
 function afficherStats(groupsData) {
-  console.log(">>> afficherStats()", groupsData?.length || 0);
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
@@ -840,7 +763,6 @@ function afficherSessionChart(sessionHistory) {
 
 /** synchroniserStatistiques — Synchronise les stats avec Firestore */
 async function synchroniserStatistiques() {
-  console.log(">>> synchroniserStatistiques()");
 
   if (typeof auth === 'undefined' || !auth) {
     console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
@@ -860,18 +782,12 @@ async function synchroniserStatistiques() {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     if (doc.exists) {
       const data = doc.data();
-      console.log("Données récupérées depuis Firestore :", data);
-
       // Synchroniser les réponses dans localStorage
       if (data.responses) {
         Object.keys(data.responses).forEach(key => {
           localStorage.setItem(key, data.responses[key]);
         });
       }
-
-      console.log("Statistiques synchronisées avec Firestore.");
-    } else {
-      console.log("Aucune donnée trouvée dans Firestore pour cet utilisateur.");
     }
   } catch (error) {
     console.error("Erreur lors de la synchronisation des statistiques :", error);
@@ -883,7 +799,6 @@ async function synchroniserStatistiques() {
  * resetStats() – Réinitialise les statistiques stockées dans le localStorage et Firestore
  */
 async function resetStats() {
-  console.log(">>> resetStats()");
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) return;
 
@@ -894,13 +809,11 @@ async function resetStats() {
     if (k && k.startsWith("question_")) toRemove.push(k);
   }
   toRemove.forEach(k => localStorage.removeItem(k));
-  console.log("Statistiques locales réinitialisées.");
 
   try {
     // Remplacer le delete() par un set() à responses: {}
     await db.collection('quizProgress').doc(uid)
       .set({ responses: {}, lastUpdated: firebase.firestore.Timestamp.now() }, { merge: true });
-    console.log("Réponses effacées dans Firestore !");
     alert("Les statistiques ont été réinitialisées !");
     window.location.reload();
   } catch (error) {

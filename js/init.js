@@ -1,7 +1,6 @@
 // === init.js === Page initialization ===
 
 async function initIndex() {
-  console.log(">>> initIndex()");
 
   // INSTANT : afficher le compteur quotidien depuis localStorage
   // AVANT toute opération Firestore/prefetch (qui peut prendre 10-15s offline)

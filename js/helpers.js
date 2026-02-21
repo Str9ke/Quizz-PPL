@@ -89,7 +89,6 @@ function getKeyFor(q) {
 
 // Placeholder to avoid errors
 function updateMarkedCount() {
-  console.log("updateMarkedCount called");
 }
 
 /**
@@ -113,7 +112,6 @@ function ensureDailyStatsBarVisible() {
     console.warn('[dailyStatsBar] recreated dynamically');
   }
   statsBar.style.display = 'block';
-  console.log('[dailyStatsBar] visible=', !!statsBar);
 }
 
 /**
@@ -124,7 +122,6 @@ function toggleAutoStart() {
   if (checkbox) {
     const isChecked = checkbox.checked;
     localStorage.setItem('autoStartQuiz', isChecked ? 'true' : 'false');
-    console.log('autoStartQuiz:', isChecked);
   }
 }
 

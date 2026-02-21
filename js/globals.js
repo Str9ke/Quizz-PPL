@@ -70,7 +70,6 @@ function showBuildTag(targetId = 'buildInfo') {
     }
   }
   el.textContent = `Build: ${APP_BUILD_TAG}`;
-  console.log('[buildTag]', APP_BUILD_TAG);
 }
 
 // Variables de comptage par catégorie

@@ -9,30 +9,14 @@
         const mode = localStorage.getItem('quizMode');
         const nb = localStorage.getItem('quizNbQuestions');
         
-        const debugInfo = {
-          autoStartQuiz: autoStartQuiz,
-          quizCategory: cat,
-          quizMode: mode,
-          quizNbQuestions: nb
-        };
-        
-        console.log('%c[EARLY-DEBUG-AUTOSTART]', 'color:red;font-weight:bold;font-size:16px', debugInfo);
-        
         // Si autoStartQuiz est activé, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
-          console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
           if (cat && mode && nb) {
-            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec REGENERATION des questions');
             // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
             localStorage.removeItem('currentQuestions');
-            console.log('[EARLY-ACTION] currentQuestions supprimé du localStorage');
             // Redirection IMMEDIATE sans setTimeout
             window.location = 'quiz.html';
-          } else {
-            console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activé mais pas de config trouvée');
           }
-        } else {
-          console.log('%c[EARLY-AUTOSTART-DISABLED]', 'color:blue', 'autoStartQuiz désactivé ou URL avec ?accueil');
         }
       })();
     </script>
@@ -82,7 +66,6 @@
       if (user) {
         // Sauvegarder le UID dans localStorage pour le mode offline
         localStorage.setItem('cachedUid', user.uid);
-        console.log("Utilisateur connecté :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (!indexInitTriggered && typeof initIndex === 'function') {
@@ -91,7 +74,6 @@
         }
       } else if (localStorage.getItem('cachedUid')) {
         // Auth null mais UID en cache → démarrer en mode offline (navigator.onLine peut mentir)
-        console.log("[offline] Auth null mais UID en cache, démarrage offline");
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (!indexInitTriggered && typeof initIndex === 'function') {
@@ -99,7 +81,6 @@
           initIndex();
         }
       } else {
-        console.log("Aucun utilisateur connecté");
         document.getElementById("loginContainer").style.display = "block";
         document.getElementById("quizContainer").style.display = "none";
       }
@@ -107,7 +88,6 @@
     // Sécurité : si auth ne fire pas dans les 2s et qu'on a un cachedUid, démarrer quand même
     setTimeout(() => {
       if (!indexInitTriggered && localStorage.getItem('cachedUid')) {
-        console.log('[offline] index.html: Auth timeout, démarrage avec cachedUid');
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         indexInitTriggered = true;
@@ -210,13 +190,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260223h"></script>
-  <script src="js/helpers.js?v=20260223h"></script>
-  <script src="js/categories.js?v=20260223h"></script>
-  <script src="js/stats.js?v=20260223h"></script>
-  <script src="js/quiz.js?v=20260223h"></script>
-  <script src="js/init.js?v=20260223h"></script>
-  <script src="js/offline.js?v=20260223h"></script>
+  <script src="js/globals.js?v=20260223i"></script>
+  <script src="js/helpers.js?v=20260223i"></script>
+  <script src="js/categories.js?v=20260223i"></script>
+  <script src="js/stats.js?v=20260223i"></script>
+  <script src="js/quiz.js?v=20260223i"></script>
+  <script src="js/init.js?v=20260223i"></script>
+  <script src="js/offline.js?v=20260223i"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
@@ -232,13 +212,11 @@
 
       try {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        console.log("Connecté :", userCredential.user.uid);
       } catch (error) {
         console.error("Erreur lors de la connexion :", error);
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
           try {
             const newUser = await auth.createUserWithEmailAndPassword(email, password);
-            console.log("Utilisateur créé et connecté :", newUser.user.uid);
           } catch (creationError) {
             console.error("Erreur lors de la création du compte :", creationError);
             alert("Erreur lors de la création du compte : " + creationError.message);
@@ -253,7 +231,6 @@
       try {
         localStorage.removeItem('cachedUid');
         await auth.signOut();
-        console.log("Déconnecté !");
         window.location.reload();
       } catch (error) {
         console.error("Erreur lors de la déconnexion :", error);

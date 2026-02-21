@@ -40,7 +40,6 @@ async function addPendingWrite(operation) {
     operation.createdAt = Date.now();
     store.add(operation);
     tx.oncomplete = () => {
-      console.log('[offline] Écriture mise en file d\'attente:', operation.type);
       updateOfflineBadge();
       resolve();
     };
@@ -123,7 +122,6 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
       { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
       { merge: true }
     );
-    console.log('[saveResponses] Écrit via Firestore (online ou queue offline)');
     // Lire depuis le cache local (inclut les écritures en attente)
     const fresh = await db.collection('quizProgress').doc(uid).get({ source: 'cache' });
     return normalizeResponses(fresh.exists ? fresh.data().responses : merged);
@@ -150,7 +148,6 @@ async function saveToggleWithOfflineFallback(uid, key, payload) {
   await _ensurePersistence();
   try {
     await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
-    console.log('[saveToggle] Écrit via Firestore:', key);
   } catch (e) {
     console.warn('[offline] Toggle sauvegardé IndexedDB:', key);
     await addPendingWrite({ type: 'saveToggle', uid, key, data: payload });
@@ -163,7 +160,6 @@ async function saveToggleWithOfflineFallback(uid, key, payload) {
 async function saveDailyCountOffline(uid, count) {
   try {
     await saveDailyCount(uid, count);
-    console.log('[saveDailyCountOffline] Écrit via Firestore');
   } catch (e) {
     console.warn('[offline] dailyCount sauvegardé IndexedDB');
     await addPendingWrite({
@@ -190,7 +186,6 @@ async function saveSessionResultOffline(uid, correct, total, category, sessionDa
   }
   try {
     await saveSessionResult(uid, correct, total, category, sessionDate);
-    console.log('[saveSessionResultOffline] Écrit via Firestore');
   } catch (e) {
     console.warn('[offline] sessionResult sauvegardé IndexedDB');
     await addPendingWrite({
@@ -217,7 +212,6 @@ async function syncPendingWrites() {
   // Vérifier la vraie connectivité avant de tenter la sync
   const reallyOnline = await _checkRealConnectivity();
   if (!reallyOnline) {
-    console.log('[offline] syncPendingWrites: pas vraiment en ligne, annulation');
     return;
   }
   
@@ -227,9 +221,7 @@ async function syncPendingWrites() {
   // D'abord, flusher les écritures Firestore en attente (enablePersistence buffer)
   try {
     if (typeof db.waitForPendingWrites === 'function') {
-      console.log('[offline] Flush des écritures Firestore en attente...');
       await db.waitForPendingWrites();
-      console.log('[offline] Écritures Firestore flushées');
     }
   } catch (e) {
     console.warn('[offline] waitForPendingWrites échoué:', e.message);
@@ -241,12 +233,10 @@ async function syncPendingWrites() {
   
   const pending = await getPendingWrites();
   if (pending.length === 0) {
-    console.log('[offline] Aucune écriture IndexedDB en attente');
     return;
   }
   
   isSyncing = true;
-  console.log(`[offline] Synchronisation de ${pending.length} écritures en attente...`);
   showSyncNotification(`Synchronisation de ${pending.length} éléments...`);
   
   let synced = 0;
@@ -309,7 +299,6 @@ async function syncPendingWrites() {
     ? `Synchronisation terminée ! ${synced} élément(s) envoyé(s).`
     : `Sync partielle : ${synced} OK, ${failed} en erreur.`;
   showSyncNotification(msg);
-  console.log(`[offline] Sync terminée: ${synced} OK, ${failed} erreurs`);
   
   // Recharger les réponses fraîches depuis Firestore
   if (synced > 0 && uid) {
@@ -330,7 +319,6 @@ async function syncPendingWrites() {
     
     // Si on est sur la page stats.html, rafraîchir l'affichage
     if (window.location.pathname.endsWith('stats.html') && typeof initStats === 'function') {
-      console.log('[offline] Refresh de stats.html après sync');
       try { await initStats(); } catch (e) { /* ignore */ }
     }
   }
@@ -346,10 +334,8 @@ async function _syncLocalSessionsToFirestore(uid) {
   const localSessions = typeof _getLocalSessionBackup === 'function'
     ? _getLocalSessionBackup() : [];
   if (!localSessions.length) {
-    console.log('[sync] Aucune session localStorage à synchroniser');
     return;
   }
-  console.log('[sync] Synchronisation de', localSessions.length, 'sessions localStorage vers Firestore...');
   const docRef = db.collection('quizProgress').doc(uid);
   let pushed = 0;
   // Pousser par lots de 10 (pour éviter des écritures trop grosses)
@@ -367,7 +353,6 @@ async function _syncLocalSessionsToFirestore(uid) {
       );
       pushed += batch.length;
     } catch (e) {
-      console.warn('[sync] Erreur push sessions batch', i, ':', e.message);
     }
   }
   console.log('[sync]', pushed, '/', localSessions.length, 'sessions pushées vers Firestore');
@@ -448,12 +433,10 @@ async function _flushFirestoreAndRefreshStats() {
   try {
     if (typeof db !== 'undefined' && typeof db.waitForPendingWrites === 'function') {
       await db.waitForPendingWrites();
-      console.log('[online] Firestore pending writes flushées');
     }
   } catch (e) { /* ignore */ }
   // Rafraîchir stats.html si on y est
   if (window.location.pathname.endsWith('stats.html') && typeof initStats === 'function') {
-    console.log('[online] Refresh de stats.html après reconnexion');
     try { await initStats(); } catch (e) { /* ignore */ }
   }
 }

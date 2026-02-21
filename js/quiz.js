@@ -1,7 +1,6 @@
 // === quiz.js === Quiz display, validation, immediate correction ===
 
 async function demarrerQuiz() {
-  console.log(">>> demarrerQuiz()");
   selectedCategory = document.getElementById('categorie').value;
   modeQuiz = document.getElementById('mode').value;
   nbQuestions = parseInt(document.getElementById('nbQuestions').value);
@@ -31,7 +30,6 @@ async function demarrerQuiz() {
  * toggleMarquerQuestion() – Marque ou supprime une question marquée
  */
 function toggleMarquerQuestion(questionId, button) {
-  console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer ou supprimer une question.");
@@ -83,7 +81,6 @@ function toggleMarquerQuestion(questionId, button) {
 }
 
 function toggleImportantQuestion(questionId, button) {
-  console.log(">>> toggleImportantQuestion(questionId=" + questionId + ")");
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer une question comme importante.");
@@ -133,7 +130,6 @@ function toggleImportantQuestion(questionId, button) {
  * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
 function afficherBoutonsMarquer() {
-  console.log(">>> afficherBoutonsMarquer()");
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
     // remove existing action buttons to avoid duplicates
@@ -158,7 +154,6 @@ function afficherBoutonsMarquer() {
 }
 
 async function initQuiz() {
-  console.log(">>> initQuiz()");
   // redirect if not logged in (sauf si offline avec UID en cache)
   if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
     window.location = 'index.html';
@@ -222,9 +217,6 @@ async function initQuiz() {
  * afficherQuiz() – Affiche les questions du quiz sur quiz.html
  */
 function afficherQuiz() {
-  console.log(">>> afficherQuiz()");
-  console.log("    currentQuestions=", currentQuestions);
-
   // Reset validation state pour le nouveau quiz
   window._quizValidated = false;
   window._immediateAnswers = {};
@@ -345,10 +337,8 @@ function handleImmediateAnswer(q, selectedRadio) {
  * validerReponses() – Traite les réponses de l'utilisateur, affiche la correction et sauvegarde la progression
  */
 async function validerReponses() {
-    console.log(">>> validerReponses()");
     // Empêcher la double validation
     if (window._quizValidated) {
-      console.log('[validerReponses] Déjà validé, ignoré');
       return;
     }
     window._quizValidated = true;
@@ -448,7 +438,6 @@ async function validerReponses() {
  * afficherCorrection() – Affiche la correction sur quiz.html
  */
 function afficherCorrection() {
-  console.log(">>> afficherCorrection()");
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
 
