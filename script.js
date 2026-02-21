@@ -1566,7 +1566,7 @@ function computeStatsFor(category, responses) {
  * computeStatsForFirestore() – Calcule les stats pour une catégorie à partir des réponses Firestore
  */
 function computeStatsForFirestore(categoryQuestions, responses) {
-  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0;
+  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
     const r = responses[key] || {};
@@ -1574,147 +1574,221 @@ function computeStatsForFirestore(categoryQuestions, responses) {
     if (r.status === 'réussie')      reussie++;
     else if (r.status === 'ratée')    ratee++;
     else                               nonvue++;
-    // marquée en supplément
+    // marquée / importante en supplément
     if (r.marked)                     marquee++;
+    if (r.important)                  importante++;
   });
-  return { reussie, ratee, nonvue, marquee };
+  return { reussie, ratee, nonvue, marquee, importante };
 }
 
 /**
  * initStats() – Chargement initial sur stats.html pour afficher les statistiques
+ * Organise les catégories en groupes pour un affichage compact.
  */
 async function initStats() {
   console.log(">>> initStats()");
 
   if (typeof auth === 'undefined' || !auth) {
-    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
+    console.error("Firebase Auth n'est pas initialisé.");
     alert("Erreur : Firebase Auth n'est pas initialisé.");
     return;
   }
 
   if (!auth.currentUser) {
-    console.error("Utilisateur non authentifié, impossible de charger les statistiques");
+    console.error("Utilisateur non authentifié");
     window.location = 'index.html';
     return;
   }
-
-  console.log("Utilisateur authentifié :", auth.currentUser.uid);
 
   const uid = auth.currentUser.uid;
 
   try {
     const doc = await db.collection('quizProgress').doc(uid).get();
     const data = doc.exists ? doc.data() : { responses: {} };
-    console.log("Données récupérées depuis Firestore :", data);
 
-    // Pour chaque catégorie, charge les questions et calcule les stats à partir des réponses Firestore
-    const categoriesList = [
-      { label: "PROCÉDURE RADIO", value: "PROCÉDURE RADIO" },
-      { label: "PROCÉDURES OPÉRATIONNELLES", value: "PROCÉDURES OPÉRATIONNELLES" },
-      { label: "RÉGLEMENTATION", value: "RÉGLEMENTATION" },
-      { label: "CONNAISSANCE DE L'AVION", value: "CONNAISSANCE DE L'AVION" },
-      { label: "INSTRUMENTATION", value: "INSTRUMENTATION" },
-      { label: "MASSE ET CENTRAGE", value: "MASSE ET CENTRAGE" },
-      { label: "MOTORISATION", value: "MOTORISATION" },
-      { label: "AERODYNAMIQUE PRINCIPES DU VOL", value: "AERODYNAMIQUE PRINCIPES DU VOL" },
-      { label: "EASA PROCEDURES", value: "EASA PROCEDURES" },
-      { label: "EASA AERODYNAMIQUE", value: "EASA AERODYNAMIQUE" },
-      { label: "EASA NAVIGATION", value: "EASA NAVIGATION" },
-      { label: "EASA CONNAISSANCE DE L'AVION", value: "EASA CONNAISSANCE DE L'AVION" },
-      { label: "EASA METEOROLOGIE", value: "EASA METEOROLOGIE" },
-      { label: "EASA PERFORMANCE ET PLANIFICATION", value: "EASA PERFORMANCE ET PLANIFICATION" },
-      { label: "EASA REGLEMENTATION", value: "EASA REGLEMENTATION" },
-      { label: "EASA PERFORMANCES HUMAINES", value: "EASA PERFORMANCES HUMAINES" },
-      { label: "EASA - TOUTES", value: "EASA ALL" },
-      { label: "GLIGLI COMMUNICATIONS (HARD)", value: "GLIGLI COMMUNICATIONS HARD" },
-      { label: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (HARD)", value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD" },
-      { label: "GLIGLI ÉPREUVE COMMUNE (HARD)", value: "GLIGLI EPREUVE COMMUNE HARD" },
-      { label: "GLIGLI ÉPREUVE SPÉCIFIQUE (HARD)", value: "GLIGLI EPREUVE SPECIFIQUE HARD" },
-      { label: "GLIGLI MÉTÉOROLOGIE (HARD)", value: "GLIGLI METEOROLOGIE HARD" },
-      { label: "GLIGLI NAVIGATION (HARD)", value: "GLIGLI NAVIGATION HARD" },
-      { label: "GLIGLI PERFORMANCE HUMAINE (HARD)", value: "GLIGLI PERFORMANCE HUMAINE HARD" },
-      { label: "GLIGLI PERFORMANCES & PRÉP. VOL (HARD)", value: "GLIGLI PERFORMANCES PREPARATION VOL HARD" },
-      { label: "GLIGLI PRINCIPES DU VOL (HARD)", value: "GLIGLI PRINCIPES DU VOL HARD" },
-      { label: "GLIGLI PROCÉDURES OPÉRATIONNELLES (HARD)", value: "GLIGLI PROCEDURES OPERATIONNELLES HARD" },
-      { label: "GLIGLI RÉGLEMENTATION (HARD)", value: "GLIGLI REGLEMENTATION HARD" },
-      { label: "GLIGLI COMMUNICATIONS (EASY)", value: "GLIGLI COMMUNICATIONS EASY" },
-      { label: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (EASY)", value: "GLIGLI CONNAISSANCES GENERALES AERONEF EASY" },
-      { label: "GLIGLI ÉPREUVE COMMUNE (EASY)", value: "GLIGLI EPREUVE COMMUNE EASY" },
-      { label: "GLIGLI ÉPREUVE SPÉCIFIQUE (EASY)", value: "GLIGLI EPREUVE SPECIFIQUE EASY" },
-      { label: "GLIGLI MÉTÉOROLOGIE (EASY)", value: "GLIGLI METEOROLOGIE EASY" },
-      { label: "GLIGLI NAVIGATION (EASY)", value: "GLIGLI NAVIGATION EASY" },
-      { label: "GLIGLI PERFORMANCE HUMAINE (EASY)", value: "GLIGLI PERFORMANCE HUMAINE EASY" },
-      { label: "GLIGLI PERFORMANCES & PRÉP. VOL (EASY)", value: "GLIGLI PERFORMANCES PREPARATION VOL EASY" },
-      { label: "GLIGLI PRINCIPES DU VOL (EASY)", value: "GLIGLI PRINCIPES DU VOL EASY" },
-      { label: "GLIGLI PROCÉDURES OPÉRATIONNELLES (EASY)", value: "GLIGLI PROCEDURES OPERATIONNELLES EASY" },
-      { label: "GLIGLI RÉGLEMENTATION (EASY)", value: "GLIGLI REGLEMENTATION EASY" },
-      { label: "GLIGLI - TOUTES", value: "GLIGLI ALL" },
-      { label: "AUTRES (hors EASA/GLIGLI)", value: "AUTRES" }
+    // Groupes de catégories (sans doublons d'agrégats)
+    const groups = [
+      {
+        name: "CLASSIQUES",
+        categories: [
+          { label: "Procédure Radio", value: "PROCÉDURE RADIO" },
+          { label: "Procédures Op.", value: "PROCÉDURES OPÉRATIONNELLES" },
+          { label: "Réglementation", value: "RÉGLEMENTATION" },
+          { label: "Connaissance Avion", value: "CONNAISSANCE DE L'AVION" },
+          { label: "Instrumentation", value: "INSTRUMENTATION" },
+          { label: "Masse & Centrage", value: "MASSE ET CENTRAGE" },
+          { label: "Motorisation", value: "MOTORISATION" },
+          { label: "Aérodynamique", value: "AERODYNAMIQUE PRINCIPES DU VOL" }
+        ]
+      },
+      {
+        name: "EASA",
+        categories: [
+          { label: "Procédures", value: "EASA PROCEDURES" },
+          { label: "Aérodynamique", value: "EASA AERODYNAMIQUE" },
+          { label: "Navigation", value: "EASA NAVIGATION" },
+          { label: "Connaissance Avion", value: "EASA CONNAISSANCE DE L'AVION" },
+          { label: "Météorologie", value: "EASA METEOROLOGIE" },
+          { label: "Perf. & Planif.", value: "EASA PERFORMANCE ET PLANIFICATION" },
+          { label: "Réglementation", value: "EASA REGLEMENTATION" },
+          { label: "Perf. Humaines", value: "EASA PERFORMANCES HUMAINES" }
+        ]
+      },
+      {
+        name: "GLIGLI HARD",
+        categories: [
+          { label: "Communications", value: "GLIGLI COMMUNICATIONS HARD" },
+          { label: "Conn. Gén. Aéronef", value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD" },
+          { label: "Épreuve Commune", value: "GLIGLI EPREUVE COMMUNE HARD" },
+          { label: "Épreuve Spécifique", value: "GLIGLI EPREUVE SPECIFIQUE HARD" },
+          { label: "Météorologie", value: "GLIGLI METEOROLOGIE HARD" },
+          { label: "Navigation", value: "GLIGLI NAVIGATION HARD" },
+          { label: "Perf. Humaine", value: "GLIGLI PERFORMANCE HUMAINE HARD" },
+          { label: "Perf. & Prép. Vol", value: "GLIGLI PERFORMANCES PREPARATION VOL HARD" },
+          { label: "Principes du Vol", value: "GLIGLI PRINCIPES DU VOL HARD" },
+          { label: "Proc. Op.", value: "GLIGLI PROCEDURES OPERATIONNELLES HARD" },
+          { label: "Réglementation", value: "GLIGLI REGLEMENTATION HARD" }
+        ]
+      },
+      {
+        name: "GLIGLI EASY",
+        categories: [
+          { label: "Communications", value: "GLIGLI COMMUNICATIONS EASY" },
+          { label: "Conn. Gén. Aéronef", value: "GLIGLI CONNAISSANCES GENERALES AERONEF EASY" },
+          { label: "Épreuve Commune", value: "GLIGLI EPREUVE COMMUNE EASY" },
+          { label: "Épreuve Spécifique", value: "GLIGLI EPREUVE SPECIFIQUE EASY" },
+          { label: "Météorologie", value: "GLIGLI METEOROLOGIE EASY" },
+          { label: "Navigation", value: "GLIGLI NAVIGATION EASY" },
+          { label: "Perf. Humaine", value: "GLIGLI PERFORMANCE HUMAINE EASY" },
+          { label: "Perf. & Prép. Vol", value: "GLIGLI PERFORMANCES PREPARATION VOL EASY" },
+          { label: "Principes du Vol", value: "GLIGLI PRINCIPES DU VOL EASY" },
+          { label: "Proc. Op.", value: "GLIGLI PROCEDURES OPERATIONNELLES EASY" },
+          { label: "Réglementation", value: "GLIGLI REGLEMENTATION EASY" }
+        ]
+      }
     ];
 
-    const statsArr = [];
-    for (const cat of categoriesList) {
-      try {
-        await chargerQuestions(cat.value);
-        const catQuestions = [...questions];
-        statsArr.push({ label: cat.label, stats: computeStatsForFirestore(catQuestions, data.responses) });
-      } catch (err) {
-        console.error("Stat error for category", cat.value, err);
-        statsArr.push({ label: cat.label, stats: { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 } });
+    // Charger les stats pour chaque catégorie individuelle
+    const groupsData = [];
+    for (const group of groups) {
+      const catStats = [];
+      for (const cat of group.categories) {
+        try {
+          await chargerQuestions(cat.value);
+          const catQuestions = [...questions];
+          catStats.push({ label: cat.label, stats: computeStatsForFirestore(catQuestions, data.responses) });
+        } catch (err) {
+          console.error("Stat error for", cat.value, err);
+          catStats.push({ label: cat.label, stats: { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0 } });
+        }
       }
+      groupsData.push({ name: group.name, categories: catStats });
     }
 
-    afficherStats(statsArr);
+    afficherStats(groupsData);
   } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques :", error);
+    console.error("Erreur stats:", error);
     afficherStats([]);
   }
 }
 
 /**
- * afficherStats() – Affiche les statistiques sur stats.html, y compris les marquées
+ * afficherStats() – Affiche les statistiques groupées, compactes, avec barres de progression colorées
  */
-function afficherStats(statsList) {
-  console.log(">>> afficherStats()", statsList?.length || 0);
+function afficherStats(groupsData) {
+  console.log(">>> afficherStats()", groupsData?.length || 0);
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
-  if (!Array.isArray(statsList) || statsList.length === 0) {
+  if (!Array.isArray(groupsData) || groupsData.length === 0) {
     cont.innerHTML = '<p>Aucune statistique disponible.</p>';
     return;
   }
 
-  const totals = statsList.map(s => s.stats.reussie + s.stats.ratee + s.stats.nonvue + s.stats.marquee);
-  const totalGlobal = totals.reduce((a,b)=>a+b,0);
-  const reussiesGlobal = statsList.reduce((a,s)=>a + (s.stats.reussie||0),0);
-  const marqueesGlobal = statsList.reduce((a,s)=>a + (s.stats.marquee||0),0);
-  const percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+  // Couleur selon le pourcentage
+  function percColor(p) {
+    if (p >= 80) return '#4caf50';
+    if (p >= 50) return '#ff9800';
+    return '#f44336';
+  }
 
-  const sections = statsList.map((entry, idx) => {
-    const t = totals[idx];
-    const perc = t ? Math.round((entry.stats.reussie * 100) / t) : 0;
-    return `
-      <hr>
-      <h2>Catégorie : ${entry.label}</h2>
-      <p>Total : ${t} questions</p>
-      <p>✅ Réussies : ${entry.stats.reussie}</p>
-      <p>❌ Ratées : ${entry.stats.ratee}</p>
-      <p>👀 Non vues : ${entry.stats.nonvue}</p>
-      <p>📌 Marquées : ${entry.stats.marquee}</p>
-      <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${perc}%;"></div></div>
-    `;
-  }).join('\n');
+  // Totaux globaux (pas de doublons car pas d'agrégats)
+  let gRe = 0, gRa = 0, gNv = 0, gMa = 0, gIm = 0;
+  groupsData.forEach(g => g.categories.forEach(c => {
+    gRe += c.stats.reussie;
+    gRa += c.stats.ratee;
+    gNv += c.stats.nonvue;
+    gMa += c.stats.marquee;
+    gIm += c.stats.importante || 0;
+  }));
+  const gTotal = gRe + gRa + gNv;
+  const gPerc = gTotal ? Math.round((gRe * 100) / gTotal) : 0;
 
-  cont.innerHTML = `
-    ${sections}
-    <hr>
-    <h2>Global</h2>
-    <p>Total cumulé : ${totalGlobal}</p>
-    <p>Réussies cumulées : ${reussiesGlobal}</p>
-    <p>📌 Marquées cumulées : ${marqueesGlobal}</p>
-    <p>Pourcentage global : ${percGlobal}%</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
+  // Carte globale
+  let html = `
+    <div class="stats-global-card">
+      <div class="stats-global-row">
+        <span class="stats-global-title">GLOBAL</span>
+        <span class="stats-global-perc" style="color:${percColor(gPerc)}">${gPerc}%</span>
+      </div>
+      <div class="progressbar" style="height:14px;margin:6px 0">
+        <div class="progress" style="height:14px;width:${gPerc}%;background:${percColor(gPerc)}"></div>
+      </div>
+      <div class="stats-global-details">
+        <span>${gTotal} questions</span>
+        <span>✅ ${gRe}</span>
+        <span>❌ ${gRa}</span>
+        <span>👀 ${gNv}</span>
+        <span>📌 ${gMa}</span>
+        <span>⭐ ${gIm}</span>
+      </div>
+    </div>
   `;
+
+  // Chaque groupe
+  groupsData.forEach(group => {
+    let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0;
+    group.categories.forEach(c => {
+      grRe += c.stats.reussie;
+      grRa += c.stats.ratee;
+      grNv += c.stats.nonvue;
+      grMa += c.stats.marquee;
+      grIm += c.stats.importante || 0;
+    });
+    const grTotal = grRe + grRa + grNv;
+    const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;
+
+    html += `<div class="stats-group">`;
+    html += `<div class="stats-group-header">
+      <span class="stats-group-name">${group.name}</span>
+      <span class="stats-group-summary">${grRe}/${grTotal} · ${grPerc}%</span>
+    </div>`;
+    html += `<div class="progressbar" style="height:8px;margin:4px 0 8px">
+      <div class="progress" style="height:8px;width:${grPerc}%;background:${percColor(grPerc)}"></div>
+    </div>`;
+
+    // Lignes par catégorie
+    group.categories.forEach(cat => {
+      const s = cat.stats;
+      const total = s.reussie + s.ratee + s.nonvue;
+      const perc = total ? Math.round((s.reussie * 100) / total) : 0;
+      const markers = [];
+      if (s.marquee) markers.push(`📌${s.marquee}`);
+      if (s.importante) markers.push(`⭐${s.importante}`);
+      const markersStr = markers.length ? ` <span class="stats-cat-marks">${markers.join(' ')}</span>` : '';
+
+      html += `<div class="stats-cat-row">
+        <span class="stats-cat-name">${cat.label}</span>
+        <span class="stats-cat-bar"><div class="progressbar-mini"><div class="progress-mini" style="width:${perc}%;background:${percColor(perc)}"></div></div></span>
+        <span class="stats-cat-perc" style="color:${percColor(perc)}">${perc}%</span>
+        <span class="stats-cat-nums">✅${s.reussie} ❌${s.ratee} 👀${s.nonvue}${markersStr}</span>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  cont.innerHTML = html;
 }
 
 /**

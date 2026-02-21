@@ -11,7 +11,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script>
-    // NOTE: apiKey is read from window.FIREBASE_CONFIG if provided (see config.example.js)
     const firebaseConfig = {
       apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
       authDomain: "quizaviation-b79ff.firebaseapp.com",
@@ -21,42 +20,15 @@
       appId: "1:200438765697:web:3467cf30e905ed586e5580",
       measurementId: "G-N3G7EVGZ84"
     };
-
-    // Initialiser Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
   </script>
-  <script src="script.js?v=20260221a"></script>
+  <script src="script.js?v=20260221b"></script>
   <script>
-    const categoriesList = [
-      "PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
-      "CONNAISSANCE DE L’AVION","INSTRUMENTATION","MASSE ET CENTRAGE","MOTORISATION",
-      "EASA PROCEDURES","EASA AERODYNAMIQUE","EASA NAVIGATION",
-      "EASA CONNAISSANCE DE L'AVION","EASA METEOROLOGIE",
-      "EASA PERFORMANCE ET PLANIFICATION","EASA REGLEMENTATION"
-    ];
-
-    // map each category to its JSON file
-    const fileMap = {
-      "PROCÉDURE RADIO": "questions_procedure_radio.json",
-      "PROCÉDURES OPÉRATIONNELLES": "questions_procedure_operationnelles.json",
-      "RÉGLEMENTATION": "questions_reglementation.json",
-      "CONNAISSANCE DE L’AVION": "questions_connaissance_avion.json",
-      "INSTRUMENTATION": "questions_instrumentation.json",
-      "MASSE ET CENTRAGE": "questions_masse_et_centrage.json",
-      "MOTORISATION": "questions_motorisation.json",
-      "EASA PROCEDURES": "section_easa_procedures_new.json",
-      "EASA AERODYNAMIQUE": "section_easa_aerodynamique.json",
-      "EASA NAVIGATION": "section_easa_navigation.json",
-      "EASA CONNAISSANCE DE L'AVION": "section_easa_connaissance_avion.json",
-      "EASA METEOROLOGIE": "section_easa_meteorologie.json",
-      "EASA PERFORMANCE ET PLANIFICATION": "section_easa_performance_planification.json",
-      "EASA REGLEMENTATION": "section_easa_reglementation.json"
-    };
-
+    // stats.html delegates entirely to script.js initStats() + afficherStats()
     auth.onAuthStateChanged(user => {
       if (user) initStats();
       else {
@@ -64,91 +36,12 @@
         window.location = 'index.html';
       }
     });
-
-    function normalizeResponses(responses) {
-      const normalized = {};
-      for (const key in responses) {
-        const r = responses[key];
-        // use the DB 'marked' property or fallback to status==='marquée'
-        const isMarked = (r.marked === true) || (r.status === "marquée");
-        normalized[key] = { ...r, marked: isMarked };
-      }
-      return normalized;
-    }
-
-    async function initStats() {
-      const uid = auth.currentUser.uid;
-      const doc = await db.collection("quizProgress").doc(uid).get();
-      // normalize so status="marquée" ⇒ marked=true
-      const responses = normalizeResponses(doc.exists ? doc.data().responses : {});
-      let html = "";
-      let sumRe=0, sumRa=0, sumNv=0, sumMa=0;
-
-      for (const cat of categoriesList) {
-        // load questions for this category
-        const resQ = await fetch(fileMap[cat]);
-        const qs = await resQ.json();
-        // compute stats
-        let re=0, ra=0, nv=0, ma=0;
-        qs.forEach(q => {
-          // use same normalization & key logic as script.js
-          const key = getKeyFor({ categorie: cat, id: q.id });
-          const r = responses[key] || {};
-          // toujours compter réussite/échec/non-vue
-          if      (r.status==='réussie') re++;
-          else if (r.status==='ratée')   ra++;
-          else                            nv++;
-          // marquée en supplément
-          if (r.marked)                  ma++;
-        });
-        const total = re+ra+nv+ma;
-        const perc  = total? Math.round((re*100)/total):0;
-        html += `
-          <h2>Catégorie : ${cat}</h2>
-          <p>Total : ${total}</p>
-          <p>✅ Réussies : ${re}</p>
-          <p>❌ Ratées : ${ra}</p>
-          <p>👀 Non vues : ${nv}</p>
-          <p>📌 Marquées : ${ma}</p>
-          <div class="progressbar"><div class="progress" style="width:${perc}%;"></div></div><hr>
-        `;
-        sumMa += ma; sumRe += re; sumRa += ra; sumNv += nv;
-      }
-      const sumTotal = sumRe + sumRa + sumNv + sumMa;
-      const sumPerc  = sumTotal? Math.round((sumRe*100)/sumTotal) : 0;
-      html += `
-        <h2>Global</h2>
-        <p>Total : ${sumTotal}</p>
-        <p>✅ Réussies : ${sumRe}</p>
-        <p>❌ Ratées : ${sumRa}</p>
-        <p>👀 Non vues : ${sumNv}</p>
-        <p>📌 Marquées : ${sumMa}</p>
-        <div class="progressbar"><div class="progress" style="width:${sumPerc}%;"></div></div>
-      `;
-
-      document.getElementById("statsContainer").innerHTML = html;
-    }
-
-    function updateStats() {
-      // ...existing code...
-      // Adapter la condition pour intégrer les questions marquées
-      // dans successCount ou failCount selon la bonne_reponse
-      if (question.isCorrect /* ...existing condition... */) {
-        successCount++;
-      } else {
-        failCount++;
-      }
-      // ...existing code...
-    }
-
-    categoriesList.push("EASA PERFORMANCES HUMAINES");
-    fileMap["EASA PERFORMANCES HUMAINES"] = "section_easa_perf_humaines.json";
   </script>
 </head>
 <body>
   <h1>Quiz Aviation - Statistiques</h1>
   <div class="container" id="statsContainer">
-    <!-- Les statistiques seront affichées ici -->
+    <p style="text-align:center;color:#888;">Chargement des statistiques...</p>
   </div>
   <div class="container" style="text-align: center; margin-top: 1rem;">
     <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
