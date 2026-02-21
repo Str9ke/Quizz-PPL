@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <title>Quiz Aviation - Statistiques</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -43,7 +43,7 @@
     auth.onAuthStateChanged(user => {
       if (user) initStats();
       else {
-        alert("Vous devez Ãªtre connectÃ© pour voir vos statistiques.");
+        alert("Vous devez être connecté pour voir vos statistiques.");
         window.location = 'index.html';
       }
     });
@@ -55,8 +55,8 @@
     <p style="text-align:center;color:#888;">Chargement des statistiques...</p>
   </div>
   <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="if (confirm('Confirmez-vous la rÃ©initialisation de toutes les statistiques ?')) resetStats();">
-      RÃ©initialiser les Statistiques
+    <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
+      Réinitialiser les Statistiques
     </button>
     <button onclick="window.location='index.html'">Retour Accueil</button>
   </div>

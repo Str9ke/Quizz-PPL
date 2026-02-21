@@ -132,7 +132,7 @@ async function initIndex() {
     currentResponses = currentResponses || {};
   }
   
-  updateModeCounts();
+  await updateModeCounts();
 
   // Sélectionner le mode "ratées+non vues" par défaut
   const modeSelect = document.getElementById('mode');
