@@ -1,6 +1,21 @@
 // === helpers.js === Utility functions ===
 
 /**
+ * _ensurePersistence() – Attend que enablePersistence() soit prêt.
+ * Sur Android lent, enablePersistence() peut prendre 1-2s à initialiser IndexedDB.
+ * Sans cette attente, les opérations Firestore utilisent un cache in-memory
+ * qui est perdu au changement de page → données offline perdues.
+ */
+let _persistenceAwaited = false;
+async function _ensurePersistence() {
+  if (_persistenceAwaited) return;
+  if (window._persistenceReady) {
+    try { await window._persistenceReady; } catch (e) { /* already handled */ }
+  }
+  _persistenceAwaited = true;
+}
+
+/**
  * getDocWithTimeout() – Lit un document Firestore avec fallback rapide hors-ligne.
  * Si hors-ligne (navigator.onLine === false) → lecture directe du cache Firestore.
  * Si en ligne → lecture réseau avec timeout de 4s, puis fallback cache.
@@ -9,6 +24,8 @@
  * @returns {Promise<firebase.firestore.DocumentSnapshot>}
  */
 async function getDocWithTimeout(docRef, timeoutMs = 2000) {
+  // S'assurer que la persistance Firestore est initialisée
+  await _ensurePersistence();
   // Hors-ligne → lecture cache immédiate (pas de timeout réseau)
   if (!navigator.onLine) {
     try {

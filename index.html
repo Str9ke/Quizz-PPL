@@ -67,8 +67,8 @@
     // Attacher Auth et Firestore à window pour les rendre globalement accessibles
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    // Activer la persistance hors-ligne Firestore
-    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    // Activer la persistance hors-ligne Firestore (stocker la promesse pour l'attendre)
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
       if (err.code === 'failed-precondition') {
         console.warn('[Firestore] Persistance impossible : plusieurs onglets ouverts');
       } else if (err.code === 'unimplemented') {
@@ -176,13 +176,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260223b"></script>
-  <script src="js/helpers.js?v=20260223b"></script>
-  <script src="js/categories.js?v=20260223b"></script>
-  <script src="js/stats.js?v=20260223b"></script>
-  <script src="js/quiz.js?v=20260223b"></script>
-  <script src="js/init.js?v=20260223b"></script>
-  <script src="js/offline.js?v=20260223b"></script>
+  <script src="js/globals.js?v=20260223c"></script>
+  <script src="js/helpers.js?v=20260223c"></script>
+  <script src="js/categories.js?v=20260223c"></script>
+  <script src="js/stats.js?v=20260223c"></script>
+  <script src="js/quiz.js?v=20260223c"></script>
+  <script src="js/init.js?v=20260223c"></script>
+  <script src="js/offline.js?v=20260223c"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>

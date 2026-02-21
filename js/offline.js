@@ -95,6 +95,8 @@ async function countPendingWrites() {
  * @returns {Object} merged responses (local or from Firestore)
  */
 async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
+  // S'assurer que la persistance Firestore est initialisée
+  await _ensurePersistence();
   // D'abord, essayer de récupérer les réponses existantes (locales au pire)
   let existing = {};
   try {
@@ -145,6 +147,7 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
  * Sauvegarde un toggle (marquer/important) avec fallback offline
  */
 async function saveToggleWithOfflineFallback(uid, key, payload) {
+  await _ensurePersistence();
   try {
     await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
     console.log('[saveToggle] Écrit via Firestore:', key);
@@ -176,12 +179,16 @@ async function saveDailyCountOffline(uid, count) {
  * Sauvegarde sessionResult avec fallback offline
  */
 async function saveSessionResultOffline(uid, correct, total, category) {
+  // Générer la date UNE SEULE fois pour que le backup localStorage
+  // et l'écriture Firestore aient la même date (déduplique correctement)
+  const sessionDate = new Date().toISOString();
+
   // TOUJOURS sauvegarder en localStorage comme backup pour l'affichage offline
   if (typeof _saveSessionToLocalBackup === 'function') {
-    _saveSessionToLocalBackup(correct, total, category);
+    _saveSessionToLocalBackup(correct, total, category, sessionDate);
   }
   try {
-    await saveSessionResult(uid, correct, total, category);
+    await saveSessionResult(uid, correct, total, category, sessionDate);
     console.log('[saveSessionResultOffline] Écrit via Firestore');
   } catch (e) {
     console.warn('[offline] sessionResult sauvegardé IndexedDB');

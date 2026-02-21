@@ -395,6 +395,14 @@ async function validerReponses() {
         rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    // Incrémenter le compteur quotidien direct dans localStorage
+    // (fiable même si Firestore n'est pas prêt offline)
+    try {
+      const dayKey = 'dailyAnswered_' + new Date().toISOString().slice(0, 10);
+      const prev = parseInt(localStorage.getItem(dayKey)) || 0;
+      localStorage.setItem(dayKey, prev + currentQuestions.length);
+    } catch (e) { /* localStorage plein — rare */ }
+
     try {
         // Sauvegarde avec fallback offline
         currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);

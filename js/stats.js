@@ -117,8 +117,13 @@ async function displayDailyStats(forcedUid) {
       console.log('[displayDailyStats-NO-TIMESTAMP]', 'Réponses SANS timestamp:', noTimestampResponses);
     }
     
+    // Lire aussi le compteur direct localStorage (fiable offline même si Firestore pas prêt)
+    const todayDate = new Date().toISOString().slice(0, 10);
+    const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayDate)) || 0;
+    answeredToday = Math.max(answeredToday, lsDirectCount);
+
     // Afficher le compteur (ne jamais diminuer dans la même journée → ratchet)
-    const todayKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
+    const todayKey = 'dailyCountRatchet_' + todayDate;
     const previousMax = parseInt(localStorage.getItem(todayKey)) || 0;
     if (answeredToday < previousMax) {
       console.log('[displayDailyStats] Ratchet: affiché', previousMax, 'au lieu de', answeredToday);
@@ -137,6 +142,21 @@ async function displayDailyStats(forcedUid) {
     }
   } catch (error) {
     console.error('[displayDailyStats] Erreur:', error);
+    // Même en cas d'erreur Firestore, afficher le compteur localStorage
+    try {
+      const todayDate = new Date().toISOString().slice(0, 10);
+      const lsCount = parseInt(localStorage.getItem('dailyAnswered_' + todayDate)) || 0;
+      const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayDate)) || 0;
+      const best = Math.max(lsCount, ratchetCount);
+      if (best > 0) {
+        const statsBar = document.getElementById('dailyStatsBar');
+        const countElem = document.getElementById('answeredTodayCount');
+        if (statsBar && countElem) {
+          countElem.textContent = best;
+          statsBar.style.display = 'block';
+        }
+      }
+    } catch (e2) { /* ignore */ }
   }
 }
 
@@ -212,14 +232,14 @@ async function saveDailyCount(uid, answeredCount) {
  * saveSessionResult() – Sauvegarde le résultat d'une session de quiz dans Firestore
  * Stocke dans quizProgress/{uid} un champ sessionHistory: [ {date, correct, total, category, percent}, ... ]
  */
-async function saveSessionResult(uid, correct, total, category) {
+async function saveSessionResult(uid, correct, total, category, sessionDate) {
   try {
     const docRef = db.collection('quizProgress').doc(uid);
     const doc = await getDocWithTimeout(docRef);
     const data = doc.exists ? doc.data() : {};
     const sessionHistory = data.sessionHistory || [];
     sessionHistory.push({
-      date: new Date().toISOString(),
+      date: sessionDate || new Date().toISOString(),
       correct,
       total,
       category,
@@ -442,11 +462,11 @@ async function initStats() {
 // ---- Backup localStorage pour les sessions offline ----
 
 /** Sauvegarde une session en localStorage (backup pour l'affichage offline) */
-function _saveSessionToLocalBackup(correct, total, category) {
+function _saveSessionToLocalBackup(correct, total, category, sessionDate) {
   try {
     const backup = JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
     backup.push({
-      date: new Date().toISOString(),
+      date: sessionDate || new Date().toISOString(),
       correct,
       total,
       category,

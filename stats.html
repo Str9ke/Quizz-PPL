@@ -27,17 +27,17 @@
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260223b"></script>
-  <script src="js/helpers.js?v=20260223b"></script>
-  <script src="js/categories.js?v=20260223b"></script>
-  <script src="js/stats.js?v=20260223b"></script>
-  <script src="js/quiz.js?v=20260223b"></script>
-  <script src="js/init.js?v=20260223b"></script>
-  <script src="js/offline.js?v=20260223b"></script>
+  <script src="js/globals.js?v=20260223c"></script>
+  <script src="js/helpers.js?v=20260223c"></script>
+  <script src="js/categories.js?v=20260223c"></script>
+  <script src="js/stats.js?v=20260223c"></script>
+  <script src="js/quiz.js?v=20260223c"></script>
+  <script src="js/init.js?v=20260223c"></script>
+  <script src="js/offline.js?v=20260223c"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     let statsInitTriggered = false;
