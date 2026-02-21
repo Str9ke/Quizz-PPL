@@ -115,49 +115,27 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     }
   });
 
-  // Tenter la sauvegarde Firestore
+  // Sauvegarder via Firestore (fonctionne aussi offline grâce à enablePersistence)
   try {
-    if (!navigator.onLine) throw new Error('offline');
-    
-    // Remplacer serverTimestamp par un timestamp numérique pour le offline
-    const cleanedResponses = {};
-    Object.entries(merged).forEach(([k, v]) => {
-      cleanedResponses[k] = { ...v };
-      // Si c'est un serverTimestamp non résolu, le remplacer
-      if (v.timestamp && typeof v.timestamp === 'object' && v.timestamp.hasOwnProperty('_methodName')) {
-        cleanedResponses[k].timestamp = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 };
-      }
-    });
-
     await db.collection('quizProgress').doc(uid).set(
-      { responses: merged, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+      { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
       { merge: true }
     );
-    
-    // Re-fetch & normalize
-    const fresh = await db.collection('quizProgress').doc(uid).get();
-    return normalizeResponses(fresh.data().responses);
+    console.log('[saveResponses] Écrit via Firestore (online ou queue offline)');
+    // Lire depuis le cache local (inclut les écritures en attente)
+    const fresh = await db.collection('quizProgress').doc(uid).get({ source: 'cache' });
+    return normalizeResponses(fresh.exists ? fresh.data().responses : merged);
   } catch (e) {
-    console.warn('[offline] Sauvegarde Firestore échouée, stockage local', e.message);
-    
-    // Stocker en IndexedDB pour sync ultérieure
-    // Convertir les timestamps pour sérialisation
+    console.warn('[offline] Firestore set échoué, fallback IndexedDB:', e.message);
+    // Stocker en IndexedDB pour sync ultérieure (cas rare: SDK non init)
     const serializableResponses = {};
     Object.entries(responsesToSave).forEach(([k, v]) => {
       serializableResponses[k] = { ...v };
-      // Remplacer FieldValue.serverTimestamp() par un timestamp numérique
       if (v.timestamp && typeof v.timestamp !== 'number' && !v.timestamp.seconds) {
         serializableResponses[k].timestamp = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 };
       }
     });
-
-    await addPendingWrite({
-      type: 'saveResponses',
-      uid: uid,
-      data: serializableResponses
-    });
-    
-    // Mettre à jour localement quand même
+    await addPendingWrite({ type: 'saveResponses', uid, data: serializableResponses });
     currentResponses = normalizeResponses(merged);
     return currentResponses;
   }
@@ -168,16 +146,11 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
  */
 async function saveToggleWithOfflineFallback(uid, key, payload) {
   try {
-    if (!navigator.onLine) throw new Error('offline');
     await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
+    console.log('[saveToggle] Écrit via Firestore:', key);
   } catch (e) {
-    console.warn('[offline] Toggle sauvegardé localement:', key);
-    await addPendingWrite({
-      type: 'saveToggle',
-      uid: uid,
-      key: key,
-      data: payload
-    });
+    console.warn('[offline] Toggle sauvegardé IndexedDB:', key);
+    await addPendingWrite({ type: 'saveToggle', uid, key, data: payload });
   }
 }
 
@@ -186,14 +159,14 @@ async function saveToggleWithOfflineFallback(uid, key, payload) {
  */
 async function saveDailyCountOffline(uid, count) {
   try {
-    if (!navigator.onLine) throw new Error('offline');
     await saveDailyCount(uid, count);
+    console.log('[saveDailyCountOffline] Écrit via Firestore');
   } catch (e) {
-    console.warn('[offline] dailyCount sauvegardé localement');
+    console.warn('[offline] dailyCount sauvegardé IndexedDB');
     await addPendingWrite({
       type: 'saveDailyCount',
-      uid: uid,
-      count: count,
+      uid,
+      count,
       date: new Date().toISOString().slice(0, 10)
     });
   }
@@ -204,16 +177,16 @@ async function saveDailyCountOffline(uid, count) {
  */
 async function saveSessionResultOffline(uid, correct, total, category) {
   try {
-    if (!navigator.onLine) throw new Error('offline');
     await saveSessionResult(uid, correct, total, category);
+    console.log('[saveSessionResultOffline] Écrit via Firestore');
   } catch (e) {
-    console.warn('[offline] sessionResult sauvegardé localement');
+    console.warn('[offline] sessionResult sauvegardé IndexedDB');
     await addPendingWrite({
       type: 'saveSessionResult',
-      uid: uid,
-      correct: correct,
-      total: total,
-      category: category,
+      uid,
+      correct,
+      total,
+      category,
       date: new Date().toISOString()
     });
   }
@@ -264,7 +237,7 @@ async function syncPendingWrites() {
             }
           });
           await db.collection('quizProgress').doc(op.uid).set(
-            { responses: merged, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+            { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
             { merge: true }
           );
           break;

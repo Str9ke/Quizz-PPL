@@ -117,7 +117,15 @@ async function displayDailyStats(forcedUid) {
       console.log('[displayDailyStats-NO-TIMESTAMP]', 'Réponses SANS timestamp:', noTimestampResponses);
     }
     
-    // Afficher le compteur
+    // Afficher le compteur (ne jamais diminuer dans la même journée → ratchet)
+    const todayKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
+    const previousMax = parseInt(localStorage.getItem(todayKey)) || 0;
+    if (answeredToday < previousMax) {
+      console.log('[displayDailyStats] Ratchet: affiché', previousMax, 'au lieu de', answeredToday);
+      answeredToday = previousMax;
+    } else {
+      localStorage.setItem(todayKey, answeredToday);
+    }
     const statsBar = document.getElementById('dailyStatsBar');
     const countElem = document.getElementById('answeredTodayCount');
     if (statsBar && countElem) {
@@ -219,7 +227,7 @@ async function saveSessionResult(uid, correct, total, category) {
     // Garder les 200 dernières sessions max
     if (sessionHistory.length > 200) sessionHistory.splice(0, sessionHistory.length - 200);
     await docRef.set(
-      { sessionHistory, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+      { sessionHistory, lastUpdated: firebase.firestore.Timestamp.now() },
       { merge: true }
     );
     console.log('[saveSessionResult] session saved:', correct + '/' + total);
@@ -652,7 +660,9 @@ function afficherSessionChart(sessionHistory) {
     const d = new Date(s.date);
     const dayLabel = String(d.getDate()).padStart(2, '0') + '/' +
       String(d.getMonth() + 1).padStart(2, '0');
-    const tooltip = `${dayLabel} - ${pct}% (${s.correct}/${s.total}) ${s.category || ''}`;
+    const timeLabel = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const tooltip = `${dayLabel} ${timeLabel} - ${pct}% (${s.correct}/${s.total}) ${s.category || ''}`;
+    const clickInfo = `${dayLabel} à ${timeLabel}\\n${pct}% (${s.correct}/${s.total})\\n${s.category || 'Toutes catégories'}`;
 
     let bottomLabel = '';
     if (isLast) {
@@ -661,7 +671,7 @@ function afficherSessionChart(sessionHistory) {
       bottomLabel = dayLabel;
     }
 
-    html += `<div class="daily-bar-col" title="${tooltip}">
+    html += `<div class="daily-bar-col" title="${tooltip}" onclick="alert('${clickInfo}')" style="cursor:pointer">
       <div class="daily-bar-count">${pct}%</div>
       <div class="daily-bar" style="height:${h}px;background:${color}"></div>
       <div class="daily-bar-label">${bottomLabel}</div>
@@ -733,7 +743,7 @@ async function resetStats() {
   try {
     // Remplacer le delete() par un set() à responses: {}
     await db.collection('quizProgress').doc(uid)
-      .set({ responses: {}, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      .set({ responses: {}, lastUpdated: firebase.firestore.Timestamp.now() }, { merge: true });
     console.log("Réponses effacées dans Firestore !");
     alert("Les statistiques ont été réinitialisées !");
     window.location.reload();

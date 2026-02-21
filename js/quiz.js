@@ -165,9 +165,6 @@ async function initQuiz() {
     return;
   }
 
-  // Pré-charger les JSON si pas encore fait (nécessaire pour le mode offline)
-  await prefetchAllJsonFiles();
-
   ensureDailyStatsBarVisible();
   showBuildTag();
 
@@ -187,8 +184,11 @@ async function initQuiz() {
   nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
 
   if (stored) {
+    // Questions déjà en mémoire → pas besoin de prefetch ni de chargerQuestions
     currentQuestions = JSON.parse(stored);
   } else {
+    // Pas de questions en mémoire → charger depuis les JSON (prefetch d'abord)
+    await prefetchAllJsonFiles();
     const catNorm = getNormalizedCategory(selectedCategory);
     if (catNorm === "TOUTES") {
       await loadAllQuestions();
@@ -207,9 +207,12 @@ async function initQuiz() {
     console.warn('[offline] Impossible de charger les réponses, utilisation du cache local');
     currentResponses = currentResponses || {};
   }
-  // Affiche le compteur quotidien sur la page du quiz
-  await displayDailyStats(uid);
+
+  // Afficher le quiz IMMÉDIATEMENT, puis mettre à jour le compteur en arrière-plan
   afficherQuiz();
+
+  // Compteur quotidien en tâche de fond (non bloquant)
+  displayDailyStats(uid).catch(e => console.warn('[initQuiz] displayDailyStats error:', e));
 }
 
 /**
@@ -218,6 +221,10 @@ async function initQuiz() {
 function afficherQuiz() {
   console.log(">>> afficherQuiz()");
   console.log("    currentQuestions=", currentQuestions);
+
+  // Reset validation state pour le nouveau quiz
+  window._quizValidated = false;
+  window._immediateAnswers = {};
 
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
@@ -284,6 +291,10 @@ function handleImmediateAnswer(q, selectedRadio) {
   const selectedVal = parseInt(selectedRadio.value);
   const isCorrect = selectedVal === q.bonne_reponse;
 
+  // Sauvegarder la réponse en mémoire (pour validerReponses)
+  if (!window._immediateAnswers) window._immediateAnswers = {};
+  window._immediateAnswers[q.id] = selectedVal;
+
   // Mettre à jour le score
   window._immediateScore.answered++;
   if (isCorrect) window._immediateScore.correct++;
@@ -301,12 +312,12 @@ function handleImmediateAnswer(q, selectedRadio) {
     if (!label) return;
     const val = parseInt(r.value);
     if (val === q.bonne_reponse) {
-      label.style.background = '#d4edda';
+      label.style.background = 'var(--correct-bg, #d4edda)';
       label.style.borderLeft = '4px solid #28a745';
       label.style.paddingLeft = '8px';
       label.style.borderRadius = '4px';
     } else if (val === selectedVal && !isCorrect) {
-      label.style.background = '#f8d7da';
+      label.style.background = 'var(--wrong-bg, #f8d7da)';
       label.style.borderLeft = '4px solid #dc3545';
       label.style.paddingLeft = '8px';
       label.style.borderRadius = '4px';
@@ -332,18 +343,35 @@ function handleImmediateAnswer(q, selectedRadio) {
  */
 async function validerReponses() {
     console.log(">>> validerReponses()");
+    // Empêcher la double validation
+    if (window._quizValidated) {
+      console.log('[validerReponses] Déjà validé, ignoré');
+      return;
+    }
+    window._quizValidated = true;
+
     let correctCount = 0;
     const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
     if (!uid) return;
 
+    // En mode correction immédiate, utiliser les réponses stockées en mémoire
+    const isImmediate = localStorage.getItem('correctionImmediate') === '1';
+    const immediateAnswers = window._immediateAnswers || {};
+
     let responsesToSave = {};
     currentQuestions.forEach(q => {
-        const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+        let selectedVal = null;
+        if (isImmediate && immediateAnswers[q.id] !== undefined) {
+            selectedVal = immediateAnswers[q.id];
+        } else {
+            const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+            selectedVal = sel ? parseInt(sel.value) : null;
+        }
         const key = getKeyFor(q);
         const wasMarked = currentResponses[key]?.marked === true;
       const wasImportant = currentResponses[key]?.important === true;
-        const status = sel 
-            ? (parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée') 
+        const status = selectedVal !== null
+            ? (selectedVal === q.bonne_reponse ? 'réussie' : 'ratée')
             : 'ratée';
         responsesToSave[key] = {
             category: q.categorie,
@@ -351,7 +379,7 @@ async function validerReponses() {
             status,
         marked: wasMarked,
         important: wasImportant,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            timestamp: firebase.firestore.Timestamp.now()
         };
         if (status === 'réussie') correctCount++;
     });
@@ -395,11 +423,19 @@ function afficherCorrection() {
   if (!cont) return;
 
   let html = "";
+  const isImmediate = localStorage.getItem('correctionImmediate') === '1';
+  const immediateAnswers = window._immediateAnswers || {};
+
   currentQuestions.forEach((q, idx) => {
     const key = getKeyFor(q);
     const response = currentResponses[key];
-    const checkedInput = document.querySelector(`input[name="q${q.id}"]:checked`);
-    const checkedVal = checkedInput ? parseInt(checkedInput.value) : null;
+    let checkedVal = null;
+    if (isImmediate && immediateAnswers[q.id] !== undefined) {
+      checkedVal = immediateAnswers[q.id];
+    } else {
+      const checkedInput = document.querySelector(`input[name="q${q.id}"]:checked`);
+      checkedVal = checkedInput ? parseInt(checkedInput.value) : null;
+    }
 
     let ansHtml = "";
     q.choix.forEach((choixText, i) => {

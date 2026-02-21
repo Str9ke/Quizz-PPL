@@ -65,6 +65,12 @@ body {
   background: var(--bg-body);
   color: var(--text-primary);
   transition: background 0.3s, color 0.3s;
+  color-scheme: dark;
+  accent-color: #667eea;
+}
+
+body.light {
+  color-scheme: light;
 }
 
 h1 {

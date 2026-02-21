@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -63,7 +63,17 @@
       const waitForAuth = () => new Promise(resolve => {
         const u = auth.currentUser;
         if (u) return resolve(u);
-        const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+        // Essayer auth first, puis fallback cachedUid
+        const unsub = auth.onAuthStateChanged(user => {
+          unsub();
+          if (user) return resolve(user);
+          // Auth null → utiliser cachedUid comme fallback
+          const cached = localStorage.getItem('cachedUid');
+          if (cached) return resolve({ uid: cached });
+          resolve(null);
+        });
+        // Timeout si auth ne répond pas
+        setTimeout(() => resolve(localStorage.getItem('cachedUid') ? { uid: localStorage.getItem('cachedUid') } : null), 2000);
       });
 
       const countToday = (responses) => {
@@ -82,10 +92,15 @@
       };
 
       const renderCount = (n) => {
+        // Ratchet: ne jamais diminuer dans la même journée
+        const todayKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
+        const prevMax = parseInt(localStorage.getItem(todayKey)) || 0;
+        const display = Math.max(n, prevMax);
+        if (display > prevMax) localStorage.setItem(todayKey, display);
         const bar = document.getElementById('dailyStatsBar');
         const num = document.getElementById('answeredTodayCount');
         if (bar) bar.style.display = 'block';
-        if (num) num.textContent = n;
+        if (num) num.textContent = display;
       };
 
       const run = async () => {
@@ -136,13 +151,13 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="js/globals.js?v=20260222a"></script>
-  <script src="js/helpers.js?v=20260222a"></script>
-  <script src="js/categories.js?v=20260222a"></script>
-  <script src="js/stats.js?v=20260222a"></script>
-  <script src="js/quiz.js?v=20260222a"></script>
-  <script src="js/init.js?v=20260222a"></script>
-  <script src="js/offline.js?v=20260222a"></script>
+  <script src="js/globals.js?v=20260222b"></script>
+  <script src="js/helpers.js?v=20260222b"></script>
+  <script src="js/categories.js?v=20260222b"></script>
+  <script src="js/stats.js?v=20260222b"></script>
+  <script src="js/quiz.js?v=20260222b"></script>
+  <script src="js/init.js?v=20260222b"></script>
+  <script src="js/offline.js?v=20260222b"></script>
   <script>
     // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
     document.addEventListener('DOMContentLoaded', () => {
