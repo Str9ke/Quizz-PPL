@@ -447,6 +447,10 @@ async function initIndex() {
   
   updateModeCounts();
 
+  // Sélectionner le mode "ratées+non vues" par défaut
+  const modeSelect = document.getElementById('mode');
+  if (modeSelect) modeSelect.value = 'ratees_nonvues';
+
   const p = document.getElementById('totalGlobalInfo');
   p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
 
@@ -455,29 +459,57 @@ async function initIndex() {
   // Initialiser le checkbox de démarrage automatique
   initAutoStartCheckbox();
 
-  // Mettre à jour le compteur de catégories
-  const catCountElem = document.getElementById('categoryCount');
-  if (catCountElem) {
-    const categories = [
-      "AERODYNAMIQUE PRINCIPES DU VOL","PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
-      "CONNAISSANCE DE L'AVION","INSTRUMENTATION","MASSE ET CENTRAGE",
-      "MOTORISATION","EASA PROCEDURES","EASA AERODYNAMIQUE"
-    ];
-    catCountElem.textContent = categories.length;
-  }
+  // Afficher la barre de progression globale sur l'accueil
+  displayHomeProgressBar(currentResponses);
 
-  // Charger et afficher le nombre de procédures EASA
-  fetch('section_easa_procedures_new.json')
-    .then(resp => resp.json())
-    .then(data => {
-      const countEasa = data.length;
-      categories.find(cat => cat.name === "EASA PROCEDURES").count = countEasa;
-      updateCategorySelect(); // same function used for other categories
-    })
-    .catch(error => console.error("Erreur lors du chargement des procédures EASA :", error));
-  
   // Afficher les statistiques du jour
   await displayDailyStats();
+}
+
+/**
+ * displayHomeProgressBar() – Affiche la barre de progression globale sur la page d'accueil
+ */
+function displayHomeProgressBar(responses) {
+  const cont = document.getElementById('progressionContainer');
+  if (!cont) return;
+
+  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0;
+  questions.forEach(q => {
+    const key = getKeyFor(q);
+    const r = responses[key];
+    if (!r) { nonvue++; }
+    else {
+      if (r.status === 'réussie') reussie++;
+      else if (r.status === 'ratée') ratee++;
+      else nonvue++;
+      if (r.marked) marquee++;
+      if (r.important) importante++;
+    }
+  });
+  const total = reussie + ratee + nonvue;
+  const perc = total ? Math.round((reussie * 100) / total) : 0;
+  function percColor(p) {
+    if (p >= 80) return '#4caf50';
+    if (p >= 50) return '#ff9800';
+    return '#f44336';
+  }
+  cont.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <strong>Progression globale</strong>
+      <span style="font-size:1.4em;font-weight:bold;color:${percColor(perc)}">${perc}%</span>
+    </div>
+    <div class="progressbar" style="height:14px;margin:4px 0">
+      <div class="progress" style="height:14px;width:${perc}%;background:${percColor(perc)}"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.85em;color:#555;margin-top:4px">
+      <span>${total} questions</span>
+      <span>✅ ${reussie}</span>
+      <span>❌ ${ratee}</span>
+      <span>👀 ${nonvue}</span>
+      <span>📌 ${marquee}</span>
+      <span>⭐ ${importante}</span>
+    </div>
+  `;
 }
 
 /**
@@ -1525,6 +1557,9 @@ async function validerReponses() {
         // re-fetch & normalize
         const fresh = await db.collection('quizProgress').doc(uid).get();
         currentResponses = normalizeResponses(fresh.data().responses);
+
+        // Sauvegarder le compteur quotidien dans Firestore (collection dailyHistory)
+        await saveDailyCount(uid, currentQuestions.length);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
     }
@@ -1534,6 +1569,43 @@ async function validerReponses() {
     if (typeof updateMarkedCount === 'function') updateMarkedCount();
     // mettre à jour le compteur de questions répondues aujourd'hui
     await displayDailyStats(uid);
+}
+
+/**
+ * saveDailyCount() – Incrémente le compteur quotidien dans Firestore
+ * Stocke dans quizProgress/{uid} un champ dailyHistory: { "YYYY-MM-DD": count, ... }
+ */
+async function saveDailyCount(uid, answeredCount) {
+  try {
+    const today = new Date();
+    const dateKey = today.getFullYear() + '-' +
+      String(today.getMonth() + 1).padStart(2, '0') + '-' +
+      String(today.getDate()).padStart(2, '0');
+    
+    const docRef = db.collection('quizProgress').doc(uid);
+    const doc = await docRef.get();
+    const existing = doc.exists && doc.data().dailyHistory ? doc.data().dailyHistory : {};
+    existing[dateKey] = (existing[dateKey] || 0) + answeredCount;
+    
+    await docRef.set({ dailyHistory: existing }, { merge: true });
+    console.log('[saveDailyCount]', dateKey, ':', existing[dateKey]);
+  } catch (e) {
+    console.error('[saveDailyCount] error:', e);
+  }
+}
+
+/**
+ * getDailyHistory() – Récupère l'historique quotidien depuis Firestore
+ * Retourne un objet { "YYYY-MM-DD": count, ... }
+ */
+async function getDailyHistory(uid) {
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    return (doc.exists && doc.data().dailyHistory) ? doc.data().dailyHistory : {};
+  } catch (e) {
+    console.error('[getDailyHistory] error:', e);
+    return {};
+  }
 }
 
 /**
@@ -1686,6 +1758,10 @@ async function initStats() {
     }
 
     afficherStats(groupsData);
+
+    // Charger et afficher l'historique quotidien
+    const dailyHistory = await getDailyHistory(uid);
+    afficherDailyChart(dailyHistory);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
@@ -1789,6 +1865,84 @@ function afficherStats(groupsData) {
   });
 
   cont.innerHTML = html;
+}
+
+/**
+ * afficherDailyChart() – Affiche un graphique en barres de l'activité quotidienne (60 derniers jours)
+ */
+function afficherDailyChart(dailyHistory) {
+  // Trouver ou créer le conteneur du graphique
+  let chartCont = document.getElementById('dailyChartContainer');
+  if (!chartCont) {
+    // Insérer après le statsContainer
+    const statsCont = document.getElementById('statsContainer');
+    if (!statsCont) return;
+    chartCont = document.createElement('div');
+    chartCont.id = 'dailyChartContainer';
+    chartCont.className = 'container';
+    statsCont.parentNode.insertBefore(chartCont, statsCont.nextSibling);
+  }
+
+  // Générer les 60 derniers jours
+  const days = [];
+  const today = new Date();
+  for (let i = 59; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+    days.push({ key, date: d, count: dailyHistory[key] || 0 });
+  }
+
+  const maxCount = Math.max(...days.map(d => d.count), 1);
+  const maxBarH = 120; // pixels max height
+
+  // Totaux
+  const total60 = days.reduce((s, d) => s + d.count, 0);
+  const last7 = days.slice(-7).reduce((s, d) => s + d.count, 0);
+  const avg = total60 ? Math.round(total60 / 60) : 0;
+
+  let html = `
+    <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <strong>Activité quotidienne</strong>
+      <div style="font-size:0.8em;color:#666">
+        7j: <b>${last7}</b> · 60j: <b>${total60}</b> · moy: <b>${avg}/j</b>
+      </div>
+    </div>
+    <div class="daily-chart-scroll">
+      <div class="daily-chart">
+  `;
+
+  days.forEach((day, idx) => {
+    const h = day.count ? Math.max(Math.round((day.count / maxCount) * maxBarH), 3) : 0;
+    const isToday = idx === days.length - 1;
+    const dd = day.date.getDate();
+    const isFirstOfMonth = dd === 1;
+    const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    
+    // Tooltip label
+    const dayLabel = String(day.date.getDate()).padStart(2, '0') + '/' +
+      String(day.date.getMonth() + 1).padStart(2, '0');
+    
+    let bottomLabel = '';
+    if (isFirstOfMonth) {
+      bottomLabel = monthNames[day.date.getMonth()];
+    } else if (idx % 7 === 0 || isToday) {
+      bottomLabel = dayLabel;
+    }
+
+    const barColor = isToday ? '#667eea' : (day.count > 0 ? '#4caf50' : '#e0e0e0');
+    
+    html += `<div class="daily-bar-col" title="${dayLabel}: ${day.count} questions">
+      <div class="daily-bar-count">${day.count || ''}</div>
+      <div class="daily-bar" style="height:${h}px;background:${barColor}"></div>
+      <div class="daily-bar-label">${bottomLabel}</div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  chartCont.innerHTML = html;
 }
 
 /**
