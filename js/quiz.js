@@ -70,7 +70,16 @@ function toggleMarquerQuestion(questionId, button) {
       updateModeCounts();
       updateMarkedCount();
     })
-    .catch(console.error);
+    .catch(async (err) => {
+      console.warn('[offline] toggleMarquer fallback');
+      await saveToggleWithOfflineFallback(uid, key, payload);
+      // update in-memory anyway
+      currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
+      button.textContent = newMarked ? "Supprimer" : "Marquer";
+      button.className   = newMarked ? "delete-button" : "mark-button";
+      updateModeCounts();
+      updateMarkedCount();
+    });
 }
 
 function toggleImportantQuestion(questionId, button) {
@@ -109,7 +118,15 @@ function toggleImportantQuestion(questionId, button) {
       updateModeCounts();
       updateMarkedCount();
     })
-    .catch(console.error);
+    .catch(async (err) => {
+      console.warn('[offline] toggleImportant fallback');
+      await saveToggleWithOfflineFallback(uid, key, payload);
+      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
+      button.textContent = newImportant ? "Retirer Important" : "Important";
+      button.className   = newImportant ? "unimportant-button" : "important-button";
+      updateModeCounts();
+      updateMarkedCount();
+    });
 }
 
 /**
@@ -180,8 +197,13 @@ async function initQuiz() {
   }
 
   const uid = auth.currentUser.uid;
-  const doc = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+  try {
+    const doc = await db.collection('quizProgress').doc(uid).get();
+    currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+  } catch (e) {
+    console.warn('[offline] Impossible de charger les réponses, utilisation du cache local');
+    currentResponses = currentResponses || {};
+  }
   // Affiche le compteur quotidien sur la page du quiz
   await displayDailyStats(auth.currentUser?.uid);
   afficherQuiz();
@@ -343,36 +365,13 @@ async function validerReponses() {
     }
 
     try {
-        // fetch all existing responses
-        const doc = await db.collection('quizProgress').doc(uid).get();
-        const existing = doc.exists ? doc.data().responses : {};
-        // merge: preserve old marks/categories for keys not in currentQuestions
-        const merged = {};
+        // Sauvegarde avec fallback offline
+        currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);
 
-        Object.keys(responsesToSave).forEach(key => {
-            if (existing[key]) {
-                merged[key] = { ...existing[key], ...responsesToSave[key] };
-            } else {
-                merged[key] = responsesToSave[key];
-            }
-        });
-
-        Object.keys(existing).forEach(key => {
-            if (!merged[key]) merged[key] = existing[key];
-        });
-
-        await db.collection('quizProgress').doc(uid).set(
-            { responses: merged, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
-            { merge: true }
-        );
-        // re-fetch & normalize
-        const fresh = await db.collection('quizProgress').doc(uid).get();
-        currentResponses = normalizeResponses(fresh.data().responses);
-
-        // Sauvegarder le compteur quotidien dans Firestore (collection dailyHistory)
-        await saveDailyCount(uid, currentQuestions.length);
+        // Sauvegarder le compteur quotidien
+        await saveDailyCountOffline(uid, currentQuestions.length);
         // Sauvegarder le résultat de la session
-        await saveSessionResult(uid, correctCount, currentQuestions.length, selectedCategory);
+        await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
     }

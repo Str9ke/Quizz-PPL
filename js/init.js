@@ -121,8 +121,13 @@ async function initIndex() {
   
   // Load stored responses so marked flags are available
   const uid = auth.currentUser.uid;
-  const docResp = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
+  try {
+    const docResp = await db.collection('quizProgress').doc(uid).get();
+    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
+  } catch (e) {
+    console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');
+    currentResponses = currentResponses || {};
+  }
   
   updateModeCounts();
 

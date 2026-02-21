@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#667eea">
   <title>Quiz Aviation - Statistiques</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
@@ -25,13 +27,17 @@
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
   </script>
-  <script src="js/globals.js?v=20260221c"></script>
-  <script src="js/helpers.js?v=20260221c"></script>
-  <script src="js/categories.js?v=20260221c"></script>
-  <script src="js/stats.js?v=20260221c"></script>
-  <script src="js/quiz.js?v=20260221c"></script>
-  <script src="js/init.js?v=20260221c"></script>
+  <script src="js/globals.js?v=20260221d"></script>
+  <script src="js/helpers.js?v=20260221d"></script>
+  <script src="js/categories.js?v=20260221d"></script>
+  <script src="js/stats.js?v=20260221d"></script>
+  <script src="js/quiz.js?v=20260221d"></script>
+  <script src="js/init.js?v=20260221d"></script>
+  <script src="js/offline.js?v=20260221d"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     auth.onAuthStateChanged(user => {

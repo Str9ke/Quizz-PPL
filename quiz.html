@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta name="theme-color" content="#667eea">
   <title>Quiz Aviation - Quiz</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
@@ -29,6 +30,9 @@
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
 
     console.log("Firebase initialisé :", firebase.apps.length > 0);
     console.log("Auth attaché à window :", !!window.auth);
@@ -109,12 +113,13 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="js/globals.js?v=20260221c"></script>
-  <script src="js/helpers.js?v=20260221c"></script>
-  <script src="js/categories.js?v=20260221c"></script>
-  <script src="js/stats.js?v=20260221c"></script>
-  <script src="js/quiz.js?v=20260221c"></script>
-  <script src="js/init.js?v=20260221c"></script>
+  <script src="js/globals.js?v=20260221d"></script>
+  <script src="js/helpers.js?v=20260221d"></script>
+  <script src="js/categories.js?v=20260221d"></script>
+  <script src="js/stats.js?v=20260221d"></script>
+  <script src="js/quiz.js?v=20260221d"></script>
+  <script src="js/init.js?v=20260221d"></script>
+  <script src="js/offline.js?v=20260221d"></script>
   <script>
     // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
     document.addEventListener('DOMContentLoaded', () => {

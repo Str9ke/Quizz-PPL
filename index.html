@@ -38,8 +38,10 @@
     </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#667eea">
   <title>Quiz Aviation - Accueil</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
@@ -65,6 +67,14 @@
     // Attacher Auth et Firestore à window pour les rendre globalement accessibles
     window.auth = firebase.auth();
     window.db = firebase.firestore();
+    // Activer la persistance hors-ligne Firestore
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code === 'failed-precondition') {
+        console.warn('[Firestore] Persistance impossible : plusieurs onglets ouverts');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[Firestore] Persistance non supportée par ce navigateur');
+      }
+    });
 
     // Surveille l'état de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
@@ -146,12 +156,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260221c"></script>
-  <script src="js/helpers.js?v=20260221c"></script>
-  <script src="js/categories.js?v=20260221c"></script>
-  <script src="js/stats.js?v=20260221c"></script>
-  <script src="js/quiz.js?v=20260221c"></script>
-  <script src="js/init.js?v=20260221c"></script>
+  <script src="js/globals.js?v=20260221d"></script>
+  <script src="js/helpers.js?v=20260221d"></script>
+  <script src="js/categories.js?v=20260221d"></script>
+  <script src="js/stats.js?v=20260221d"></script>
+  <script src="js/quiz.js?v=20260221d"></script>
+  <script src="js/init.js?v=20260221d"></script>
+  <script src="js/offline.js?v=20260221d"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
