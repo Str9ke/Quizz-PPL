@@ -1941,13 +1941,13 @@ function afficherDailyChart(dailyHistory) {
   // Totaux
   const total60 = days.reduce((s, d) => s + d.count, 0);
   const last7 = days.slice(-7).reduce((s, d) => s + d.count, 0);
-  const avg = total60 ? Math.round(total60 / 60) : 0;
+  const avg7 = last7 ? Math.round(last7 / 7) : 0;
 
   let html = `
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
       <strong>Activité quotidienne</strong>
       <div style="font-size:0.8em;color:#666">
-        7j: <b>${last7}</b> · 60j: <b>${total60}</b> · moy: <b>${avg}/j</b>
+        7j: <b>${last7}</b> · 60j: <b>${total60}</b> · moy/7j: <b>${avg7}/j</b>
       </div>
     </div>
     <div class="daily-chart-scroll">
