@@ -31,27 +31,38 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260223a"></script>
-  <script src="js/helpers.js?v=20260223a"></script>
-  <script src="js/categories.js?v=20260223a"></script>
-  <script src="js/stats.js?v=20260223a"></script>
-  <script src="js/quiz.js?v=20260223a"></script>
-  <script src="js/init.js?v=20260223a"></script>
-  <script src="js/offline.js?v=20260223a"></script>
+  <script src="js/globals.js?v=20260223b"></script>
+  <script src="js/helpers.js?v=20260223b"></script>
+  <script src="js/categories.js?v=20260223b"></script>
+  <script src="js/stats.js?v=20260223b"></script>
+  <script src="js/quiz.js?v=20260223b"></script>
+  <script src="js/init.js?v=20260223b"></script>
+  <script src="js/offline.js?v=20260223b"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
+    let statsInitTriggered = false;
+    let statsAuthTimeout;
     auth.onAuthStateChanged(user => {
+      clearTimeout(statsAuthTimeout);
       if (user) {
         localStorage.setItem('cachedUid', user.uid);
-        initStats();
+        if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else if (localStorage.getItem('cachedUid')) {
         console.log('[offline] stats.html: Auth null, UID en cache, démarrage offline');
-        initStats();
+        if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else {
         alert("Vous devez être connecté pour voir vos statistiques.");
         window.location = 'index.html';
       }
     });
+    // Sécurité : si auth ne fire pas dans les 3s et qu'on a un cachedUid, démarrer quand même
+    statsAuthTimeout = setTimeout(() => {
+      if (!statsInitTriggered && localStorage.getItem('cachedUid')) {
+        console.log('[offline] stats.html: Auth timeout, démarrage avec cachedUid');
+        statsInitTriggered = true;
+        initStats();
+      }
+    }, 3000);
   </script>
 </head>
 <body>

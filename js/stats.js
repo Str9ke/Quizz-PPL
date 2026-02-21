@@ -313,6 +313,7 @@ function computeStatsForFirestore(categoryQuestions, responses) {
  */
 async function initStats() {
   console.log(">>> initStats()");
+  const t0 = performance.now();
 
   if (typeof auth === 'undefined' || !auth) {
     console.error("Firebase Auth n'est pas initialisé.");
@@ -329,6 +330,10 @@ async function initStats() {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
 
   try {
+    // Pré-charger tous les JSON en parallèle (depuis le cache SW = quasi-instantané)
+    await prefetchAllJsonFiles();
+    console.log(`[initStats] prefetch done in ${Math.round(performance.now() - t0)}ms`);
+
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const data = doc.exists ? doc.data() : { responses: {} };
 
@@ -419,13 +424,79 @@ async function initStats() {
     const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses || {});
     afficherDailyChart(enrichedHistory);
 
-    // Afficher l'historique des sessions
-    const sessionHistory = data.sessionHistory || [];
+    // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)
+    const firestoreHistory = data.sessionHistory || [];
+    const localBackup = _getLocalSessionBackup();
+    const sessionHistory = _mergeSessionHistories(firestoreHistory, localBackup);
     afficherSessionChart(sessionHistory);
+    console.log(`[initStats] terminé en ${Math.round(performance.now() - t0)}ms`);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
+    // Même en cas d'erreur Firestore, afficher les sessions offline depuis localStorage
+    const localBackup = _getLocalSessionBackup();
+    if (localBackup.length) afficherSessionChart(localBackup);
   }
+}
+
+// ---- Backup localStorage pour les sessions offline ----
+
+/** Sauvegarde une session en localStorage (backup pour l'affichage offline) */
+function _saveSessionToLocalBackup(correct, total, category) {
+  try {
+    const backup = JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
+    backup.push({
+      date: new Date().toISOString(),
+      correct,
+      total,
+      category,
+      percent: total > 0 ? Math.round(100 * correct / total) : 0
+    });
+    // Garder les 60 dernières max
+    if (backup.length > 60) backup.splice(0, backup.length - 60);
+    localStorage.setItem('offlineSessionBackup', JSON.stringify(backup));
+    console.log('[_saveSessionToLocalBackup] session ajoutée au backup localStorage');
+  } catch (e) {
+    console.warn('[_saveSessionToLocalBackup] erreur:', e.message);
+  }
+}
+
+/** Lit le backup localStorage des sessions */
+function _getLocalSessionBackup() {
+  try {
+    return JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
+  } catch { return []; }
+}
+
+/** Fusionne les sessions Firestore et localStorage (déduplique par date) */
+function _mergeSessionHistories(firestoreSessions, localSessions) {
+  if (!localSessions.length) return firestoreSessions;
+  if (!firestoreSessions.length) return localSessions;
+  // Créer un Set des dates Firestore pour dédupliquer
+  const firestoreDates = new Set(firestoreSessions.map(s => s.date));
+  const merged = [...firestoreSessions];
+  for (const ls of localSessions) {
+    if (!firestoreDates.has(ls.date)) {
+      merged.push(ls);
+    }
+  }
+  // Trier par date
+  merged.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return merged.slice(-200);
+}
+
+/** Nettoie le backup localStorage (sessions qui sont déjà dans Firestore) */
+function _cleanLocalSessionBackup(firestoreSessions) {
+  try {
+    const backup = _getLocalSessionBackup();
+    if (!backup.length) return;
+    const firestoreDates = new Set(firestoreSessions.map(s => s.date));
+    const remaining = backup.filter(s => !firestoreDates.has(s.date));
+    if (remaining.length !== backup.length) {
+      localStorage.setItem('offlineSessionBackup', JSON.stringify(remaining));
+      console.log(`[_cleanLocalSessionBackup] nettoyé: ${backup.length - remaining.length} sessions déjà dans Firestore`);
+    }
+  } catch (e) { /* ignore */ }
 }
 
 /** afficherStats — Affiche les statistiques par groupe */

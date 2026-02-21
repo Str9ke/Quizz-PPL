@@ -176,6 +176,10 @@ async function saveDailyCountOffline(uid, count) {
  * Sauvegarde sessionResult avec fallback offline
  */
 async function saveSessionResultOffline(uid, correct, total, category) {
+  // TOUJOURS sauvegarder en localStorage comme backup pour l'affichage offline
+  if (typeof _saveSessionToLocalBackup === 'function') {
+    _saveSessionToLocalBackup(correct, total, category);
+  }
   try {
     await saveSessionResult(uid, correct, total, category);
     console.log('[saveSessionResultOffline] Écrit via Firestore');
@@ -302,8 +306,17 @@ async function syncPendingWrites() {
       if (fresh.exists) {
         currentResponses = normalizeResponses(fresh.data().responses);
         if (typeof updateModeCounts === 'function') updateModeCounts();
+        // Nettoyer le backup localStorage des sessions déjà dans Firestore
+        const freshSessions = fresh.data().sessionHistory || [];
+        if (typeof _cleanLocalSessionBackup === 'function') _cleanLocalSessionBackup(freshSessions);
       }
     } catch (e) { /* ignore */ }
+    
+    // Si on est sur la page stats.html, rafraîchir l'affichage
+    if (window.location.pathname.endsWith('stats.html') && typeof initStats === 'function') {
+      console.log('[offline] Refresh de stats.html après sync');
+      try { await initStats(); } catch (e) { /* ignore */ }
+    }
   }
 }
 
@@ -353,13 +366,30 @@ function updateOnlineStatus() {
       setTimeout(() => {
         bar.style.display = 'none';
       }, 3000);
-      // Lancer la sync
+      // Lancer la sync (IndexedDB pending writes)
       syncPendingWrites();
+      // Flusher les écritures Firestore en attente + rafraîchir stats si besoin
+      _flushFirestoreAndRefreshStats();
     } else {
       _showOfflineBar(bar);
     }
     updateOfflineBadge();
   });
+}
+
+/** Flush Firestore pending writes et rafraîchit stats.html si on y est */
+async function _flushFirestoreAndRefreshStats() {
+  try {
+    if (typeof db !== 'undefined' && typeof db.waitForPendingWrites === 'function') {
+      await db.waitForPendingWrites();
+      console.log('[online] Firestore pending writes flushées');
+    }
+  } catch (e) { /* ignore */ }
+  // Rafraîchir stats.html si on y est
+  if (window.location.pathname.endsWith('stats.html') && typeof initStats === 'function') {
+    console.log('[online] Refresh de stats.html après reconnexion');
+    try { await initStats(); } catch (e) { /* ignore */ }
+  }
 }
 
 function _showOfflineBar(bar) {
