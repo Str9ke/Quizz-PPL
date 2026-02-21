@@ -246,6 +246,9 @@ async function saveDailyCount(uid, answeredCount) {
  * Cela garantit que les sessions ajoutées sur différents appareils ne s'écrasent pas.
  */
 async function saveSessionResult(uid, correct, total, category, sessionDate) {
+  // S'assurer que la persistance Firestore est initialisée
+  // (sinon le write va dans le cache in-memory et se perd au rechargement)
+  await _ensurePersistence();
   try {
     const docRef = db.collection('quizProgress').doc(uid);
     const entry = {

@@ -199,7 +199,7 @@ async function saveSessionResultOffline(uid, correct, total, category, sessionDa
       correct,
       total,
       category,
-      date: new Date().toISOString()
+      date: sessionDate
     });
   }
 }
@@ -234,6 +234,10 @@ async function syncPendingWrites() {
   } catch (e) {
     console.warn('[offline] waitForPendingWrites échoué:', e.message);
   }
+
+  // Synchroniser explicitement les sessions localStorage vers Firestore
+  // C'est le mécanisme fiable de sync cross-device pour les sessions
+  await _syncLocalSessionsToFirestore(uid);
   
   const pending = await getPendingWrites();
   if (pending.length === 0) {
@@ -329,6 +333,56 @@ async function syncPendingWrites() {
       console.log('[offline] Refresh de stats.html après sync');
       try { await initStats(); } catch (e) { /* ignore */ }
     }
+  }
+}
+
+/**
+ * _syncLocalSessionsToFirestore() – Pousse toutes les sessions du backup
+ * localStorage vers Firestore via arrayUnion (sync explicite cross-device).
+ * arrayUnion déduplique automatiquement les entrées identiques.
+ */
+async function _syncLocalSessionsToFirestore(uid) {
+  if (!uid) return;
+  const localSessions = typeof _getLocalSessionBackup === 'function'
+    ? _getLocalSessionBackup() : [];
+  if (!localSessions.length) {
+    console.log('[sync] Aucune session localStorage à synchroniser');
+    return;
+  }
+  console.log('[sync] Synchronisation de', localSessions.length, 'sessions localStorage vers Firestore...');
+  const docRef = db.collection('quizProgress').doc(uid);
+  let pushed = 0;
+  // Pousser par lots de 10 (pour éviter des écritures trop grosses)
+  const batchSize = 10;
+  for (let i = 0; i < localSessions.length; i += batchSize) {
+    const batch = localSessions.slice(i, i + batchSize);
+    try {
+      // arrayUnion avec plusieurs entrées à la fois
+      await docRef.set(
+        {
+          sessionHistory: firebase.firestore.FieldValue.arrayUnion(...batch),
+          lastUpdated: firebase.firestore.Timestamp.now()
+        },
+        { merge: true }
+      );
+      pushed += batch.length;
+    } catch (e) {
+      console.warn('[sync] Erreur push sessions batch', i, ':', e.message);
+    }
+  }
+  console.log('[sync]', pushed, '/', localSessions.length, 'sessions pushées vers Firestore');
+  // Relire le document pour avoir la version complète du serveur
+  try {
+    const fresh = await docRef.get({ source: 'server' });
+    if (fresh.exists) {
+      const serverSessions = fresh.data().sessionHistory || [];
+      // Nettoyer le localStorage : retirer les sessions déjà sur le serveur
+      if (typeof _cleanLocalSessionBackup === 'function') {
+        _cleanLocalSessionBackup(serverSessions);
+      }
+    }
+  } catch (e) {
+    console.warn('[sync] Impossible de relire le doc après push:', e.message);
   }
 }
 
