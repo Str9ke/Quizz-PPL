@@ -106,16 +106,7 @@
     <!-- Sélection de la catégorie -->
     <label for="categorie">Catégorie :</label>
     <select id="categorie" onchange="categoryChanged()">
-      <option value="TOUTES">TOUTES LES QUESTIONS</option>
-      <option value="EASA PROCEDURES">EASA PROCEDURES</option>
-      <option value="section_easa_aerodynamique">EASA AERODYNAMIQUE</option>
-      <option value="section_easa_connaissance_avion">EASA CONNAISSANCE AVION</option>
-      <option value="section_easa_meteorologie">EASA METEOROLOGIE</option>
-      <option value="section_easa_navigation">EASA NAVIGATION</option>
-      <option value="section_easa_performance_planification">EASA PERFORMANCE PLANIFICATION</option>
-      <option value="section_easa_reglementation">EASA REGLEMENTATION</option>
-      <option value="questions_easa_procedures_op.json">EASA PERFORMANCES HUMAINES (xx questions)</option>
-      <!-- ... autres options déjà existantes ... -->
+      <!-- Options générées dynamiquement par updateCategorySelect() -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
@@ -135,6 +126,10 @@
       <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
       <strong>Démarrage automatique</strong> (au prochain lancement, le quiz se lancera automatiquement avec cette configuration)
     </label>
+    <label for="correctionImmediateCheckbox" style="margin-top: 0.5rem; display: block;">
+      <input type="checkbox" id="correctionImmediateCheckbox">
+      <strong>Correction immédiate</strong> (chaque réponse est corrigée instantanément)
+    </label>
     <br><br>
     
     <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
@@ -151,7 +146,12 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="script.js?v=20260221d"></script>
+  <script src="js/globals.js?v=20260222a"></script>
+  <script src="js/helpers.js?v=20260222a"></script>
+  <script src="js/categories.js?v=20260222a"></script>
+  <script src="js/stats.js?v=20260222a"></script>
+  <script src="js/quiz.js?v=20260222a"></script>
+  <script src="js/init.js?v=20260222a"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>

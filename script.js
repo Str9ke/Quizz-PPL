@@ -459,6 +459,10 @@ async function initIndex() {
   // Initialiser le checkbox de démarrage automatique
   initAutoStartCheckbox();
 
+  // Restaurer l'état du checkbox correction immédiate
+  const corrImm = document.getElementById('correctionImmediateCheckbox');
+  if (corrImm) corrImm.checked = localStorage.getItem('correctionImmediate') === '1';
+
   // Afficher la barre de progression globale sur l'accueil
   displayHomeProgressBar(currentResponses);
 
@@ -847,76 +851,11 @@ async function demarrerQuiz() {
   localStorage.setItem('quizNbQuestions', nbQuestions);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
 
+  // Sauvegarder le mode correction immédiate
+  const corrImm = document.getElementById('correctionImmediateCheckbox');
+  localStorage.setItem('correctionImmediate', corrImm && corrImm.checked ? '1' : '0');
+
   window.location = 'quiz.html';
-}
-
-async function initQuiz() {
-  console.log(">>> initQuiz()");
-  
-  ensureDailyStatsBarVisible();
-  showBuildTag();
-
-  // DEBUG détaillé
-  console.log('[initQuiz-DEBUG] localStorage.getItem("currentQuestions"):', localStorage.getItem('currentQuestions'));
-  console.log('[initQuiz-DEBUG] localStorage.getItem("quizCategory"):', localStorage.getItem('quizCategory'));
-  console.log('[initQuiz-DEBUG] localStorage.getItem("quizMode"):', localStorage.getItem('quizMode'));
-  console.log('[initQuiz-DEBUG] localStorage.getItem("quizNbQuestions"):', localStorage.getItem('quizNbQuestions'));
-  
-  // redirect if not logged in
-  if (!auth.currentUser) {
-    window.location = 'index.html';
-    return;
-  }
-
-  // ← avoid ReferenceError
-  const stored = localStorage.getItem('currentQuestions');
-  console.log('[initQuiz-CHECK] stored existe?', !!stored);
-
-  // guard quiz container
-  const quizContainer = document.getElementById('quizContainer');
-  if (!quizContainer) {
-    console.error("quizContainer not found, aborting initQuiz");
-    return;
-  }
-
-  // restore quiz parameters
-  selectedCategory = localStorage.getItem('quizCategory') || "TOUTES";
-  modeQuiz        = localStorage.getItem('quizMode')     || "toutes";
-  nbQuestions     = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
-
-  if (stored) {
-    console.log(">>> initQuiz() - RESTAURATION DES QUESTIONS STOCKÉES (length=" + JSON.parse(stored).length + ")");
-    currentQuestions = JSON.parse(stored);
-  } else {
-    console.log(">>> initQuiz() - GÉNÉRATION DE NOUVELLES QUESTIONS");
-    const catNorm = getNormalizedCategory(selectedCategory);
-    if (catNorm === "TOUTES") {
-      await loadAllQuestions();
-    } else {
-      await chargerQuestions(catNorm);
-    }
-    await filtrerQuestions(modeQuiz, nbQuestions);
-    console.log('[initQuiz-GENERATED] Nouvelles questions générées (length=' + currentQuestions.length + ')');
-    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
-  }
-
-  const uid = auth.currentUser.uid;
-  const doc = await db.collection('quizProgress').doc(uid).get();
-  currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
-  
-  // Afficher les statistiques du jour
-  await displayDailyStats(uid);
-  
-  afficherQuiz();
-}
-
-// Guard old unused listener
-const oldSelect = document.getElementById("categorie-select");
-if (oldSelect) {
-  oldSelect.addEventListener("change", e => {
-    const filePath = categoryFiles[e.target.value];
-    if (filePath) loadQuestions(filePath);
-  });
 }
 
 /**
@@ -1159,35 +1098,6 @@ async function chargerQuestions(cat) {
         console.error("Erreur de chargement pour", norm, err);
         questions = [];
     }
-}
-
-// Update file path mapping to use the JSON files at the server root
-const categoryFiles = {
-    "section_easa_aerodynamique": "section_easa_aerodynamique.json",
-    "section_easa_connaissance_avion": "section_easa_connaissance_avion.json",
-    "section_easa_meteorologie": "section_easa_meteorologie.json",
-    "section_easa_navigation": "section_easa_navigation.json",
-    "section_easa_performance_planification": "section_easa_performance_planification.json",
-    "section_easa_reglementation": "section_easa_reglementation.json",
-    "section_easa_perf_humaines": "section_easa_perf_humaines.json"
-};
-// Lors du changement de la sélection, on charge le fichier adéquat
-const catSel = document.getElementById("categorie-select");
-if (catSel) {
-  catSel.addEventListener("change", e => {
-    const selected = e.target.value;
-    const filePath = categoryFiles[selected];
-    if (filePath) {
-        loadQuestions(filePath);
-    }
-  });
-}
-// Fonction loadQuestions modifiée pour réinitialiser le compteur si besoin
-function loadQuestions(file) {
-    // ...existing code pour charger le JSON...
-    // Par exemple, une fois récupéré le JSON, vous pouvez réinitialiser/valider que chaque question a un id séquentiel :
-    // questions.forEach((q, i) => q.id = i+1);
-    // ...existing code...
 }
 
 /**
@@ -1452,43 +1362,75 @@ function afficherQuiz() {
   // restore mark buttons on quiz display
   afficherBoutonsMarquer();
   updateMarkedCount();
+
+  // Mode correction immédiate : attacher les listeners
+  const isImmediate = localStorage.getItem('correctionImmediate') === '1';
+  if (isImmediate) {
+    window._immediateScore = { correct: 0, answered: 0, total: currentQuestions.length };
+    // Ajouter le compteur de score en temps réel
+    const scoreDiv = document.createElement('div');
+    scoreDiv.id = 'immediateScoreBar';
+    scoreDiv.className = 'immediate-score-bar';
+    scoreDiv.innerHTML = `Score : <span id="immScoreVal">0</span> / <span id="immScoreTotal">${currentQuestions.length}</span> — <span id="immScoreAnswered">0</span> répondue(s)`;
+    cont.insertBefore(scoreDiv, cont.firstChild);
+
+    currentQuestions.forEach(q => {
+      const radios = document.querySelectorAll(`input[name="q${q.id}"]`);
+      radios.forEach(radio => {
+        radio.addEventListener('change', () => handleImmediateAnswer(q, radio));
+      });
+    });
+  }
 }
 
 /**
- * loadQuestion() – Charge une question spécifique par son index
+ * handleImmediateAnswer() – Gère la correction immédiate d'une question
  */
-function loadQuestion(index) {
-  console.log(">>> loadQuestion(index=" + index + ")");
-  const q = currentQuestions[index];
-  if (!q) {
-    console.error("Question introuvable à l'index " + index);
-    return;
-  }
+function handleImmediateAnswer(q, selectedRadio) {
+  const selectedVal = parseInt(selectedRadio.value);
+  const isCorrect = selectedVal === q.bonne_reponse;
 
-  document.getElementById('questionText').textContent = q.question;
-  const reponseContainer = document.getElementById('reponseContainer');
-  reponseContainer.innerHTML = "";
+  // Mettre à jour le score
+  window._immediateScore.answered++;
+  if (isCorrect) window._immediateScore.correct++;
 
-  q.choix.forEach((choix, i) => {
-    const label = document.createElement('label');
-    label.style.display = "block";
-    label.style.marginBottom = "4px";
+  const scoreVal = document.getElementById('immScoreVal');
+  const scoreAnswered = document.getElementById('immScoreAnswered');
+  if (scoreVal) scoreVal.textContent = window._immediateScore.correct;
+  if (scoreAnswered) scoreAnswered.textContent = window._immediateScore.answered;
 
-    const input = document.createElement('input');
-    input.type = "radio";
-    input.name = "q" + q.id;
-    input.value = i;
-
-    const span = document.createElement('span');
-    span.textContent = choix;
-
-    label.appendChild(input);
-    label.appendChild(span);
-    reponseContainer.appendChild(label);
+  // Désactiver tous les radios de cette question
+  const allRadios = document.querySelectorAll(`input[name="q${q.id}"]`);
+  allRadios.forEach(r => {
+    r.disabled = true;
+    const label = r.closest('label');
+    if (!label) return;
+    const val = parseInt(r.value);
+    if (val === q.bonne_reponse) {
+      label.style.background = '#d4edda';
+      label.style.borderLeft = '4px solid #28a745';
+      label.style.paddingLeft = '8px';
+      label.style.borderRadius = '4px';
+    } else if (val === selectedVal && !isCorrect) {
+      label.style.background = '#f8d7da';
+      label.style.borderLeft = '4px solid #dc3545';
+      label.style.paddingLeft = '8px';
+      label.style.borderRadius = '4px';
+    }
   });
 
-  // Mettre à jour le numéro de la question actuelle
-  document.getElementById('currentQuestionNumber').textContent = index + 1;
+  // Si toutes les questions sont répondues, afficher un résumé
+  if (window._immediateScore.answered === window._immediateScore.total) {
+    const pct = Math.round(100 * window._immediateScore.correct / window._immediateScore.total);
+    const rc = document.getElementById('resultContainer');
+    if (rc) {
+      rc.style.display = 'block';
+      rc.innerHTML = `Terminé ! <strong>${window._immediateScore.correct}</strong> / <strong>${window._immediateScore.total}</strong> (${pct}%)`;
+      rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Sauvegarder automatiquement les réponses
+    validerReponses();
+  }
 }
 
 /**
@@ -1560,6 +1502,8 @@ async function validerReponses() {
 
         // Sauvegarder le compteur quotidien dans Firestore (collection dailyHistory)
         await saveDailyCount(uid, currentQuestions.length);
+        // Sauvegarder le résultat de la session
+        await saveSessionResult(uid, correctCount, currentQuestions.length, selectedCategory);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
     }
@@ -1591,6 +1535,35 @@ async function saveDailyCount(uid, answeredCount) {
     console.log('[saveDailyCount]', dateKey, ':', existing[dateKey]);
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
+  }
+}
+
+/**
+ * saveSessionResult() – Sauvegarde le résultat d'une session de quiz dans Firestore
+ * Stocke dans quizProgress/{uid} un champ sessionHistory: [ {date, correct, total, category, percent}, ... ]
+ */
+async function saveSessionResult(uid, correct, total, category) {
+  try {
+    const docRef = db.collection('quizProgress').doc(uid);
+    const doc = await docRef.get();
+    const data = doc.exists ? doc.data() : {};
+    const sessionHistory = data.sessionHistory || [];
+    sessionHistory.push({
+      date: new Date().toISOString(),
+      correct,
+      total,
+      category,
+      percent: total > 0 ? Math.round(100 * correct / total) : 0
+    });
+    // Garder les 200 dernières sessions max
+    if (sessionHistory.length > 200) sessionHistory.splice(0, sessionHistory.length - 200);
+    await docRef.set(
+      { sessionHistory, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    console.log('[saveSessionResult] session saved:', correct + '/' + total);
+  } catch (e) {
+    console.error('[saveSessionResult] error:', e);
   }
 }
 
@@ -1644,32 +1617,6 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
   });
   
   return merged;
-}
-
-/**
- * computeStatsFor() – Calcule les statistiques (réussies, ratées, non vues, marquées) pour une catégorie
- */
-function computeStatsFor(category, responses) {
-  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0;
-
-  // Filtrer les questions par catégorie
-  const categoryQuestions = questions.filter(q => q.categorie === category);
-
-  categoryQuestions.forEach(q => {
-    const key = `question_${q.categorie}_${q.id}`;
-    const response = responses[key];
-    if (!response) {
-      nonvue++;
-    } else if (response.status === 'réussie') {
-      reussie++;
-    } else if (response.status === 'ratée') {
-      ratee++;
-    } else if (response.status === 'marquée') {
-      marquee++;
-    }
-  });
-
-  return { reussie, ratee, nonvue, marquee };
 }
 
 /**
@@ -1802,6 +1749,10 @@ async function initStats() {
     // Compléter/corriger dailyHistory avec les timestamps réels des réponses
     const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses || {});
     afficherDailyChart(enrichedHistory);
+
+    // Afficher l'historique des sessions
+    const sessionHistory = data.sessionHistory || [];
+    afficherSessionChart(sessionHistory);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
@@ -1988,6 +1939,83 @@ function afficherDailyChart(dailyHistory) {
 }
 
 /**
+ * afficherSessionChart() – Affiche un graphique en barres des 60 dernières sessions (% réussite)
+ */
+function afficherSessionChart(sessionHistory) {
+  // Trouver ou créer le conteneur
+  let chartCont = document.getElementById('sessionChartContainer');
+  if (!chartCont) {
+    const dailyCont = document.getElementById('dailyChartContainer');
+    const statsCont = document.getElementById('statsContainer');
+    const ref = dailyCont || statsCont;
+    if (!ref) return;
+    chartCont = document.createElement('div');
+    chartCont.id = 'sessionChartContainer';
+    chartCont.className = 'container';
+    // Insérer après le dailyChart (ou avant statsContainer)
+    if (dailyCont && dailyCont.nextSibling) {
+      dailyCont.parentNode.insertBefore(chartCont, dailyCont.nextSibling);
+    } else if (statsCont) {
+      statsCont.parentNode.insertBefore(chartCont, statsCont);
+    }
+  }
+
+  const sessions = (sessionHistory || []).slice(-60);
+  if (!sessions.length) {
+    chartCont.innerHTML = `
+      <div style="margin-bottom:10px"><strong>Historique des sessions</strong></div>
+      <p style="color:#aaa;text-align:center;">Aucune session enregistrée</p>`;
+    return;
+  }
+
+  // Calculs globaux
+  const totalSessions = sessions.length;
+  const avgPct = Math.round(sessions.reduce((s, x) => s + x.percent, 0) / totalSessions);
+  const last5 = sessions.slice(-5);
+  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + x.percent, 0) / last5.length) : 0;
+
+  const maxBarH = 100; // pixels max height
+
+  let html = `
+    <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <strong>Historique des sessions</strong>
+      <div style="font-size:0.8em;color:#666">
+        ${totalSessions} session${totalSessions > 1 ? 's' : ''} · moy: <b>${avgPct}%</b> · 5 dern.: <b>${avgLast5}%</b>
+      </div>
+    </div>
+    <div class="daily-chart-scroll">
+      <div class="daily-chart">
+  `;
+
+  sessions.forEach((s, idx) => {
+    const pct = s.percent || 0;
+    const h = Math.max(6, Math.round((pct / 100) * maxBarH));
+    const color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
+    const isLast = idx === sessions.length - 1;
+    const d = new Date(s.date);
+    const dayLabel = String(d.getDate()).padStart(2, '0') + '/' +
+      String(d.getMonth() + 1).padStart(2, '0');
+    const tooltip = `${dayLabel} - ${pct}% (${s.correct}/${s.total}) ${s.category || ''}`;
+
+    let bottomLabel = '';
+    if (isLast) {
+      bottomLabel = 'Dern.';
+    } else if (idx % 10 === 0) {
+      bottomLabel = dayLabel;
+    }
+
+    html += `<div class="daily-bar-col" title="${tooltip}">
+      <div class="daily-bar-count">${pct}%</div>
+      <div class="daily-bar" style="height:${h}px;background:${color}"></div>
+      <div class="daily-bar-label">${bottomLabel}</div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  chartCont.innerHTML = html;
+}
+
+/**
  * afficherCorrection() – Affiche la correction sur quiz.html
  */
 function afficherCorrection() {
@@ -2099,47 +2127,6 @@ async function synchroniserStatistiques() {
 }
 
 /**
- * sauvegarderProgression() – Enregistre la progression complète (réponses et stats) dans Firestore
- */
-async function sauvegarderProgression() {
-  console.log(">>> sauvegarderProgression()");
-
-  if (typeof auth === 'undefined' || !auth) {
-    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
-    alert("Erreur : Firebase Auth n'est pas initialisé.");
-    return;
-  }
-
-  if (!auth.currentUser) {
-    alert("Vous devez être connecté pour sauvegarder votre progression.");
-    console.error("Utilisateur non authentifié, impossible de sauvegarder la progression");
-    return;
-  }
-
-  let progressData = {
-    category: selectedCategory,
-    currentQuestionIndex: 0 // À ajuster selon la logique de reprise
-  };
-
-  const uid = auth.currentUser.uid;
-  console.log("Données à sauvegarder :", progressData);
-
-  try {
-    await db.collection('quizProgress').doc(uid).set({
-      category: progressData.category,
-      currentQuestionIndex: progressData.currentQuestionIndex,
-      responses: progressData.responses,
-      stats: progressData.stats,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    console.log("Progression complète sauvegardée dans Firestore !");
-  } catch (error) {
-    console.error("Erreur lors de la sauvegarde de la progression :", error);
-    alert("Erreur lors de la sauvegarde de la progression : " + error.message);
-  }
-}
-
-/**
  * resetStats() – Réinitialise les statistiques stockées dans le localStorage et Firestore
  */
 async function resetStats() {
@@ -2174,133 +2161,6 @@ async function resetStats() {
  */
 function voirStats() {
   window.location = 'stats.html';
-}
-
-/**
- * afficherProgression() – Récupère et affiche les données sauvegardées pour chaque question
- */
-async function afficherProgression() {
-  console.log(">>> afficherProgression()");
-
-  if (typeof auth === 'undefined' || !auth) {
-    console.error("Firebase Auth n'est pas initialisé. Vérifiez la configuration Firebase.");
-    alert("Erreur : Firebase Auth n'est pas initialisé.");
-    return;
-  }
-
-  if (!auth.currentUser) {
-    alert("Vous devez être connecté pour voir votre progression.");
-    console.error("Utilisateur non authentifié, impossible de récupérer la progression");
-    return;
-  }
-
-  const uid = auth.currentUser.uid;
-
-  try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
-    if (doc.exists) {
-      const data = doc.data();
-      console.log("Progression récupérée :", data);
-
-      // Afficher les données dans la console ou dans une section dédiée
-      const cont = document.getElementById('progressionContainer');
-      if (cont) {
-        cont.innerHTML = `
-          <h2>Progression sauvegardée</h2>
-          <pre>${JSON.stringify(data, null, 2)}</pre>
-        `;
-      } else {
-        alert("Progression récupérée. Consultez la console pour les détails.");
-      }
-    } else {
-      console.log("Aucune progression trouvée pour cet utilisateur.");
-      alert("Aucune progression trouvée.");
-    }
-  } catch (error) {
-    console.error("Erreur lors de la récupération de la progression :", error);
-    alert("Erreur lors de la récupération de la progression : " + error.message);
-  }
-}
-
-// Réinitialiser les catégories et afficher les catégories et modes
-const categories = [
-  { name: "PROCÉDURE RADIO", count: 0 },
-  { name: "PROCÉDURES OPÉRATIONNELLES", count: 0 },
-  { name: "RÉGLEMENTATION", count: 0 },
-  { name: "CONNAISSANCE DE L'AVION", count: 0 },
-  { name: "INSTRUMENTATION", count: 0 },
-  { name: "MASSE ET CENTRAGE", count: 0 },
-  { name: "MOTORISATION", count: 0 },
-  { name: "AERODYNAMIQUE PRINCIPES DU VOL", count: 0 },
-  { name: "EASA PROCEDURES", count: 0 },
-  { name: "EASA AERODYNAMIQUE", count: 0 },
-  { name: "EASA NAVIGATION", count: 0 },
-  { name: "EASA CONNAISSANCE DE L'AVION", count: 0 },
-  { name: "EASA METEOROLOGIE", count: 0 },
-  { name: "EASA PERFORMANCE ET PLANIFICATION", count: 0 },
-  { name: "EASA REGLEMENTATION", count: 0 },
-  { name: "EASA PERFORMANCES HUMAINES", count: 0 } // Nouvelle catégorie
-];
-
-function displayCategories() {
-  const catSelect = document.getElementById("categorie");
-  catSelect.innerHTML = "";
-
-  const optionToutes = document.createElement("option");
-  optionToutes.value = "TOUTES";
-  optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
-  catSelect.appendChild(optionToutes);
-
-  categories.forEach(cat => {
-    const opt = document.createElement("option");
-    opt.value = cat.name;
-    opt.textContent = `${cat.name} (${cat.count})`;
-    catSelect.appendChild(opt);
-  });
-}
-
-function displayMode() {
-  let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0, nbImportantes = 0;
-
-  const uid = auth.currentUser?.uid;
-  if (!uid) {
-    console.error("Utilisateur non authentifié, impossible de mettre à jour les modes.");
-    return;
-  }
-
-  db.collection('quizProgress').doc(uid).get()
-    .then(doc => {
-      const responses = doc.exists ? doc.data().responses : {};
-
-      questions.forEach(q => {
-        const key = `question_${q.categorie}_${q.id}`;
-        const response = responses[key];
-        if (!response) {
-          nbNonvues++;
-        } else if (response.status === 'ratée') {
-          nbRatees++;
-        } else if (response.status === 'marquée') {
-          nbMarquees++;
-        }
-        if (response?.important) {
-          nbImportantes++;
-        }
-      });
-
-      const nbRateesNonvues = nbRatees + nbNonvues;
-
-      const modeSelect = document.getElementById('mode');
-      modeSelect.innerHTML = `
-        <option value="toutes">Toutes (${total})</option>
-        <option value="ratees">Ratées (${nbRatees})</option>
-        <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
-        <option value="nonvues">Non vues (${nbNonvues})</option>
-        <option value="marquees">Marquées (${nbMarquees})</option>
-        <option value="importantes">Importantes (${nbImportantes})</option>
-      `;
-    })
-    .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
 }
 
 // NEW: Helper to normalize category names for mode counting
