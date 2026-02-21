@@ -4,7 +4,7 @@ async function displayDailyStats(forcedUid) {
   ensureDailyStatsBarVisible();
 
   // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
-  let uid = forcedUid || auth.currentUser?.uid;
+  let uid = forcedUid || auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     uid = await new Promise(resolve => {
       const unsub = auth.onAuthStateChanged(u => {
@@ -310,13 +310,13 @@ async function initStats() {
     return;
   }
 
-  if (!auth.currentUser) {
+  if (!auth.currentUser && !(localStorage.getItem('cachedUid') && !navigator.onLine)) {
     console.error("Utilisateur non authentifié");
     window.location = 'index.html';
     return;
   }
 
-  const uid = auth.currentUser.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
 
   try {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
@@ -682,13 +682,13 @@ async function synchroniserStatistiques() {
     return;
   }
 
-  if (!auth.currentUser) {
+  if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
     console.error("Utilisateur non authentifié, impossible de synchroniser les statistiques");
     alert("Vous devez être connecté pour synchroniser vos statistiques.");
     return;
   }
 
-  const uid = auth.currentUser.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
 
   try {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
@@ -718,7 +718,7 @@ async function synchroniserStatistiques() {
  */
 async function resetStats() {
   console.log(">>> resetStats()");
-  const uid = auth.currentUser?.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) return;
 
   // Supprimer les données locales

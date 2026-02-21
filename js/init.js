@@ -123,7 +123,11 @@ async function initIndex() {
   await loadAllQuestions();
   
   // Load stored responses so marked flags are available
-  const uid = auth.currentUser.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) {
+    console.error('[initIndex] Aucun UID disponible (ni Auth ni cache)');
+    return;
+  }
   try {
     const docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
@@ -159,25 +163,19 @@ async function initIndex() {
 
 // Sécurise l'init sur la page quiz en évitant les doublons et les problèmes de timing Auth
 if (window.location.pathname.endsWith('quiz.html')) {
-  let quizAuthResolved = false;
   auth.onAuthStateChanged(user => {
     if (user && !quizInitTriggered) {
-      quizAuthResolved = true;
+      localStorage.setItem('cachedUid', user.uid);
       quizInitTriggered = true;
       initQuiz();
     } else if (!user) {
-      if (quizAuthResolved || navigator.onLine) {
-        // L'utilisateur s'est déconnecté ou n'est pas connecté en ligne
+      if (!navigator.onLine && localStorage.getItem('cachedUid') && !quizInitTriggered) {
+        // Hors-ligne + UID en cache → démarrer le quiz offline
+        console.log('[offline] quiz.html: Auth null, UID en cache, démarrage offline');
+        quizInitTriggered = true;
+        initQuiz();
+      } else if (navigator.onLine || !localStorage.getItem('cachedUid')) {
         window.location = 'index.html';
-      } else {
-        // Hors-ligne, premier appel null → attendre que Auth charge le cache
-        console.log('[offline] quiz.html: Auth null, attente du cache...');
-        setTimeout(() => {
-          if (!quizAuthResolved && !quizInitTriggered) {
-            console.log('[offline] quiz.html: timeout Auth, retour accueil');
-            window.location = 'index.html';
-          }
-        }, 3000);
       }
     }
   });

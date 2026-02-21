@@ -624,7 +624,7 @@ async function filtrerQuestions(mode, nb) {
   }
 
   // fetch and normalize up-to-date responses
-  const uid = auth.currentUser?.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   let responses = {};
   if (uid) {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));

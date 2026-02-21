@@ -32,7 +32,7 @@ async function demarrerQuiz() {
  */
 function toggleMarquerQuestion(questionId, button) {
   console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
-  const uid = auth.currentUser?.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer ou supprimer une question.");
     return;
@@ -84,7 +84,7 @@ function toggleMarquerQuestion(questionId, button) {
 
 function toggleImportantQuestion(questionId, button) {
   console.log(">>> toggleImportantQuestion(questionId=" + questionId + ")");
-  const uid = auth.currentUser?.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer une question comme importante.");
     return;
@@ -159,11 +159,14 @@ function afficherBoutonsMarquer() {
 
 async function initQuiz() {
   console.log(">>> initQuiz()");
-  // redirect if not logged in
-  if (!auth.currentUser) {
+  // redirect if not logged in (sauf si offline avec UID en cache)
+  if (!auth.currentUser && !(localStorage.getItem('cachedUid') && !navigator.onLine)) {
     window.location = 'index.html';
     return;
   }
+
+  // Pré-charger les JSON si pas encore fait (nécessaire pour le mode offline)
+  await prefetchAllJsonFiles();
 
   ensureDailyStatsBarVisible();
   showBuildTag();
@@ -196,7 +199,7 @@ async function initQuiz() {
     localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
 
-  const uid = auth.currentUser.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   try {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
@@ -205,7 +208,7 @@ async function initQuiz() {
     currentResponses = currentResponses || {};
   }
   // Affiche le compteur quotidien sur la page du quiz
-  await displayDailyStats(auth.currentUser?.uid);
+  await displayDailyStats(uid);
   afficherQuiz();
 }
 
@@ -330,7 +333,7 @@ function handleImmediateAnswer(q, selectedRadio) {
 async function validerReponses() {
     console.log(">>> validerReponses()");
     let correctCount = 0;
-    const uid = auth.currentUser?.uid;
+    const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
     if (!uid) return;
 
     let responsesToSave = {};

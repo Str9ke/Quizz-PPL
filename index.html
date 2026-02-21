@@ -77,32 +77,28 @@
     });
 
     // Surveille l'état de connexion de l'utilisateur
-    let authResolved = false;
     auth.onAuthStateChanged(user => {
       if (user) {
-        authResolved = true;
+        // Sauvegarder le UID dans localStorage pour le mode offline
+        localStorage.setItem('cachedUid', user.uid);
         console.log("Utilisateur connecté :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (typeof initIndex === 'function') {
           initIndex();
         }
-      } else if (authResolved || navigator.onLine) {
-        // Auth a déjà résolu une fois OU on est en ligne → pas de user = vraiment déconnecté
+      } else if (!navigator.onLine && localStorage.getItem('cachedUid')) {
+        // Hors-ligne + utilisateur connu en cache → démarrer en mode offline
+        console.log("[offline] Auth null mais UID en cache, démarrage offline");
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("quizContainer").style.display = "block";
+        if (typeof initIndex === 'function') {
+          initIndex();
+        }
+      } else {
         console.log("Aucun utilisateur connecté");
         document.getElementById("loginContainer").style.display = "block";
         document.getElementById("quizContainer").style.display = "none";
-      } else {
-        // Premier appel + hors-ligne → attendre que Auth charge le user depuis IndexedDB
-        console.log("[offline] Auth retourne null, attente du cache IndexedDB...");
-        setTimeout(() => {
-          if (!authResolved) {
-            // Après 3s, toujours pas de user → afficher login
-            console.log("[offline] Timeout Auth — affichage login");
-            document.getElementById("loginContainer").style.display = "block";
-            document.getElementById("quizContainer").style.display = "none";
-          }
-        }, 3000);
       }
     });
   </script>
@@ -170,13 +166,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260221e"></script>
-  <script src="js/helpers.js?v=20260221e"></script>
-  <script src="js/categories.js?v=20260221e"></script>
-  <script src="js/stats.js?v=20260221e"></script>
-  <script src="js/quiz.js?v=20260221e"></script>
-  <script src="js/init.js?v=20260221e"></script>
-  <script src="js/offline.js?v=20260221e"></script>
+  <script src="js/globals.js?v=20260221f"></script>
+  <script src="js/helpers.js?v=20260221f"></script>
+  <script src="js/categories.js?v=20260221f"></script>
+  <script src="js/stats.js?v=20260221f"></script>
+  <script src="js/quiz.js?v=20260221f"></script>
+  <script src="js/init.js?v=20260221f"></script>
+  <script src="js/offline.js?v=20260221f"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
@@ -211,6 +207,7 @@
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
+        localStorage.removeItem('cachedUid');
         await auth.signOut();
         console.log("Déconnecté !");
         window.location.reload();

@@ -229,7 +229,7 @@ async function syncPendingWrites() {
   if (isSyncing) return;
   if (!navigator.onLine) return;
   
-  const uid = auth.currentUser?.uid;
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) return;
   
   const pending = await getPendingWrites();
