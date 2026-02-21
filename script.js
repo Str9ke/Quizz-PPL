@@ -1761,6 +1761,11 @@ function afficherCorrection() {
           ${idx + 1}. ${q.question}
           ${nonReponduHtml}
         </div>
+        ${ q.image 
+          ? `<div class="question-image">
+               <img src="${q.image}" alt="Question ${q.id} illustration" />
+             </div>`
+          : "" }
         <div class="answer-list">
           ${ansHtml}
         </div>
