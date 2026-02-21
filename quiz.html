@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <title>Quiz Aviation - Quiz</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -34,8 +34,8 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
 
-    console.log("Firebase initialisÃ© :", firebase.apps.length > 0);
-    console.log("Auth attachÃ© Ã  window :", !!window.auth);
+    console.log("Firebase initialisé :", firebase.apps.length > 0);
+    console.log("Auth attaché à window :", !!window.auth);
   </script>
 </head>
 <body>
@@ -46,19 +46,19 @@
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
-  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';</script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
   <div id="resultContainer" style="display:none;"></div>
   <h1>Quiz Aviation - Quiz</h1>
   <div id="buildInfo" style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:-6px;"></div>
 
-  <!-- Compteur de questions rÃ©pondues aujourd'hui -->
+  <!-- Compteur de questions répondues aujourd'hui -->
   <div id="dailyStatsBar" style="display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">â€¦</span>
+    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">…</span>
   </div>
 
   <script>
-    // Fallback ultra-simple pour afficher le compteur mÃªme si le script principal n'est pas chargÃ©
+    // Fallback ultra-simple pour afficher le compteur même si le script principal n'est pas chargé
     (function() {
       const waitForAuth = () => new Promise(resolve => {
         const u = auth.currentUser;
@@ -67,12 +67,12 @@
         const unsub = auth.onAuthStateChanged(user => {
           unsub();
           if (user) return resolve(user);
-          // Auth null â†’ utiliser cachedUid comme fallback
+          // Auth null → utiliser cachedUid comme fallback
           const cached = localStorage.getItem('cachedUid');
           if (cached) return resolve({ uid: cached });
           resolve(null);
         });
-        // Timeout si auth ne rÃ©pond pas
+        // Timeout si auth ne répond pas
         setTimeout(() => resolve(localStorage.getItem('cachedUid') ? { uid: localStorage.getItem('cachedUid') } : null), 2000);
       });
 
@@ -92,7 +92,7 @@
       };
 
       const renderCount = (n) => {
-        // Ratchet: ne jamais diminuer dans la mÃªme journÃ©e
+        // Ratchet: ne jamais diminuer dans la même journée
         const todayKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
         const prevMax = parseInt(localStorage.getItem(todayKey)) || 0;
         const display = Math.max(n, prevMax);
@@ -107,7 +107,7 @@
         try {
           const user = await waitForAuth();
           if (!user) return;
-          // Lecture rapide : cache Firestore si hors-ligne, sinon rÃ©seau avec timeout
+          // Lecture rapide : cache Firestore si hors-ligne, sinon réseau avec timeout
           const getOpts = navigator.onLine ? {} : { source: 'cache' };
           let doc;
           if (navigator.onLine) {
@@ -139,10 +139,10 @@
   </script>
 
   <div class="container" id="quizContainer">
-    <!-- Les questions seront affichÃ©es ici -->
+    <!-- Les questions seront affichées ici -->
   </div>
   <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="validerReponses()">Valider les RÃ©ponses</button>
+    <button onclick="validerReponses()">Valider les Réponses</button>
     <button onclick="window.location='stats.html'">Voir les Statistiques</button>
     <button onclick="window.location='index.html?accueil=1'">Retour Accueil</button>
     <button id="resetQuizBtn" style="margin-left:1em;">Reset</button>
@@ -150,16 +150,16 @@
   <div>
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
-  <!-- Cache-bust to forcer le chargement de la derniÃ¨re version du script -->
-  <script src="js/globals.js?v=20260223d"></script>
-  <script src="js/helpers.js?v=20260223d"></script>
-  <script src="js/categories.js?v=20260223d"></script>
-  <script src="js/stats.js?v=20260223d"></script>
-  <script src="js/quiz.js?v=20260223d"></script>
-  <script src="js/init.js?v=20260223d"></script>
-  <script src="js/offline.js?v=20260223d"></script>
+  <!-- Cache-bust to forcer le chargement de la dernière version du script -->
+  <script src="js/globals.js?v=20260223e"></script>
+  <script src="js/helpers.js?v=20260223e"></script>
+  <script src="js/categories.js?v=20260223e"></script>
+  <script src="js/stats.js?v=20260223e"></script>
+  <script src="js/quiz.js?v=20260223e"></script>
+  <script src="js/init.js?v=20260223e"></script>
+  <script src="js/offline.js?v=20260223e"></script>
   <script>
-    // SÃ©curitÃ© : dÃ©clenche l'affichage du compteur mÃªme si initQuiz ne le fait pas
+    // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
     document.addEventListener('DOMContentLoaded', () => {
       try {
         if (typeof showBuildTag === 'function') showBuildTag();
@@ -173,7 +173,7 @@
           }
         };
         setTimeout(kick, 500);
-        setTimeout(kick, 1500); // second essai au cas oÃ¹ auth arriverait plus tard
+        setTimeout(kick, 1500); // second essai au cas où auth arriverait plus tard
       } catch (e) {
         console.error('[inline] daily stats bootstrap error', e);
       }

@@ -178,12 +178,13 @@ async function saveDailyCountOffline(uid, count) {
 /**
  * Sauvegarde sessionResult avec fallback offline
  */
-async function saveSessionResultOffline(uid, correct, total, category) {
-  // Générer la date UNE SEULE fois pour que le backup localStorage
-  // et l'écriture Firestore aient la même date (déduplique correctement)
-  const sessionDate = new Date().toISOString();
+async function saveSessionResultOffline(uid, correct, total, category, sessionDate) {
+  // Utiliser la date passée en paramètre (ou en générer une si non fournie)
+  // La date est générée dans validerReponses() et partagée avec _saveSessionToLocalBackup
+  // pour que la déduplication fonctionne correctement
+  if (!sessionDate) sessionDate = new Date().toISOString();
 
-  // TOUJOURS sauvegarder en localStorage comme backup pour l'affichage offline
+  // Sauvegarder en localStorage comme backup (si pas déjà fait par validerReponses)
   if (typeof _saveSessionToLocalBackup === 'function') {
     _saveSessionToLocalBackup(correct, total, category, sessionDate);
   }

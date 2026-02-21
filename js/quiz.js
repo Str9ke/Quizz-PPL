@@ -418,14 +418,21 @@ async function validerReponses() {
       if (countElem) countElem.textContent = display;
     } catch (e) { /* localStorage plein — rare */ }
 
+    // Sauvegarder la session en localStorage IMMÉDIATEMENT
+    // (avant toute opération Firestore qui peut bloquer 10-15s offline)
+    const sessionDate = new Date().toISOString();
+    if (typeof _saveSessionToLocalBackup === 'function') {
+      _saveSessionToLocalBackup(correctCount, currentQuestions.length, selectedCategory, sessionDate);
+    }
+
     try {
         // Sauvegarde avec fallback offline
         currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);
 
         // Sauvegarder le compteur quotidien
         await saveDailyCountOffline(uid, currentQuestions.length);
-        // Sauvegarder le résultat de la session
-        await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory);
+        // Sauvegarder le résultat de la session (avec la même date pour déduplication)
+        await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory, sessionDate);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
     }

@@ -495,8 +495,14 @@ async function initStats() {
 function _saveSessionToLocalBackup(correct, total, category, sessionDate) {
   try {
     const backup = JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
+    const date = sessionDate || new Date().toISOString();
+    // Dédupliquer : ne pas ajouter si une session avec la même date existe déjà
+    if (backup.some(s => s.date === date)) {
+      console.log('[_saveSessionToLocalBackup] session déjà présente, ignorée');
+      return;
+    }
     backup.push({
-      date: sessionDate || new Date().toISOString(),
+      date,
       correct,
       total,
       category,
