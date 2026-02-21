@@ -596,12 +596,20 @@ function updateCategorySelect() {
  */
 async function categoryChanged() {
   const selected = document.getElementById("categorie").value;
+  // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
+  const modeSelect = document.getElementById('mode');
+  const previousMode = modeSelect ? modeSelect.value : 'ratees_nonvues';
+
   if (selected === "TOUTES") {
     await loadAllQuestions();
   } else {
     await chargerQuestions(selected);
   }
-  updateModeCounts();
+  await updateModeCounts();
+
+  // Restaurer le mode précédent (updateModeCounts recrée les options)
+  if (modeSelect) modeSelect.value = previousMode;
+
   document.getElementById("totalGlobalInfo").textContent =
     "Total questions disponibles: " + questions.length;
 }
@@ -619,7 +627,7 @@ async function filtrerQuestions(mode, nb) {
   const uid = auth.currentUser?.uid;
   let responses = {};
   if (uid) {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     responses = normalizeResponses(doc.exists ? doc.data().responses : {});
   }
 
