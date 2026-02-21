@@ -547,6 +547,16 @@ async function registerServiceWorker() {
         }
       });
     });
+
+    // Recharger la page quand un nouveau SW prend le contrôle
+    // (garantit que les JSON mis à jour sont servis depuis le nouveau cache)
+    let _swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_swRefreshing) return;
+      _swRefreshing = true;
+      console.log('[SW] Nouveau SW actif — rechargement pour mettre à jour les données');
+      window.location.reload();
+    });
   } catch (e) {
     console.error('[SW] Erreur d\'enregistrement:', e);
   }

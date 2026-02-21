@@ -4,7 +4,7 @@
  * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
  */
 function _buildExplicationHtml(q) {
-  if (!q.explication && !q.explication_images) return '';
+  if (!q.explication && (!q.explication_images || !q.explication_images.length)) return '';
   let html = '<div class="explication-block">';
   html += '<strong>\uD83D\uDCA1 Explication :</strong><br>';
   if (q.explication) {
@@ -344,7 +344,7 @@ function handleImmediateAnswer(q, selectedRadio) {
 
   // Afficher l'explication si disponible
   const questionBlock = selectedRadio.closest('.question-block');
-  if (questionBlock && (q.explication || q.explication_images)) {
+  if (questionBlock && (q.explication || (q.explication_images && q.explication_images.length))) {
     // Vérifier qu'on n'a pas déjà ajouté l'explication
     if (!questionBlock.querySelector('.explication-block')) {
       const explDiv = document.createElement('div');
