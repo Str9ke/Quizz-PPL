@@ -1914,13 +1914,13 @@ function afficherDailyChart(dailyHistory) {
   // Trouver ou créer le conteneur du graphique
   let chartCont = document.getElementById('dailyChartContainer');
   if (!chartCont) {
-    // Insérer après le statsContainer
+    // Insérer avant le statsContainer (tout en haut)
     const statsCont = document.getElementById('statsContainer');
     if (!statsCont) return;
     chartCont = document.createElement('div');
     chartCont.id = 'dailyChartContainer';
     chartCont.className = 'container';
-    statsCont.parentNode.insertBefore(chartCont, statsCont.nextSibling);
+    statsCont.parentNode.insertBefore(chartCont, statsCont);
   }
 
   // Générer les 60 derniers jours
