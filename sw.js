@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v5';
+const CACHE_NAME = 'quiz-ppl-v6';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -41,7 +41,6 @@ const PRECACHE_URLS = [
   BASE + 'questions_masse_et_centrage.json',
   BASE + 'questions_motorisation.json',
   BASE + 'questions_aerodynamique.json',
-  BASE + 'questions_easa_procedures_op.json',
   BASE + 'section_easa_procedures_new.json',
   BASE + 'section_easa_aerodynamique.json',
   BASE + 'section_easa_connaissance_avion.json',
@@ -78,10 +77,14 @@ const PRECACHE_URLS = [
 self.addEventListener('install', event => {
   console.log('[SW] Installation — pré-cache des assets');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(PRECACHE_URLS);
+    caches.open(CACHE_NAME).then(async cache => {
+      // Cacher chaque fichier individuellement pour ne pas bloquer si un seul échoue
+      const results = await Promise.allSettled(
+        PRECACHE_URLS.map(url => cache.add(url).catch(e => console.warn('[SW] Échec cache:', url, e.message)))
+      );
+      const ok = results.filter(r => r.status === 'fulfilled').length;
+      console.log(`[SW] Pré-cache: ${ok}/${PRECACHE_URLS.length} fichiers`);
     }).then(() => {
-      // Force le SW à prendre le contrôle immédiatement
       return self.skipWaiting();
     })
   );
