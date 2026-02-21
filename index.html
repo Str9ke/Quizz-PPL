@@ -77,6 +77,7 @@
     });
 
     // Surveille l'état de connexion de l'utilisateur
+    let indexInitTriggered = false;
     auth.onAuthStateChanged(user => {
       if (user) {
         // Sauvegarder le UID dans localStorage pour le mode offline
@@ -84,7 +85,8 @@
         console.log("Utilisateur connecté :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
-        if (typeof initIndex === 'function') {
+        if (!indexInitTriggered && typeof initIndex === 'function') {
+          indexInitTriggered = true;
           initIndex();
         }
       } else if (localStorage.getItem('cachedUid')) {
@@ -92,7 +94,8 @@
         console.log("[offline] Auth null mais UID en cache, démarrage offline");
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
-        if (typeof initIndex === 'function') {
+        if (!indexInitTriggered && typeof initIndex === 'function') {
+          indexInitTriggered = true;
           initIndex();
         }
       } else {
@@ -101,6 +104,16 @@
         document.getElementById("quizContainer").style.display = "none";
       }
     });
+    // Sécurité : si auth ne fire pas dans les 2s et qu'on a un cachedUid, démarrer quand même
+    setTimeout(() => {
+      if (!indexInitTriggered && localStorage.getItem('cachedUid')) {
+        console.log('[offline] index.html: Auth timeout, démarrage avec cachedUid');
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("quizContainer").style.display = "block";
+        indexInitTriggered = true;
+        if (typeof initIndex === 'function') initIndex();
+      }
+    }, 2000);
   </script>
 </head>
 <body>
@@ -115,6 +128,27 @@
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
   <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
   <h1>Quiz Aviation - Accueil</h1>
+  <script>
+    // EARLY: si on a un cachedUid, afficher immédiatement l'interface quiz
+    // et masquer le login (évite le flash du formulaire en mode offline)
+    (function() {
+      if (localStorage.getItem('cachedUid')) {
+        // quizContainer sera affiché dès qu'il existera dans le DOM
+        document.addEventListener('DOMContentLoaded', function() {
+          var lc = document.getElementById('loginContainer');
+          var qc = document.getElementById('quizContainer');
+          if (lc) lc.style.display = 'none';
+          if (qc) qc.style.display = 'block';
+        });
+      } else {
+        // Pas de cachedUid → montrer le login
+        document.addEventListener('DOMContentLoaded', function() {
+          var lc = document.getElementById('loginContainer');
+          if (lc) lc.style.display = 'block';
+        });
+      }
+    })();
+  </script>
 
   <!-- Compteur de questions répondues aujourd'hui -->
   <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -122,7 +156,7 @@
   </div>
 
   <!-- Formulaire de connexion/inscription -->
-  <div id="loginContainer" class="container">
+  <div id="loginContainer" class="container" style="display:none;">
     <h2>Connexion / Inscription</h2>
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email" required>
@@ -176,13 +210,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260223e"></script>
-  <script src="js/helpers.js?v=20260223e"></script>
-  <script src="js/categories.js?v=20260223e"></script>
-  <script src="js/stats.js?v=20260223e"></script>
-  <script src="js/quiz.js?v=20260223e"></script>
-  <script src="js/init.js?v=20260223e"></script>
-  <script src="js/offline.js?v=20260223e"></script>
+  <script src="js/globals.js?v=20260223f"></script>
+  <script src="js/helpers.js?v=20260223f"></script>
+  <script src="js/categories.js?v=20260223f"></script>
+  <script src="js/stats.js?v=20260223f"></script>
+  <script src="js/quiz.js?v=20260223f"></script>
+  <script src="js/init.js?v=20260223f"></script>
+  <script src="js/offline.js?v=20260223f"></script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
