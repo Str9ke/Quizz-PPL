@@ -88,14 +88,39 @@ let countInstr = 0;
 let countMasse = 0;
 let countMotor = 0;
 let countEasa = 0;
-let countAer = 0;      // ← nouveau compteur pour EASA AERODYNAMIQUE
-let countEasaAero = 0; // ← compteur pour EASA AERODYNAMIQUE
+let countAer = 0;      // compteur pour AERODYNAMIQUE PRINCIPES DU VOL
+let countEasaAero = 0; // compteur pour EASA AERODYNAMIQUE
 let countEasaConnaissance = 0;
 let countEasaMeteorologie = 0;
 let countEasaPerformance = 0;
 let countEasaReglementation = 0;
 let countEasaNavigation = 0; // ← compteur pour EASA NAVIGATION
 let countEasaPerfHumaines = 0; // ← compteur pour EASA PERFORMANCES HUMAINES
+let countEasaAll = 0; // agrégat toutes EASA
+let countGligliComm = 0;
+let countGligliConnaissance = 0;
+let countGligliEpreuveCommune = 0;
+let countGligliEpreuveSpecifique = 0;
+let countGligliMeteo = 0;
+let countGligliNavigation = 0;
+let countGligliPerfHumaine = 0;
+let countGligliPerfPrepVol = 0;
+let countGligliPrincipesVol = 0;
+let countGligliProcedures = 0;
+let countGligliReglementation = 0;
+let countGligliCommEasy = 0;
+let countGligliConnaissanceEasy = 0;
+let countGligliEpreuveCommuneEasy = 0;
+let countGligliEpreuveSpecifiqueEasy = 0;
+let countGligliMeteoEasy = 0;
+let countGligliNavigationEasy = 0;
+let countGligliPerfHumaineEasy = 0;
+let countGligliPerfPrepVolEasy = 0;
+let countGligliPrincipesVolEasy = 0;
+let countGligliProceduresEasy = 0;
+let countGligliReglementationEasy = 0;
+let countGligliAll = 0; // agrégat toutes GLIGLI
+let countAutresAll = 0; // agrégat hors EASA / GLIGLI
 let totalGlobal = 0;
 
 /**
@@ -316,6 +341,9 @@ async function initIndex() {
   countMasse = questions.length;
   await chargerQuestions("MOTORISATION");
   countMotor = questions.length;
+  // Catégorie AERODYNAMIQUE PRINCIPES DU VOL (fichier questions_aerodynamique.json)
+  await chargerQuestions("AERODYNAMIQUE PRINCIPES DU VOL");
+  countAer = questions.length;
   // Pour les catégories EASA : utilisez les clés telles qu'elles figurent dans index.html
   await chargerQuestions("EASA PROCEDURES");
   countEasa = questions.length;
@@ -335,13 +363,74 @@ async function initIndex() {
   // Nouvelle catégorie EASA PERFORMANCES HUMAINES
   await chargerQuestions("EASA PERFORMANCES HUMAINES");
   countEasaPerfHumaines = questions.length;
+  countEasaAll = countEasa + countEasaAero + countEasaNavigation + countEasaConnaissance + countEasaMeteorologie + countEasaPerformance + countEasaReglementation + countEasaPerfHumaines;
+
+  // Catégories GLIGLI HARD
+  await chargerQuestions("GLIGLI COMMUNICATIONS HARD");
+  countGligliComm = questions.length;
+  await chargerQuestions("GLIGLI CONNAISSANCES GENERALES AERONEF HARD");
+  countGligliConnaissance = questions.length;
+  await chargerQuestions("GLIGLI EPREUVE COMMUNE HARD");
+  countGligliEpreuveCommune = questions.length;
+  await chargerQuestions("GLIGLI EPREUVE SPECIFIQUE HARD");
+  countGligliEpreuveSpecifique = questions.length;
+  await chargerQuestions("GLIGLI METEOROLOGIE HARD");
+  countGligliMeteo = questions.length;
+  await chargerQuestions("GLIGLI NAVIGATION HARD");
+  countGligliNavigation = questions.length;
+  await chargerQuestions("GLIGLI PERFORMANCE HUMAINE HARD");
+  countGligliPerfHumaine = questions.length;
+  await chargerQuestions("GLIGLI PERFORMANCES PREPARATION VOL HARD");
+  countGligliPerfPrepVol = questions.length;
+  await chargerQuestions("GLIGLI PRINCIPES DU VOL HARD");
+  countGligliPrincipesVol = questions.length;
+  await chargerQuestions("GLIGLI PROCEDURES OPERATIONNELLES HARD");
+  countGligliProcedures = questions.length;
+  await chargerQuestions("GLIGLI REGLEMENTATION HARD");
+  countGligliReglementation = questions.length;
+  // GLIGLI EASY
+  await chargerQuestions("GLIGLI COMMUNICATIONS EASY");
+  countGligliCommEasy = questions.length;
+  await chargerQuestions("GLIGLI CONNAISSANCES GENERALES AERONEF EASY");
+  countGligliConnaissanceEasy = questions.length;
+  await chargerQuestions("GLIGLI EPREUVE COMMUNE EASY");
+  countGligliEpreuveCommuneEasy = questions.length;
+  await chargerQuestions("GLIGLI EPREUVE SPECIFIQUE EASY");
+  countGligliEpreuveSpecifiqueEasy = questions.length;
+  await chargerQuestions("GLIGLI METEOROLOGIE EASY");
+  countGligliMeteoEasy = questions.length;
+  await chargerQuestions("GLIGLI NAVIGATION EASY");
+  countGligliNavigationEasy = questions.length;
+  await chargerQuestions("GLIGLI PERFORMANCE HUMAINE EASY");
+  countGligliPerfHumaineEasy = questions.length;
+  await chargerQuestions("GLIGLI PERFORMANCES PREPARATION VOL EASY");
+  countGligliPerfPrepVolEasy = questions.length;
+  await chargerQuestions("GLIGLI PRINCIPES DU VOL EASY");
+  countGligliPrincipesVolEasy = questions.length;
+  await chargerQuestions("GLIGLI PROCEDURES OPERATIONNELLES EASY");
+  countGligliProceduresEasy = questions.length;
+  await chargerQuestions("GLIGLI REGLEMENTATION EASY");
+  countGligliReglementationEasy = questions.length;
+  countGligliAll = countGligliComm + countGligliConnaissance + countGligliEpreuveCommune + countGligliEpreuveSpecifique + countGligliMeteo + countGligliNavigation + countGligliPerfHumaine + countGligliPerfPrepVol + countGligliPrincipesVol + countGligliProcedures + countGligliReglementation;
+  countGligliAll += countGligliCommEasy + countGligliConnaissanceEasy + countGligliEpreuveCommuneEasy + countGligliEpreuveSpecifiqueEasy + countGligliMeteoEasy + countGligliNavigationEasy + countGligliPerfHumaineEasy + countGligliPerfPrepVolEasy + countGligliPrincipesVolEasy + countGligliProceduresEasy + countGligliReglementationEasy;
+
+  // Catégories autres (hors EASA / GLIGLI)
+  countAutresAll = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countAer;
   
   totalGlobal = countRadio + countOp + countRegl + countConv +
-                countInstr + countMasse + countMotor +
+                countInstr + countMasse + countMotor + countAer +
                 countEasa + countEasaAero + countEasaNavigation +
                 countEasaConnaissance + countEasaMeteorologie +
                 countEasaPerformance + countEasaReglementation +
-                countEasaPerfHumaines;
+                countEasaPerfHumaines +
+                countGligliComm + countGligliConnaissance + countGligliEpreuveCommune +
+                countGligliEpreuveSpecifique + countGligliMeteo + countGligliNavigation +
+                countGligliPerfHumaine + countGligliPerfPrepVol + countGligliPrincipesVol +
+                countGligliProcedures + countGligliReglementation +
+                countGligliCommEasy + countGligliConnaissanceEasy + countGligliEpreuveCommuneEasy +
+                countGligliEpreuveSpecifiqueEasy + countGligliMeteoEasy + countGligliNavigationEasy +
+                countGligliPerfHumaineEasy + countGligliPerfPrepVolEasy + countGligliPrincipesVolEasy +
+                countGligliProceduresEasy + countGligliReglementationEasy;
   
   updateCategorySelect();
 
@@ -372,7 +461,7 @@ async function initIndex() {
   const catCountElem = document.getElementById('categoryCount');
   if (catCountElem) {
     const categories = [
-      "PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
+      "AERODYNAMIQUE PRINCIPES DU VOL","PROCÉDURE RADIO","PROCÉDURES OPÉRATIONNELLES","RÉGLEMENTATION",
       "CONNAISSANCE DE L'AVION","INSTRUMENTATION","MASSE ET CENTRAGE",
       "MOTORISATION","EASA PROCEDURES","EASA AERODYNAMIQUE"
     ];
@@ -399,6 +488,7 @@ async function initIndex() {
 async function loadAllQuestions() {
   let allQuestions = [];
   const categories = [
+    "AERODYNAMIQUE PRINCIPES DU VOL",
     "PROCÉDURE RADIO",
     "PROCÉDURES OPÉRATIONNELLES",
     "RÉGLEMENTATION",
@@ -413,7 +503,29 @@ async function loadAllQuestions() {
     "EASA METEOROLOGIE",
     "EASA PERFORMANCE ET PLANIFICATION",
     "EASA REGLEMENTATION",
-    "EASA PERFORMANCES HUMAINES" // Nouvelle catégorie
+    "EASA PERFORMANCES HUMAINES", // Nouvelle catégorie
+    "GLIGLI COMMUNICATIONS HARD",
+    "GLIGLI CONNAISSANCES GENERALES AERONEF HARD",
+    "GLIGLI EPREUVE COMMUNE HARD",
+    "GLIGLI EPREUVE SPECIFIQUE HARD",
+    "GLIGLI METEOROLOGIE HARD",
+    "GLIGLI NAVIGATION HARD",
+    "GLIGLI PERFORMANCE HUMAINE HARD",
+    "GLIGLI PERFORMANCES PREPARATION VOL HARD",
+    "GLIGLI PRINCIPES DU VOL HARD",
+    "GLIGLI PROCEDURES OPERATIONNELLES HARD",
+    "GLIGLI REGLEMENTATION HARD",
+    "GLIGLI COMMUNICATIONS EASY",
+    "GLIGLI CONNAISSANCES GENERALES AERONEF EASY",
+    "GLIGLI EPREUVE COMMUNE EASY",
+    "GLIGLI EPREUVE SPECIFIQUE EASY",
+    "GLIGLI METEOROLOGIE EASY",
+    "GLIGLI NAVIGATION EASY",
+    "GLIGLI PERFORMANCE HUMAINE EASY",
+    "GLIGLI PERFORMANCES PREPARATION VOL EASY",
+    "GLIGLI PRINCIPES DU VOL EASY",
+    "GLIGLI PROCEDURES OPERATIONNELLES EASY",
+    "GLIGLI REGLEMENTATION EASY"
   ];
   for (const cat of categories) {
     await chargerQuestions(cat);
@@ -436,6 +548,12 @@ function updateCategorySelect() {
 
   // Use friendly display names for EASA categories
   const categories = [
+    // Mettre les trois catégories agrégées juste après "Toutes"
+    { value: "GLIGLI ALL", display: "GLIGLI - TOUTES", count: countGligliAll },
+    { value: "AUTRES", display: "AUTRES (hors EASA/GLIGLI)", count: countAutresAll },
+    { value: "EASA ALL", display: "EASA - TOUTES", count: countEasaAll },
+    // Puis les autres catégories
+    { value: "AERODYNAMIQUE PRINCIPES DU VOL", display: "AERODYNAMIQUE PRINCIPES DU VOL", count: countAer },
     { value: "PROCÉDURE RADIO", display: "PROCÉDURE RADIO", count: countRadio },
     { value: "PROCÉDURES OPÉRATIONNELLES", display: "PROCÉDURES OPÉRATIONNELLES", count: countOp },
     { value: "RÉGLEMENTATION", display: "RÉGLEMENTATION", count: countRegl },
@@ -450,7 +568,29 @@ function updateCategorySelect() {
     { value: "EASA METEOROLOGIE", display: "EASA METEOROLOGIE", count: countEasaMeteorologie },
     { value: "EASA PERFORMANCE ET PLANIFICATION", display: "EASA PERFORMANCE ET PLANIFICATION", count: countEasaPerformance },
     { value: "EASA REGLEMENTATION", display: "EASA REGLEMENTATION", count: countEasaReglementation },
-    { value: "EASA PERFORMANCES HUMAINES", display: "EASA PERFORMANCES HUMAINES", count: countEasaPerfHumaines }
+    { value: "EASA PERFORMANCES HUMAINES", display: "EASA PERFORMANCES HUMAINES", count: countEasaPerfHumaines },
+    { value: "GLIGLI COMMUNICATIONS HARD", display: "GLIGLI COMMUNICATIONS (HARD)", count: countGligliComm },
+    { value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD", display: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (HARD)", count: countGligliConnaissance },
+    { value: "GLIGLI EPREUVE COMMUNE HARD", display: "GLIGLI ÉPREUVE COMMUNE (HARD)", count: countGligliEpreuveCommune },
+    { value: "GLIGLI EPREUVE SPECIFIQUE HARD", display: "GLIGLI ÉPREUVE SPÉCIFIQUE (HARD)", count: countGligliEpreuveSpecifique },
+    { value: "GLIGLI METEOROLOGIE HARD", display: "GLIGLI MÉTÉOROLOGIE (HARD)", count: countGligliMeteo },
+    { value: "GLIGLI NAVIGATION HARD", display: "GLIGLI NAVIGATION (HARD)", count: countGligliNavigation },
+    { value: "GLIGLI PERFORMANCE HUMAINE HARD", display: "GLIGLI PERFORMANCE HUMAINE (HARD)", count: countGligliPerfHumaine },
+    { value: "GLIGLI PERFORMANCES PREPARATION VOL HARD", display: "GLIGLI PERFORMANCES & PRÉP. VOL (HARD)", count: countGligliPerfPrepVol },
+    { value: "GLIGLI PRINCIPES DU VOL HARD", display: "GLIGLI PRINCIPES DU VOL (HARD)", count: countGligliPrincipesVol },
+    { value: "GLIGLI PROCEDURES OPERATIONNELLES HARD", display: "GLIGLI PROCÉDURES OPÉRATIONNELLES (HARD)", count: countGligliProcedures },
+    { value: "GLIGLI REGLEMENTATION HARD", display: "GLIGLI RÉGLEMENTATION (HARD)", count: countGligliReglementation },
+    { value: "GLIGLI COMMUNICATIONS EASY", display: "GLIGLI COMMUNICATIONS (EASY)", count: countGligliCommEasy },
+    { value: "GLIGLI CONNAISSANCES GENERALES AERONEF EASY", display: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (EASY)", count: countGligliConnaissanceEasy },
+    { value: "GLIGLI EPREUVE COMMUNE EASY", display: "GLIGLI ÉPREUVE COMMUNE (EASY)", count: countGligliEpreuveCommuneEasy },
+    { value: "GLIGLI EPREUVE SPECIFIQUE EASY", display: "GLIGLI ÉPREUVE SPÉCIFIQUE (EASY)", count: countGligliEpreuveSpecifiqueEasy },
+    { value: "GLIGLI METEOROLOGIE EASY", display: "GLIGLI MÉTÉOROLOGIE (EASY)", count: countGligliMeteoEasy },
+    { value: "GLIGLI NAVIGATION EASY", display: "GLIGLI NAVIGATION (EASY)", count: countGligliNavigationEasy },
+    { value: "GLIGLI PERFORMANCE HUMAINE EASY", display: "GLIGLI PERFORMANCE HUMAINE (EASY)", count: countGligliPerfHumaineEasy },
+    { value: "GLIGLI PERFORMANCES PREPARATION VOL EASY", display: "GLIGLI PERFORMANCES & PRÉP. VOL (EASY)", count: countGligliPerfPrepVolEasy },
+    { value: "GLIGLI PRINCIPES DU VOL EASY", display: "GLIGLI PRINCIPES DU VOL (EASY)", count: countGligliPrincipesVolEasy },
+    { value: "GLIGLI PROCEDURES OPERATIONNELLES EASY", display: "GLIGLI PROCÉDURES OPÉRATIONNELLES (EASY)", count: countGligliProceduresEasy },
+    { value: "GLIGLI REGLEMENTATION EASY", display: "GLIGLI RÉGLEMENTATION (EASY)", count: countGligliReglementationEasy }
   ];
   
   categories.forEach(cat => {
@@ -486,16 +626,66 @@ function fixQuotes(str) {
 function getNormalizedCategory(cat) {
   if (!cat) return "TOUTES";
   cat = fixQuotes(cat).replace(/_/g,' ').trim().toLowerCase();
+  const catAscii = cat.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  // map section_easa_* keys
-  if (cat.includes("procedures"))      return "EASA PROCEDURES";
-  if (cat.includes("aerodynamique"))   return "EASA AERODYNAMIQUE";
-  if (cat.includes("navigation"))      return "EASA NAVIGATION";
-  if (cat.includes("connaissance avion"))   return "EASA CONNAISSANCE DE L'AVION";
-  if (cat.includes("meteorologie"))    return "EASA METEOROLOGIE";
-  if (cat.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
-  if (cat.includes("reglementation"))  return "EASA REGLEMENTATION";
-  if (cat.includes("performances humaines")) return "EASA PERFORMANCES HUMAINES";
+  const isGligli = catAscii.includes("gligli");
+  const mentionsEasy = catAscii.includes("easy");
+  const mentionsHard = catAscii.includes("hard") || (isGligli && !mentionsEasy);
+
+  // GLIGLI agrégées et spécifiques
+  if (catAscii.includes("easa") && catAscii.includes("all")) return "EASA ALL";
+  if (isGligli && catAscii.includes("all")) return "GLIGLI ALL";
+  if (catAscii.includes("autres")) return "AUTRES";
+
+  if (isGligli && mentionsEasy) {
+    if (catAscii.includes("communications")) return "GLIGLI COMMUNICATIONS EASY";
+    if (catAscii.includes("connaissance") && catAscii.includes("aeronef")) return "GLIGLI CONNAISSANCES GENERALES AERONEF EASY";
+    if (catAscii.includes("epreuve") && catAscii.includes("commune")) return "GLIGLI EPREUVE COMMUNE EASY";
+    if (catAscii.includes("epreuve") && catAscii.includes("specifique")) return "GLIGLI EPREUVE SPECIFIQUE EASY";
+    if (catAscii.includes("meteorologie")) return "GLIGLI METEOROLOGIE EASY";
+    if (catAscii.includes("navigation")) return "GLIGLI NAVIGATION EASY";
+    if (catAscii.includes("performance") && catAscii.includes("humaine")) return "GLIGLI PERFORMANCE HUMAINE EASY";
+    if (catAscii.includes("performances") && catAscii.includes("preparation")) return "GLIGLI PERFORMANCES PREPARATION VOL EASY";
+    if (catAscii.includes("principes") && catAscii.includes("vol")) return "GLIGLI PRINCIPES DU VOL EASY";
+    if (catAscii.includes("procedure") && catAscii.includes("operationnelle")) return "GLIGLI PROCEDURES OPERATIONNELLES EASY";
+    if (catAscii.includes("reglementation")) return "GLIGLI REGLEMENTATION EASY";
+  }
+
+  if (isGligli && mentionsHard) {
+    if (catAscii.includes("communications")) return "GLIGLI COMMUNICATIONS HARD";
+    if (catAscii.includes("connaissance") && catAscii.includes("aeronef")) return "GLIGLI CONNAISSANCES GENERALES AERONEF HARD";
+    if (catAscii.includes("epreuve") && catAscii.includes("commune")) return "GLIGLI EPREUVE COMMUNE HARD";
+    if (catAscii.includes("epreuve") && catAscii.includes("specifique")) return "GLIGLI EPREUVE SPECIFIQUE HARD";
+    if (catAscii.includes("meteorologie")) return "GLIGLI METEOROLOGIE HARD";
+    if (catAscii.includes("navigation")) return "GLIGLI NAVIGATION HARD";
+    if (catAscii.includes("performance") && catAscii.includes("humaine")) return "GLIGLI PERFORMANCE HUMAINE HARD";
+    if (catAscii.includes("performances") && catAscii.includes("preparation")) return "GLIGLI PERFORMANCES PREPARATION VOL HARD";
+    if (catAscii.includes("principes") && catAscii.includes("vol")) return "GLIGLI PRINCIPES DU VOL HARD";
+    if (catAscii.includes("procedure") && catAscii.includes("operationnelle")) return "GLIGLI PROCEDURES OPERATIONNELLES HARD";
+    if (catAscii.includes("reglementation")) return "GLIGLI REGLEMENTATION HARD";
+  }
+
+  // EASA explicite
+  if (catAscii.includes("easa")) {
+    if (catAscii.includes("aerodynamique")) return "EASA AERODYNAMIQUE";
+    if (catAscii.includes("navigation")) return "EASA NAVIGATION";
+    if (catAscii.includes("connaissance") && catAscii.includes("avion")) return "EASA CONNAISSANCE DE L'AVION";
+    if (catAscii.includes("meteorologie")) return "EASA METEOROLOGIE";
+    if (catAscii.includes("performance") && catAscii.includes("planification")) return "EASA PERFORMANCE ET PLANIFICATION";
+    if (catAscii.includes("reglementation")) return "EASA REGLEMENTATION";
+    if (catAscii.includes("performances") && catAscii.includes("humaines")) return "EASA PERFORMANCES HUMAINES";
+    if (catAscii.includes("procedures")) return "EASA PROCEDURES";
+  }
+
+  // Catégories classiques
+  if (catAscii.includes("aerodynamique")) return "AERODYNAMIQUE PRINCIPES DU VOL";
+  if (catAscii.includes("procedure") && catAscii.includes("radio")) return "PROCÉDURE RADIO";
+  if (catAscii.includes("procedures") && catAscii.includes("operationnelles")) return "PROCÉDURES OPÉRATIONNELLES";
+  if (catAscii.includes("reglementation")) return "RÉGLEMENTATION";
+  if (catAscii.includes("connaissance") && catAscii.includes("avion")) return "CONNAISSANCE DE L'AVION";
+  if (catAscii.includes("instrumentation")) return "INSTRUMENTATION";
+  if (catAscii.includes("masse") && catAscii.includes("centrage")) return "MASSE ET CENTRAGE";
+  if (catAscii.includes("motorisation")) return "MOTORISATION";
 
   return cat.toUpperCase();
 }
@@ -503,14 +693,63 @@ function getNormalizedCategory(cat) {
 function getNormalizedSelectedCategory(selected) {
   if (!selected || selected==="TOUTES") return "TOUTES";
   const s=selected.replace(/_/g,' ').trim().toLowerCase();
-  if (s.includes("procedures"))      return "EASA PROCEDURES";
-  if (s.includes("aerodynamique"))   return "EASA AERODYNAMIQUE";
-  if (s.includes("navigation"))      return "EASA NAVIGATION";
-  if (s.includes("connaissance avion"))   return "EASA CONNAISSANCE DE L'AVION";
-  if (s.includes("meteorologie"))    return "EASA METEOROLOGIE";
-  if (s.includes("performance planification")) return "EASA PERFORMANCE ET PLANIFICATION";
-  if (s.includes("reglementation"))  return "EASA REGLEMENTATION";
-  if (s.includes("performances humaines")) return "EASA PERFORMANCES HUMAINES";
+  const sAscii = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const isGligli = sAscii.includes("gligli");
+  const mentionsEasy = sAscii.includes("easy");
+  const mentionsHard = sAscii.includes("hard") || (isGligli && !mentionsEasy);
+
+  if (sAscii.includes("easa") && sAscii.includes("all")) return "EASA ALL";
+  if (isGligli && sAscii.includes("all")) return "GLIGLI ALL";
+  if (sAscii.includes("autres")) return "AUTRES";
+
+  if (isGligli && mentionsEasy) {
+    if (sAscii.includes("communications")) return "GLIGLI COMMUNICATIONS EASY";
+    if (sAscii.includes("connaissance") && sAscii.includes("aeronef")) return "GLIGLI CONNAISSANCES GENERALES AERONEF EASY";
+    if (sAscii.includes("epreuve") && sAscii.includes("commune")) return "GLIGLI EPREUVE COMMUNE EASY";
+    if (sAscii.includes("epreuve") && sAscii.includes("specifique")) return "GLIGLI EPREUVE SPECIFIQUE EASY";
+    if (sAscii.includes("meteorologie")) return "GLIGLI METEOROLOGIE EASY";
+    if (sAscii.includes("navigation")) return "GLIGLI NAVIGATION EASY";
+    if (sAscii.includes("performance") && sAscii.includes("humaine")) return "GLIGLI PERFORMANCE HUMAINE EASY";
+    if (sAscii.includes("performances") && sAscii.includes("preparation")) return "GLIGLI PERFORMANCES PREPARATION VOL EASY";
+    if (sAscii.includes("principes") && sAscii.includes("vol")) return "GLIGLI PRINCIPES DU VOL EASY";
+    if (sAscii.includes("procedure") && sAscii.includes("operationnelle")) return "GLIGLI PROCEDURES OPERATIONNELLES EASY";
+    if (sAscii.includes("reglementation")) return "GLIGLI REGLEMENTATION EASY";
+  }
+
+  if (isGligli && mentionsHard) {
+    if (sAscii.includes("communications")) return "GLIGLI COMMUNICATIONS HARD";
+    if (sAscii.includes("connaissance") && sAscii.includes("aeronef")) return "GLIGLI CONNAISSANCES GENERALES AERONEF HARD";
+    if (sAscii.includes("epreuve") && sAscii.includes("commune")) return "GLIGLI EPREUVE COMMUNE HARD";
+    if (sAscii.includes("epreuve") && sAscii.includes("specifique")) return "GLIGLI EPREUVE SPECIFIQUE HARD";
+    if (sAscii.includes("meteorologie")) return "GLIGLI METEOROLOGIE HARD";
+    if (sAscii.includes("navigation")) return "GLIGLI NAVIGATION HARD";
+    if (sAscii.includes("performance") && sAscii.includes("humaine")) return "GLIGLI PERFORMANCE HUMAINE HARD";
+    if (sAscii.includes("performances") && sAscii.includes("preparation")) return "GLIGLI PERFORMANCES PREPARATION VOL HARD";
+    if (sAscii.includes("principes") && sAscii.includes("vol")) return "GLIGLI PRINCIPES DU VOL HARD";
+    if (sAscii.includes("procedure") && sAscii.includes("operationnelle")) return "GLIGLI PROCEDURES OPERATIONNELLES HARD";
+    if (sAscii.includes("reglementation")) return "GLIGLI REGLEMENTATION HARD";
+  }
+
+  if (sAscii.includes("easa")) {
+    if (sAscii.includes("aerodynamique")) return "EASA AERODYNAMIQUE";
+    if (sAscii.includes("navigation")) return "EASA NAVIGATION";
+    if (sAscii.includes("connaissance") && sAscii.includes("avion")) return "EASA CONNAISSANCE DE L'AVION";
+    if (sAscii.includes("meteorologie")) return "EASA METEOROLOGIE";
+    if (sAscii.includes("performance") && sAscii.includes("planification")) return "EASA PERFORMANCE ET PLANIFICATION";
+    if (sAscii.includes("reglementation")) return "EASA REGLEMENTATION";
+    if (sAscii.includes("performances") && sAscii.includes("humaines")) return "EASA PERFORMANCES HUMAINES";
+    if (sAscii.includes("procedures")) return "EASA PROCEDURES";
+  }
+
+  if (sAscii.includes("aerodynamique")) return "AERODYNAMIQUE PRINCIPES DU VOL";
+  if (sAscii.includes("procedure") && sAscii.includes("radio")) return "PROCÉDURE RADIO";
+  if (sAscii.includes("procedures") && sAscii.includes("operationnelles")) return "PROCÉDURES OPÉRATIONNELLES";
+  if (sAscii.includes("reglementation")) return "RÉGLEMENTATION";
+  if (sAscii.includes("connaissance") && sAscii.includes("avion")) return "CONNAISSANCE DE L'AVION";
+  if (sAscii.includes("instrumentation")) return "INSTRUMENTATION";
+  if (sAscii.includes("masse") && sAscii.includes("centrage")) return "MASSE ET CENTRAGE";
+  if (sAscii.includes("motorisation")) return "MOTORISATION";
+
   return selected.toUpperCase();
 }
 
@@ -524,7 +763,7 @@ async function updateModeCounts() {
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
-    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0;
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0;
     list.forEach(q => {
       const r = currentResponses[getKeyFor(q)];
       total++;
@@ -534,6 +773,7 @@ async function updateModeCounts() {
         if (r.status==="réussie") nbReussies++;
         if (r.status==="ratée")   nbRatees++;
         if (r.marked)             nbMarquees++;
+        if (r.important)          nbImportantes++;
       }
     });
 
@@ -546,6 +786,7 @@ async function updateModeCounts() {
         <option value="nonvues">Non vues (${nbNonvues})</option>
         <option value="reussies">Réussies (${nbReussies})</option>
         <option value="marquees">Marquées (${nbMarquees})</option>
+        <option value="importantes">Importantes (${nbImportantes})</option>
       `;
     }
 }
@@ -651,6 +892,18 @@ if (oldSelect) {
 async function chargerQuestions(cat) {
     const norm = getNormalizedCategory(cat);
     let fileName = "";
+  const loadFile = async (fname) => {
+    const res = await fetch(fname);
+    const data = res.ok ? await res.json() : [];
+    return Array.isArray(data) ? data : [];
+  };
+  const normalizeList = (list, categoryName) => list.map((q, i) => ({
+    ...q,
+    id: i + 1,
+    categorie: categoryName,
+    image: q.image || q.image_url || q.imageUrl || null
+  }));
+
     switch (norm) {
         case "PROCÉDURE RADIO":
             fileName = "questions_procedure_radio.json";
@@ -673,6 +926,9 @@ async function chargerQuestions(cat) {
         case "MOTORISATION":
             fileName = "questions_motorisation.json";
             break;
+        case "AERODYNAMIQUE PRINCIPES DU VOL":
+          fileName = "questions_aerodynamique.json";
+          break;
         case "EASA PROCEDURES":
             fileName = "section_easa_procedures_new.json";
             break;
@@ -697,6 +953,158 @@ async function chargerQuestions(cat) {
         case "EASA PERFORMANCES HUMAINES":
             fileName = "section_easa_perf_humaines.json";
             break;
+        case "GLIGLI COMMUNICATIONS HARD":
+          fileName = "gligli_communications_hard.json";
+          break;
+        case "GLIGLI CONNAISSANCES GENERALES AERONEF HARD":
+          fileName = "gligli_connaissances_generales_aeronef_hard.json";
+          break;
+        case "GLIGLI EPREUVE COMMUNE HARD":
+          fileName = "gligli_epreuve_commune_hard.json";
+          break;
+        case "GLIGLI EPREUVE SPECIFIQUE HARD":
+          fileName = "gligli_epreuve_specifique_hard.json";
+          break;
+        case "GLIGLI METEOROLOGIE HARD":
+          fileName = "gligli_meteorologie_hard.json";
+          break;
+        case "GLIGLI NAVIGATION HARD":
+          fileName = "gligli_navigation_hard.json";
+          break;
+        case "GLIGLI PERFORMANCE HUMAINE HARD":
+          fileName = "gligli_performance_humaine_hard.json";
+          break;
+        case "GLIGLI PERFORMANCES PREPARATION VOL HARD":
+          fileName = "gligli_performances_preparation_vol_hard.json";
+          break;
+        case "GLIGLI PRINCIPES DU VOL HARD":
+          fileName = "gligli_principes_du_vol_hard.json";
+          break;
+        case "GLIGLI PROCEDURES OPERATIONNELLES HARD":
+          fileName = "gligli_procedures_operationnelles_hard.json";
+          break;
+        case "GLIGLI REGLEMENTATION HARD":
+          fileName = "gligli_reglementation_hard.json";
+          break;
+        case "GLIGLI COMMUNICATIONS EASY":
+          fileName = "gligli_communications_easy.json";
+          break;
+        case "GLIGLI CONNAISSANCES GENERALES AERONEF EASY":
+          fileName = "gligli_connaissances_generales_aeronef_easy.json";
+          break;
+        case "GLIGLI EPREUVE COMMUNE EASY":
+          fileName = "gligli_epreuve_commune_easy.json";
+          break;
+        case "GLIGLI EPREUVE SPECIFIQUE EASY":
+          fileName = "gligli_epreuve_specifique_easy.json";
+          break;
+        case "GLIGLI METEOROLOGIE EASY":
+          fileName = "gligli_meteorologie_easy.json";
+          break;
+        case "GLIGLI NAVIGATION EASY":
+          fileName = "gligli_navigation_easy.json";
+          break;
+        case "GLIGLI PERFORMANCE HUMAINE EASY":
+          fileName = "gligli_performance_humaine_easy.json";
+          break;
+        case "GLIGLI PERFORMANCES PREPARATION VOL EASY":
+          fileName = "gligli_performances_preparation_vol_easy.json";
+          break;
+        case "GLIGLI PRINCIPES DU VOL EASY":
+          fileName = "gligli_principes_du_vol_easy.json";
+          break;
+        case "GLIGLI PROCEDURES OPERATIONNELLES EASY":
+          fileName = "gligli_procedures_operationnelles_easy.json";
+          break;
+        case "GLIGLI REGLEMENTATION EASY":
+          fileName = "gligli_reglementation_easy.json";
+          break;
+        case "EASA ALL": {
+          const files = [
+            "section_easa_procedures_new.json",
+            "section_easa_aerodynamique.json",
+            "section_easa_navigation.json",
+            "section_easa_connaissance_avion.json",
+            "section_easa_meteorologie.json",
+            "section_easa_performance_planification.json",
+            "section_easa_reglementation.json",
+            "section_easa_perf_humaines.json"
+          ];
+          try {
+            const all = [];
+            for (const f of files) {
+              const part = await loadFile(f);
+              all.push(...part);
+            }
+            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+          } catch (err) {
+            console.error("Erreur de chargement EASA ALL", err);
+            questions = [];
+          }
+          return;
+        }
+        case "GLIGLI ALL": {
+          const files = [
+            "gligli_communications_hard.json",
+            "gligli_connaissances_generales_aeronef_hard.json",
+            "gligli_epreuve_commune_hard.json",
+            "gligli_epreuve_specifique_hard.json",
+            "gligli_meteorologie_hard.json",
+            "gligli_navigation_hard.json",
+            "gligli_performance_humaine_hard.json",
+            "gligli_performances_preparation_vol_hard.json",
+            "gligli_principes_du_vol_hard.json",
+            "gligli_procedures_operationnelles_hard.json",
+            "gligli_reglementation_hard.json",
+            "gligli_communications_easy.json",
+            "gligli_connaissances_generales_aeronef_easy.json",
+            "gligli_epreuve_commune_easy.json",
+            "gligli_epreuve_specifique_easy.json",
+            "gligli_meteorologie_easy.json",
+            "gligli_navigation_easy.json",
+            "gligli_performance_humaine_easy.json",
+            "gligli_performances_preparation_vol_easy.json",
+            "gligli_principes_du_vol_easy.json",
+            "gligli_procedures_operationnelles_easy.json",
+            "gligli_reglementation_easy.json"
+          ];
+          try {
+            const all = [];
+            for (const f of files) {
+              const part = await loadFile(f);
+              all.push(...part);
+            }
+            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+          } catch (err) {
+            console.error("Erreur de chargement GLIGLI ALL", err);
+            questions = [];
+          }
+          return;
+        }
+        case "AUTRES": {
+          const files = [
+            "questions_procedure_radio.json",
+            "questions_procedure_operationnelles.json",
+            "questions_reglementation.json",
+            "questions_connaissance_avion.json",
+            "questions_instrumentation.json",
+            "questions_masse_et_centrage.json",
+            "questions_motorisation.json",
+            "questions_aerodynamique.json"
+          ];
+          try {
+            const all = [];
+            for (const f of files) {
+              const part = await loadFile(f);
+              all.push(...part);
+            }
+            questions = normalizeList(all, norm).map((q, idx) => ({ ...q, id: idx + 1 }));
+          } catch (err) {
+            console.error("Erreur de chargement AUTRES", err);
+            questions = [];
+          }
+          return;
+        }
         case "TOUTES":
             return;
         default:
@@ -706,9 +1114,16 @@ async function chargerQuestions(cat) {
     }
     try {
         const res = await fetch(fileName);
-        questions = res.ok ? await res.json() : [];
-        questions.forEach((q, i) => q.id = i + 1);
-    } catch {
+        const data = res.ok ? await res.json() : [];
+        const normalizedCat = norm;
+        questions = Array.isArray(data) ? data.map((q, i) => ({
+          ...q,
+          id: i + 1,
+          categorie: normalizedCat,
+          image: q.image || q.image_url || q.imageUrl || null
+        })) : [];
+      } catch (err) {
+        console.error("Erreur de chargement pour", norm, err);
         questions = [];
     }
 }
@@ -762,12 +1177,7 @@ async function filtrerQuestions(mode, nb) {
   }
 
   const shuffled = [...questions].sort(() => 0.5 - Math.random());
-  if (mode === "marquees") {
-    currentQuestions = shuffled
-      .filter(q => responses[getKeyFor(q)]?.marked)
-      .slice(0, nb);
-  }
-  else if (mode === "toutes") {
+  if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   }
   else if (mode === "ratees") {
@@ -786,6 +1196,11 @@ async function filtrerQuestions(mode, nb) {
          const s = responses[getKeyFor(q)]?.status;
          return s === 'ratée' || !s;
       })
+      .slice(0, nb);
+  }
+  else if (mode === "importantes") {
+    currentQuestions = shuffled
+      .filter(q => responses[getKeyFor(q)]?.important)
       .slice(0, nb);
   }
   else if (mode === "marquees") {
@@ -823,7 +1238,8 @@ function toggleMarquerQuestion(questionId, button) {
     responses: {
       [key]: {
         status: prev.status || 'ratée',
-        marked: newMarked
+        marked: newMarked,
+        important: prev.important === true
       }
     }
   };
@@ -842,6 +1258,45 @@ function toggleMarquerQuestion(questionId, button) {
     .catch(console.error);
 }
 
+function toggleImportantQuestion(questionId, button) {
+  console.log(">>> toggleImportantQuestion(questionId=" + questionId + ")");
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    alert("Vous devez être connecté pour marquer une question comme importante.");
+    return;
+  }
+
+  const question = currentQuestions.find(q => q.id === questionId);
+  if (!question) {
+    console.error("Question introuvable dans la catégorie sélectionnée.");
+    return;
+  }
+
+  const key = getKeyFor(question);
+  const prev = currentResponses[key] || {};
+  const newImportant = !prev.important;
+  const payload = {
+    responses: {
+      [key]: {
+        status: prev.status || 'ratée',
+        marked: prev.marked === true,
+        important: newImportant
+      }
+    }
+  };
+
+  db.collection('quizProgress').doc(uid)
+    .set(payload, { merge: true })
+    .then(() => {
+      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
+      button.textContent = newImportant ? "Retirer Important" : "Important";
+      button.className   = newImportant ? "unimportant-button" : "important-button";
+      updateModeCounts();
+      updateMarkedCount();
+    })
+    .catch(console.error);
+}
+
 /**
  * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
@@ -849,17 +1304,24 @@ function afficherBoutonsMarquer() {
   console.log(">>> afficherBoutonsMarquer()");
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
-    // remove any existing mark-button to avoid duplicates
-    const existingBtn = block.querySelector('.mark-button, .delete-button');
-    if (existingBtn) existingBtn.remove();
+    // remove existing action buttons to avoid duplicates
+    block.querySelectorAll('.mark-button, .delete-button, .important-button, .unimportant-button').forEach(btn => btn.remove());
     const q   = currentQuestions[idx];
     const key = getKeyFor(q);
     const isMarked = (currentResponses[key] && currentResponses[key].marked === true);
+    const isImportant = (currentResponses[key] && currentResponses[key].important === true);
     const btn = document.createElement('button');
     btn.textContent = isMarked ? "Supprimer" : "Marquer";
     btn.className   = isMarked ? "delete-button" : "mark-button";
     btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
     block.appendChild(btn);
+
+    const btnImp = document.createElement('button');
+    btnImp.textContent = isImportant ? "Retirer Important" : "Important";
+    btnImp.className   = isImportant ? "delete-button" : "mark-button";
+    btnImp.style.marginLeft = '8px';
+    btnImp.onclick     = () => toggleImportantQuestion(q.id, btnImp);
+    block.appendChild(btnImp);
   });
 }
 
@@ -1010,6 +1472,7 @@ async function validerReponses() {
         const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
         const key = getKeyFor(q);
         const wasMarked = currentResponses[key]?.marked === true;
+      const wasImportant = currentResponses[key]?.important === true;
         const status = sel 
             ? (parseInt(sel.value) === q.bonne_reponse ? 'réussie' : 'ratée') 
             : 'ratée';
@@ -1017,7 +1480,8 @@ async function validerReponses() {
             category: q.categorie,
             questionId: q.id,
             status,
-            marked: wasMarked,
+        marked: wasMarked,
+        important: wasImportant,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (status === 'réussie') correctCount++;
@@ -1144,210 +1608,104 @@ async function initStats() {
 
     // Pour chaque catégorie, charge les questions et calcule les stats à partir des réponses Firestore
     const categoriesList = [
-      "PROCÉDURE RADIO",
-      "PROCÉDURES OPÉRATIONNELLES",
-      "RÉGLEMENTATION",
-      "CONNAISSANCE DE L'AVION",
-      "INSTRUMENTATION",
-      "MASSE ET CENTRAGE",
-      "MOTORISATION",
-      "EASA PROCEDURES",
-      "EASA AERODYNAMIQUE",   // ← inclure ici
-      "EASA NAVIGATION",
-      "EASA CONNAISSANCE DE L'AVION",
-      "EASA METEOROLOGIE",
-      "EASA PERFORMANCE ET PLANIFICATION",
-      "EASA REGLEMENTATION",
-      "EASA PERFORMANCES HUMAINES" // Nouvelle catégorie
+      { label: "PROCÉDURE RADIO", value: "PROCÉDURE RADIO" },
+      { label: "PROCÉDURES OPÉRATIONNELLES", value: "PROCÉDURES OPÉRATIONNELLES" },
+      { label: "RÉGLEMENTATION", value: "RÉGLEMENTATION" },
+      { label: "CONNAISSANCE DE L'AVION", value: "CONNAISSANCE DE L'AVION" },
+      { label: "INSTRUMENTATION", value: "INSTRUMENTATION" },
+      { label: "MASSE ET CENTRAGE", value: "MASSE ET CENTRAGE" },
+      { label: "MOTORISATION", value: "MOTORISATION" },
+      { label: "AERODYNAMIQUE PRINCIPES DU VOL", value: "AERODYNAMIQUE PRINCIPES DU VOL" },
+      { label: "EASA PROCEDURES", value: "EASA PROCEDURES" },
+      { label: "EASA AERODYNAMIQUE", value: "EASA AERODYNAMIQUE" },
+      { label: "EASA NAVIGATION", value: "EASA NAVIGATION" },
+      { label: "EASA CONNAISSANCE DE L'AVION", value: "EASA CONNAISSANCE DE L'AVION" },
+      { label: "EASA METEOROLOGIE", value: "EASA METEOROLOGIE" },
+      { label: "EASA PERFORMANCE ET PLANIFICATION", value: "EASA PERFORMANCE ET PLANIFICATION" },
+      { label: "EASA REGLEMENTATION", value: "EASA REGLEMENTATION" },
+      { label: "EASA PERFORMANCES HUMAINES", value: "EASA PERFORMANCES HUMAINES" },
+      { label: "EASA - TOUTES", value: "EASA ALL" },
+      { label: "GLIGLI COMMUNICATIONS (HARD)", value: "GLIGLI COMMUNICATIONS HARD" },
+      { label: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (HARD)", value: "GLIGLI CONNAISSANCES GENERALES AERONEF HARD" },
+      { label: "GLIGLI ÉPREUVE COMMUNE (HARD)", value: "GLIGLI EPREUVE COMMUNE HARD" },
+      { label: "GLIGLI ÉPREUVE SPÉCIFIQUE (HARD)", value: "GLIGLI EPREUVE SPECIFIQUE HARD" },
+      { label: "GLIGLI MÉTÉOROLOGIE (HARD)", value: "GLIGLI METEOROLOGIE HARD" },
+      { label: "GLIGLI NAVIGATION (HARD)", value: "GLIGLI NAVIGATION HARD" },
+      { label: "GLIGLI PERFORMANCE HUMAINE (HARD)", value: "GLIGLI PERFORMANCE HUMAINE HARD" },
+      { label: "GLIGLI PERFORMANCES & PRÉP. VOL (HARD)", value: "GLIGLI PERFORMANCES PREPARATION VOL HARD" },
+      { label: "GLIGLI PRINCIPES DU VOL (HARD)", value: "GLIGLI PRINCIPES DU VOL HARD" },
+      { label: "GLIGLI PROCÉDURES OPÉRATIONNELLES (HARD)", value: "GLIGLI PROCEDURES OPERATIONNELLES HARD" },
+      { label: "GLIGLI RÉGLEMENTATION (HARD)", value: "GLIGLI REGLEMENTATION HARD" },
+      { label: "GLIGLI COMMUNICATIONS (EASY)", value: "GLIGLI COMMUNICATIONS EASY" },
+      { label: "GLIGLI CONNAISSANCES GÉNÉRALES AÉRONEF (EASY)", value: "GLIGLI CONNAISSANCES GENERALES AERONEF EASY" },
+      { label: "GLIGLI ÉPREUVE COMMUNE (EASY)", value: "GLIGLI EPREUVE COMMUNE EASY" },
+      { label: "GLIGLI ÉPREUVE SPÉCIFIQUE (EASY)", value: "GLIGLI EPREUVE SPECIFIQUE EASY" },
+      { label: "GLIGLI MÉTÉOROLOGIE (EASY)", value: "GLIGLI METEOROLOGIE EASY" },
+      { label: "GLIGLI NAVIGATION (EASY)", value: "GLIGLI NAVIGATION EASY" },
+      { label: "GLIGLI PERFORMANCE HUMAINE (EASY)", value: "GLIGLI PERFORMANCE HUMAINE EASY" },
+      { label: "GLIGLI PERFORMANCES & PRÉP. VOL (EASY)", value: "GLIGLI PERFORMANCES PREPARATION VOL EASY" },
+      { label: "GLIGLI PRINCIPES DU VOL (EASY)", value: "GLIGLI PRINCIPES DU VOL EASY" },
+      { label: "GLIGLI PROCÉDURES OPÉRATIONNELLES (EASY)", value: "GLIGLI PROCEDURES OPERATIONNELLES EASY" },
+      { label: "GLIGLI RÉGLEMENTATION (EASY)", value: "GLIGLI REGLEMENTATION EASY" },
+      { label: "GLIGLI - TOUTES", value: "GLIGLI ALL" },
+      { label: "AUTRES (hors EASA/GLIGLI)", value: "AUTRES" }
     ];
 
     const statsArr = [];
     for (const cat of categoriesList) {
-      await chargerQuestions(cat);
-      // Copie locale pour éviter l'écrasement
-      const catQuestions = [...questions];
-      statsArr.push(computeStatsForFirestore(catQuestions, data.responses));
+      try {
+        await chargerQuestions(cat.value);
+        const catQuestions = [...questions];
+        statsArr.push({ label: cat.label, stats: computeStatsForFirestore(catQuestions, data.responses) });
+      } catch (err) {
+        console.error("Stat error for category", cat.value, err);
+        statsArr.push({ label: cat.label, stats: { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 } });
+      }
     }
 
-    // Affiche les stats pour toutes les catégories (spread)
-    afficherStats(...statsArr);
+    afficherStats(statsArr);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques :", error);
-    afficherStats(
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 },
-      { reussie: 0, ratee: 0, nonvue: 0, marquee: 0 }
-    );
+    afficherStats([]);
   }
 }
 
 /**
  * afficherStats() – Affiche les statistiques sur stats.html, y compris les marquées
  */
-function afficherStats(statsRadio, statsOp, statsRegl, statsConv, statsInstr, statsMasse, statsMotor, statsEasa) {
-  console.log(">>> afficherStats()");
+function afficherStats(statsList) {
+  console.log(">>> afficherStats()", statsList?.length || 0);
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
-  const totalRadio = statsRadio.reussie + statsRadio.ratee + statsRadio.nonvue + statsRadio.marquee;
-  const totalOp = statsOp.reussie + statsOp.ratee + statsOp.nonvue + statsOp.marquee;
-  const totalRegl = statsRegl.reussie + statsRegl.ratee + statsRegl.nonvue + statsRegl.marquee;
-  const totalConv = statsConv.reussie + statsConv.ratee + statsConv.nonvue + statsConv.marquee;
-  const totalInstr = statsInstr.reussie + statsInstr.ratee + statsInstr.nonvue + statsInstr.marquee;
-  const totalMasse = statsMasse.reussie + statsMasse.ratee + statsMasse.nonvue + statsMasse.marquee;
-  const totalMotor = statsMotor.reussie + statsMotor.ratee + statsMotor.nonvue + statsMotor.marquee;
-  const totalEasa = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee;
-  const totalAer = statsEasa.reussie + statsEasa.ratee + statsEasa.nonvue + statsEasa.marquee; // Utiliser les mêmes stats que EASA AERODYNAMIQUE pour l'instant
+  if (!Array.isArray(statsList) || statsList.length === 0) {
+    cont.innerHTML = '<p>Aucune statistique disponible.</p>';
+    return;
+  }
 
-  const totalGlobal = totalRadio + totalOp + totalRegl + totalConv + totalInstr + totalMasse + totalMotor + totalEasa;
-  const reussiesGlobal = statsRadio.reussie + statsOp.reussie + statsRegl.reussie + statsConv.reussie +
-                         statsInstr.reussie + statsMasse.reussie + statsMotor.reussie + statsEasa.reussie;
-  const marqueesGlobal = statsRadio.marquee + statsOp.marquee + statsRegl.marquee + statsConv.marquee +
-                         statsInstr.marquee + statsMasse.marquee + statsMotor.marquee + statsEasa.marquee;
+  const totals = statsList.map(s => s.stats.reussie + s.stats.ratee + s.stats.nonvue + s.stats.marquee);
+  const totalGlobal = totals.reduce((a,b)=>a+b,0);
+  const reussiesGlobal = statsList.reduce((a,s)=>a + (s.stats.reussie||0),0);
+  const marqueesGlobal = statsList.reduce((a,s)=>a + (s.stats.marquee||0),0);
+  const percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
 
-  let percGlobal = totalGlobal ? Math.round((reussiesGlobal * 100) / totalGlobal) : 0;
+  const sections = statsList.map((entry, idx) => {
+    const t = totals[idx];
+    const perc = t ? Math.round((entry.stats.reussie * 100) / t) : 0;
+    return `
+      <hr>
+      <h2>Catégorie : ${entry.label}</h2>
+      <p>Total : ${t} questions</p>
+      <p>✅ Réussies : ${entry.stats.reussie}</p>
+      <p>❌ Ratées : ${entry.stats.ratee}</p>
+      <p>👀 Non vues : ${entry.stats.nonvue}</p>
+      <p>📌 Marquées : ${entry.stats.marquee}</p>
+      <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${perc}%;"></div></div>
+    `;
+  }).join('\n');
 
-  // Ajoute la section EASA PROCEDURES
   cont.innerHTML = `
-    <h2>Catégorie : PROCÉDURE RADIO</h2>
-    <p>Total : ${totalRadio} questions</p>
-    <p>✅ Réussies : ${statsRadio.reussie}</p>
-    <p>❌ Ratées : ${statsRadio.ratee}</p>
-    <p>👀 Non vues : ${statsRadio.nonvue}</p>
-    <p>📌 Marquées : ${statsRadio.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : PROCÉDURES OPÉRATIONNELLES</h2>
-    <p>Total : ${totalOp} questions</p>
-    <p>✅ Réussies : ${statsOp.reussie}</p>
-    <p>❌ Ratées : ${statsOp.ratee}</p>
-    <p>👀 Non vues : ${statsOp.nonvue}</p>
-    <p>📌 Marquées : ${statsOp.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : RÉGLEMENTATION</h2>
-    <p>Total : ${totalRegl} questions</p>
-    <p>✅ Réussies : ${statsRegl.reussie}</p>
-    <p>❌ Ratées : ${statsRegl.ratee}</p>
-    <p>👀 Non vues : ${statsRegl.nonvue}</p>
-    <p>📌 Marquées : ${statsRegl.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : CONNAISSANCE DE L'AVION</h2>
-    <p>Total : ${totalConv} questions</p>
-    <p>✅ Réussies : ${statsConv.reussie}</p>
-    <p>❌ Ratées : ${statsConv.ratee}</p>
-    <p>👀 Non vues : ${statsConv.nonvue}</p>
-    <p>📌 Marquées : ${statsConv.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : INSTRUMENTATION</h2>
-    <p>Total : ${totalInstr} questions</p>
-    <p>✅ Réussies : ${statsInstr.reussie}</p>
-    <p>❌ Ratées : ${statsInstr.ratee}</p>
-    <p>👀 Non vues : ${statsInstr.nonvue}</p>
-    <p>📌 Marquées : ${statsInstr.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : MASSE ET CENTRAGE</h2>
-    <p>Total : ${totalMasse} questions</p>
-    <p>✅ Réussies : ${statsMasse.reussie}</p>
-    <p>❌ Ratées : ${statsMasse.ratee}</p>
-    <p>👀 Non vues : ${statsMasse.nonvue}</p>
-    <p>📌 Marquées : ${statsMasse.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : MOTORISATION</h2>
-    <p>Total : ${totalMotor} questions</p>
-    <p>✅ Réussies : ${statsMotor.reussie}</p>
-    <p>❌ Ratées : ${statsMotor.ratee}</p>
-    <p>👀 Non vues : ${statsMotor.nonvue}</p>
-    <p>📌 Marquées : ${statsMotor.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA PROCEDURES</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA AERODYNAMIQUE</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA NAVIGATION</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA CONNAISSANCE AVION</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA METEOROLOGIE</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA PERFORMANCE PLANIFICATION</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA REGLEMENTATION</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
-    <hr>
-    <h2>Catégorie : EASA PERFORMANCES HUMAINES</h2>
-    <p>Total : ${totalEasa} questions</p>
-    <p>✅ Réussies : ${statsEasa.reussie}</p>
-    <p>❌ Ratées : ${statsEasa.ratee}</p>
-    <p>👀 Non vues : ${statsEasa.nonvue}</p>
-    <p>📌 Marquées : ${statsEasa.marquee}</p>
-    <div class="progressbar"><div class="progress" style="height: 10px; background-color: yellow; width:${percGlobal}%;"></div></div>
-
+    ${sections}
     <hr>
     <h2>Global</h2>
     <p>Total cumulé : ${totalGlobal}</p>
@@ -1597,6 +1955,7 @@ const categories = [
   { name: "INSTRUMENTATION", count: 0 },
   { name: "MASSE ET CENTRAGE", count: 0 },
   { name: "MOTORISATION", count: 0 },
+  { name: "AERODYNAMIQUE PRINCIPES DU VOL", count: 0 },
   { name: "EASA PROCEDURES", count: 0 },
   { name: "EASA AERODYNAMIQUE", count: 0 },
   { name: "EASA NAVIGATION", count: 0 },
@@ -1626,7 +1985,7 @@ function displayCategories() {
 
 function displayMode() {
   let total = questions.length;
-  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0;
+  let nbRatees = 0, nbNonvues = 0, nbMarquees = 0, nbImportantes = 0;
 
   const uid = auth.currentUser?.uid;
   if (!uid) {
@@ -1648,6 +2007,9 @@ function displayMode() {
         } else if (response.status === 'marquée') {
           nbMarquees++;
         }
+        if (response?.important) {
+          nbImportantes++;
+        }
       });
 
       const nbRateesNonvues = nbRatees + nbNonvues;
@@ -1659,6 +2021,7 @@ function displayMode() {
         <option value="ratees_nonvues">Ratées+Non vues (${nbRateesNonvues})</option>
         <option value="nonvues">Non vues (${nbNonvues})</option>
         <option value="marquees">Marquées (${nbMarquees})</option>
+        <option value="importantes">Importantes (${nbImportantes})</option>
       `;
     })
     .catch(error => console.error("Erreur lors de la mise à jour des modes :", error));
