@@ -202,11 +202,32 @@ async function syncPendingWrites() {
   if (isSyncing) return;
   if (!navigator.onLine) return;
   
+  // Vérifier la vraie connectivité avant de tenter la sync
+  const reallyOnline = await _checkRealConnectivity();
+  if (!reallyOnline) {
+    console.log('[offline] syncPendingWrites: pas vraiment en ligne, annulation');
+    return;
+  }
+  
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) return;
   
+  // D'abord, flusher les écritures Firestore en attente (enablePersistence buffer)
+  try {
+    if (typeof db.waitForPendingWrites === 'function') {
+      console.log('[offline] Flush des écritures Firestore en attente...');
+      await db.waitForPendingWrites();
+      console.log('[offline] Écritures Firestore flushées');
+    }
+  } catch (e) {
+    console.warn('[offline] waitForPendingWrites échoué:', e.message);
+  }
+  
   const pending = await getPendingWrites();
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    console.log('[offline] Aucune écriture IndexedDB en attente');
+    return;
+  }
   
   isSyncing = true;
   console.log(`[offline] Synchronisation de ${pending.length} écritures en attente...`);
@@ -353,7 +374,9 @@ async function _checkRealConnectivity() {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2500);
-    await fetch('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js', {
+    // Utiliser une URL googleapis.com qui est exclue du cache SW
+    // (le SW laisse passer toutes les requêtes vers googleapis.com)
+    await fetch('https://firestore.googleapis.com/', {
       method: 'HEAD',
       mode: 'no-cors',
       cache: 'no-store',

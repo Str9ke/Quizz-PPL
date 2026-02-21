@@ -196,7 +196,7 @@ async function saveDailyCount(uid, answeredCount) {
       String(today.getDate()).padStart(2, '0');
     
     const docRef = db.collection('quizProgress').doc(uid);
-    const doc = await docRef.get();
+    const doc = await getDocWithTimeout(docRef);
     const existing = doc.exists && doc.data().dailyHistory ? doc.data().dailyHistory : {};
     existing[dateKey] = (existing[dateKey] || 0) + answeredCount;
     
@@ -204,6 +204,7 @@ async function saveDailyCount(uid, answeredCount) {
     console.log('[saveDailyCount]', dateKey, ':', existing[dateKey]);
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
+    throw e; // Propager pour que saveDailyCountOffline tombe dans le fallback IndexedDB
   }
 }
 
@@ -214,7 +215,7 @@ async function saveDailyCount(uid, answeredCount) {
 async function saveSessionResult(uid, correct, total, category) {
   try {
     const docRef = db.collection('quizProgress').doc(uid);
-    const doc = await docRef.get();
+    const doc = await getDocWithTimeout(docRef);
     const data = doc.exists ? doc.data() : {};
     const sessionHistory = data.sessionHistory || [];
     sessionHistory.push({
@@ -233,6 +234,7 @@ async function saveSessionResult(uid, correct, total, category) {
     console.log('[saveSessionResult] session saved:', correct + '/' + total);
   } catch (e) {
     console.error('[saveSessionResult] error:', e);
+    throw e; // Propager pour que saveSessionResultOffline tombe dans le fallback IndexedDB
   }
 }
 

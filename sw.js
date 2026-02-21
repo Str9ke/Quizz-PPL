@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v6';
+const CACHE_NAME = 'quiz-ppl-v7';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -125,16 +125,22 @@ self.addEventListener('fetch', event => {
     caches.match(event.request, { ignoreSearch: true }).then(cached => {
       if (cached) {
         // Retourner le cache immédiatement
-        // Mais aussi mettre à jour le cache en arrière-plan (stale-while-revalidate)
-        fetch(event.request).then(response => {
-          if (response && response.ok) {
-            const clone = response.clone();
-            // Stocker sous l'URL sans query string pour cohérence
-            const cleanUrl = new URL(event.request.url);
-            cleanUrl.search = '';
-            caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
-          }
-        }).catch(() => {});
+        // Stale-while-revalidate (SEULEMENT si en ligne pour éviter
+        // l'accumulation de fetch échoués qui peut tuer le SW sur Android)
+        if (navigator.onLine) {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 5000);
+          fetch(event.request, { signal: ctrl.signal }).then(response => {
+            clearTimeout(timer);
+            if (response && response.ok) {
+              const clone = response.clone();
+              // Stocker sous l'URL sans query string pour cohérence
+              const cleanUrl = new URL(event.request.url);
+              cleanUrl.search = '';
+              caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+            }
+          }).catch(() => { clearTimeout(timer); });
+        }
         return cached;
       }
       // Pas en cache → aller chercher sur le réseau
@@ -148,12 +154,24 @@ self.addEventListener('fetch', event => {
         }
         return response;
       }).catch(() => {
-        // Tout a échoué — si c'est une navigation, retourner la page d'accueil cachée
+        // Tout a échoué — si c'est une navigation, retourner la page demandée ou index.html
         if (event.request.mode === 'navigate') {
-          return caches.match(BASE + 'index.html');
+          // D'abord essayer de retrouver la page exacte demandée (ex: quiz.html)
+          return caches.match(event.request, { ignoreSearch: true }).then(page => {
+            if (page) return page;
+            return caches.match(BASE + 'index.html', { ignoreSearch: true });
+          });
         }
         return new Response('Offline', { status: 503, statusText: 'Offline' });
       });
+    }).catch(() => {
+      // Sécurité : si caches.match() lui-même échoue (pression mémoire Android, etc.)
+      if (event.request.mode === 'navigate') {
+        return caches.match(BASE + 'index.html', { ignoreSearch: true })
+          .catch(() => new Response('<h1>Hors ligne</h1><p>Rechargez la page.</p>',
+            { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+      }
+      return new Response('Offline', { status: 503, statusText: 'Offline' });
     })
   );
 });
