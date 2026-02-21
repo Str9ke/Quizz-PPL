@@ -28,8 +28,8 @@ async function demarrerQuiz() {
 }
 
 /**
- * chargerQuestions() – Charge le fichier JSON correspondant à la catégorie
-
+ * toggleMarquerQuestion() – Marque ou supprime une question marquée
+ */
 function toggleMarquerQuestion(questionId, button) {
   console.log(">>> toggleMarquerQuestion(questionId=" + questionId + ")");
   const uid = auth.currentUser?.uid;
@@ -138,6 +138,7 @@ function afficherBoutonsMarquer() {
     btnImp.onclick     = () => toggleImportantQuestion(q.id, btnImp);
     block.appendChild(btnImp);
   });
+}
 
 async function initQuiz() {
   console.log(">>> initQuiz()");
@@ -303,7 +304,7 @@ function handleImmediateAnswer(q, selectedRadio) {
 
 /**
  * validerReponses() – Traite les réponses de l'utilisateur, affiche la correction et sauvegarde la progression
-
+ */
 async function validerReponses() {
     console.log(">>> validerReponses()");
     let correctCount = 0;
@@ -384,9 +385,8 @@ async function validerReponses() {
 }
 
 /**
- * saveDailyCount() – Incrémente le compteur quotidien dans Firestore
- * Stocke dans quizProgress/{uid} un champ dailyHistory: { "YYYY-MM-DD": count, ... }
-
+ * afficherCorrection() – Affiche la correction sur quiz.html
+ */
 function afficherCorrection() {
   console.log(">>> afficherCorrection()");
   const cont = document.getElementById('quizContainer');
@@ -444,4 +444,3 @@ function afficherCorrection() {
   updateMarkedCount();
 }
 
-/**

@@ -179,9 +179,7 @@ function displayHomeProgressBar(responses) {
   `;
 }
 
-/**
- * loadAllQuestions() – Charge toutes les questions de toutes les catégories
-
+/** saveDailyCount — Sauvegarde le compteur quotidien */
 async function saveDailyCount(uid, answeredCount) {
   try {
     const today = new Date();
@@ -282,9 +280,7 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
   return merged;
 }
 
-/**
- * computeStatsForFirestore() – Calcule les stats pour une catégorie à partir des réponses Firestore
-
+/** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
 function computeStatsForFirestore(categoryQuestions, responses) {
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0;
   categoryQuestions.forEach(q => {
@@ -422,8 +418,7 @@ async function initStats() {
   }
 }
 
-/**
-
+/** afficherStats — Affiche les statistiques par groupe */
 function afficherStats(groupsData) {
   console.log(">>> afficherStats()", groupsData?.length || 0);
   const cont = document.getElementById('statsContainer');
@@ -677,8 +672,7 @@ function afficherSessionChart(sessionHistory) {
   chartCont.innerHTML = html;
 }
 
-/**
-
+/** synchroniserStatistiques — Synchronise les stats avec Firestore */
 async function synchroniserStatistiques() {
   console.log(">>> synchroniserStatistiques()");
 
