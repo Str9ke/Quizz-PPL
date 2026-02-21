@@ -147,11 +147,9 @@ function ensureDailyStatsBarVisible() {
     // recrée la barre si jamais absente du DOM
     statsBar = document.createElement('div');
     statsBar.id = 'dailyStatsBar';
-    statsBar.style.cssText = 'display:block;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:1rem;border-radius:8px;margin:1rem auto;max-width:600px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    statsBar.style.cssText = 'display:block;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:0.4rem 1rem;border-radius:8px;margin:0.5rem auto;max-width:600px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
     statsBar.innerHTML = `
-      <div style="font-size:0.9rem;opacity:0.9;">Aujourd'hui</div>
-      <div style="font-size:2rem;font-weight:bold;margin:0.5rem 0;" id="answeredTodayCount">…</div>
-      <div style="font-size:0.9rem;opacity:0.9;">question(s) répondue(s)</div>
+      <span style="font-size:1.4rem;font-weight:bold;" id="answeredTodayCount">…</span>
     `;
     const anchor = document.querySelector('h1');
     if (anchor && anchor.parentNode) {
