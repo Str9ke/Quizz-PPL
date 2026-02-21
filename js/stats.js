@@ -242,31 +242,53 @@ async function saveDailyCount(uid, answeredCount) {
 
 /**
  * saveSessionResult() – Sauvegarde le résultat d'une session de quiz dans Firestore
- * Stocke dans quizProgress/{uid} un champ sessionHistory: [ {date, correct, total, category, percent}, ... ]
+ * Utilise arrayUnion pour un ajout atomique sans read-modify-write.
+ * Cela garantit que les sessions ajoutées sur différents appareils ne s'écrasent pas.
  */
 async function saveSessionResult(uid, correct, total, category, sessionDate) {
   try {
     const docRef = db.collection('quizProgress').doc(uid);
-    const doc = await getDocWithTimeout(docRef);
-    const data = doc.exists ? doc.data() : {};
-    const sessionHistory = data.sessionHistory || [];
-    sessionHistory.push({
+    const entry = {
       date: sessionDate || new Date().toISOString(),
       correct,
       total,
       category,
       percent: total > 0 ? Math.round(100 * correct / total) : 0
-    });
-    // Garder les 200 dernières sessions max
-    if (sessionHistory.length > 200) sessionHistory.splice(0, sessionHistory.length - 200);
+    };
+    // arrayUnion = ajout atomique côté serveur, pas de lecture préalable nécessaire
+    // → fonctionne correctement même si plusieurs appareils ajoutent des sessions
     await docRef.set(
-      { sessionHistory, lastUpdated: firebase.firestore.Timestamp.now() },
+      {
+        sessionHistory: firebase.firestore.FieldValue.arrayUnion(entry),
+        lastUpdated: firebase.firestore.Timestamp.now()
+      },
       { merge: true }
     );
-    console.log('[saveSessionResult] session saved:', correct + '/' + total);
+    console.log('[saveSessionResult] session saved via arrayUnion:', correct + '/' + total);
   } catch (e) {
     console.error('[saveSessionResult] error:', e);
     throw e; // Propager pour que saveSessionResultOffline tombe dans le fallback IndexedDB
+  }
+}
+
+/**
+ * _trimSessionHistory() – Limite l'historique à 200 sessions max.
+ * À appeler uniquement en ligne (après sync), car c'est un read-modify-write.
+ */
+async function _trimSessionHistory(uid) {
+  try {
+    const docRef = db.collection('quizProgress').doc(uid);
+    const doc = await docRef.get();
+    if (!doc.exists) return;
+    const history = doc.data().sessionHistory || [];
+    if (history.length <= 200) return;
+    // Trier par date et garder les 200 dernières
+    history.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const trimmed = history.slice(-200);
+    await docRef.set({ sessionHistory: trimmed }, { merge: true });
+    console.log('[_trimSessionHistory] trimmed from', history.length, 'to', trimmed.length);
+  } catch (e) {
+    console.warn('[_trimSessionHistory] error:', e.message);
   }
 }
 
@@ -478,6 +500,8 @@ async function initStats() {
     const firestoreHistory = data.sessionHistory || [];
     const localBackup = _getLocalSessionBackup();
     const sessionHistory = _mergeSessionHistories(firestoreHistory, localBackup);
+    // Trier par date (arrayUnion ne garantit pas l'ordre)
+    sessionHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     afficherSessionChart(sessionHistory);
     console.log(`[initStats] terminé en ${Math.round(performance.now() - t0)}ms`);
   } catch (error) {

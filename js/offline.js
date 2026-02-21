@@ -284,7 +284,7 @@ async function syncPendingWrites() {
           break;
         }
         case 'saveSessionResult': {
-          await saveSessionResult(op.uid, op.correct, op.total, op.category);
+          await saveSessionResult(op.uid, op.correct, op.total, op.category, op.date);
           break;
         }
         default:
@@ -317,6 +317,10 @@ async function syncPendingWrites() {
         // Nettoyer le backup localStorage des sessions déjà dans Firestore
         const freshSessions = fresh.data().sessionHistory || [];
         if (typeof _cleanLocalSessionBackup === 'function') _cleanLocalSessionBackup(freshSessions);
+        // Limiter l'historique à 200 sessions si nécessaire
+        if (typeof _trimSessionHistory === 'function' && freshSessions.length > 200) {
+          _trimSessionHistory(uid).catch(e => console.warn('[sync] trim error:', e.message));
+        }
       }
     } catch (e) { /* ignore */ }
     
