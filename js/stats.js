@@ -3,6 +3,18 @@
 async function displayDailyStats(forcedUid) {
   ensureDailyStatsBarVisible();
 
+  // INSTANT : afficher le compteur localStorage AVANT toute opération Firestore
+  try {
+    const todayDateInstant = new Date().toISOString().slice(0, 10);
+    const lsInstant = parseInt(localStorage.getItem('dailyAnswered_' + todayDateInstant)) || 0;
+    const ratchetInstant = parseInt(localStorage.getItem('dailyCountRatchet_' + todayDateInstant)) || 0;
+    const instantCount = Math.max(lsInstant, ratchetInstant);
+    if (instantCount > 0) {
+      const countElemInstant = document.getElementById('answeredTodayCount');
+      if (countElemInstant) countElemInstant.textContent = instantCount;
+    }
+  } catch (e) { /* ignore */ }
+
   // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
   let uid = forcedUid || auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
@@ -334,6 +346,24 @@ function computeStatsForFirestore(categoryQuestions, responses) {
 async function initStats() {
   console.log(">>> initStats()");
   const t0 = performance.now();
+
+  // INSTANT : afficher les sessions et le compteur quotidien depuis localStorage
+  // AVANT toute opération Firestore (qui peut prendre 10-15s offline sur Android)
+  try {
+    const localBackupInstant = _getLocalSessionBackup();
+    if (localBackupInstant.length) afficherSessionChart(localBackupInstant);
+  } catch (e) { /* ignore */ }
+  try {
+    const todayInstant = new Date().toISOString().slice(0, 10);
+    const lsInstant = parseInt(localStorage.getItem('dailyAnswered_' + todayInstant)) || 0;
+    const ratchetInstant = parseInt(localStorage.getItem('dailyCountRatchet_' + todayInstant)) || 0;
+    const instantCount = Math.max(lsInstant, ratchetInstant);
+    if (instantCount > 0) {
+      ensureDailyStatsBarVisible();
+      const countElemInstant = document.getElementById('answeredTodayCount');
+      if (countElemInstant) countElemInstant.textContent = instantCount;
+    }
+  } catch (e) { /* ignore */ }
 
   if (typeof auth === 'undefined' || !auth) {
     console.error("Firebase Auth n'est pas initialisé.");

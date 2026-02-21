@@ -200,16 +200,19 @@ async function initQuiz() {
   }
 
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
-  try {
-    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
-  } catch (e) {
-    console.warn('[offline] Impossible de charger les réponses, utilisation du cache local');
-    currentResponses = currentResponses || {};
-  }
 
-  // Afficher le quiz IMMÉDIATEMENT, puis mettre à jour le compteur en arrière-plan
+  // Afficher le quiz IMMÉDIATEMENT sans attendre Firestore (qui peut bloquer 10-15s offline)
   afficherQuiz();
+
+  // Charger les réponses en arrière-plan, puis mettre à jour les boutons marquer/important
+  getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(doc => {
+    currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+    afficherBoutonsMarquer();
+    updateMarkedCount();
+  }).catch(e => {
+    console.warn('[offline] Impossible de charger les réponses:', e.message);
+    currentResponses = currentResponses || {};
+  });
 
   // Compteur quotidien en tâche de fond (non bloquant)
   displayDailyStats(uid).catch(e => console.warn('[initQuiz] displayDailyStats error:', e));
@@ -368,19 +371,22 @@ async function validerReponses() {
             selectedVal = sel ? parseInt(sel.value) : null;
         }
         const key = getKeyFor(q);
-        const wasMarked = currentResponses[key]?.marked === true;
-      const wasImportant = currentResponses[key]?.important === true;
+        const hasExisting = !!currentResponses[key];
+        const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
+        const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
         const status = selectedVal !== null
             ? (selectedVal === q.bonne_reponse ? 'réussie' : 'ratée')
             : 'ratée';
-        responsesToSave[key] = {
+        const entry = {
             category: q.categorie,
             questionId: q.id,
             status,
-        marked: wasMarked,
-        important: wasImportant,
             timestamp: firebase.firestore.Timestamp.now()
         };
+        // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
+        if (wasMarked !== undefined) entry.marked = wasMarked;
+        if (wasImportant !== undefined) entry.important = wasImportant;
+        responsesToSave[key] = entry;
         if (status === 'réussie') correctCount++;
     });
 
@@ -400,7 +406,16 @@ async function validerReponses() {
     try {
       const dayKey = 'dailyAnswered_' + new Date().toISOString().slice(0, 10);
       const prev = parseInt(localStorage.getItem(dayKey)) || 0;
-      localStorage.setItem(dayKey, prev + currentQuestions.length);
+      const newTotal = prev + currentQuestions.length;
+      localStorage.setItem(dayKey, newTotal);
+      // Mise à jour DIRECTE du DOM (sans attendre Firestore)
+      ensureDailyStatsBarVisible();
+      const ratchetKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
+      const prevRatchet = parseInt(localStorage.getItem(ratchetKey)) || 0;
+      const display = Math.max(newTotal, prevRatchet);
+      localStorage.setItem(ratchetKey, display);
+      const countElem = document.getElementById('answeredTodayCount');
+      if (countElem) countElem.textContent = display;
     } catch (e) { /* localStorage plein — rare */ }
 
     try {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <title>Quiz Aviation - Statistiques</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -31,13 +31,13 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260223c"></script>
-  <script src="js/helpers.js?v=20260223c"></script>
-  <script src="js/categories.js?v=20260223c"></script>
-  <script src="js/stats.js?v=20260223c"></script>
-  <script src="js/quiz.js?v=20260223c"></script>
-  <script src="js/init.js?v=20260223c"></script>
-  <script src="js/offline.js?v=20260223c"></script>
+  <script src="js/globals.js?v=20260223d"></script>
+  <script src="js/helpers.js?v=20260223d"></script>
+  <script src="js/categories.js?v=20260223d"></script>
+  <script src="js/stats.js?v=20260223d"></script>
+  <script src="js/quiz.js?v=20260223d"></script>
+  <script src="js/init.js?v=20260223d"></script>
+  <script src="js/offline.js?v=20260223d"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     let statsInitTriggered = false;
@@ -48,17 +48,17 @@
         localStorage.setItem('cachedUid', user.uid);
         if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else if (localStorage.getItem('cachedUid')) {
-        console.log('[offline] stats.html: Auth null, UID en cache, démarrage offline');
+        console.log('[offline] stats.html: Auth null, UID en cache, dÃ©marrage offline');
         if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else {
-        alert("Vous devez être connecté pour voir vos statistiques.");
+        alert("Vous devez Ãªtre connectÃ© pour voir vos statistiques.");
         window.location = 'index.html';
       }
     });
-    // Sécurité : si auth ne fire pas dans les 3s et qu'on a un cachedUid, démarrer quand même
+    // SÃ©curitÃ© : si auth ne fire pas dans les 3s et qu'on a un cachedUid, dÃ©marrer quand mÃªme
     statsAuthTimeout = setTimeout(() => {
       if (!statsInitTriggered && localStorage.getItem('cachedUid')) {
-        console.log('[offline] stats.html: Auth timeout, démarrage avec cachedUid');
+        console.log('[offline] stats.html: Auth timeout, dÃ©marrage avec cachedUid');
         statsInitTriggered = true;
         initStats();
       }
@@ -73,15 +73,15 @@
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';</script>
   <h1>Quiz Aviation - Statistiques</h1>
   <div class="container" id="statsContainer">
     <p style="text-align:center;color:var(--text-secondary);">Chargement des statistiques...</p>
   </div>
   <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
-      Réinitialiser les Statistiques
+    <button onclick="if (confirm('Confirmez-vous la rÃ©initialisation de toutes les statistiques ?')) resetStats();">
+      RÃ©initialiser les Statistiques
     </button>
     <button onclick="window.location='index.html'">Retour Accueil</button>
   </div>

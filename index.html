@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <script>
-      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exécuté très tôt, avant Firebase)
+      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exÃ©cutÃ© trÃ¨s tÃ´t, avant Firebase)
       (function() {
         const autoStartQuiz = localStorage.getItem('autoStartQuiz') === 'true';
         const cat = localStorage.getItem('quizCategory');
@@ -18,21 +18,21 @@
         
         console.log('%c[EARLY-DEBUG-AUTOSTART]', 'color:red;font-weight:bold;font-size:16px', debugInfo);
         
-        // Si autoStartQuiz est activé, redirection vers le quiz
+        // Si autoStartQuiz est activÃ©, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
-          console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
+          console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activÃ©, vÃ©rification config...');
           if (cat && mode && nb) {
             console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec REGENERATION des questions');
-            // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
+            // IMPORTANT: Nettoyer currentQuestions pour FORCER la rÃ©gÃ©nÃ©ration de nouvelles questions
             localStorage.removeItem('currentQuestions');
-            console.log('[EARLY-ACTION] currentQuestions supprimé du localStorage');
+            console.log('[EARLY-ACTION] currentQuestions supprimÃ© du localStorage');
             // Redirection IMMEDIATE sans setTimeout
             window.location = 'quiz.html';
           } else {
-            console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activé mais pas de config trouvée');
+            console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activÃ© mais pas de config trouvÃ©e');
           }
         } else {
-          console.log('%c[EARLY-AUTOSTART-DISABLED]', 'color:blue', 'autoStartQuiz désactivé ou URL avec ?accueil');
+          console.log('%c[EARLY-AUTOSTART-DISABLED]', 'color:blue', 'autoStartQuiz dÃ©sactivÃ© ou URL avec ?accueil');
         }
       })();
     </script>
@@ -43,7 +43,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
   <script src="config.js"></script>
   <!-- Inclusion des SDK Firebase en mode compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -64,7 +64,7 @@
 
     // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
-    // Attacher Auth et Firestore à window pour les rendre globalement accessibles
+    // Attacher Auth et Firestore Ã  window pour les rendre globalement accessibles
     window.auth = firebase.auth();
     window.db = firebase.firestore();
     // Activer la persistance hors-ligne Firestore (stocker la promesse pour l'attendre)
@@ -72,31 +72,31 @@
       if (err.code === 'failed-precondition') {
         console.warn('[Firestore] Persistance impossible : plusieurs onglets ouverts');
       } else if (err.code === 'unimplemented') {
-        console.warn('[Firestore] Persistance non supportée par ce navigateur');
+        console.warn('[Firestore] Persistance non supportÃ©e par ce navigateur');
       }
     });
 
-    // Surveille l'état de connexion de l'utilisateur
+    // Surveille l'Ã©tat de connexion de l'utilisateur
     auth.onAuthStateChanged(user => {
       if (user) {
         // Sauvegarder le UID dans localStorage pour le mode offline
         localStorage.setItem('cachedUid', user.uid);
-        console.log("Utilisateur connecté :", user.uid);
+        console.log("Utilisateur connectÃ© :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (typeof initIndex === 'function') {
           initIndex();
         }
       } else if (localStorage.getItem('cachedUid')) {
-        // Auth null mais UID en cache → démarrer en mode offline (navigator.onLine peut mentir)
-        console.log("[offline] Auth null mais UID en cache, démarrage offline");
+        // Auth null mais UID en cache â†’ dÃ©marrer en mode offline (navigator.onLine peut mentir)
+        console.log("[offline] Auth null mais UID en cache, dÃ©marrage offline");
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (typeof initIndex === 'function') {
           initIndex();
         }
       } else {
-        console.log("Aucun utilisateur connecté");
+        console.log("Aucun utilisateur connectÃ©");
         document.getElementById("loginContainer").style.display = "block";
         document.getElementById("quizContainer").style.display = "none";
       }
@@ -106,17 +106,17 @@
 <body>
   <!-- Theme toggle -->
   <script>
-    // Appliquer le thème sauvegardé (dark par défaut)
+    // Appliquer le thÃ¨me sauvegardÃ© (dark par dÃ©faut)
     (function() {
       const saved = localStorage.getItem('theme');
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';</script>
   <h1>Quiz Aviation - Accueil</h1>
 
-  <!-- Compteur de questions répondues aujourd'hui -->
+  <!-- Compteur de questions rÃ©pondues aujourd'hui -->
   <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">0</span>
   </div>
@@ -126,17 +126,17 @@
     <h2>Connexion / Inscription</h2>
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Mot de passe (min. 6 caractères)" required>
+      <input type="password" id="password" placeholder="Mot de passe (min. 6 caractÃ¨res)" required>
       <button type="submit">Se connecter / S'inscrire</button>
     </form>
   </div>
 
-  <!-- Interface du quiz, affichée après authentification -->
+  <!-- Interface du quiz, affichÃ©e aprÃ¨s authentification -->
   <div id="quizContainer" class="container" style="display: none;">
-    <!-- Sélection de la catégorie -->
-    <label for="categorie">Catégorie :</label>
+    <!-- SÃ©lection de la catÃ©gorie -->
+    <label for="categorie">CatÃ©gorie :</label>
     <select id="categorie" onchange="categoryChanged()">
-      <!-- Options générées dynamiquement par updateCategorySelect() -->
+      <!-- Options gÃ©nÃ©rÃ©es dynamiquement par updateCategorySelect() -->
     </select>
     <br><br>
     <!-- Choix du nombre de questions -->
@@ -146,45 +146,45 @@
     <!-- Choix du mode -->
     <label for="mode">Mode :</label>
     <select id="mode">
-      <!-- Options mises à jour par updateModeCounts() -->
+      <!-- Options mises Ã  jour par updateModeCounts() -->
     </select>
     <br><br>
     <p id="totalGlobalInfo" style="color: var(--text-secondary);"></p>
     
-    <!-- Option Démarrage automatique -->
+    <!-- Option DÃ©marrage automatique -->
     <label for="autoStartCheckbox" style="margin-top: 1rem; display: block;">
       <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
-      <strong>Démarrage automatique</strong> (au prochain lancement, le quiz se lancera automatiquement avec cette configuration)
+      <strong>DÃ©marrage automatique</strong> (au prochain lancement, le quiz se lancera automatiquement avec cette configuration)
     </label>
     <label for="correctionImmediateCheckbox" style="margin-top: 0.5rem; display: block;">
       <input type="checkbox" id="correctionImmediateCheckbox">
-      <strong>Correction immédiate</strong> (chaque réponse est corrigée instantanément)
+      <strong>Correction immÃ©diate</strong> (chaque rÃ©ponse est corrigÃ©e instantanÃ©ment)
     </label>
     <br><br>
     
-    <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
+    <button id="btnStart" disabled onclick="demarrerQuiz()">DÃ©marrer le Quiz</button>
     <button onclick="window.location='stats.html'">Voir les Statistiques</button>
     <br><br>
     <div id="progressionContainer" style="margin-top: 1rem; background: var(--bg-question); padding: 1rem; border-radius: 4px;"></div>
     <br><br>
-    <!-- Bouton de déconnexion -->
-    <button id="btnLogout">Déconnexion</button>
+    <!-- Bouton de dÃ©connexion -->
+    <button id="btnLogout">DÃ©connexion</button>
     <br><br>
   </div>
 
-  <!-- Placeholder pour l'élément manquant -->
+  <!-- Placeholder pour l'Ã©lÃ©ment manquant -->
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260223c"></script>
-  <script src="js/helpers.js?v=20260223c"></script>
-  <script src="js/categories.js?v=20260223c"></script>
-  <script src="js/stats.js?v=20260223c"></script>
-  <script src="js/quiz.js?v=20260223c"></script>
-  <script src="js/init.js?v=20260223c"></script>
-  <script src="js/offline.js?v=20260223c"></script>
+  <script src="js/globals.js?v=20260223d"></script>
+  <script src="js/helpers.js?v=20260223d"></script>
+  <script src="js/categories.js?v=20260223d"></script>
+  <script src="js/stats.js?v=20260223d"></script>
+  <script src="js/quiz.js?v=20260223d"></script>
+  <script src="js/init.js?v=20260223d"></script>
+  <script src="js/offline.js?v=20260223d"></script>
 
-  <!-- Gestion de la connexion et déconnexion -->
+  <!-- Gestion de la connexion et dÃ©connexion -->
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -192,22 +192,22 @@
       const password = document.getElementById('password').value;
 
       if (password.length < 6) {
-        alert("Le mot de passe doit contenir au moins 6 caractères.");
+        alert("Le mot de passe doit contenir au moins 6 caractÃ¨res.");
         return;
       }
 
       try {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        console.log("Connecté :", userCredential.user.uid);
+        console.log("ConnectÃ© :", userCredential.user.uid);
       } catch (error) {
         console.error("Erreur lors de la connexion :", error);
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
           try {
             const newUser = await auth.createUserWithEmailAndPassword(email, password);
-            console.log("Utilisateur créé et connecté :", newUser.user.uid);
+            console.log("Utilisateur crÃ©Ã© et connectÃ© :", newUser.user.uid);
           } catch (creationError) {
-            console.error("Erreur lors de la création du compte :", creationError);
-            alert("Erreur lors de la création du compte : " + creationError.message);
+            console.error("Erreur lors de la crÃ©ation du compte :", creationError);
+            alert("Erreur lors de la crÃ©ation du compte : " + creationError.message);
           }
         } else {
           alert("Erreur de connexion : " + error.message);
@@ -219,10 +219,10 @@
       try {
         localStorage.removeItem('cachedUid');
         await auth.signOut();
-        console.log("Déconnecté !");
+        console.log("DÃ©connectÃ© !");
         window.location.reload();
       } catch (error) {
-        console.error("Erreur lors de la déconnexion :", error);
+        console.error("Erreur lors de la dÃ©connexion :", error);
       }
     });
   </script>
