@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v2';
+const CACHE_NAME = 'quiz-ppl-v3';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -117,17 +117,20 @@ self.addEventListener('fetch', event => {
   }
 
   // Pour toutes les autres requêtes : Cache-First, puis réseau en fallback
+  // ignoreSearch: true → les paramètres ?v=xxx n'empêchent pas le cache hit
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    caches.match(event.request, { ignoreSearch: true }).then(cached => {
       if (cached) {
         // Retourner le cache immédiatement
         // Mais aussi mettre à jour le cache en arrière-plan (stale-while-revalidate)
-        const fetchPromise = fetch(event.request).then(response => {
+        fetch(event.request).then(response => {
           if (response && response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            // Stocker sous l'URL sans query string pour cohérence
+            const cleanUrl = new URL(event.request.url);
+            cleanUrl.search = '';
+            caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
           }
-          return response;
         }).catch(() => {});
         return cached;
       }
@@ -136,7 +139,9 @@ self.addEventListener('fetch', event => {
         // Mettre en cache pour la prochaine fois (images, etc.)
         if (response && response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          const cleanUrl = new URL(event.request.url);
+          cleanUrl.search = '';
+          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
         }
         return response;
       }).catch(() => {

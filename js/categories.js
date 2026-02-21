@@ -1,5 +1,65 @@
 // === categories.js === Category normalization, question loading, filtering ===
 
+// Cache mémoire pour éviter de re-fetcher les mêmes fichiers JSON
+const _jsonCache = new Map();
+
+/**
+ * prefetchAllJsonFiles() – Charge tous les fichiers JSON en parallèle.
+ * Stocke les résultats dans _jsonCache pour que chargerQuestions() soit instantané.
+ */
+async function prefetchAllJsonFiles() {
+  const files = [
+    'questions_procedure_radio.json',
+    'questions_procedure_operationnelles.json',
+    'questions_reglementation.json',
+    'questions_connaissance_avion.json',
+    'questions_instrumentation.json',
+    'questions_masse_et_centrage.json',
+    'questions_motorisation.json',
+    'questions_aerodynamique.json',
+    'section_easa_procedures_new.json',
+    'section_easa_aerodynamique.json',
+    'section_easa_navigation.json',
+    'section_easa_connaissance_avion.json',
+    'section_easa_meteorologie.json',
+    'section_easa_performance_planification.json',
+    'section_easa_reglementation.json',
+    'section_easa_perf_humaines.json',
+    'gligli_communications_hard.json',
+    'gligli_communications_easy.json',
+    'gligli_connaissances_generales_aeronef_hard.json',
+    'gligli_connaissances_generales_aeronef_easy.json',
+    'gligli_epreuve_commune_hard.json',
+    'gligli_epreuve_commune_easy.json',
+    'gligli_epreuve_specifique_hard.json',
+    'gligli_epreuve_specifique_easy.json',
+    'gligli_meteorologie_hard.json',
+    'gligli_meteorologie_easy.json',
+    'gligli_navigation_hard.json',
+    'gligli_navigation_easy.json',
+    'gligli_performance_humaine_hard.json',
+    'gligli_performance_humaine_easy.json',
+    'gligli_performances_preparation_vol_hard.json',
+    'gligli_performances_preparation_vol_easy.json',
+    'gligli_principes_du_vol_hard.json',
+    'gligli_principes_du_vol_easy.json',
+    'gligli_procedures_operationnelles_hard.json',
+    'gligli_procedures_operationnelles_easy.json',
+    'gligli_reglementation_hard.json',
+    'gligli_reglementation_easy.json'
+  ];
+  const t0 = performance.now();
+  const results = await Promise.allSettled(
+    files.map(f => fetch(f).then(r => r.ok ? r.json() : []))
+  );
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      _jsonCache.set(files[i], Array.isArray(r.value) ? r.value : []);
+    }
+  });
+  console.log(`[prefetch] ${_jsonCache.size}/${files.length} fichiers JSON chargés en ${Math.round(performance.now() - t0)}ms`);
+}
+
 function getNormalizedCategory(cat) {
   if (!cat) return "TOUTES";
   cat = fixQuotes(cat).replace(/_/g,' ').trim().toLowerCase();
@@ -395,8 +455,14 @@ async function chargerQuestions(cat) {
             return;
     }
     try {
-        const res = await fetch(fileName);
-        const data = res.ok ? await res.json() : [];
+        let data;
+        if (_jsonCache.has(fileName)) {
+          data = _jsonCache.get(fileName);
+        } else {
+          const res = await fetch(fileName);
+          data = res.ok ? await res.json() : [];
+          if (Array.isArray(data)) _jsonCache.set(fileName, data);
+        }
         const normalizedCat = norm;
         questions = Array.isArray(data) ? data.map((q, i) => ({
           ...q,

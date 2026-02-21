@@ -198,7 +198,7 @@ async function initQuiz() {
 
   const uid = auth.currentUser.uid;
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses, utilisation du cache local');

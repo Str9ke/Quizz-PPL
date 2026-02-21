@@ -20,7 +20,7 @@ async function displayDailyStats(forcedUid) {
   console.log('[displayDailyStats] uid=', uid);
   
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const responses = doc.exists ? doc.data().responses || {} : {};
     
     // DEBUG : Afficher toutes les réponses brutes pour comprendre la structure
@@ -234,7 +234,7 @@ async function saveSessionResult(uid, correct, total, category) {
  */
 async function getDailyHistory(uid) {
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     return (doc.exists && doc.data().dailyHistory) ? doc.data().dailyHistory : {};
   } catch (e) {
     console.error('[getDailyHistory] error:', e);
@@ -319,7 +319,7 @@ async function initStats() {
   const uid = auth.currentUser.uid;
 
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const data = doc.exists ? doc.data() : { responses: {} };
 
     // Groupes de catégories (sans doublons d'agrégats)
@@ -691,7 +691,7 @@ async function synchroniserStatistiques() {
   const uid = auth.currentUser.uid;
 
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     if (doc.exists) {
       const data = doc.data();
       console.log("Données récupérées depuis Firestore :", data);

@@ -98,7 +98,7 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
   // D'abord, essayer de récupérer les réponses existantes (locales au pire)
   let existing = {};
   try {
-    const doc = await db.collection('quizProgress').doc(uid).get();
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     if (doc.exists) existing = doc.data().responses || {};
   } catch (e) {
     console.warn('[offline] Impossible de lire Firestore, utilisation du cache local');

@@ -3,6 +3,9 @@
 async function initIndex() {
   console.log(">>> initIndex()");
   
+  // Pré-charger tous les fichiers JSON en parallèle (depuis le cache SW = quasi-instantané)
+  await prefetchAllJsonFiles();
+
   // Chargement des catégories classiques
   await chargerQuestions("PROCÉDURE RADIO");
   countRadio = questions.length;
@@ -122,7 +125,7 @@ async function initIndex() {
   // Load stored responses so marked flags are available
   const uid = auth.currentUser.uid;
   try {
-    const docResp = await db.collection('quizProgress').doc(uid).get();
+    const docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');

@@ -1,6 +1,43 @@
 // === helpers.js === Utility functions ===
 
 /**
+ * getDocWithTimeout() – Lit un document Firestore avec fallback rapide hors-ligne.
+ * Si hors-ligne (navigator.onLine === false) → lecture directe du cache Firestore.
+ * Si en ligne → lecture réseau avec timeout de 4s, puis fallback cache.
+ * @param {firebase.firestore.DocumentReference} docRef
+ * @param {number} timeoutMs – Délai max avant fallback cache (défaut 4000ms)
+ * @returns {Promise<firebase.firestore.DocumentSnapshot>}
+ */
+async function getDocWithTimeout(docRef, timeoutMs = 4000) {
+  // Hors-ligne → lecture cache immédiate (pas de timeout réseau)
+  if (!navigator.onLine) {
+    try {
+      return await docRef.get({ source: 'cache' });
+    } catch (e) {
+      // Pas en cache du tout → retourner un snapshot vide
+      console.warn('[getDocWithTimeout] cache miss offline:', e.message);
+      return { exists: false, data: () => ({}) };
+    }
+  }
+  // En ligne → essayer réseau, avec timeout court
+  try {
+    return await Promise.race([
+      docRef.get(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs)
+      )
+    ]);
+  } catch (e) {
+    console.warn('[getDocWithTimeout] réseau lent/indisponible, fallback cache:', e.message);
+    try {
+      return await docRef.get({ source: 'cache' });
+    } catch (e2) {
+      return { exists: false, data: () => ({}) };
+    }
+  }
+}
+
+/**
  * normalizeResponses() – Normalize raw Firestore responses into { status, marked }
  */
 function normalizeResponses(raw) {
