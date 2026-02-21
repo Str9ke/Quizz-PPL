@@ -159,12 +159,26 @@ async function initIndex() {
 
 // Sécurise l'init sur la page quiz en évitant les doublons et les problèmes de timing Auth
 if (window.location.pathname.endsWith('quiz.html')) {
+  let quizAuthResolved = false;
   auth.onAuthStateChanged(user => {
     if (user && !quizInitTriggered) {
+      quizAuthResolved = true;
       quizInitTriggered = true;
       initQuiz();
     } else if (!user) {
-      window.location = 'index.html';
+      if (quizAuthResolved || navigator.onLine) {
+        // L'utilisateur s'est déconnecté ou n'est pas connecté en ligne
+        window.location = 'index.html';
+      } else {
+        // Hors-ligne, premier appel null → attendre que Auth charge le cache
+        console.log('[offline] quiz.html: Auth null, attente du cache...');
+        setTimeout(() => {
+          if (!quizAuthResolved && !quizInitTriggered) {
+            console.log('[offline] quiz.html: timeout Auth, retour accueil');
+            window.location = 'index.html';
+          }
+        }, 3000);
+      }
     }
   });
 }

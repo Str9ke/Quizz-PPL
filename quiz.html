@@ -45,7 +45,7 @@
 
   <!-- Compteur de questions répondues aujourd'hui -->
   <div id="dailyStatsBar" style="display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">â€¦</span>
+    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">…</span>
   </div>
 
   <script>
@@ -149,7 +149,7 @@
           }
         };
         setTimeout(kick, 500);
-        setTimeout(kick, 1500); // second essai au cas oâ¹ auth arriverait plus tard
+        setTimeout(kick, 1500); // second essai au cas où auth arriverait plus tard
       } catch (e) {
         console.error('[inline] daily stats bootstrap error', e);
       }

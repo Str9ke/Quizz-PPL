@@ -349,9 +349,9 @@ function updateOnlineStatus() {
     // Lancer la sync
     syncPendingWrites();
   } else {
-    bar.style.background = '#ff9800';
+    bar.style.background = '#e53935';
     bar.style.color = 'white';
-    bar.textContent = '✈ Mode hors-ligne — Les réponses sont sauvegardées localement';
+    bar.textContent = '✈ Hors ligne';
     bar.style.display = 'block';
   }
   updateOfflineBadge();

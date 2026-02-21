@@ -22,11 +22,11 @@
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
           console.log('%c[EARLY-CHECK]', 'color:orange', 'autoStartQuiz est activé, vérification config...');
           if (cat && mode && nb) {
-            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec Râ‰Gâ‰Nâ‰RATION des questions');
+            console.log('%c[EARLY-REDIRECT-TRIGGERED]', 'color:green;font-weight:bold;font-size:14px', 'Redirection avec REGENERATION des questions');
             // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
             localStorage.removeItem('currentQuestions');
             console.log('[EARLY-ACTION] currentQuestions supprimé du localStorage');
-            // Redirection IMMâ‰DIATE sans setTimeout
+            // Redirection IMMEDIATE sans setTimeout
             window.location = 'quiz.html';
           } else {
             console.log('%c[EARLY-NO-CONFIG-FOUND]', 'color:orange', 'autoStartQuiz activé mais pas de config trouvée');
@@ -77,18 +77,32 @@
     });
 
     // Surveille l'état de connexion de l'utilisateur
+    let authResolved = false;
     auth.onAuthStateChanged(user => {
       if (user) {
+        authResolved = true;
         console.log("Utilisateur connecté :", user.uid);
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (typeof initIndex === 'function') {
           initIndex();
         }
-      } else {
+      } else if (authResolved || navigator.onLine) {
+        // Auth a déjà résolu une fois OU on est en ligne → pas de user = vraiment déconnecté
         console.log("Aucun utilisateur connecté");
         document.getElementById("loginContainer").style.display = "block";
         document.getElementById("quizContainer").style.display = "none";
+      } else {
+        // Premier appel + hors-ligne → attendre que Auth charge le user depuis IndexedDB
+        console.log("[offline] Auth retourne null, attente du cache IndexedDB...");
+        setTimeout(() => {
+          if (!authResolved) {
+            // Après 3s, toujours pas de user → afficher login
+            console.log("[offline] Timeout Auth — affichage login");
+            document.getElementById("loginContainer").style.display = "block";
+            document.getElementById("quizContainer").style.display = "none";
+          }
+        }, 3000);
       }
     });
   </script>
