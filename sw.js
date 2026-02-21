@@ -4,24 +4,28 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v1';
+const CACHE_NAME = 'quiz-ppl-v2';
+
+// Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
+const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
+const BASE = SW_PATH.substring(0, SW_PATH.lastIndexOf('/') + 1); // ex: /Quizz-PPL/
 
 // Fichiers critiques à pré-cacher lors de l'installation
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/quiz.html',
-  '/stats.html',
-  '/style.css',
-  '/config.js',
-  '/js/globals.js',
-  '/js/helpers.js',
-  '/js/categories.js',
-  '/js/stats.js',
-  '/js/quiz.js',
-  '/js/init.js',
-  '/js/offline.js',
-  '/manifest.json',
+  BASE,
+  BASE + 'index.html',
+  BASE + 'quiz.html',
+  BASE + 'stats.html',
+  BASE + 'style.css',
+  BASE + 'config.js',
+  BASE + 'js/globals.js',
+  BASE + 'js/helpers.js',
+  BASE + 'js/categories.js',
+  BASE + 'js/stats.js',
+  BASE + 'js/quiz.js',
+  BASE + 'js/init.js',
+  BASE + 'js/offline.js',
+  BASE + 'manifest.json',
   // Firebase SDK (CDN) — on les cache aussi
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js',
@@ -29,45 +33,45 @@ const PRECACHE_URLS = [
   // Chart.js CDN (utilisé par stats)
   'https://cdn.jsdelivr.net/npm/chart.js',
   // Fichiers de questions JSON
-  '/questions_procedure_radio.json',
-  '/questions_procedure_operationnelles.json',
-  '/questions_reglementation.json',
-  '/questions_connaissance_avion.json',
-  '/questions_instrumentation.json',
-  '/questions_masse_et_centrage.json',
-  '/questions_motorisation.json',
-  '/questions_aerodynamique.json',
-  '/questions_easa_procedures_op.json',
-  '/section_easa_procedures_new.json',
-  '/section_easa_aerodynamique.json',
-  '/section_easa_connaissance_avion.json',
-  '/section_easa_meteorologie.json',
-  '/section_easa_navigation.json',
-  '/section_easa_performance_planification.json',
-  '/section_easa_reglementation.json',
-  '/section_easa_perf_humaines.json',
-  '/gligli_communications_hard.json',
-  '/gligli_communications_easy.json',
-  '/gligli_connaissances_generales_aeronef_hard.json',
-  '/gligli_connaissances_generales_aeronef_easy.json',
-  '/gligli_epreuve_commune_hard.json',
-  '/gligli_epreuve_commune_easy.json',
-  '/gligli_epreuve_specifique_hard.json',
-  '/gligli_epreuve_specifique_easy.json',
-  '/gligli_meteorologie_hard.json',
-  '/gligli_meteorologie_easy.json',
-  '/gligli_navigation_hard.json',
-  '/gligli_navigation_easy.json',
-  '/gligli_performance_humaine_hard.json',
-  '/gligli_performance_humaine_easy.json',
-  '/gligli_performances_preparation_vol_hard.json',
-  '/gligli_performances_preparation_vol_easy.json',
-  '/gligli_principes_du_vol_hard.json',
-  '/gligli_principes_du_vol_easy.json',
-  '/gligli_procedures_operationnelles_hard.json',
-  '/gligli_procedures_operationnelles_easy.json',
-  '/gligli_reglementation_hard.json',
-  '/gligli_reglementation_easy.json'
+  BASE + 'questions_procedure_radio.json',
+  BASE + 'questions_procedure_operationnelles.json',
+  BASE + 'questions_reglementation.json',
+  BASE + 'questions_connaissance_avion.json',
+  BASE + 'questions_instrumentation.json',
+  BASE + 'questions_masse_et_centrage.json',
+  BASE + 'questions_motorisation.json',
+  BASE + 'questions_aerodynamique.json',
+  BASE + 'questions_easa_procedures_op.json',
+  BASE + 'section_easa_procedures_new.json',
+  BASE + 'section_easa_aerodynamique.json',
+  BASE + 'section_easa_connaissance_avion.json',
+  BASE + 'section_easa_meteorologie.json',
+  BASE + 'section_easa_navigation.json',
+  BASE + 'section_easa_performance_planification.json',
+  BASE + 'section_easa_reglementation.json',
+  BASE + 'section_easa_perf_humaines.json',
+  BASE + 'gligli_communications_hard.json',
+  BASE + 'gligli_communications_easy.json',
+  BASE + 'gligli_connaissances_generales_aeronef_hard.json',
+  BASE + 'gligli_connaissances_generales_aeronef_easy.json',
+  BASE + 'gligli_epreuve_commune_hard.json',
+  BASE + 'gligli_epreuve_commune_easy.json',
+  BASE + 'gligli_epreuve_specifique_hard.json',
+  BASE + 'gligli_epreuve_specifique_easy.json',
+  BASE + 'gligli_meteorologie_hard.json',
+  BASE + 'gligli_meteorologie_easy.json',
+  BASE + 'gligli_navigation_hard.json',
+  BASE + 'gligli_navigation_easy.json',
+  BASE + 'gligli_performance_humaine_hard.json',
+  BASE + 'gligli_performance_humaine_easy.json',
+  BASE + 'gligli_performances_preparation_vol_hard.json',
+  BASE + 'gligli_performances_preparation_vol_easy.json',
+  BASE + 'gligli_principes_du_vol_hard.json',
+  BASE + 'gligli_principes_du_vol_easy.json',
+  BASE + 'gligli_procedures_operationnelles_hard.json',
+  BASE + 'gligli_procedures_operationnelles_easy.json',
+  BASE + 'gligli_reglementation_hard.json',
+  BASE + 'gligli_reglementation_easy.json'
 ];
 
 // ---- INSTALLATION : pré-cache des fichiers critiques ----
@@ -138,7 +142,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         // Tout a échoué — si c'est une navigation, retourner la page d'accueil cachée
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match(BASE + 'index.html');
         }
         return new Response('Offline', { status: 503, statusText: 'Offline' });
       });

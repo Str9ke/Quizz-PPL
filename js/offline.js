@@ -424,7 +424,7 @@ async function registerServiceWorker() {
   }
   
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    const reg = await navigator.serviceWorker.register('sw.js');
     console.log('[SW] Service Worker enregistré, scope:', reg.scope);
     
     // Écouter les mises à jour
