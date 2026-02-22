@@ -96,9 +96,18 @@ function updateMarkedCount() {
  */
 function ensureDailyStatsBarVisible() {
   let statsBar = document.getElementById('dailyStatsBar');
+  const needsContent = !statsBar || !statsBar.querySelector('#streakDisplay');
   if (!statsBar) {
     statsBar = document.createElement('div');
     statsBar.id = 'dailyStatsBar';
+    const anchor = document.querySelector('h1');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(statsBar, anchor.nextSibling);
+    } else {
+      document.body.prepend(statsBar);
+    }
+  }
+  if (needsContent) {
     statsBar.style.cssText = 'display:block;background:var(--bg-question, #1e1e2e);border:1px solid rgba(255,255,255,0.1);color:white;padding:0.6rem 1rem;border-radius:10px;margin:0.5rem auto;max-width:600px;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
     statsBar.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -112,12 +121,6 @@ function ensureDailyStatsBarVisible() {
         <div id="dailyProgressBarInner" style="height:100%;width:0%;border-radius:5px;transition:width 0.6s ease, background 0.6s ease;background:#8b0000;"></div>
       </div>
     `;
-    const anchor = document.querySelector('h1');
-    if (anchor && anchor.parentNode) {
-      anchor.parentNode.insertBefore(statsBar, anchor.nextSibling);
-    } else {
-      document.body.prepend(statsBar);
-    }
   }
   statsBar.style.display = 'block';
 }

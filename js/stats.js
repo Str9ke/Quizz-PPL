@@ -24,23 +24,27 @@ async function displayDailyStats(forcedUid) {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const data = doc.exists ? doc.data() : {};
     
-    // Seed le backup localStorage avec les données Firestore (capture les données existantes)
-    if (data.dailyHistory) {
-      try {
-        const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
-        let changed = false;
-        for (const [k, v] of Object.entries(data.dailyHistory)) {
-          if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
-        }
-        if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
-      } catch (e) { /* ignore */ }
+    // Enrichir dailyHistory avec les timestamps des réponses (cross-browser : les responses
+    // sont sync Firestore, donc fiables même sur un nouveau navigateur)
+    let enrichedDH = { ...(data.dailyHistory || {}) };
+    if (data.responses) {
+      enrichedDH = enrichDailyHistoryFromResponses(enrichedDH, data.responses);
     }
+    // Seed le backup localStorage avec les données enrichies
+    try {
+      const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+      let changed = false;
+      for (const [k, v] of Object.entries(enrichedDH)) {
+        if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
+      }
+      if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+    } catch (e) { /* ignore */ }
     
     // Compteur Firestore dailyHistory (source de vérité incrémentale)
     const _now = new Date();
     const todayLocal = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
     const todayUtc = _now.toISOString().slice(0, 10);
-    const firestoreDailyCount = (data.dailyHistory && data.dailyHistory[todayLocal]) || 0;
+    const firestoreDailyCount = enrichedDH[todayLocal] || 0;
     
     // Compteur direct localStorage (fiable offline même si Firestore pas prêt)
     const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayUtc)) || 0;
@@ -56,8 +60,8 @@ async function displayDailyStats(forcedUid) {
     } else {
       localStorage.setItem(todayRatchetKey, answeredToday);
     }
-    // Mettre à jour la barre avec les données Firestore fusionnées
-    updateDailyStatsBar(answeredToday, data.dailyHistory || {});
+    // Mettre à jour la barre avec les données enrichies
+    updateDailyStatsBar(answeredToday, enrichedDH);
   } catch (error) {
     console.error('[displayDailyStats] Erreur:', error);
     // Même en erreur, la barre est déjà affichée depuis localStorage (appel INSTANT au début)
@@ -266,11 +270,10 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
     const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     countsByDate[key] = (countsByDate[key] || 0) + 1;
   }
-  // Remplir uniquement les dates manquantes (pas de données incrémentales)
+  // Prendre le max entre la valeur existante et le comptage des réponses
+  // (les réponses sont sync Firestore → même données cross-browser)
   for (const [dateKey, count] of Object.entries(countsByDate)) {
-    if (!enriched[dateKey] || enriched[dateKey] === 0) {
-      enriched[dateKey] = count;
-    }
+    enriched[dateKey] = Math.max(enriched[dateKey] || 0, count);
   }
   return enriched;
 }
