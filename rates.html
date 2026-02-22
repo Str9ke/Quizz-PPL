@@ -197,7 +197,7 @@
         el.addEventListener('click', function() {
           var questionText = decodeURIComponent(el.getAttribute('data-question'));
           var correctText = decodeURIComponent(el.getAttribute('data-correct'));
-          speakText(questionText + '… La bonne réponse est : ' + correctText);
+          speakText(questionText + '… ' + correctText);
         });
       });
 
