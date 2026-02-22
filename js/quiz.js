@@ -176,6 +176,27 @@ function afficherBoutonsMarquer() {
   });
 }
 
+/**
+ * updateCategoryInfoBar() – Affiche le nom de la catégorie et le nombre de ratées+non vues / total
+ */
+function updateCategoryInfoBar(categoryName, remaining, total) {
+  const bar = document.getElementById('categoryInfoBar');
+  if (!bar) return;
+  bar.style.display = 'block';
+
+  const nameEl = document.getElementById('categoryName');
+  const progressEl = document.getElementById('categoryProgress');
+
+  if (nameEl) nameEl.textContent = categoryName || '';
+  if (progressEl) {
+    if (remaining !== null && total !== null) {
+      progressEl.textContent = `Restant (ratées + non vues) : ${remaining} / ${total}`;
+    } else {
+      progressEl.textContent = 'Chargement…';
+    }
+  }
+}
+
 async function initQuiz() {
   // redirect if not logged in (sauf si offline avec UID en cache)
   if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
@@ -222,11 +243,38 @@ async function initQuiz() {
   // Afficher le quiz IMMÉDIATEMENT sans attendre Firestore (qui peut bloquer 10-15s offline)
   afficherQuiz();
 
+  // Afficher immédiatement le nom de la catégorie
+  updateCategoryInfoBar(selectedCategory, null, null);
+
   // Charger les réponses en arrière-plan, puis mettre à jour les boutons marquer/important
-  getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(doc => {
+  getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(async (doc) => {
     currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
     afficherBoutonsMarquer();
     updateMarkedCount();
+
+    // Charger les questions complètes de la catégorie pour calculer ratées+non vues / total
+    try {
+      const savedCurrent = [...currentQuestions]; // sauvegarder le quiz en cours
+      const catNorm = getNormalizedCategory(selectedCategory);
+      if (catNorm === "TOUTES") {
+        await loadAllQuestions();
+      } else {
+        await chargerQuestions(catNorm);
+      }
+      const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+      const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+      const fullList = isAggregate ? questions : questions.filter(q => q.categorie === normalizedSel);
+      let nbRatees = 0, nbNonvues = 0;
+      fullList.forEach(q => {
+        const r = currentResponses[getKeyFor(q)];
+        if (!r) { nbNonvues++; }
+        else if (r.status === 'ratée') { nbRatees++; }
+      });
+      updateCategoryInfoBar(selectedCategory, nbRatees + nbNonvues, fullList.length);
+      currentQuestions = savedCurrent; // restaurer le quiz en cours
+    } catch (e) {
+      console.warn('[categoryInfo] Impossible de calculer les stats catégorie:', e.message);
+    }
   }).catch(e => {
     console.warn('[offline] Impossible de charger les réponses:', e.message);
     currentResponses = currentResponses || {};
