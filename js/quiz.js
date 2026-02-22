@@ -576,20 +576,23 @@ async function validerReponses() {
 
     // Incrémenter le compteur quotidien direct dans localStorage
     // (fiable même si Firestore n'est pas prêt offline)
-    try {
-      const dayKey = 'dailyAnswered_' + new Date().toISOString().slice(0, 10);
-      const prev = parseInt(localStorage.getItem(dayKey)) || 0;
-      const newTotal = prev + currentQuestions.length;
-      localStorage.setItem(dayKey, newTotal);
-      // Mise à jour DIRECTE du DOM (sans attendre Firestore)
-      ensureDailyStatsBarVisible();
-      const ratchetKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
-      const prevRatchet = parseInt(localStorage.getItem(ratchetKey)) || 0;
-      const display = Math.max(newTotal, prevRatchet);
-      localStorage.setItem(ratchetKey, display);
-      const countElem = document.getElementById('answeredTodayCount');
-      if (countElem) countElem.textContent = display;
-    } catch (e) { /* localStorage plein — rare */ }
+    // Ne PAS incrémenter en mode révisions espacées
+    if (modeQuiz !== 'revisions') {
+      try {
+        const dayKey = 'dailyAnswered_' + new Date().toISOString().slice(0, 10);
+        const prev = parseInt(localStorage.getItem(dayKey)) || 0;
+        const newTotal = prev + currentQuestions.length;
+        localStorage.setItem(dayKey, newTotal);
+        // Mise à jour DIRECTE du DOM (sans attendre Firestore)
+        ensureDailyStatsBarVisible();
+        const ratchetKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
+        const prevRatchet = parseInt(localStorage.getItem(ratchetKey)) || 0;
+        const display = Math.max(newTotal, prevRatchet);
+        localStorage.setItem(ratchetKey, display);
+        const countElem = document.getElementById('answeredTodayCount');
+        if (countElem) countElem.textContent = display;
+      } catch (e) { /* localStorage plein — rare */ }
+    }
 
     // Sauvegarder la session en localStorage IMMÉDIATEMENT
     // (avant toute opération Firestore qui peut bloquer 10-15s offline)
@@ -602,8 +605,10 @@ async function validerReponses() {
         // Sauvegarde avec fallback offline
         currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);
 
-        // Sauvegarder le compteur quotidien
-        await saveDailyCountOffline(uid, currentQuestions.length);
+        // Sauvegarder le compteur quotidien (sauf mode révisions espacées)
+        if (modeQuiz !== 'revisions') {
+          await saveDailyCountOffline(uid, currentQuestions.length);
+        }
         // Sauvegarder le résultat de la session (avec la même date pour déduplication)
         await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory, sessionDate);
     } catch (e) {

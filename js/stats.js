@@ -31,44 +31,17 @@ async function displayDailyStats(forcedUid) {
   }
   try {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    const responses = doc.exists ? doc.data().responses || {} : {};
+    const data = doc.exists ? doc.data() : {};
     
-    // Aujourd'hui à minuit (heure locale)
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayStartMs = todayStart.getTime();
-    
-    // Compter les réponses d'aujourd'hui
-    let answeredToday = 0;
-    Object.entries(responses).forEach(([key, response]) => {
-      // Les réponses peuvent avoir un timestamp (Firestore FieldValue)
-      let respTime = null;
-      
-      if (response.timestamp) {
-        // Si c'est un timestamp Firestore (a .seconds et .nanoseconds)
-        if (response.timestamp.seconds !== undefined) {
-          respTime = response.timestamp.seconds * 1000;
-        } else if (typeof response.timestamp === 'number') {
-          respTime = response.timestamp;
-        }
-      } else if (response.lastUpdated) {
-        if (response.lastUpdated.seconds !== undefined) {
-          respTime = response.lastUpdated.seconds * 1000;
-        } else if (typeof response.lastUpdated === 'number') {
-          respTime = response.lastUpdated;
-        }
-      }
-      
-      // Si on a un timestamp et qu'il est >= à aujourd'hui minuit
-      if (respTime && respTime >= todayStartMs) {
-        answeredToday++;
-      }
-    });
-    
-    // Lire aussi le compteur direct localStorage (fiable offline même si Firestore pas prêt)
+    // Compteur Firestore dailyHistory (source de vérité incrémentale)
     const todayDate = new Date().toISOString().slice(0, 10);
+    const firestoreDailyCount = (data.dailyHistory && data.dailyHistory[todayDate]) || 0;
+    
+    // Compteur direct localStorage (fiable offline même si Firestore pas prêt)
     const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayDate)) || 0;
-    answeredToday = Math.max(answeredToday, lsDirectCount);
+    
+    // Prendre le max des deux sources
+    let answeredToday = Math.max(firestoreDailyCount, lsDirectCount);
 
     // Afficher le compteur (ne jamais diminuer dans la même journée → ratchet)
     const todayKey = 'dailyCountRatchet_' + todayDate;
@@ -153,7 +126,7 @@ function displayHomeProgressBar(responses) {
   `;
 }
 
-/** saveDailyCount — Sauvegarde le compteur quotidien */
+/** saveDailyCount — Sauvegarde le compteur quotidien (incrémentation atomique) */
 async function saveDailyCount(uid, answeredCount) {
   try {
     const today = new Date();
@@ -162,11 +135,11 @@ async function saveDailyCount(uid, answeredCount) {
       String(today.getDate()).padStart(2, '0');
     
     const docRef = db.collection('quizProgress').doc(uid);
-    const doc = await getDocWithTimeout(docRef);
-    const existing = doc.exists && doc.data().dailyHistory ? doc.data().dailyHistory : {};
-    existing[dateKey] = (existing[dateKey] || 0) + answeredCount;
-    
-    await docRef.set({ dailyHistory: existing }, { merge: true });
+    // Utiliser FieldValue.increment pour une incrémentation atomique
+    // (pas de read-modify-write → pas de perte si deux sessions concurrentes)
+    const update = {};
+    update['dailyHistory.' + dateKey] = firebase.firestore.FieldValue.increment(answeredCount);
+    await docRef.set(update, { merge: true });
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
     throw e; // Propager pour que saveDailyCountOffline tombe dans le fallback IndexedDB
@@ -243,41 +216,13 @@ async function getDailyHistory(uid) {
 }
 
 /**
- * enrichDailyHistoryFromResponses() – Complète les données dailyHistory
- * en scannant les timestamps des réponses Firestore.
- * Cela garantit que même si dailyHistory est vide (nouvellement ajouté),
- * les jours avec des réponses apparaissent dans le graphique.
+ * enrichDailyHistoryFromResponses() – OBSOLÈTE, conservé pour compatibilité.
+ * L'ancienne version scannait les timestamps des réponses mais ceux-ci sont
+ * écrasés à chaque nouvelle tentative, ce qui faussait les compteurs passés.
+ * Désormais dailyHistory (incrémenté par saveDailyCount) est la seule source.
  */
-function enrichDailyHistoryFromResponses(dailyHistory, responses) {
-  const countsFromTimestamps = {};
-  
-  Object.values(responses).forEach(r => {
-    let respTime = null;
-    if (r.timestamp) {
-      if (r.timestamp.seconds !== undefined) respTime = r.timestamp.seconds * 1000;
-      else if (typeof r.timestamp === 'number') respTime = r.timestamp;
-    } else if (r.lastUpdated) {
-      if (r.lastUpdated.seconds !== undefined) respTime = r.lastUpdated.seconds * 1000;
-      else if (typeof r.lastUpdated === 'number') respTime = r.lastUpdated;
-    }
-    if (!respTime) return;
-    
-    const d = new Date(respTime);
-    const key = d.getFullYear() + '-' +
-      String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0');
-    countsFromTimestamps[key] = (countsFromTimestamps[key] || 0) + 1;
-  });
-  
-  // Fusionner : prendre le max entre dailyHistory et les timestamps
-  // (dailyHistory est incrémental et plus fiable quand il existe,
-  //  mais pour les anciens jours sans dailyHistory on utilise les timestamps)
-  const merged = { ...countsFromTimestamps };
-  Object.entries(dailyHistory).forEach(([key, val]) => {
-    merged[key] = Math.max(merged[key] || 0, val);
-  });
-  
-  return merged;
+function enrichDailyHistoryFromResponses(dailyHistory, _responses) {
+  return { ...dailyHistory };
 }
 
 /** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
@@ -423,11 +368,16 @@ async function initStats() {
 
     afficherStats(groupsData);
 
-    // Charger l'historique quotidien et le compléter depuis les timestamps des réponses
+    // Charger l'historique quotidien depuis Firestore (source de vérité)
     const dailyHistory = await getDailyHistory(uid);
-    // Compléter/corriger dailyHistory avec les timestamps réels des réponses
-    const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses || {});
-    afficherDailyChart(enrichedHistory);
+    // Pour aujourd'hui : réconcilier dailyHistory avec le compteur localStorage
+    // (le compteur localStorage est mis à jour immédiatement, dailyHistory peut être en retard)
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKey)) || 0;
+    const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKey)) || 0;
+    const todayBest = Math.max(dailyHistory[todayKey] || 0, lsDailyCount, ratchetCount);
+    dailyHistory[todayKey] = todayBest;
+    afficherDailyChart(dailyHistory);
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)
     const firestoreHistory = data.sessionHistory || [];
