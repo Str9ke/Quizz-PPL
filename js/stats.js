@@ -83,7 +83,9 @@ async function displayDailyStats(forcedUid) {
     }
     if (Object.keys(syncUpdate).length > 0) {
       try {
-        db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        // AWAIT obligatoire : sans ça, le write va dans le cache local Firestore
+        // mais n'atteint pas le serveur avant que l'autre navigateur ne lise
+        await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
         console.log('[displayDailyStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
       } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
     }
@@ -512,7 +514,7 @@ async function initStats() {
     }
     if (Object.keys(syncUpdate).length > 0) {
       try {
-        db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
         console.log('[initStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
       } catch (e) { console.warn('[initStats] write-back failed:', e); }
     }
