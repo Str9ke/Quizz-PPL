@@ -1,10 +1,11 @@
 // === stats.js === Statistics, daily chart, session chart, persistence ===
 
 async function displayDailyStats(forcedUid) {
-  // INSTANT : afficher depuis localStorage AVANT toute opération Firestore
-  try {
-    updateDailyStatsBar(); // calcule tout depuis localStorage (streak, goal, count, bar)
-  } catch (e) { /* ignore */ }
+  // PAS d'appel "instant" updateDailyStatsBar() ici :
+  // les appelants (initIndex, initQuiz, initStats, quiz.html DOMContentLoaded)
+  // font déjà un affichage instant avant d'appeler cette fonction.
+  // Un appel ici écraserait la valeur Firestore correcte avec la valeur localStorage périmée
+  // (cause du flash 142→137).
 
   // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
   let uid = forcedUid || auth.currentUser?.uid || localStorage.getItem('cachedUid');
@@ -30,29 +31,39 @@ async function displayDailyStats(forcedUid) {
     if (data.responses) {
       enrichedDH = enrichDailyHistoryFromResponses(enrichedDH, data.responses);
     }
-    // Seed le backup localStorage avec les données enrichies
+    // Fusionner enrichedDH avec TOUT le localStorage (backup + clés individuelles)
+    // pour TOUTES les dates, pas seulement aujourd'hui
     try {
       const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+      for (const [k, v] of Object.entries(dhBackup)) {
+        enrichedDH[k] = Math.max(enrichedDH[k] || 0, v);
+      }
+    } catch (e) { /* ignore */ }
+    const _now = new Date();
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(_now); d.setDate(d.getDate() - i);
+      const localKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const lsVal = Math.max(
+        parseInt(localStorage.getItem('dailyAnswered_' + localKey)) || 0,
+        parseInt(localStorage.getItem('dailyCountRatchet_' + localKey)) || 0
+      );
+      if (lsVal > 0) enrichedDH[localKey] = Math.max(enrichedDH[localKey] || 0, lsVal);
+    }
+    
+    // Seed le backup localStorage avec les données enrichies
+    try {
+      const dhBackup2 = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
       let changed = false;
       for (const [k, v] of Object.entries(enrichedDH)) {
-        if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
+        if (v > (dhBackup2[k] || 0)) { dhBackup2[k] = v; changed = true; }
       }
-      if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+      if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup2));
     } catch (e) { /* ignore */ }
     
-    // Compteur Firestore dailyHistory (source de vérité incrémentale)
-    const _now = new Date();
+    // Compteur aujourd'hui : max de toutes les sources + ratchet
     const todayLocal = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
     const todayUtc = _now.toISOString().slice(0, 10);
-    const firestoreDailyCount = enrichedDH[todayLocal] || 0;
-    
-    // Compteur direct localStorage (fiable offline même si Firestore pas prêt)
-    const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayUtc)) || 0;
-    
-    // Prendre le max des deux sources
-    let answeredToday = Math.max(firestoreDailyCount, lsDirectCount);
-
-    // Ne jamais diminuer dans la même journée → ratchet
+    let answeredToday = enrichedDH[todayLocal] || 0;
     const todayRatchetKey = 'dailyCountRatchet_' + todayUtc;
     const previousMax = parseInt(localStorage.getItem(todayRatchetKey)) || 0;
     if (answeredToday < previousMax) {
@@ -60,21 +71,22 @@ async function displayDailyStats(forcedUid) {
     } else {
       localStorage.setItem(todayRatchetKey, answeredToday);
     }
+    enrichedDH[todayLocal] = answeredToday;
 
-    // SYNC CROSS-BROWSER : si le max local dépasse le compteur Firestore,
-    // écrire la valeur correcte dans Firestore pour que les autres navigateurs la voient
-    const rawFirestoreCount = (data.dailyHistory || {})[todayLocal] || 0;
-    if (answeredToday > rawFirestoreCount) {
+    // SYNC CROSS-BROWSER : écrire dans Firestore TOUTES les dates où le max local > Firestore
+    const rawDH = data.dailyHistory || {};
+    const syncUpdate = {};
+    for (const [dateKey, mergedVal] of Object.entries(enrichedDH)) {
+      if (mergedVal > (rawDH[dateKey] || 0)) {
+        syncUpdate['dailyHistory.' + dateKey] = mergedVal;
+      }
+    }
+    if (Object.keys(syncUpdate).length > 0) {
       try {
-        const syncUpdate = {};
-        syncUpdate['dailyHistory.' + todayLocal] = answeredToday;
         db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
-        console.log('[displayDailyStats] sync cross-browser:', rawFirestoreCount, '→', answeredToday);
+        console.log('[displayDailyStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
       } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
     }
-
-    // Mettre à jour enrichedDH avec le max local pour la barre
-    enrichedDH[todayLocal] = answeredToday;
 
     // Mettre à jour la barre avec les données enrichies
     updateDailyStatsBar(answeredToday, enrichedDH);
@@ -490,14 +502,18 @@ async function initStats() {
     const todayEnrichedCount = dailyHistory[todayKeyLocal] || 0;
     updateDailyStatsBar(todayEnrichedCount, dailyHistory);
 
-    // SYNC CROSS-BROWSER : écrire le max local dans Firestore si supérieur
-    const rawFirestoreToday = (data.dailyHistory || {})[todayKeyLocal] || 0;
-    if (todayEnrichedCount > rawFirestoreToday) {
+    // SYNC CROSS-BROWSER : écrire dans Firestore TOUTES les dates où le max local > Firestore
+    const rawDH = data.dailyHistory || {};
+    const syncUpdate = {};
+    for (const [dateKey, mergedVal] of Object.entries(dailyHistory)) {
+      if (mergedVal > (rawDH[dateKey] || 0)) {
+        syncUpdate['dailyHistory.' + dateKey] = mergedVal;
+      }
+    }
+    if (Object.keys(syncUpdate).length > 0) {
       try {
-        const syncUpdate = {};
-        syncUpdate['dailyHistory.' + todayKeyLocal] = todayEnrichedCount;
         db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
-        console.log('[initStats] sync cross-browser:', rawFirestoreToday, '→', todayEnrichedCount);
+        console.log('[initStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
       } catch (e) { console.warn('[initStats] write-back failed:', e); }
     }
 

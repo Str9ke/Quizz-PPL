@@ -92,28 +92,22 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="js/globals.js?v=20260223m"></script>
-  <script src="js/helpers.js?v=20260223m"></script>
-  <script src="js/categories.js?v=20260223m"></script>
-  <script src="js/stats.js?v=20260223m"></script>
-  <script src="js/quiz.js?v=20260223m"></script>
-  <script src="js/init.js?v=20260223m"></script>
-  <script src="js/offline.js?v=20260223m"></script>
+  <script src="js/globals.js?v=20260222p"></script>
+  <script src="js/helpers.js?v=20260222p"></script>
+  <script src="js/categories.js?v=20260222p"></script>
+  <script src="js/stats.js?v=20260222p"></script>
+  <script src="js/quiz.js?v=20260222p"></script>
+  <script src="js/init.js?v=20260222p"></script>
+  <script src="js/offline.js?v=20260222p"></script>
   <script>
-    // Sécurité : déclenche l'affichage du compteur même si initQuiz ne le fait pas
+    // Affichage instantané du compteur depuis localStorage (updateDailyStatsBar)
+    // initQuiz() se chargera de l'appel Firestore via displayDailyStats()
+    // PAS de setTimeout(displayDailyStats) ici — initQuiz le fait déjà.
+    // Chaque appel redondant cause un flash (valeur Firestore → reset localStorage → Firestore).
     document.addEventListener('DOMContentLoaded', () => {
       try {
         if (typeof showBuildTag === 'function') showBuildTag();
         if (typeof updateDailyStatsBar === 'function') updateDailyStatsBar();
-        const kick = async () => {
-          if (typeof displayDailyStats === 'function') {
-            await displayDailyStats();
-          } else {
-            console.warn('[inline] displayDailyStats not available');
-          }
-        };
-        setTimeout(kick, 500);
-        setTimeout(kick, 1500); // second essai au cas où auth arriverait plus tard
       } catch (e) {
         console.error('[inline] daily stats bootstrap error', e);
       }
