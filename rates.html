@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Ratés du jour</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
+  </script>
+
+  <h1>❌ Ratés du jour</h1>
+
+  <div class="container" id="ratesContainer">
+    <p id="ratesLoading" style="text-align:center;color:var(--text-secondary);">Chargement…</p>
+  </div>
+
+  <div class="container" style="text-align: center; margin-top: 1rem;">
+    <button onclick="window.location='index.html'">Retour Accueil</button>
+    <button onclick="window.location='stats.html'">Statistiques</button>
+  </div>
+
+  <script>
+  (function() {
+    // === Helpers TTS ===
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      var utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      var voices = speechSynthesis.getVoices();
+      var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+      var voice = null;
+      if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
+      if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
+      if (voice) utterance.voice = voice;
+      speechSynthesis.speak(utterance);
+    }
+
+    // Pré-charger les voix
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = function() { speechSynthesis.getVoices(); };
+      }
+    }
+
+    // === Data ===
+    function getTodayKey() {
+      var now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    }
+
+    function getWrongToday() {
+      try {
+        var data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
+        var todayKey = getTodayKey();
+        if (data.date !== todayKey) return [];
+        return data.items || [];
+      } catch (e) { return []; }
+    }
+
+    function getLastViewedTimestamp() {
+      try {
+        var data = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}');
+        if (data.date !== getTodayKey()) return 0;
+        return data.ts || 0;
+      } catch (e) { return 0; }
+    }
+
+    function markAsViewed() {
+      localStorage.setItem('ratesLastViewed', JSON.stringify({
+        date: getTodayKey(),
+        ts: Date.now()
+      }));
+    }
+
+    // === Render ===
+    function render() {
+      var container = document.getElementById('ratesContainer');
+      var loadingEl = document.getElementById('ratesLoading');
+      var allItems = getWrongToday();
+      var lastViewed = getLastViewedTimestamp();
+
+      // Filtrer : uniquement les items non encore vus
+      var items = allItems.filter(function(item) { return item.ts > lastViewed; });
+
+      if (items.length === 0) {
+        container.innerHTML = '<div class="rates-empty">' +
+          '<div class="rates-empty-icon">✅</div>' +
+          '<p>Aucune nouvelle question ratée à réviser !</p>' +
+          (allItems.length > 0
+            ? '<p style="font-size:0.85rem;color:var(--text-secondary);">Vous avez déjà consulté les ' + allItems.length + ' erreur(s) d\'aujourd\'hui.</p>'
+            : '<p style="font-size:0.85rem;color:var(--text-secondary);">Lancez un quiz pour commencer !</p>') +
+          '</div>';
+        // Marquer comme vu même si vide (pour synchroniser le badge)
+        markAsViewed();
+        return;
+      }
+
+      var html = '<div class="rates-header">' +
+        '<span class="rates-count">' + items.length + ' question' + (items.length > 1 ? 's' : '') + ' ratée' + (items.length > 1 ? 's' : '') + ' à réviser</span>' +
+        '<span class="rates-hint">💡 Cliquez sur les réponses pour écouter la question et la bonne réponse</span>' +
+        '</div>';
+
+      items.forEach(function(item, idx) {
+        var q = item.q;
+        var timeStr = new Date(item.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        html += '<div class="question-block rates-question-block" data-rates-idx="' + idx + '">';
+        html += '<div class="rates-meta">';
+        html += '<span class="rates-time">🕐 ' + timeStr + '</span>';
+        html += '<span class="rates-cat">' + (q.categorie || '') + '</span>';
+        html += '</div>';
+        html += '<div class="question-title">' + (idx + 1) + '. ' + q.question + '</div>';
+
+        if (q.image) {
+          html += '<div class="question-image"><img src="' + q.image + '" alt="illustration" onerror="this.style.display=\'none\';" /></div>';
+        }
+
+        html += '<div class="answer-list rates-answer-list" data-question="' + encodeURIComponent(q.question) + '" data-correct="' + encodeURIComponent(q.choix[q.bonne_reponse]) + '">';
+        q.choix.forEach(function(choixText, i) {
+          var cls = '';
+          if (i === q.bonne_reponse) cls = 'correct';
+          else if (i === item.selected) cls = 'wrong';
+          html += '<div style="margin-bottom:4px;"><span class="' + cls + '">' + choixText + '</span></div>';
+        });
+        html += '</div>';
+
+        // Explication
+        if (q.explication) {
+          html += '<div class="explication-block"><strong>Explication :</strong> ' + q.explication + '</div>';
+        }
+        if (q.explication_images && q.explication_images.length) {
+          q.explication_images.forEach(function(img) {
+            html += '<div class="explication-image"><img src="' + img + '" alt="explication" onerror="this.style.display=\'none\';" /></div>';
+          });
+        }
+
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+
+      // Attach TTS click listeners on answer zones
+      var answerLists = container.querySelectorAll('.rates-answer-list');
+      answerLists.forEach(function(el) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function() {
+          var questionText = decodeURIComponent(el.getAttribute('data-question'));
+          var correctText = decodeURIComponent(el.getAttribute('data-correct'));
+          speakText(questionText + '… La bonne réponse est : ' + correctText);
+        });
+      });
+
+      // Marquer comme vu APRÈS l'affichage
+      markAsViewed();
+    }
+
+    // Auth check then render
+    var initDone = false;
+    function init() {
+      if (initDone) return;
+      initDone = true;
+      render();
+    }
+
+    auth.onAuthStateChanged(function(user) {
+      if (user || localStorage.getItem('cachedUid')) { init(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      if (!initDone && localStorage.getItem('cachedUid')) init();
+    }, 2000);
+  })();
+  </script>
+</body>
+</html>

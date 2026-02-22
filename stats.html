@@ -31,13 +31,13 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260222v"></script>
-  <script src="js/helpers.js?v=20260222v"></script>
-  <script src="js/categories.js?v=20260222v"></script>
-  <script src="js/stats.js?v=20260222v"></script>
-  <script src="js/quiz.js?v=20260222v"></script>
-  <script src="js/init.js?v=20260222v"></script>
-  <script src="js/offline.js?v=20260222v"></script>
+  <script src="js/globals.js?v=20260222w"></script>
+  <script src="js/helpers.js?v=20260222w"></script>
+  <script src="js/categories.js?v=20260222w"></script>
+  <script src="js/stats.js?v=20260222w"></script>
+  <script src="js/quiz.js?v=20260222w"></script>
+  <script src="js/init.js?v=20260222w"></script>
+  <script src="js/offline.js?v=20260222w"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     let statsInitTriggered = false;
@@ -87,8 +87,26 @@
     <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
       Réinitialiser les Statistiques
     </button>
+    <button class="btn-rates" onclick="window.location='rates.html'">❌ Ratés du jour <span id="ratesBadge" class="rates-badge" style="display:none;"></span></button>
     <button onclick="window.location='index.html'">Retour Accueil</button>
   </div>
+  <script>
+  // Mise à jour du badge "Ratés du jour"
+  (function() {
+    try {
+      var now = new Date();
+      var todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      var data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
+      if (data.date !== todayKey) return;
+      var items = data.items || [];
+      var viewed = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}');
+      var lastTs = (viewed.date === todayKey) ? (viewed.ts || 0) : 0;
+      var unseen = items.filter(function(item) { return item.ts > lastTs; }).length;
+      var badge = document.getElementById('ratesBadge');
+      if (badge && unseen > 0) { badge.textContent = unseen; badge.style.display = 'inline-block'; }
+    } catch (e) {}
+  })();
+  </script>
 </body>
 </html>
 

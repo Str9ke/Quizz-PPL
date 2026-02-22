@@ -570,6 +570,85 @@ button:disabled {
   min-height: 1em;
 }
 
+/* ===== Rates page ===== */
+.rates-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.rates-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+.rates-header {
+  margin-bottom: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-question);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.rates-count {
+  display: block;
+  font-weight: bold;
+  color: var(--text-heading);
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+.rates-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.rates-question-block {
+  position: relative;
+}
+.rates-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.rates-time {
+  opacity: 0.8;
+}
+.rates-cat {
+  background: var(--bg-body);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+}
+.rates-answer-list {
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 4px;
+  padding: 4px;
+}
+.rates-answer-list:hover {
+  background: rgba(100,126,234,0.08);
+}
+.rates-answer-list:active {
+  background: rgba(100,126,234,0.15);
+}
+/* Badge on rates button */
+.rates-badge {
+  display: inline-block;
+  background: #ef5350;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.btn-rates {
+  position: relative;
+}
+
 /* ===== Correction colors (dark-aware) ===== */
 .correct {
   color: #4caf50;

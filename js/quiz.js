@@ -35,6 +35,41 @@ if ('speechSynthesis' in window) {
 }
 
 /**
+ * _logWrongAnswer() – Enregistre une question ratée dans le journal quotidien (pour la page Ratés)
+ * Stocke la question complète + timestamp + réponse sélectionnée
+ */
+function _logWrongAnswer(q, selectedVal) {
+  try {
+    const now = new Date();
+    const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    let data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
+    // Réinitialiser si c'est un nouveau jour
+    if (data.date !== todayKey) data = { date: todayKey, items: [] };
+    const key = getKeyFor(q);
+    // On ajoute même si déjà présente (plusieurs tentatives = plusieurs entrées chronologiques)
+    // Mais on déduplique si c'est la même question dans le même quiz (même minute)
+    const recentDuplicate = data.items.find(item => item.key === key && (Date.now() - item.ts) < 60000);
+    if (recentDuplicate) return;
+    data.items.push({
+      key: key,
+      ts: Date.now(),
+      selected: selectedVal,
+      q: {
+        id: q.id,
+        question: q.question,
+        choix: q.choix,
+        bonne_reponse: q.bonne_reponse,
+        categorie: q.categorie,
+        image: q.image || null,
+        explication: q.explication || null,
+        explication_images: q.explication_images || null
+      }
+    });
+    localStorage.setItem('wrongToday', JSON.stringify(data));
+  } catch (e) { /* localStorage plein */ }
+}
+
+/**
  * _queueForReask() – Ajoute une question ratée dans la file de ré-interrogation
  * La question sera reposée au 2ème quiz généré après celui-ci
  */
@@ -660,6 +695,10 @@ async function validerReponses() {
         if (wasImportant !== undefined) entry.important = wasImportant;
         responsesToSave[key] = entry;
         if (status === 'réussie') correctCount++;
+        // Logger la question ratée pour la page "Ratés du jour"
+        if (status === 'ratée') {
+          _logWrongAnswer(q, selectedVal);
+        }
         // Mode non-immédiat : ajouter les questions ratées à la file de ré-interrogation
         if (status === 'ratée' && !isImmediate) {
           _queueForReask(q);
