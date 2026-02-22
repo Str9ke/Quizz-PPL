@@ -93,21 +93,44 @@ function displayHomeProgressBar(responses, dailyHistory) {
     return '#f44336';
   }
 
-  // Calculer l'estimation des jours restants (moyenne 7 derniers jours)
+  // Fusionner dailyHistory avec localStorage backup (même source que l'objectif/chart)
+  const mergedDH = { ...(dailyHistory || {}) };
+  try {
+    const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+    for (const [k, v] of Object.entries(dhBackup)) {
+      mergedDH[k] = Math.max(mergedDH[k] || 0, v);
+    }
+  } catch (e) { /* ignore */ }
+  // Ajouter les clés individuelles localStorage (60 jours)
+  const _now = new Date();
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(_now);
+    d.setDate(d.getDate() - i);
+    const lk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const lsVal = Math.max(
+      parseInt(localStorage.getItem('dailyAnswered_' + lk)) || 0,
+      parseInt(localStorage.getItem('dailyCountRatchet_' + lk)) || 0
+    );
+    if (lsVal > 0) mergedDH[lk] = Math.max(mergedDH[lk] || 0, lsVal);
+  }
+
+  // Calculer l'estimation des jours restants
+  // Moyenne sur 7 jours complets (hors aujourd'hui) — même fenêtre que l'objectif et le chart
+  const remaining = ratee + nonvue;
   let daysRemainingHtml = '';
-  if (dailyHistory && nonvue > 0) {
+  if (remaining > 0) {
     const today = new Date();
     let total7 = 0;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 1; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      total7 += dailyHistory[key] || 0;
+      total7 += mergedDH[key] || 0;
     }
     const avg7 = total7 / 7;
     if (avg7 > 0) {
-      const daysLeft = Math.ceil(nonvue / avg7);
-      daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} questions/jour sur 7 jours">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+      const daysLeft = Math.ceil(remaining / avg7);
+      daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} questions/jour sur 7 jours complets (hors aujourd'hui)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
     }
   }
 
@@ -550,6 +573,26 @@ function afficherStats(groupsData) {
   const gTotal = gRe + gRa + gNv;
   const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
 
+  // Calculer les jours restants (même logique que la page d'accueil)
+  const gRemaining = gRa + gNv;
+  let gDaysHtml = '';
+  if (gRemaining > 0) {
+    const mergedDH = _getDailyHistoryMerged();
+    const _now = new Date();
+    let t7 = 0;
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(_now);
+      d.setDate(d.getDate() - i);
+      const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      t7 += mergedDH[k] || 0;
+    }
+    const a7 = t7 / 7;
+    if (a7 > 0) {
+      const dL = Math.ceil(gRemaining / a7);
+      gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#667eea;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(a7)}/j)</span></div>`;
+    }
+  }
+
   // Carte globale
   let html = `
     <div class="stats-global-card">
@@ -568,6 +611,7 @@ function afficherStats(groupsData) {
         <span>📌 ${gMa}</span>
         <span>⭐ ${gIm}</span>
       </div>
+      ${gDaysHtml}
     </div>
   `;
 

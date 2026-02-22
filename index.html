@@ -146,10 +146,8 @@
     })();
   </script>
 
-  <!-- Compteur de questions répondues aujourd'hui -->
-  <div id="dailyStatsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">0</span>
-  </div>
+  <!-- Compteur de questions répondues aujourd'hui (recréé par ensureDailyStatsBarVisible) -->
+  <div id="dailyStatsBar" style="display:none;"></div>
 
   <!-- Formulaire de connexion/inscription -->
   <div id="loginContainer" class="container" style="display:none;">

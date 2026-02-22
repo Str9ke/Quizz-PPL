@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v26';
+const CACHE_NAME = 'quiz-ppl-v27';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
