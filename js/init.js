@@ -104,26 +104,14 @@ async function initIndex() {
   countGligliProceduresEasy = questions.length;
   await chargerQuestions("GLIGLI REGLEMENTATION EASY");
   countGligliReglementationEasy = questions.length;
-  countGligliAll = countGligliComm + countGligliConnaissance + countGligliEpreuveCommune + countGligliEpreuveSpecifique + countGligliMeteo + countGligliNavigation + countGligliPerfHumaine + countGligliPerfPrepVol + countGligliPrincipesVol + countGligliProcedures + countGligliReglementation;
-  countGligliAll += countGligliCommEasy + countGligliConnaissanceEasy + countGligliEpreuveCommuneEasy + countGligliEpreuveSpecifiqueEasy + countGligliMeteoEasy + countGligliNavigationEasy + countGligliPerfHumaineEasy + countGligliPerfPrepVolEasy + countGligliPrincipesVolEasy + countGligliProceduresEasy + countGligliReglementationEasy;
+  // countGligliAll : charger GLIGLI ALL (dédupliqué) pour obtenir le vrai total unique
+  await chargerQuestions("GLIGLI ALL");
+  countGligliAll = questions.length;
 
   // Catégories autres (hors EASA / GLIGLI)
   countAutresAll = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countAer;
   
-  totalGlobal = countRadio + countOp + countRegl + countConv +
-                countInstr + countMasse + countMotor + countAer +
-                countEasa + countEasaAero + countEasaNavigation +
-                countEasaConnaissance + countEasaMeteorologie +
-                countEasaPerformance + countEasaReglementation +
-                countEasaPerfHumaines +
-                countGligliComm + countGligliConnaissance + countGligliEpreuveCommune +
-                countGligliEpreuveSpecifique + countGligliMeteo + countGligliNavigation +
-                countGligliPerfHumaine + countGligliPerfPrepVol + countGligliPrincipesVol +
-                countGligliProcedures + countGligliReglementation +
-                countGligliCommEasy + countGligliConnaissanceEasy + countGligliEpreuveCommuneEasy +
-                countGligliEpreuveSpecifiqueEasy + countGligliMeteoEasy + countGligliNavigationEasy +
-                countGligliPerfHumaineEasy + countGligliPerfPrepVolEasy + countGligliPrincipesVolEasy +
-                countGligliProceduresEasy + countGligliReglementationEasy;
+  totalGlobal = countAutresAll + countEasaAll + countGligliAll;
   
   updateCategorySelect();
 

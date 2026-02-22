@@ -3,6 +3,78 @@
 // Cache mémoire pour éviter de re-fetcher les mêmes fichiers JSON
 const _jsonCache = new Map();
 
+// Mapping fichier JSON GLIGLI → nom de catégorie normalisé (pour résolution des refs épreuve)
+const _fileToCategory = {
+  'gligli_communications_hard.json': 'GLIGLI COMMUNICATIONS HARD',
+  'gligli_communications_easy.json': 'GLIGLI COMMUNICATIONS EASY',
+  'gligli_connaissances_generales_aeronef_hard.json': 'GLIGLI CONNAISSANCES GENERALES AERONEF HARD',
+  'gligli_connaissances_generales_aeronef_easy.json': 'GLIGLI CONNAISSANCES GENERALES AERONEF EASY',
+  'gligli_meteorologie_hard.json': 'GLIGLI METEOROLOGIE HARD',
+  'gligli_meteorologie_easy.json': 'GLIGLI METEOROLOGIE EASY',
+  'gligli_navigation_hard.json': 'GLIGLI NAVIGATION HARD',
+  'gligli_navigation_easy.json': 'GLIGLI NAVIGATION EASY',
+  'gligli_performance_humaine_hard.json': 'GLIGLI PERFORMANCE HUMAINE HARD',
+  'gligli_performance_humaine_easy.json': 'GLIGLI PERFORMANCE HUMAINE EASY',
+  'gligli_performances_preparation_vol_hard.json': 'GLIGLI PERFORMANCES PREPARATION VOL HARD',
+  'gligli_performances_preparation_vol_easy.json': 'GLIGLI PERFORMANCES PREPARATION VOL EASY',
+  'gligli_principes_du_vol_hard.json': 'GLIGLI PRINCIPES DU VOL HARD',
+  'gligli_principes_du_vol_easy.json': 'GLIGLI PRINCIPES DU VOL EASY',
+  'gligli_procedures_operationnelles_hard.json': 'GLIGLI PROCEDURES OPERATIONNELLES HARD',
+  'gligli_procedures_operationnelles_easy.json': 'GLIGLI PROCEDURES OPERATIONNELLES EASY',
+  'gligli_reglementation_hard.json': 'GLIGLI REGLEMENTATION HARD',
+  'gligli_reglementation_easy.json': 'GLIGLI REGLEMENTATION EASY',
+};
+
+/**
+ * resolveEpreuveQuestions(data, epreuveCategoryName) – Résout les questions d'un fichier épreuve.
+ * Les entrées avec ref_file/ref_index sont résolues depuis _jsonCache avec leur catégorie d'origine.
+ * Les questions uniques (sans ref) gardent la catégorie épreuve.
+ */
+function resolveEpreuveQuestions(data, epreuveCategoryName) {
+  const resolved = [];
+  let uniqueIdx = 0;
+  for (const entry of data) {
+    if (entry.ref_file != null && entry.ref_index != null) {
+      const sourceData = _jsonCache.get(entry.ref_file);
+      if (sourceData && sourceData[entry.ref_index]) {
+        const srcQ = sourceData[entry.ref_index];
+        const srcCategory = _fileToCategory[entry.ref_file] || epreuveCategoryName;
+        resolved.push({
+          ...srcQ,
+          id: entry.ref_index + 1,
+          categorie: srcCategory,
+          image: srcQ.image || srcQ.image_url || srcQ.imageUrl || null
+        });
+      } else {
+        console.warn('[resolveEpreuve] Ref introuvable:', entry.ref_file, entry.ref_index);
+      }
+    } else {
+      // Question unique à cette épreuve
+      uniqueIdx++;
+      resolved.push({
+        ...entry,
+        id: uniqueIdx,
+        categorie: epreuveCategoryName,
+        image: entry.image || entry.image_url || entry.imageUrl || null
+      });
+    }
+  }
+  return resolved;
+}
+
+/**
+ * _deduplicateQuestions(questionsArray) – Déduplique par getKeyFor, garde la première occurrence.
+ */
+function _deduplicateQuestions(questionsArray) {
+  const seen = new Set();
+  return questionsArray.filter(q => {
+    const key = getKeyFor(q);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /**
  * prefetchAllJsonFiles() – Charge tous les fichiers JSON en parallèle.
  * Stocke les résultats dans _jsonCache pour que chargerQuestions() soit instantané.
@@ -425,7 +497,7 @@ async function chargerQuestions(cat) {
               await chargerQuestions(subCat);
               all.push(...questions);
             }
-            questions = all;
+            questions = _deduplicateQuestions(all);
           } catch (err) {
             console.error("Erreur de chargement GLIGLI ALL", err);
             questions = [];
@@ -473,12 +545,18 @@ async function chargerQuestions(cat) {
           if (Array.isArray(data)) _jsonCache.set(fileName, data);
         }
         const normalizedCat = norm;
-        questions = Array.isArray(data) ? data.map((q, i) => ({
-          ...q,
-          id: i + 1,
-          categorie: normalizedCat,
-          image: q.image || q.image_url || q.imageUrl || null
-        })) : [];
+        const isEpreuve = norm.includes('EPREUVE');
+        if (isEpreuve && Array.isArray(data)) {
+          // Résoudre les références vers les catégories thématiques
+          questions = resolveEpreuveQuestions(data, normalizedCat);
+        } else {
+          questions = Array.isArray(data) ? data.map((q, i) => ({
+            ...q,
+            id: i + 1,
+            categorie: normalizedCat,
+            image: q.image || q.image_url || q.imageUrl || null
+          })) : [];
+        }
       } catch (err) {
         console.error("Erreur de chargement pour", norm, err);
         questions = [];
@@ -532,7 +610,7 @@ async function loadAllQuestions() {
     await chargerQuestions(cat);
     allQuestions = allQuestions.concat(questions);
   }
-  questions = allQuestions;
+  questions = _deduplicateQuestions(allQuestions);
 }
 
 
