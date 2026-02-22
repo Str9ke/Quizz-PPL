@@ -33,6 +33,18 @@ async function displayDailyStats(forcedUid) {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const data = doc.exists ? doc.data() : {};
     
+    // Seed le backup localStorage avec les données Firestore (capture les données existantes)
+    if (data.dailyHistory) {
+      try {
+        const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        let changed = false;
+        for (const [k, v] of Object.entries(data.dailyHistory)) {
+          if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
+        }
+        if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+      } catch (e) { /* ignore */ }
+    }
+    
     // Compteur Firestore dailyHistory (source de vérité incrémentale)
     const todayDate = new Date().toISOString().slice(0, 10);
     const firestoreDailyCount = (data.dailyHistory && data.dailyHistory[todayDate]) || 0;
@@ -398,16 +410,44 @@ async function initStats() {
 
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
     const dailyHistory = data.dailyHistory || {};
-    // Pour aujourd'hui : réconcilier dailyHistory avec le compteur localStorage
-    // (le compteur localStorage est mis à jour immédiatement, dailyHistory peut être en retard)
-    // Note: localStorage utilise des clés UTC (toISOString), Firestore/chart utilisent des clés locales
     const _today = new Date();
+    // Fusionner avec le backup localStorage (filet de sécurité si Firestore a perdu des incréments)
+    const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+    for (const [dateKey, count] of Object.entries(dhBackup)) {
+      dailyHistory[dateKey] = Math.max(dailyHistory[dateKey] || 0, count);
+    }
+    // Récupérer aussi les anciennes clés dailyAnswered_*/dailyCountRatchet_* de localStorage
+    // (elles utilisent des dates UTC, les convertir en dates locales pour le graphique)
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(_today);
+      d.setDate(d.getDate() - i);
+      const localKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      // Vérifier les clés UTC (toISOString) — couvrir aussi le décalage horaire potentiel
+      const utcKey1 = localKey; // Même date si pas de décalage minuit
+      const lsVal = Math.max(
+        parseInt(localStorage.getItem('dailyAnswered_' + utcKey1)) || 0,
+        parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey1)) || 0
+      );
+      if (lsVal > 0) {
+        dailyHistory[localKey] = Math.max(dailyHistory[localKey] || 0, lsVal);
+      }
+    }
+    // Pour aujourd'hui : réconcilier aussi avec les compteurs UTC de localStorage
     const todayKeyLocal = _today.getFullYear() + '-' + String(_today.getMonth() + 1).padStart(2, '0') + '-' + String(_today.getDate()).padStart(2, '0');
     const todayKeyUtc = _today.toISOString().slice(0, 10);
     const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKeyUtc)) || 0;
     const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
-    const todayBest = Math.max(dailyHistory[todayKeyLocal] || 0, lsDailyCount, ratchetCount);
-    dailyHistory[todayKeyLocal] = todayBest;
+    dailyHistory[todayKeyLocal] = Math.max(dailyHistory[todayKeyLocal] || 0, lsDailyCount, ratchetCount);
+    // Sauvegarder le dailyHistory fusionné dans localStorage pour les futures visites
+    // (agit comme seed : si Firestore fonctionne maintenant, on capture les données existantes)
+    try {
+      const existingBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+      let changed = false;
+      for (const [k, v] of Object.entries(dailyHistory)) {
+        if (v > (existingBackup[k] || 0)) { existingBackup[k] = v; changed = true; }
+      }
+      if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(existingBackup));
+    } catch (e) { /* ignore */ }
     afficherDailyChart(dailyHistory);
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)

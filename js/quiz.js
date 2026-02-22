@@ -579,18 +579,25 @@ async function validerReponses() {
     // Ne PAS incrémenter en mode révisions espacées
     if (modeQuiz !== 'revisions') {
       try {
-        const dayKey = 'dailyAnswered_' + new Date().toISOString().slice(0, 10);
-        const prev = parseInt(localStorage.getItem(dayKey)) || 0;
+        const _now = new Date();
+        const dayKeyUtc = 'dailyAnswered_' + _now.toISOString().slice(0, 10);
+        const prev = parseInt(localStorage.getItem(dayKeyUtc)) || 0;
         const newTotal = prev + currentQuestions.length;
-        localStorage.setItem(dayKey, newTotal);
+        localStorage.setItem(dayKeyUtc, newTotal);
         // Mise à jour DIRECTE du DOM (sans attendre Firestore)
         ensureDailyStatsBarVisible();
-        const ratchetKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
-        const prevRatchet = parseInt(localStorage.getItem(ratchetKey)) || 0;
+        const ratchetKeyUtc = 'dailyCountRatchet_' + _now.toISOString().slice(0, 10);
+        const prevRatchet = parseInt(localStorage.getItem(ratchetKeyUtc)) || 0;
         const display = Math.max(newTotal, prevRatchet);
-        localStorage.setItem(ratchetKey, display);
+        localStorage.setItem(ratchetKeyUtc, display);
         const countElem = document.getElementById('answeredTodayCount');
         if (countElem) countElem.textContent = display;
+        // Backup persistant en date LOCALE (même format que Firestore/chart)
+        // Survit aux pertes de sync Firestore, sert de filet de sécurité pour le graphique
+        const localDateKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+        const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + currentQuestions.length;
+        localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
       } catch (e) { /* localStorage plein — rare */ }
     }
 
