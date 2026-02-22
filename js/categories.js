@@ -270,11 +270,15 @@ async function updateModeCounts() {
     // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
     // because chargerQuestions already loaded the right set with correct individual categories
     const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
-    const list = isAggregate
+    // Épreuve categories also contain mixed-category questions (refs resolved from thematic files)
+    const isEpreuve = normalizedSel.includes('EPREUVE');
+    const list = (isAggregate || isEpreuve)
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
     let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0, nbAvecNotes=0;
+    // Compter les questions uniques (propres à l'épreuve, pas des références thématiques)
+    const nbUniques = isEpreuve ? questions.filter(q => q.categorie === normalizedSel).length : 0;
     const now = Date.now();
     const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
     list.forEach(q => {
@@ -300,6 +304,7 @@ async function updateModeCounts() {
       modeSelect.innerHTML = `
         <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
         <option value="toutes">Toutes (${total})</option>
+        ${isEpreuve ? `<option value="uniques">🔹 Uniques épreuve (${nbUniques})</option>` : ''}
         <option value="ratees">Ratées (${nbRatees})</option>
         <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
         <option value="nonvues">Non vues (${nbNonvues})</option>
@@ -785,6 +790,13 @@ async function filtrerQuestions(mode, nb) {
     }
     currentQuestions = shuffled
       .filter(q => !!notesMap[getKeyFor(q)])
+      .slice(0, nb);
+  }
+  else if (mode === "uniques") {
+    // Questions exclusives à cette épreuve (pas des références thématiques)
+    const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+    currentQuestions = shuffled
+      .filter(q => q.categorie === normalizedSel)
       .slice(0, nb);
   }
 }

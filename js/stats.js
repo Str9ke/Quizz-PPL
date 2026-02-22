@@ -83,7 +83,7 @@ async function displayDailyStats(forcedUid) {
  * toggleAutoStart() – Active/désactive le démarrage automatique du quiz
  */
 
-function displayHomeProgressBar(responses) {
+function displayHomeProgressBar(responses, dailyHistory) {
   const cont = document.getElementById('progressionContainer');
   if (!cont) return;
 
@@ -107,6 +107,25 @@ function displayHomeProgressBar(responses) {
     if (p >= 50) return '#ff9800';
     return '#f44336';
   }
+
+  // Calculer l'estimation des jours restants (moyenne 7 derniers jours)
+  let daysRemainingHtml = '';
+  if (dailyHistory && nonvue > 0) {
+    const today = new Date();
+    let total7 = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      total7 += dailyHistory[key] || 0;
+    }
+    const avg7 = total7 / 7;
+    if (avg7 > 0) {
+      const daysLeft = Math.ceil(nonvue / avg7);
+      daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} questions/jour sur 7 jours">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+    }
+  }
+
   cont.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <strong>Progression globale</strong>
@@ -119,10 +138,11 @@ function displayHomeProgressBar(responses) {
       <span>${total} questions</span>
       <span>✅ ${reussie}</span>
       <span>❌ ${ratee}</span>
-      <span>👀 ${nonvue}</span>
+      <span>👀 ${nonvue} restante${nonvue > 1 ? 's' : ''}</span>
       <span>📌 ${marquee}</span>
       <span>⭐ ${importante}</span>
     </div>
+    ${daysRemainingHtml ? `<div style="margin-top:6px;font-size:0.9em;color:#667eea;font-weight:600">${daysRemainingHtml}</div>` : ''}
   `;
 }
 
@@ -357,10 +377,18 @@ async function initStats() {
         try {
           await chargerQuestions(cat.value);
           const catQuestions = [...questions];
-          catStats.push({ label: cat.label, stats: computeStatsForFirestore(catQuestions, data.responses) });
+          const isEpreuve = cat.value.includes('EPREUVE');
+          const fullStats = computeStatsForFirestore(catQuestions, data.responses);
+          // Pour les totaux groupe/global : ne compter que les questions uniques des épreuves
+          // (les refs sont déjà comptées dans leurs catégories thématiques)
+          const globalContrib = isEpreuve
+            ? computeStatsForFirestore(catQuestions.filter(q => q.categorie === cat.value), data.responses)
+            : fullStats;
+          catStats.push({ label: cat.label, stats: fullStats, globalContrib });
         } catch (err) {
           console.error("Stat error for", cat.value, err);
-          catStats.push({ label: cat.label, stats: { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0 } });
+          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0 };
+          catStats.push({ label: cat.label, stats: emptyStats, globalContrib: emptyStats });
         }
       }
       groupsData.push({ name: group.name, categories: catStats });
@@ -368,15 +396,18 @@ async function initStats() {
 
     afficherStats(groupsData);
 
-    // Charger l'historique quotidien depuis Firestore (source de vérité)
-    const dailyHistory = await getDailyHistory(uid);
+    // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
+    const dailyHistory = data.dailyHistory || {};
     // Pour aujourd'hui : réconcilier dailyHistory avec le compteur localStorage
     // (le compteur localStorage est mis à jour immédiatement, dailyHistory peut être en retard)
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKey)) || 0;
-    const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKey)) || 0;
-    const todayBest = Math.max(dailyHistory[todayKey] || 0, lsDailyCount, ratchetCount);
-    dailyHistory[todayKey] = todayBest;
+    // Note: localStorage utilise des clés UTC (toISOString), Firestore/chart utilisent des clés locales
+    const _today = new Date();
+    const todayKeyLocal = _today.getFullYear() + '-' + String(_today.getMonth() + 1).padStart(2, '0') + '-' + String(_today.getDate()).padStart(2, '0');
+    const todayKeyUtc = _today.toISOString().slice(0, 10);
+    const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKeyUtc)) || 0;
+    const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
+    const todayBest = Math.max(dailyHistory[todayKeyLocal] || 0, lsDailyCount, ratchetCount);
+    dailyHistory[todayKeyLocal] = todayBest;
     afficherDailyChart(dailyHistory);
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)
@@ -473,14 +504,15 @@ function afficherStats(groupsData) {
     return '#f44336';
   }
 
-  // Totaux globaux (pas de doublons car pas d'agrégats)
+  // Totaux globaux (utiliser globalContrib pour éviter le double-comptage des refs épreuve)
   let gRe = 0, gRa = 0, gNv = 0, gMa = 0, gIm = 0;
   groupsData.forEach(g => g.categories.forEach(c => {
-    gRe += c.stats.reussie;
-    gRa += c.stats.ratee;
-    gNv += c.stats.nonvue;
-    gMa += c.stats.marquee;
-    gIm += c.stats.importante || 0;
+    const s = c.globalContrib || c.stats;
+    gRe += s.reussie;
+    gRa += s.ratee;
+    gNv += s.nonvue;
+    gMa += s.marquee;
+    gIm += s.importante || 0;
   }));
   const gTotal = gRe + gRa + gNv;
   const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
@@ -510,11 +542,12 @@ function afficherStats(groupsData) {
   groupsData.forEach(group => {
     let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0;
     group.categories.forEach(c => {
-      grRe += c.stats.reussie;
-      grRa += c.stats.ratee;
-      grNv += c.stats.nonvue;
-      grMa += c.stats.marquee;
-      grIm += c.stats.importante || 0;
+      const s = c.globalContrib || c.stats;
+      grRe += s.reussie;
+      grRa += s.ratee;
+      grNv += s.nonvue;
+      grMa += s.marquee;
+      grIm += s.importante || 0;
     });
     const grTotal = grRe + grRa + grNv;
     const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;

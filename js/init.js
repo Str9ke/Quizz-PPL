@@ -129,12 +129,14 @@ async function initIndex() {
     console.error('[initIndex] Aucun UID disponible (ni Auth ni cache)');
     return;
   }
+  let _dailyHist = {};
   try {
     const docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
     const docData = docResp.exists ? docResp.data() : {};
     currentResponses = normalizeResponses(docData.responses || {});
     // Charger le cache de notes pour le mode "Avec notes"
     _notesCache = docData.notes || {};
+    _dailyHist = docData.dailyHistory || {};
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');
     currentResponses = currentResponses || {};
@@ -161,7 +163,7 @@ async function initIndex() {
   if (corrImm) corrImm.checked = localStorage.getItem('correctionImmediate') === '1';
 
   // Afficher la barre de progression globale sur l'accueil
-  displayHomeProgressBar(currentResponses);
+  displayHomeProgressBar(currentResponses, _dailyHist);
 
   // Afficher les statistiques du jour
   await displayDailyStats();
