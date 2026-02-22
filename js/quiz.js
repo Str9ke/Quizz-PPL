@@ -42,6 +42,9 @@ async function demarrerQuiz() {
   localStorage.setItem('quizNbQuestions', nbQuestions);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
 
+  // Nettoyer les recently answered quand on démarre un nouveau quiz depuis l'accueil
+  localStorage.removeItem('recentlyAnsweredKeys');
+
   // Sauvegarder le mode correction immédiate
   const corrImm = document.getElementById('correctionImmediateCheckbox');
   localStorage.setItem('correctionImmediate', corrImm && corrImm.checked ? '1' : '0');

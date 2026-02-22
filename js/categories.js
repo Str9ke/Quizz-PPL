@@ -652,14 +652,37 @@ async function filtrerQuestions(mode, nb) {
       .slice(0, nb);
   }
   else if (mode === "importantes") {
-    currentQuestions = shuffled
-      .filter(q => responses[getKeyFor(q)]?.important)
-      .slice(0, nb);
+    const allImportantes = shuffled.filter(q => responses[getKeyFor(q)]?.important);
+    currentQuestions = _excludeRecentlyAnswered(allImportantes, nb);
   }
   else if (mode === "marquees") {
-    currentQuestions = shuffled
-      .filter(q => responses[getKeyFor(q)]?.marked)
-      .slice(0, nb);
+    const allMarquees = shuffled.filter(q => responses[getKeyFor(q)]?.marked);
+    currentQuestions = _excludeRecentlyAnswered(allMarquees, nb);
+  }
+}
+
+/**
+ * _excludeRecentlyAnswered() – Exclut les questions récemment posées si possible,
+ * sinon complète avec celles récemment posées pour atteindre nb.
+ */
+function _excludeRecentlyAnswered(pool, nb) {
+  let recentKeys = [];
+  try {
+    const raw = localStorage.getItem('recentlyAnsweredKeys');
+    if (raw) recentKeys = JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+
+  if (!recentKeys.length) return pool.slice(0, nb);
+
+  const recentSet = new Set(recentKeys);
+  const fresh = pool.filter(q => !recentSet.has(getKeyFor(q)));
+  const recent = pool.filter(q => recentSet.has(getKeyFor(q)));
+
+  // Prendre d'abord les questions non récentes, puis compléter avec les récentes si besoin
+  if (fresh.length >= nb) {
+    return fresh.slice(0, nb);
+  } else {
+    return [...fresh, ...recent].slice(0, nb);
   }
 }
 

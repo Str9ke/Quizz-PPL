@@ -6,6 +6,17 @@ function resetQuiz() {
   const mode = localStorage.getItem('quizMode') || "toutes";
   const nb = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
   const sousCat = localStorage.getItem('quizSousCategorie');
+
+  // Sauvegarder les questions du quiz actuel comme "récemment posées"
+  // pour éviter qu'elles retombent immédiatement en mode marquées/importantes
+  try {
+    const prev = localStorage.getItem('currentQuestions');
+    if (prev) {
+      const prevIds = JSON.parse(prev).map(q => getKeyFor(q));
+      localStorage.setItem('recentlyAnsweredKeys', JSON.stringify(prevIds));
+    }
+  } catch (e) { /* ignore */ }
+
   localStorage.removeItem('currentQuestions');
   (async () => {
     try {
