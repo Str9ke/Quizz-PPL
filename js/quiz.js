@@ -517,6 +517,17 @@ function handleImmediateAnswer(q, selectedRadio) {
     _speakCorrectAnswer(correctText);
     // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
     _queueForReask(q);
+    // Permettre de re-lire la bonne réponse en cliquant n'importe où dans la zone réponses
+    const answerList = selectedRadio.closest('.answer-list');
+    if (answerList && !answerList._ttsReplayAttached) {
+      answerList._ttsReplayAttached = true;
+      answerList.style.cursor = 'pointer';
+      answerList.addEventListener('click', (e) => {
+        // Ne pas interférer avec les liens ou boutons
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        _speakCorrectAnswer(correctText);
+      });
+    }
   }
 
   // Afficher l'explication si disponible
