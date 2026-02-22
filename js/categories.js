@@ -202,7 +202,7 @@ async function updateModeCounts() {
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
-    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0;
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0;
     list.forEach(q => {
       const r = currentResponses[getKeyFor(q)];
       total++;
@@ -213,6 +213,7 @@ async function updateModeCounts() {
         if (r.status==="ratée")   nbRatees++;
         if (r.marked)             nbMarquees++;
         if (r.important)          nbImportantes++;
+        if ((r.failCount || 0) >= 2) nbDifficiles++;
       }
     });
 
@@ -223,6 +224,7 @@ async function updateModeCounts() {
         <option value="ratees">Ratées (${nbRatees})</option>
         <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
         <option value="nonvues">Non vues (${nbNonvues})</option>
+        <option value="difficiles">⚠️ Difficiles (${nbDifficiles})</option>
         <option value="reussies">Réussies (${nbReussies})</option>
         <option value="marquees">Marquées (${nbMarquees})</option>
         <option value="importantes">Importantes (${nbImportantes})</option>
@@ -649,6 +651,11 @@ async function filtrerQuestions(mode, nb) {
          const s = responses[getKeyFor(q)]?.status;
          return s === 'ratée' || !s;
       })
+      .slice(0, nb);
+  }
+  else if (mode === "difficiles") {
+    currentQuestions = shuffled
+      .filter(q => (responses[getKeyFor(q)]?.failCount || 0) >= 2)
       .slice(0, nb);
   }
   else if (mode === "importantes") {

@@ -306,6 +306,19 @@ function afficherQuiz() {
 
   cont.innerHTML = "";
   currentQuestions.forEach((q, idx) => {
+    // Mélanger les choix pour ne pas toujours avoir les réponses au même endroit
+    // Créer un tableau d'indices [0, 1, 2, 3], le mélanger (Fisher-Yates)
+    const indices = q.choix.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    // Réordonner les choix et mettre à jour bonne_reponse
+    const originalChoix = [...q.choix];
+    const originalBonne = q.bonne_reponse;
+    q.choix = indices.map(i => originalChoix[i]);
+    q.bonne_reponse = indices.indexOf(originalBonne);
+
     cont.innerHTML += `
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
@@ -450,6 +463,7 @@ async function validerReponses() {
         const hasExisting = !!currentResponses[key];
         const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
         const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
+        const prevFailCount = hasExisting ? (currentResponses[key].failCount || 0) : 0;
         const status = selectedVal !== null
             ? (selectedVal === q.bonne_reponse ? 'réussie' : 'ratée')
             : 'ratée';
@@ -457,6 +471,7 @@ async function validerReponses() {
             category: q.categorie,
             questionId: q.id,
             status,
+            failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
             timestamp: firebase.firestore.Timestamp.now()
         };
         // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
