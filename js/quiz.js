@@ -37,36 +37,51 @@ if ('speechSynthesis' in window) {
 /**
  * _logWrongAnswer() – Enregistre une question ratée dans le journal quotidien (pour la page Ratés)
  * Stocke la question complète + timestamp + réponse sélectionnée
+ * Double stockage : localStorage (instantané) + Firestore (sync cross-device)
  */
 function _logWrongAnswer(q, selectedVal) {
+  const now = new Date();
+  const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  const key = getKeyFor(q);
+  const ts = Date.now();
+  const item = {
+    key: key,
+    ts: ts,
+    selected: selectedVal,
+    q: {
+      id: q.id,
+      question: q.question,
+      choix: q.choix,
+      bonne_reponse: q.bonne_reponse,
+      categorie: q.categorie,
+      image: q.image || null,
+      explication: q.explication || null,
+      explication_images: q.explication_images || null
+    }
+  };
+
+  // 1) localStorage (instantané, même offline)
   try {
-    const now = new Date();
-    const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     let data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
-    // Réinitialiser si c'est un nouveau jour
     if (data.date !== todayKey) data = { date: todayKey, items: [] };
-    const key = getKeyFor(q);
-    // On ajoute même si déjà présente (plusieurs tentatives = plusieurs entrées chronologiques)
-    // Mais on déduplique si c'est la même question dans le même quiz (même minute)
-    const recentDuplicate = data.items.find(item => item.key === key && (Date.now() - item.ts) < 60000);
+    // Déduplique si même question dans la même minute
+    const recentDuplicate = data.items.find(it => it.key === key && (ts - it.ts) < 60000);
     if (recentDuplicate) return;
-    data.items.push({
-      key: key,
-      ts: Date.now(),
-      selected: selectedVal,
-      q: {
-        id: q.id,
-        question: q.question,
-        choix: q.choix,
-        bonne_reponse: q.bonne_reponse,
-        categorie: q.categorie,
-        image: q.image || null,
-        explication: q.explication || null,
-        explication_images: q.explication_images || null
-      }
-    });
+    data.items.push(item);
     localStorage.setItem('wrongToday', JSON.stringify(data));
   } catch (e) { /* localStorage plein */ }
+
+  // 2) Firestore (sync cross-device, fonctionne offline grâce à la persistence)
+  try {
+    const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+    if (!uid) return;
+    const docRef = db.collection('quizProgress').doc(uid).collection('wrongToday').doc(todayKey);
+    // arrayUnion ajoute l'item au tableau sans écraser les existants
+    docRef.set({
+      date: todayKey,
+      items: firebase.firestore.FieldValue.arrayUnion(item)
+    }, { merge: true }).catch(function(e) { console.warn('[wrongToday] Firestore write error:', e); });
+  } catch (e) { /* Firestore non disponible */ }
 }
 
 /**

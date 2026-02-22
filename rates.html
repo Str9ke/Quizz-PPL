@@ -88,59 +88,70 @@
       return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     }
 
-    function getWrongToday() {
-      try {
-        var data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
-        var todayKey = getTodayKey();
-        if (data.date !== todayKey) return [];
-        return data.items || [];
-      } catch (e) { return []; }
-    }
-
+    // Récupère le lastViewed depuis localStorage (rapide) ou Firestore (cross-device)
     function getLastViewedTimestamp() {
       try {
         var data = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}');
-        if (data.date !== getTodayKey()) return 0;
-        return data.ts || 0;
-      } catch (e) { return 0; }
+        if (data.date === getTodayKey()) return data.ts || 0;
+      } catch (e) {}
+      return 0;
     }
 
-    function markAsViewed() {
-      localStorage.setItem('ratesLastViewed', JSON.stringify({
-        date: getTodayKey(),
-        ts: Date.now()
-      }));
+    // Sauvegarde lastViewed en localStorage + Firestore (cross-device)
+    function markAsViewed(uid) {
+      var payload = { date: getTodayKey(), ts: Date.now() };
+      localStorage.setItem('ratesLastViewed', JSON.stringify(payload));
+      // Sync to Firestore for cross-device
+      if (uid) {
+        try {
+          db.collection('quizProgress').doc(uid).collection('wrongToday').doc('_meta').set(
+            { lastViewed: payload }, { merge: true }
+          ).catch(function() {});
+        } catch (e) {}
+      }
+    }
+
+    // Fusionne localStorage + Firestore items, déduplique par key+ts
+    function mergeItems(localItems, firestoreItems) {
+      var map = {};
+      function addItem(item) {
+        var id = item.key + '_' + item.ts;
+        if (!map[id]) map[id] = item;
+      }
+      (localItems || []).forEach(addItem);
+      (firestoreItems || []).forEach(addItem);
+      var result = [];
+      for (var id in map) result.push(map[id]);
+      // Trier par timestamp chronologique
+      result.sort(function(a, b) { return a.ts - b.ts; });
+      return result;
     }
 
     // === Render ===
-    function render() {
+    function render(items, allItemsCount, uid, lastViewed) {
       var container = document.getElementById('ratesContainer');
-      var loadingEl = document.getElementById('ratesLoading');
-      var allItems = getWrongToday();
-      var lastViewed = getLastViewedTimestamp();
 
       // Filtrer : uniquement les items non encore vus
-      var items = allItems.filter(function(item) { return item.ts > lastViewed; });
+      var unseen = items.filter(function(item) { return item.ts > lastViewed; });
 
-      if (items.length === 0) {
+      if (unseen.length === 0) {
         container.innerHTML = '<div class="rates-empty">' +
           '<div class="rates-empty-icon">✅</div>' +
           '<p>Aucune nouvelle question ratée à réviser !</p>' +
-          (allItems.length > 0
-            ? '<p style="font-size:0.85rem;color:var(--text-secondary);">Vous avez déjà consulté les ' + allItems.length + ' erreur(s) d\'aujourd\'hui.</p>'
+          (allItemsCount > 0
+            ? '<p style="font-size:0.85rem;color:var(--text-secondary);">Vous avez déjà consulté les ' + allItemsCount + ' erreur(s) d\'aujourd\'hui.</p>'
             : '<p style="font-size:0.85rem;color:var(--text-secondary);">Lancez un quiz pour commencer !</p>') +
           '</div>';
-        // Marquer comme vu même si vide (pour synchroniser le badge)
-        markAsViewed();
+        markAsViewed(uid);
         return;
       }
 
       var html = '<div class="rates-header">' +
-        '<span class="rates-count">' + items.length + ' question' + (items.length > 1 ? 's' : '') + ' ratée' + (items.length > 1 ? 's' : '') + ' à réviser</span>' +
+        '<span class="rates-count">' + unseen.length + ' question' + (unseen.length > 1 ? 's' : '') + ' ratée' + (unseen.length > 1 ? 's' : '') + ' à réviser</span>' +
         '<span class="rates-hint">💡 Cliquez sur les réponses pour écouter la question et la bonne réponse</span>' +
         '</div>';
 
-      items.forEach(function(item, idx) {
+      unseen.forEach(function(item, idx) {
         var q = item.q;
         var timeStr = new Date(item.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
@@ -191,23 +202,86 @@
       });
 
       // Marquer comme vu APRÈS l'affichage
-      markAsViewed();
+      markAsViewed(uid);
     }
 
-    // Auth check then render
+    // === Init : charge depuis Firestore (cross-device) + localStorage (local) ===
+    function initRates() {
+      var uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      var todayKey = getTodayKey();
+
+      // Charger les items localStorage immédiatement
+      var localItems = [];
+      try {
+        var localData = JSON.parse(localStorage.getItem('wrongToday') || '{}');
+        if (localData.date === todayKey) localItems = localData.items || [];
+      } catch (e) {}
+
+      // Charger le lastViewed local
+      var lastViewed = getLastViewedTimestamp();
+
+      if (!uid) {
+        // Pas connecté → afficher uniquement localStorage
+        render(localItems, localItems.length, null, lastViewed);
+        return;
+      }
+
+      // Charger depuis Firestore (inclut le cache local Firestore si offline)
+      var docRef = db.collection('quizProgress').doc(uid).collection('wrongToday').doc(todayKey);
+      var metaRef = db.collection('quizProgress').doc(uid).collection('wrongToday').doc('_meta');
+
+      // Lancer les 2 lectures en parallèle
+      Promise.all([
+        docRef.get().catch(function() { return null; }),
+        metaRef.get().catch(function() { return null; })
+      ]).then(function(results) {
+        var fsDoc = results[0];
+        var metaDoc = results[1];
+
+        var fsItems = [];
+        if (fsDoc && fsDoc.exists) {
+          var fsData = fsDoc.data();
+          fsItems = fsData.items || [];
+        }
+
+        // lastViewed cross-device : prendre le max entre localStorage et Firestore
+        var fsLastViewed = 0;
+        if (metaDoc && metaDoc.exists) {
+          var meta = metaDoc.data();
+          if (meta.lastViewed && meta.lastViewed.date === todayKey) {
+            fsLastViewed = meta.lastViewed.ts || 0;
+          }
+        }
+        var effectiveLastViewed = Math.max(lastViewed, fsLastViewed);
+        // Synchroniser le lastViewed local si Firestore est plus récent
+        if (fsLastViewed > lastViewed) {
+          localStorage.setItem('ratesLastViewed', JSON.stringify({ date: todayKey, ts: fsLastViewed }));
+        }
+
+        // Fusionner localStorage + Firestore items
+        var allItems = mergeItems(localItems, fsItems);
+
+        render(allItems, allItems.length, uid, effectiveLastViewed);
+      }).catch(function(err) {
+        console.warn('[rates] Firestore read error, fallback localStorage:', err);
+        render(localItems, localItems.length, uid, lastViewed);
+      });
+    }
+
+    // Auth check then init
     var initDone = false;
-    function init() {
+    function doInit() {
       if (initDone) return;
       initDone = true;
-      render();
+      initRates();
     }
 
     auth.onAuthStateChanged(function(user) {
-      if (user || localStorage.getItem('cachedUid')) { init(); }
+      if (user || localStorage.getItem('cachedUid')) { doInit(); }
       else { window.location = 'index.html'; }
     });
     setTimeout(function() {
-      if (!initDone && localStorage.getItem('cachedUid')) init();
+      if (!initDone && localStorage.getItem('cachedUid')) doInit();
     }, 2000);
   })();
   </script>

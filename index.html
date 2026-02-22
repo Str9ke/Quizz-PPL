@@ -218,13 +218,13 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260222w"></script>
-  <script src="js/helpers.js?v=20260222w"></script>
-  <script src="js/categories.js?v=20260222w"></script>
-  <script src="js/stats.js?v=20260222w"></script>
-  <script src="js/quiz.js?v=20260222w"></script>
-  <script src="js/init.js?v=20260222w"></script>
-  <script src="js/offline.js?v=20260222w"></script>
+  <script src="js/globals.js?v=20260222x"></script>
+  <script src="js/helpers.js?v=20260222x"></script>
+  <script src="js/categories.js?v=20260222x"></script>
+  <script src="js/stats.js?v=20260222x"></script>
+  <script src="js/quiz.js?v=20260222x"></script>
+  <script src="js/init.js?v=20260222x"></script>
+  <script src="js/offline.js?v=20260222x"></script>
 
   <!-- Sélecteur de voix TTS : population & test -->
   <script>
@@ -357,20 +357,55 @@
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>
-  // Mise à jour du badge "Ratés du jour"
+  // Mise à jour du badge "Ratés du jour" (localStorage rapide + Firestore cross-device)
   (function() {
-    try {
-      var now = new Date();
-      var todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-      var data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
-      if (data.date !== todayKey) return;
-      var items = data.items || [];
-      var viewed = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}');
-      var lastTs = (viewed.date === todayKey) ? (viewed.ts || 0) : 0;
-      var unseen = items.filter(function(item) { return item.ts > lastTs; }).length;
+    var now = new Date();
+    var todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+    function updateBadge(unseen) {
       var badge = document.getElementById('ratesBadge');
       if (badge && unseen > 0) { badge.textContent = unseen; badge.style.display = 'inline-block'; }
+      else if (badge) { badge.style.display = 'none'; }
+    }
+
+    // 1) Instant : localStorage
+    try {
+      var data = JSON.parse(localStorage.getItem('wrongToday') || '{}');
+      var localItems = (data.date === todayKey) ? (data.items || []) : [];
+      var viewed = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}');
+      var lastTs = (viewed.date === todayKey) ? (viewed.ts || 0) : 0;
+      var unseen = localItems.filter(function(item) { return item.ts > lastTs; }).length;
+      updateBadge(unseen);
     } catch (e) {}
+
+    // 2) Async : Firestore (pour cross-device, ex: PC voit les ratés du téléphone)
+    function checkFirestoreBadge() {
+      var uid = (window.auth && auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      if (!uid || !window.db) return;
+      var docRef = db.collection('quizProgress').doc(uid).collection('wrongToday').doc(todayKey);
+      var metaRef = db.collection('quizProgress').doc(uid).collection('wrongToday').doc('_meta');
+      Promise.all([docRef.get(), metaRef.get()]).then(function(results) {
+        var fsDoc = results[0]; var metaDoc = results[1];
+        var fsItems = (fsDoc && fsDoc.exists) ? (fsDoc.data().items || []) : [];
+        var fsLastViewed = 0;
+        if (metaDoc && metaDoc.exists && metaDoc.data().lastViewed && metaDoc.data().lastViewed.date === todayKey) {
+          fsLastViewed = metaDoc.data().lastViewed.ts || 0;
+        }
+        // Merge local + firestore
+        var map = {};
+        function add(it) { map[it.key + '_' + it.ts] = it; }
+        try { var ld = JSON.parse(localStorage.getItem('wrongToday') || '{}'); if (ld.date === todayKey) (ld.items || []).forEach(add); } catch(e){}
+        fsItems.forEach(add);
+        var allItems = []; for (var k in map) allItems.push(map[k]);
+        var vw = 0;
+        try { var v = JSON.parse(localStorage.getItem('ratesLastViewed') || '{}'); if (v.date === todayKey) vw = v.ts || 0; } catch(e){}
+        var effectiveLV = Math.max(vw, fsLastViewed);
+        var count = allItems.filter(function(it) { return it.ts > effectiveLV; }).length;
+        updateBadge(count);
+      }).catch(function(){});
+    }
+    // Délai pour laisser Firebase s'initialiser
+    setTimeout(checkFirestoreBadge, 2500);
   })();
   </script>
   <script>
