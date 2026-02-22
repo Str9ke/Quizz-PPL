@@ -646,8 +646,6 @@ async function categoryChanged() {
     await chargerQuestions(selected);
   }
   updateModeCounts();
-  document.getElementById("totalGlobalInfo").textContent =
-    "Total questions disponibles: " + questions.length;
 }
 
 // Replace curly apostrophes etc. with straight apostrophes for consistency

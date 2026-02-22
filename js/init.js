@@ -155,9 +155,6 @@ async function initIndex() {
   const modeSelect = document.getElementById('mode');
   if (modeSelect) modeSelect.value = 'ratees_nonvues';
 
-  const p = document.getElementById('totalGlobalInfo');
-  p.textContent = `Total de questions (toutes catégories) : ${totalGlobal}`;
-
   document.getElementById('btnStart').disabled = false;
   
   // Initialiser le checkbox de démarrage automatique

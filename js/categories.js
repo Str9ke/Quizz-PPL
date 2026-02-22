@@ -610,9 +610,6 @@ async function categoryChanged() {
 
   // Restaurer le mode précédent (updateModeCounts recrée les options)
   if (modeSelect) modeSelect.value = previousMode;
-
-  document.getElementById("totalGlobalInfo").textContent =
-    "Total questions disponibles: " + questions.length;
 }
 
 
