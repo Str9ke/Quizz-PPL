@@ -228,7 +228,6 @@ async function initQuiz() {
   }
 
   ensureDailyStatsBarVisible();
-  showBuildTag();
 
   // ← avoid ReferenceError
   const stored = localStorage.getItem('currentQuestions');

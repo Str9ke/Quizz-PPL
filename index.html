@@ -108,6 +108,22 @@
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
   <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
   <h1>Quiz Aviation - Accueil</h1>
+  <div id="lastUpdateInfo" style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:-6px;margin-bottom:8px;"></div>
+  <script>
+    // Afficher la date/heure de dernière mise à jour du site
+    (function() {
+      // Date de dernière mise à jour (mise à jour manuellement à chaque déploiement)
+      var LAST_UPDATE = '2026-02-22T18:00:00';
+      var d = new Date(LAST_UPDATE);
+      var pad = function(n) { return n < 10 ? '0' + n : n; };
+      var formatted = pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear()
+        + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      document.addEventListener('DOMContentLoaded', function() {
+        var el = document.getElementById('lastUpdateInfo');
+        if (el) el.textContent = 'Derni\u00e8re mise \u00e0 jour : ' + formatted;
+      });
+    })();
+  </script>
   <script>
     // EARLY: si on a un cachedUid, afficher immédiatement l'interface quiz
     // et masquer le login (évite le flash du formulaire en mode offline)
