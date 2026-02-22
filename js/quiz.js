@@ -163,24 +163,39 @@ function toggleImportantQuestion(questionId, button) {
 function afficherBoutonsMarquer() {
   const questionBlocks = document.querySelectorAll('.question-block');
   questionBlocks.forEach((block, idx) => {
-    // remove existing action buttons to avoid duplicates
-    block.querySelectorAll('.mark-button, .delete-button, .important-button, .unimportant-button').forEach(btn => btn.remove());
+    // remove existing action buttons row to avoid duplicates
+    block.querySelectorAll('.question-actions-row').forEach(row => row.remove());
+    block.querySelectorAll('.mark-button, .delete-button, .important-button, .unimportant-button, .note-toggle-btn').forEach(btn => btn.remove());
     const q   = currentQuestions[idx];
+    if (!q) return;
     const key = getKeyFor(q);
     const isMarked = (currentResponses[key] && currentResponses[key].marked === true);
     const isImportant = (currentResponses[key] && currentResponses[key].important === true);
+
+    // Conteneur flex pour tous les boutons d'action
+    const row = document.createElement('div');
+    row.className = 'question-actions-row';
+
     const btn = document.createElement('button');
     btn.textContent = isMarked ? "Supprimer" : "Marquer";
     btn.className   = isMarked ? "delete-button" : "mark-button";
     btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
-    block.appendChild(btn);
+    row.appendChild(btn);
 
     const btnImp = document.createElement('button');
     btnImp.textContent = isImportant ? "Retirer Important" : "Important";
     btnImp.className   = isImportant ? "delete-button" : "mark-button";
-    btnImp.style.marginLeft = '8px';
     btnImp.onclick     = () => toggleImportantQuestion(q.id, btnImp);
-    block.appendChild(btnImp);
+    row.appendChild(btnImp);
+
+    // Bouton Ma note (dans la même ligne)
+    const btnNote = document.createElement('button');
+    btnNote.className = 'note-toggle-btn';
+    btnNote.textContent = '📝 Ma note';
+    btnNote.onclick = () => _toggleNoteEditor(key, btnNote);
+    row.appendChild(btnNote);
+
+    block.appendChild(row);
   });
 }
 
@@ -443,16 +458,23 @@ function handleImmediateAnswer(q, selectedRadio) {
       }
     }
     // Ajouter le bouton de note si pas déjà présent
-    const key = getKeyFor(q);
+    const key2 = getKeyFor(q);
     if (!questionBlock.querySelector('.note-toggle-btn')) {
+      // Créer une row d'actions si elle n'existe pas
+      let row = questionBlock.querySelector('.question-actions-row');
+      if (!row) {
+        row = document.createElement('div');
+        row.className = 'question-actions-row';
+        questionBlock.appendChild(row);
+      }
       const btn = document.createElement('button');
       btn.className = 'note-toggle-btn';
       btn.textContent = '📝 Ma note';
-      btn.onclick = () => _toggleNoteEditor(key, btn);
-      questionBlock.appendChild(btn);
+      btn.onclick = () => _toggleNoteEditor(key2, btn);
+      row.appendChild(btn);
       // Charger et afficher la note existante
-      if (_notesCache && _notesCache[key]) {
-        _renderNoteDisplay(key, _notesCache[key]);
+      if (_notesCache && _notesCache[key2]) {
+        _renderNoteDisplay(key2, _notesCache[key2]);
       }
     }
   }
@@ -654,21 +676,28 @@ function afficherCorrection() {
 let _notesCache = null;
 
 /**
- * _attachNoteButtons() – Ajoute un bouton "📝 Ma note" après chaque question corrigée
+ * _attachNoteButtons() – S'assure que les placeholders de notes et boutons sont présents
+ * (les boutons note sont désormais dans la question-actions-row via afficherBoutonsMarquer)
  */
 function _attachNoteButtons() {
+  // Les boutons note sont déjà ajoutés par afficherBoutonsMarquer() dans la row.
+  // Ici on s'assure juste que le noteDisplay div existe pour chaque question.
   currentQuestions.forEach(q => {
     const key = getKeyFor(q);
-    const displayDiv = document.getElementById('noteDisplay_' + key);
-    if (!displayDiv) return;
-    // Ne pas ajouter deux fois
-    if (displayDiv.parentElement.querySelector('.note-toggle-btn')) return;
-
-    const btn = document.createElement('button');
-    btn.className = 'note-toggle-btn';
-    btn.textContent = '📝 Ma note';
-    btn.onclick = () => _toggleNoteEditor(key, btn);
-    displayDiv.parentElement.appendChild(btn);
+    if (!document.getElementById('noteDisplay_' + key)) {
+      // Trouver le question-block correspondant
+      const blocks = document.querySelectorAll('.question-block');
+      const idx = currentQuestions.indexOf(q);
+      if (blocks[idx]) {
+        const nd = document.createElement('div');
+        nd.className = 'personal-note-display';
+        nd.id = 'noteDisplay_' + key;
+        // Insérer avant la row de boutons
+        const row = blocks[idx].querySelector('.question-actions-row');
+        if (row) blocks[idx].insertBefore(nd, row);
+        else blocks[idx].appendChild(nd);
+      }
+    }
   });
 }
 
@@ -703,7 +732,13 @@ function _toggleNoteEditor(key, btn) {
     <div id="noteImagePreview_${key}" class="note-image-preview"></div>
   `;
 
-  btn.parentElement.appendChild(editor);
+  // Placer l'éditeur dans le question-block (pas dans la row de boutons)
+  const block = btn.closest('.question-block');
+  if (block) {
+    block.appendChild(editor);
+  } else {
+    btn.parentElement.appendChild(editor);
+  }
 
   // Auto-grow textarea
   const textarea = document.getElementById('noteText_' + key);
@@ -814,7 +849,13 @@ function _renderNoteDisplay(key, note) {
   }
 
   let html = '<div class="personal-note-block">';
-  html += '<strong>📌 Ma note personnelle :</strong><br>';
+  html += '<div class="personal-note-header">';
+  html += '<strong>📌 Ma note personnelle :</strong>';
+  html += '<span class="personal-note-actions">';
+  html += `<button class="note-edit-btn" onclick="_editNote('${key}')" title="Modifier">✏️</button>`;
+  html += `<button class="note-delete-btn" onclick="_deleteNote('${key}')" title="Supprimer">❌</button>`;
+  html += '</span>';
+  html += '</div>';
   if (note.text) {
     const escaped = note.text
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -826,6 +867,61 @@ function _renderNoteDisplay(key, note) {
   }
   html += '</div>';
   div.innerHTML = html;
+}
+
+/**
+ * _editNote() – Ouvre l'éditeur de note pour modification
+ */
+function _editNote(key) {
+  // Trouver le bouton note dans la row pour positionner l'éditeur
+  const displayDiv = document.getElementById('noteDisplay_' + key);
+  if (!displayDiv) return;
+  const block = displayDiv.closest('.question-block');
+  if (!block) return;
+  const noteBtn = block.querySelector('.note-toggle-btn');
+  if (noteBtn) {
+    _toggleNoteEditor(key, noteBtn);
+    // S'assurer que l'éditeur est visible
+    const editor = document.getElementById('noteEditor_' + key);
+    if (editor) editor.style.display = 'block';
+  }
+}
+
+/**
+ * _deleteNote() – Supprime une note après confirmation
+ */
+async function _deleteNote(key) {
+  if (!confirm('Supprimer cette note personnelle ?')) return;
+
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) return;
+
+  // Supprimer dans Firestore
+  try {
+    await db.collection('quizProgress').doc(uid).set(
+      { notes: { [key]: firebase.firestore.FieldValue.delete() } },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn('[note] Firestore delete failed', e.message);
+  }
+
+  // Supprimer du localStorage
+  try {
+    const lsKey = 'personalNotes_' + uid;
+    const stored = JSON.parse(localStorage.getItem(lsKey) || '{}');
+    delete stored[key];
+    localStorage.setItem(lsKey, JSON.stringify(stored));
+  } catch (e) { /* ignore */ }
+
+  // Supprimer du cache
+  if (_notesCache) delete _notesCache[key];
+
+  // Masquer l'affichage et l'éditeur
+  const div = document.getElementById('noteDisplay_' + key);
+  if (div) div.innerHTML = '';
+  const editor = document.getElementById('noteEditor_' + key);
+  if (editor) { editor.remove(); }
 }
 
 /**
