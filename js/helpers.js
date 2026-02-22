@@ -141,11 +141,16 @@ function initAutoStartCheckbox() {
 // ============================================================
 
 /**
- * _isEligibleForSR() – Une question est éligible à la répétition espacée si elle est
- * marquée, importante, ou difficile (failCount >= 2), ET qu'elle a déjà été vue.
+ * _isEligibleForSR() – Une question est éligible à la répétition espacée si :
+ * 1) Elle a déjà un nextReview programmé (= elle est dans le cycle SR), OU
+ * 2) Elle est marquée, importante, ou difficile (failCount >= 2) → entre dans le cycle immédiatement
+ * Les questions non vues (pas de réponse) ne sont jamais éligibles.
  */
 function _isEligibleForSR(r) {
   if (!r) return false;
+  // Déjà dans le cycle SR (a été répondue depuis l'activation du SR)
+  if (r.nextReview !== undefined && r.nextReview !== null) return true;
+  // Pas encore dans le cycle mais marquée/importante/difficile → y entre maintenant
   return r.marked === true || r.important === true || (r.failCount || 0) >= 2;
 }
 
