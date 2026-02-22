@@ -651,14 +651,16 @@ function afficherDailyChart(dailyHistory) {
 
   // Totaux
   const total60 = days.reduce((s, d) => s + d.count, 0);
-  const last7 = days.slice(-7).reduce((s, d) => s + d.count, 0);
-  const avg7 = last7 ? Math.round(last7 / 7) : 0;
+  // 7 derniers jours COMPLETS (hors aujourd'hui) — même fenêtre que l'objectif journalier
+  const last7Complete = days.slice(-8, -1).reduce((s, d) => s + d.count, 0);
+  const avg7 = last7Complete ? Math.round(last7Complete / 7) : 0;
+  const todayCount = days[days.length - 1].count;
 
   let html = `
     <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
       <strong>Activité quotidienne</strong>
       <div style="font-size:0.8em;color:var(--text-secondary)">
-        7j: <b>${last7}</b> · 60j: <b>${total60}</b> · moy/7j: <b>${avg7}/j</b>
+        auj: <b>${todayCount}</b> · 60j: <b>${total60}</b> · moy/7j: <b>${avg7}/j</b>
       </div>
     </div>
     <div class="daily-chart-scroll">

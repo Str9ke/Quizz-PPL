@@ -53,88 +53,29 @@
     <div id="categoryProgress" style="font-size: 0.85rem; opacity: 0.9;"></div>
   </div>
 
-  <!-- Compteur de questions répondues aujourd'hui -->
-  <div id="dailyStatsBar" style="display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <span style="font-size: 1.4rem; font-weight: bold;" id="answeredTodayCount">…</span>
-  </div>
+  <!-- Compteur de questions répondues aujourd'hui (recréé par ensureDailyStatsBarVisible) -->
+  <div id="dailyStatsBar" style="display:none;"></div>
 
   <script>
-    // Fallback ultra-simple pour afficher le compteur même si le script principal n'est pas chargé
+    // Affichage instantané depuis localStorage — même source que updateDailyStatsBar()
     (function() {
-      const waitForAuth = () => new Promise(resolve => {
-        const u = auth.currentUser;
-        if (u) return resolve(u);
-        // Essayer auth first, puis fallback cachedUid
-        const unsub = auth.onAuthStateChanged(user => {
-          unsub();
-          if (user) return resolve(user);
-          // Auth null → utiliser cachedUid comme fallback
-          const cached = localStorage.getItem('cachedUid');
-          if (cached) return resolve({ uid: cached });
-          resolve(null);
-        });
-        // Timeout si auth ne répond pas
-        setTimeout(() => resolve(localStorage.getItem('cachedUid') ? { uid: localStorage.getItem('cachedUid') } : null), 2000);
-      });
-
-      const countToday = (responses) => {
+      try {
         const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+        const utcKey = now.toISOString().slice(0, 10);
+        // Même logique que _getDailyHistoryMerged pour aujourd'hui
         let count = 0;
-        Object.values(responses || {}).forEach(r => {
-          let ts = null;
-          if (r.timestamp?.seconds !== undefined) ts = r.timestamp.seconds * 1000;
-          else if (typeof r.timestamp === 'number') ts = r.timestamp;
-          else if (r.lastUpdated?.seconds !== undefined) ts = r.lastUpdated.seconds * 1000;
-          else if (typeof r.lastUpdated === 'number') ts = r.lastUpdated;
-          if (ts && ts >= todayStart) count++;
-        });
-        return count;
-      };
-
-      const renderCount = (n) => {
-        // Ratchet: ne jamais diminuer dans la même journée
-        const todayKey = 'dailyCountRatchet_' + new Date().toISOString().slice(0, 10);
-        const prevMax = parseInt(localStorage.getItem(todayKey)) || 0;
-        const display = Math.max(n, prevMax);
-        if (display > prevMax) localStorage.setItem(todayKey, display);
-        const bar = document.getElementById('dailyStatsBar');
-        const num = document.getElementById('answeredTodayCount');
-        if (bar) bar.style.display = 'block';
-        if (num) num.textContent = display;
-      };
-
-      const run = async () => {
         try {
-          const user = await waitForAuth();
-          if (!user) return;
-          // Lecture rapide : cache Firestore si hors-ligne, sinon réseau avec timeout
-          const getOpts = navigator.onLine ? {} : { source: 'cache' };
-          let doc;
-          if (navigator.onLine) {
-            try {
-              doc = await Promise.race([
-                db.collection('quizProgress').doc(user.uid).get(),
-                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2000))
-              ]);
-            } catch (_) {
-              doc = await db.collection('quizProgress').doc(user.uid).get({ source: 'cache' });
-            }
-          } else {
-            doc = await db.collection('quizProgress').doc(user.uid).get({ source: 'cache' });
-          }
-          const responses = doc.exists ? doc.data().responses || {} : {};
-          const n = countToday(responses);
-          renderCount(n);
-        } catch (e) {
-          console.warn('[fallback-dailyStats] error', e);
-        }
-      };
-
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(run, 400);
-        setTimeout(run, 1400);
-      });
+          const backup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+          count = Math.max(count, backup[todayKey] || 0);
+        } catch (_) {}
+        count = Math.max(count,
+          parseInt(localStorage.getItem('dailyAnswered_' + utcKey)) || 0,
+          parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0
+        );
+        const el = document.getElementById('answeredTodayCount');
+        if (el) el.textContent = count || '…';
+      } catch (_) {}
     })();
   </script>
 

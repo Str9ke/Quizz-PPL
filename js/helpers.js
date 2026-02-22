@@ -175,8 +175,8 @@ function _computeStreak(dailyHistory) {
 }
 
 /**
- * _computeDailyGoal() – Calcule l'objectif quotidien à partir de la moyenne des 7 derniers jours
- * Minimum 10 questions, arrondi à la dizaine la plus proche.
+ * _computeDailyGoal() – Calcule l'objectif quotidien = moyenne des 7 derniers jours complets
+ * (hors aujourd'hui). Minimum 10 questions.
  */
 function _computeDailyGoal(dailyHistory) {
   const saved = parseInt(localStorage.getItem('dailyGoalOverride'));
@@ -193,9 +193,8 @@ function _computeDailyGoal(dailyHistory) {
     if (count > 0) activeDays++;
   }
   if (activeDays === 0) return 20; // défaut si aucune activité récente
-  const avg = total / 7;
-  // Arrondir à la dizaine la plus proche, minimum 10
-  return Math.max(10, Math.round(avg / 10) * 10 || 10);
+  // Moyenne exacte (pas d'arrondi à la dizaine), minimum 10
+  return Math.max(10, Math.round(total / 7));
 }
 
 /**
