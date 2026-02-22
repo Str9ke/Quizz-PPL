@@ -527,11 +527,28 @@ async function validerReponses() {
         const status = selectedVal !== null
             ? (selectedVal === q.bonne_reponse ? 'réussie' : 'ratée')
             : 'ratée';
+
+        // Répétition espacée : calculer le prochain intervalle
+        const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
+        let newInterval;
+        if (status === 'réussie') {
+          // Bonne réponse : augmenter l'intervalle (1→3→7→15→30→60 jours)
+          if (prevInterval <= 0) newInterval = 1;
+          else if (prevInterval === 1) newInterval = 3;
+          else newInterval = Math.min(Math.round(prevInterval * 2.5), 60);
+        } else {
+          // Mauvaise réponse : retour à 1 jour
+          newInterval = 1;
+        }
+        const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
+
         const entry = {
             category: q.categorie,
             questionId: q.id,
             status,
             failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
+            srInterval: newInterval,
+            nextReview: nextReviewMs,
             timestamp: firebase.firestore.Timestamp.now()
         };
         // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé

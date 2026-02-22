@@ -202,7 +202,8 @@ async function updateModeCounts() {
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
-    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0;
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0;
+    const now = Date.now();
     list.forEach(q => {
       const r = currentResponses[getKeyFor(q)];
       total++;
@@ -214,12 +215,15 @@ async function updateModeCounts() {
         if (r.marked)             nbMarquees++;
         if (r.important)          nbImportantes++;
         if ((r.failCount || 0) >= 2) nbDifficiles++;
+        // Révisions du jour : question éligible SR et due
+        if (_isEligibleForSR(r) && _isDueForReview(r, now)) nbRevisions++;
       }
     });
 
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
       modeSelect.innerHTML = `
+        <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
         <option value="toutes">Toutes (${total})</option>
         <option value="ratees">Ratées (${nbRatees})</option>
         <option value="ratees_nonvues">Ratées+Non vues (${nbRatees+nbNonvues})</option>
@@ -649,6 +653,24 @@ async function filtrerQuestions(mode, nb) {
          return s === 'ratée' || !s;
       })
       .slice(0, nb);
+  }
+  else if (mode === "revisions") {
+    const now = Date.now();
+    // Sélectionner les questions éligibles SR et dues pour révision
+    const dueQuestions = shuffled.filter(q => {
+      const r = responses[getKeyFor(q)];
+      if (!r) return false;
+      return _isEligibleForSR(r) && _isDueForReview(r, now);
+    });
+    // Trier par les plus en retard d'abord (les plus urgentes)
+    dueQuestions.sort((a, b) => {
+      const ra = responses[getKeyFor(a)];
+      const rb = responses[getKeyFor(b)];
+      const nrA = ra.nextReview || 0;
+      const nrB = rb.nextReview || 0;
+      return nrA - nrB; // plus petit nextReview = plus en retard
+    });
+    currentQuestions = dueQuestions.slice(0, nb);
   }
   else if (mode === "difficiles") {
     currentQuestions = shuffled

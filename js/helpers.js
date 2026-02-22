@@ -136,6 +136,35 @@ function initAutoStartCheckbox() {
   }
 }
 
+// ============================================================
+// Répétition espacée (Spaced Repetition) – helpers
+// ============================================================
+
+/**
+ * _isEligibleForSR() – Une question est éligible à la répétition espacée si elle est
+ * marquée, importante, ou difficile (failCount >= 2), ET qu'elle a déjà été vue.
+ */
+function _isEligibleForSR(r) {
+  if (!r) return false;
+  return r.marked === true || r.important === true || (r.failCount || 0) >= 2;
+}
+
+/**
+ * _isDueForReview() – Vérifie si une question est due pour révision.
+ * Si nextReview n'est pas défini mais que la question est éligible, elle est due immédiatement.
+ */
+function _isDueForReview(r, now) {
+  if (!r) return false;
+  // Pas encore de nextReview → question éligible jamais planifiée → due immédiatement
+  if (r.nextReview === undefined || r.nextReview === null) return true;
+  // nextReview peut être un timestamp Firestore ou un nombre
+  let reviewMs = r.nextReview;
+  if (typeof reviewMs === 'object' && reviewMs.seconds) {
+    reviewMs = reviewMs.seconds * 1000;
+  }
+  return reviewMs <= now;
+}
+
 /**
  * voirStats() – Redirige vers la page des statistiques
  */
