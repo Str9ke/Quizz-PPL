@@ -157,16 +157,22 @@ async function saveToggleWithOfflineFallback(uid, key, payload) {
 /**
  * Sauvegarde dailyCount avec fallback offline
  */
-async function saveDailyCountOffline(uid, count) {
+async function saveDailyCountOffline(uid) {
   try {
-    await saveDailyCount(uid, count);
+    await saveDailyCount(uid);
   } catch (e) {
     console.warn('[offline] dailyCount sauvegardé IndexedDB');
+    const today = new Date();
+    const utcKey = today.toISOString().slice(0, 10);
+    const absoluteCount = Math.max(
+      parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0,
+      parseInt(localStorage.getItem('dailyAnswered_' + utcKey)) || 0
+    );
     await addPendingWrite({
       type: 'saveDailyCount',
       uid,
-      count,
-      date: new Date().toISOString().slice(0, 10)
+      absoluteCount,
+      date: utcKey
     });
   }
 }
@@ -274,7 +280,21 @@ async function syncPendingWrites() {
           break;
         }
         case 'saveDailyCount': {
-          await saveDailyCount(op.uid, op.count);
+          // Écrire la valeur absolue stockée (ou recalculer depuis localStorage)
+          const today = new Date();
+          const dateKey = op.date || today.toISOString().slice(0, 10);
+          const localKey = dateKey; // même format
+          const absVal = op.absoluteCount || Math.max(
+            parseInt(localStorage.getItem('dailyCountRatchet_' + dateKey)) || 0,
+            parseInt(localStorage.getItem('dailyAnswered_' + dateKey)) || 0,
+            op.count || 0
+          );
+          if (absVal > 0) {
+            const dkLocal = dateKey.length === 10 ? dateKey : today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+            const upd = {};
+            upd['dailyHistory.' + dkLocal] = absVal;
+            await db.collection('quizProgress').doc(op.uid).set(upd, { merge: true });
+          }
           break;
         }
         case 'saveSessionResult': {

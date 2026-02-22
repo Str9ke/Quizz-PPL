@@ -83,10 +83,16 @@ async function displayDailyStats(forcedUid) {
     }
     if (Object.keys(syncUpdate).length > 0) {
       try {
-        // AWAIT obligatoire : sans ça, le write va dans le cache local Firestore
-        // mais n'atteint pas le serveur avant que l'autre navigateur ne lise
         await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
-        console.log('[displayDailyStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
+        // waitForPendingWrites : attend que le SERVEUR accuse réception
+        // (avec persistence, set() ne confirme que le cache local)
+        if (db.waitForPendingWrites) {
+          await Promise.race([
+            db.waitForPendingWrites(),
+            new Promise(resolve => setTimeout(resolve, 5000)) // timeout 5s max
+          ]);
+        }
+        console.log('[displayDailyStats] sync cross-browser OK:', Object.keys(syncUpdate).length, 'dates');
       } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
     }
 
@@ -188,19 +194,27 @@ function displayHomeProgressBar(responses, dailyHistory) {
   `;
 }
 
-/** saveDailyCount — Sauvegarde le compteur quotidien (incrémentation atomique) */
-async function saveDailyCount(uid, answeredCount) {
+/** saveDailyCount — Sauvegarde le compteur quotidien (valeur absolue depuis localStorage) */
+async function saveDailyCount(uid) {
   try {
     const today = new Date();
     const dateKey = today.getFullYear() + '-' +
       String(today.getMonth() + 1).padStart(2, '0') + '-' +
       String(today.getDate()).padStart(2, '0');
+    const utcKey = today.toISOString().slice(0, 10);
+    
+    // Lire la valeur absolue depuis localStorage (source de vérité locale)
+    const absoluteCount = Math.max(
+      parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0,
+      parseInt(localStorage.getItem('dailyAnswered_' + utcKey)) || 0
+    );
+    if (absoluteCount <= 0) return;
     
     const docRef = db.collection('quizProgress').doc(uid);
-    // Utiliser FieldValue.increment pour une incrémentation atomique
-    // (pas de read-modify-write → pas de perte si deux sessions concurrentes)
+    // Écrire la valeur ABSOLUE (pas d'increment) pour éviter les conflits
+    // entre FieldValue.increment et les set() de write-back cross-browser
     const update = {};
-    update['dailyHistory.' + dateKey] = firebase.firestore.FieldValue.increment(answeredCount);
+    update['dailyHistory.' + dateKey] = absoluteCount;
     await docRef.set(update, { merge: true });
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
@@ -515,7 +529,13 @@ async function initStats() {
     if (Object.keys(syncUpdate).length > 0) {
       try {
         await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
-        console.log('[initStats] sync cross-browser:', Object.keys(syncUpdate).length, 'dates mises à jour');
+        if (db.waitForPendingWrites) {
+          await Promise.race([
+            db.waitForPendingWrites(),
+            new Promise(resolve => setTimeout(resolve, 5000))
+          ]);
+        }
+        console.log('[initStats] sync cross-browser OK:', Object.keys(syncUpdate).length, 'dates');
       } catch (e) { console.warn('[initStats] write-back failed:', e); }
     }
 

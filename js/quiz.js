@@ -633,7 +633,7 @@ async function validerReponses() {
 
         // Sauvegarder le compteur quotidien (sauf mode révisions espacées)
         if (modeQuiz !== 'revisions') {
-          await saveDailyCountOffline(uid, currentQuestions.length);
+          await saveDailyCountOffline(uid);
         }
         // Sauvegarder le résultat de la session (avec la même date pour déduplication)
         await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory, sessionDate);
