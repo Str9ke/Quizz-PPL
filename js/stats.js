@@ -73,11 +73,13 @@ async function displayDailyStats(forcedUid) {
     }
     enrichedDH[todayLocal] = answeredToday;
 
-    // SYNC CROSS-BROWSER : écrire dans Firestore TOUTES les dates où le max local > Firestore
-    const rawDH = data.dailyHistory || {};
+    // SYNC CROSS-BROWSER : écrire TOUTES les valeurs enrichies dans Firestore
+    // PAS de comparaison avec rawDH : avec Firestore persistence, les lectures locales
+    // reflètent les writes non-sync (latency compensation) → la comparaison est toujours
+    // fausse et le serveur ne reçoit jamais les données. Écriture absolue = idempotente.
     const syncUpdate = {};
     for (const [dateKey, mergedVal] of Object.entries(enrichedDH)) {
-      if (mergedVal > (rawDH[dateKey] || 0)) {
+      if (mergedVal > 0) {
         syncUpdate['dailyHistory.' + dateKey] = mergedVal;
       }
     }
@@ -85,14 +87,13 @@ async function displayDailyStats(forcedUid) {
       try {
         await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
         // waitForPendingWrites : attend que le SERVEUR accuse réception
-        // (avec persistence, set() ne confirme que le cache local)
         if (db.waitForPendingWrites) {
           await Promise.race([
             db.waitForPendingWrites(),
-            new Promise(resolve => setTimeout(resolve, 5000)) // timeout 5s max
+            new Promise(resolve => setTimeout(resolve, 5000))
           ]);
         }
-        console.log('[displayDailyStats] sync cross-browser OK:', Object.keys(syncUpdate).length, 'dates');
+        console.log('[displayDailyStats] sync OK:', Object.keys(syncUpdate).length, 'dates pushées au serveur');
       } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
     }
 
@@ -518,24 +519,24 @@ async function initStats() {
     const todayEnrichedCount = dailyHistory[todayKeyLocal] || 0;
     updateDailyStatsBar(todayEnrichedCount, dailyHistory);
 
-    // SYNC CROSS-BROWSER : écrire dans Firestore TOUTES les dates où le max local > Firestore
-    const rawDH = data.dailyHistory || {};
-    const syncUpdate = {};
+    // SYNC CROSS-BROWSER : écrire TOUTES les valeurs enrichies dans Firestore
+    // (pas de comparaison avec data.dailyHistory : latency compensation fausse les lectures locales)
+    const syncUpdate2 = {};
     for (const [dateKey, mergedVal] of Object.entries(dailyHistory)) {
-      if (mergedVal > (rawDH[dateKey] || 0)) {
-        syncUpdate['dailyHistory.' + dateKey] = mergedVal;
+      if (mergedVal > 0) {
+        syncUpdate2['dailyHistory.' + dateKey] = mergedVal;
       }
     }
-    if (Object.keys(syncUpdate).length > 0) {
+    if (Object.keys(syncUpdate2).length > 0) {
       try {
-        await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        await db.collection('quizProgress').doc(uid).set(syncUpdate2, { merge: true });
         if (db.waitForPendingWrites) {
           await Promise.race([
             db.waitForPendingWrites(),
             new Promise(resolve => setTimeout(resolve, 5000))
           ]);
         }
-        console.log('[initStats] sync cross-browser OK:', Object.keys(syncUpdate).length, 'dates');
+        console.log('[initStats] sync OK:', Object.keys(syncUpdate2).length, 'dates pushées au serveur');
       } catch (e) { console.warn('[initStats] write-back failed:', e); }
     }
 
