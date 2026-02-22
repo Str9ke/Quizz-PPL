@@ -1,18 +1,9 @@
 // === stats.js === Statistics, daily chart, session chart, persistence ===
 
 async function displayDailyStats(forcedUid) {
-  ensureDailyStatsBarVisible();
-
-  // INSTANT : afficher le compteur localStorage AVANT toute opération Firestore
+  // INSTANT : afficher depuis localStorage AVANT toute opération Firestore
   try {
-    const todayDateInstant = new Date().toISOString().slice(0, 10);
-    const lsInstant = parseInt(localStorage.getItem('dailyAnswered_' + todayDateInstant)) || 0;
-    const ratchetInstant = parseInt(localStorage.getItem('dailyCountRatchet_' + todayDateInstant)) || 0;
-    const instantCount = Math.max(lsInstant, ratchetInstant);
-    if (instantCount > 0) {
-      const countElemInstant = document.getElementById('answeredTodayCount');
-      if (countElemInstant) countElemInstant.textContent = instantCount;
-    }
+    updateDailyStatsBar(); // calcule tout depuis localStorage (streak, goal, count, bar)
   } catch (e) { /* ignore */ }
 
   // Assure-toi d'avoir un UID (utile si auth.currentUser n'est pas encore prêt)
@@ -46,48 +37,30 @@ async function displayDailyStats(forcedUid) {
     }
     
     // Compteur Firestore dailyHistory (source de vérité incrémentale)
-    const todayDate = new Date().toISOString().slice(0, 10);
-    const firestoreDailyCount = (data.dailyHistory && data.dailyHistory[todayDate]) || 0;
+    const _now = new Date();
+    const todayLocal = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+    const todayUtc = _now.toISOString().slice(0, 10);
+    const firestoreDailyCount = (data.dailyHistory && data.dailyHistory[todayLocal]) || 0;
     
     // Compteur direct localStorage (fiable offline même si Firestore pas prêt)
-    const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayDate)) || 0;
+    const lsDirectCount = parseInt(localStorage.getItem('dailyAnswered_' + todayUtc)) || 0;
     
     // Prendre le max des deux sources
     let answeredToday = Math.max(firestoreDailyCount, lsDirectCount);
 
-    // Afficher le compteur (ne jamais diminuer dans la même journée → ratchet)
-    const todayKey = 'dailyCountRatchet_' + todayDate;
-    const previousMax = parseInt(localStorage.getItem(todayKey)) || 0;
+    // Ne jamais diminuer dans la même journée → ratchet
+    const todayRatchetKey = 'dailyCountRatchet_' + todayUtc;
+    const previousMax = parseInt(localStorage.getItem(todayRatchetKey)) || 0;
     if (answeredToday < previousMax) {
       answeredToday = previousMax;
     } else {
-      localStorage.setItem(todayKey, answeredToday);
+      localStorage.setItem(todayRatchetKey, answeredToday);
     }
-    const statsBar = document.getElementById('dailyStatsBar');
-    const countElem = document.getElementById('answeredTodayCount');
-    if (statsBar && countElem) {
-      countElem.textContent = answeredToday;
-      statsBar.style.display = 'block';
-    } else {
-      console.warn('[displayDailyStats] Éléments HTML statsBar ou countElem non trouvés');
-    }
+    // Mettre à jour la barre avec les données Firestore fusionnées
+    updateDailyStatsBar(answeredToday, data.dailyHistory || {});
   } catch (error) {
     console.error('[displayDailyStats] Erreur:', error);
-    // Même en cas d'erreur Firestore, afficher le compteur localStorage
-    try {
-      const todayDate = new Date().toISOString().slice(0, 10);
-      const lsCount = parseInt(localStorage.getItem('dailyAnswered_' + todayDate)) || 0;
-      const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayDate)) || 0;
-      const best = Math.max(lsCount, ratchetCount);
-      if (best > 0) {
-        const statsBar = document.getElementById('dailyStatsBar');
-        const countElem = document.getElementById('answeredTodayCount');
-        if (statsBar && countElem) {
-          countElem.textContent = best;
-          statsBar.style.display = 'block';
-        }
-      }
-    } catch (e2) { /* ignore */ }
+    // Même en erreur, la barre est déjà affichée depuis localStorage (appel INSTANT au début)
   }
 }
 
@@ -248,13 +221,35 @@ async function getDailyHistory(uid) {
 }
 
 /**
- * enrichDailyHistoryFromResponses() – OBSOLÈTE, conservé pour compatibilité.
- * L'ancienne version scannait les timestamps des réponses mais ceux-ci sont
- * écrasés à chaque nouvelle tentative, ce qui faussait les compteurs passés.
- * Désormais dailyHistory (incrémenté par saveDailyCount) est la seule source.
+ * enrichDailyHistoryFromResponses() – Reconstruit l'historique quotidien à partir des timestamps
+ * des réponses pour les dates où dailyHistory n'a PAS de données (bootstrap initial).
+ * Note : les timestamps sont écrasés à chaque nouvelle tentative, donc cette méthode
+ * sous-estime les jours anciens. Mais c'est mieux que des barres vides.
+ * Pour les dates récentes (couvertes par saveDailyCount), on garde la valeur incrémentale.
  */
-function enrichDailyHistoryFromResponses(dailyHistory, _responses) {
-  return { ...dailyHistory };
+function enrichDailyHistoryFromResponses(dailyHistory, responses) {
+  if (!responses || typeof responses !== 'object') return { ...dailyHistory };
+  const enriched = { ...dailyHistory };
+  // Compter les réponses par date locale
+  const countsByDate = {};
+  for (const r of Object.values(responses)) {
+    let ts = null;
+    if (r.timestamp?.seconds !== undefined) ts = r.timestamp.seconds * 1000;
+    else if (typeof r.timestamp === 'number') ts = r.timestamp;
+    else if (r.lastUpdated?.seconds !== undefined) ts = r.lastUpdated.seconds * 1000;
+    else if (typeof r.lastUpdated === 'number') ts = r.lastUpdated;
+    if (!ts) continue;
+    const d = new Date(ts);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    countsByDate[key] = (countsByDate[key] || 0) + 1;
+  }
+  // Remplir uniquement les dates manquantes (pas de données incrémentales)
+  for (const [dateKey, count] of Object.entries(countsByDate)) {
+    if (!enriched[dateKey] || enriched[dateKey] === 0) {
+      enriched[dateKey] = count;
+    }
+  }
+  return enriched;
 }
 
 /** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
@@ -280,22 +275,14 @@ function computeStatsForFirestore(categoryQuestions, responses) {
  */
 async function initStats() {
 
-  // INSTANT : afficher les sessions et le compteur quotidien depuis localStorage
+  // INSTANT : afficher les sessions et la barre quotidienne depuis localStorage
   // AVANT toute opération Firestore (qui peut prendre 10-15s offline sur Android)
   try {
     const localBackupInstant = _getLocalSessionBackup();
     if (localBackupInstant.length) afficherSessionChart(localBackupInstant);
   } catch (e) { /* ignore */ }
   try {
-    const todayInstant = new Date().toISOString().slice(0, 10);
-    const lsInstant = parseInt(localStorage.getItem('dailyAnswered_' + todayInstant)) || 0;
-    const ratchetInstant = parseInt(localStorage.getItem('dailyCountRatchet_' + todayInstant)) || 0;
-    const instantCount = Math.max(lsInstant, ratchetInstant);
-    if (instantCount > 0) {
-      ensureDailyStatsBarVisible();
-      const countElemInstant = document.getElementById('answeredTodayCount');
-      if (countElemInstant) countElemInstant.textContent = instantCount;
-    }
+    updateDailyStatsBar(); // streak, objectif, compteur, barre — tout depuis localStorage
   } catch (e) { /* ignore */ }
 
   if (typeof auth === 'undefined' || !auth) {
@@ -438,6 +425,12 @@ async function initStats() {
     const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKeyUtc)) || 0;
     const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
     dailyHistory[todayKeyLocal] = Math.max(dailyHistory[todayKeyLocal] || 0, lsDailyCount, ratchetCount);
+    // Enrichir avec les timestamps des réponses (comble les jours sans données incrémentales)
+    const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses);
+    // Recopier dans dailyHistory pour que le backup capture aussi les données enrichies
+    for (const [k, v] of Object.entries(enrichedHistory)) {
+      dailyHistory[k] = Math.max(dailyHistory[k] || 0, v);
+    }
     // Sauvegarder le dailyHistory fusionné dans localStorage pour les futures visites
     // (agit comme seed : si Firestore fonctionne maintenant, on capture les données existantes)
     try {

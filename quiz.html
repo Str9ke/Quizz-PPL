@@ -163,7 +163,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       try {
         if (typeof showBuildTag === 'function') showBuildTag();
-        if (typeof ensureDailyStatsBarVisible === 'function') ensureDailyStatsBarVisible();
+        if (typeof updateDailyStatsBar === 'function') updateDailyStatsBar();
         const kick = async () => {
           if (typeof displayDailyStats === 'function') {
             await displayDailyStats();

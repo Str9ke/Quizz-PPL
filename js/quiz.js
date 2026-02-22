@@ -200,7 +200,7 @@ function afficherBoutonsMarquer() {
 }
 
 /**
- * updateCategoryInfoBar() – Affiche le nom de la catégorie et le nombre de ratées+non vues / total
+ * updateCategoryInfoBar() – Affiche le nom de la catégorie, le ratio réussies/total et une barre de progression
  */
 function updateCategoryInfoBar(categoryName, remaining, total) {
   const bar = document.getElementById('categoryInfoBar');
@@ -212,8 +212,29 @@ function updateCategoryInfoBar(categoryName, remaining, total) {
 
   if (nameEl) nameEl.textContent = categoryName || '';
   if (progressEl) {
-    if (remaining !== null && total !== null) {
-      progressEl.textContent = `Restant (ratées + non vues) : ${remaining} / ${total}`;
+    if (remaining !== null && total !== null && total > 0) {
+      const reussies = total - remaining;
+      const pct = Math.round(100 * reussies / total);
+      // Couleur : rouge → orange → vert selon avancement
+      let barColor;
+      const t = pct / 100;
+      if (t <= 0.5) {
+        const s = t * 2;
+        barColor = `rgb(${Math.round(220 - 30 * s)}, ${Math.round(50 + 130 * s)}, ${Math.round(50)})`;
+      } else {
+        const s = (t - 0.5) * 2;
+        barColor = `rgb(${Math.round(190 - 144 * s)}, ${Math.round(180 + 24 * s)}, ${Math.round(50 + 14 * s)})`;
+      }
+      progressEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span>✅ ${reussies} réussies / ${total}</span>
+          <span style="font-weight:bold">${pct}%</span>
+        </div>
+        <div style="height:8px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;border-radius:4px;background:${barColor};transition:width 0.6s ease"></div>
+        </div>
+        <div style="margin-top:3px;font-size:0.78rem;opacity:0.8">📋 Restant : ${remaining} (ratées + non vues)</div>
+      `;
     } else {
       progressEl.textContent = 'Chargement…';
     }
@@ -584,20 +605,18 @@ async function validerReponses() {
         const prev = parseInt(localStorage.getItem(dayKeyUtc)) || 0;
         const newTotal = prev + currentQuestions.length;
         localStorage.setItem(dayKeyUtc, newTotal);
-        // Mise à jour DIRECTE du DOM (sans attendre Firestore)
-        ensureDailyStatsBarVisible();
+        // Ratchet
         const ratchetKeyUtc = 'dailyCountRatchet_' + _now.toISOString().slice(0, 10);
         const prevRatchet = parseInt(localStorage.getItem(ratchetKeyUtc)) || 0;
         const display = Math.max(newTotal, prevRatchet);
         localStorage.setItem(ratchetKeyUtc, display);
-        const countElem = document.getElementById('answeredTodayCount');
-        if (countElem) countElem.textContent = display;
         // Backup persistant en date LOCALE (même format que Firestore/chart)
-        // Survit aux pertes de sync Firestore, sert de filet de sécurité pour le graphique
         const localDateKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
         const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
         dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + currentQuestions.length;
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+        // Mise à jour visuelle DIRECTE de la barre (streak, objectif, progression)
+        updateDailyStatsBar(display);
       } catch (e) { /* localStorage plein — rare */ }
     }
 
@@ -625,6 +644,19 @@ async function validerReponses() {
     afficherBoutonsMarquer();
     // mettre à jour le compteur de marquées dans l’interface
     if (typeof updateMarkedCount === 'function') updateMarkedCount();
+    // mettre à jour la barre de progression catégorie après validation
+    try {
+      const savedCQ = [...currentQuestions];
+      const catNorm = getNormalizedCategory(selectedCategory);
+      if (catNorm === "TOUTES") { await loadAllQuestions(); } else { await chargerQuestions(catNorm); }
+      const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+      const isAgg = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+      const fullL = isAgg ? questions : questions.filter(q => q.categorie === normalizedSel);
+      let nR = 0, nNV = 0;
+      fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (!r) nNV++; else if (r.status === 'ratée') nR++; });
+      updateCategoryInfoBar(selectedCategory, nR + nNV, fullL.length);
+      currentQuestions = savedCQ;
+    } catch (e) { /* ignore */ }
     // mettre à jour le compteur de questions répondues aujourd'hui
     await displayDailyStats(uid);
 }

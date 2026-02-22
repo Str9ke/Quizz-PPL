@@ -2,18 +2,10 @@
 
 async function initIndex() {
 
-  // INSTANT : afficher le compteur quotidien depuis localStorage
+  // INSTANT : afficher la barre quotidienne depuis localStorage
   // AVANT toute opération Firestore/prefetch (qui peut prendre 10-15s offline)
   try {
-    ensureDailyStatsBarVisible();
-    const todayInstant = new Date().toISOString().slice(0, 10);
-    const lsInstant = parseInt(localStorage.getItem('dailyAnswered_' + todayInstant)) || 0;
-    const ratchetInstant = parseInt(localStorage.getItem('dailyCountRatchet_' + todayInstant)) || 0;
-    const instantCount = Math.max(lsInstant, ratchetInstant);
-    if (instantCount > 0) {
-      const countElemInstant = document.getElementById('answeredTodayCount');
-      if (countElemInstant) countElemInstant.textContent = instantCount;
-    }
+    updateDailyStatsBar(); // streak, objectif, compteur, barre de progression — tout depuis localStorage
   } catch (e) { /* ignore */ }
   
   // Pré-charger tous les fichiers JSON en parallèle (depuis le cache SW = quasi-instantané)
