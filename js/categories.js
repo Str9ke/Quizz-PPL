@@ -658,6 +658,11 @@ async function filtrerQuestions(mode, nb) {
       .filter(q => (responses[getKeyFor(q)]?.failCount || 0) >= 2)
       .slice(0, nb);
   }
+  else if (mode === "reussies") {
+    currentQuestions = shuffled
+      .filter(q => responses[getKeyFor(q)]?.status === 'réussie')
+      .slice(0, nb);
+  }
   else if (mode === "importantes") {
     const allImportantes = shuffled.filter(q => responses[getKeyFor(q)]?.important);
     currentQuestions = _excludeRecentlyAnswered(allImportantes, nb);
