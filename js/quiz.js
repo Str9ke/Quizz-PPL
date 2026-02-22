@@ -13,10 +13,17 @@ function _speakCorrectAnswer(answerText) {
   utterance.lang = 'fr-FR';
   utterance.rate = 0.95;
   utterance.pitch = 1.0;
-  // Essayer de trouver une voix française
+  // Utiliser la voix préférée si elle est définie, sinon la première voix FR
   const voices = speechSynthesis.getVoices();
-  const frVoice = voices.find(v => v.lang.startsWith('fr'));
-  if (frVoice) utterance.voice = frVoice;
+  const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+  let voice = null;
+  if (preferredName) {
+    voice = voices.find(v => v.name === preferredName);
+  }
+  if (!voice) {
+    voice = voices.find(v => v.lang.startsWith('fr'));
+  }
+  if (voice) utterance.voice = voice;
   speechSynthesis.speak(utterance);
 }
 // Pré-charger les voix (Chrome les charge de manière asynchrone)

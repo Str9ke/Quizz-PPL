@@ -191,6 +191,16 @@
       <input type="checkbox" id="correctionImmediateCheckbox">
       <strong>Correction immédiate</strong> (chaque réponse est corrigée instantanément)
     </label>
+
+    <!-- Sélecteur de voix TTS -->
+    <div id="voiceSelectorSection">
+      <label for="voiceSelect"><strong>🔊 Voix TTS :</strong></label>
+      <div class="voice-selector-row">
+        <select id="voiceSelect"></select>
+        <button type="button" id="btnTestVoice" onclick="testSelectedVoice()">▶ Tester</button>
+      </div>
+      <div id="voiceInfo"></div>
+    </div>
     <br><br>
     
     <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
@@ -207,13 +217,142 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260222u"></script>
-  <script src="js/helpers.js?v=20260222u"></script>
-  <script src="js/categories.js?v=20260222u"></script>
-  <script src="js/stats.js?v=20260222u"></script>
-  <script src="js/quiz.js?v=20260222u"></script>
-  <script src="js/init.js?v=20260222u"></script>
-  <script src="js/offline.js?v=20260222u"></script>
+  <script src="js/globals.js?v=20260222v"></script>
+  <script src="js/helpers.js?v=20260222v"></script>
+  <script src="js/categories.js?v=20260222v"></script>
+  <script src="js/stats.js?v=20260222v"></script>
+  <script src="js/quiz.js?v=20260222v"></script>
+  <script src="js/init.js?v=20260222v"></script>
+  <script src="js/offline.js?v=20260222v"></script>
+
+  <!-- Sélecteur de voix TTS : population & test -->
+  <script>
+  (function() {
+    var select = document.getElementById('voiceSelect');
+    var infoDiv = document.getElementById('voiceInfo');
+    if (!select) return;
+
+    var femaleNames = ['denise','amelie','amélie','aurelie','aurélie','caroline','virginie','marie',
+      'hortense','eloise','éloïse','sylvie','céline','celine','lea','léa','nathalie','julie',
+      'sophie','isabelle','alice','lucienne','brigitte','aria','jenny','clara','coralie',
+      'josephine','joséphine','vivienne','yvette','charline','renée','renee','salli','kendra',
+      'joanna','ivy','kimberly','ruth','emma','olivia','anna'];
+    var maleNames = ['paul','thomas','henri','nicolas','pierre','mathieu','guillaume','patrick',
+      'raphael','raphaël','alain','jean','luc','jacques','françois','francois','claude',
+      'vivien','fabrice','yves','joey','matthew','justin','kevin','stephen','brian','gregory'];
+
+    function genderIcon(name) {
+      var n = name.toLowerCase();
+      for (var i = 0; i < femaleNames.length; i++) { if (n.indexOf(femaleNames[i]) >= 0) return ' ♀'; }
+      for (var i = 0; i < maleNames.length; i++) { if (n.indexOf(maleNames[i]) >= 0) return ' ♂'; }
+      return '';
+    }
+
+    function qualityBadge(name) {
+      var n = name.toLowerCase();
+      if (n.indexOf('natural') >= 0 || n.indexOf('neural') >= 0) return ' ✨HD';
+      if (n.indexOf('online') >= 0) return ' ☁️';
+      return '';
+    }
+
+    function populateVoices() {
+      if (!('speechSynthesis' in window)) {
+        select.innerHTML = '<option>TTS non supporté</option>';
+        return;
+      }
+      var voices = speechSynthesis.getVoices();
+      var frVoices = voices.filter(function(v) { return v.lang && v.lang.match(/^fr/i); });
+      if (frVoices.length === 0 && voices.length === 0) return;
+      if (frVoices.length === 0) frVoices = voices;
+
+      var saved = localStorage.getItem('ttsPreferredVoiceName') || '';
+      select.innerHTML = '';
+
+      var defOpt = document.createElement('option');
+      defOpt.value = '';
+      defOpt.textContent = '🔄 Voix par défaut du système';
+      select.appendChild(defOpt);
+
+      frVoices.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v.name;
+        var label = v.name + genderIcon(v.name) + qualityBadge(v.name);
+        if (v.localService) label += ' 📱';
+        opt.textContent = label;
+        if (v.name === saved) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      updateVoiceInfo();
+    }
+
+    function updateVoiceInfo() {
+      if (!('speechSynthesis' in window)) return;
+      var voices = speechSynthesis.getVoices();
+      var selectedName = select.value;
+      if (!selectedName) {
+        infoDiv.textContent = 'La première voix française disponible sera utilisée.';
+        return;
+      }
+      var voice = voices.find(function(v) { return v.name === selectedName; });
+      if (voice) {
+        var info = voice.lang;
+        if (voice.localService) info += ' · Locale (hors-ligne)';
+        else info += ' · En ligne';
+        if (voice.default) info += ' · Par défaut';
+        infoDiv.textContent = info;
+      }
+    }
+
+    select.addEventListener('change', function() {
+      localStorage.setItem('ttsPreferredVoiceName', select.value);
+      updateVoiceInfo();
+    });
+
+    populateVoices();
+    if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = function() { populateVoices(); };
+    }
+
+    var sampleAnswers = [
+      "L'angle d'incidence est l'angle entre la corde de l'aile et le vent relatif.",
+      "La portance est proportionnelle au carré de la vitesse.",
+      "En cas de panne moteur, la priorité est de maintenir la vitesse de finesse max.",
+      "Le transpondeur doit être réglé sur 7700 en cas de détresse.",
+      "La pression atmosphérique standard au niveau de la mer est 1013 virgule 25 hectopascals.",
+      "L'effet de sol augmente la portance et diminue la traînée induite.",
+      "La VNE est la vitesse à ne jamais dépasser.",
+      "Le QNH est le calage altimétrique qui permet de lire l'altitude.",
+      "Le facteur de charge en virage à 60 degrés d'inclinaison est de 2G.",
+      "Un NOTAM est un avis aux navigateurs aériens diffusé par les services de l'information aéronautique."
+    ];
+
+    window.testSelectedVoice = function() {
+      if (!('speechSynthesis' in window)) { alert('TTS non supporté sur cet appareil'); return; }
+      speechSynthesis.cancel();
+      var text = sampleAnswers[Math.floor(Math.random() * sampleAnswers.length)];
+      var utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      var voices = speechSynthesis.getVoices();
+      var selectedName = select.value;
+      if (selectedName) {
+        var voice = voices.find(function(v) { return v.name === selectedName; });
+        if (voice) utterance.voice = voice;
+      } else {
+        var frVoice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
+        if (frVoice) utterance.voice = frVoice;
+      }
+      var btn = document.getElementById('btnTestVoice');
+      btn.textContent = '🔊 Lecture...';
+      btn.disabled = true;
+      utterance.onend = function() { btn.textContent = '▶ Tester'; btn.disabled = false; };
+      utterance.onerror = function() { btn.textContent = '▶ Tester'; btn.disabled = false; };
+      speechSynthesis.speak(utterance);
+    };
+  })();
+  </script>
 
   <!-- Gestion de la connexion et déconnexion -->
   <script>

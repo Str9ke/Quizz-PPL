@@ -521,6 +521,55 @@ button:disabled {
   opacity: 0.85;
 }
 
+/* ===== Voice selector section ===== */
+#voiceSelectorSection {
+  margin-top: 1rem;
+  background: var(--bg-question);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.voice-selector-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+#voiceSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 0.85rem;
+}
+#btnTestVoice {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--button-bg);
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+#btnTestVoice:hover {
+  background: var(--button-hover);
+}
+#btnTestVoice:disabled {
+  background: var(--button-disabled);
+  cursor: default;
+}
+#voiceInfo {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  min-height: 1em;
+}
+
 /* ===== Correction colors (dark-aware) ===== */
 .correct {
   color: #4caf50;
