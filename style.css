@@ -528,6 +528,127 @@ body.light .explication-block {
   border-left-color: #4a6cf7;
 }
 
+/* ===== Notes personnelles ===== */
+.personal-note-display {
+  margin-top: 0;
+}
+.personal-note-block {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--bg-body);
+  border-left: 4px solid #f0ad4e;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.92em;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+.personal-note-block strong {
+  color: var(--text-heading);
+}
+.personal-note-block img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 8px 0;
+  display: block;
+}
+body.light .personal-note-block {
+  background: #fff8e1;
+  border-left-color: #e69500;
+}
+.note-toggle-btn {
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 0.82em;
+  background: transparent;
+  border: 1px solid var(--text-secondary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.note-toggle-btn:hover {
+  background: rgba(102, 126, 234, 0.15);
+}
+.note-editor {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--text-secondary);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+.note-textarea {
+  width: 100%;
+  min-height: 32px;
+  max-height: 300px;
+  padding: 6px 8px;
+  font-size: 0.9em;
+  border: 1px solid var(--text-secondary);
+  border-radius: 6px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  resize: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.note-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.note-image-label {
+  font-size: 0.82em;
+  padding: 3px 10px;
+  border: 1px solid var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+.note-image-label:hover {
+  background: rgba(102, 126, 234, 0.15);
+}
+.note-image-name {
+  font-size: 0.78em;
+  color: var(--text-secondary);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.note-publish-btn {
+  margin-left: auto;
+  padding: 4px 16px;
+  font-size: 0.85em;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+.note-publish-btn:hover {
+  opacity: 0.85;
+}
+.note-image-preview {
+  margin-top: 6px;
+}
+.note-image-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 4px;
+}
+
 /* ===== Links ===== */
 a {
   color: var(--link-color);

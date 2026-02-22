@@ -4,22 +4,27 @@
  * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
  */
 function _buildExplicationHtml(q) {
-  if (!q.explication && (!q.explication_images || !q.explication_images.length)) return '';
-  let html = '<div class="explication-block">';
-  html += '<strong>\uD83D\uDCA1 Explication :</strong><br>';
-  if (q.explication) {
-    // Escape HTML but preserve newlines
-    const escaped = q.explication
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
-    html += escaped;
+  let html = '';
+  const hasExplication = q.explication || (q.explication_images && q.explication_images.length);
+  if (hasExplication) {
+    html += '<div class="explication-block">';
+    html += '<strong>\uD83D\uDCA1 Explication :</strong><br>';
+    if (q.explication) {
+      const escaped = q.explication
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      html += escaped;
+    }
+    if (q.explication_images && q.explication_images.length) {
+      q.explication_images.forEach(imgPath => {
+        html += `<br><img src="${imgPath}" alt="Explication illustration" loading="lazy">`;
+      });
+    }
+    html += '</div>';
   }
-  if (q.explication_images && q.explication_images.length) {
-    q.explication_images.forEach(imgPath => {
-      html += `<br><img src="${imgPath}" alt="Explication illustration" loading="lazy">`;
-    });
-  }
-  html += '</div>';
+  // Placeholder pour la note personnelle (rempli dynamiquement)
+  const key = getKeyFor(q);
+  html += `<div class="personal-note-display" id="noteDisplay_${key}"></div>`;
   return html;
 }
 
@@ -251,7 +256,15 @@ async function initQuiz() {
 
   // Charger les réponses en arrière-plan, puis mettre à jour les boutons marquer/important
   getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(async (doc) => {
-    currentResponses = normalizeResponses(doc.exists ? doc.data().responses : {});
+    const data = doc.exists ? doc.data() : {};
+    currentResponses = normalizeResponses(data.responses || {});
+    // Précharger les notes personnelles pour correction immédiate
+    _notesCache = data.notes || {};
+    try {
+      const lsKey = 'personalNotes_' + uid;
+      const lsNotes = JSON.parse(localStorage.getItem(lsKey) || '{}');
+      Object.keys(lsNotes).forEach(k => { if (!_notesCache[k]) _notesCache[k] = lsNotes[k]; });
+    } catch (e) { /* ignore */ }
     afficherBoutonsMarquer();
     updateMarkedCount();
 
@@ -408,13 +421,39 @@ function handleImmediateAnswer(q, selectedRadio) {
 
   // Afficher l'explication si disponible
   const questionBlock = selectedRadio.closest('.question-block');
-  if (questionBlock && (q.explication || (q.explication_images && q.explication_images.length))) {
-    // Vérifier qu'on n'a pas déjà ajouté l'explication
-    if (!questionBlock.querySelector('.explication-block')) {
-      const explDiv = document.createElement('div');
-      explDiv.innerHTML = _buildExplicationHtml(q);
-      const explEl = explDiv.firstElementChild;
-      if (explEl) questionBlock.appendChild(explEl);
+  if (questionBlock) {
+    if (q.explication || (q.explication_images && q.explication_images.length)) {
+      // Vérifier qu'on n'a pas déjà ajouté l'explication
+      if (!questionBlock.querySelector('.explication-block')) {
+        const explDiv = document.createElement('div');
+        explDiv.innerHTML = _buildExplicationHtml(q);
+        // _buildExplicationHtml retourne explication-block + noteDisplay div
+        while (explDiv.firstChild) {
+          questionBlock.appendChild(explDiv.firstChild);
+        }
+      }
+    } else {
+      // Pas d'explication officielle mais ajouter le placeholder pour note
+      const key = getKeyFor(q);
+      if (!document.getElementById('noteDisplay_' + key)) {
+        const nd = document.createElement('div');
+        nd.className = 'personal-note-display';
+        nd.id = 'noteDisplay_' + key;
+        questionBlock.appendChild(nd);
+      }
+    }
+    // Ajouter le bouton de note si pas déjà présent
+    const key = getKeyFor(q);
+    if (!questionBlock.querySelector('.note-toggle-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'note-toggle-btn';
+      btn.textContent = '📝 Ma note';
+      btn.onclick = () => _toggleNoteEditor(key, btn);
+      questionBlock.appendChild(btn);
+      // Charger et afficher la note existante
+      if (_notesCache && _notesCache[key]) {
+        _renderNoteDisplay(key, _notesCache[key]);
+      }
     }
   }
 
@@ -601,5 +640,228 @@ function afficherCorrection() {
   // re-attach mark buttons on corrected view
   afficherBoutonsMarquer();
   updateMarkedCount();
+
+  // Ajouter les boutons de note personnelle et charger les notes existantes
+  _attachNoteButtons();
+  _loadAndDisplayNotes();
 }
 
+// ============================================================
+// Notes personnelles
+// ============================================================
+
+/** Cache mémoire des notes chargées */
+let _notesCache = null;
+
+/**
+ * _attachNoteButtons() – Ajoute un bouton "📝 Ma note" après chaque question corrigée
+ */
+function _attachNoteButtons() {
+  currentQuestions.forEach(q => {
+    const key = getKeyFor(q);
+    const displayDiv = document.getElementById('noteDisplay_' + key);
+    if (!displayDiv) return;
+    // Ne pas ajouter deux fois
+    if (displayDiv.parentElement.querySelector('.note-toggle-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'note-toggle-btn';
+    btn.textContent = '📝 Ma note';
+    btn.onclick = () => _toggleNoteEditor(key, btn);
+    displayDiv.parentElement.appendChild(btn);
+  });
+}
+
+/**
+ * _toggleNoteEditor() – Affiche/masque l'éditeur de note
+ */
+function _toggleNoteEditor(key, btn) {
+  const existingEditor = document.getElementById('noteEditor_' + key);
+  if (existingEditor) {
+    existingEditor.style.display = existingEditor.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  const editor = document.createElement('div');
+  editor.id = 'noteEditor_' + key;
+  editor.className = 'note-editor';
+
+  // Pré-remplir avec la note existante
+  const existing = _notesCache && _notesCache[key];
+  const existingText = existing ? (existing.text || '') : '';
+
+  editor.innerHTML = `
+    <textarea class="note-textarea" id="noteText_${key}" placeholder="Écrire une note personnelle…" rows="1">${existingText}</textarea>
+    <div class="note-actions">
+      <label class="note-image-label">
+        🖼️ Image
+        <input type="file" accept="image/*" id="noteImage_${key}" style="display:none" />
+      </label>
+      <span class="note-image-name" id="noteImageName_${key}"></span>
+      <button class="note-publish-btn" onclick="_publishNote('${key}')">Publier</button>
+    </div>
+    <div id="noteImagePreview_${key}" class="note-image-preview"></div>
+  `;
+
+  btn.parentElement.appendChild(editor);
+
+  // Auto-grow textarea
+  const textarea = document.getElementById('noteText_' + key);
+  textarea.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+  });
+  // Trigger initial resize if pre-filled
+  if (existingText) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  // Image file handler
+  const fileInput = document.getElementById('noteImage_' + key);
+  fileInput.addEventListener('change', function() {
+    const file = this.files[0];
+    const nameSpan = document.getElementById('noteImageName_' + key);
+    const previewDiv = document.getElementById('noteImagePreview_' + key);
+    if (file) {
+      nameSpan.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewDiv.innerHTML = `<img src="${e.target.result}" alt="Aperçu" />`;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      nameSpan.textContent = '';
+      previewDiv.innerHTML = '';
+    }
+  });
+}
+
+/**
+ * _publishNote() – Sauvegarde la note dans Firestore
+ */
+async function _publishNote(key) {
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  const textarea = document.getElementById('noteText_' + key);
+  const fileInput = document.getElementById('noteImage_' + key);
+  const text = textarea ? textarea.value.trim() : '';
+  const file = fileInput && fileInput.files[0];
+
+  if (!text && !file) { return; }
+
+  let imageData = null;
+  if (file) {
+    // Convertir l'image en base64 (stockée dans Firestore, < 1MB)
+    imageData = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+  // Conserver l'image existante si pas de nouvelle image uploadée
+  const existingNote = _notesCache && _notesCache[key];
+  if (!imageData && existingNote && existingNote.image) {
+    imageData = existingNote.image;
+  }
+
+  const notePayload = {
+    text: text,
+    image: imageData,
+    updatedAt: firebase.firestore.Timestamp.now()
+  };
+
+  // Sauvegarder
+  try {
+    await db.collection('quizProgress').doc(uid).set(
+      { notes: { [key]: notePayload } },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn('[note] Firestore save failed, storing locally', e.message);
+    // Fallback localStorage
+    try {
+      const lsKey = 'personalNotes_' + uid;
+      const stored = JSON.parse(localStorage.getItem(lsKey) || '{}');
+      stored[key] = notePayload;
+      localStorage.setItem(lsKey, JSON.stringify(stored));
+    } catch (e2) { /* ignore */ }
+  }
+
+  // Mettre à jour le cache
+  if (!_notesCache) _notesCache = {};
+  _notesCache[key] = notePayload;
+
+  // Afficher la note
+  _renderNoteDisplay(key, notePayload);
+
+  // Masquer l'éditeur
+  const editor = document.getElementById('noteEditor_' + key);
+  if (editor) editor.style.display = 'none';
+}
+
+/**
+ * _renderNoteDisplay() – Affiche une note personnelle dans la zone de display
+ */
+function _renderNoteDisplay(key, note) {
+  const div = document.getElementById('noteDisplay_' + key);
+  if (!div) return;
+
+  if (!note || (!note.text && !note.image)) {
+    div.innerHTML = '';
+    return;
+  }
+
+  let html = '<div class="personal-note-block">';
+  html += '<strong>📌 Ma note personnelle :</strong><br>';
+  if (note.text) {
+    const escaped = note.text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    html += escaped;
+  }
+  if (note.image) {
+    html += `<br><img src="${note.image}" alt="Note illustration" loading="lazy" />`;
+  }
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+/**
+ * _loadAndDisplayNotes() – Charge les notes depuis Firestore et les affiche
+ */
+async function _loadAndDisplayNotes() {
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) return;
+
+  try {
+    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    const data = doc.exists ? doc.data() : {};
+    _notesCache = data.notes || {};
+
+    // Compléter avec les notes localStorage (fallback offline)
+    try {
+      const lsKey = 'personalNotes_' + uid;
+      const lsNotes = JSON.parse(localStorage.getItem(lsKey) || '{}');
+      Object.keys(lsNotes).forEach(k => {
+        if (!_notesCache[k]) _notesCache[k] = lsNotes[k];
+      });
+    } catch (e) { /* ignore */ }
+  } catch (e) {
+    console.warn('[notes] Impossible de charger les notes:', e.message);
+    // Fallback localStorage
+    try {
+      const lsKey = 'personalNotes_' + uid;
+      _notesCache = JSON.parse(localStorage.getItem(lsKey) || '{}');
+    } catch (e2) { _notesCache = {}; }
+  }
+
+  // Afficher les notes existantes
+  currentQuestions.forEach(q => {
+    const key = getKeyFor(q);
+    if (_notesCache[key]) {
+      _renderNoteDisplay(key, _notesCache[key]);
+    }
+  });
+}
