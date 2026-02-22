@@ -60,6 +60,22 @@ async function displayDailyStats(forcedUid) {
     } else {
       localStorage.setItem(todayRatchetKey, answeredToday);
     }
+
+    // SYNC CROSS-BROWSER : si le max local dépasse le compteur Firestore,
+    // écrire la valeur correcte dans Firestore pour que les autres navigateurs la voient
+    const rawFirestoreCount = (data.dailyHistory || {})[todayLocal] || 0;
+    if (answeredToday > rawFirestoreCount) {
+      try {
+        const syncUpdate = {};
+        syncUpdate['dailyHistory.' + todayLocal] = answeredToday;
+        db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        console.log('[displayDailyStats] sync cross-browser:', rawFirestoreCount, '→', answeredToday);
+      } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
+    }
+
+    // Mettre à jour enrichedDH avec le max local pour la barre
+    enrichedDH[todayLocal] = answeredToday;
+
     // Mettre à jour la barre avec les données enrichies
     updateDailyStatsBar(answeredToday, enrichedDH);
   } catch (error) {
@@ -468,6 +484,22 @@ async function initStats() {
       if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(existingBackup));
     } catch (e) { /* ignore */ }
     afficherDailyChart(dailyHistory);
+
+    // Mettre à jour la barre quotidienne avec les données enrichies
+    // (la barre initiale était depuis localStorage, maintenant on a les données Firestore)
+    const todayEnrichedCount = dailyHistory[todayKeyLocal] || 0;
+    updateDailyStatsBar(todayEnrichedCount, dailyHistory);
+
+    // SYNC CROSS-BROWSER : écrire le max local dans Firestore si supérieur
+    const rawFirestoreToday = (data.dailyHistory || {})[todayKeyLocal] || 0;
+    if (todayEnrichedCount > rawFirestoreToday) {
+      try {
+        const syncUpdate = {};
+        syncUpdate['dailyHistory.' + todayKeyLocal] = todayEnrichedCount;
+        db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        console.log('[initStats] sync cross-browser:', rawFirestoreToday, '→', todayEnrichedCount);
+      } catch (e) { console.warn('[initStats] write-back failed:', e); }
+    }
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)
     const firestoreHistory = data.sessionHistory || [];
