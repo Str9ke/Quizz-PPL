@@ -202,11 +202,14 @@ async function updateModeCounts() {
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
-    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0;
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0, nbAvecNotes=0;
     const now = Date.now();
+    const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
     list.forEach(q => {
-      const r = currentResponses[getKeyFor(q)];
+      const key = getKeyFor(q);
+      const r = currentResponses[key];
       total++;
+      if (notesMap[key]) nbAvecNotes++;
       if (!r) {
         nbNonvues++;
       } else {
@@ -232,6 +235,7 @@ async function updateModeCounts() {
         <option value="reussies">Réussies (${nbReussies})</option>
         <option value="marquees">Marquées (${nbMarquees})</option>
         <option value="importantes">Importantes (${nbImportantes})</option>
+        <option value="avecnotes">📝 Avec notes (${nbAvecNotes})</option>
       `;
     }
 }
@@ -689,6 +693,21 @@ async function filtrerQuestions(mode, nb) {
   else if (mode === "marquees") {
     const allMarquees = shuffled.filter(q => responses[getKeyFor(q)]?.marked);
     currentQuestions = _excludeRecentlyAnswered(allMarquees, nb);
+  }
+  else if (mode === "avecnotes") {
+    // Charger les notes depuis Firestore
+    let notesMap = {};
+    if (uid) {
+      try {
+        const docN = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+        notesMap = docN.exists ? (docN.data().notes || {}) : {};
+      } catch (e) {
+        notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+      }
+    }
+    currentQuestions = shuffled
+      .filter(q => !!notesMap[getKeyFor(q)])
+      .slice(0, nb);
   }
 }
 

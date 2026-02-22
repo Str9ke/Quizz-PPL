@@ -331,7 +331,10 @@ function afficherQuiz() {
     return;
   }
 
-  cont.innerHTML = "";
+  // Construire TOUT le HTML en une seule chaîne puis injecter une seule fois
+  // (évite innerHTML += en boucle qui détruit/recrée le DOM à chaque itération,
+  //  ce qui peut interrompre le chargement des images)
+  let quizHtml = "";
   currentQuestions.forEach((q, idx) => {
     // Mélanger les choix pour ne pas toujours avoir les réponses au même endroit
     // Créer un tableau d'indices [0, 1, 2, 3], le mélanger (Fisher-Yates)
@@ -346,12 +349,13 @@ function afficherQuiz() {
     q.choix = indices.map(i => originalChoix[i]);
     q.bonne_reponse = indices.indexOf(originalBonne);
 
-    cont.innerHTML += `
+    quizHtml += `
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
         ${ q.image 
           ? `<div class="question-image">
-               <img src="${q.image}" alt="Question ${q.id} illustration" />
+               <img src="${q.image}" alt="Question ${q.id} illustration"
+                    onerror="this.style.display='none'; console.warn('Image introuvable:', this.src);" />
              </div>`
           : "" }
         <div class="answer-list">
@@ -364,6 +368,7 @@ function afficherQuiz() {
       </div>
     `;
   });
+  cont.innerHTML = quizHtml;
 
   // Mettre à jour le nombre total de questions
   const totalQuestions = questions.length;
@@ -663,7 +668,8 @@ function afficherCorrection() {
         </div>
         ${ q.image 
           ? `<div class="question-image">
-               <img src="${q.image}" alt="Question ${q.id} illustration" />
+               <img src="${q.image}" alt="Question ${q.id} illustration"
+                    onerror="this.style.display='none'; console.warn('Image introuvable:', this.src);" />
              </div>`
           : "" }
         <div class="answer-list">

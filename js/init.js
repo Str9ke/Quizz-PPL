@@ -143,10 +143,18 @@ async function initIndex() {
   }
   try {
     const docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    currentResponses = normalizeResponses(docResp.exists ? docResp.data().responses : {});
+    const docData = docResp.exists ? docResp.data() : {};
+    currentResponses = normalizeResponses(docData.responses || {});
+    // Charger le cache de notes pour le mode "Avec notes"
+    _notesCache = docData.notes || {};
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');
     currentResponses = currentResponses || {};
+    // Essayer de charger les notes depuis localStorage
+    try {
+      const lsNotesKey = 'notes_' + uid;
+      _notesCache = JSON.parse(localStorage.getItem(lsNotesKey) || '{}');
+    } catch (e2) { _notesCache = {}; }
   }
   
   await updateModeCounts();
