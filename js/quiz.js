@@ -1,6 +1,49 @@
 // === quiz.js === Quiz display, validation, immediate correction ===
 
 /**
+ * _speakCorrectAnswer() – Lit la bonne réponse via Web Speech Synthesis (TTS)
+ * Uniquement si l'option TTS est activée (localStorage ttsEnabled)
+ */
+function _speakCorrectAnswer(answerText) {
+  if (localStorage.getItem('ttsEnabled') !== '1') return;
+  if (!('speechSynthesis' in window)) return;
+  // Annuler toute lecture en cours
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(answerText);
+  utterance.lang = 'fr-FR';
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
+  // Essayer de trouver une voix française
+  const voices = speechSynthesis.getVoices();
+  const frVoice = voices.find(v => v.lang.startsWith('fr'));
+  if (frVoice) utterance.voice = frVoice;
+  speechSynthesis.speak(utterance);
+}
+// Pré-charger les voix (Chrome les charge de manière asynchrone)
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  }
+}
+
+/**
+ * _queueForReask() – Ajoute une question ratée dans la file de ré-interrogation
+ * La question sera reposée au 2ème quiz généré après celui-ci
+ */
+function _queueForReask(q) {
+  try {
+    const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
+    const key = getKeyFor(q);
+    // Éviter les doublons
+    if (queue.some(item => item.key === key)) return;
+    // countdown=2 : sera décrémenté à chaque génération de quiz, injectée quand =0
+    queue.push({ key, question: q, countdown: 2 });
+    localStorage.setItem('reaskQueue', JSON.stringify(queue));
+  } catch (e) { /* localStorage plein */ }
+}
+
+/**
  * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
  */
 function _buildExplicationHtml(q) {
@@ -49,6 +92,15 @@ async function demarrerQuiz() {
 
   // Nettoyer les recently answered quand on démarre un nouveau quiz depuis l'accueil
   localStorage.removeItem('recentlyAnsweredKeys');
+
+  // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
+  try {
+    const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
+    if (queue.length) {
+      queue.forEach(item => { if (item.countdown > 0) item.countdown--; });
+      localStorage.setItem('reaskQueue', JSON.stringify(queue));
+    }
+  } catch (e) { /* ignore */ }
 
   // Sauvegarder le mode correction immédiate
   const corrImm = document.getElementById('correctionImmediateCheckbox');
@@ -459,6 +511,14 @@ function handleImmediateAnswer(q, selectedRadio) {
     }
   });
 
+  // TTS : lire la bonne réponse à voix haute si mauvaise réponse
+  if (!isCorrect) {
+    const correctText = q.choix[q.bonne_reponse];
+    _speakCorrectAnswer(correctText);
+    // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
+    _queueForReask(q);
+  }
+
   // Afficher l'explication si disponible
   const questionBlock = selectedRadio.closest('.question-block');
   if (questionBlock) {
@@ -582,6 +642,10 @@ async function validerReponses() {
         if (wasImportant !== undefined) entry.important = wasImportant;
         responsesToSave[key] = entry;
         if (status === 'réussie') correctCount++;
+        // Mode non-immédiat : ajouter les questions ratées à la file de ré-interrogation
+        if (status === 'ratée' && !isImmediate) {
+          _queueForReask(q);
+        }
     });
 
     afficherCorrection();

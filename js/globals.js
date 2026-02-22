@@ -18,6 +18,16 @@ function resetQuiz() {
   } catch (e) { /* ignore */ }
 
   localStorage.removeItem('currentQuestions');
+
+  // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
+  try {
+    const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
+    if (queue.length) {
+      queue.forEach(item => { if (item.countdown > 0) item.countdown--; });
+      localStorage.setItem('reaskQueue', JSON.stringify(queue));
+    }
+  } catch (e) { /* ignore */ }
+
   (async () => {
     try {
       let catNorm = getNormalizedCategory(cat);

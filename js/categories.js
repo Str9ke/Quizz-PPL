@@ -799,6 +799,28 @@ async function filtrerQuestions(mode, nb) {
       .filter(q => q.categorie === normalizedSel)
       .slice(0, nb);
   }
+
+  // INJECTION : questions de la file de ré-interrogation (countdown === 0)
+  // Ces questions ratées 2 quiz avant sont injectées dans le quiz actuel
+  try {
+    const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
+    const ready = queue.filter(item => item.countdown <= 0);
+    const remaining = queue.filter(item => item.countdown > 0);
+    if (ready.length > 0) {
+      // Injecter les questions prêtes (ne pas dépasser +5 pour ne pas surcharger)
+      const toInject = ready.slice(0, 5);
+      const currentKeys = new Set(currentQuestions.map(q => getKeyFor(q)));
+      toInject.forEach(item => {
+        if (!currentKeys.has(item.key) && item.question) {
+          currentQuestions.push(item.question);
+          currentKeys.add(item.key);
+        }
+      });
+      // Retirer les questions injectées de la queue, garder les overflo
+      const leftover = ready.slice(5); // celles qu'on n'a pas pu injecter restent
+      localStorage.setItem('reaskQueue', JSON.stringify([...remaining, ...leftover]));
+    }
+  } catch (e) { /* ignore */ }
 }
 
 /**

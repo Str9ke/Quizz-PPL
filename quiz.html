@@ -44,7 +44,11 @@
     })();
   </script>
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
+  </script>
   <div id="resultContainer" style="display:none;"></div>
 
   <!-- Bandeau catégorie + restant (ratées + non vues) / total -->
@@ -92,13 +96,13 @@
     Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
-  <script src="js/globals.js?v=20260222s"></script>
-  <script src="js/helpers.js?v=20260222s"></script>
-  <script src="js/categories.js?v=20260222s"></script>
-  <script src="js/stats.js?v=20260222s"></script>
-  <script src="js/quiz.js?v=20260222s"></script>
-  <script src="js/init.js?v=20260222s"></script>
-  <script src="js/offline.js?v=20260222s"></script>
+  <script src="js/globals.js?v=20260222t"></script>
+  <script src="js/helpers.js?v=20260222t"></script>
+  <script src="js/categories.js?v=20260222t"></script>
+  <script src="js/stats.js?v=20260222t"></script>
+  <script src="js/quiz.js?v=20260222t"></script>
+  <script src="js/init.js?v=20260222t"></script>
+  <script src="js/offline.js?v=20260222t"></script>
   <script>
     // Affichage instantané du compteur depuis localStorage (updateDailyStatsBar)
     // initQuiz() se chargera de l'appel Firestore via displayDailyStats()
