@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Recherche</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20260223a"></script>
+  <script src="js/helpers.js?v=20260223a"></script>
+  <script src="js/categories.js?v=20260223a"></script>
+  <script src="js/stats.js?v=20260223a"></script>
+  <script src="js/quiz.js?v=20260223a"></script>
+  <script src="js/init.js?v=20260223a"></script>
+  <script src="js/offline.js?v=20260223a"></script>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
+  </script>
+
+  <h1>🔍 Recherche de questions</h1>
+
+  <!-- Search bar -->
+  <div class="container" id="searchBarContainer">
+    <div class="search-input-row">
+      <input type="text" id="searchInput" placeholder="Rechercher une question…" autocomplete="off" />
+      <button id="btnClearSearch" onclick="clearSearch()" style="display:none;" title="Effacer">✕</button>
+    </div>
+    <div id="searchHint" class="search-hint">Entrez au moins 3 caractères pour lancer la recherche</div>
+    <div id="searchStatus" class="search-status" style="display:none;"></div>
+  </div>
+
+  <!-- Search results -->
+  <div id="searchResults"></div>
+
+  <!-- Revision history -->
+  <div class="container" id="revisionHistoryContainer" style="margin-top: 1.5rem;">
+    <div class="revision-history-header">
+      <strong>📅 Historique des révisions</strong>
+    </div>
+    <div class="revision-days-nav" id="revisionDaysNav"></div>
+    <div id="revisionResults"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="container" style="text-align: center; margin-top: 1rem;">
+    <button onclick="window.location='index.html'">Retour Accueil</button>
+    <button onclick="window.location='stats.html'">Statistiques</button>
+  </div>
+
+  <script>
+  // ============================================================
+  // Search page logic
+  // ============================================================
+  (function() {
+    let allQuestionsLoaded = [];
+    let currentResponses = {};
+    let _notesCache = {};
+    let uid = null;
+    let searchTimeout = null;
+    let revisionDayOffset = null; // null = not selected
+
+    // === TTS ===
+    function speakText(text) {
+      if (!('speechSynthesis' in window) || localStorage.getItem('ttsEnabled') !== '1') return;
+      speechSynthesis.cancel();
+      var utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      var voices = speechSynthesis.getVoices();
+      var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+      var voice = null;
+      if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
+      if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
+      if (voice) utterance.voice = voice;
+      speechSynthesis.speak(utterance);
+    }
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = function() { speechSynthesis.getVoices(); };
+      }
+    }
+
+    // === Init ===
+    async function initSearch() {
+      uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      if (!uid) {
+        window.location = 'index.html';
+        return;
+      }
+
+      // Show loading
+      document.getElementById('searchHint').textContent = 'Chargement des questions…';
+
+      // Load all questions
+      await prefetchAllJsonFiles();
+      await loadAllQuestions();
+      allQuestionsLoaded = [...questions];
+
+      // Load responses + notes from Firestore
+      try {
+        let doc;
+        if (navigator.onLine) {
+          try {
+            doc = await Promise.race([
+              db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+            ]);
+          } catch (e) {
+            doc = await db.collection('quizProgress').doc(uid).get();
+          }
+        } else {
+          doc = await db.collection('quizProgress').doc(uid).get();
+        }
+        const data = doc.exists ? doc.data() : {};
+        currentResponses = normalizeResponses(data.responses || {});
+        _notesCache = data.notes || {};
+        // Also merge localStorage notes
+        try {
+          const lsNotes = JSON.parse(localStorage.getItem('personalNotes_' + uid) || '{}');
+          Object.keys(lsNotes).forEach(k => { if (!_notesCache[k]) _notesCache[k] = lsNotes[k]; });
+        } catch (e) {}
+      } catch (e) {
+        console.warn('[search] Firestore load failed:', e);
+      }
+
+      document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
+
+      // Bind search input
+      const input = document.getElementById('searchInput');
+      input.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const val = this.value.trim();
+        document.getElementById('btnClearSearch').style.display = val.length > 0 ? 'inline-block' : 'none';
+        if (val.length < 3) {
+          document.getElementById('searchResults').innerHTML = '';
+          document.getElementById('searchStatus').style.display = 'none';
+          document.getElementById('searchHint').style.display = val.length === 0 ? 'block' : 'block';
+          if (val.length > 0 && val.length < 3) {
+            document.getElementById('searchHint').textContent = 'Entrez au moins 3 caractères…';
+          } else {
+            document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
+          }
+          return;
+        }
+        document.getElementById('searchHint').style.display = 'none';
+        searchTimeout = setTimeout(() => doSearch(val), 250);
+      });
+      input.focus();
+
+      // Build revision history nav
+      buildRevisionNav();
+    }
+
+    // === Search ===
+    function doSearch(query) {
+      const normalizedQuery = query.toLowerCase()
+        .replace(/['']/g, "'")
+        .replace(/[""]/g, '"')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      const terms = normalizedQuery.split(/\s+/).filter(t => t.length > 0);
+
+      const results = allQuestionsLoaded.filter(q => {
+        const haystack = (q.question + ' ' + (q.choix || []).join(' ') + ' ' + (q.explication || ''))
+          .toLowerCase()
+          .replace(/['']/g, "'")
+          .replace(/[""]/g, '"')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return terms.every(term => haystack.includes(term));
+      });
+
+      const statusEl = document.getElementById('searchStatus');
+      statusEl.style.display = 'block';
+      if (results.length === 0) {
+        statusEl.innerHTML = '<span style="color:var(--text-secondary)">Aucun résultat pour « ' + escapeHtml(query) + ' »</span>';
+      } else {
+        const shown = Math.min(results.length, 50);
+        statusEl.innerHTML = '<strong>' + results.length + '</strong> résultat' + (results.length > 1 ? 's' : '') +
+          (results.length > 50 ? ' (50 premiers affichés)' : '');
+      }
+
+      renderQuestions(results.slice(0, 50), document.getElementById('searchResults'));
+    }
+
+    window.clearSearch = function() {
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      input.focus();
+      document.getElementById('searchResults').innerHTML = '';
+      document.getElementById('searchStatus').style.display = 'none';
+      document.getElementById('btnClearSearch').style.display = 'none';
+      document.getElementById('searchHint').style.display = 'block';
+      document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
+    };
+
+    // === Render questions ===
+    function renderQuestions(questionsList, container) {
+      if (!questionsList.length) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      questionsList.forEach((q, idx) => {
+        const key = getKeyFor(q);
+        const resp = currentResponses[key] || {};
+        const isMarked = resp.marked === true;
+        const isImportant = resp.important === true;
+        const status = resp.status || null;
+
+        // Status badge
+        let statusBadge = '';
+        if (status === 'réussie') statusBadge = '<span class="search-badge search-badge-ok">✅ Réussie</span>';
+        else if (status === 'ratée') statusBadge = '<span class="search-badge search-badge-fail">❌ Ratée</span>';
+        else statusBadge = '<span class="search-badge search-badge-unseen">👀 Non vue</span>';
+
+        if (isMarked) statusBadge += ' <span class="search-badge search-badge-marked">📌 Marquée</span>';
+        if (isImportant) statusBadge += ' <span class="search-badge search-badge-important">⭐ Importante</span>';
+
+        html += '<div class="container question-block search-result-block" data-key="' + key + '" data-qid="' + q.id + '">';
+        html += '<div class="search-result-meta">';
+        html += '<span class="search-result-cat">' + escapeHtml(q.categorie || '') + '</span>';
+        html += '<span class="search-result-badges">' + statusBadge + '</span>';
+        html += '</div>';
+        html += '<div class="question-title">' + escapeHtml(q.question) + '</div>';
+
+        // Image
+        if (q.image) {
+          html += '<div class="question-image"><img src="' + q.image + '" alt="illustration" onerror="this.style.display=\'none\';" loading="lazy" /></div>';
+        }
+
+        // Choices with correct answer highlighted
+        html += '<div class="answer-list" data-question="' + encodeURIComponent(q.question) + '" data-correct="' + encodeURIComponent(q.choix[q.bonne_reponse] || '') + '">';
+        (q.choix || []).forEach((choixText, i) => {
+          let cls = '';
+          if (i === q.bonne_reponse) cls = 'correct';
+          html += '<div style="margin-bottom:4px;padding:4px 6px;border-radius:4px;' +
+            (i === q.bonne_reponse ? 'background:rgba(76,175,80,0.12);' : '') +
+            '"><span class="' + cls + '">' + escapeHtml(choixText) + '</span></div>';
+        });
+        html += '</div>';
+
+        // Explication
+        if (q.explication || (q.explication_images && q.explication_images.length)) {
+          html += '<div class="explication-block">';
+          html += '<strong>💡 Explication :</strong><br>';
+          if (q.explication) {
+            html += escapeHtml(q.explication).replace(/\n/g, '<br>');
+          }
+          if (q.explication_images && q.explication_images.length) {
+            q.explication_images.forEach(img => {
+              html += '<br><img src="' + img + '" alt="Explication" loading="lazy" onerror="this.style.display=\'none\';">';
+            });
+          }
+          html += '</div>';
+        }
+
+        // Note display
+        html += '<div class="personal-note-display" id="noteDisplay_' + key + '"></div>';
+
+        // Action buttons
+        html += '<div class="question-actions-row">';
+        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="searchToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
+        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="searchToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
+        html += '<button class="note-toggle-btn" onclick="searchToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
+        html += '</div>';
+
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+
+      // Attach TTS click listeners
+      container.querySelectorAll('.answer-list').forEach(el => {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function() {
+          speakText(decodeURIComponent(el.getAttribute('data-question')) + '… ' + decodeURIComponent(el.getAttribute('data-correct')));
+        });
+      });
+
+      // Render existing notes
+      questionsList.forEach(q => {
+        const key = getKeyFor(q);
+        const note = _notesCache[key];
+        if (note && (note.text || note.image)) {
+          searchRenderNote(key, note);
+        }
+      });
+    }
+
+    // === Toggle Marquer ===
+    window.searchToggleMarquer = function(key, qid, btn) {
+      if (!uid) return;
+      const prev = currentResponses[key] || {};
+      const newMarked = !prev.marked;
+      const payload = {
+        responses: { [key]: { status: prev.status || 'ratée', marked: newMarked, important: prev.important === true } }
+      };
+      currentResponses[key] = { ...prev, marked: newMarked };
+      btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
+      btn.className = newMarked ? 'delete-button' : 'mark-button';
+      // Update badge
+      const block = btn.closest('.search-result-block');
+      if (block) updateBadges(block, key);
+
+      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
+        try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      });
+    };
+
+    // === Toggle Important ===
+    window.searchToggleImportant = function(key, qid, btn) {
+      if (!uid) return;
+      const prev = currentResponses[key] || {};
+      const newImportant = !prev.important;
+      const payload = {
+        responses: { [key]: { status: prev.status || 'ratée', marked: prev.marked === true, important: newImportant } }
+      };
+      currentResponses[key] = { ...prev, important: newImportant };
+      btn.textContent = newImportant ? 'Retirer Important' : 'Important';
+      btn.className = newImportant ? 'delete-button' : 'mark-button';
+      const block = btn.closest('.search-result-block');
+      if (block) updateBadges(block, key);
+
+      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
+        try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      });
+    };
+
+    function updateBadges(block, key) {
+      const resp = currentResponses[key] || {};
+      const badges = block.querySelector('.search-result-badges');
+      if (!badges) return;
+      let html = '';
+      if (resp.status === 'réussie') html += '<span class="search-badge search-badge-ok">✅ Réussie</span>';
+      else if (resp.status === 'ratée') html += '<span class="search-badge search-badge-fail">❌ Ratée</span>';
+      else html += '<span class="search-badge search-badge-unseen">👀 Non vue</span>';
+      if (resp.marked) html += ' <span class="search-badge search-badge-marked">📌 Marquée</span>';
+      if (resp.important) html += ' <span class="search-badge search-badge-important">⭐ Importante</span>';
+      badges.innerHTML = html;
+    }
+
+    // === Notes ===
+    window.searchToggleNote = function(key, btn) {
+      const existingEditor = document.getElementById('noteEditor_' + key);
+      if (existingEditor) {
+        existingEditor.style.display = existingEditor.style.display === 'none' ? 'block' : 'none';
+        return;
+      }
+      const editor = document.createElement('div');
+      editor.id = 'noteEditor_' + key;
+      editor.className = 'note-editor';
+      const existingNote = _notesCache[key];
+      const existingText = existingNote ? (existingNote.text || '') : '';
+      editor.innerHTML = `
+        <textarea class="note-textarea" id="noteText_${key}" placeholder="Écrire une note personnelle…" rows="1">${escapeHtml(existingText)}</textarea>
+        <div class="note-actions">
+          <label class="note-image-label">
+            🖼️ Image
+            <input type="file" accept="image/*" id="noteImage_${key}" style="display:none" />
+          </label>
+          <span class="note-image-name" id="noteImageName_${key}"></span>
+          <button class="note-publish-btn" onclick="searchPublishNote('${key}')">Publier</button>
+        </div>
+        <div id="noteImagePreview_${key}" class="note-image-preview"></div>
+      `;
+      const block = btn.closest('.question-block');
+      if (block) block.appendChild(editor);
+      else btn.parentElement.appendChild(editor);
+
+      // Auto-grow
+      const textarea = document.getElementById('noteText_' + key);
+      textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+      });
+      if (existingText) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
+
+      // Image handler
+      document.getElementById('noteImage_' + key).addEventListener('change', function() {
+        const file = this.files[0];
+        const nameSpan = document.getElementById('noteImageName_' + key);
+        const previewDiv = document.getElementById('noteImagePreview_' + key);
+        if (file) {
+          nameSpan.textContent = file.name;
+          const reader = new FileReader();
+          reader.onload = e => { previewDiv.innerHTML = '<img src="' + e.target.result + '" alt="Aperçu" />'; };
+          reader.readAsDataURL(file);
+        } else { nameSpan.textContent = ''; previewDiv.innerHTML = ''; }
+      });
+    };
+
+    window.searchPublishNote = async function(key) {
+      if (!uid) { alert('Vous devez être connecté.'); return; }
+      const textarea = document.getElementById('noteText_' + key);
+      const fileInput = document.getElementById('noteImage_' + key);
+      const text = textarea ? textarea.value.trim() : '';
+      const file = fileInput && fileInput.files[0];
+      if (!text && !file) return;
+
+      let imageData = null;
+      if (file) {
+        imageData = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+      const existing = _notesCache[key];
+      if (!imageData && existing && existing.image) imageData = existing.image;
+
+      const notePayload = { text, image: imageData, updatedAt: firebase.firestore.Timestamp.now() };
+      try {
+        await db.collection('quizProgress').doc(uid).set({ notes: { [key]: notePayload } }, { merge: true });
+      } catch (e) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('personalNotes_' + uid) || '{}');
+          stored[key] = notePayload;
+          localStorage.setItem('personalNotes_' + uid, JSON.stringify(stored));
+        } catch (e2) {}
+      }
+      _notesCache[key] = notePayload;
+      searchRenderNote(key, notePayload);
+      const editor = document.getElementById('noteEditor_' + key);
+      if (editor) editor.style.display = 'none';
+    };
+
+    window.searchEditNote = function(key) {
+      const block = document.getElementById('noteDisplay_' + key);
+      if (!block) return;
+      const qBlock = block.closest('.question-block');
+      if (!qBlock) return;
+      const noteBtn = qBlock.querySelector('.note-toggle-btn');
+      if (noteBtn) {
+        searchToggleNote(key, noteBtn);
+        const editor = document.getElementById('noteEditor_' + key);
+        if (editor) editor.style.display = 'block';
+      }
+    };
+
+    window.searchDeleteNote = async function(key) {
+      if (!confirm('Supprimer cette note personnelle ?')) return;
+      if (!uid) return;
+      try {
+        await db.collection('quizProgress').doc(uid).set(
+          { notes: { [key]: firebase.firestore.FieldValue.delete() } },
+          { merge: true }
+        );
+      } catch (e) {}
+      try {
+        const stored = JSON.parse(localStorage.getItem('personalNotes_' + uid) || '{}');
+        delete stored[key];
+        localStorage.setItem('personalNotes_' + uid, JSON.stringify(stored));
+      } catch (e) {}
+      delete _notesCache[key];
+      const div = document.getElementById('noteDisplay_' + key);
+      if (div) div.innerHTML = '';
+    };
+
+    function searchRenderNote(key, note) {
+      const div = document.getElementById('noteDisplay_' + key);
+      if (!div) return;
+      if (!note || (!note.text && !note.image)) { div.innerHTML = ''; return; }
+      let html = '<div class="personal-note-block">';
+      html += '<div class="personal-note-header">';
+      html += '<strong>📌 Ma note personnelle :</strong>';
+      html += '<span class="personal-note-actions">';
+      html += '<button class="note-edit-btn" onclick="searchEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
+      html += '<button class="note-delete-btn" onclick="searchDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
+      html += '</span></div>';
+      if (note.text) { html += escapeHtml(note.text).replace(/\n/g, '<br>'); }
+      if (note.image) { html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />'; }
+      html += '</div>';
+      div.innerHTML = html;
+    }
+
+    // === Revision History ===
+    function buildRevisionNav() {
+      const nav = document.getElementById('revisionDaysNav');
+      const dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
+      let html = '';
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const label = i < 3 ? dayLabels[i] : formatShortDate(d);
+        const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const isActive = revisionDayOffset === i;
+        html += '<button class="revision-day-btn' + (isActive ? ' revision-day-active' : '') + '" data-offset="' + i + '" data-date="' + dateKey + '" onclick="selectRevisionDay(' + i + ')">' + label + '</button>';
+      }
+      nav.innerHTML = html;
+    }
+
+    function formatShortDate(d) {
+      const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      return days[d.getDay()] + ' ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    window.selectRevisionDay = function(offset) {
+      // Toggle: click same day again to deselect
+      if (revisionDayOffset === offset) {
+        revisionDayOffset = null;
+        buildRevisionNav();
+        document.getElementById('revisionResults').innerHTML = '';
+        return;
+      }
+      revisionDayOffset = offset;
+      buildRevisionNav();
+      loadRevisionDay(offset);
+    };
+
+    function loadRevisionDay(offset) {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      const targetDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const startMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const endMs = startMs + 86400000;
+
+      // Find questions answered on that day via response timestamps
+      const dayQuestions = [];
+      allQuestionsLoaded.forEach(q => {
+        const key = getKeyFor(q);
+        const resp = currentResponses[key];
+        if (!resp) return;
+        let ts = null;
+        if (resp.timestamp) {
+          if (resp.timestamp.seconds !== undefined) ts = resp.timestamp.seconds * 1000;
+          else if (typeof resp.timestamp === 'number') ts = resp.timestamp;
+        } else if (resp.lastUpdated) {
+          if (resp.lastUpdated.seconds !== undefined) ts = resp.lastUpdated.seconds * 1000;
+          else if (typeof resp.lastUpdated === 'number') ts = resp.lastUpdated;
+        }
+        if (ts && ts >= startMs && ts < endMs) {
+          dayQuestions.push({ q, ts, resp });
+        }
+      });
+
+      // Sort by timestamp
+      dayQuestions.sort((a, b) => a.ts - b.ts);
+
+      const container = document.getElementById('revisionResults');
+      const dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
+      const dayLabel = offset < 3 ? dayLabels[offset] : formatShortDate(d);
+
+      if (dayQuestions.length === 0) {
+        container.innerHTML = '<div class="revision-empty"><p style="text-align:center;color:var(--text-secondary);padding:1rem;">Aucune question répondue ' + (offset === 0 ? 'aujourd\'hui' : dayLabel.toLowerCase()) + '</p></div>';
+        return;
+      }
+
+      // Summary
+      const correct = dayQuestions.filter(x => x.resp.status === 'réussie').length;
+      const wrong = dayQuestions.filter(x => x.resp.status === 'ratée').length;
+      const pct = dayQuestions.length > 0 ? Math.round(100 * correct / dayQuestions.length) : 0;
+      container.innerHTML = '<div class="revision-summary"><strong>' + dayLabel + '</strong> — ' +
+        dayQuestions.length + ' question' + (dayQuestions.length > 1 ? 's' : '') +
+        ' · ✅ ' + correct + ' · ❌ ' + wrong + ' · ' + pct + '%</div>';
+
+      renderQuestions(dayQuestions.map(x => x.q), container);
+    }
+
+    // === Helpers ===
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // === Auth ===
+    let initDone = false;
+    function doInit() {
+      if (initDone) return;
+      initDone = true;
+      initSearch();
+    }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
+      else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      if (!initDone && localStorage.getItem('cachedUid')) doInit();
+    }, 2500);
+  })();
+  </script>
+</body>
+</html>
