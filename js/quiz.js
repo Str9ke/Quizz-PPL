@@ -623,13 +623,13 @@ function handleImmediateAnswer(q, selectedRadio) {
     if (!label) return;
     const val = parseInt(r.value);
     if (val === q.bonne_reponse) {
-      label.style.background = 'var(--correct-bg, #d4f0e8)';
-      label.style.borderLeft = '4px solid #45c4b0';
+      label.style.background = 'var(--correct-bg, #d4edda)';
+      label.style.borderLeft = '4px solid #28a745';
       label.style.paddingLeft = '8px';
       label.style.borderRadius = '4px';
     } else if (val === selectedVal && !isCorrect) {
-      label.style.background = 'var(--wrong-bg, #f5d0d8)';
-      label.style.borderLeft = '4px solid #c0283c';
+      label.style.background = 'var(--wrong-bg, #f8d7da)';
+      label.style.borderLeft = '4px solid #dc3545';
       label.style.paddingLeft = '8px';
       label.style.borderRadius = '4px';
     }
