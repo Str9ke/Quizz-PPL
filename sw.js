@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v39';
+const CACHE_NAME = 'quiz-ppl-v41';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -120,7 +120,32 @@ self.addEventListener('fetch', event => {
     return; // Ne pas intercepter — laisser le réseau gérer
   }
 
-  // Pour toutes les autres requêtes : Cache-First, puis réseau en fallback
+  // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
+  const isJsonFile = url.pathname.endsWith('.json') && !url.pathname.endsWith('manifest.json');
+
+  // === Stratégie pour fichiers JSON : Network-First (quand en ligne) ===
+  // Garantit que les questions sont toujours à jour entre navigateurs
+  if (isJsonFile && navigator.onLine) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          const cleanUrl = new URL(event.request.url);
+          cleanUrl.search = '';
+          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+        }
+        return response;
+      }).catch(() => {
+        // Réseau échoué → fallback sur le cache
+        return caches.match(event.request, { ignoreSearch: true }).then(cached => {
+          return cached || new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+        });
+      })
+    );
+    return;
+  }
+
+  // === Stratégie pour les autres fichiers : Cache-First + Stale-While-Revalidate ===
   // ignoreSearch: true → les paramètres ?v=xxx n'empêchent pas le cache hit
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then(cached => {

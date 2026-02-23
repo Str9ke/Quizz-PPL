@@ -127,12 +127,48 @@ async function initIndex() {
   }
   let _dailyHist = {};
   try {
-    const docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne
+    // pour récupérer les données fraîches écrites par un autre appareil.
+    let docResp;
+    if (navigator.onLine) {
+      try {
+        docResp = await Promise.race([
+          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('initIndex server timeout')), 6000))
+        ]);
+        console.log('[initIndex] Firestore lu depuis le SERVEUR');
+      } catch (e) {
+        console.warn('[initIndex] lecture serveur échouée, fallback cache:', e.message);
+        docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+      }
+    } else {
+      docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    }
     const docData = docResp.exists ? docResp.data() : {};
     currentResponses = normalizeResponses(docData.responses || {});
     // Charger le cache de notes pour le mode "Avec notes"
     _notesCache = docData.notes || {};
     _dailyHist = docData.dailyHistory || {};
+    // CROSS-BROWSER FIX : synchroniser les valeurs serveur → localStorage
+    // pour que les affichages instantanés futurs soient cohérents entre navigateurs
+    try {
+      const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+      let changed = false;
+      for (const [k, v] of Object.entries(_dailyHist)) {
+        if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
+      }
+      if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+      // Mettre à jour le ratchet d'aujourd'hui avec la valeur serveur
+      const _now = new Date();
+      const todayKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+      const todayUtcKey = _now.toISOString().slice(0, 10);
+      const serverToday = _dailyHist[todayKey] || 0;
+      const localRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayUtcKey)) || 0;
+      if (serverToday > localRatchet) {
+        localStorage.setItem('dailyCountRatchet_' + todayUtcKey, serverToday);
+        localStorage.setItem('dailyAnswered_' + todayUtcKey, serverToday);
+      }
+    } catch (e) { /* ignore */ }
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');
     currentResponses = currentResponses || {};

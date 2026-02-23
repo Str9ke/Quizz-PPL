@@ -22,12 +22,29 @@ async function displayDailyStats(forcedUid) {
     return;
   }
   try {
-    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    // CROSS-BROWSER : forcer une lecture SERVEUR quand on est en ligne
+    // pour récupérer les compteurs écrits par un autre navigateur.
+    // Sans cela, la persistance Firestore retourne le cache local (périmé).
+    let doc;
+    if (navigator.onLine) {
+      try {
+        doc = await Promise.race([
+          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('server timeout')), 6000))
+        ]);
+      } catch (e) {
+        console.warn('[displayDailyStats] lecture serveur échouée, fallback cache:', e.message);
+        doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+      }
+    } else {
+      doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    }
     const data = doc.exists ? doc.data() : {};
+    const rawFirestoreDH = { ...(data.dailyHistory || {}) };
     
     // Enrichir dailyHistory avec les timestamps des réponses (cross-browser : les responses
     // sont sync Firestore, donc fiables même sur un nouveau navigateur)
-    let enrichedDH = { ...(data.dailyHistory || {}) };
+    let enrichedDH = { ...rawFirestoreDH };
     if (data.responses) {
       enrichedDH = enrichDailyHistoryFromResponses(enrichedDH, data.responses);
     }
@@ -71,15 +88,23 @@ async function displayDailyStats(forcedUid) {
     } else {
       localStorage.setItem(todayRatchetKey, answeredToday);
     }
+    // CROSS-BROWSER FIX : mettre aussi à jour dailyAnswered_ avec la valeur serveur
+    // pour que le prochain quiz sur ce navigateur incrémente depuis la bonne base.
+    // Sans cela, un PC avec dailyAnswered_=136 qui reçoit 196 du serveur
+    // ajouterait +5 à 136 (=141) au lieu de +5 à 196 (=201).
+    const todayAnsweredKey = 'dailyAnswered_' + todayUtc;
+    const prevAnswered = parseInt(localStorage.getItem(todayAnsweredKey)) || 0;
+    if (answeredToday > prevAnswered) {
+      localStorage.setItem(todayAnsweredKey, answeredToday);
+    }
     enrichedDH[todayLocal] = answeredToday;
 
-    // SYNC CROSS-BROWSER : écrire TOUTES les valeurs enrichies dans Firestore
-    // PAS de comparaison avec rawDH : avec Firestore persistence, les lectures locales
-    // reflètent les writes non-sync (latency compensation) → la comparaison est toujours
-    // fausse et le serveur ne reçoit jamais les données. Écriture absolue = idempotente.
+    // SYNC CROSS-BROWSER : écrire uniquement les valeurs SUPÉRIEURES à Firestore
+    // Maintenant que nous forçons source:'server' quand online, rawFirestoreDH reflète
+    // les vraies valeurs serveur → on peut comparer et ne jamais écraser une valeur plus haute.
     const syncUpdate = {};
     for (const [dateKey, mergedVal] of Object.entries(enrichedDH)) {
-      if (mergedVal > 0) {
+      if (mergedVal > 0 && mergedVal > (rawFirestoreDH[dateKey] || 0)) {
         syncUpdate['dailyHistory.' + dateKey] = mergedVal;
       }
     }
@@ -195,7 +220,10 @@ function displayHomeProgressBar(responses, dailyHistory) {
   `;
 }
 
-/** saveDailyCount — Sauvegarde le compteur quotidien (valeur absolue depuis localStorage) */
+/** saveDailyCount — Sauvegarde le compteur quotidien (valeur absolue depuis localStorage)
+ *  Utilise une transaction Firestore pour garantir max(local, serveur) et ne jamais
+ *  écraser le compteur d'un autre navigateur avec une valeur plus basse.
+ */
 async function saveDailyCount(uid) {
   try {
     const today = new Date();
@@ -212,8 +240,29 @@ async function saveDailyCount(uid) {
     if (absoluteCount <= 0) return;
     
     const docRef = db.collection('quizProgress').doc(uid);
-    // Écrire la valeur ABSOLUE (pas d'increment) pour éviter les conflits
-    // entre FieldValue.increment et les set() de write-back cross-browser
+    
+    // Transaction atomique : lire la valeur SERVEUR et écrire max(local, serveur)
+    // → empêche Firefox d'écraser 198 (Chrome) avec 172 (Firefox)
+    if (navigator.onLine) {
+      try {
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(docRef);
+          const serverVal = doc.exists ? ((doc.data().dailyHistory || {})[dateKey] || 0) : 0;
+          const newVal = Math.max(absoluteCount, serverVal);
+          const update = {};
+          update['dailyHistory.' + dateKey] = newVal;
+          transaction.set(docRef, update, { merge: true });
+          // Mettre à jour le ratchet local si le serveur avait plus
+          if (serverVal > absoluteCount) {
+            localStorage.setItem('dailyCountRatchet_' + utcKey, serverVal);
+          }
+        });
+        return; // Transaction réussie
+      } catch (txErr) {
+        console.warn('[saveDailyCount] transaction échouée, fallback direct:', txErr.message);
+      }
+    }
+    // Fallback (offline ou transaction échouée) : écrire la valeur locale directement
     const update = {};
     update['dailyHistory.' + dateKey] = absoluteCount;
     await docRef.set(update, { merge: true });
@@ -374,8 +423,27 @@ async function initStats() {
     // Pré-charger tous les JSON en parallèle (depuis le cache SW = quasi-instantané)
     await prefetchAllJsonFiles();
 
-    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne
+    // Sans cela, enablePersistence retourne le cache local (périmé si un autre
+    // appareil a écrit de nouvelles données, ex: Android 196 vs PC cache 136).
+    let doc;
+    if (navigator.onLine) {
+      try {
+        doc = await Promise.race([
+          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('initStats server timeout')), 6000))
+        ]);
+        console.log('[initStats] Firestore lu depuis le SERVEUR');
+      } catch (e) {
+        console.warn('[initStats] lecture serveur échouée, fallback cache:', e.message);
+        doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+      }
+    } else {
+      doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    }
     const data = doc.exists ? doc.data() : { responses: {} };
+    // Garder une copie des valeurs serveur brutes pour la comparaison lors du write-back
+    const rawServerDailyHistory = { ...(data.dailyHistory || {}) };
 
     // Groupes de catégories (sans doublons d'agrégats)
     const groups = [
@@ -519,25 +587,76 @@ async function initStats() {
     const todayEnrichedCount = dailyHistory[todayKeyLocal] || 0;
     updateDailyStatsBar(todayEnrichedCount, dailyHistory);
 
-    // SYNC CROSS-BROWSER : écrire TOUTES les valeurs enrichies dans Firestore
-    // (pas de comparaison avec data.dailyHistory : latency compensation fausse les lectures locales)
-    const syncUpdate2 = {};
-    for (const [dateKey, mergedVal] of Object.entries(dailyHistory)) {
-      if (mergedVal > 0) {
-        syncUpdate2['dailyHistory.' + dateKey] = mergedVal;
-      }
-    }
-    if (Object.keys(syncUpdate2).length > 0) {
+    // SYNC CROSS-BROWSER : utiliser une transaction pour garantir max(local, serveur)
+    // et ne JAMAIS écraser une valeur plus élevée provenant d'un autre appareil.
+    // Avant, on écrivait TOUTES les valeurs locales → un PC avec 136 en cache
+    // écrasait le 196 de l'Android sur le serveur.
+    if (navigator.onLine) {
       try {
-        await db.collection('quizProgress').doc(uid).set(syncUpdate2, { merge: true });
-        if (db.waitForPendingWrites) {
-          await Promise.race([
-            db.waitForPendingWrites(),
-            new Promise(resolve => setTimeout(resolve, 5000))
-          ]);
+        const docRef = db.collection('quizProgress').doc(uid);
+        await db.runTransaction(async (transaction) => {
+          const freshDoc = await transaction.get(docRef);
+          const serverDH = freshDoc.exists ? (freshDoc.data().dailyHistory || {}) : {};
+          const update = {};
+          let hasUpdates = false;
+          // Écrire seulement les valeurs locales SUPÉRIEURES au serveur
+          for (const [dateKey, localVal] of Object.entries(dailyHistory)) {
+            const serverVal = serverDH[dateKey] || 0;
+            if (localVal > serverVal) {
+              update['dailyHistory.' + dateKey] = localVal;
+              hasUpdates = true;
+            }
+            // Si le serveur a une valeur plus haute (autre appareil), mettre à jour localement
+            if (serverVal > localVal) {
+              dailyHistory[dateKey] = serverVal;
+            }
+          }
+          // Vérifier aussi les dates présentes sur le serveur mais pas en local
+          for (const [dateKey, serverVal] of Object.entries(serverDH)) {
+            if (serverVal > (dailyHistory[dateKey] || 0)) {
+              dailyHistory[dateKey] = serverVal;
+            }
+          }
+          if (hasUpdates) {
+            transaction.set(docRef, update, { merge: true });
+          }
+        });
+        // Après la transaction : mettre à jour localStorage avec les valeurs réconciliées
+        try {
+          const reconciledBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+          let changed2 = false;
+          for (const [k, v] of Object.entries(dailyHistory)) {
+            if (v > (reconciledBackup[k] || 0)) { reconciledBackup[k] = v; changed2 = true; }
+          }
+          if (changed2) localStorage.setItem('dailyHistoryBackup', JSON.stringify(reconciledBackup));
+        } catch (e) { /* ignore */ }
+        // Mettre à jour les clés ratchet/dailyAnswered pour aujourd'hui
+        const freshTodayVal = dailyHistory[todayKeyLocal] || 0;
+        const currentRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
+        if (freshTodayVal > currentRatchet) {
+          localStorage.setItem('dailyCountRatchet_' + todayKeyUtc, freshTodayVal);
+          localStorage.setItem('dailyAnswered_' + todayKeyUtc, freshTodayVal);
         }
-        console.log('[initStats] sync OK:', Object.keys(syncUpdate2).length, 'dates pushées au serveur');
-      } catch (e) { console.warn('[initStats] write-back failed:', e); }
+        // Re-render le chart et la barre avec les données réconciliées
+        afficherDailyChart(dailyHistory);
+        const reconciledToday = dailyHistory[todayKeyLocal] || 0;
+        updateDailyStatsBar(reconciledToday, dailyHistory);
+        console.log('[initStats] sync transactionnelle OK, today=' + reconciledToday);
+      } catch (e) {
+        console.warn('[initStats] sync transactionnelle échouée:', e.message);
+        // Fallback : écrire seulement les valeurs SUPÉRIEURES aux valeurs serveur brutes
+        const syncUpdate2 = {};
+        for (const [dateKey, mergedVal] of Object.entries(dailyHistory)) {
+          if (mergedVal > 0 && mergedVal > (rawServerDailyHistory[dateKey] || 0)) {
+            syncUpdate2['dailyHistory.' + dateKey] = mergedVal;
+          }
+        }
+        if (Object.keys(syncUpdate2).length > 0) {
+          try {
+            await db.collection('quizProgress').doc(uid).set(syncUpdate2, { merge: true });
+          } catch (e2) { console.warn('[initStats] fallback write-back failed:', e2); }
+        }
+      }
     }
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)

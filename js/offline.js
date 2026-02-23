@@ -291,9 +291,23 @@ async function syncPendingWrites() {
           );
           if (absVal > 0) {
             const dkLocal = dateKey.length === 10 ? dateKey : today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-            const upd = {};
-            upd['dailyHistory.' + dkLocal] = absVal;
-            await db.collection('quizProgress').doc(op.uid).set(upd, { merge: true });
+            // Transaction atomique : max(local, serveur) pour ne pas écraser un autre navigateur
+            try {
+              const docRef = db.collection('quizProgress').doc(op.uid);
+              await db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(docRef);
+                const serverVal = doc.exists ? ((doc.data().dailyHistory || {})[dkLocal] || 0) : 0;
+                const newVal = Math.max(absVal, serverVal);
+                const upd = {};
+                upd['dailyHistory.' + dkLocal] = newVal;
+                transaction.set(docRef, upd, { merge: true });
+              });
+            } catch (txErr) {
+              // Fallback si la transaction échoue
+              const upd = {};
+              upd['dailyHistory.' + dkLocal] = absVal;
+              await db.collection('quizProgress').doc(op.uid).set(upd, { merge: true });
+            }
           }
           break;
         }
@@ -558,10 +572,19 @@ async function registerServiceWorker() {
     const reg = await navigator.serviceWorker.register('sw.js');
     console.log('[SW] Service Worker enregistré, scope:', reg.scope);
     
+    // Forcer une vérification de mise à jour à chaque visite
+    // (garantit que tous les navigateurs récupèrent la dernière version rapidement)
+    try { await reg.update(); } catch (e) { /* ignore si offline */ }
+    
     // Écouter les mises à jour
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Nouveau SW prêt — forcer l'activation immédiate
+          console.log('[SW] Nouvelle version détectée — activation immédiate');
+          newWorker.postMessage('skipWaiting');
+        }
         if (newWorker.state === 'activated') {
           console.log('[SW] Nouvelle version du cache installée');
         }
