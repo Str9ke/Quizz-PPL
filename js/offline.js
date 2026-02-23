@@ -443,8 +443,8 @@ function updateOnlineStatus() {
   
   _checkRealConnectivity().then(isOnline => {
     if (isOnline) {
-      bar.style.background = '#4caf50';
-      bar.style.color = 'white';
+      bar.style.background = '#45c4b0';
+      bar.style.color = '#1a0e20';
       bar.textContent = '✓ En ligne';
       bar.style.display = 'block';
       // Cacher après 3 secondes si en ligne

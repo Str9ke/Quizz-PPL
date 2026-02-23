@@ -154,9 +154,9 @@ function displayHomeProgressBar(responses, dailyHistory) {
   const total = reussie + ratee + nonvue;
   const perc = total ? (reussie * 100 / total).toFixed(2) : '0.00';
   function percColor(p) {
-    if (p >= 80) return '#4caf50';
-    if (p >= 50) return '#ff9800';
-    return '#f44336';
+    if (p >= 80) return '#45c4b0';
+    if (p >= 50) return '#e6a817';
+    return '#c0283c';
   }
 
   // Fusionner dailyHistory avec localStorage backup (même source que l'objectif/chart)
@@ -216,7 +216,7 @@ function displayHomeProgressBar(responses, dailyHistory) {
       <span>📌 ${marquee}</span>
       <span>⭐ ${importante}</span>
     </div>
-    ${daysRemainingHtml ? `<div style="margin-top:6px;font-size:0.9em;color:#667eea;font-weight:600">${daysRemainingHtml}</div>` : ''}
+    ${daysRemainingHtml ? `<div style="margin-top:6px;font-size:0.9em;color:#45c4b0;font-weight:600">${daysRemainingHtml}</div>` : ''}
   `;
 }
 
@@ -748,9 +748,9 @@ function afficherStats(groupsData) {
 
   // Couleur selon le pourcentage
   function percColor(p) {
-    if (p >= 80) return '#4caf50';
-    if (p >= 50) return '#ff9800';
-    return '#f44336';
+    if (p >= 80) return '#45c4b0';
+    if (p >= 50) return '#e6a817';
+    return '#c0283c';
   }
 
   // Totaux globaux (utiliser globalContrib pour éviter le double-comptage des refs épreuve)
@@ -782,7 +782,7 @@ function afficherStats(groupsData) {
     const a7 = t7 / 7;
     if (a7 > 0) {
       const dL = Math.ceil(gRemaining / a7);
-      gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#667eea;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(a7)}/j)</span></div>`;
+      gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#45c4b0;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(a7)}/j)</span></div>`;
     }
   }
 
@@ -924,7 +924,7 @@ function afficherDailyChart(dailyHistory) {
       bottomLabel = dayLabel;
     }
 
-    const barColor = isToday ? '#667eea' : (day.count > 0 ? '#4caf50' : '#e0e0e0');
+    const barColor = isToday ? '#ffd54f' : (day.count > 0 ? '#45c4b0' : '#2e2040');
     
     html += `<div class="daily-bar-col" title="${dayLabel}: ${day.count} questions">
       <div class="daily-bar-count">${day.count || ''}</div>
