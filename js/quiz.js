@@ -166,9 +166,27 @@ function _buildExplicationHtml(q) {
     }
     html += '</div>';
   }
-  // Placeholder pour la note personnelle (rempli dynamiquement)
+  // Note personnelle : afficher immédiatement si disponible en cache
   const key = getKeyFor(q);
-  html += `<div class="personal-note-display" id="noteDisplay_${key}"></div>`;
+  html += `<div class="personal-note-display" id="noteDisplay_${key}">`;
+  if (_notesCache && _notesCache[key] && (_notesCache[key].text || _notesCache[key].image)) {
+    const note = _notesCache[key];
+    html += '<div class="personal-note-block">';
+    html += '<div class="personal-note-header">';
+    html += '<strong>📌 Ma note personnelle :</strong>';
+    html += '<span class="personal-note-actions">';
+    html += `<button class="note-edit-btn" onclick="_editNote('${key}')" title="Modifier">✏️</button>`;
+    html += `<button class="note-delete-btn" onclick="_deleteNote('${key}')" title="Supprimer">❌</button>`;
+    html += '</span></div>';
+    if (note.text) {
+      html += note.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+    if (note.image) {
+      html += `<br><img src="${note.image}" alt="Note illustration" loading="lazy" />`;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
   return html;
 }
 

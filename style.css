@@ -714,6 +714,10 @@ body.light .explication-block {
   line-height: 1.5;
   color: var(--text-secondary);
   white-space: pre-line;
+  max-height: none;
+  overflow: visible;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 .personal-note-header {
   display: flex;
