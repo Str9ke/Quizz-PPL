@@ -9,22 +9,26 @@ function _speakCorrectAnswer(answerText) {
   if (!('speechSynthesis' in window)) return;
   // Annuler toute lecture en cours
   speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(answerText);
-  utterance.lang = 'fr-FR';
-  utterance.rate = 0.95;
-  utterance.pitch = 1.0;
-  // Utiliser la voix préférée si elle est définie, sinon la première voix FR
-  const voices = speechSynthesis.getVoices();
-  const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
-  let voice = null;
-  if (preferredName) {
-    voice = voices.find(v => v.name === preferredName);
-  }
-  if (!voice) {
-    voice = voices.find(v => v.lang.startsWith('fr'));
-  }
-  if (voice) utterance.voice = voice;
-  speechSynthesis.speak(utterance);
+  // Petit délai après cancel pour contourner un bug Chrome
+  // où speak() est ignoré juste après cancel()
+  setTimeout(() => {
+    const utterance = new SpeechSynthesisUtterance(answerText);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    // Utiliser la voix préférée si elle est définie, sinon la première voix FR
+    const voices = speechSynthesis.getVoices();
+    const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+    let voice = null;
+    if (preferredName) {
+      voice = voices.find(v => v.name === preferredName);
+    }
+    if (!voice) {
+      voice = voices.find(v => v.lang.startsWith('fr'));
+    }
+    if (voice) utterance.voice = voice;
+    speechSynthesis.speak(utterance);
+  }, 100);
 }
 // Pré-charger les voix (Chrome les charge de manière asynchrone)
 if ('speechSynthesis' in window) {

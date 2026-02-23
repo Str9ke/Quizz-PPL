@@ -135,6 +135,8 @@
       const btn = document.getElementById('resetQuizBtn');
       if (btn) {
         btn.addEventListener('click', function() {
+          window.scrollTo(0, 0);
+          if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
           if (typeof resetQuiz === 'function') {
             resetQuiz();
           } else {
