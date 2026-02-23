@@ -566,9 +566,10 @@ function afficherQuiz() {
   });
   cont.innerHTML = quizHtml;
 
-  // Mettre à jour le nombre total de questions
+  // Mettre à jour le nombre total de questions (si l'élément existe)
   const totalQuestions = questions.length;
-  document.getElementById('totalQuestions').textContent = totalQuestions;
+  const totalQEl = document.getElementById('totalQuestions');
+  if (totalQEl) totalQEl.textContent = totalQuestions;
 
   // restore mark buttons on quiz display
   afficherBoutonsMarquer();
