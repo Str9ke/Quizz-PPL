@@ -35,6 +35,50 @@ if ('speechSynthesis' in window) {
 }
 
 /**
+ * _resolveTtsText(q) – Pour les questions à propositions numérotées,
+ * résout les références numériques (ex: "1, 2 et 3") en texte réel des propositions.
+ * Exemple : si la question contient "1 - l'angle d'incidence\n2 - la forme du profil"
+ * et la bonne réponse est "1 et 2", le TTS lira "l'angle d'incidence et la forme du profil".
+ */
+function _resolveTtsText(q) {
+  const correctChoice = (q.choix[q.bonne_reponse] || '').trim();
+  if (!correctChoice) return correctChoice;
+
+  // Nettoyer le point final
+  const cleaned = correctChoice.replace(/\.?\s*$/, '');
+
+  // Vérifier si le choix ne contient que des numéros séparés par virgules/et
+  // Ex: "1, 2 et 3" ou "2 et 4" ou "3" ou "1, 2, 3 et 4"
+  if (!/^\d+(\s*,\s*\d+)*(\s+et\s+\d+)?$/.test(cleaned)) return correctChoice;
+
+  // Extraire les numéros référencés
+  const numbers = cleaned.match(/\d+/g);
+  if (!numbers) return correctChoice;
+
+  // Extraire les propositions numérotées du texte de la question
+  // Format attendu : "N - texte" sur des lignes séparées
+  const propositions = {};
+  const lines = q.question.split('\n');
+  lines.forEach(line => {
+    const m = line.trim().match(/^(\d+)\s*[-–—]\s*(.+)/);
+    if (m) propositions[m[1]] = m[2].trim().replace(/\.?\s*$/, '');
+  });
+
+  if (Object.keys(propositions).length === 0) return correctChoice;
+
+  // Résoudre chaque numéro vers le texte de sa proposition
+  const resolved = numbers.map(n => propositions[n] || n);
+
+  // Vérifier qu'au moins un numéro a été résolu en texte
+  if (resolved.every((r, i) => r === numbers[i])) return correctChoice;
+
+  // Composer le texte TTS naturel
+  if (resolved.length === 1) return resolved[0];
+  if (resolved.length === 2) return resolved[0] + ' et ' + resolved[1];
+  return resolved.slice(0, -1).join(', ') + ' et ' + resolved[resolved.length - 1];
+}
+
+/**
  * _logWrongAnswer() – Enregistre une question ratée dans le journal quotidien (pour la page Ratés)
  * Stocke la question complète + timestamp + réponse sélectionnée
  * Double stockage : localStorage (instantané) + Firestore (sync cross-device)
@@ -570,7 +614,7 @@ function handleImmediateAnswer(q, selectedRadio) {
 
   // TTS : lire la bonne réponse à voix haute si mauvaise réponse
   if (!isCorrect) {
-    const correctText = q.choix[q.bonne_reponse];
+    const correctText = _resolveTtsText(q);
     _speakCorrectAnswer(correctText);
     // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
     _queueForReask(q);

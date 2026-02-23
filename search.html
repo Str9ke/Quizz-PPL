@@ -115,6 +115,31 @@
       }
     }
 
+    /**
+     * resolveTtsText(q) – Pour les questions à propositions numérotées,
+     * résout "1, 2 et 3" en texte réel des propositions.
+     */
+    function resolveTtsText(q) {
+      var correctChoice = (q.choix[q.bonne_reponse] || '').trim();
+      if (!correctChoice) return correctChoice;
+      var cleaned = correctChoice.replace(/\.?\s*$/, '');
+      if (!/^\d+(\s*,\s*\d+)*(\s+et\s+\d+)?$/.test(cleaned)) return correctChoice;
+      var numbers = cleaned.match(/\d+/g);
+      if (!numbers) return correctChoice;
+      var propositions = {};
+      var lines = q.question.split('\n');
+      lines.forEach(function(line) {
+        var m = line.trim().match(/^(\d+)\s*[-\u2013\u2014]\s*(.+)/);
+        if (m) propositions[m[1]] = m[2].trim().replace(/\.?\s*$/, '');
+      });
+      if (Object.keys(propositions).length === 0) return correctChoice;
+      var resolved = numbers.map(function(n) { return propositions[n] || n; });
+      if (resolved.every(function(r, i) { return r === numbers[i]; })) return correctChoice;
+      if (resolved.length === 1) return resolved[0];
+      if (resolved.length === 2) return resolved[0] + ' et ' + resolved[1];
+      return resolved.slice(0, -1).join(', ') + ' et ' + resolved[resolved.length - 1];
+    }
+
     // === Init ===
     async function initSearch() {
       uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
@@ -265,7 +290,8 @@
         }
 
         // Choices with correct answer highlighted
-        html += '<div class="answer-list" data-question="' + encodeURIComponent(q.question) + '" data-correct="' + encodeURIComponent(q.choix[q.bonne_reponse] || '') + '">';
+        var ttsText = resolveTtsText(q);
+        html += '<div class="answer-list" data-question="' + encodeURIComponent(q.question) + '" data-correct="' + encodeURIComponent(ttsText) + '">';
         (q.choix || []).forEach((choixText, i) => {
           let cls = '';
           if (i === q.bonne_reponse) cls = 'correct';
@@ -585,11 +611,12 @@
       const correct = dayQuestions.filter(x => x.resp.status === 'réussie').length;
       const wrong = dayQuestions.filter(x => x.resp.status === 'ratée').length;
       const pct = dayQuestions.length > 0 ? Math.round(100 * correct / dayQuestions.length) : 0;
-      container.innerHTML = '<div class="revision-summary"><strong>' + dayLabel + '</strong> — ' +
+      const summaryHtml = '<div class="revision-summary"><strong>' + dayLabel + '</strong> — ' +
         dayQuestions.length + ' question' + (dayQuestions.length > 1 ? 's' : '') +
         ' · ✅ ' + correct + ' · ❌ ' + wrong + ' · ' + pct + '%</div>';
 
       renderQuestions(dayQuestions.map(x => x.q), container);
+      container.insertAdjacentHTML('afterbegin', summaryHtml);
     }
 
     // === Helpers ===
