@@ -51,10 +51,15 @@
     if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
 
-  <h1>🔍 Recherche de questions</h1>
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">🔍</div>
+    <h1 class="home-hero-title">Recherche de questions</h1>
+    <div class="home-hero-subtitle">Trouvez n'importe quelle question</div>
+  </div>
 
   <!-- Search bar -->
-  <div class="container" id="searchBarContainer">
+  <div class="home-card" id="searchBarContainer">
     <div class="search-input-row">
       <input type="text" id="searchInput" placeholder="Rechercher une question…" autocomplete="off" />
       <button id="btnClearSearch" onclick="clearSearch()" style="display:none;" title="Effacer">✕</button>
@@ -67,10 +72,19 @@
   <div id="searchResults"></div>
 
   <!-- Navigation -->
-  <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="window.location='index.html'">Retour Accueil</button>
-    <button class="btn-historique" onclick="window.location='historique.html'">📅 Historique</button>
-    <button onclick="window.location='stats.html'">Statistiques</button>
+  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
   </div>
 
   <script>
