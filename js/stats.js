@@ -867,7 +867,7 @@ function afficherDailyChart(dailyHistory) {
     if (!statsCont) return;
     chartCont = document.createElement('div');
     chartCont.id = 'dailyChartContainer';
-    chartCont.className = 'container';
+    chartCont.className = 'home-card';
     statsCont.parentNode.insertBefore(chartCont, statsCont);
   }
 
@@ -950,7 +950,7 @@ function afficherSessionChart(sessionHistory) {
     if (!ref) return;
     chartCont = document.createElement('div');
     chartCont.id = 'sessionChartContainer';
-    chartCont.className = 'container';
+    chartCont.className = 'home-card';
     // Insérer après le dailyChart (ou avant statsContainer)
     if (dailyCont && dailyCont.nextSibling) {
       dailyCont.parentNode.insertBefore(chartCont, dailyCont.nextSibling);

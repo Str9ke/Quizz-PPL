@@ -51,11 +51,23 @@
     if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
 
-  <h1>📅 Historique des révisions</h1>
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">📅</div>
+    <h1 class="home-hero-title">Historique des révisions</h1>
+    <div class="home-hero-subtitle">Revoyez vos réponses des 7 derniers jours</div>
+  </div>
 
   <!-- Revision history -->
-  <div class="container" id="revisionHistoryContainer">
+  <div class="home-card" id="revisionHistoryContainer">
     <div class="revision-days-nav" id="revisionDaysNav"></div>
+    <!-- Filter buttons -->
+    <div class="hist-filter-bar" id="histFilterBar">
+      <button class="hist-filter-btn hist-filter-ok" data-filter="réussie" onclick="toggleHistFilter('réussie', this)">✅ Réussis</button>
+      <button class="hist-filter-btn hist-filter-fail" data-filter="ratée" onclick="toggleHistFilter('ratée', this)">❌ Ratés</button>
+      <button class="hist-filter-btn hist-filter-marked" data-filter="marqués" onclick="toggleHistFilter('marqués', this)">📌 Marqués</button>
+      <button class="hist-filter-btn hist-filter-important" data-filter="importants" onclick="toggleHistFilter('importants', this)">⭐ Importants</button>
+    </div>
     <div id="revisionSummary"></div>
     <div id="revisionResults"></div>
     <div id="revisionLoading" class="revision-empty">
@@ -64,10 +76,19 @@
   </div>
 
   <!-- Navigation -->
-  <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="window.location='index.html'">Retour Accueil</button>
-    <button class="btn-search" onclick="window.location='search.html'">🔍 Recherche</button>
-    <button onclick="window.location='stats.html'">Statistiques</button>
+  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-search" onclick="window.location='search.html'">
+      <div class="home-nav-icon">🔍</div>
+      <div class="home-nav-label">Recherche</div>
+    </div>
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
   </div>
 
   <script>
@@ -80,6 +101,8 @@
     let _notesCache = {};
     let uid = null;
     let revisionDayOffset = null;
+    let activeFilters = new Set();
+    let _lastDayQuestions = []; // cache for re-filtering
 
     // === TTS ===
     function speakText(text) {
@@ -483,6 +506,7 @@
       });
 
       dayQuestions.sort(function(a, b) { return a.ts - b.ts; });
+      _lastDayQuestions = dayQuestions;
 
       var container = document.getElementById('revisionResults');
       var summaryDiv = document.getElementById('revisionSummary');
@@ -495,15 +519,61 @@
         return;
       }
 
-      var correct = dayQuestions.filter(function(x) { return x.resp.status === 'réussie'; }).length;
-      var wrong = dayQuestions.filter(function(x) { return x.resp.status === 'ratée'; }).length;
-      var pct = dayQuestions.length > 0 ? Math.round(100 * correct / dayQuestions.length) : 0;
+      // Apply active filters if any
+      applyFiltersAndRender();
+    }
+
+    // === Auth ===
+    // === Filter logic ===
+    window.toggleHistFilter = function(filterName, btn) {
+      if (activeFilters.has(filterName)) {
+        activeFilters.delete(filterName);
+        btn.classList.remove('hist-filter-active');
+      } else {
+        activeFilters.add(filterName);
+        btn.classList.add('hist-filter-active');
+      }
+      applyFiltersAndRender();
+    };
+
+    function applyFiltersAndRender() {
+      if (_lastDayQuestions.length === 0 && activeFilters.size > 0) return;
+      var container = document.getElementById('revisionResults');
+      var summaryDiv = document.getElementById('revisionSummary');
+
+      var filtered = _lastDayQuestions;
+      if (activeFilters.size > 0) {
+        filtered = _lastDayQuestions.filter(function(item) {
+          var resp = item.resp || {};
+          for (var f of activeFilters) {
+            if (f === 'réussie' && resp.status === 'réussie') return true;
+            if (f === 'ratée' && resp.status === 'ratée') return true;
+            if (f === 'marqués' && resp.marked === true) return true;
+            if (f === 'importants' && resp.important === true) return true;
+          }
+          return false;
+        });
+      }
+
+      if (filtered.length === 0 && _lastDayQuestions.length > 0) {
+        container.innerHTML = '<div class="revision-empty"><p style="text-align:center;color:var(--text-secondary);padding:1rem;">Aucune question ne correspond aux filtres sélectionnés</p></div>';
+        return;
+      }
+      if (filtered.length === 0) return;
+
+      var correct = filtered.filter(function(x) { return x.resp.status === 'réussie'; }).length;
+      var wrong = filtered.filter(function(x) { return x.resp.status === 'ratée'; }).length;
+      var pct = filtered.length > 0 ? Math.round(100 * correct / filtered.length) : 0;
+      var dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
+      var d = new Date(); d.setDate(d.getDate() - (revisionDayOffset || 0));
+      var dayLabel = (revisionDayOffset || 0) < 3 ? dayLabels[revisionDayOffset || 0] : formatShortDate(d);
+      var filterSuffix = activeFilters.size > 0 ? ' (filtré : ' + filtered.length + '/' + _lastDayQuestions.length + ')' : '';
 
       summaryDiv.innerHTML = '<div class="revision-summary"><strong>' + dayLabel + '</strong> — ' +
-        dayQuestions.length + ' question' + (dayQuestions.length > 1 ? 's' : '') +
-        ' · ✅ ' + correct + ' · ❌ ' + wrong + ' · ' + pct + '%</div>';
+        filtered.length + ' question' + (filtered.length > 1 ? 's' : '') +
+        ' · ✅ ' + correct + ' · ❌ ' + wrong + ' · ' + pct + '%' + filterSuffix + '</div>';
 
-      renderQuestions(dayQuestions.map(function(x) { return x.q; }), container);
+      renderQuestions(filtered.map(function(x) { return x.q; }), container);
     }
 
     // === Auth ===

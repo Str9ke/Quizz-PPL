@@ -900,6 +900,7 @@ a {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
   letter-spacing: -0.5px;
 }
 .home-hero-subtitle {
@@ -915,6 +916,7 @@ body.light .home-hero-title {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
 }
 body.light .home-hero-subtitle {
   color: rgba(100, 100, 130, 0.6);
@@ -1169,6 +1171,142 @@ body.light .home-card-header {
   background: rgba(239, 83, 80, 0.05);
 }
 
+/* Stats page buttons */
+.stats-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.stats-btn-reset {
+  background: transparent;
+  border-color: rgba(239, 83, 80, 0.3);
+  color: #ef5350;
+}
+.stats-btn-reset:hover {
+  background: rgba(239, 83, 80, 0.1);
+  border-color: #ef5350;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 83, 80, 0.15);
+}
+body.light .stats-btn-reset {
+  color: #c62828;
+  border-color: rgba(198, 40, 40, 0.3);
+}
+body.light .stats-btn-reset:hover {
+  background: rgba(198, 40, 40, 0.08);
+}
+
+/* Quiz page hero & buttons */
+.quiz-hero {
+  text-align: center;
+  padding: 1.2rem 1rem 0.8rem;
+  position: relative;
+}
+.quiz-hero-icon {
+  font-size: 2.4rem;
+  margin-bottom: 0.2rem;
+  filter: drop-shadow(0 2px 8px rgba(102, 126, 234, 0.4));
+}
+.quiz-hero-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a78bfa, #c084fc, #e879f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+}
+.quiz-hero-counter {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 600;
+}
+body.light .quiz-hero-title {
+  background: linear-gradient(135deg, #6c47b8, #8b5cf6, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+.quiz-category-bar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  margin: 0.3rem auto;
+  max-width: 800px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  font-size: 0.95rem;
+}
+.quiz-category-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+.quiz-category-progress {
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+.quiz-actions-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  width: 90%;
+  max-width: 800px;
+  margin: 1rem auto 0.5rem;
+}
+.quiz-btn {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  letter-spacing: 0.3px;
+  flex: 1;
+  min-width: 160px;
+}
+.quiz-btn:hover {
+  transform: translateY(-1px);
+}
+.quiz-btn:active {
+  transform: translateY(0);
+}
+.quiz-btn-validate {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+}
+.quiz-btn-validate:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
+}
+.quiz-btn-new {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(17, 153, 142, 0.3);
+}
+.quiz-btn-new:hover {
+  box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+}
+
+@media (max-width: 600px) {
+  .quiz-hero-icon { font-size: 2rem; }
+  .quiz-hero-title { font-size: 1rem; }
+  .quiz-actions-bar { width: 94%; }
+  .quiz-btn { padding: 10px 16px; font-size: 0.88rem; min-width: 140px; }
+  .quiz-category-bar { width: 94%; }
+}
+
 /* Responsive home */
 @media (max-width: 600px) {
   .home-hero {
@@ -1369,6 +1507,83 @@ body.light .home-card-header {
   text-align: center;
   padding: 1rem;
 }
+
+/* Historique filter bar */
+.hist-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.hist-filter-btn {
+  padding: 6px 14px;
+  font-size: 0.82em;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin: 0;
+  font-weight: 600;
+  border: 1.5px solid;
+  background: transparent;
+}
+.hist-filter-ok {
+  border-color: rgba(76, 175, 80, 0.35);
+  color: #4caf50;
+}
+.hist-filter-ok:hover, .hist-filter-ok.hist-filter-active {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
+}
+.hist-filter-ok.hist-filter-active {
+  background: rgba(76, 175, 80, 0.25);
+  transform: scale(0.96);
+}
+.hist-filter-fail {
+  border-color: rgba(239, 83, 80, 0.35);
+  color: #ef5350;
+}
+.hist-filter-fail:hover, .hist-filter-fail.hist-filter-active {
+  background: rgba(239, 83, 80, 0.15);
+  border-color: #ef5350;
+  box-shadow: 0 0 8px rgba(239, 83, 80, 0.2);
+}
+.hist-filter-fail.hist-filter-active {
+  background: rgba(239, 83, 80, 0.25);
+  transform: scale(0.96);
+}
+.hist-filter-marked {
+  border-color: rgba(255, 143, 0, 0.35);
+  color: #ff8f00;
+}
+.hist-filter-marked:hover, .hist-filter-marked.hist-filter-active {
+  background: rgba(255, 143, 0, 0.15);
+  border-color: #ff8f00;
+  box-shadow: 0 0 8px rgba(255, 143, 0, 0.2);
+}
+.hist-filter-marked.hist-filter-active {
+  background: rgba(255, 143, 0, 0.25);
+  transform: scale(0.96);
+}
+.hist-filter-important {
+  border-color: rgba(255, 193, 7, 0.35);
+  color: #ffc107;
+}
+.hist-filter-important:hover, .hist-filter-important.hist-filter-active {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: #ffc107;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.2);
+}
+.hist-filter-important.hist-filter-active {
+  background: rgba(255, 193, 7, 0.25);
+  transform: scale(0.96);
+}
+
+body.light .hist-filter-ok { color: #2e7d32; border-color: rgba(76, 175, 80, 0.3); }
+body.light .hist-filter-fail { color: #c62828; border-color: rgba(239, 83, 80, 0.3); }
+body.light .hist-filter-marked { color: #e65100; border-color: rgba(255, 143, 0, 0.3); }
+body.light .hist-filter-important { color: #f57f17; border-color: rgba(255, 193, 7, 0.3); }
 
 body.light .search-result-cat {
   background: rgba(0,0,0,0.05);

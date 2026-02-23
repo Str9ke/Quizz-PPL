@@ -79,18 +79,43 @@
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
     if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
-  <h1>Quiz Aviation - Statistiques</h1>
-  <div class="container" id="statsContainer">
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">📊</div>
+    <h1 class="home-hero-title">Statistiques</h1>
+    <div class="home-hero-subtitle">Votre progression détaillée</div>
+  </div>
+
+  <div class="home-card" id="statsContainer">
     <p style="text-align:center;color:var(--text-secondary);">Chargement des statistiques...</p>
   </div>
-  <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
-      Réinitialiser les Statistiques
+
+  <!-- Action buttons -->
+  <div class="home-card" style="text-align: center; padding: 1rem;">
+    <button class="stats-btn stats-btn-reset" onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
+      🗑️ Réinitialiser les Statistiques
     </button>
-    <button class="btn-rates" onclick="window.location='rates.html'">❌ Ratés du jour <span id="ratesBadge" class="rates-badge" style="display:none;"></span></button>
-    <button class="btn-search" onclick="window.location='search.html'">🔍 Recherche</button>
-    <button class="btn-historique" onclick="window.location='historique.html'">📅 Historique</button>
-    <button onclick="window.location='index.html'">Retour Accueil</button>
+  </div>
+
+  <!-- Navigation grid -->
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
+      <div class="home-nav-icon">❌</div>
+      <div class="home-nav-label">Ratés du jour</div>
+      <span id="ratesBadge" class="rates-badge" style="display:none;"></span>
+    </div>
+    <div class="home-nav-card home-nav-search" onclick="window.location='search.html'">
+      <div class="home-nav-icon">🔍</div>
+      <div class="home-nav-label">Recherche</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
   </div>
   <script>
   // Mise à jour du badge "Ratés du jour" (localStorage rapide + Firestore cross-device)

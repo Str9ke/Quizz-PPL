@@ -51,10 +51,17 @@
   </script>
   <div id="resultContainer" style="display:none;"></div>
 
+  <!-- Hero banner -->
+  <div class="quiz-hero">
+    <div class="quiz-hero-icon">✈️</div>
+    <div class="quiz-hero-title">Quiz en cours</div>
+    <div class="quiz-hero-counter">Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span></div>
+  </div>
+
   <!-- Bandeau catégorie + restant (ratées + non vues) / total -->
-  <div id="categoryInfoBar" style="display:none; background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%); color: white; padding: 0.5rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.15); font-size: 0.95rem;">
-    <div id="categoryName" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 2px;"></div>
-    <div id="categoryProgress" style="font-size: 0.85rem; opacity: 0.9;"></div>
+  <div id="categoryInfoBar" class="quiz-category-bar" style="display:none;">
+    <div id="categoryName" class="quiz-category-name"></div>
+    <div id="categoryProgress" class="quiz-category-progress"></div>
   </div>
 
   <!-- Compteur de questions répondues aujourd'hui (recréé par ensureDailyStatsBarVisible) -->
@@ -83,17 +90,26 @@
     })();
   </script>
 
-  <div class="container" id="quizContainer">
+  <div class="home-card" id="quizContainer">
     <!-- Les questions seront affichées ici -->
   </div>
-  <div class="container" style="text-align: center; margin-top: 1rem;">
-    <button onclick="validerReponses()">Valider les Réponses</button>
-    <button onclick="window.location='stats.html'">Voir les Statistiques</button>
-    <button onclick="window.location='index.html?accueil=1'">Retour Accueil</button>
-    <button id="resetQuizBtn" style="margin-left:1em;">Reset</button>
+  <div class="quiz-actions-bar">
+    <button class="quiz-btn quiz-btn-validate" onclick="validerReponses()">✅ Valider les Réponses</button>
+    <button class="quiz-btn quiz-btn-new" id="resetQuizBtn">🔄 Nouvelles Questions</button>
   </div>
-  <div>
-    Question <span id="currentQuestionNumber">0</span> / <span id="totalQuestions">0</span>
+  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 0.5rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html?accueil=1'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
   </div>
   <!-- Cache-bust to forcer le chargement de la dernière version du script -->
   <script src="js/globals.js?v=20260222y"></script>
