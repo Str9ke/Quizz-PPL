@@ -111,8 +111,13 @@
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
     if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
-  <h1>Quiz Aviation - Accueil</h1>
-  <div id="lastUpdateInfo" style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:-6px;margin-bottom:8px;"></div>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">✈️</div>
+    <h1 class="home-hero-title">Quiz Aviation PPL</h1>
+    <div id="lastUpdateInfo" class="home-hero-subtitle"></div>
+  </div>
   <script>
     // Afficher la date/heure de dernière mise à jour du site
     (function() {
@@ -150,69 +155,100 @@
     })();
   </script>
 
-  <!-- Compteur de questions répondues aujourd'hui (recréé par ensureDailyStatsBarVisible) -->
-  <div id="dailyStatsBar" style="display:none;"></div>
-
   <!-- Formulaire de connexion/inscription -->
   <div id="loginContainer" class="container" style="display:none;">
-    <h2>Connexion / Inscription</h2>
+    <h2 style="text-align:center;">✈️ Connexion</h2>
     <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Mot de passe (min. 6 caractères)" required>
-      <button type="submit">Se connecter / S'inscrire</button>
+      <input type="email" id="email" class="home-input" placeholder="Email" required style="width:100%;margin-bottom:10px;">
+      <input type="password" id="password" class="home-input" placeholder="Mot de passe (min. 6 caractères)" required style="width:100%;margin-bottom:10px;">
+      <button type="submit" class="home-btn-start" style="width:100%;">Se connecter / S'inscrire</button>
     </form>
   </div>
 
   <!-- Interface du quiz, affichée après authentification -->
-  <div id="quizContainer" class="container" style="display: none;">
-    <!-- Sélection de la catégorie -->
-    <label for="categorie">Catégorie :</label>
-    <select id="categorie" onchange="categoryChanged()">
-      <!-- Options générées dynamiquement par updateCategorySelect() -->
-    </select>
-    <br><br>
-    <!-- Choix du nombre de questions -->
-    <label for="nbQuestions">Nombre de questions :</label>
-    <input type="number" id="nbQuestions" value="5" min="1">
-    <br><br>
-    <!-- Choix du mode -->
-    <label for="mode">Mode :</label>
-    <select id="mode">
-      <!-- Options mises à jour par updateModeCounts() -->
-    </select>
-    <br><br>
-    
-    <!-- Option Démarrage automatique -->
-    <label for="autoStartCheckbox" style="margin-top: 1rem; display: block;">
-      <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
-      <strong>Démarrage automatique</strong> (au prochain lancement, le quiz se lancera automatiquement avec cette configuration)
-    </label>
-    <label for="correctionImmediateCheckbox" style="margin-top: 0.5rem; display: block;">
-      <input type="checkbox" id="correctionImmediateCheckbox">
-      <strong>Correction immédiate</strong> (chaque réponse est corrigée instantanément)
-    </label>
+  <div id="quizContainer" style="display: none;">
 
-    <!-- Sélecteur de voix TTS -->
-    <div id="voiceSelectorSection">
-      <label for="voiceSelect"><strong>🔊 Voix TTS :</strong></label>
+    <!-- Daily stats bar -->
+    <div id="dailyStatsBar" style="display:none;"></div>
+
+    <!-- Progression card -->
+    <div class="home-card home-card-progress">
+      <div id="progressionContainer" style="margin: 0;"></div>
+    </div>
+
+    <!-- Quiz configuration card -->
+    <div class="home-card">
+      <div class="home-card-header">
+        <span class="home-card-icon">⚙️</span>
+        <span class="home-card-title">Configuration du Quiz</span>
+      </div>
+      <div class="home-form-grid">
+        <div class="home-form-group">
+          <label for="categorie" class="home-label">Catégorie</label>
+          <select id="categorie" class="home-select" onchange="categoryChanged()"></select>
+        </div>
+        <div class="home-form-group">
+          <label for="nbQuestions" class="home-label">Questions</label>
+          <input type="number" id="nbQuestions" class="home-input" value="5" min="1">
+        </div>
+        <div class="home-form-group">
+          <label for="mode" class="home-label">Mode</label>
+          <select id="mode" class="home-select"></select>
+        </div>
+      </div>
+      <div class="home-options">
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
+          <span>🚀 Démarrage automatique</span>
+        </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="correctionImmediateCheckbox">
+          <span>⚡ Correction immédiate</span>
+        </label>
+      </div>
+      <button id="btnStart" class="home-btn-start" disabled onclick="demarrerQuiz()">
+        🎯 Démarrer le Quiz
+      </button>
+    </div>
+
+    <!-- Quick navigation cards -->
+    <div class="home-nav-grid">
+      <button class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+        <span class="home-nav-icon">📊</span>
+        <span class="home-nav-label">Statistiques</span>
+      </button>
+      <button class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
+        <span class="home-nav-icon">❌</span>
+        <span class="home-nav-label">Ratés du jour</span>
+        <span id="ratesBadge" class="rates-badge" style="display:none;"></span>
+      </button>
+      <button class="home-nav-card home-nav-search" onclick="window.location='search.html'">
+        <span class="home-nav-icon">🔍</span>
+        <span class="home-nav-label">Recherche</span>
+      </button>
+      <button class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+        <span class="home-nav-icon">📅</span>
+        <span class="home-nav-label">Historique</span>
+      </button>
+    </div>
+
+    <!-- Voice selector card -->
+    <div class="home-card home-card-voice" id="voiceSelectorSection">
+      <div class="home-card-header">
+        <span class="home-card-icon">🔊</span>
+        <span class="home-card-title">Voix TTS</span>
+      </div>
       <div class="voice-selector-row">
         <select id="voiceSelect"></select>
         <button type="button" id="btnTestVoice" onclick="testSelectedVoice()">▶ Tester</button>
       </div>
       <div id="voiceInfo"></div>
     </div>
-    <br><br>
-    
-    <button id="btnStart" disabled onclick="demarrerQuiz()">Démarrer le Quiz</button>
-    <button onclick="window.location='stats.html'">Voir les Statistiques</button>
-    <button class="btn-rates" onclick="window.location='rates.html'">❌ Ratés du jour <span id="ratesBadge" class="rates-badge" style="display:none;"></span></button>
-    <button class="btn-search" onclick="window.location='search.html'">🔍 Recherche</button>
-    <br><br>
-    <div id="progressionContainer" style="margin-top: 1rem; background: var(--bg-question); padding: 1rem; border-radius: 4px;"></div>
-    <br><br>
-    <!-- Bouton de déconnexion -->
-    <button id="btnLogout">Déconnexion</button>
-    <br><br>
+
+    <!-- Logout -->
+    <div style="text-align: center; margin: 1rem auto; max-width: 800px;">
+      <button id="btnLogout" class="home-btn-logout">Déconnexion</button>
+    </div>
   </div>
 
   <!-- Placeholder pour l'élément manquant -->
