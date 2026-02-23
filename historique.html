@@ -332,7 +332,7 @@
       var existingNote = _notesCache[key];
       var existingText = existingNote ? (existingNote.text || '') : '';
       editor.innerHTML =
-        '<textarea class="note-textarea" id="noteText_' + key + '" placeholder="Écrire une note personnelle…" rows="1">' + escapeHtml(existingText) + '</textarea>' +
+        '<div class="note-textarea" contenteditable="true" id="noteText_' + key + '" data-placeholder="\u00c9crire une note personnelle\u2026">' + existingText + '</div>' +
         '<div class="note-actions">' +
           '<label class="note-image-label">🖼️ Image<input type="file" accept="image/*" id="noteImage_' + key + '" style="display:none" /></label>' +
           '<span class="note-image-name" id="noteImageName_' + key + '"></span>' +
@@ -343,8 +343,8 @@
       if (block) block.appendChild(editor); else btn.parentElement.appendChild(editor);
 
       var textarea = document.getElementById('noteText_' + key);
-      textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
-      if (existingText) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
+      // contenteditable div grows naturally, no auto-resize needed
+      if (existingText && textarea) textarea.focus();
 
       document.getElementById('noteImage_' + key).addEventListener('change', function() {
         var file = this.files[0];
@@ -363,7 +363,7 @@
       if (!uid) { alert('Vous devez être connecté.'); return; }
       var textarea = document.getElementById('noteText_' + key);
       var fileInput = document.getElementById('noteImage_' + key);
-      var text = textarea ? textarea.value.trim() : '';
+      var text = textarea ? sanitizeNoteHtml(textarea.innerHTML).trim() : '';
       var file = fileInput && fileInput.files[0];
       if (!text && !file) return;
 
@@ -436,7 +436,7 @@
       html += '<button class="note-edit-btn" onclick="histEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
       html += '<button class="note-delete-btn" onclick="histDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
       html += '</span></div>';
-      if (note.text) html += escapeHtml(note.text).replace(/\n/g, '<br>');
+      if (note.text) html += renderNoteText(note.text);
       if (note.image) html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />';
       html += '</div>';
       div.innerHTML = html;
@@ -446,6 +446,41 @@
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function sanitizeNoteHtml(html) {
+      if (!html) return '';
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+      var allowedTags = ['b','strong','i','em','u','br','p','div','ul','ol','li','span','a','h1','h2','h3','h4','h5','h6','sub','sup','blockquote','pre','code','hr'];
+      var allowedAttrs = ['href','target','style'];
+      function clean(node) {
+        var children = Array.from(node.childNodes);
+        children.forEach(function(child) {
+          if (child.nodeType === 3) return;
+          if (child.nodeType === 1) {
+            var tag = child.tagName.toLowerCase();
+            if (allowedTags.indexOf(tag) === -1) {
+              while (child.firstChild) node.insertBefore(child.firstChild, child);
+              node.removeChild(child);
+            } else {
+              Array.from(child.attributes).forEach(function(attr) {
+                if (attr.name.indexOf('on') === 0 || allowedAttrs.indexOf(attr.name) === -1) child.removeAttribute(attr.name);
+              });
+              if (tag === 'a') child.setAttribute('target', '_blank');
+              clean(child);
+            }
+          } else { node.removeChild(child); }
+        });
+      }
+      clean(doc.body);
+      return doc.body.innerHTML;
+    }
+
+    function renderNoteText(text) {
+      if (!text) return '';
+      if (/<[a-z][\s\S]*>/i.test(text)) return sanitizeNoteHtml(text);
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
 
     function formatShortDate(d) {

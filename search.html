@@ -418,7 +418,7 @@
       const existingNote = _notesCache[key];
       const existingText = existingNote ? (existingNote.text || '') : '';
       editor.innerHTML = `
-        <textarea class="note-textarea" id="noteText_${key}" placeholder="Écrire une note personnelle…" rows="1">${escapeHtml(existingText)}</textarea>
+        <div class="note-textarea" contenteditable="true" id="noteText_${key}" data-placeholder="Écrire une note personnelle…">${existingText}</div>
         <div class="note-actions">
           <label class="note-image-label">
             🖼️ Image
@@ -433,13 +433,8 @@
       if (block) block.appendChild(editor);
       else btn.parentElement.appendChild(editor);
 
-      // Auto-grow
-      const textarea = document.getElementById('noteText_' + key);
-      textarea.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
-      });
-      if (existingText) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
+      // contenteditable grows naturally
+      if (existingText) document.getElementById('noteText_' + key).focus();
 
       // Image handler
       document.getElementById('noteImage_' + key).addEventListener('change', function() {
@@ -457,9 +452,9 @@
 
     window.searchPublishNote = async function(key) {
       if (!uid) { alert('Vous devez être connecté.'); return; }
-      const textarea = document.getElementById('noteText_' + key);
+      const noteEl = document.getElementById('noteText_' + key);
       const fileInput = document.getElementById('noteImage_' + key);
-      const text = textarea ? textarea.value.trim() : '';
+      const text = noteEl ? sanitizeNoteHtml(noteEl.innerHTML).trim() : '';
       const file = fileInput && fileInput.files[0];
       if (!text && !file) return;
 
@@ -533,7 +528,7 @@
       html += '<button class="note-edit-btn" onclick="searchEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
       html += '<button class="note-delete-btn" onclick="searchDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
       html += '</span></div>';
-      if (note.text) { html += escapeHtml(note.text).replace(/\n/g, '<br>'); }
+      if (note.text) { html += renderNoteText(note.text); }
       if (note.image) { html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />'; }
       html += '</div>';
       div.innerHTML = html;
@@ -543,6 +538,41 @@
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function sanitizeNoteHtml(html) {
+      if (!html) return '';
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+      var allowedTags = ['b','strong','i','em','u','br','p','div','ul','ol','li','span','a','h1','h2','h3','h4','h5','h6','sub','sup','blockquote','pre','code','hr'];
+      var allowedAttrs = ['href','target','style'];
+      function clean(node) {
+        var children = Array.from(node.childNodes);
+        children.forEach(function(child) {
+          if (child.nodeType === 3) return;
+          if (child.nodeType === 1) {
+            var tag = child.tagName.toLowerCase();
+            if (allowedTags.indexOf(tag) === -1) {
+              while (child.firstChild) node.insertBefore(child.firstChild, child);
+              node.removeChild(child);
+            } else {
+              Array.from(child.attributes).forEach(function(attr) {
+                if (attr.name.indexOf('on') === 0 || allowedAttrs.indexOf(attr.name) === -1) child.removeAttribute(attr.name);
+              });
+              if (tag === 'a') child.setAttribute('target', '_blank');
+              clean(child);
+            }
+          } else { node.removeChild(child); }
+        });
+      }
+      clean(doc.body);
+      return doc.body.innerHTML;
+    }
+
+    function renderNoteText(text) {
+      if (!text) return '';
+      if (/<[a-z][\s\S]*>/i.test(text)) return sanitizeNoteHtml(text);
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
 
     // === Auth ===

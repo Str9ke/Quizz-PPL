@@ -179,7 +179,7 @@ function _buildExplicationHtml(q) {
     html += `<button class="note-delete-btn" onclick="_deleteNote('${key}')" title="Supprimer">❌</button>`;
     html += '</span></div>';
     if (note.text) {
-      html += note.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      html += _renderNoteText(note.text);
     }
     if (note.image) {
       html += `<br><img src="${note.image}" alt="Note illustration" loading="lazy" />`;
@@ -940,6 +940,62 @@ function afficherCorrection() {
 let _notesCache = null;
 
 /**
+ * _sanitizeNoteHtml() – Nettoie le HTML collé pour ne garder que le formatage sûr
+ * Autorise : b, strong, i, em, u, br, p, div, ul, ol, li, span, a, h1-h6, sub, sup, blockquote, pre, code
+ * Supprime : script, iframe, style, on*, etc.
+ */
+function _sanitizeNoteHtml(html) {
+  if (!html) return '';
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const allowedTags = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'div', 'ul', 'ol', 'li',
+    'span', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'sub', 'sup', 'blockquote', 'pre', 'code', 'hr']);
+  const allowedAttrs = new Set(['href', 'target', 'style']);
+
+  function clean(node) {
+    const children = Array.from(node.childNodes);
+    children.forEach(child => {
+      if (child.nodeType === 3) return; // text node OK
+      if (child.nodeType === 1) {
+        const tag = child.tagName.toLowerCase();
+        if (!allowedTags.has(tag)) {
+          // Replace with its children
+          while (child.firstChild) node.insertBefore(child.firstChild, child);
+          node.removeChild(child);
+        } else {
+          // Remove dangerous attributes
+          Array.from(child.attributes).forEach(attr => {
+            if (attr.name.startsWith('on') || (!allowedAttrs.has(attr.name))) {
+              child.removeAttribute(attr.name);
+            }
+          });
+          // Force links to open in new tab
+          if (tag === 'a') child.setAttribute('target', '_blank');
+          clean(child);
+        }
+      } else {
+        node.removeChild(child);
+      }
+    });
+  }
+  clean(doc.body);
+  return doc.body.innerHTML;
+}
+
+/**
+ * _renderNoteText() – Rend le texte d'une note, compatible ancien format (plain text) et nouveau (HTML)
+ */
+function _renderNoteText(text) {
+  if (!text) return '';
+  // Détecte si le texte contient du HTML (balises)
+  if (/<[a-z][\s\S]*>/i.test(text)) {
+    return _sanitizeNoteHtml(text);
+  }
+  // Ancien format plain text : échapper et convertir les retours à la ligne
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+}
+
+/**
  * _attachNoteButtons() – S'assure que les placeholders de notes et boutons sont présents
  * (les boutons note sont désormais dans la question-actions-row via afficherBoutonsMarquer)
  */
@@ -984,7 +1040,7 @@ function _toggleNoteEditor(key, btn) {
   const existingText = existing ? (existing.text || '') : '';
 
   editor.innerHTML = `
-    <textarea class="note-textarea" id="noteText_${key}" placeholder="Écrire une note personnelle…" rows="1">${existingText}</textarea>
+    <div class="note-textarea" contenteditable="true" id="noteText_${key}" data-placeholder="Écrire une note personnelle…">${existingText}</div>
     <div class="note-actions">
       <label class="note-image-label">
         🖼️ Image
@@ -1004,17 +1060,9 @@ function _toggleNoteEditor(key, btn) {
     btn.parentElement.appendChild(editor);
   }
 
-  // Auto-grow textarea
-  const textarea = document.getElementById('noteText_' + key);
-  textarea.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = this.scrollHeight + 'px';
-  });
-  // Trigger initial resize if pre-filled
-  if (existingText) {
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-  }
+  // Auto-grow contenteditable
+  const noteDiv = document.getElementById('noteText_' + key);
+  // No auto-grow needed for contenteditable, it grows naturally
 
   // Image file handler
   const fileInput = document.getElementById('noteImage_' + key);
@@ -1043,9 +1091,9 @@ async function _publishNote(key) {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) { alert('Vous devez être connecté.'); return; }
 
-  const textarea = document.getElementById('noteText_' + key);
+  const noteEl = document.getElementById('noteText_' + key);
   const fileInput = document.getElementById('noteImage_' + key);
-  const text = textarea ? textarea.value.trim() : '';
+  const text = noteEl ? _sanitizeNoteHtml(noteEl.innerHTML).trim() : '';
   const file = fileInput && fileInput.files[0];
 
   if (!text && !file) { return; }
@@ -1121,10 +1169,7 @@ function _renderNoteDisplay(key, note) {
   html += '</span>';
   html += '</div>';
   if (note.text) {
-    const escaped = note.text
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
-    html += escaped;
+    html += _renderNoteText(note.text);
   }
   if (note.image) {
     html += `<br><img src="${note.image}" alt="Note illustration" loading="lazy" />`;
