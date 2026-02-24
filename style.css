@@ -1575,8 +1575,8 @@ body.light .quiz-hero-title {
 }
 .revision-days-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 12px;
 }
 .revision-day-btn {
@@ -1739,7 +1739,7 @@ body.light .revision-summary { background: rgba(102, 126, 234, 0.06); }
     align-items: flex-start;
   }
   .revision-days-nav {
-    gap: 4px;
+    gap: 0;
   }
   .revision-day-btn {
     padding: 5px 10px;
@@ -1775,78 +1775,109 @@ body.light .revision-summary { background: rgba(102, 126, 234, 0.06); }
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.08);
 }
+.top-nav-current {
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  pointer-events: none;
+}
 
 /* ===== Calendar widget ===== */
+.cal-wrapper {
+  background: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 14px 12px;
+  margin-bottom: 14px;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
 .cal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  padding: 0 4px;
 }
 .cal-month-label {
   font-weight: 700;
-  font-size: 1em;
+  font-size: 1.05em;
   color: var(--text-heading);
+  letter-spacing: 0.01em;
 }
 .cal-nav-btn {
   background: none;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.9em;
-  padding: 4px 10px;
-  border-radius: 6px;
+  font-size: 0.85em;
+  padding: 5px 12px;
+  border-radius: 8px;
   transition: all 0.2s;
 }
 .cal-nav-btn:hover {
   color: #667eea;
   border-color: #667eea;
+  background: rgba(102, 126, 234, 0.06);
 }
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  margin-bottom: 8px;
+  gap: 3px;
+  margin-bottom: 4px;
 }
 .cal-day-header {
   text-align: center;
   font-size: 0.72em;
   font-weight: 700;
   color: var(--text-secondary);
-  padding: 2px 0;
+  padding: 4px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .cal-day {
   position: relative;
   text-align: center;
-  padding: 6px 2px;
-  font-size: 0.82em;
-  border-radius: 6px;
+  padding: 7px 2px 4px;
+  font-size: 0.85em;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.18s;
   color: var(--text-primary);
+  min-height: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .cal-day:hover:not(.cal-day-future):not(.cal-day-empty) {
-  background: rgba(102, 126, 234, 0.12);
+  background: rgba(102, 126, 234, 0.1);
+  transform: scale(1.08);
 }
 .cal-day-empty {
   cursor: default;
 }
 .cal-day-future {
-  opacity: 0.25;
+  opacity: 0.2;
   cursor: default;
 }
 .cal-day-today {
   font-weight: 700;
   color: #667eea;
-  box-shadow: inset 0 0 0 1.5px #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  box-shadow: inset 0 0 0 2px #667eea;
 }
 .cal-day-selected {
-  background: #667eea !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: #fff !important;
   font-weight: 700;
+  box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+  transform: scale(1.08);
 }
 .cal-day-active {
   font-weight: 600;
+  color: var(--text-heading);
 }
 .cal-dot {
   display: block;
@@ -1854,24 +1885,27 @@ body.light .revision-summary { background: rgba(102, 126, 234, 0.06); }
   height: 5px;
   border-radius: 50%;
   background: #4caf50;
-  margin: 1px auto 0;
+  margin: 2px auto 0;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
 }
 .cal-day-selected .cal-dot {
   background: #fff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 .cal-shortcuts {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 12px;
 }
 .cal-shortcut-btn {
-  padding: 4px 12px;
-  font-size: 0.78em;
+  padding: 7px 18px;
+  font-size: 0.82em;
   font-weight: 600;
-  border-radius: 14px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   border: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-secondary);
@@ -1879,9 +1913,12 @@ body.light .revision-summary { background: rgba(102, 126, 234, 0.06); }
 .cal-shortcut-btn:hover {
   border-color: #667eea;
   color: #667eea;
+  background: rgba(102, 126, 234, 0.06);
+  transform: translateY(-1px);
 }
 .cal-shortcut-active {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  border-color: #667eea;
+  border-color: transparent;
+  box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
 }
