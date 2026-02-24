@@ -522,11 +522,11 @@ async function initStats() {
           const globalContrib = isEpreuve
             ? computeStatsForFirestore(catQuestions.filter(q => q.categorie === cat.value), data.responses)
             : fullStats;
-          catStats.push({ label: cat.label, stats: fullStats, globalContrib });
+          catStats.push({ label: cat.label, value: cat.value, stats: fullStats, globalContrib });
         } catch (err) {
           console.error("Stat error for", cat.value, err);
           const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0 };
-          catStats.push({ label: cat.label, stats: emptyStats, globalContrib: emptyStats });
+          catStats.push({ label: cat.label, value: cat.value, stats: emptyStats, globalContrib: emptyStats });
         }
       }
       groupsData.push({ name: group.name, categories: catStats });
@@ -665,6 +665,8 @@ async function initStats() {
     const sessionHistory = _mergeSessionHistories(firestoreHistory, localBackup);
     // Trier par date (arrayUnion ne garantit pas l'ordre)
     sessionHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Stocker globalement pour les graphiques par catégorie
+    window._sessionHistoryCache = sessionHistory;
     afficherSessionChart(sessionHistory);
   } catch (error) {
     console.error("Erreur stats:", error);
@@ -808,6 +810,9 @@ function afficherStats(groupsData) {
     </div>
   `;
 
+  // Compteur unique pour les IDs de graphiques
+  let catChartIdx = 0;
+
   // Chaque groupe
   groupsData.forEach(group => {
     let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0;
@@ -840,19 +845,127 @@ function afficherStats(groupsData) {
       if (s.marquee) markers.push(`📌${s.marquee}`);
       if (s.importante) markers.push(`⭐${s.importante}`);
       const markersStr = markers.length ? ` <span class="stats-cat-marks">${markers.join(' ')}</span>` : '';
+      const chartId = 'catChart_' + catChartIdx;
+      const catVal = (cat.value || '').replace(/'/g, "\\'");
+      catChartIdx++;
 
-      html += `<div class="stats-cat-row">
+      html += `<div class="stats-cat-row" data-cat-value="${cat.value || ''}" data-chart-id="${chartId}" onclick="_toggleCatChart(this)" style="cursor:pointer;" title="Cliquer pour voir les sessions">
         <span class="stats-cat-name">${cat.label}</span>
         <span class="stats-cat-bar"><div class="progressbar-mini"><div class="progress-mini" style="width:${perc}%;background:${percColor(perc)}"></div></div></span>
         <span class="stats-cat-perc" style="color:${percColor(perc)}">${perc}%</span>
         <span class="stats-cat-nums">✅${s.reussie} ❌${s.ratee} 👀${s.nonvue}${markersStr}</span>
+        <button class="stats-cat-reset-btn" onclick="event.stopPropagation();_resetCategoryStats('${catVal}','${cat.label}')" title="Réinitialiser ${cat.label}">🔄</button>
       </div>`;
+      html += `<div class="stats-cat-chart-container" id="${chartId}" style="display:none;"></div>`;
     });
 
     html += `</div>`;
   });
 
   cont.innerHTML = html;
+}
+
+/**
+ * _toggleCatChart() – Toggle le graphique des sessions pour une catégorie
+ */
+function _toggleCatChart(rowEl) {
+  const chartId = rowEl.getAttribute('data-chart-id');
+  const catValue = rowEl.getAttribute('data-cat-value');
+  const chartDiv = document.getElementById(chartId);
+  if (!chartDiv) return;
+
+  if (chartDiv.style.display !== 'none') {
+    chartDiv.style.display = 'none';
+    rowEl.classList.remove('stats-cat-row-expanded');
+    return;
+  }
+
+  // Fermer les autres graphiques ouverts
+  document.querySelectorAll('.stats-cat-chart-container').forEach(el => { el.style.display = 'none'; });
+  document.querySelectorAll('.stats-cat-row-expanded').forEach(el => { el.classList.remove('stats-cat-row-expanded'); });
+
+  rowEl.classList.add('stats-cat-row-expanded');
+  chartDiv.style.display = 'block';
+  _renderCatSessionChart(chartDiv, catValue);
+}
+
+/**
+ * _renderCatSessionChart() – Affiche un mini graphique des sessions pour une catégorie
+ */
+function _renderCatSessionChart(container, catValue) {
+  const allSessions = window._sessionHistoryCache || [];
+  const sessions = allSessions.filter(s => s.category === catValue).slice(-30);
+
+  if (!sessions.length) {
+    container.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-secondary);font-size:0.85em;">Aucune session pour cette catégorie</div>';
+    return;
+  }
+
+  const avgPct = Math.round(sessions.reduce((s, x) => s + x.percent, 0) / sessions.length);
+  const last5 = sessions.slice(-5);
+  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + x.percent, 0) / last5.length) : 0;
+  const maxBarH = 60;
+
+  let html = `
+    <div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">
+      <span>${sessions.length} session${sessions.length > 1 ? 's' : ''}</span>
+      <span>moy: <b>${avgPct}%</b> · 5 dern.: <b>${avgLast5}%</b></span>
+    </div>
+    <div class="daily-chart-scroll" style="margin:0 4px 6px">
+      <div class="daily-chart" style="height:${maxBarH + 40}px;min-width:${Math.max(sessions.length * 18, 200)}px">
+  `;
+
+  sessions.forEach((s, idx) => {
+    const pct = s.percent || 0;
+    const h = Math.max(4, Math.round((pct / 100) * maxBarH));
+    const color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
+    const d = new Date(s.date);
+    const dayLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    const timeLabel = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const tooltip = `${dayLabel} ${timeLabel} - ${pct}% (${s.correct}/${s.total})`;
+
+    html += `<div class="daily-bar-col" title="${tooltip}" style="cursor:default">
+      <div class="daily-bar-count" style="font-size:0.65em">${pct}%</div>
+      <div class="daily-bar" style="height:${h}px;background:${color}"></div>
+      <div class="daily-bar-label" style="font-size:0.6em">${idx === sessions.length - 1 ? dayLabel : (idx % 5 === 0 ? dayLabel : '')}</div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  container.innerHTML = html;
+}
+
+/**
+ * _resetCategoryStats() – Réinitialise les statistiques d'une seule catégorie
+ */
+async function _resetCategoryStats(catValue, catLabel) {
+  if (!confirm(`Réinitialiser toutes les statistiques de « ${catLabel} » ?\n\nCela supprimera vos réponses pour cette catégorie.`)) return;
+
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  try {
+    // Charger les questions de cette catégorie pour obtenir leurs clés
+    await chargerQuestions(catValue);
+    const keys = questions.map(q => getKeyFor(q));
+
+    if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
+
+    // Construire la mise à jour : supprimer chaque clé dans responses
+    const update = { responses: {} };
+    keys.forEach(k => { update.responses[k] = firebase.firestore.FieldValue.delete(); });
+
+    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+
+    // Supprimer aussi du localStorage
+    keys.forEach(k => { localStorage.removeItem(k); });
+
+    alert(`Statistiques de « ${catLabel} » réinitialisées !`);
+    window.location.reload();
+  } catch (e) {
+    console.error('[resetCategory] Erreur:', e);
+    alert('Erreur lors de la réinitialisation : ' + e.message);
+  }
 }
 
 /**

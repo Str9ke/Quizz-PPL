@@ -394,6 +394,45 @@ button:disabled {
   color: var(--stats-cat-text);
 }
 
+/* Category row reset button */
+.stats-cat-reset-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+.stats-cat-reset-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+body.light .stats-cat-reset-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Expanded category row */
+.stats-cat-row-expanded {
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 4px;
+  margin: 0 -4px;
+  padding: 4px;
+}
+
+/* Category session chart container */
+.stats-cat-chart-container {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  margin: 4px 0 8px;
+  overflow: hidden;
+}
+body.light .stats-cat-chart-container {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 /* Mini progress bar for category rows */
 .progressbar-mini {
   width: 100%;
@@ -1647,10 +1686,39 @@ body.light .quiz-hero-title {
   transform: scale(0.96);
 }
 
+/* "Toutes" filter button */
+.hist-filter-all {
+  border-color: rgba(102, 126, 234, 0.35);
+  color: #667eea;
+}
+.hist-filter-all:hover, .hist-filter-all.hist-filter-active {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+}
+.hist-filter-all.hist-filter-active {
+  background: rgba(102, 126, 234, 0.25);
+  transform: scale(0.96);
+}
+
+/* Quiz launch button in filter bar */
+.hist-filter-quiz {
+  border-color: rgba(46, 204, 113, 0.5);
+  color: #2ecc71;
+  font-weight: 700;
+}
+.hist-filter-quiz:hover {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+}
+
 body.light .hist-filter-ok { color: #2e7d32; border-color: rgba(76, 175, 80, 0.3); }
 body.light .hist-filter-fail { color: #c62828; border-color: rgba(239, 83, 80, 0.3); }
 body.light .hist-filter-marked { color: #e65100; border-color: rgba(255, 143, 0, 0.3); }
 body.light .hist-filter-important { color: #f57f17; border-color: rgba(255, 193, 7, 0.3); }
+body.light .hist-filter-all { color: #4a64d4; border-color: rgba(102, 126, 234, 0.3); }
+body.light .hist-filter-quiz { color: #1a9f53; border-color: rgba(46, 204, 113, 0.3); }
 
 body.light .search-result-cat {
   background: rgba(0,0,0,0.05);

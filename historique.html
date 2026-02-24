@@ -63,10 +63,12 @@
     <div class="revision-days-nav" id="revisionDaysNav"></div>
     <!-- Filter buttons -->
     <div class="hist-filter-bar" id="histFilterBar">
+      <button class="hist-filter-btn hist-filter-all" data-filter="toutes" onclick="toggleHistFilter('toutes', this)">📋 Toutes</button>
       <button class="hist-filter-btn hist-filter-ok" data-filter="réussie" onclick="toggleHistFilter('réussie', this)">✅ Réussis</button>
       <button class="hist-filter-btn hist-filter-fail" data-filter="ratée" onclick="toggleHistFilter('ratée', this)">❌ Ratés</button>
       <button class="hist-filter-btn hist-filter-marked" data-filter="marqués" onclick="toggleHistFilter('marqués', this)">📌 Marqués</button>
       <button class="hist-filter-btn hist-filter-important" data-filter="importants" onclick="toggleHistFilter('importants', this)">⭐ Importants</button>
+      <button class="hist-filter-btn hist-filter-quiz" id="histQuizLaunchBtn" style="display:none;" onclick="launchHistQuiz()">▶️ Lancer le quiz</button>
     </div>
     <div id="revisionSummary"></div>
     <div id="revisionResults"></div>
@@ -76,7 +78,11 @@
   </div>
 
   <!-- Navigation -->
-  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
+      <div class="home-nav-icon">📖</div>
+      <div class="home-nav-label">Révision</div>
+    </div>
     <div class="home-nav-card home-nav-search" onclick="window.location='search.html'">
       <div class="home-nav-icon">🔍</div>
       <div class="home-nav-label">Recherche</div>
@@ -107,17 +113,24 @@
     // === TTS ===
     function speakText(text) {
       if (!('speechSynthesis' in window) || localStorage.getItem('ttsEnabled') !== '1') return;
+      // Toggle: if currently speaking, stop
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        return;
+      }
       speechSynthesis.cancel();
-      var utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.95;
-      var voices = speechSynthesis.getVoices();
-      var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
-      var voice = null;
-      if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
-      if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
-      if (voice) utterance.voice = voice;
-      speechSynthesis.speak(utterance);
+      setTimeout(function() {
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.95;
+        var voices = speechSynthesis.getVoices();
+        var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+        var voice = null;
+        if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
+        if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
+        if (voice) utterance.voice = voice;
+        speechSynthesis.speak(utterance);
+      }, 100);
     }
     if ('speechSynthesis' in window) {
       speechSynthesis.getVoices();
@@ -561,34 +574,81 @@
     // === Auth ===
     // === Filter logic ===
     window.toggleHistFilter = function(filterName, btn) {
-      if (activeFilters.has(filterName)) {
-        activeFilters.delete(filterName);
-        btn.classList.remove('hist-filter-active');
-      } else {
-        activeFilters.add(filterName);
+      if (filterName === 'toutes') {
+        // "Toutes" clears all other filters and shows everything
+        activeFilters.clear();
+        document.querySelectorAll('.hist-filter-btn').forEach(function(b) { b.classList.remove('hist-filter-active'); });
         btn.classList.add('hist-filter-active');
+      } else {
+        // Remove "toutes" if active
+        var allBtn = document.querySelector('.hist-filter-all');
+        if (allBtn) allBtn.classList.remove('hist-filter-active');
+
+        if (activeFilters.has(filterName)) {
+          activeFilters.delete(filterName);
+          btn.classList.remove('hist-filter-active');
+        } else {
+          activeFilters.add(filterName);
+          btn.classList.add('hist-filter-active');
+        }
       }
       applyFiltersAndRender();
     };
+
+    // === Quiz launch from filters ===
+    window.launchHistQuiz = function() {
+      var filtered = _getFilteredQuestions();
+      if (!filtered.length) { alert('Aucune question à lancer.'); return; }
+      // Mélanger les choix proprement pour chaque question
+      var questionsForQuiz = filtered.map(function(item) {
+        var q = JSON.parse(JSON.stringify(item.q));
+        return q;
+      });
+      localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz));
+      localStorage.setItem('quizCategory', 'HISTORIQUE');
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      window.location = 'quiz.html';
+    };
+
+    function _getFilteredQuestions() {
+      if (_lastDayQuestions.length === 0) return [];
+      if (activeFilters.size === 0) return _lastDayQuestions;
+      return _lastDayQuestions.filter(function(item) {
+        var resp = item.resp || {};
+        for (var f of activeFilters) {
+          if (f === 'réussie' && resp.status === 'réussie') return true;
+          if (f === 'ratée' && resp.status === 'ratée') return true;
+          if (f === 'marqués' && resp.marked === true) return true;
+          if (f === 'importants' && resp.important === true) return true;
+        }
+        return false;
+      });
+    }
+
+    function _updateQuizLaunchBtn(filteredCount) {
+      var btn = document.getElementById('histQuizLaunchBtn');
+      if (!btn) return;
+      if (filteredCount > 0 && _lastDayQuestions.length > 0) {
+        btn.style.display = 'inline-block';
+        btn.textContent = '▶️ Quiz (' + filteredCount + ')';
+      } else {
+        btn.style.display = 'none';
+      }
+    }
 
     function applyFiltersAndRender() {
       if (_lastDayQuestions.length === 0 && activeFilters.size > 0) return;
       var container = document.getElementById('revisionResults');
       var summaryDiv = document.getElementById('revisionSummary');
 
-      var filtered = _lastDayQuestions;
-      if (activeFilters.size > 0) {
-        filtered = _lastDayQuestions.filter(function(item) {
-          var resp = item.resp || {};
-          for (var f of activeFilters) {
-            if (f === 'réussie' && resp.status === 'réussie') return true;
-            if (f === 'ratée' && resp.status === 'ratée') return true;
-            if (f === 'marqués' && resp.marked === true) return true;
-            if (f === 'importants' && resp.important === true) return true;
-          }
-          return false;
-        });
-      }
+      var filtered = _getFilteredQuestions();
+      // If no active filters, show all
+      if (activeFilters.size === 0) filtered = _lastDayQuestions;
+
+      _updateQuizLaunchBtn(filtered.length);
 
       if (filtered.length === 0 && _lastDayQuestions.length > 0) {
         container.innerHTML = '<div class="revision-empty"><p style="text-align:center;color:var(--text-secondary);padding:1rem;">Aucune question ne correspond aux filtres sélectionnés</p></div>';

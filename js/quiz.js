@@ -7,6 +7,11 @@
 function _speakCorrectAnswer(answerText) {
   if (localStorage.getItem('ttsEnabled') !== '1') return;
   if (!('speechSynthesis' in window)) return;
+  // Toggle: if currently speaking, stop
+  if (speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+    return;
+  }
   // Annuler toute lecture en cours
   speechSynthesis.cancel();
   // Petit délai après cancel pour contourner un bug Chrome

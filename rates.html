@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#121218">
-  <title>Quiz Aviation - Ratés du jour</title>
+  <title>Quiz Aviation - Révision</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
   <script src="config.js"></script>
@@ -46,8 +46,8 @@
 
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">❌</div>
-    <h1 class="home-hero-title">Ratés du jour</h1>
+    <div class="home-hero-icon">📖</div>
+    <h1 class="home-hero-title">Révision</h1>
     <div class="home-hero-subtitle">Révisez vos erreurs récentes</div>
   </div>
 
@@ -55,7 +55,11 @@
     <p id="ratesLoading" style="text-align:center;color:var(--text-secondary);">Chargement…</p>
   </div>
 
-  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-search" onclick="window.location='search.html'">
+      <div class="home-nav-icon">🔍</div>
+      <div class="home-nav-label">Recherche</div>
+    </div>
     <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
       <div class="home-nav-icon">📊</div>
       <div class="home-nav-label">Statistiques</div>
@@ -75,18 +79,26 @@
     // === Helpers TTS ===
     function speakText(text) {
       if (!('speechSynthesis' in window)) return;
+      if (localStorage.getItem('ttsEnabled') !== '1') return;
+      // Toggle: if currently speaking, stop
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        return;
+      }
       speechSynthesis.cancel();
-      var utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      var voices = speechSynthesis.getVoices();
-      var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
-      var voice = null;
-      if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
-      if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
-      if (voice) utterance.voice = voice;
-      speechSynthesis.speak(utterance);
+      setTimeout(function() {
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        var voices = speechSynthesis.getVoices();
+        var preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+        var voice = null;
+        if (preferredName) voice = voices.find(function(v) { return v.name === preferredName; });
+        if (!voice) voice = voices.find(function(v) { return v.lang && v.lang.match(/^fr/i); });
+        if (voice) utterance.voice = voice;
+        speechSynthesis.speak(utterance);
+      }, 100);
     }
 
     // Pré-charger les voix
@@ -166,6 +178,12 @@
         '<span class="rates-hint">💡 Cliquez sur les réponses pour écouter la question et la bonne réponse</span>' +
         '</div>';
 
+      // Quiz launch button (top)
+      html += '<div style="text-align:center;margin:10px 0"><button class="hist-filter-btn hist-filter-quiz" style="display:inline-block;font-size:0.95em;padding:8px 20px;" onclick="launchRevisionQuiz()">▶️ Lancer le quiz (' + unseen.length + ' questions)</button></div>';
+
+      // Store unseen for quiz launch
+      window._revisionUnseen = unseen;
+
       unseen.forEach(function(item, idx) {
         var q = item.q;
         var timeStr = new Date(item.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -203,6 +221,9 @@
         html += '</div>';
       });
 
+      // Quiz launch button (bottom)
+      html += '<div style="text-align:center;margin:10px 0"><button class="hist-filter-btn hist-filter-quiz" style="display:inline-block;font-size:0.95em;padding:8px 20px;" onclick="launchRevisionQuiz()">▶️ Lancer le quiz (' + unseen.length + ' questions)</button></div>';
+
       container.innerHTML = html;
 
       // Attach TTS click listeners on answer zones
@@ -219,6 +240,22 @@
       // Marquer comme vu APRÈS l'affichage
       markAsViewed(uid);
     }
+
+    // === Quiz launch from Révision ===
+    window.launchRevisionQuiz = function() {
+      var unseen = window._revisionUnseen || [];
+      if (!unseen.length) { alert('Aucune question à lancer.'); return; }
+      var questionsForQuiz = unseen.map(function(item) {
+        return JSON.parse(JSON.stringify(item.q));
+      });
+      localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz));
+      localStorage.setItem('quizCategory', 'RÉVISION');
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      window.location = 'quiz.html';
+    };
 
     // === Init : charge depuis Firestore (cross-device) + localStorage (local) ===
     function initRates() {
