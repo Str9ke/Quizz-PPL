@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <title>Quiz Aviation - Statistiques</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -31,13 +31,13 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260224c"></script>
-  <script src="js/helpers.js?v=20260224c"></script>
-  <script src="js/categories.js?v=20260224c"></script>
-  <script src="js/stats.js?v=20260224c"></script>
-  <script src="js/quiz.js?v=20260224c"></script>
-  <script src="js/init.js?v=20260224c"></script>
-  <script src="js/offline.js?v=20260224c"></script>
+  <script src="js/globals.js?v=20260224d"></script>
+  <script src="js/helpers.js?v=20260224d"></script>
+  <script src="js/categories.js?v=20260224d"></script>
+  <script src="js/stats.js?v=20260224d"></script>
+  <script src="js/quiz.js?v=20260224d"></script>
+  <script src="js/init.js?v=20260224d"></script>
+  <script src="js/offline.js?v=20260224d"></script>
   <script>
     // stats.html delegates entirely to script.js initStats() + afficherStats()
     let statsInitTriggered = false;
@@ -48,17 +48,17 @@
         localStorage.setItem('cachedUid', user.uid);
         if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else if (localStorage.getItem('cachedUid')) {
-        console.log('[offline] stats.html: Auth null, UID en cache, dÃ©marrage offline');
+        console.log('[offline] stats.html: Auth null, UID en cache, démarrage offline');
         if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else {
-        alert("Vous devez Ãªtre connectÃ© pour voir vos statistiques.");
+        alert("Vous devez être connecté pour voir vos statistiques.");
         window.location = 'index.html';
       }
     });
-    // SÃ©curitÃ© : si auth ne fire pas dans les 3s et qu'on a un cachedUid, dÃ©marrer quand mÃªme
+    // Sécurité : si auth ne fire pas dans les 3s et qu'on a un cachedUid, démarrer quand même
     statsAuthTimeout = setTimeout(() => {
       if (!statsInitTriggered && localStorage.getItem('cachedUid')) {
-        console.log('[offline] stats.html: Auth timeout, dÃ©marrage avec cachedUid');
+        console.log('[offline] stats.html: Auth timeout, démarrage avec cachedUid');
         statsInitTriggered = true;
         initStats();
       }
@@ -73,29 +73,29 @@
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
-  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'ðŸ”‡':'ðŸ”Š';document.getElementById('ttsToggle').title=on?'TTS dÃ©sactivÃ©':'TTS activÃ©'})()" title="TTS dÃ©sactivÃ©">ðŸ”‡</button>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
   <script>
-    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';
-    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='ðŸ”Š';document.getElementById('ttsToggle').title='TTS activÃ©';}
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">ðŸ“Š</div>
+    <div class="home-hero-icon">📊</div>
     <h1 class="home-hero-title">Statistiques</h1>
-    <div class="home-hero-subtitle">Votre progression dÃ©taillÃ©e</div>
+    <div class="home-hero-subtitle">Votre progression détaillée</div>
   </div>
 
   <!-- Top navigation -->
   <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link">ðŸ  Accueil</a>
-    <a href="quiz.html" class="top-nav-link">ðŸŽ¯ Quiz</a>
-    <a href="stats.html" class="top-nav-link top-nav-current">ðŸ“Š Stats</a>
-    <a href="rates.html" class="top-nav-link">ðŸ“– RÃ©vision</a>
-    <a href="historique.html" class="top-nav-link">ðŸ“… Historique</a>
-    <a href="search.html" class="top-nav-link">ðŸ” Recherche</a>
-    <a href="symboles.html" class="top-nav-link">ðŸ”£ Symboles</a>
-    <a href="navlog.html" class="top-nav-link">ðŸ—ºï¸ NavLog</a>
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link top-nav-current">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ NavLog</a>
   </div>
 
   <div class="home-card" id="statsContainer">
@@ -104,33 +104,33 @@
 
   <!-- Action buttons -->
   <div class="home-card" style="text-align: center; padding: 1rem;">
-    <button class="stats-btn stats-btn-reset" onclick="if (confirm('Confirmez-vous la rÃ©initialisation de toutes les statistiques ?')) resetStats();">
-      ðŸ—‘ï¸ RÃ©initialiser les Statistiques
+    <button class="stats-btn stats-btn-reset" onclick="if (confirm('Confirmez-vous la réinitialisation de toutes les statistiques ?')) resetStats();">
+      🗑️ Réinitialiser les Statistiques
     </button>
   </div>
 
   <!-- Navigation grid -->
   <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem;">
     <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
-      <div class="home-nav-icon">ðŸ“–</div>
-      <div class="home-nav-label">RÃ©vision</div>
+      <div class="home-nav-icon">📖</div>
+      <div class="home-nav-label">Révision</div>
       <span id="ratesBadge" class="rates-badge" style="display:none;"></span>
     </div>
     <div class="home-nav-card home-nav-search" onclick="window.location='search.html'">
-      <div class="home-nav-icon">ðŸ”</div>
+      <div class="home-nav-icon">🔍</div>
       <div class="home-nav-label">Recherche</div>
     </div>
     <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
-      <div class="home-nav-icon">ðŸ“…</div>
+      <div class="home-nav-icon">📅</div>
       <div class="home-nav-label">Historique</div>
     </div>
     <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
-      <div class="home-nav-icon">ðŸ </div>
+      <div class="home-nav-icon">🏠</div>
       <div class="home-nav-label">Accueil</div>
     </div>
   </div>
   <script>
-  // Mise Ã  jour du badge "RatÃ©s du jour" (localStorage rapide + Firestore cross-device)
+  // Mise à jour du badge "Ratés du jour" (localStorage rapide + Firestore cross-device)
   (function() {
     var now = new Date();
     var todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');

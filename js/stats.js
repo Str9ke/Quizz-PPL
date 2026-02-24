@@ -912,7 +912,7 @@ function _renderCatSessionChart(container, catValue) {
   const avgPct = Math.round(sessions.reduce((s, x) => s + x.percent, 0) / sessions.length);
   const last5 = sessions.slice(-5);
   const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + x.percent, 0) / last5.length) : 0;
-  const maxBarH = 60;
+  const maxBarH = 120;
 
   let html = `
     <div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">
@@ -920,7 +920,7 @@ function _renderCatSessionChart(container, catValue) {
       <span>moy: <b>${avgPct}%</b> · 5 dern.: <b>${avgLast5}%</b></span>
     </div>
     <div class="daily-chart-scroll" style="margin:0 4px 6px">
-      <div class="daily-chart" style="height:${maxBarH + 40}px;min-width:${Math.max(sessions.length * 14, 200)}px">
+      <div class="daily-chart" style="min-width:${Math.max(sessions.length * 14, 200)}px">
   `;
 
   sessions.forEach((s, idx) => {
@@ -1112,7 +1112,7 @@ function _renderSymbolesGlobalSessionChart(container) {
   var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
   var last5 = sessions.slice(-5);
   var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
-  var maxBarH = 60;
+  var maxBarH = 120;
 
   var html = '';
   html += '<div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">';
@@ -1120,7 +1120,7 @@ function _renderSymbolesGlobalSessionChart(container) {
   html += '  <span>moy: <b>' + avgPct + '%</b> · 5 dern.: <b>' + avgLast5 + '%</b></span>';
   html += '</div>';
   html += '<div class="daily-chart-scroll" style="margin:0 4px 6px">';
-  html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
+  html += '  <div class="daily-chart" style="min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
 
   sessions.forEach(function(s, idx) {
     var pct = Math.min(s.percent || 0, 100);
@@ -1159,7 +1159,7 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
   var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
   var last5 = sessions.slice(-5);
   var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
-  var maxBarH = 60;
+  var maxBarH = 120;
 
   var html = '';
   html += '<div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">';
@@ -1167,7 +1167,7 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
   html += '  <span>moy: <b>' + avgPct + '%</b> · 5 dern.: <b>' + avgLast5 + '%</b></span>';
   html += '</div>';
   html += '<div class="daily-chart-scroll" style="margin:0 4px 6px">';
-  html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
+  html += '  <div class="daily-chart" style="min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
 
   sessions.forEach(function(s, idx) {
     var pct = Math.min(s.percent || 0, 100);

@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#121218">
-  <title>NavLog — Navigation PPL</title>
+  <title>NavLog â€” Navigation PPL</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260224b" />
+  <link rel="stylesheet" href="style.css?v=20260224d" />
   <style>
     /* ---- NavLog-specific styles ---- */
     .navlog-section { max-width: 1100px; margin: 0 auto 18px; padding: 0 10px; }
@@ -19,6 +19,19 @@
       font-size: 1.05em; font-weight: 700; color: var(--text-heading);
       margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
     }
+
+    /* -- Tab bar -- */
+    .navlog-tabs { display: flex; gap: 0; margin-bottom: 16px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border-color); }
+    .navlog-tab {
+      flex: 1; padding: 10px 16px; text-align: center; font-weight: 700; font-size: 0.95em;
+      background: var(--bg-question); color: var(--text-secondary); cursor: pointer;
+      border: none; transition: all .18s;
+    }
+    .navlog-tab:not(:last-child) { border-right: 1.5px solid var(--border-color); }
+    .navlog-tab.active { background: #667eea; color: #fff; }
+    .navlog-tab:hover:not(.active) { background: rgba(102,126,234,.1); color: #667eea; }
+    .navlog-tab-content { display: none; }
+    .navlog-tab-content.active { display: block; }
 
     /* -- Airport buttons -- */
     .airport-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -32,11 +45,18 @@
     .weather-display { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.82em; line-height: 1.6; }
     .weather-block { margin-bottom: 14px; padding: 10px 12px; background: var(--bg-question); border-radius: 8px; position: relative; }
     .weather-block-title { font-weight: 700; color: #667eea; margin-bottom: 4px; font-size: 0.95em; }
-    .weather-line { color: var(--text-primary); word-break: break-all; }
+    .weather-line { color: var(--text-primary); word-break: break-all; cursor: pointer; padding: 4px 0; border-radius: 4px; transition: background .15s; }
+    .weather-line:hover { background: rgba(102,126,234,.08); }
+    .weather-decoded {
+      margin: 6px 0 8px; padding: 8px 10px; background: rgba(46,204,113,.08); border-left: 3px solid #2ecc71;
+      border-radius: 0 6px 6px 0; font-family: inherit; font-size: 0.92em; color: var(--text-primary); line-height: 1.6;
+      display: none;
+    }
+    .weather-decoded.visible { display: block; }
     .weather-apply-btn {
-      position: absolute; top: 8px; right: 8px; padding: 4px 10px; border: none;
+      padding: 4px 10px; border: none; margin-left: 8px;
       border-radius: 6px; background: #e67e22; color: #fff; font-size: 0.78em;
-      cursor: pointer; font-weight: 600;
+      cursor: pointer; font-weight: 600; vertical-align: middle;
     }
     .weather-apply-btn:hover { background: #d35400; }
 
@@ -77,6 +97,12 @@
     .wind-slider-row { display: flex; align-items: center; gap: 8px; }
     .wind-slider-row input[type="range"] { flex: 1; accent-color: #667eea; }
     .wind-slider-row .wind-val { min-width: 40px; font-weight: 700; color: var(--text-heading); font-size: 0.92em; }
+
+    /* -- Airspeed indicator (Badin) -- */
+    .asi-wrapper { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+    .asi-container { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
+    .asi-svg { width: 100%; height: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; }
+    .asi-value { text-align: center; font-size: 1.1em; font-weight: 700; color: var(--text-heading); margin-top: 4px; }
 
     /* -- NavLog table -- */
     .navlog-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -150,6 +176,27 @@
     .summary-value { font-weight: 700; color: var(--text-heading); font-size: 0.95em; }
     .summary-value.highlight { color: #e67e22; font-size: 1.05em; }
 
+    /* -- Meteo maps section -- */
+    .meteo-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 700px) { .meteo-map-grid { grid-template-columns: 1fr; } }
+    .meteo-map-card {
+      background: var(--bg-question); border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .meteo-map-card h3 {
+      margin: 0; padding: 10px 12px; font-size: 0.9em; color: var(--text-heading);
+      background: rgba(102,126,234,.08); border-bottom: 1px solid var(--border-color);
+    }
+    .meteo-map-card iframe { width: 100%; height: 350px; border: none; }
+    .meteo-map-card img { width: 100%; height: auto; display: block; }
+    .meteo-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .meteo-link {
+      padding: 6px 14px; border-radius: 8px; border: 1.5px solid var(--border-color);
+      background: var(--bg-question); color: #667eea; text-decoration: none;
+      font-size: 0.85em; font-weight: 600; transition: all .18s;
+    }
+    .meteo-link:hover { border-color: #667eea; background: rgba(102,126,234,.1); }
+
     /* Misc */
     .navlog-help { font-size: 0.78em; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; }
     .inline-select {
@@ -169,70 +216,88 @@
   <script>
     (function() { var saved = localStorage.getItem('theme'); if (saved === 'light') document.body.classList.add('light'); })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';</script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
+  <script>if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';</script>
 
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">🗺️</div>
+    <div class="home-hero-icon">ðŸ—ºï¸</div>
     <h1 class="home-hero-title">NavLog</h1>
     <div class="home-hero-subtitle">Tableau de navigation VFR</div>
   </div>
 
   <!-- Top navigation -->
   <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
-    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
-    <a href="stats.html" class="top-nav-link">📊 Stats</a>
-    <a href="rates.html" class="top-nav-link">📖 Révision</a>
-    <a href="historique.html" class="top-nav-link">📅 Historique</a>
-    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
-    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
-    <a href="navlog.html" class="top-nav-link top-nav-current">🗺️ NavLog</a>
+    <a href="index.html?accueil=1" class="top-nav-link">ðŸ  Accueil</a>
+    <a href="quiz.html" class="top-nav-link">ðŸŽ¯ Quiz</a>
+    <a href="stats.html" class="top-nav-link">ðŸ“Š Stats</a>
+    <a href="rates.html" class="top-nav-link">ðŸ“– RÃ©vision</a>
+    <a href="historique.html" class="top-nav-link">ðŸ“… Historique</a>
+    <a href="search.html" class="top-nav-link">ðŸ” Recherche</a>
+    <a href="symboles.html" class="top-nav-link">ðŸ”£ Symboles</a>
+    <a href="navlog.html" class="top-nav-link top-nav-current">ðŸ—ºï¸ NavLog</a>
   </div>
 
   <div class="navlog-section">
 
+    <!-- ======== TAB BAR ======== -->
+    <div class="navlog-tabs">
+      <button class="navlog-tab active" onclick="switchTab('nav')">ðŸ“‹ Navigation</button>
+      <button class="navlog-tab" onclick="switchTab('meteo')">ðŸŒ¤ï¸ MÃ©tÃ©o &amp; Cartes</button>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  TAB 1: NAVIGATION                                              -->
+    <!-- ================================================================ -->
+    <div class="navlog-tab-content active" id="tabNav">
+
     <!-- ======== WEATHER PANEL ======== -->
     <div class="navlog-card">
-      <div class="navlog-card-title">🌤️ Météo</div>
+      <div class="navlog-card-title">ðŸŒ¤ï¸ MÃ©tÃ©o aÃ©rodromes</div>
       <div class="airport-btns" id="airportBtns"></div>
       <div class="weather-display" id="weatherDisplay">
-        <div style="color:var(--text-secondary);font-size:.9em">Cliquez sur un aérodrome pour charger la météo.</div>
+        <div style="color:var(--text-secondary);font-size:.9em">Chargement automatique de la mÃ©tÃ©o...</div>
       </div>
     </div>
 
     <!-- ======== CONFIGURATION PANEL ======== -->
     <div class="navlog-card">
-      <div class="navlog-card-title">⚙️ Configuration</div>
+      <div class="navlog-card-title">âš™ï¸ Configuration</div>
       <div class="config-grid">
         <!-- Left column -->
         <div class="config-group">
           <div class="config-row">
             <label>Type de vol :</label>
             <div class="flight-type-btns">
-              <button class="flight-type-btn active" data-type="local" onclick="setFlightType('local')">🔁 Local</button>
-              <button class="flight-type-btn" data-type="vfr" onclick="setFlightType('vfr')">➡️ Navigation</button>
+              <button class="flight-type-btn active" data-type="local" onclick="setFlightType('local')">ðŸ” Local</button>
+              <button class="flight-type-btn" data-type="vfr" onclick="setFlightType('vfr')">âž¡ï¸ Navigation</button>
             </div>
           </div>
           <div class="config-row">
-            <label>Départ :</label>
+            <label>DÃ©part :</label>
             <select class="inline-select" id="departureSelect" onchange="setDeparture(this.value)"></select>
           </div>
           <div class="config-row" id="arrivalRow" style="display:none">
-            <label>Arrivée :</label>
+            <label>ArrivÃ©e :</label>
             <select class="inline-select" id="arrivalSelect" onchange="setArrival(this.value)"></select>
           </div>
           <div class="config-row">
             <label>TAS :</label>
             <input type="number" class="mini-input" id="tasInput" value="90" min="40" max="250" step="5" onchange="setTas(this.value)"> kt
           </div>
+          <!-- Airspeed indicator (Badin) -->
+          <div class="asi-wrapper">
+            <div>
+              <div class="asi-container" id="asiGauge"></div>
+              <div class="asi-value" id="asiLabel">90 kt</div>
+            </div>
+          </div>
           <div class="config-row">
-            <label>Taxi départ :</label>
+            <label>Taxi dÃ©part :</label>
             <input type="number" class="mini-input" id="taxiOutInput" value="10" min="0" max="60" onchange="setTaxiOut(this.value)"> min
           </div>
           <div class="config-row">
-            <label>Taxi arrivée :</label>
+            <label>Taxi arrivÃ©e :</label>
             <input type="number" class="mini-input" id="taxiInInput" value="10" min="0" max="60" onchange="setTaxiIn(this.value)"> min
           </div>
           <div class="config-row">
@@ -240,17 +305,17 @@
             <input type="number" class="mini-input" id="fuelBurnInput" value="30" min="5" max="150" step="1" onchange="setFuelBurn(this.value)"> L/h
           </div>
           <div class="config-row">
-            <label>Réserve :</label>
+            <label>RÃ©serve :</label>
             <input type="number" class="mini-input" id="reserveInput" value="30" min="0" max="120" step="5" onchange="setReserve(this.value)"> min
           </div>
         </div>
         <!-- Right column: wind -->
         <div class="config-group">
-          <div class="config-label">🌬️ Vent global (s'applique à toutes les branches)</div>
+          <div class="config-label">ðŸŒ¬ï¸ Vent global (s'applique Ã  toutes les branches)</div>
           <div class="compass-wrapper">
             <div>
               <div class="compass-container" id="globalCompass"></div>
-              <div class="compass-deg-label" id="globalWindDirLabel">000°</div>
+              <div class="compass-deg-label" id="globalWindDirLabel">000Â°</div>
             </div>
             <div class="wind-controls">
               <div class="wind-slider-row">
@@ -267,7 +332,7 @@
               <div class="wind-slider-row">
                 <input type="range" min="0" max="350" value="0" step="10" id="globalWindDirSlider"
                   oninput="setGlobalWindDir(parseInt(this.value))">
-                <span class="wind-val" id="globalWindDirSliderLabel">000°</span>
+                <span class="wind-val" id="globalWindDirSliderLabel">000Â°</span>
               </div>
             </div>
           </div>
@@ -277,7 +342,7 @@
 
     <!-- ======== NAVLOG TABLE ======== -->
     <div class="navlog-card">
-      <div class="navlog-card-title">📋 Log de Navigation</div>
+      <div class="navlog-card-title">ðŸ“‹ Log de Navigation</div>
       <div class="navlog-scroll">
         <table class="navlog-table" id="navlogTable">
           <thead>
@@ -285,49 +350,133 @@
               <th>#</th>
               <th>Point tournant</th>
               <th>Alt (ft)</th>
-              <th>Route °</th>
-              <th>Cap vrai °</th>
+              <th>Route Â°</th>
+              <th>Cap vrai Â°</th>
               <th>Dist (NM)</th>
               <th>GS (kt)</th>
               <th>Temps</th>
-              <th>Cumulé</th>
-              <th title="Vent par branche">🌬️</th>
+              <th>CumulÃ©</th>
+              <th title="Vent par branche">ðŸŒ¬ï¸</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="navlogBody"></tbody>
         </table>
       </div>
-      <button class="add-row-btn" onclick="addWaypoint()">➕ Ajouter un point tournant</button>
+      <button class="add-row-btn" onclick="addWaypoint()">âž• Ajouter un point tournant</button>
       <div class="navlog-help">
-        💡 Le premier point est le départ, le dernier l'arrivée. Cliquez 🌬️ pour ajuster le vent par branche.
-        Route = cap géographique (True Course). Le cap vrai (TH) et la vitesse sol (GS) sont calculés.
+        ðŸ’¡ Remplissez les points tournants, la route (Â°) et la distance (NM) pour chaque branche.
+        Cliquez ðŸŒ¬ï¸ pour ajuster le vent par branche.
+        Cliquez sur un METAR/TAF ci-dessus pour afficher le dÃ©codage en franÃ§ais.
       </div>
     </div>
 
     <!-- ======== SUMMARY ======== -->
     <div class="navlog-card">
-      <div class="navlog-card-title">📊 Résumé du vol</div>
+      <div class="navlog-card-title">ðŸ“Š RÃ©sumÃ© du vol</div>
       <div class="summary-grid" id="summaryGrid"></div>
     </div>
+
+    </div><!-- end tabNav -->
+
+    <!-- ================================================================ -->
+    <!--  TAB 2: METEO & CARTES                                          -->
+    <!-- ================================================================ -->
+    <div class="navlog-tab-content" id="tabMeteo">
+
+    <div class="navlog-card">
+      <div class="navlog-card-title">ðŸ—ºï¸ Cartes MÃ©tÃ©o en temps rÃ©el</div>
+      <p style="font-size:.85em;color:var(--text-secondary);margin:0 0 12px">
+        Cartes interactives Windy.com â€” cliquez/glissez pour naviguer, zoom avec la molette.
+        Les donnÃ©es sont mises Ã  jour en temps rÃ©el.
+      </p>
+
+      <div class="meteo-map-grid">
+        <div class="meteo-map-card">
+          <h3>ðŸŒ§ï¸ Radar France</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=6&overlay=radar&product=radar&level=surface&lat=46.8&lon=2.5&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸŒ§ï¸ Radar Europe</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=4&overlay=radar&product=radar&level=surface&lat=50&lon=10&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸ›°ï¸ Satellite France (nuages)</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=6&overlay=satellite&product=satellite&level=surface&lat=46.8&lon=2.5&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸ›°ï¸ Satellite Europe (nuages)</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=4&overlay=satellite&product=satellite&level=surface&lat=50&lon=10&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸ’¨ Vents France</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=6&overlay=wind&product=ecmwf&level=surface&lat=46.8&lon=2.5&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸŒ€ Pression &amp; Fronts Europe</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=4&overlay=pressure&product=ecmwf&level=surface&lat=50&lon=10&pressure=true&message=true" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="navlog-card">
+      <div class="navlog-card-title">ðŸ“„ Cartes TEMSI, WINTEM &amp; documents officiels</div>
+      <p style="font-size:.85em;color:var(--text-secondary);margin:0 0 12px">
+        Les cartes TEMSI (Tempo Significant Meteorology) et WINTEM (Wind &amp; Temperature) sont publiÃ©es
+        par les services mÃ©tÃ©orologiques officiels. Cliquez sur les liens ci-dessous pour accÃ©der aux
+        documents les plus rÃ©cents.
+      </p>
+      <div class="meteo-links">
+        <a class="meteo-link" href="https://aviation.meteo.fr" target="_blank" rel="noopener">ðŸ‡«ðŸ‡· AÃ©roWeb MÃ©tÃ©o-France</a>
+        <a class="meteo-link" href="https://www.ogimet.com/gramet_aero.phtml.en" target="_blank" rel="noopener">ðŸ“Š OGIMET Gramet</a>
+        <a class="meteo-link" href="https://www.sia.aviation-civile.gouv.fr" target="_blank" rel="noopener">ðŸ“‹ SIA (AIP France)</a>
+        <a class="meteo-link" href="https://www.dwd.de/EN/ourservices/hobbymet_wetterkarten/hobbymet_wetterkarten.html" target="_blank" rel="noopener">ðŸ‡©ðŸ‡ª DWD Cartes synoptiques</a>
+        <a class="meteo-link" href="https://www.meteobelgique.be" target="_blank" rel="noopener">ðŸ‡§ðŸ‡ª MÃ©tÃ©o Belgique</a>
+        <a class="meteo-link" href="https://aviationweather.gov/gfa" target="_blank" rel="noopener">ðŸŒ AWC (USA) GFA</a>
+      </div>
+
+      <div class="meteo-map-grid" style="margin-top:16px">
+        <div class="meteo-map-card">
+          <h3>â˜ï¸ Couverture nuageuse (ECMWF)</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=5&overlay=clouds&product=ecmwf&level=surface&lat=47&lon=3&message=true" loading="lazy"></iframe>
+        </div>
+        <div class="meteo-map-card">
+          <h3>ðŸŒ¡ï¸ TempÃ©rature au sol</h3>
+          <iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=5&overlay=temp&product=ecmwf&level=surface&lat=47&lon=3&message=true" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end tabMeteo -->
 
   </div><!-- end navlog-section -->
 
   <script>
   // ================================================================
-  //  NAVLOG — Full client-side navigation log
+  //  NAVLOG â€” Full client-side navigation log
   // ================================================================
   (function() {
     'use strict';
 
+    // ---- Tab switching ----
+    window.switchTab = function(tab) {
+      document.querySelectorAll('.navlog-tab').forEach(function(t, i) {
+        t.classList.toggle('active', (tab === 'nav' && i === 0) || (tab === 'meteo' && i === 1));
+      });
+      document.getElementById('tabNav').classList.toggle('active', tab === 'nav');
+      document.getElementById('tabMeteo').classList.toggle('active', tab === 'meteo');
+    };
+
     // ---- Airport database ----
     var AIRPORTS = [
       { icao: 'EBSG', name: 'Saint-Ghislain' },
-      { icao: 'EBCV', name: 'Chièvres' },
+      { icao: 'EBCV', name: 'ChiÃ¨vres' },
       { icao: 'EBCI', name: 'Charleroi' },
       { icao: 'EBNM', name: 'Namur' },
       { icao: 'EBCF', name: 'Cerfontaine' },
-      { icao: 'EBBR', name: 'Bruxelles' }
+      { icao: 'EBBR', name: 'Bruxelles' },
+      { icao: 'LFQJ', name: 'Maubeuge' },
+      { icao: 'LFQQ', name: 'Lille-Lesquin' }
     ];
 
     // ---- State ----
@@ -343,17 +492,17 @@
       fuelBurn: 30,
       reserveTime: 30,
       waypoints: [
-        { wp: 'EBSG',  alt: '', route: '', dist: '', windDir: null, windSpeed: null },
-        { wp: '',       alt: '', route: '', dist: '', windDir: null, windSpeed: null },
-        { wp: 'EBSG',  alt: '', route: '', dist: '', windDir: null, windSpeed: null }
+        { wp: '', alt: '', route: '', dist: '', windDir: null, windSpeed: null },
+        { wp: '', alt: '', route: '', dist: '', windDir: null, windSpeed: null },
+        { wp: '', alt: '', route: '', dist: '', windDir: null, windSpeed: null }
       ]
     };
 
-    var weatherCache = {};       // { icao: { metar, taf, ts } }
-    var activeAirports = [];     // icao codes currently displayed
-    var expandedWindRow = -1;    // index of currently expanded per-row wind, -1 = none
+    var weatherCache = {};
+    var activeAirports = [];
+    var expandedWindRow = -1;
 
-    // ---- Expose functions globally for inline handlers ----
+    // ---- Expose functions globally ----
     window.setFlightType = setFlightType;
     window.setDeparture = setDeparture;
     window.setArrival = setArrival;
@@ -368,6 +517,157 @@
     window.removeWaypoint = removeWaypoint;
     window.toggleRowWind = toggleRowWind;
     window.applyMetarWind = applyMetarWind;
+    window.toggleDecode = toggleDecode;
+
+    // ================================================================
+    //  METAR / TAF DECODER (French)
+    // ================================================================
+    var WX = {
+      '-':'faible ','+':'forte ','VC':'aux environs : ',
+      'MI':'mince ','BC':'bancs de ','PR':'partiel ','DR':'chasse-',
+      'BL':'soufflÃ©(e) ','SH':'averses de ','TS':'orage avec ','FZ':'verglaÃ§ant(e) ',
+      'RA':'pluie','SN':'neige','DZ':'bruine','GR':'grÃªle (>5mm)',
+      'GS':'grÃ©sil','PL':'granules de glace','IC':'cristaux de glace',
+      'SG':'neige en grains','UP':'prÃ©cipitation inconnue',
+      'FG':'brouillard','BR':'brume (vis 1-5km)','HZ':'brume sÃ¨che',
+      'FU':'fumÃ©e','SA':'sable','DU':'poussiÃ¨re','VA':'cendres volcaniques',
+      'SQ':'grain','FC':'trombe/tornade','SS':'tempÃªte de sable',
+      'DS':'tempÃªte de poussiÃ¨re','PO':'tourbillon de poussiÃ¨re'
+    };
+    var CC = {'FEW':'Quelques (1-2/8)','SCT':'Ã‰pars (3-4/8)','BKN':'FragmentÃ© (5-7/8)','OVC':'Couvert (8/8)'};
+
+    function decodeWxCode(wx) {
+      var r='', p=0;
+      if(wx[0]==='-'||wx[0]==='+'){r+=WX[wx[0]]||'';p=1;}
+      if(wx.substring(p,p+2)==='VC'){r+=WX['VC'];p+=2;}
+      var d=wx.substring(p,p+2);
+      if(['MI','BC','PR','DR','BL','SH','TS','FZ'].indexOf(d)>=0){r+=(WX[d]||d);p+=2;}
+      while(p<wx.length){var ph=wx.substring(p,p+2);r+=(WX[ph]||ph)+' ';p+=2;}
+      return r.trim();
+    }
+
+    function decodeMetar(raw) {
+      if(!raw||raw.indexOf('Erreur')>=0||raw==='Pas de donnÃ©es') return raw;
+      var parts=raw.trim().split(/\s+/), out=[], i=0;
+
+      if(parts[i]&&/^[A-Z]{4}$/.test(parts[i])){out.push('ðŸ¢ Station : '+parts[i]);i++;}
+      if(parts[i]&&/^\d{6}Z$/.test(parts[i])){var dt=parts[i];out.push('ðŸ• Le '+dt.substring(0,2)+' Ã  '+dt.substring(2,4)+':'+dt.substring(4,6)+' UTC');i++;}
+      if(parts[i]==='AUTO'){out.push('ðŸ¤– Observation automatique');i++;}
+      if(parts[i]==='COR'){out.push('âœï¸ Correction');i++;}
+
+      if(parts[i]&&/^(VRB|\d{3})\d{2,3}(G\d{2,3})?KT$/.test(parts[i])){
+        var wm=parts[i].match(/^(VRB|\d{3})(\d{2,3})(G(\d{2,3}))?KT$/);
+        var wd=wm[1]==='VRB'?'variable':wm[1]+'Â°', ws=parseInt(wm[2]), wg=wm[4]?parseInt(wm[4]):null;
+        var wt='ðŸ’¨ Vent : '+(ws===0&&wm[1]==='000'?'calme':wd+' Ã  '+ws+' kt'+(wg?' rafales '+wg+' kt':''));
+        out.push(wt);i++;
+      }
+      if(parts[i]&&/^\d{3}V\d{3}$/.test(parts[i])){var vm=parts[i].match(/^(\d{3})V(\d{3})$/);out.push('â†”ï¸ Direction variable entre '+vm[1]+'Â° et '+vm[2]+'Â°');i++;}
+
+      if(parts[i]==='CAVOK'){out.push('ðŸ‘ï¸ CAVOK : vis > 10 km, pas de nuages significatifs < FL100, pas de phÃ©nomÃ¨nes mÃ©tÃ©o');i++;}
+      else if(parts[i]==='9999'){out.push('ðŸ‘ï¸ VisibilitÃ© : â‰¥ 10 km');i++;}
+      else if(parts[i]&&/^\d{4}(NDV)?$/.test(parts[i])){var vis=parseInt(parts[i]);out.push('ðŸ‘ï¸ VisibilitÃ© : '+vis+' m'+(vis<=1000?' âš ï¸':''));i++;}
+
+      if(parts[i]&&/^\d{4}(N|NE|E|SE|S|SW|W|NW)$/.test(parts[i])){var dv=parts[i].match(/^(\d{4})(N|NE|E|SE|S|SW|W|NW)$/);out.push('ðŸ‘ï¸ Vis. min '+dv[1]+' m vers '+dv[2]);i++;}
+
+      while(parts[i]&&/^R\d{2}/.test(parts[i])){
+        var rm=parts[i].match(/^R(\d{2}[LCR]?)\/([PM]?)(\d{4})(V([PM]?)(\d{4}))?/);
+        if(rm){var t='ðŸ›¬ RVR piste '+rm[1]+' : '+(rm[2]==='P'?'>':rm[2]==='M'?'<':'')+rm[3]+' m';if(rm[4])t+=' variable â†’ '+(rm[5]==='P'?'>':'')+rm[6]+' m';out.push(t);}
+        i++;
+      }
+
+      while(parts[i]&&/^[-+]?(?:VC)?(?:MI|BC|PR|DR|BL|SH|TS|FZ)?(?:RA|SN|DZ|GR|GS|PL|IC|SG|UP|FG|BR|HZ|FU|SA|DU|VA|SQ|FC|SS|DS|PO)+$/.test(parts[i])){
+        out.push('ðŸŒ§ï¸ '+decodeWxCode(parts[i]));i++;
+      }
+      if(parts[i]==='NSW'){out.push('â˜€ï¸ Pas de phÃ©nomÃ¨ne mÃ©tÃ©o significatif');i++;}
+
+      while(parts[i]&&/^(FEW|SCT|BKN|OVC|VV)\d{3}(CB|TCU)?$/.test(parts[i])){
+        var cl=parts[i].match(/^(FEW|SCT|BKN|OVC|VV)(\d{3})(CB|TCU)?$/);var alt=parseInt(cl[2])*100;
+        if(cl[1]==='VV'){out.push('â˜ï¸ VisibilitÃ© verticale : '+alt+' ft');}
+        else{var ct='â˜ï¸ '+(CC[cl[1]]||cl[1])+' Ã  '+alt+' ft';if(cl[3]==='CB')ct+=' â›ˆï¸ Cumulonimbus';if(cl[3]==='TCU')ct+=' ðŸŒ©ï¸ TCU';out.push(ct);}
+        i++;
+      }
+      if(parts[i]==='NCD'||parts[i]==='NSC'){out.push('â˜€ï¸ Pas de nuages significatifs');i++;}
+      if(parts[i]==='SKC'||parts[i]==='CLR'){out.push('â˜€ï¸ Ciel clair');i++;}
+
+      if(parts[i]&&/^M?\d{2}\/M?\d{2}$/.test(parts[i])){
+        var td=parts[i].match(/^(M?\d{2})\/(M?\d{2})$/);
+        out.push('ðŸŒ¡ï¸ Temp : '+td[1].replace('M','-')+'Â°C, rosÃ©e : '+td[2].replace('M','-')+'Â°C');i++;
+      }
+      if(parts[i]&&/^Q\d{4}$/.test(parts[i])){out.push('ðŸ“Š QNH : '+parseInt(parts[i].substring(1))+' hPa');i++;}
+      if(parts[i]&&/^A\d{4}$/.test(parts[i])){out.push('ðŸ“Š AltimÃ¨tre : '+(parseInt(parts[i].substring(1))/100).toFixed(2)+' inHg');i++;}
+      if(parts[i]==='NOSIG'){out.push('âœ… Pas de changement significatif prÃ©vu');i++;}
+
+      if(i<parts.length){var rem=parts.slice(i).join(' ');
+        if(rem.indexOf('RMK')>=0)out.push('ðŸ“ Remarques : '+rem.replace('RMK ',''));
+        else if(rem.indexOf('TEMPO')>=0)out.push('â³ Temporaire : '+rem);
+        else if(rem.indexOf('BECMG')>=0)out.push('ðŸ”„ Ã‰volution : '+rem);
+        else if(rem.trim())out.push('ðŸ“ '+rem);
+      }
+      return out.join('\n');
+    }
+
+    function decodeTaf(raw) {
+      if(!raw||raw.indexOf('Erreur')>=0||raw==='Pas de donnÃ©es') return raw;
+      var text=raw.replace(/<br>/g,'\n'), lines=text.split('\n'), out=[];
+      lines.forEach(function(line){
+        line=line.trim();if(!line)return;
+        if(/^TAF/.test(line)){
+          var hp=line.replace(/^TAF\s*(AMD\s*)?/,'').trim().split(/\s+/);
+          out.push('ðŸ“‹ TAF'+(line.indexOf('AMD')>=0?' (amendÃ©)':''));
+          var j=0;
+          if(hp[j]&&/^[A-Z]{4}$/.test(hp[j])){out.push('ðŸ¢ Station : '+hp[j]);j++;}
+          if(hp[j]&&/^\d{6}Z$/.test(hp[j])){out.push('ðŸ• Ã‰mis le '+hp[j].substring(0,2)+' Ã  '+hp[j].substring(2,4)+':'+hp[j].substring(4,6)+' UTC');j++;}
+          if(hp[j]&&/^\d{4}\/\d{4}$/.test(hp[j])){var vp=hp[j].split('/');out.push('ðŸ“… ValiditÃ© : du '+vp[0].substring(0,2)+' Ã  '+vp[0].substring(2)+'h au '+vp[1].substring(0,2)+' Ã  '+vp[1].substring(2)+'h');j++;}
+          var rest=hp.slice(j).join(' ');if(rest)out.push('   âž¡ï¸ '+decodeTafGroup(rest));
+          return;
+        }
+        if(/^TEMPO/.test(line)){
+          var tp=line.replace(/^TEMPO\s*/,'').trim(),vm=tp.match(/^(\d{4}\/\d{4})\s*(.*)/);
+          if(vm){var v=vm[1].split('/');out.push('â³ TEMPO du '+v[0].substring(0,2)+' Ã  '+v[0].substring(2)+'h au '+v[1].substring(0,2)+' Ã  '+v[1].substring(2)+'h :');out.push('   âž¡ï¸ '+decodeTafGroup(vm[2]));}
+          else out.push('â³ TEMPO : '+tp);
+          return;
+        }
+        if(/^BECMG/.test(line)){
+          var bp=line.replace(/^BECMG\s*/,'').trim(),bm=bp.match(/^(\d{4}\/\d{4})\s*(.*)/);
+          if(bm){var b=bm[1].split('/');out.push('ðŸ”„ BECMG du '+b[0].substring(0,2)+' Ã  '+b[0].substring(2)+'h au '+b[1].substring(0,2)+' Ã  '+b[1].substring(2)+'h :');out.push('   âž¡ï¸ '+decodeTafGroup(bm[2]));}
+          else out.push('ðŸ”„ BECMG : '+bp);
+          return;
+        }
+        if(/^FM\d{6}/.test(line)){
+          var ft=line.substring(2,8),fr=line.substring(8).trim();
+          out.push('â© Ã€ partir du '+ft.substring(0,2)+' Ã  '+ft.substring(2,4)+':'+ft.substring(4,6)+' UTC :');
+          out.push('   âž¡ï¸ '+decodeTafGroup(fr));
+          return;
+        }
+        if(/^PROB\d{2}/.test(line)){
+          out.push('ðŸŽ² Prob. '+line.substring(4,6)+'% : '+decodeTafGroup(line.substring(6).trim()));
+          return;
+        }
+        out.push(decodeTafGroup(line));
+      });
+      return out.join('\n');
+    }
+
+    function decodeTafGroup(text) {
+      if(!text||!text.trim())return '';
+      var parts=text.trim().split(/\s+/), items=[];
+      parts.forEach(function(p){
+        if(/^(VRB|\d{3})\d{2,3}(G\d{2,3})?KT$/.test(p)){
+          var wm=p.match(/^(VRB|\d{3})(\d{2,3})(G(\d{2,3}))?KT$/);
+          items.push('vent '+(wm[1]==='VRB'?'variable':wm[1]+'Â°')+' '+wm[2]+'kt'+(wm[4]?' raf.'+wm[4]+'kt':''));
+        } else if(p==='CAVOK'){items.push('CAVOK');}
+        else if(/^\d{4}$/.test(p)){var v=parseInt(p);items.push('vis '+(v>=9999?'â‰¥10km':v+'m'));}
+        else if(/^(FEW|SCT|BKN|OVC|VV)\d{3}(CB|TCU)?$/.test(p)){
+          var cm=p.match(/^(FEW|SCT|BKN|OVC|VV)(\d{3})(CB|TCU)?$/);items.push(cm[1]+' '+(parseInt(cm[2])*100)+'ft'+(cm[3]?' '+cm[3]:''));
+        } else if(/^[-+]?(?:VC)?(?:MI|BC|PR|DR|BL|SH|TS|FZ)?(?:RA|SN|DZ|GR|GS|PL|IC|SG|UP|FG|BR|HZ|FU|SA|DU|VA|SQ|FC|SS|DS|PO)+$/.test(p)){
+          items.push(decodeWxCode(p));
+        } else if(/^(NSC|SKC|NCD|CLR|NSW)$/.test(p)){items.push(p);}
+        else if(!/^\d{4}\/\d{4}$/.test(p)&&!/^PROB\d{2}$/.test(p)){items.push(p);}
+      });
+      return items.join(', ');
+    }
+
+    function toggleDecode(id){ var el=document.getElementById(id); if(el)el.classList.toggle('visible'); }
 
     // ================================================================
     //  WIND TRIANGLE CALCULATION
@@ -375,130 +675,134 @@
     function windTriangle(tc, wd, ws, tas) {
       if (!tas || tas <= 0) return null;
       if (!ws || ws <= 0) return { wca: 0, th: normDeg(tc), gs: tas };
-
       var diffRad = (wd - tc) * Math.PI / 180;
       var sinWCA = (ws / tas) * Math.sin(diffRad);
-      if (Math.abs(sinWCA) > 1) return null; // wind too strong
-
+      if (Math.abs(sinWCA) > 1) return null;
       var wcaRad = Math.asin(sinWCA);
       var wca = wcaRad * 180 / Math.PI;
       var th = normDeg(tc + wca);
-
-      // Ground speed via vector components
       var thRad = th * Math.PI / 180;
       var wdRad = wd * Math.PI / 180;
       var ge = tas * Math.sin(thRad) - ws * Math.sin(wdRad);
       var gn = tas * Math.cos(thRad) - ws * Math.cos(wdRad);
       var gs = Math.sqrt(ge * ge + gn * gn);
-
       if (gs < 1) return null;
       return { wca: Math.round(wca), th: Math.round(th), gs: Math.round(gs) };
     }
 
-    function normDeg(d) {
-      d = d % 360;
-      if (d < 0) d += 360;
-      return d;
-    }
+    function normDeg(d) { d = d % 360; if (d < 0) d += 360; return d; }
 
     // ================================================================
-    //  COMPASS ROSE SVG GENERATION
+    //  COMPASS ROSE SVG
     // ================================================================
     function createCompassSVG(size) {
       var r = size === 'mini' ? 90 : 95;
       var svg = '<svg viewBox="0 0 200 200" class="compass-svg">';
-      // Background
       svg += '<circle cx="100" cy="100" r="' + r + '" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>';
-
-      // Tick marks
       for (var deg = 0; deg < 360; deg += 10) {
         var rad = deg * Math.PI / 180;
-        var isCard = deg % 90 === 0;
-        var isMajor = deg % 30 === 0;
-        var outerR = r - 3;
-        var innerR = isCard ? r - 25 : (isMajor ? r - 18 : r - 10);
-        var x1 = 100 + outerR * Math.sin(rad);
-        var y1 = 100 - outerR * Math.cos(rad);
-        var x2 = 100 + innerR * Math.sin(rad);
-        var y2 = 100 - innerR * Math.cos(rad);
-        var sw = isCard ? 2.2 : (isMajor ? 1.2 : 0.6);
-        var col = isCard ? '#ddd' : (isMajor ? '#888' : '#555');
-        svg += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + col + '" stroke-width="' + sw + '"/>';
+        var isC = deg % 90 === 0, isM = deg % 30 === 0;
+        var oR = r - 3, iR = isC ? r - 25 : (isM ? r - 18 : r - 10);
+        var x1 = 100 + oR * Math.sin(rad), y1 = 100 - oR * Math.cos(rad);
+        var x2 = 100 + iR * Math.sin(rad), y2 = 100 - iR * Math.cos(rad);
+        svg += '<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="'+(isC?'#ddd':isM?'#888':'#555')+'" stroke-width="'+(isC?2.2:isM?1.2:0.6)+'"/>';
       }
-
-      // Cardinal labels
-      var labels = [
-        { deg: 0,   t: 'N', c: '#e74c3c' },
-        { deg: 90,  t: 'E', c: '#ccc' },
-        { deg: 180, t: 'S', c: '#ccc' },
-        { deg: 270, t: 'W', c: '#ccc' }
-      ];
-      var labelR = r - 32;
-      labels.forEach(function(l) {
-        var rad = l.deg * Math.PI / 180;
-        var x = 100 + labelR * Math.sin(rad);
-        var y = 100 - labelR * Math.cos(rad) + 5;
-        svg += '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="middle" fill="' + l.c + '" font-size="13" font-weight="bold" style="pointer-events:none">' + l.t + '</text>';
+      [{d:0,t:'N',c:'#e74c3c'},{d:90,t:'E',c:'#ccc'},{d:180,t:'S',c:'#ccc'},{d:270,t:'W',c:'#ccc'}].forEach(function(l){
+        var rad=l.d*Math.PI/180, lR=r-32;
+        svg+='<text x="'+(100+lR*Math.sin(rad)).toFixed(1)+'" y="'+(100-lR*Math.cos(rad)+5).toFixed(1)+'" text-anchor="middle" fill="'+l.c+'" font-size="13" font-weight="bold" style="pointer-events:none">'+l.t+'</text>';
       });
-
-      // 30° labels (numbers)
-      for (var d = 30; d < 360; d += 30) {
-        if (d % 90 === 0) continue; // skip cardinals
-        var rad2 = d * Math.PI / 180;
-        var numR = r - 32;
-        var nx = 100 + numR * Math.sin(rad2);
-        var ny = 100 - numR * Math.cos(rad2) + 4;
-        svg += '<text x="' + nx.toFixed(1) + '" y="' + ny.toFixed(1) + '" text-anchor="middle" fill="#777" font-size="9" style="pointer-events:none">' + (d < 100 ? '0' : '') + d + '</text>';
+      for(var d=30;d<360;d+=30){if(d%90===0)continue;var rad2=d*Math.PI/180,nR=r-32;
+        svg+='<text x="'+(100+nR*Math.sin(rad2)).toFixed(1)+'" y="'+(100-nR*Math.cos(rad2)+4).toFixed(1)+'" text-anchor="middle" fill="#777" font-size="9" style="pointer-events:none">'+(d<100?'0':'')+d+'</text>';
       }
-
-      // Wind arrow (points outward from center toward FROM direction)
-      svg += '<g class="compass-arrow" transform="rotate(0,100,100)">';
-      svg += '<line x1="100" y1="98" x2="100" y2="22" stroke="#e67e22" stroke-width="3" stroke-linecap="round"/>';
-      svg += '<polygon points="100,16 94,28 106,28" fill="#e67e22"/>';
-      svg += '</g>';
-
-      // Center dot
-      svg += '<circle cx="100" cy="100" r="5" fill="#667eea" stroke="#1a1a2e" stroke-width="1.5"/>';
-      svg += '</svg>';
+      svg+='<g class="compass-arrow" transform="rotate(0,100,100)"><line x1="100" y1="98" x2="100" y2="22" stroke="#e67e22" stroke-width="3" stroke-linecap="round"/><polygon points="100,16 94,28 106,28" fill="#e67e22"/></g>';
+      svg+='<circle cx="100" cy="100" r="5" fill="#667eea" stroke="#1a1a2e" stroke-width="1.5"/></svg>';
       return svg;
     }
 
     // ================================================================
-    //  COMPASS INTERACTION (mouse + touch)
+    //  AIRSPEED INDICATOR (Badin) SVG
+    // ================================================================
+    function createASI(tas) {
+      var min=40, max=200, sA=-150, eA=150, tA=300;
+      function s2a(s){return sA+((s-min)/(max-min))*tA;}
+      function arc(ri,ro,from,to){
+        var a1=(from-90)*Math.PI/180,a2=(to-90)*Math.PI/180,lg=to-from>180?1:0;
+        var x1o=100+ro*Math.cos(a1),y1o=100+ro*Math.sin(a1),x2o=100+ro*Math.cos(a2),y2o=100+ro*Math.sin(a2);
+        var x1i=100+ri*Math.cos(a2),y1i=100+ri*Math.sin(a2),x2i=100+ri*Math.cos(a1),y2i=100+ri*Math.sin(a1);
+        return 'M'+x1o.toFixed(1)+','+y1o.toFixed(1)+' A'+ro+','+ro+' 0 '+lg+',1 '+x2o.toFixed(1)+','+y2o.toFixed(1)+' L'+x1i.toFixed(1)+','+y1i.toFixed(1)+' A'+ri+','+ri+' 0 '+lg+',0 '+x2i.toFixed(1)+','+y2i.toFixed(1)+' Z';
+      }
+      var svg='<svg viewBox="0 0 200 200" class="asi-svg">';
+      svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#555" stroke-width="2"/>';
+      // Color arcs
+      svg+='<path d="'+arc(72,85,s2a(40),s2a(85))+'" fill="#fff" opacity="0.85"/>';
+      svg+='<path d="'+arc(72,85,s2a(50),s2a(130))+'" fill="#2ecc71" opacity="0.75"/>';
+      svg+='<path d="'+arc(72,85,s2a(130),s2a(160))+'" fill="#f1c40f" opacity="0.75"/>';
+      // Red line
+      var ra=(s2a(160)-90)*Math.PI/180;
+      svg+='<line x1="'+(100+72*Math.cos(ra)).toFixed(1)+'" y1="'+(100+72*Math.sin(ra)).toFixed(1)+'" x2="'+(100+88*Math.cos(ra)).toFixed(1)+'" y2="'+(100+88*Math.sin(ra)).toFixed(1)+'" stroke="#e74c3c" stroke-width="3"/>';
+      // Ticks and labels
+      for(var s=min;s<=max;s+=10){
+        var a=(s2a(s)-90)*Math.PI/180,mj=s%20===0;
+        svg+='<line x1="'+(100+90*Math.cos(a)).toFixed(1)+'" y1="'+(100+90*Math.sin(a)).toFixed(1)+'" x2="'+(100+(mj?72:80)*Math.cos(a)).toFixed(1)+'" y2="'+(100+(mj?72:80)*Math.sin(a)).toFixed(1)+'" stroke="#ccc" stroke-width="'+(mj?2:0.8)+'"/>';
+        if(mj) svg+='<text x="'+(100+62*Math.cos(a)).toFixed(1)+'" y="'+(100+62*Math.sin(a)+4).toFixed(1)+'" text-anchor="middle" fill="#ccc" font-size="10" font-weight="bold" style="pointer-events:none">'+s+'</text>';
+      }
+      svg+='<text x="100" y="60" text-anchor="middle" fill="#888" font-size="8" style="pointer-events:none">AIRSPEED</text>';
+      svg+='<text x="100" y="140" text-anchor="middle" fill="#888" font-size="8" style="pointer-events:none">KNOTS</text>';
+      // Needle
+      var na=s2a(Math.max(min,Math.min(max,tas)));
+      svg+='<g class="asi-needle" transform="rotate('+na+',100,100)"><line x1="100" y1="100" x2="100" y2="18" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round"/><polygon points="100,20 97,35 103,35" fill="#e74c3c"/></g>';
+      svg+='<circle cx="100" cy="100" r="8" fill="#333" stroke="#666" stroke-width="1.5"/><circle cx="100" cy="100" r="4" fill="#e74c3c"/>';
+      svg+='</svg>';
+      return svg;
+    }
+
+    function setupASIDrag(container) {
+      var svgEl=container.querySelector('svg');if(!svgEl)return;
+      var dragging=false, min=40, max=200, sA=-150, eA=150, tA=300;
+      function a2s(a){return Math.round(min+((a-sA)/tA)*(max-min));}
+      function getAngle(e){
+        var rect=svgEl.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+        var cX=e.touches?e.touches[0].clientX:e.clientX, cY=e.touches?e.touches[0].clientY:e.clientY;
+        return Math.atan2(cX-cx,-(cY-cy))*180/Math.PI;
+      }
+      function update(e){
+        var a=getAngle(e);if(a<sA)a=sA;if(a>eA)a=eA;
+        var spd=Math.round(a2s(a)/5)*5;
+        spd=Math.max(min,Math.min(max,spd));
+        setTas(spd); document.getElementById('tasInput').value=spd;
+      }
+      svgEl.addEventListener('mousedown',function(e){e.preventDefault();dragging=true;update(e);});
+      svgEl.addEventListener('touchstart',function(e){e.preventDefault();dragging=true;update(e);},{passive:false});
+      document.addEventListener('mousemove',function(e){if(dragging){e.preventDefault();update(e);}});
+      document.addEventListener('touchmove',function(e){if(dragging){e.preventDefault();update(e);}},{passive:false});
+      document.addEventListener('mouseup',function(){dragging=false;});
+      document.addEventListener('touchend',function(){dragging=false;});
+    }
+
+    function updateASI() {
+      var c=document.getElementById('asiGauge');if(!c)return;
+      c.innerHTML=createASI(state.tas);
+      document.getElementById('asiLabel').textContent=state.tas+' kt';
+      if(!c.dataset.init){setupASIDrag(c);c.dataset.init='1';}
+    }
+
+    // ================================================================
+    //  COMPASS INTERACTION
     // ================================================================
     function setupCompassDrag(svgEl, onChange) {
       var dragging = false;
-
       function getAngle(e) {
-        var rect = svgEl.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        var x = clientX - cx;
-        var y = -(clientY - cy);
-        var angle = Math.atan2(x, y) * 180 / Math.PI;
-        return Math.round(((angle % 360) + 360) % 360 / 10) * 10;
+        var rect=svgEl.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+        var cX=e.touches?e.touches[0].clientX:e.clientX,cY=e.touches?e.touches[0].clientY:e.clientY;
+        var x=cX-cx,y=-(cY-cy);
+        return Math.round(((Math.atan2(x,y)*180/Math.PI%360)+360)%360/10)*10;
       }
-
-      function handleStart(e) {
-        e.preventDefault();
-        dragging = true;
-        onChange(getAngle(e));
-      }
-      function handleMove(e) {
-        if (!dragging) return;
-        e.preventDefault();
-        onChange(getAngle(e));
-      }
-      function handleEnd() { dragging = false; }
-
-      svgEl.addEventListener('mousedown', handleStart);
-      svgEl.addEventListener('touchstart', handleStart, { passive: false });
-      document.addEventListener('mousemove', handleMove);
-      document.addEventListener('touchmove', handleMove, { passive: false });
-      document.addEventListener('mouseup', handleEnd);
-      document.addEventListener('touchend', handleEnd);
+      svgEl.addEventListener('mousedown',function(e){e.preventDefault();dragging=true;onChange(getAngle(e));});
+      svgEl.addEventListener('touchstart',function(e){e.preventDefault();dragging=true;onChange(getAngle(e));},{passive:false});
+      document.addEventListener('mousemove',function(e){if(dragging){e.preventDefault();onChange(getAngle(e));}});
+      document.addEventListener('touchmove',function(e){if(dragging){e.preventDefault();onChange(getAngle(e));}},{passive:false});
+      document.addEventListener('mouseup',function(){dragging=false;});
+      document.addEventListener('touchend',function(){dragging=false;});
     }
 
     function setCompassArrow(container, deg) {
@@ -523,80 +827,55 @@
         // ---- WAYPOINT ROW ----
         html += '<tr class="wp-row' + (isDep ? ' dep-row' : '') + '" data-idx="' + i + '">';
         html += '<td>' + (i + 1) + '</td>';
-
-        // Waypoint input
-        if (isDep || (isLast && state.flightType === 'local')) {
-          html += '<td><input class="cell-input wp-input" value="' + esc(w.wp) + '" readonly tabindex="-1" style="opacity:.7"></td>';
-        } else {
-          html += '<td><input class="cell-input wp-input" value="' + esc(w.wp) + '" placeholder="WP" oninput="updateWP(' + i + ',this.value)"></td>';
-        }
-
-        // Alt
-        html += '<td><input class="cell-input" value="' + esc(w.alt) + '" placeholder="—" style="width:55px" oninput="updateAlt(' + i + ',this.value)"></td>';
-
-        // Empty leg columns on WP row
+        html += '<td><input class="cell-input wp-input" value="' + esc(w.wp) + '" placeholder="WP ' + (i+1) + '" oninput="updateWP(' + i + ',this.value)"></td>';
+        html += '<td><input class="cell-input" value="' + esc(w.alt) + '" placeholder="â€”" style="width:55px" oninput="updateAlt(' + i + ',this.value)"></td>';
         html += '<td></td><td></td><td></td><td></td><td></td><td></td>';
-        // Wind + delete
         html += '<td></td>';
-        html += '<td>' + (canRemove ? '<button class="row-remove-btn" onclick="removeWaypoint(' + i + ')" title="Supprimer">✕</button>' : '') + '</td>';
+        html += '<td>' + (canRemove ? '<button class="row-remove-btn" onclick="removeWaypoint(' + i + ')" title="Supprimer">âœ•</button>' : '') + '</td>';
         html += '</tr>';
 
-        // ---- LEG ROW (between WP[i] and WP[i+1]) ----
+        // ---- LEG ROW ----
         if (i < wps.length - 1) {
           var nextW = wps[i + 1];
-          var hasOverride = nextW.windDir !== null && nextW.windSpeed !== null;
-          var legIdx = i + 1; // data is stored on wps[i+1]
+          var hasOvr = nextW.windDir !== null && nextW.windSpeed !== null;
+          var li = i + 1;
 
-          html += '<tr class="leg-row" data-leg="' + legIdx + '">';
-          html += '<td class="leg-arrow">↕</td>';
-          html += '<td class="leg-label" colspan="2">' + (w.wp || '?') + ' → ' + (nextW.wp || '?') + '</td>';
-          // Route (editable)
-          html += '<td><input class="cell-input" type="number" min="0" max="360" step="1" value="' + esc(nextW.route) + '" placeholder="°" style="width:50px" oninput="updateRoute(' + legIdx + ',this.value)"></td>';
-          // TH (calculated)
-          html += '<td class="cell-calc" id="th_' + legIdx + '">—</td>';
-          // Dist (editable)
-          html += '<td><input class="cell-input" type="number" min="0" max="999" step="0.1" value="' + esc(nextW.dist) + '" placeholder="NM" style="width:55px" oninput="updateDist(' + legIdx + ',this.value)"></td>';
-          // GS (calculated)
-          html += '<td class="cell-calc" id="gs_' + legIdx + '">—</td>';
-          // Leg time (calculated)
-          html += '<td class="cell-calc" id="time_' + legIdx + '">—</td>';
-          // Cumulative time (calculated)
-          html += '<td class="cell-calc" id="cum_' + legIdx + '">—</td>';
-          // Wind icon
-          html += '<td><button class="wind-icon-btn' + (hasOverride ? ' has-override' : '') + '" onclick="toggleRowWind(' + legIdx + ')" title="Vent pour cette branche">🌬️</button></td>';
+          html += '<tr class="leg-row" data-leg="' + li + '">';
+          html += '<td class="leg-arrow">â†•</td>';
+          html += '<td class="leg-label" colspan="2">' + (w.wp || 'WP'+(i+1)) + ' â†’ ' + (nextW.wp || 'WP'+(i+2)) + '</td>';
+          html += '<td><input class="cell-input" type="number" min="0" max="360" step="1" value="' + esc(nextW.route) + '" placeholder="Â°" style="width:50px" oninput="updateRoute(' + li + ',this.value)"></td>';
+          html += '<td class="cell-calc" id="th_' + li + '">â€”</td>';
+          html += '<td><input class="cell-input" type="number" min="0" max="999" step="0.1" value="' + esc(nextW.dist) + '" placeholder="NM" style="width:55px" oninput="updateDist(' + li + ',this.value)"></td>';
+          html += '<td class="cell-calc" id="gs_' + li + '">â€”</td>';
+          html += '<td class="cell-calc" id="time_' + li + '">â€”</td>';
+          html += '<td class="cell-calc" id="cum_' + li + '">â€”</td>';
+          html += '<td><button class="wind-icon-btn' + (hasOvr ? ' has-override' : '') + '" onclick="toggleRowWind(' + li + ')" title="Vent pour cette branche">ðŸŒ¬ï¸</button></td>';
           html += '<td></td>';
           html += '</tr>';
 
-          // Per-row wind expansion row
-          var display = (expandedWindRow === legIdx) ? '' : 'display:none';
-          var wd = hasOverride ? nextW.windDir : state.globalWindDir;
-          var ws = hasOverride ? nextW.windSpeed : state.globalWindSpeed;
-          html += '<tr class="wind-expand-row" id="windRow_' + legIdx + '" style="' + display + '">';
-          html += '<td colspan="11">';
-          html += '<div class="wind-expand-content">';
-          html += '<div class="compass-container mini" id="rowCompass_' + legIdx + '">' + createCompassSVG('mini') + '</div>';
+          // Wind expansion
+          var disp = (expandedWindRow === li) ? '' : 'display:none';
+          var wd = hasOvr ? nextW.windDir : state.globalWindDir;
+          var ws = hasOvr ? nextW.windSpeed : state.globalWindSpeed;
+          html += '<tr class="wind-expand-row" id="windRow_' + li + '" style="' + disp + '">';
+          html += '<td colspan="11"><div class="wind-expand-content">';
+          html += '<div class="compass-container mini" id="rowCompass_' + li + '">' + createCompassSVG('mini') + '</div>';
           html += '<div class="wind-controls">';
           html += '<div class="wind-slider-row"><span style="font-size:.8em;color:var(--text-secondary)">Vitesse</span></div>';
-          html += '<div class="wind-slider-row"><input type="range" min="0" max="50" value="' + ws + '" step="1" id="rowWindSpeed_' + legIdx + '" oninput="setRowWindSpeed(' + legIdx + ',parseInt(this.value))"><span class="wind-val" id="rowWindSpeedLabel_' + legIdx + '">' + ws + ' kt</span></div>';
+          html += '<div class="wind-slider-row"><input type="range" min="0" max="50" value="' + ws + '" step="1" id="rowWindSpeed_' + li + '" oninput="setRowWindSpeed(' + li + ',parseInt(this.value))"><span class="wind-val" id="rowWindSpeedLabel_' + li + '">' + ws + ' kt</span></div>';
           html += '<div class="wind-slider-row"><span style="font-size:.8em;color:var(--text-secondary)">Direction</span></div>';
-          html += '<div class="wind-slider-row"><input type="range" min="0" max="350" value="' + wd + '" step="10" id="rowWindDir_' + legIdx + '" oninput="setRowWindDir(' + legIdx + ',parseInt(this.value))"><span class="wind-val" id="rowWindDirLabel_' + legIdx + '">' + String(wd).padStart(3, '0') + '°</span></div>';
+          html += '<div class="wind-slider-row"><input type="range" min="0" max="350" value="' + wd + '" step="10" id="rowWindDir_' + li + '" oninput="setRowWindDir(' + li + ',parseInt(this.value))"><span class="wind-val" id="rowWindDirLabel_' + li + '">' + String(wd).padStart(3,'0') + 'Â°</span></div>';
           html += '</div>';
-          html += '<div class="wind-expand-actions">';
-          html += '<button onclick="clearRowWind(' + legIdx + ')">↩️ Utiliser vent global</button>';
-          html += '</div>';
-          html += '</div>';
-          html += '</td></tr>';
+          html += '<div class="wind-expand-actions"><button onclick="clearRowWind(' + li + ')">â†©ï¸ Utiliser vent global</button></div>';
+          html += '</div></td></tr>';
         }
       }
 
-      // Total row
       html += '<tr class="total-row"><td></td><td style="text-align:left;font-weight:700">TOTAL</td>';
       html += '<td></td><td></td><td></td>';
-      html += '<td id="totalDist">—</td><td></td><td id="totalTime">—</td><td id="totalCum">—</td><td></td><td></td></tr>';
+      html += '<td id="totalDist">â€”</td><td></td><td id="totalTime">â€”</td><td id="totalCum">â€”</td><td></td><td></td></tr>';
 
       tbody.innerHTML = html;
-
-      // Setup compass drag for expanded row
       setupGlobalCompass();
       setupRowCompasses();
       recalculate();
@@ -606,61 +885,53 @@
     //  COMPASS SETUP
     // ================================================================
     function setupGlobalCompass() {
-      var container = document.getElementById('globalCompass');
-      if (!container) return;
-      if (!container.innerHTML) container.innerHTML = createCompassSVG();
-      setCompassArrow(container, state.globalWindDir);
-      var svgEl = container.querySelector('svg');
-      if (svgEl && !container.dataset.init) {
-        setupCompassDrag(svgEl, function(deg) {
+      var c = document.getElementById('globalCompass'); if (!c) return;
+      if (!c.innerHTML) c.innerHTML = createCompassSVG();
+      setCompassArrow(c, state.globalWindDir);
+      var svg = c.querySelector('svg');
+      if (svg && !c.dataset.init) {
+        setupCompassDrag(svg, function(deg) {
           state.globalWindDir = deg;
-          setCompassArrow(container, deg);
-          document.getElementById('globalWindDirLabel').textContent = String(deg).padStart(3, '0') + '°';
+          setCompassArrow(c, deg);
+          document.getElementById('globalWindDirLabel').textContent = String(deg).padStart(3, '0') + 'Â°';
           document.getElementById('globalWindDirSlider').value = deg;
-          document.getElementById('globalWindDirSliderLabel').textContent = String(deg).padStart(3, '0') + '°';
-          recalculate();
-          saveState();
+          document.getElementById('globalWindDirSliderLabel').textContent = String(deg).padStart(3, '0') + 'Â°';
+          recalculate(); saveState();
         });
-        container.dataset.init = '1';
+        c.dataset.init = '1';
       }
     }
 
     function setupRowCompasses() {
       state.waypoints.forEach(function(w, idx) {
         if (idx === 0) return;
-        var container = document.getElementById('rowCompass_' + idx);
-        if (!container) return;
-        var wd = w.windDir !== null ? w.windDir : state.globalWindDir;
-        setCompassArrow(container, wd);
-        var svgEl = container.querySelector('svg');
-        if (svgEl) {
-          setupCompassDrag(svgEl, function(deg) {
+        var c = document.getElementById('rowCompass_' + idx); if (!c) return;
+        setCompassArrow(c, w.windDir !== null ? w.windDir : state.globalWindDir);
+        var svg = c.querySelector('svg');
+        if (svg) {
+          setupCompassDrag(svg, function(deg) {
             state.waypoints[idx].windDir = deg;
             state.waypoints[idx].windSpeed = state.waypoints[idx].windSpeed !== null ? state.waypoints[idx].windSpeed : state.globalWindSpeed;
-            setCompassArrow(container, deg);
-            var dirLabel = document.getElementById('rowWindDirLabel_' + idx);
-            var dirSlider = document.getElementById('rowWindDir_' + idx);
-            if (dirLabel) dirLabel.textContent = String(deg).padStart(3, '0') + '°';
-            if (dirSlider) dirSlider.value = deg;
-            recalculate();
-            saveState();
+            setCompassArrow(c, deg);
+            var lbl = document.getElementById('rowWindDirLabel_' + idx);
+            var sl = document.getElementById('rowWindDir_' + idx);
+            if (lbl) lbl.textContent = String(deg).padStart(3, '0') + 'Â°';
+            if (sl) sl.value = deg;
+            recalculate(); saveState();
           });
         }
       });
     }
 
     // ================================================================
-    //  RECALCULATE ALL DERIVED VALUES
+    //  RECALCULATE
     // ================================================================
     function recalculate() {
-      var wps = state.waypoints;
-      var totalDist = 0;
-      var cumMinutes = 0;
+      var wps = state.waypoints, totalDist = 0, cumSec = 0;
 
       for (var i = 1; i < wps.length; i++) {
         var w = wps[i];
-        var route = parseFloat(w.route);
-        var dist = parseFloat(w.dist);
+        var route = parseFloat(w.route), dist = parseFloat(w.dist);
         var wd = w.windDir !== null ? w.windDir : state.globalWindDir;
         var ws = w.windSpeed !== null ? w.windSpeed : state.globalWindSpeed;
 
@@ -671,80 +942,69 @@
         if (!thEl) continue;
 
         if (isNaN(route) || isNaN(dist) || dist <= 0) {
-          thEl.textContent = '—';
-          gsEl.textContent = '—';
-          timeEl.textContent = '—';
-          cumEl.textContent = formatTime(cumMinutes);
-          continue;
+          thEl.textContent = 'â€”'; gsEl.textContent = 'â€”'; timeEl.textContent = 'â€”';
+          cumEl.textContent = formatTime(cumSec); continue;
         }
 
         var result = windTriangle(route, wd, ws, state.tas);
         if (!result) {
-          thEl.textContent = '⚠️';
-          gsEl.textContent = '⚠️';
-          timeEl.textContent = '⚠️';
-          cumEl.textContent = formatTime(cumMinutes);
-          continue;
+          thEl.textContent = 'âš ï¸'; gsEl.textContent = 'âš ï¸'; timeEl.textContent = 'âš ï¸';
+          cumEl.textContent = formatTime(cumSec); continue;
         }
 
-        var legMinutes = (dist / result.gs) * 60;
-        cumMinutes += legMinutes;
-        totalDist += dist;
+        var legSec = (dist / result.gs) * 3600;
+        cumSec += legSec; totalDist += dist;
 
-        thEl.textContent = String(result.th).padStart(3, '0') + '°';
+        thEl.textContent = String(result.th).padStart(3, '0') + 'Â°';
         gsEl.textContent = result.gs;
-        timeEl.textContent = formatTime(legMinutes);
-        cumEl.textContent = formatTime(cumMinutes);
+        timeEl.textContent = formatTime(legSec);
+        cumEl.textContent = formatTime(cumSec);
       }
 
-      // Update totals
-      var totalDistEl = document.getElementById('totalDist');
-      var totalTimeEl = document.getElementById('totalTime');
-      var totalCumEl = document.getElementById('totalCum');
-      if (totalDistEl) totalDistEl.textContent = totalDist > 0 ? totalDist.toFixed(1) + ' NM' : '—';
-      if (totalTimeEl) totalTimeEl.textContent = cumMinutes > 0 ? formatTime(cumMinutes) : '—';
-      if (totalCumEl) totalCumEl.textContent = cumMinutes > 0 ? formatTime(cumMinutes) : '—';
+      var dEl = document.getElementById('totalDist');
+      var tEl = document.getElementById('totalTime');
+      var cEl = document.getElementById('totalCum');
+      if (dEl) dEl.textContent = totalDist > 0 ? totalDist.toFixed(1) + ' NM' : 'â€”';
+      if (tEl) tEl.textContent = cumSec > 0 ? formatTime(cumSec) : 'â€”';
+      if (cEl) cEl.textContent = cumSec > 0 ? formatTime(cumSec) : 'â€”';
 
-      // Update summary
-      updateSummary(totalDist, cumMinutes);
+      updateSummary(totalDist, cumSec / 60);
     }
 
-    function formatTime(minutes) {
-      if (!minutes || minutes <= 0 || !isFinite(minutes)) return '0:00';
-      var h = Math.floor(minutes / 60);
-      var m = Math.round(minutes % 60);
-      if (m === 60) { h++; m = 0; }
-      return h + ':' + String(m).padStart(2, '0');
+    function formatTime(sec) {
+      if (!sec || sec <= 0 || !isFinite(sec)) return '0:00:00';
+      var t = Math.round(sec);
+      var h = Math.floor(t / 3600);
+      var m = Math.floor((t % 3600) / 60);
+      var s = t % 60;
+      return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     }
 
     // ================================================================
-    //  SUMMARY PANEL
+    //  SUMMARY
     // ================================================================
-    function updateSummary(totalDist, flightMinutes) {
-      var taxiOut = state.taxiOut || 0;
-      var taxiIn = state.taxiIn || 0;
-      var totalEngineMin = taxiOut + flightMinutes + taxiIn;
-      var tripFuel = (flightMinutes / 60) * state.fuelBurn;
-      var taxiFuel = ((taxiOut + taxiIn) / 60) * state.fuelBurn * 0.5; // taxi at ~50% burn rate
-      var reserveFuel = (state.reserveTime / 60) * state.fuelBurn;
-      var totalFuel = tripFuel + taxiFuel + reserveFuel;
+    function updateSummary(totalDist, flightMin) {
+      var txO = state.taxiOut || 0, txI = state.taxiIn || 0;
+      var totalEngine = txO + flightMin + txI;
+      var tripFuel = (flightMin / 60) * state.fuelBurn;
+      var taxiFuel = ((txO + txI) / 60) * state.fuelBurn * 0.5;
+      var resFuel = (state.reserveTime / 60) * state.fuelBurn;
+      var totalFuel = tripFuel + taxiFuel + resFuel;
 
-      var grid = document.getElementById('summaryGrid');
-      if (!grid) return;
-
-      grid.innerHTML =
-        '<div class="summary-item"><span class="summary-label">Distance totale</span><span class="summary-value">' + (totalDist > 0 ? totalDist.toFixed(1) + ' NM' : '—') + '</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Temps de vol (hors taxi)</span><span class="summary-value">' + formatTime(flightMinutes) + '</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Roulage départ</span><span class="summary-value">' + taxiOut + ' min</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Roulage arrivée</span><span class="summary-value">' + taxiIn + ' min</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Temps moteur total</span><span class="summary-value highlight">' + formatTime(totalEngineMin) + '</span></div>' +
+      var g = document.getElementById('summaryGrid'); if (!g) return;
+      g.innerHTML =
+        '<div class="summary-item"><span class="summary-label">Distance totale</span><span class="summary-value">' + (totalDist > 0 ? totalDist.toFixed(1) + ' NM' : 'â€”') + '</span></div>' +
+        '<div class="summary-item"><span class="summary-label">Temps de vol (hors taxi)</span><span class="summary-value">' + formatTime(flightMin * 60) + '</span></div>' +
+        '<div class="summary-item"><span class="summary-label">Roulage dÃ©part</span><span class="summary-value">' + txO + ' min</span></div>' +
+        '<div class="summary-item"><span class="summary-label">Roulage arrivÃ©e</span><span class="summary-value">' + txI + ' min</span></div>' +
+        '<div class="summary-item"><span class="summary-label">Temps moteur total</span><span class="summary-value highlight">' + formatTime(totalEngine * 60) + '</span></div>' +
         '<div class="summary-item"><span class="summary-label">TAS</span><span class="summary-value">' + state.tas + ' kt</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Vent global</span><span class="summary-value">' + String(state.globalWindDir).padStart(3, '0') + '° / ' + state.globalWindSpeed + ' kt</span></div>' +
-        '<div class="summary-item"><span class="summary-label">Conso croisière</span><span class="summary-value">' + state.fuelBurn + ' L/h</span></div>' +
-        '<div class="summary-item"><span class="summary-label">⛽ Carburant vol</span><span class="summary-value">' + (tripFuel > 0 ? tripFuel.toFixed(1) + ' L' : '—') + '</span></div>' +
-        '<div class="summary-item"><span class="summary-label">⛽ Carburant taxi</span><span class="summary-value">' + (taxiFuel > 0 ? taxiFuel.toFixed(1) + ' L' : '—') + '</span></div>' +
-        '<div class="summary-item"><span class="summary-label">⛽ Réserve (' + state.reserveTime + ' min)</span><span class="summary-value">' + reserveFuel.toFixed(1) + ' L</span></div>' +
-        '<div class="summary-item"><span class="summary-label">⛽ TOTAL CARBURANT</span><span class="summary-value highlight">' + (totalFuel > 0 ? totalFuel.toFixed(1) + ' L' : '—') + '</span></div>';
+        '<div class="summary-item"><span class="summary-label">Vent global</span><span class="summary-value">' + String(state.globalWindDir).padStart(3, '0') + 'Â° / ' + state.globalWindSpeed + ' kt</span></div>' +
+        '<div class="summary-item"><span class="summary-label">Conso croisiÃ¨re</span><span class="summary-value">' + state.fuelBurn + ' L/h</span></div>' +
+        '<div class="summary-item"><span class="summary-label">â›½ Carburant vol</span><span class="summary-value">' + (tripFuel > 0 ? tripFuel.toFixed(1) + ' L' : 'â€”') + '</span></div>' +
+        '<div class="summary-item"><span class="summary-label">â›½ Carburant taxi</span><span class="summary-value">' + (taxiFuel > 0 ? taxiFuel.toFixed(1) + ' L' : 'â€”') + '</span></div>' +
+        '<div class="summary-item"><span class="summary-label">â›½ RÃ©serve (' + state.reserveTime + ' min)</span><span class="summary-value">' + resFuel.toFixed(1) + ' L</span></div>' +
+        '<div class="summary-item"><span class="summary-label">â›½ TOTAL CARBURANT</span><span class="summary-value highlight">' + (totalFuel > 0 ? totalFuel.toFixed(1) + ' L' : 'â€”') + '</span></div>';
     }
 
     // ================================================================
@@ -755,43 +1015,18 @@
       document.querySelectorAll('.flight-type-btn').forEach(function(b) {
         b.classList.toggle('active', b.getAttribute('data-type') === type);
       });
-      var arrRow = document.getElementById('arrivalRow');
-      if (type === 'local') {
-        arrRow.style.display = 'none';
-        state.arrival = state.departure;
-        state.waypoints[state.waypoints.length - 1].wp = state.departure;
-      } else {
-        arrRow.style.display = '';
-        state.waypoints[state.waypoints.length - 1].wp = state.arrival || '';
-      }
-      renderTable();
-      saveState();
+      var ar = document.getElementById('arrivalRow');
+      if (type === 'local') { ar.style.display = 'none'; state.arrival = state.departure; state.waypoints[state.waypoints.length-1].wp = state.departure; }
+      else { ar.style.display = ''; state.waypoints[state.waypoints.length-1].wp = state.arrival || ''; }
+      renderTable(); saveState();
     }
-
     function setDeparture(icao) {
-      state.departure = icao;
-      state.waypoints[0].wp = icao;
-      if (state.flightType === 'local') {
-        state.arrival = icao;
-        state.waypoints[state.waypoints.length - 1].wp = icao;
-      }
-      renderTable();
-      saveState();
+      state.departure = icao; state.waypoints[0].wp = icao;
+      if (state.flightType === 'local') { state.arrival = icao; state.waypoints[state.waypoints.length-1].wp = icao; }
+      renderTable(); saveState();
     }
-
-    function setArrival(icao) {
-      state.arrival = icao;
-      state.waypoints[state.waypoints.length - 1].wp = icao;
-      renderTable();
-      saveState();
-    }
-
-    function setTas(v) {
-      state.tas = parseInt(v) || 90;
-      recalculate();
-      saveState();
-    }
-
+    function setArrival(icao) { state.arrival = icao; state.waypoints[state.waypoints.length-1].wp = icao; renderTable(); saveState(); }
+    function setTas(v) { state.tas = parseInt(v) || 90; updateASI(); recalculate(); saveState(); }
     function setTaxiOut(v) { state.taxiOut = parseInt(v) || 0; recalculate(); saveState(); }
     function setTaxiIn(v) { state.taxiIn = parseInt(v) || 0; recalculate(); saveState(); }
     function setFuelBurn(v) { state.fuelBurn = parseFloat(v) || 30; recalculate(); saveState(); }
@@ -799,138 +1034,101 @@
 
     function setGlobalWindDir(deg) {
       state.globalWindDir = deg;
-      var container = document.getElementById('globalCompass');
-      setCompassArrow(container, deg);
-      document.getElementById('globalWindDirLabel').textContent = String(deg).padStart(3, '0') + '°';
+      var c = document.getElementById('globalCompass'); setCompassArrow(c, deg);
+      document.getElementById('globalWindDirLabel').textContent = String(deg).padStart(3, '0') + 'Â°';
       document.getElementById('globalWindDirSlider').value = deg;
-      document.getElementById('globalWindDirSliderLabel').textContent = String(deg).padStart(3, '0') + '°';
-      recalculate();
-      saveState();
+      document.getElementById('globalWindDirSliderLabel').textContent = String(deg).padStart(3, '0') + 'Â°';
+      recalculate(); saveState();
     }
-
     function setGlobalWindSpeed(v) {
       state.globalWindSpeed = v;
       document.getElementById('globalWindSpeedLabel').textContent = v + ' kt';
       document.getElementById('globalWindSpeedSlider').value = v;
-      recalculate();
-      saveState();
+      recalculate(); saveState();
     }
 
-    // Table cell updaters (exposed globally)
-    window.updateWP = function(i, v) { state.waypoints[i].wp = v; saveState(); };
+    window.updateWP = function(i, v) { state.waypoints[i].wp = v; renderTable(); saveState(); };
     window.updateAlt = function(i, v) { state.waypoints[i].alt = v; saveState(); };
     window.updateRoute = function(i, v) { state.waypoints[i].route = v; recalculate(); saveState(); };
     window.updateDist = function(i, v) { state.waypoints[i].dist = v; recalculate(); saveState(); };
 
-    // Per-row wind
     window.setRowWindDir = function(i, deg) {
       state.waypoints[i].windDir = deg;
       if (state.waypoints[i].windSpeed === null) state.waypoints[i].windSpeed = state.globalWindSpeed;
-      var container = document.getElementById('rowCompass_' + i);
-      if (container) setCompassArrow(container, deg);
-      var lbl = document.getElementById('rowWindDirLabel_' + i);
-      if (lbl) lbl.textContent = String(deg).padStart(3, '0') + '°';
-      recalculate();
-      saveState();
+      var c = document.getElementById('rowCompass_' + i); if (c) setCompassArrow(c, deg);
+      var l = document.getElementById('rowWindDirLabel_' + i); if (l) l.textContent = String(deg).padStart(3, '0') + 'Â°';
+      recalculate(); saveState();
     };
     window.setRowWindSpeed = function(i, v) {
       state.waypoints[i].windSpeed = v;
       if (state.waypoints[i].windDir === null) state.waypoints[i].windDir = state.globalWindDir;
-      var lbl = document.getElementById('rowWindSpeedLabel_' + i);
-      if (lbl) lbl.textContent = v + ' kt';
-      recalculate();
-      saveState();
+      var l = document.getElementById('rowWindSpeedLabel_' + i); if (l) l.textContent = v + ' kt';
+      recalculate(); saveState();
     };
     window.clearRowWind = function(i) {
-      state.waypoints[i].windDir = null;
-      state.waypoints[i].windSpeed = null;
-      expandedWindRow = -1;
-      renderTable();
-      saveState();
+      state.waypoints[i].windDir = null; state.waypoints[i].windSpeed = null;
+      expandedWindRow = -1; renderTable(); saveState();
     };
 
     function addWaypoint() {
-      var insertIdx = state.waypoints.length - 1; // before the last (arrival)
-      state.waypoints.splice(insertIdx, 0, {
-        wp: '', alt: '', route: '', dist: '', windDir: null, windSpeed: null
-      });
-      expandedWindRow = -1;
-      renderTable();
-      saveState();
+      state.waypoints.splice(state.waypoints.length - 1, 0, { wp: '', alt: '', route: '', dist: '', windDir: null, windSpeed: null });
+      expandedWindRow = -1; renderTable(); saveState();
     }
-
     function removeWaypoint(idx) {
       if (idx <= 0 || idx >= state.waypoints.length - 1) return;
-      state.waypoints.splice(idx, 1);
-      expandedWindRow = -1;
-      renderTable();
-      saveState();
+      state.waypoints.splice(idx, 1); expandedWindRow = -1; renderTable(); saveState();
     }
-
-    function toggleRowWind(idx) {
-      expandedWindRow = (expandedWindRow === idx) ? -1 : idx;
-      renderTable();
-    }
+    function toggleRowWind(idx) { expandedWindRow = (expandedWindRow === idx) ? -1 : idx; renderTable(); }
 
     // ================================================================
     //  WEATHER FETCHING
     // ================================================================
     function initAirportButtons() {
-      var container = document.getElementById('airportBtns');
-      var html = '';
+      var c = document.getElementById('airportBtns'), html = '';
       AIRPORTS.forEach(function(a) {
         html += '<button class="airport-btn" data-icao="' + a.icao + '" onclick="toggleAirport(\'' + a.icao + '\')">' + a.icao + '</button>';
       });
-      container.innerHTML = html;
+      c.innerHTML = html;
     }
 
     window.toggleAirport = function(icao) {
       var idx = activeAirports.indexOf(icao);
-      if (idx >= 0) {
-        activeAirports.splice(idx, 1);
-      } else {
-        activeAirports.push(icao);
-      }
-      // Sort by AIRPORTS order (proximity to EBSG)
+      if (idx >= 0) activeAirports.splice(idx, 1); else activeAirports.push(icao);
       var order = AIRPORTS.map(function(a) { return a.icao; });
       activeAirports.sort(function(a, b) { return order.indexOf(a) - order.indexOf(b); });
-
-      // Update button states
       document.querySelectorAll('.airport-btn').forEach(function(btn) {
         btn.classList.toggle('active', activeAirports.indexOf(btn.dataset.icao) >= 0);
       });
-
-      // Fetch and display weather for active airports
       renderWeather();
     };
 
     function renderWeather() {
       var display = document.getElementById('weatherDisplay');
       if (activeAirports.length === 0) {
-        display.innerHTML = '<div style="color:var(--text-secondary);font-size:.9em">Cliquez sur un aérodrome pour charger la météo.</div>';
+        display.innerHTML = '<div style="color:var(--text-secondary);font-size:.9em">Cliquez sur un aÃ©rodrome pour charger la mÃ©tÃ©o.</div>';
         return;
       }
-
       display.innerHTML = '<div style="color:var(--text-secondary);font-size:.9em">Chargement...</div>';
 
       var promises = activeAirports.map(function(icao) {
-        if (weatherCache[icao] && (Date.now() - weatherCache[icao].ts < 5 * 60 * 1000)) {
+        if (weatherCache[icao] && (Date.now() - weatherCache[icao].ts < 5 * 60 * 1000))
           return Promise.resolve({ icao: icao, metar: weatherCache[icao].metar, taf: weatherCache[icao].taf });
-        }
         return fetchWeatherForAirport(icao);
       });
 
       Promise.all(promises).then(function(results) {
-        var html = '';
+        var html = '', dc = 0;
         results.forEach(function(r) {
-          var isDep = (r.icao === state.departure);
+          var mId = 'dm_' + dc, tId = 'dt_' + dc; dc++;
           html += '<div class="weather-block">';
-          html += '<div class="weather-block-title">📍 ' + r.icao + ' — ' + getAirportName(r.icao) + '</div>';
-          if (isDep && r.metar && r.metar.indexOf('Erreur') < 0) {
-            html += '<button class="weather-apply-btn" onclick="applyMetarWind(\'' + r.icao + '\')">📥 Appliquer vent</button>';
-          }
-          html += '<div class="weather-line"><b>METAR</b> ' + (r.metar || 'Pas de données') + '</div>';
-          html += '<div class="weather-line"><b>TAF</b> ' + (r.taf || 'Pas de données') + '</div>';
+          html += '<div class="weather-block-title">ðŸ“ ' + r.icao + ' â€” ' + getAirportName(r.icao);
+          if (r.metar && r.metar.indexOf('Erreur') < 0 && r.metar !== 'Pas de donnÃ©es')
+            html += ' <button class="weather-apply-btn" onclick="applyMetarWind(\'' + r.icao + '\')">ðŸ“¥ Appliquer vent</button>';
+          html += '</div>';
+          html += '<div class="weather-line" onclick="toggleDecode(\'' + mId + '\')"><b>METAR</b> ' + (r.metar || 'N/A') + ' <span style="font-size:.7em;color:var(--text-secondary)">[cliquer = dÃ©coder]</span></div>';
+          html += '<div class="weather-decoded" id="' + mId + '">' + (decodeMetar(r.metar) || '').replace(/\n/g, '<br>') + '</div>';
+          html += '<div class="weather-line" onclick="toggleDecode(\'' + tId + '\')"><b>TAF</b> ' + (r.taf || 'N/A') + ' <span style="font-size:.7em;color:var(--text-secondary)">[cliquer = dÃ©coder]</span></div>';
+          html += '<div class="weather-decoded" id="' + tId + '">' + (decodeTaf(r.taf) || '').replace(/\n/g, '<br>') + '</div>';
           html += '</div>';
         });
         display.innerHTML = html;
@@ -938,137 +1136,79 @@
     }
 
     function fetchWeatherForAirport(icao) {
-      var baseMetar = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&format=raw&hours=4';
-      var baseTaf = 'https://aviationweather.gov/api/data/taf?ids=' + icao + '&format=raw';
-
-      function tryFetch(url) {
-        return fetch(url).then(function(r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.text();
-        });
+      var bM = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&format=raw&hours=4';
+      var bT = 'https://aviationweather.gov/api/data/taf?ids=' + icao + '&format=raw';
+      function tryF(u) { return fetch(u).then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }); }
+      function fwf(u) {
+        return tryF(u).then(function(t) { if (!t || !t.trim()) throw new Error('empty'); return t; })
+          .catch(function() { return tryF('https://api.allorigins.win/raw?url=' + encodeURIComponent(u)); })
+          .catch(function() { return tryF('https://corsproxy.io/?' + encodeURIComponent(u)); })
+          .catch(function() { return 'Erreur de chargement'; });
       }
-
-      function fetchWithFallback(url) {
-        return tryFetch(url).then(function(text) {
-          if (!text || text.trim().length === 0) throw new Error('empty');
-          return text;
-        }).catch(function() {
-          // Fallback 1: CORS proxy allorigins
-          return tryFetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
-        }).catch(function() {
-          // Fallback 2: CORS proxy corsproxy.io
-          return tryFetch('https://corsproxy.io/?' + encodeURIComponent(url));
-        }).catch(function() {
-          return 'Erreur de chargement';
-        });
-      }
-
-      return Promise.all([
-        fetchWithFallback(baseMetar),
-        fetchWithFallback(baseTaf)
-      ]).then(function(texts) {
-        var metar = texts[0].trim();
-        var taf = texts[1].trim();
-        // Take only the most recent METAR line
-        var metarLines = metar.split('\n').filter(function(l) { return l.trim().length > 0; });
-        metar = metarLines.length > 0 ? metarLines[0] : 'Pas de données';
-        // Take full TAF
-        var tafLines = taf.split('\n').filter(function(l) { return l.trim().length > 0; });
-        taf = tafLines.length > 0 ? tafLines.join('<br>') : 'Pas de données';
-
+      return Promise.all([fwf(bM), fwf(bT)]).then(function(t) {
+        var metar = t[0].trim(), taf = t[1].trim();
+        var ml = metar.split('\n').filter(function(l) { return l.trim().length > 0; });
+        metar = ml.length > 0 ? ml[0] : 'Pas de donnÃ©es';
+        var tl = taf.split('\n').filter(function(l) { return l.trim().length > 0; });
+        taf = tl.length > 0 ? tl.join('<br>') : 'Pas de donnÃ©es';
         weatherCache[icao] = { metar: metar, taf: taf, ts: Date.now() };
         return { icao: icao, metar: metar, taf: taf };
       });
     }
 
     function getAirportName(icao) {
-      for (var i = 0; i < AIRPORTS.length; i++) {
-        if (AIRPORTS[i].icao === icao) return AIRPORTS[i].name;
-      }
+      for (var i = 0; i < AIRPORTS.length; i++) if (AIRPORTS[i].icao === icao) return AIRPORTS[i].name;
       return icao;
     }
 
     // ================================================================
-    //  METAR WIND PARSING & APPLICATION
+    //  METAR WIND APPLICATION
     // ================================================================
     function parseMetarWind(metar) {
       if (!metar) return null;
-      var match = metar.match(/\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?KT\b/);
-      if (!match) return null;
-      var dir = match[1] === 'VRB' ? 0 : parseInt(match[1]);
-      var speed = parseInt(match[2]);
-      var gust = match[3] ? parseInt(match[3].substring(1)) : null;
-      return { dir: dir, speed: speed, gust: gust, variable: match[1] === 'VRB' };
+      var m = metar.match(/\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?KT\b/);
+      if (!m) return null;
+      return { dir: m[1] === 'VRB' ? 0 : parseInt(m[1]), speed: parseInt(m[2]), gust: m[3] ? parseInt(m[3].substring(1)) : null };
     }
 
     function applyMetarWind(icao) {
-      var cache = weatherCache[icao];
-      if (!cache || !cache.metar) return;
-      var wind = parseMetarWind(cache.metar);
-      if (!wind) {
-        alert('Impossible d\'extraire le vent du METAR.');
-        return;
-      }
-      // Round direction to nearest 10°
-      var dir = Math.round(wind.dir / 10) * 10;
-      var speed = Math.min(wind.speed, 50); // cap slider range
-
-      setGlobalWindDir(dir);
-      setGlobalWindSpeed(speed);
-
-      // Visual feedback
-      var btn = document.querySelector('.weather-apply-btn');
-      if (btn) {
-        btn.textContent = '✅ Appliqué !';
-        setTimeout(function() { btn.textContent = '📥 Appliquer vent'; }, 1500);
-      }
+      var c = weatherCache[icao]; if (!c || !c.metar) return;
+      var w = parseMetarWind(c.metar);
+      if (!w) { alert('Impossible d\'extraire le vent du METAR de ' + icao + '.'); return; }
+      setGlobalWindDir(Math.round(w.dir / 10) * 10);
+      setGlobalWindSpeed(Math.min(w.speed, 50));
+      // Feedback
+      document.querySelectorAll('.weather-block').forEach(function(bl) {
+        if (bl.textContent.indexOf(icao) >= 0) {
+          var btn = bl.querySelector('.weather-apply-btn');
+          if (btn) { btn.textContent = 'âœ… AppliquÃ© !'; setTimeout(function() { btn.textContent = 'ðŸ“¥ Appliquer vent'; }, 1500); }
+        }
+      });
     }
 
     // ================================================================
     //  SELECT POPULATION
     // ================================================================
     function populateSelects() {
-      var depSel = document.getElementById('departureSelect');
-      var arrSel = document.getElementById('arrivalSelect');
-      var html = '';
-      AIRPORTS.forEach(function(a) {
-        html += '<option value="' + a.icao + '">' + a.icao + ' — ' + a.name + '</option>';
-      });
-      // Also add "Autre" option
-      html += '<option value="">Autre…</option>';
-      depSel.innerHTML = html;
-      arrSel.innerHTML = html;
-      depSel.value = state.departure;
-      arrSel.value = state.arrival || '';
+      var d = document.getElementById('departureSelect'), a = document.getElementById('arrivalSelect'), h = '';
+      AIRPORTS.forEach(function(ap) { h += '<option value="' + ap.icao + '">' + ap.icao + ' â€” ' + ap.name + '</option>'; });
+      h += '<option value="">Autreâ€¦</option>';
+      d.innerHTML = h; a.innerHTML = h;
+      d.value = state.departure; a.value = state.arrival || '';
     }
 
     // ================================================================
-    //  PERSISTENCE (localStorage)
+    //  PERSISTENCE
     // ================================================================
-    function saveState() {
-      try {
-        localStorage.setItem('navlogState', JSON.stringify(state));
-      } catch (e) { /* quota exceeded, ignore */ }
-    }
-
+    function saveState() { try { localStorage.setItem('navlogState', JSON.stringify(state)); } catch (e) {} }
     function loadState() {
       try {
-        var saved = localStorage.getItem('navlogState');
-        if (saved) {
-          var parsed = JSON.parse(saved);
-          // Merge with defaults (for new fields)
-          for (var key in parsed) {
-            if (parsed.hasOwnProperty(key)) state[key] = parsed[key];
-          }
-          // Ensure waypoints have required fields
-          state.waypoints.forEach(function(w) {
-            if (w.windDir === undefined) w.windDir = null;
-            if (w.windSpeed === undefined) w.windSpeed = null;
-          });
-        }
-      } catch (e) { /* parse error, use defaults */ }
+        var s = localStorage.getItem('navlogState'); if (!s) return;
+        var p = JSON.parse(s);
+        for (var k in p) if (p.hasOwnProperty(k)) state[k] = p[k];
+        state.waypoints.forEach(function(w) { if (w.windDir === undefined) w.windDir = null; if (w.windSpeed === undefined) w.windSpeed = null; });
+      } catch (e) {}
     }
-
     function restoreUI() {
       document.getElementById('tasInput').value = state.tas;
       document.getElementById('taxiOutInput').value = state.taxiOut;
@@ -1078,18 +1218,14 @@
       document.getElementById('globalWindSpeedSlider').value = state.globalWindSpeed;
       document.getElementById('globalWindSpeedLabel').textContent = state.globalWindSpeed + ' kt';
       document.getElementById('globalWindDirSlider').value = state.globalWindDir;
-      document.getElementById('globalWindDirSliderLabel').textContent = String(state.globalWindDir).padStart(3, '0') + '°';
-      document.getElementById('globalWindDirLabel').textContent = String(state.globalWindDir).padStart(3, '0') + '°';
+      document.getElementById('globalWindDirSliderLabel').textContent = String(state.globalWindDir).padStart(3, '0') + 'Â°';
+      document.getElementById('globalWindDirLabel').textContent = String(state.globalWindDir).padStart(3, '0') + 'Â°';
       document.getElementById('departureSelect').value = state.departure;
       document.getElementById('arrivalSelect').value = state.arrival || '';
-
-      // Flight type
       document.querySelectorAll('.flight-type-btn').forEach(function(b) {
         b.classList.toggle('active', b.getAttribute('data-type') === state.flightType);
       });
-      if (state.flightType === 'vfr') {
-        document.getElementById('arrivalRow').style.display = '';
-      }
+      if (state.flightType === 'vfr') document.getElementById('arrivalRow').style.display = '';
     }
 
     // ================================================================
@@ -1104,27 +1240,40 @@
       setupGlobalCompass();
       restoreUI();
       renderTable();
+      updateASI();
 
-      // Auto-load EBSG weather
-      window.toggleAirport('EBSG');
+      // Auto-load EBCV, EBCI, LFQQ weather
+      ['EBCV', 'EBCI', 'LFQQ'].forEach(function(icao) {
+        if (activeAirports.indexOf(icao) < 0) activeAirports.push(icao);
+      });
+      var order = AIRPORTS.map(function(a) { return a.icao; });
+      activeAirports.sort(function(a, b) { return order.indexOf(a) - order.indexOf(b); });
+      document.querySelectorAll('.airport-btn').forEach(function(btn) {
+        btn.classList.toggle('active', activeAirports.indexOf(btn.dataset.icao) >= 0);
+      });
+      renderWeather();
+
+      // Apply EBCV wind as default (only if wind is still at 0)
+      fetchWeatherForAirport('EBCV').then(function(r) {
+        if (r.metar && r.metar.indexOf('Erreur') < 0) {
+          var w = parseMetarWind(r.metar);
+          if (w && state.globalWindSpeed === 0) {
+            setGlobalWindDir(Math.round(w.dir / 10) * 10);
+            setGlobalWindSpeed(Math.min(w.speed, 50));
+          }
+        }
+      }).catch(function() {});
     }
 
-    // Run init when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 
   })();
   </script>
 
-  <!-- Service Worker registration -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(function(e) {
-        console.warn('SW registration failed:', e);
-      });
+      navigator.serviceWorker.register('sw.js').catch(function(e) { console.warn('SW registration failed:', e); });
     }
   </script>
 </body>

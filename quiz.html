@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <title>Quiz Aviation - Quiz</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -43,43 +43,43 @@
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
-  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'ðŸ”‡':'ðŸ”Š';document.getElementById('ttsToggle').title=on?'TTS dÃ©sactivÃ©':'TTS activÃ©'})()" title="TTS dÃ©sactivÃ©">ðŸ”‡</button>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
   <script>
-    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';
-    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='ðŸ”Š';document.getElementById('ttsToggle').title='TTS activÃ©';}
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
   </script>
   <div id="resultContainer" style="display:none;"></div>
 
   <!-- Top navigation -->
   <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link">ðŸ  Accueil</a>
-    <a href="quiz.html" class="top-nav-link top-nav-current">ðŸŽ¯ Quiz</a>
-    <a href="stats.html" class="top-nav-link">ðŸ“Š Stats</a>
-    <a href="rates.html" class="top-nav-link">ðŸ“– RÃ©vision</a>
-    <a href="historique.html" class="top-nav-link">ðŸ“… Historique</a>
-    <a href="search.html" class="top-nav-link">ðŸ” Recherche</a>
-    <a href="symboles.html" class="top-nav-link">ðŸ”£ Symboles</a>
-    <a href="navlog.html" class="top-nav-link">ðŸ—ºï¸ NavLog</a>
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link top-nav-current">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ NavLog</a>
   </div>
 
-  <!-- Bandeau catÃ©gorie + restant (ratÃ©es + non vues) / total -->
+  <!-- Bandeau catégorie + restant (ratées + non vues) / total -->
   <div id="categoryInfoBar" style="display:none; background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%); color: white; padding: 0.5rem 1rem; border-radius: 8px; margin: 0.5rem auto; max-width: 600px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.15); font-size: 0.95rem;">
     <div id="categoryName" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 2px;"></div>
     <div id="categoryProgress" style="font-size: 0.85rem; opacity: 0.9;"></div>
   </div>
 
-  <!-- Compteur de questions rÃ©pondues aujourd'hui (recrÃ©Ã© par ensureDailyStatsBarVisible) -->
+  <!-- Compteur de questions répondues aujourd'hui (recréé par ensureDailyStatsBarVisible) -->
   <div id="dailyStatsBar" style="display:none;"></div>
 
   <script>
-    // Affichage instantanÃ© depuis localStorage â€” mÃªme source que updateDailyStatsBar()
+    // Affichage instantané depuis localStorage — même source que updateDailyStatsBar()
     (function() {
       try {
         const now = new Date();
         const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
         const utcKey = now.toISOString().slice(0, 10);
-        // MÃªme logique que _getDailyHistoryMerged pour aujourd'hui
+        // Même logique que _getDailyHistoryMerged pour aujourd'hui
         let count = 0;
         try {
           const backup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
@@ -90,49 +90,49 @@
           parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0
         );
         const el = document.getElementById('answeredTodayCount');
-        if (el) el.textContent = count || 'â€¦';
+        if (el) el.textContent = count || '…';
       } catch (_) {}
     })();
   </script>
 
   <div class="container" id="quizContainer">
-    <!-- Les questions seront affichÃ©es ici -->
+    <!-- Les questions seront affichées ici -->
   </div>
   <div class="quiz-actions-bar">
-    <button class="quiz-btn quiz-btn-validate" onclick="validerReponses()">âœ… Valider les RÃ©ponses</button>
-    <button class="quiz-btn quiz-btn-new" id="resetQuizBtn">ðŸ”„ Nouvelles Questions</button>
+    <button class="quiz-btn quiz-btn-validate" onclick="validerReponses()">✅ Valider les Réponses</button>
+    <button class="quiz-btn quiz-btn-new" id="resetQuizBtn">🔄 Nouvelles Questions</button>
   </div>
   <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 0.5rem; margin-bottom: 2rem;">
     <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
-      <div class="home-nav-icon">ðŸ“–</div>
-      <div class="home-nav-label">RÃ©vision</div>
+      <div class="home-nav-icon">📖</div>
+      <div class="home-nav-label">Révision</div>
     </div>
     <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
-      <div class="home-nav-icon">ðŸ“Š</div>
+      <div class="home-nav-icon">📊</div>
       <div class="home-nav-label">Statistiques</div>
     </div>
     <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
-      <div class="home-nav-icon">ðŸ“…</div>
+      <div class="home-nav-icon">📅</div>
       <div class="home-nav-label">Historique</div>
     </div>
     <div class="home-nav-card" onclick="window.location='index.html?accueil=1'" style="border-color: rgba(102, 126, 234, 0.2);">
-      <div class="home-nav-icon">ðŸ </div>
+      <div class="home-nav-icon">🏠</div>
       <div class="home-nav-label">Accueil</div>
     </div>
   </div>
-  <!-- Cache-bust to forcer le chargement de la derniÃ¨re version du script -->
-  <script src="js/globals.js?v=20260224c"></script>
-  <script src="js/helpers.js?v=20260224c"></script>
-  <script src="js/categories.js?v=20260224c"></script>
-  <script src="js/stats.js?v=20260224c"></script>
-  <script src="js/quiz.js?v=20260224c"></script>
-  <script src="js/init.js?v=20260224c"></script>
-  <script src="js/offline.js?v=20260224c"></script>
+  <!-- Cache-bust to forcer le chargement de la dernière version du script -->
+  <script src="js/globals.js?v=20260224d"></script>
+  <script src="js/helpers.js?v=20260224d"></script>
+  <script src="js/categories.js?v=20260224d"></script>
+  <script src="js/stats.js?v=20260224d"></script>
+  <script src="js/quiz.js?v=20260224d"></script>
+  <script src="js/init.js?v=20260224d"></script>
+  <script src="js/offline.js?v=20260224d"></script>
   <script>
-    // Affichage instantanÃ© du compteur depuis localStorage (updateDailyStatsBar)
+    // Affichage instantané du compteur depuis localStorage (updateDailyStatsBar)
     // initQuiz() se chargera de l'appel Firestore via displayDailyStats()
-    // PAS de setTimeout(displayDailyStats) ici â€” initQuiz le fait dÃ©jÃ .
-    // Chaque appel redondant cause un flash (valeur Firestore â†’ reset localStorage â†’ Firestore).
+    // PAS de setTimeout(displayDailyStats) ici — initQuiz le fait déjà.
+    // Chaque appel redondant cause un flash (valeur Firestore → reset localStorage → Firestore).
     document.addEventListener('DOMContentLoaded', () => {
       try {
         if (typeof showBuildTag === 'function') showBuildTag();
