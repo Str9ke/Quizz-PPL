@@ -1069,10 +1069,20 @@
         } else {
           promptHtml = escHtml(q.sym);
         }
-        choiceHtmls = choices.map(function(c) { return escHtml(c.mean); });
+        // Pour les barbules de vent, afficher les vitesses comme choix au lieu des descriptions
+        if (q.cat === 'Barbules de vent') {
+          choiceHtmls = choices.map(function(c) { return escHtml(c.sym); });
+        } else {
+          choiceHtmls = choices.map(function(c) { return escHtml(c.mean); });
+        }
       } else {
         // Show meaning → guess symbol (image if available)
-        promptHtml = escHtml(q.mean);
+        // Pour les barbules de vent, afficher la vitesse comme prompt
+        if (q.cat === 'Barbules de vent') {
+          promptHtml = escHtml(q.sym);
+        } else {
+          promptHtml = escHtml(q.mean);
+        }
         choiceHtmls = choices.map(function(c) {
           var cimg = getSymbolImage(c);
           if (cimg) {
@@ -1083,6 +1093,10 @@
       }
 
       var html = '<div class="sym-q-label">' + (quizMode === 'symbol' ? 'Que signifie ce symbole ?' : 'Quel symbole correspond ?') + '</div>';
+      // Pour les barbules de vent en mode symbol, adapter la question
+      if (q.cat === 'Barbules de vent' && quizMode === 'symbol') {
+        html = '<div class="sym-q-label">Quelle est la vitesse du vent représentée ?</div>';
+      }
       html += '<div class="sym-q-prompt">' + promptHtml + '</div>';
       html += '<div class="sym-q-cat">' + escHtml(q.cat) + '</div>';
       html += '<div class="sym-choices">';
@@ -1164,6 +1178,80 @@
       });
       rhtml += '</div>';
       document.getElementById('reviewList').innerHTML = rhtml;
+
+      // === Sauvegarder la session dans localStorage pour la page Stats ===
+      _saveSymbolesSession(score, total, answers);
+    }
+
+    /**
+     * Sauvegarde une session symboles dans localStorage.
+     * Format identique aux sessions du quiz classique pour compatibilité avec stats.js.
+     * On sauvegarde aussi les réponses par catégorie pour les barres de progression.
+     */
+    function _saveSymbolesSession(correct, total, answersArr) {
+      try {
+        var now = new Date().toISOString();
+        // Déterminer les groupes sélectionnés pour cette session
+        var catsUsed = {};
+        answersArr.forEach(function(a) {
+          var grp = getGroup(a.item.cat);
+          if (!catsUsed[grp]) catsUsed[grp] = { correct: 0, total: 0 };
+          catsUsed[grp].total++;
+          if (a.correct) catsUsed[grp].correct++;
+        });
+        var catNames = Object.keys(catsUsed).sort();
+        var categoryLabel = catNames.length === 1 ? catNames[0] : 'Multi (' + catNames.length + ' groupes)';
+
+        // 1) Session globale symboles
+        var sessions = [];
+        try { sessions = JSON.parse(localStorage.getItem('symbolesSessionHistory') || '[]'); } catch(e) {}
+        sessions.push({
+          date: now,
+          correct: correct,
+          total: total,
+          category: categoryLabel,
+          percent: total > 0 ? Math.round(100 * correct / total) : 0,
+          groups: catNames
+        });
+        if (sessions.length > 200) sessions = sessions.slice(-200);
+        localStorage.setItem('symbolesSessionHistory', JSON.stringify(sessions));
+
+        // 2) Sessions par groupe de catégorie (pour les barres de progression par groupe)
+        catNames.forEach(function(grp) {
+          var key = 'symbolesSessions_' + grp;
+          var grpSessions = [];
+          try { grpSessions = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
+          grpSessions.push({
+            date: now,
+            correct: catsUsed[grp].correct,
+            total: catsUsed[grp].total,
+            category: grp,
+            percent: catsUsed[grp].total > 0 ? Math.round(100 * catsUsed[grp].correct / catsUsed[grp].total) : 0
+          });
+          if (grpSessions.length > 200) grpSessions = grpSessions.slice(-200);
+          localStorage.setItem(key, JSON.stringify(grpSessions));
+        });
+
+        // 3) Réponses individuelles par symbole (pour calculer réussi/raté/non-vu)
+        var responses = {};
+        try { responses = JSON.parse(localStorage.getItem('symbolesResponses') || '{}'); } catch(e) {}
+        answersArr.forEach(function(a) {
+          var symKey = 'sym_' + a.item.cat + '_' + a.item.sym;
+          if (!responses[symKey]) {
+            responses[symKey] = { cat: a.item.cat, group: getGroup(a.item.cat), sym: a.item.sym, correct: 0, wrong: 0, lastDate: null };
+          }
+          if (a.correct) {
+            responses[symKey].correct++;
+          } else {
+            responses[symKey].wrong++;
+          }
+          responses[symKey].lastDate = now;
+        });
+        localStorage.setItem('symbolesResponses', JSON.stringify(responses));
+
+      } catch(e) {
+        console.warn('[_saveSymbolesSession] erreur:', e.message);
+      }
     }
 
     window.resetQuiz = function() {

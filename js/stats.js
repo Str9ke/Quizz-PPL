@@ -862,7 +862,15 @@ function afficherStats(groupsData) {
     html += `</div>`;
   });
 
+  // ====================================================================
+  // SECTION SYMBOLES — progression basée sur localStorage (symbolesResponses)
+  // ====================================================================
+  html += _buildSymbolesStatsHtml(catChartIdx);
+
   cont.innerHTML = html;
+
+  // Rendre les graphiques des sessions symboles interactifs
+  _attachSymbolesChartListeners();
 }
 
 /**
@@ -932,6 +940,252 @@ function _renderCatSessionChart(container, catValue) {
   });
 
   html += `</div></div>`;
+  container.innerHTML = html;
+}
+
+// ====================================================================
+// SYMBOLES STATS — fonctions pour la section Symboles sur la page Stats
+// ====================================================================
+
+/**
+ * Définition des groupes de symboles et du nombre total de symboles par groupe.
+ * Doit rester synchronisé avec la base SYMBOLS de symboles.html.
+ */
+var _SYMBOLES_GROUPS = [
+  { label: '🔤 Alphabet OTAN', total: 26 },
+  { label: '🛫 Aérodrome', total: 40 },
+  { label: '📡 Communication', total: 36 },
+  { label: '🌦️ Météo', total: 161 },
+  { label: '🧑‍✈️ Marshalling', total: 39 }
+];
+var _SYMBOLES_TOTAL = 302;
+
+/**
+ * Lit les réponses symboles depuis localStorage et calcule les stats par groupe.
+ */
+function _getSymbolesStats() {
+  var responses = {};
+  try { responses = JSON.parse(localStorage.getItem('symbolesResponses') || '{}'); } catch(e) {}
+
+  var groupStats = {};
+  _SYMBOLES_GROUPS.forEach(function(g) {
+    groupStats[g.label] = { reussie: 0, ratee: 0, total: g.total, seen: new Set() };
+  });
+
+  for (var key in responses) {
+    var r = responses[key];
+    var grp = r.group;
+    if (!groupStats[grp]) continue;
+    groupStats[grp].seen.add(key);
+    if (r.correct > 0 && r.correct > r.wrong) {
+      groupStats[grp].reussie++;
+    } else if (r.wrong > 0) {
+      groupStats[grp].ratee++;
+    }
+  }
+
+  // Convertir seen Set en nombre et calculer nonvue
+  var result = {};
+  for (var g in groupStats) {
+    var gs = groupStats[g];
+    var seenCount = gs.seen.size;
+    result[g] = {
+      reussie: gs.reussie,
+      ratee: gs.ratee,
+      nonvue: Math.max(0, gs.total - seenCount),
+      total: gs.total
+    };
+  }
+  return result;
+}
+
+/**
+ * Construit le HTML de la section SYMBOLES pour afficherStats().
+ */
+function _buildSymbolesStatsHtml(catChartIdx) {
+  var percColor = function(p) {
+    if (p >= 80) return '#4caf50';
+    if (p >= 50) return '#ff9800';
+    return '#f44336';
+  };
+
+  var groupStats = _getSymbolesStats();
+
+  // Totaux globaux symboles
+  var sRe = 0, sRa = 0, sNv = 0;
+  _SYMBOLES_GROUPS.forEach(function(g) {
+    var s = groupStats[g.label] || { reussie: 0, ratee: 0, nonvue: g.total };
+    sRe += s.reussie;
+    sRa += s.ratee;
+    sNv += s.nonvue;
+  });
+  var sTotal = sRe + sRa + sNv;
+  var sPerc = sTotal ? Math.round((sRe * 100) / sTotal) : 0;
+
+  var html = '';
+  html += '<div class="stats-group">';
+  html += '<div class="stats-group-header">';
+  html += '  <span class="stats-group-name">🔣 SYMBOLES</span>';
+  html += '  <span class="stats-group-summary">' + sRe + '/' + sTotal + ' · ' + sPerc + '%</span>';
+  html += '</div>';
+  html += '<div class="progressbar" style="height:8px;margin:4px 0 8px">';
+  html += '  <div class="progress" style="height:8px;width:' + sPerc + '%;background:' + percColor(sPerc) + '"></div>';
+  html += '</div>';
+
+  // Historique global des sessions symboles (tableau de barres)
+  html += '<div id="symbolesGlobalSessionChart" style="margin-bottom:12px;"></div>';
+
+  // Barres par groupe
+  _SYMBOLES_GROUPS.forEach(function(g) {
+    var s = groupStats[g.label] || { reussie: 0, ratee: 0, nonvue: g.total, total: g.total };
+    var total = s.reussie + s.ratee + s.nonvue;
+    var perc = total ? Math.round((s.reussie * 100) / total) : 0;
+    var chartId = 'symCatChart_' + catChartIdx;
+    catChartIdx++;
+
+    html += '<div class="stats-cat-row sym-stats-cat-row" data-sym-group="' + g.label + '" data-chart-id="' + chartId + '" style="cursor:pointer;" title="Cliquer pour voir les sessions">';
+    html += '  <span class="stats-cat-name">' + g.label + '</span>';
+    html += '  <span class="stats-cat-bar"><div class="progressbar-mini"><div class="progress-mini" style="width:' + perc + '%;background:' + percColor(perc) + '"></div></div></span>';
+    html += '  <span class="stats-cat-perc" style="color:' + percColor(perc) + '">' + perc + '%</span>';
+    html += '  <span class="stats-cat-nums">✅' + s.reussie + ' ❌' + s.ratee + ' 👀' + s.nonvue + '</span>';
+    html += '</div>';
+    html += '<div class="stats-cat-chart-container" id="' + chartId + '" style="display:none;"></div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+/**
+ * Attache les écouteurs d'événements aux éléments de la section symboles
+ * après que le HTML a été inséré dans le DOM.
+ */
+function _attachSymbolesChartListeners() {
+  // Rendu du graphique global des sessions symboles
+  var globalChart = document.getElementById('symbolesGlobalSessionChart');
+  if (globalChart) {
+    _renderSymbolesGlobalSessionChart(globalChart);
+  }
+
+  // Expandable per-group session charts
+  document.querySelectorAll('.sym-stats-cat-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+      var chartId = row.getAttribute('data-chart-id');
+      var grpLabel = row.getAttribute('data-sym-group');
+      var chartDiv = document.getElementById(chartId);
+      if (!chartDiv) return;
+
+      if (chartDiv.style.display !== 'none') {
+        chartDiv.style.display = 'none';
+        row.classList.remove('stats-cat-row-expanded');
+        return;
+      }
+
+      // Fermer les autres graphiques symboles ouverts
+      document.querySelectorAll('.sym-stats-cat-row').forEach(function(r) {
+        var cid = r.getAttribute('data-chart-id');
+        var cd = document.getElementById(cid);
+        if (cd) cd.style.display = 'none';
+        r.classList.remove('stats-cat-row-expanded');
+      });
+
+      row.classList.add('stats-cat-row-expanded');
+      chartDiv.style.display = 'block';
+      _renderSymbolesGroupSessionChart(chartDiv, grpLabel);
+    });
+  });
+}
+
+/**
+ * Rendu du graphique global des sessions symboles (toutes catégories confondues).
+ */
+function _renderSymbolesGlobalSessionChart(container) {
+  var sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem('symbolesSessionHistory') || '[]'); } catch(e) {}
+  sessions = sessions.slice(-60);
+
+  if (!sessions.length) {
+    container.innerHTML = '<div style="padding:6px 8px;text-align:center;color:var(--text-secondary);font-size:0.82em;">Aucune session symboles enregistrée</div>';
+    return;
+  }
+
+  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
+  var last5 = sessions.slice(-5);
+  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
+  var maxBarH = 60;
+
+  var html = '';
+  html += '<div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">';
+  html += '  <span><strong>Sessions symboles</strong> — ' + sessions.length + ' session' + (sessions.length > 1 ? 's' : '') + '</span>';
+  html += '  <span>moy: <b>' + avgPct + '%</b> · 5 dern.: <b>' + avgLast5 + '%</b></span>';
+  html += '</div>';
+  html += '<div class="daily-chart-scroll" style="margin:0 4px 6px">';
+  html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
+
+  sessions.forEach(function(s, idx) {
+    var pct = s.percent || 0;
+    var h = Math.max(4, Math.round((pct / 100) * maxBarH));
+    var color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
+    var d = new Date(s.date);
+    var dayLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    var timeLabel = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    var tooltip = dayLabel + ' ' + timeLabel + ' - ' + pct + '% (' + s.correct + '/' + s.total + ') ' + (s.category || '');
+
+    html += '<div class="daily-bar-col" title="' + tooltip + '" style="cursor:default">';
+    html += '  <div class="daily-bar-count" style="font-size:0.65em">' + pct + '%</div>';
+    html += '  <div class="daily-bar" style="height:' + h + 'px;background:' + color + '"></div>';
+    html += '  <div class="daily-bar-label" style="font-size:0.6em">' + (idx === sessions.length - 1 ? dayLabel : (idx % 5 === 0 ? dayLabel : '')) + '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+/**
+ * Rendu du graphique des sessions pour un groupe symboles spécifique.
+ */
+function _renderSymbolesGroupSessionChart(container, grpLabel) {
+  var key = 'symbolesSessions_' + grpLabel;
+  var sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
+  sessions = sessions.slice(-60);
+
+  if (!sessions.length) {
+    container.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-secondary);font-size:0.85em;">Aucune session pour ce groupe</div>';
+    return;
+  }
+
+  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
+  var last5 = sessions.slice(-5);
+  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
+  var maxBarH = 60;
+
+  var html = '';
+  html += '<div style="padding:6px 8px 2px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.78em;color:var(--text-secondary)">';
+  html += '  <span>' + sessions.length + ' session' + (sessions.length > 1 ? 's' : '') + '</span>';
+  html += '  <span>moy: <b>' + avgPct + '%</b> · 5 dern.: <b>' + avgLast5 + '%</b></span>';
+  html += '</div>';
+  html += '<div class="daily-chart-scroll" style="margin:0 4px 6px">';
+  html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
+
+  sessions.forEach(function(s, idx) {
+    var pct = s.percent || 0;
+    var h = Math.max(4, Math.round((pct / 100) * maxBarH));
+    var color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
+    var d = new Date(s.date);
+    var dayLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    var timeLabel = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    var tooltip = dayLabel + ' ' + timeLabel + ' - ' + pct + '% (' + s.correct + '/' + s.total + ')';
+
+    html += '<div class="daily-bar-col" title="' + tooltip + '" style="cursor:default">';
+    html += '  <div class="daily-bar-count" style="font-size:0.65em">' + pct + '%</div>';
+    html += '  <div class="daily-bar" style="height:' + h + 'px;background:' + color + '"></div>';
+    html += '  <div class="daily-bar-label" style="font-size:0.6em">' + (idx === sessions.length - 1 ? dayLabel : (idx % 5 === 0 ? dayLabel : '')) + '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
   container.innerHTML = html;
 }
 
@@ -1177,6 +1431,13 @@ async function resetStats() {
     if (k && k.startsWith("question_")) toRemove.push(k);
   }
   toRemove.forEach(k => localStorage.removeItem(k));
+
+  // Supprimer aussi les stats Symboles
+  localStorage.removeItem('symbolesSessionHistory');
+  localStorage.removeItem('symbolesResponses');
+  _SYMBOLES_GROUPS.forEach(function(g) {
+    localStorage.removeItem('symbolesSessions_' + g.label);
+  });
 
   try {
     // Remplacer le delete() par un set() à responses: {}
