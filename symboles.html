@@ -1190,6 +1190,7 @@
      */
     function _saveSymbolesSession(correct, total, answersArr) {
       try {
+        console.log('[Symboles] Sauvegarde session:', correct + '/' + total, '(' + answersArr.length + ' réponses)');
         var now = new Date().toISOString();
         // Déterminer les groupes sélectionnés pour cette session
         var catsUsed = {};
@@ -1248,6 +1249,7 @@
           responses[symKey].lastDate = now;
         });
         localStorage.setItem('symbolesResponses', JSON.stringify(responses));
+        console.log('[Symboles] Session sauvegardée OK. Réponses:', Object.keys(responses).length, 'symboles. Sessions:', sessions.length);
 
       } catch(e) {
         console.warn('[_saveSymbolesSession] erreur:', e.message);
