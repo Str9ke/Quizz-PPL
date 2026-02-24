@@ -343,6 +343,7 @@
       {cat: 'Barbules de vent', sym: '25 KT', mean: 'Hampe + 2 barbules pleines + 1 demi-barbule'},
       {cat: 'Barbules de vent', sym: '35 KT', mean: 'Hampe + 3 barbules pleines + 1 demi-barbule'},
       {cat: 'Barbules de vent', sym: '50 KT', mean: 'Hampe + 1 fanion triangulaire (drapeau)'},
+      {cat: 'Barbules de vent', sym: '60 KT', mean: 'Hampe + 1 fanion triangulaire + 1 barbule pleine'},
       {cat: 'Barbules de vent', sym: '65 KT', mean: 'Hampe + 1 fanion + 1 barbule pleine + 1 demi-barbule'},
       {cat: 'Barbules de vent', sym: '100 KT', mean: 'Hampe + 2 fanions triangulaires'},
       {cat: 'Barbules de vent', sym: '125 KT', mean: 'Hampe + 2 fanions + 2 barbules pleines + 1 demi-barbule'},
@@ -538,49 +539,38 @@
       SYM_IMAGES['+ (croix)'] = TS('<line x1="25" y1="6" x2="25" y2="34" stroke="#333" stroke-width="3"/><line x1="11" y1="20" x2="39" y2="20" stroke="#333" stroke-width="3"/>');
       SYM_IMAGES['M (lettre)'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">M</text>');
 
-      // === FRONTS MÉTÉO ===
-      SYM_IMAGES['Front froid'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#2980b9" stroke-width="3"/><polygon points="25,20 20,8 30,8" fill="#2980b9"/><polygon points="50,20 45,8 55,8" fill="#2980b9"/><polygon points="75,20 70,8 80,8" fill="#2980b9"/><polygon points="100,20 95,8 105,8" fill="#2980b9"/>');
-      SYM_IMAGES['Front chaud'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#e74c3c" stroke-width="3"/><path d="M20,20 A8,8 0 0,1 36,20" fill="#e74c3c"/><path d="M46,20 A8,8 0 0,1 62,20" fill="#e74c3c"/><path d="M72,20 A8,8 0 0,1 88,20" fill="#e74c3c"/><path d="M98,20 A8,8 0 0,1 114,20" fill="#e74c3c"/>');
-      SYM_IMAGES['Front stationnaire'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#888" stroke-width="2"/><polygon points="20,20 15,8 25,8" fill="#2980b9"/><polygon points="55,20 50,8 60,8" fill="#2980b9"/><polygon points="90,20 85,8 95,8" fill="#2980b9"/><path d="M32,20 A7,7 0 0,0 46,20" fill="#e74c3c"/><path d="M67,20 A7,7 0 0,0 81,20" fill="#e74c3c"/><path d="M102,20 A7,7 0 0,0 116,20" fill="#e74c3c"/>');
-      SYM_IMAGES['Front occlus'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#9b59b6" stroke-width="3"/><polygon points="22,20 17,8 27,8" fill="#9b59b6"/><path d="M36,20 A7,7 0 0,1 50,20" fill="#9b59b6"/><polygon points="62,20 57,8 67,8" fill="#9b59b6"/><path d="M76,20 A7,7 0 0,1 90,20" fill="#9b59b6"/><polygon points="102,20 97,8 107,8" fill="#9b59b6"/>');
+      // === FRONTS MÉTÉO (images locales Carte METEO) ===
+      function meteoImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="Symboles/Carte%20METEO/' + file + '" alt="' + alt + '"></div>'; }
+      SYM_IMAGES['Front froid'] = meteoImg('meteo-front-froid.png','Front froid');
+      SYM_IMAGES['Front chaud'] = meteoImg('meteo-front-chaud.png','Front chaud');
+      SYM_IMAGES['Front stationnaire'] = meteoImg('meteo-front-stationnaire.png','Front stationnaire');      SYM_IMAGES['Front occlus'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#9b59b6" stroke-width="3"/><polygon points="22,20 17,8 27,8" fill="#9b59b6"/><path d="M36,20 A7,7 0 0,1 50,20" fill="#9b59b6"/><polygon points="62,20 57,8 67,8" fill="#9b59b6"/><path d="M76,20 A7,7 0 0,1 90,20" fill="#9b59b6"/><polygon points="102,20 97,8 107,8" fill="#9b59b6"/>');
       SYM_IMAGES['Thalweg (TROF)'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#e67e22" stroke-width="2.5" stroke-dasharray="8,5"/>');
       SYM_IMAGES['Dorsale (Ridge)'] = S(120,40,'<polyline points="5,30 20,10 35,30 50,10 65,30 80,10 95,30 110,10 115,20" fill="none" stroke="#f1c40f" stroke-width="2.5"/>');
 
       // === CENTRES DE PRESSION ===
       SYM_IMAGES['H (Anticyclone)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#2980b9" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#2980b9" text-anchor="middle">H</text>');
       SYM_IMAGES['L (Dépression)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#e74c3c" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#e74c3c" text-anchor="middle">L</text>');
-      SYM_IMAGES['Ouragan'] = S(60,60,'<circle cx="30" cy="30" r="8" fill="#e74c3c"/><path d="M30,22 Q42,10 38,30 Q34,50 30,38" stroke="#e74c3c" stroke-width="2.5" fill="none"/><path d="M30,38 Q18,50 22,30 Q26,10 30,22" stroke="#e74c3c" stroke-width="2.5" fill="none"/>');
-      SYM_IMAGES['Tempête tropicale'] = S(60,60,'<path d="M18,46 Q18,14 42,14" stroke="#e74c3c" stroke-width="3" fill="none"/><path d="M42,14 Q42,46 18,46" stroke="#e74c3c" stroke-width="3" fill="none"/>');
-      SYM_IMAGES['Dépression tropicale'] = S(60,60,'<circle cx="30" cy="30" r="20" fill="none" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4,3"/><text x="30" y="40" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#e74c3c" text-anchor="middle">L</text>');
+      SYM_IMAGES['Ouragan'] = meteoImg('meteo-ouragan.png','Ouragan');
+      SYM_IMAGES['Tempête tropicale'] = meteoImg('meteo-tempete-tropicale.png','Tempête tropicale');
+      SYM_IMAGES['Dépression tropicale'] = meteoImg('meteo-depression-tropicale.png','Dépression tropicale');
       SYM_IMAGES['Onde tropicale'] = S(100,40,'<path d="M10,30 Q30,5 50,20 Q70,35 90,10" stroke="#9b59b6" stroke-width="3" fill="none"/>');
 
-      // === BARBULES DE VENT ===
-      // Calm = circle
-      SYM_IMAGES['Calme (0 KT)'] = S(50,50,'<circle cx="25" cy="25" r="10" fill="none" stroke="#333" stroke-width="2.5"/>');
-      // 5 KT = staff + short barb
-      SYM_IMAGES['5 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="35" y2="12" stroke="#333" stroke-width="2.5"/>');
-      // 10 KT = staff + full barb
-      SYM_IMAGES['10 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/>');
-      // 15 KT = 1 full + 1 half
-      SYM_IMAGES['15 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="35" y2="18" stroke="#333" stroke-width="2.5"/>');
-      // 20 KT = 2 full barbs
-      SYM_IMAGES['20 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/>');
-      // 25 KT = 2 full + 1 half
-      SYM_IMAGES['25 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/><line x1="25" y1="20" x2="35" y2="24" stroke="#333" stroke-width="2.5"/>');
-      // 35 KT = 3 full + 1 half
-      SYM_IMAGES['35 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/><line x1="25" y1="20" x2="40" y2="26" stroke="#333" stroke-width="2.5"/><line x1="25" y1="26" x2="35" y2="30" stroke="#333" stroke-width="2.5"/>');
-      // 50 KT = 1 pennant (filled triangle)
-      SYM_IMAGES['50 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/>');
-      // 65 KT = 1 pennant + 1 full + 1 half
-      SYM_IMAGES['65 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/><line x1="25" y1="20" x2="40" y2="26" stroke="#333" stroke-width="2.5"/><line x1="25" y1="26" x2="35" y2="30" stroke="#333" stroke-width="2.5"/>');
-      // 100 KT = 2 pennants
-      SYM_IMAGES['100 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/><polygon points="25,18 40,24 25,28" fill="#333"/>');
-      // 125 KT = 2 pennants + 2 full + 1 half
-      SYM_IMAGES['125 KT'] = S(50,56,'<line x1="25" y1="4" x2="25" y2="48" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="48" r="3" fill="#333"/><polygon points="25,4 40,10 25,14" fill="#333"/><polygon points="25,14 40,20 25,24" fill="#333"/><line x1="25" y1="26" x2="40" y2="32" stroke="#333" stroke-width="2.5"/><line x1="25" y1="32" x2="40" y2="38" stroke="#333" stroke-width="2.5"/><line x1="25" y1="38" x2="35" y2="42" stroke="#333" stroke-width="2.5"/>');
-
-      // === GIVRAGE CARTES ===
-      SYM_IMAGES['Givrage modéré (carte)'] = S(60,50,'<path d="M10,35 Q30,5 50,35" fill="none" stroke="#00bcd4" stroke-width="3"/><line x1="30" y1="10" x2="30" y2="38" stroke="#00bcd4" stroke-width="2"/>');
-      SYM_IMAGES['Givrage fort (carte)'] = S(60,50,'<path d="M10,35 Q30,5 50,35" fill="none" stroke="#00bcd4" stroke-width="3"/><line x1="30" y1="10" x2="30" y2="38" stroke="#00bcd4" stroke-width="2"/><line x1="22" y1="24" x2="38" y2="24" stroke="#00bcd4" stroke-width="2"/><line x1="30" y1="16" x2="30" y2="32" stroke="#00bcd4" stroke-width="2"/>');
+      // === BARBULES DE VENT (images locales Carte METEO) ===
+      SYM_IMAGES['Calme (0 KT)'] = meteoImg('meteo-calme-0kt.png','Calme 0 KT');
+      SYM_IMAGES['5 KT']   = meteoImg('meteo-5kt.png','5 KT');
+      SYM_IMAGES['10 KT']  = meteoImg('meteo-10kt.png','10 KT');
+      SYM_IMAGES['15 KT']  = meteoImg('meteo-15kt.png','15 KT');
+      SYM_IMAGES['20 KT']  = meteoImg('meteo-20kt.png','20 KT');
+      SYM_IMAGES['25 KT']  = meteoImg('meteo-25kt.png','25 KT');
+      SYM_IMAGES['35 KT']  = meteoImg('meteo-35kt.png','35 KT');
+      SYM_IMAGES['50 KT']  = meteoImg('meteo-50kt.png','50 KT');
+      SYM_IMAGES['60 KT']  = meteoImg('meteo-60kt.png','60 KT');
+      SYM_IMAGES['65 KT']  = meteoImg('meteo-65kt.png','65 KT');
+      SYM_IMAGES['100 KT'] = meteoImg('meteo-100kt.png','100 KT');
+      SYM_IMAGES['125 KT'] = meteoImg('meteo-125kt.png','125 KT');
+      // === GIVRAGE CARTES (images locales Carte METEO) ===
+      SYM_IMAGES['Givrage modéré (carte)'] = meteoImg('meteo-givrage-modere.png','Givrage modéré');
+      SYM_IMAGES['Givrage fort (carte)'] = meteoImg('meteo-givrage-fort.png','Givrage fort');
       SYM_IMAGES['Limite des glaces (Ice Edge)'] = S(100,30,'<line x1="5" y1="15" x2="95" y2="15" stroke="#00bcd4" stroke-width="2.5" stroke-dasharray="3,4"/><circle cx="15" cy="15" r="3" fill="#00bcd4"/><circle cx="35" cy="15" r="3" fill="#00bcd4"/><circle cx="55" cy="15" r="3" fill="#00bcd4"/><circle cx="75" cy="15" r="3" fill="#00bcd4"/>');
       SYM_IMAGES['Limite embruns givrants'] = S(100,30,'<line x1="5" y1="15" x2="95" y2="15" stroke="#e74c3c" stroke-width="2" stroke-dasharray="8,5"/><rect x="12" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="32" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="52" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="72" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/>');
 
@@ -631,7 +621,7 @@
       SYM_IMAGES["Cabrer et allumer/éteindre phares (intercepteur)"] = S(100,60,'<path d="M20,42 Q40,18 70,12" stroke="#444" stroke-width="2.5" fill="none"/><polygon points="65,7 75,12 67,17" fill="#444"/><circle cx="55" cy="18" r="4" fill="#f1c40f"><animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite"/></circle><text x="50" y="56" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">montez</text>');
 
       // === SIGNAUX DE MARSHALLING (AC-08-003 ICAO — images locales) ===
-      function marshImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="Symboles/' + file + '" alt="' + alt + '"></div>'; }
+      function marshImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="Symboles/Marshalling/' + file + '" alt="' + alt + '"></div>'; }
       SYM_IMAGES['1. Wingwalker / Guide']                = marshImg('01-wingwalker.png','Wingwalker');
       SYM_IMAGES['2. Identification du poste']            = marshImg('02-identify-gate.png','Identify gate');
       SYM_IMAGES['3. Vers le prochain signaleur']         = marshImg('03-proceed-next-signalman.png','Proceed to next signalman');
