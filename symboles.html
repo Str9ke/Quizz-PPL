@@ -13,6 +13,36 @@
     .sym-cat-btn { padding: 7px 10px; font-size: 0.82em; font-weight: 600; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; text-align: left; }
     .sym-cat-btn:hover { border-color: #667eea; color: #667eea; }
     .sym-cat-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-color: transparent; }
+    /* Tabbed modes: Quiz / Consulter / Nuages interactif */
+    .sym-tab-row { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); }
+    .sym-tab { flex: 1; padding: 10px 6px; font-size: 0.9em; font-weight: 700; cursor: pointer; background: transparent; border: none; color: var(--text-secondary); border-bottom: 3px solid transparent; transition: all 0.2s; text-align: center; }
+    .sym-tab:hover { color: #667eea; }
+    .sym-tab.active { color: #667eea; border-bottom-color: #667eea; }
+    /* Consultation / browse mode */
+    .sym-browse { max-width: 900px; margin: 0 auto; }
+    .sym-browse-group { margin-bottom: 20px; }
+    .sym-browse-group-title { font-size: 1em; font-weight: 700; color: var(--text-heading); margin: 12px 0 8px; padding: 6px 12px; background: linear-gradient(135deg, rgba(102,126,234,.1) 0%, rgba(118,75,162,.1) 100%); border-radius: 8px; }
+    .sym-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+    .sym-browse-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.82em; }
+    .sym-browse-card .sym-browse-img { flex-shrink: 0; max-width: 70px; max-height: 55px; }
+    .sym-browse-card .sym-browse-img svg, .sym-browse-card .sym-browse-img img { max-width: 70px; max-height: 55px; }
+    .sym-browse-card .sym-browse-sym { font-weight: 700; color: var(--text-heading); min-width: 50px; }
+    .sym-browse-card .sym-browse-mean { color: var(--text-secondary); flex: 1; }
+    /* Cloud interactive diagram */
+    .cloud-diagram-wrap { max-width: 850px; margin: 0 auto; padding: 20px; }
+    .cloud-diagram-img { position: relative; display: inline-block; }
+    .cloud-diagram-img img { width: 100%; max-width: 817px; border-radius: 10px; }
+    .cloud-dropdown { position: absolute; font-size: 0.72em; padding: 2px 4px; border-radius: 4px; border: 1.5px solid #667eea; background: rgba(0,0,0,0.7); color: #fff; cursor: pointer; }
+    .cloud-dropdown option { background: #222; }
+    .cloud-dropdown.correct { border-color: #4caf50; background: rgba(76,175,80,0.2); }
+    .cloud-dropdown.wrong { border-color: #f44336; background: rgba(244,67,54,0.2); }
+    .cloud-check-btn { display: block; margin: 14px auto; padding: 10px 30px; font-size: 0.95em; font-weight: 700; border-radius: 20px; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+    .cloud-score { text-align: center; font-size: 1.1em; font-weight: 700; color: var(--text-heading); margin: 10px 0; }
+    /* Animated light blink via CSS */
+    @keyframes blink-on-off { 0%,20% { opacity: 1; } 50%,80% { opacity: 0.05; } 100% { opacity: 1; } }
+    @keyframes flare-burst { 0% { r: 4; opacity: 1; } 30% { r: 18; opacity: 0.9; } 60% { r: 25; opacity: 0.4; } 100% { r: 30; opacity: 0; } }
+    .light-blink { animation: blink-on-off 0.7s ease-in-out infinite; }
+    .flare-glow { animation: flare-burst 1.2s ease-out infinite; }
     .sym-mode-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
     .sym-mode-btn { padding: 8px 20px; font-size: 0.88em; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; }
     .sym-mode-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-color: transparent; }
@@ -93,6 +123,16 @@
       <span class="home-card-title">Configuration</span>
     </div>
 
+    <!-- Tabs: Quiz / Consulter / Nuages -->
+    <div class="sym-tab-row">
+      <button class="sym-tab active" data-tab="quiz" onclick="switchTab('quiz',this)">🎯 Quiz</button>
+      <button class="sym-tab" data-tab="browse" onclick="switchTab('browse',this)">📖 Consulter</button>
+      <button class="sym-tab" data-tab="clouds" onclick="switchTab('clouds',this)">☁️ Nuages interactif</button>
+    </div>
+
+    <!-- ===== QUIZ TAB ===== -->
+    <div id="tabQuiz">
+
     <!-- Mode -->
     <div style="margin-bottom: 6px; font-size: 0.85em; color: var(--text-secondary); font-weight: 600;">Mode :</div>
     <div class="sym-mode-row">
@@ -116,6 +156,30 @@
     </div>
 
     <button class="sym-start-btn" id="btnStart" onclick="startQuiz()">🚀 Commencer le test</button>
+    </div><!-- /tabQuiz -->
+
+    <!-- ===== BROWSE TAB ===== -->
+    <div id="tabBrowse" style="display:none;">
+      <div style="margin-bottom:8px; font-size:0.85em; color:var(--text-secondary); font-weight:600;">Filtrer par groupe :</div>
+      <div class="sym-select-btns" id="browseFilterBtns"></div>
+      <div class="sym-browse" id="browseContent"></div>
+    </div>
+
+    <!-- ===== CLOUDS INTERACTIVE TAB ===== -->
+    <div id="tabClouds" style="display:none;">
+      <div class="cloud-diagram-wrap">
+        <p style="font-size:0.88em; color:var(--text-secondary); text-align:center; margin-bottom:10px;">
+          Placez le bon type de nuage à chaque emplacement sur le diagramme d'altitude.
+        </p>
+        <div class="cloud-diagram-img" id="cloudDiagramContainer">
+          <img src="Symboles/Meteo/clouds-altitude-diagram.png" alt="Diagramme des nuages par altitude" id="cloudDiagramImg">
+        </div>
+        <button class="cloud-check-btn" onclick="checkCloudAnswers()">✅ Vérifier</button>
+        <button class="cloud-check-btn" onclick="resetCloudDiagram()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-secondary); margin-top:6px;">🔄 Réinitialiser</button>
+        <div class="cloud-score" id="cloudScore"></div>
+      </div>
+    </div>
+
   </div>
 
   <div id="quizPanel" style="display:none;">
@@ -134,6 +198,35 @@
   <script>
   (function() {
     'use strict';
+
+    // ================================================
+    // GROUP MAPPING — fewer selectable groups
+    // ================================================
+    var CAT_GROUPS = {
+      'Alphabet OTAN': '🔤 Alphabet OTAN',
+      'Feux de navigation': '🛫 Aérodrome',
+      'Table des angles': '🛫 Aérodrome',
+      'Échelle de lisibilité': '📡 Communication',
+      'Signaux au sol': '🛫 Aérodrome',
+      'Signaux lumineux (au sol)': '📡 Communication',
+      'Signaux lumineux (en vol)': '📡 Communication',
+      'Distances déclarées': '🛫 Aérodrome',
+      'Codes météo OACI': '🌦️ Météo',
+      'Fronts météo': '🌦️ Météo',
+      'Centres de pression': '🌦️ Météo',
+      'Barbules de vent': '🌦️ Météo',
+      'Givrage cartes': '🌦️ Météo',
+      'Avertissements vent': '🌦️ Météo',
+      'Types de nuages': '🌦️ Météo',
+      'Correspondance pression-altitude': '🌦️ Météo',
+      'Signaux sol-air (survivants)': '📡 Communication',
+      'Signaux sol-air (sauvetage)': '📡 Communication',
+      "Signaux d'interception": '📡 Communication',
+      'Signaux de marshalling': '🧑‍✈️ Marshalling',
+      'Marquages de piste': '🛫 Aérodrome'
+    };
+    function getGroup(cat) { return CAT_GROUPS[cat] || cat; }
+
     // ================================================
     // SYMBOLS DATABASE — extracted from all images
     // ================================================
@@ -491,7 +584,25 @@
       {cat: 'Marquages de piste', sym: 'Ligne axiale jaune (TWY)', mean: 'Axe de voie de circulation (taxiway centerline)'},
       {cat: 'Marquages de piste', sym: 'Panneau rouge + inscription blanche', mean: 'Panneau obligatoire de type STOP ou désignation de piste'},
       {cat: 'Marquages de piste', sym: 'Panneau jaune/noir (direction)', mean: 'Panneau d\'information / direction de taxiway'},
-      {cat: 'Marquages de piste', sym: 'Chevrons blancs (zone fermée)', mean: 'Zone inutilisable ou fermée — interdiction de circuler'}
+      {cat: 'Marquages de piste', sym: 'Chevrons blancs (zone fermée)', mean: 'Zone inutilisable ou fermée — interdiction de circuler'},
+
+      // === Types de nuages ===
+      {cat: 'Types de nuages', sym: 'Cirrus (Ci)', mean: 'Nuage élevé en filaments blancs — cristaux de glace — pas de précipitations'},
+      {cat: 'Types de nuages', sym: 'Cirrocumulus (Cc)', mean: "Banc moutonné élevé — éléments < 1° — cristaux de glace — pas de précipitations"},
+      {cat: 'Types de nuages', sym: 'Cirrostratus (Cs)', mean: 'Voile élevé transparent — cristaux de glace — phénomènes de halo'},
+      {cat: 'Types de nuages', sym: 'Altocumulus (Ac)', mean: "Banc/nappe blanc-gris à éléments 1–5° — gouttelettes d'eau — averses possibles"},
+      {cat: 'Types de nuages', sym: 'Altostratus (As)', mean: "Nappe grisâtre/bleuâtre — soleil visible comme au travers d'un verre dépoli — pluie/neige"},
+      {cat: 'Types de nuages', sym: 'Nimbostratus (Ns)', mean: 'Couche grise et sombre — pluie/neige continues — masque le soleil'},
+      {cat: 'Types de nuages', sym: 'Cumulonimbus (Cb)', mean: "Nuage dense et puissant — développement vertical — enclume — orages, grêle, pluie"},
+      {cat: 'Types de nuages', sym: 'Cumulus congestus (TCU)', mean: "Cumulus à développement vertical important — aspect bouillonnant — averses"},
+      {cat: 'Types de nuages', sym: 'Cumulus humilis (Cu)', mean: "Nuage séparé de beau temps — base horizontale — faible développement vertical"},
+      {cat: 'Types de nuages', sym: 'Stratocumulus (Sc)', mean: "Banc/nappe de dalles/galets > 5° — gouttelettes d'eau — pluie/neige faible"},
+      {cat: 'Types de nuages', sym: 'Stratus (St)', mean: 'Couche grise uniforme — brouillard si base au sol — bruine ou neige en grains'},
+
+      // === Correspondance pression-altitude ===
+      {cat: 'Correspondance pression-altitude', sym: '850 hPa', mean: '≈ 1 500 m / 4 781 ft / FL050 (atmosphère standard)'},
+      {cat: 'Correspondance pression-altitude', sym: '700 hPa', mean: '≈ 3 000 m / 9 882 ft / FL100 (atmosphère standard)'},
+      {cat: 'Correspondance pression-altitude', sym: '500 hPa', mean: '≈ 5 500 m / 18 289 ft / FL180 (atmosphère standard)'}
     ];
 
     // ================================================
@@ -526,26 +637,32 @@
       // Manche à air
       SYM_IMAGES['Manche à air (segments)'] = S(110,60,'<line x1="10" y1="52" x2="10" y2="8" stroke="#555" stroke-width="3"/><polygon points="10,10 10,42 100,36 100,16" fill="none" stroke="#555" stroke-width="1.5"/><rect x="10" y="10" width="18" height="32" fill="#e74c3c" opacity=".85"/><rect x="28" y="12" width="18" height="28" fill="#fff" opacity=".85"/><rect x="46" y="14" width="18" height="24" fill="#e74c3c" opacity=".85"/><rect x="64" y="16" width="18" height="20" fill="#fff" opacity=".85"/><rect x="82" y="18" width="18" height="18" fill="#e74c3c" opacity=".85"/>');
 
-      // === FEUX DE NAVIGATION ===
-      // Avion face: vert gauche, rouge droite
-      var planeFront = '<line x1="40" y1="10" x2="40" y2="38" stroke="#444" stroke-width="3"/><line x1="8" y1="24" x2="72" y2="24" stroke="#444" stroke-width="2.5"/><line x1="25" y1="36" x2="55" y2="36" stroke="#444" stroke-width="2"/><rect x="37" y="6" width="6" height="8" rx="2" fill="#888"/>';
-      SYM_IMAGES['🟢 gauche · 🔴 droite (face)'] = S(80,48, planeFront + '<circle cx="8" cy="24" r="5" fill="#2ecc71"/><circle cx="72" cy="24" r="5" fill="#e74c3c"/>');
-      // Avion dos: blanc
-      SYM_IMAGES['⬜ blanc (arrière)'] = S(80,48, '<line x1="40" y1="10" x2="40" y2="38" stroke="#444" stroke-width="3"/><line x1="8" y1="24" x2="72" y2="24" stroke="#444" stroke-width="2.5"/><line x1="25" y1="12" x2="55" y2="12" stroke="#444" stroke-width="2"/><rect x="37" y="34" width="6" height="8" rx="2" fill="#888"/><circle cx="40" cy="42" r="5" fill="#fff" stroke="#ccc" stroke-width="1"/>');
-      // Vert seul (avion allant à droite)
-      SYM_IMAGES['🟢 vert seul visible'] = S(80,48,'<g transform="translate(40,24) rotate(-15)"><line x1="-16" y1="0" x2="16" y2="0" stroke="#444" stroke-width="3"/><line x1="-30" y1="6" x2="30" y2="6" stroke="#444" stroke-width="2"/></g><circle cx="14" cy="24" r="5" fill="#2ecc71"/>');
-      // Rouge seul (avion allant à gauche)
-      SYM_IMAGES['🔴 rouge seul visible'] = S(80,48,'<g transform="translate(40,24) rotate(15)"><line x1="-16" y1="0" x2="16" y2="0" stroke="#444" stroke-width="3"/><line x1="-30" y1="6" x2="30" y2="6" stroke="#444" stroke-width="2"/></g><circle cx="66" cy="24" r="5" fill="#e74c3c"/>');
-      // Virage gauche
-      SYM_IMAGES['🟢 vert + silhouette inclinée vers vous'] = S(80,50,'<g transform="translate(40,25) rotate(25)"><ellipse cx="0" cy="-4" rx="6" ry="14" fill="#888" opacity=".4"/><line x1="-22" y1="2" x2="22" y2="2" stroke="#444" stroke-width="2.5"/><line x1="-8" y1="-10" x2="8" y2="-10" stroke="#444" stroke-width="2"/></g><circle cx="18" cy="18" r="5" fill="#2ecc71"/>');
-      // Virage droite
-      SYM_IMAGES["🔴 rouge + silhouette inclinée s'éloignant"] = S(80,50,'<g transform="translate(40,25) rotate(-25)"><ellipse cx="0" cy="-4" rx="6" ry="14" fill="#888" opacity=".4"/><line x1="-22" y1="2" x2="22" y2="2" stroke="#444" stroke-width="2.5"/><line x1="-8" y1="-10" x2="8" y2="-10" stroke="#444" stroke-width="2"/></g><circle cx="62" cy="18" r="5" fill="#e74c3c"/>');
+      // === FEUX DE NAVIGATION (images d'avion extraites) ===
+      function acImg(file, alt) { return '<div style="display:inline-block;background:#1a1a2e;border-radius:10px;padding:6px 10px;"><img src="Symboles/Meteo/aircraft/' + file + '" alt="' + alt + '" style="height:80px;"></div>'; }
+      SYM_IMAGES['🟢 gauche · 🔴 droite (face)'] = acImg('facing-towards.png','Avion de face');
+      SYM_IMAGES['⬜ blanc (arrière)'] = acImg('facing-away.png','Avion de dos');
+      SYM_IMAGES['🟢 vert seul visible'] = acImg('facing-right.png','Avion allant à droite');
+      SYM_IMAGES['🔴 rouge seul visible'] = acImg('facing-left.png','Avion allant à gauche');
+      SYM_IMAGES['🟢 vert + silhouette inclinée vers vous'] = acImg('looking-down.png','Vue plongeante');
+      SYM_IMAGES["🔴 rouge + silhouette inclinée s'éloignant"] = acImg('looking-up.png','Vue de dessous');
 
       // === SIGNAUX LUMINEUX (AU SOL) ===
       function lightSig(color, flashing, label) {
         var c = color === 'vert' ? '#2ecc71' : color === 'rouge' ? '#e74c3c' : '#fff';
-        var flash = flashing ? '<circle cx="50" cy="28" r="12" fill="'+c+'" opacity=".3"><animate attributeName="opacity" values=".3;1;.3" dur="0.8s" repeatCount="indefinite"/></circle>' : '';
-        return S(100,56,'<rect x="2" y="2" width="96" height="52" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/><circle cx="50" cy="28" r="14" fill="'+c+'" opacity=".9"/>'+flash+'<text x="50" y="50" font-family="Arial,sans-serif" font-size="8" fill="#aaa" text-anchor="middle">'+label+'</text>');
+        var glow = color === 'vert' ? '#2ecc71' : color === 'rouge' ? '#e74c3c' : '#f0f0f0';
+        if (flashing) {
+          // CSS-animated blink with real on/off
+          return S(100,56,'<rect x="2" y="2" width="96" height="52" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>'
+            + '<circle cx="50" cy="26" r="16" fill="'+c+'" class="light-blink"/>'
+            + '<circle cx="50" cy="26" r="22" fill="'+glow+'" opacity="0.15" class="light-blink"/>'
+            + '<text x="50" y="50" font-family="Arial,sans-serif" font-size="8" fill="#aaa" text-anchor="middle">'+label+'</text>');
+        } else {
+          // Fixed steady light — no animation
+          return S(100,56,'<rect x="2" y="2" width="96" height="52" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>'
+            + '<circle cx="50" cy="26" r="16" fill="'+c+'" opacity="0.95"/>'
+            + '<circle cx="50" cy="26" r="22" fill="'+glow+'" opacity="0.12"/>'
+            + '<text x="50" y="50" font-family="Arial,sans-serif" font-size="8" fill="#aaa" text-anchor="middle">'+label+'</text>');
+        }
       }
       SYM_IMAGES['sol:Feu vert continu'] = lightSig('vert', false, 'continu');
       SYM_IMAGES['sol:Feu rouge continu'] = lightSig('rouge', false, 'continu');
@@ -554,7 +671,15 @@
       SYM_IMAGES['sol:Éclats rouges'] = lightSig('rouge', true, 'éclats');
 
       // === SIGNAUX LUMINEUX (EN VOL) ===
-      SYM_IMAGES['vol:Fusée rouge'] = S(80,70,'<rect x="2" y="2" width="76" height="66" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/><line x1="40" y1="58" x2="40" y2="22" stroke="#e74c3c" stroke-width="3"/><circle cx="40" cy="18" r="10" fill="#e74c3c" opacity=".9"/><circle cx="40" cy="18" r="16" fill="#e74c3c" opacity=".2"/>');
+      SYM_IMAGES['vol:Fusée rouge'] = S(100,80,'<rect x="2" y="2" width="96" height="76" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>'
+        + '<line x1="50" y1="68" x2="50" y2="30" stroke="#c0392b" stroke-width="3" stroke-linecap="round"/>'
+        + '<circle cx="50" cy="24" r="6" fill="#e74c3c"/>'
+        + '<circle cx="50" cy="24" r="12" fill="#e74c3c" opacity="0.4" class="flare-glow"/>'
+        + '<circle cx="50" cy="24" r="20" fill="#ff6b6b" opacity="0.15" class="flare-glow" style="animation-delay:0.2s"/>'
+        + '<circle cx="42" cy="20" r="2" fill="#ff9999" class="flare-glow" style="animation-delay:0.4s"/>'
+        + '<circle cx="58" cy="18" r="1.5" fill="#ff9999" class="flare-glow" style="animation-delay:0.6s"/>'
+        + '<circle cx="46" cy="16" r="1.5" fill="#ffcccc" class="flare-glow" style="animation-delay:0.3s"/>'
+        + '<text x="50" y="74" font-family="Arial,sans-serif" font-size="7" fill="#aaa" text-anchor="middle">fusée rouge</text>');
       SYM_IMAGES['vol:Feu vert continu'] = lightSig('vert', false, 'continu');
       SYM_IMAGES['vol:Feu rouge continu'] = lightSig('rouge', false, 'continu');
       SYM_IMAGES['vol:Éclats verts'] = lightSig('vert', true, 'éclats');
@@ -723,6 +848,30 @@
       SYM_IMAGES['Panneau rouge + inscription blanche'] = S(80,40,'<rect x="4" y="4" width="72" height="32" rx="3" fill="#c0392b" stroke="#fff" stroke-width="1.5"/><text x="40" y="26" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#fff" text-anchor="middle">09-27</text>');
       SYM_IMAGES['Panneau jaune/noir (direction)'] = S(90,40,'<rect x="4" y="4" width="82" height="32" rx="3" fill="#f1c40f"/><text x="45" y="26" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#111" text-anchor="middle">← A3</text>');
       SYM_IMAGES['Chevrons blancs (zone fermée)'] = S(100,50,'<rect x="0" y="0" width="100" height="50" fill="#555"/><polyline points="10,40 25,10 40,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="35,40 50,10 65,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="60,40 75,10 90,40" fill="none" stroke="#fff" stroke-width="2.5"/>');
+
+      // === TYPES DE NUAGES (images extraites) ===
+      function cloudImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:4px 8px;"><img src="Symboles/Meteo/clouds/' + file + '" alt="' + alt + '" style="height:60px; width:auto;"></div>'; }
+      SYM_IMAGES['Cirrus (Ci)'] = cloudImg('cirrus.png','Cirrus');
+      SYM_IMAGES['Cirrocumulus (Cc)'] = cloudImg('cirrocumulus.png','Cirrocumulus');
+      SYM_IMAGES['Cirrostratus (Cs)'] = cloudImg('cirrostratus.png','Cirrostratus');
+      SYM_IMAGES['Altocumulus (Ac)'] = cloudImg('altocumulus.png','Altocumulus');
+      SYM_IMAGES['Altostratus (As)'] = cloudImg('altostratus.png','Altostratus');
+      SYM_IMAGES['Nimbostratus (Ns)'] = cloudImg('nimbostratus.png','Nimbostratus');
+      SYM_IMAGES['Cumulonimbus (Cb)'] = cloudImg('cumulonimbus.png','Cumulonimbus');
+      SYM_IMAGES['Cumulus congestus (TCU)'] = cloudImg('cumulus-congestus.png','Cumulus congestus');
+      SYM_IMAGES['Cumulus humilis (Cu)'] = cloudImg('cumulus-humilis.png','Cumulus humilis');
+      SYM_IMAGES['Stratocumulus (Sc)'] = cloudImg('stratocumulus.png','Stratocumulus');
+      SYM_IMAGES['Stratus (St)'] = cloudImg('stratus.png','Stratus');
+
+      // === CORRESPONDANCE PRESSION-ALTITUDE ===
+      function pressCard(hpa, ft, m) {
+        return S(120,50,'<rect x="2" y="2" width="116" height="46" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1"/>'
+          + '<text x="60" y="18" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#2c3e50" text-anchor="middle">' + hpa + ' hPa</text>'
+          + '<text x="60" y="32" font-family="Arial,sans-serif" font-size="10" fill="#7f8c8d" text-anchor="middle">' + ft + ' ft ≈ ' + m + ' m</text>');
+      }
+      SYM_IMAGES['850 hPa ≈ 5000 ft'] = pressCard('850','5 000','1 500');
+      SYM_IMAGES['700 hPa ≈ 10 000 ft'] = pressCard('700','10 000','3 000');
+      SYM_IMAGES['500 hPa ≈ 18 000 ft'] = pressCard('500','18 000','5 500');
     })();
 
     // Quick lookup: get SVG for a symbol entry
@@ -744,9 +893,27 @@
     var currentIdx = 0;
     var score = 0;
     var answers = []; // {item, userAnswer, correct}
+    var activeTab = 'quiz';
 
     // ================================================
-    // CATEGORIES
+    // TABS
+    // ================================================
+    window.switchTab = function(tab, btn) {
+      activeTab = tab;
+      document.querySelectorAll('.sym-tab').forEach(function(t) { t.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      document.getElementById('tabQuiz').style.display = tab === 'quiz' ? '' : 'none';
+      document.getElementById('tabBrowse').style.display = tab === 'browse' ? '' : 'none';
+      document.getElementById('tabClouds').style.display = tab === 'clouds' ? '' : 'none';
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('configPanel').style.display = 'block';
+      if (tab === 'browse') buildBrowseContent();
+      if (tab === 'clouds') setupCloudDiagram();
+    };
+
+    // ================================================
+    // CATEGORIES — group-based selection
     // ================================================
     function getCategories() {
       var cats = [];
@@ -757,22 +924,53 @@
       return cats;
     }
 
-    function countCat(cat) {
-      return SYMBOLS.filter(function(s) { return s.cat === cat; }).length;
+    function getGroups() {
+      var groups = [];
+      var seen = {};
+      getCategories().forEach(function(cat) {
+        var g = getGroup(cat);
+        if (!seen[g]) { seen[g] = true; groups.push(g); }
+      });
+      return groups;
+    }
+
+    function getCatsForGroup(group) {
+      return getCategories().filter(function(cat) { return getGroup(cat) === group; });
+    }
+
+    function countGroup(group) {
+      var cats = getCatsForGroup(group);
+      return SYMBOLS.filter(function(s) { return cats.indexOf(s.cat) >= 0; }).length;
     }
 
     function buildCatGrid() {
       var grid = document.getElementById('catGrid');
-      var cats = getCategories();
+      var groups = getGroups();
       var html = '';
-      cats.forEach(function(cat) {
-        var isActive = selectedCats.has(cat);
-        html += '<button class="sym-cat-btn' + (isActive ? ' active' : '') + '" data-cat="' + cat + '" onclick="toggleCat(this)">' + cat + ' <span style="opacity:0.5">(' + countCat(cat) + ')</span></button>';
+      groups.forEach(function(grp) {
+        var cats = getCatsForGroup(grp);
+        var allActive = cats.every(function(c) { return selectedCats.has(c); });
+        html += '<button class="sym-cat-btn' + (allActive ? ' active' : '') + '" data-group="' + grp + '" onclick="toggleGroup(this)">' + grp + ' <span style="opacity:0.5">(' + countGroup(grp) + ')</span></button>';
       });
       grid.innerHTML = html;
       updateMaxLabel();
     }
 
+    window.toggleGroup = function(btn) {
+      var grp = btn.getAttribute('data-group');
+      var cats = getCatsForGroup(grp);
+      var allActive = cats.every(function(c) { return selectedCats.has(c); });
+      if (allActive) {
+        cats.forEach(function(c) { selectedCats.delete(c); });
+        btn.classList.remove('active');
+      } else {
+        cats.forEach(function(c) { selectedCats.add(c); });
+        btn.classList.add('active');
+      }
+      updateMaxLabel();
+    };
+
+    // Keep legacy toggleCat for any reference
     window.toggleCat = function(btn) {
       var cat = btn.getAttribute('data-cat');
       if (selectedCats.has(cat)) {
@@ -987,6 +1185,133 @@
     function escHtml(t) {
       return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    // ================================================
+    // BROWSE / CONSULTATION MODE
+    // ================================================
+    var browseActiveGroups = new Set();
+
+    function buildBrowseFilters() {
+      var btns = document.getElementById('browseFilterBtns');
+      var groups = getGroups();
+      var html = '<button class="sym-select-btn" onclick="browseSelectAll()">Tous</button>';
+      groups.forEach(function(g) {
+        var active = browseActiveGroups.has(g);
+        html += '<button class="sym-select-btn' + (active ? ' active" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-color:transparent;"' : '"') + ' data-bgroup="' + g + '" onclick="toggleBrowseGroup(this)">' + g + '</button>';
+      });
+      btns.innerHTML = html;
+    }
+
+    window.toggleBrowseGroup = function(btn) {
+      var g = btn.getAttribute('data-bgroup');
+      if (browseActiveGroups.has(g)) browseActiveGroups.delete(g);
+      else browseActiveGroups.add(g);
+      buildBrowseContent();
+    };
+
+    window.browseSelectAll = function() {
+      browseActiveGroups.clear();
+      getGroups().forEach(function(g) { browseActiveGroups.add(g); });
+      buildBrowseContent();
+    };
+
+    function buildBrowseContent() {
+      // Default: show all groups
+      if (browseActiveGroups.size === 0) {
+        getGroups().forEach(function(g) { browseActiveGroups.add(g); });
+      }
+      buildBrowseFilters();
+      var container = document.getElementById('browseContent');
+      var groups = getGroups().filter(function(g) { return browseActiveGroups.has(g); });
+      var html = '';
+      groups.forEach(function(grp) {
+        html += '<div class="sym-browse-group">';
+        html += '<div class="sym-browse-group-title">' + escHtml(grp) + '</div>';
+        html += '<div class="sym-browse-grid">';
+        var cats = getCatsForGroup(grp);
+        SYMBOLS.forEach(function(s) {
+          if (cats.indexOf(s.cat) < 0) return;
+          var img = getSymbolImage(s);
+          var imgHtml = img ? '<div class="sym-browse-img">' + img + '</div>' : '';
+          html += '<div class="sym-browse-card">' + imgHtml + '<div class="sym-browse-sym">' + escHtml(s.sym) + '</div><div class="sym-browse-mean">' + escHtml(s.mean) + '</div></div>';
+        });
+        html += '</div></div>';
+      });
+      container.innerHTML = html;
+    }
+
+    // ================================================
+    // CLOUD INTERACTIVE DIAGRAM
+    // ================================================
+    var CLOUD_POSITIONS = [
+      // Approximate % positions on the 817x382 diagram for each cloud label
+      {name:'Cirrus',         x:72, y:12},
+      {name:'Cirrocumulus',   x:38, y:12},
+      {name:'Cirrostratus',   x:72, y:28},
+      {name:'Altocumulus',    x:38, y:36},
+      {name:'Altostratus',    x:72, y:44},
+      {name:'Nimbostratus',   x:72, y:62},
+      {name:'Cumulonimbus',   x:12, y:40},
+      {name:'Cumulus',        x:38, y:62},
+      {name:'Stratocumulus',  x:55, y:78},
+      {name:'Stratus',        x:80, y:82}
+    ];
+    var CLOUD_NAMES = ['—','Cirrus','Cirrocumulus','Cirrostratus','Altocumulus','Altostratus','Nimbostratus','Cumulonimbus','Cumulus congestus (TCU)','Cumulus','Stratocumulus','Stratus'];
+    var cloudDiagramReady = false;
+
+    function setupCloudDiagram() {
+      if (cloudDiagramReady) return;
+      cloudDiagramReady = true;
+      var container = document.getElementById('cloudDiagramContainer');
+      // Wait for image to load to get real dimensions
+      var img = document.getElementById('cloudDiagramImg');
+      function placeDropdowns() {
+        // Remove old dropdowns
+        container.querySelectorAll('select').forEach(function(s) { s.remove(); });
+        CLOUD_POSITIONS.forEach(function(pos, i) {
+          var sel = document.createElement('select');
+          sel.className = 'cloud-dropdown';
+          sel.setAttribute('data-answer', pos.name);
+          sel.style.left = pos.x + '%';
+          sel.style.top = pos.y + '%';
+          var options = '<option value="">?</option>';
+          CLOUD_NAMES.forEach(function(n) {
+            if (n === '—') return;
+            options += '<option value="' + n + '">' + n + '</option>';
+          });
+          sel.innerHTML = options;
+          container.appendChild(sel);
+        });
+      }
+      if (img.complete) placeDropdowns();
+      else img.addEventListener('load', placeDropdowns);
+    }
+
+    window.checkCloudAnswers = function() {
+      var selects = document.querySelectorAll('#cloudDiagramContainer select');
+      var correct = 0;
+      var total = selects.length;
+      selects.forEach(function(sel) {
+        var answer = sel.getAttribute('data-answer');
+        sel.classList.remove('correct','wrong');
+        if (sel.value === answer) {
+          sel.classList.add('correct');
+          correct++;
+        } else {
+          sel.classList.add('wrong');
+        }
+      });
+      document.getElementById('cloudScore').textContent = correct + ' / ' + total + ' correct' + (correct > 1 ? 's' : '');
+    };
+
+    window.resetCloudDiagram = function() {
+      var selects = document.querySelectorAll('#cloudDiagramContainer select');
+      selects.forEach(function(sel) {
+        sel.value = '';
+        sel.classList.remove('correct','wrong');
+      });
+      document.getElementById('cloudScore').textContent = '';
+    };
 
     // ================================================
     // INIT
