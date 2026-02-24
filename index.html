@@ -1,18 +1,18 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <script>
-      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exécuté très tôt, avant Firebase)
+      // REDIRECTION AUTOMATIQUE EN MODE AUTOSTART (exÃ©cutÃ© trÃ¨s tÃ´t, avant Firebase)
       (function() {
         const autoStartQuiz = localStorage.getItem('autoStartQuiz') === 'true';
         const cat = localStorage.getItem('quizCategory');
         const mode = localStorage.getItem('quizMode');
         const nb = localStorage.getItem('quizNbQuestions');
         
-        // Si autoStartQuiz est activé, redirection vers le quiz
+        // Si autoStartQuiz est activÃ©, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
           if (cat && mode && nb) {
-            // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
+            // IMPORTANT: Nettoyer currentQuestions pour FORCER la rÃ©gÃ©nÃ©ration de nouvelles questions
             localStorage.removeItem('currentQuestions');
             // Redirection IMMEDIATE sans setTimeout
             window.location = 'quiz.html';
@@ -27,7 +27,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
-  <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
+  <!-- Charger la configuration Firebase (clÃ© API) AVANT les SDK -->
   <script src="config.js"></script>
   <!-- Inclusion des SDK Firebase en mode compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -48,7 +48,7 @@
 
     // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
-    // Attacher Auth et Firestore à window pour les rendre globalement accessibles
+    // Attacher Auth et Firestore Ã  window pour les rendre globalement accessibles
     window.auth = firebase.auth();
     window.db = firebase.firestore();
     // Activer la persistance hors-ligne Firestore (stocker la promesse pour l'attendre)
@@ -56,11 +56,11 @@
       if (err.code === 'failed-precondition') {
         console.warn('[Firestore] Persistance impossible : plusieurs onglets ouverts');
       } else if (err.code === 'unimplemented') {
-        console.warn('[Firestore] Persistance non supportée par ce navigateur');
+        console.warn('[Firestore] Persistance non supportÃ©e par ce navigateur');
       }
     });
 
-    // Surveille l'état de connexion de l'utilisateur
+    // Surveille l'Ã©tat de connexion de l'utilisateur
     let indexInitTriggered = false;
     auth.onAuthStateChanged(user => {
       if (user) {
@@ -73,7 +73,7 @@
           initIndex();
         }
       } else if (localStorage.getItem('cachedUid')) {
-        // Auth null mais UID en cache → démarrer en mode offline (navigator.onLine peut mentir)
+        // Auth null mais UID en cache â†’ dÃ©marrer en mode offline (navigator.onLine peut mentir)
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("quizContainer").style.display = "block";
         if (!indexInitTriggered && typeof initIndex === 'function') {
@@ -85,7 +85,7 @@
         document.getElementById("quizContainer").style.display = "none";
       }
     });
-    // Sécurité : si auth ne fire pas dans les 2s et qu'on a un cachedUid, démarrer quand même
+    // SÃ©curitÃ© : si auth ne fire pas dans les 2s et qu'on a un cachedUid, dÃ©marrer quand mÃªme
     setTimeout(() => {
       if (!indexInitTriggered && localStorage.getItem('cachedUid')) {
         document.getElementById("loginContainer").style.display = "none";
@@ -99,41 +99,42 @@
 <body>
   <!-- Theme toggle -->
   <script>
-    // Appliquer le thème sauvegardé (dark par défaut)
+    // Appliquer le thÃ¨me sauvegardÃ© (dark par dÃ©faut)
     (function() {
       const saved = localStorage.getItem('theme');
       if (saved === 'light') document.body.classList.add('light');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'ðŸŒ™':'â˜€ï¸'})()">â˜€ï¸</button>
+  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'ðŸ”‡':'ðŸ”Š';document.getElementById('ttsToggle').title=on?'TTS dÃ©sactivÃ©':'TTS activÃ©'})()" title="TTS dÃ©sactivÃ©">ðŸ”‡</button>
   <script>
-    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
-    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='ðŸŒ™';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='ðŸ”Š';document.getElementById('ttsToggle').title='TTS activÃ©';}
   </script>
 
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">✈️</div>
+    <div class="home-hero-icon">âœˆï¸</div>
     <h1 class="home-hero-title">Quiz Aviation PPL</h1>
     <div id="lastUpdateInfo" class="home-hero-subtitle"></div>
   </div>
 
   <!-- Top navigation -->
   <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link top-nav-current">🏠 Accueil</a>
-    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
-    <a href="stats.html" class="top-nav-link">📊 Stats</a>
-    <a href="rates.html" class="top-nav-link">📖 Révision</a>
-    <a href="historique.html" class="top-nav-link">📅 Historique</a>
-    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
-    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="index.html?accueil=1" class="top-nav-link top-nav-current">ðŸ  Accueil</a>
+    <a href="quiz.html" class="top-nav-link">ðŸŽ¯ Quiz</a>
+    <a href="stats.html" class="top-nav-link">ðŸ“Š Stats</a>
+    <a href="rates.html" class="top-nav-link">ðŸ“– RÃ©vision</a>
+    <a href="historique.html" class="top-nav-link">ðŸ“… Historique</a>
+    <a href="search.html" class="top-nav-link">ðŸ” Recherche</a>
+    <a href="symboles.html" class="top-nav-link">ðŸ”£ Symboles</a>
+    <a href="navlog.html" class="top-nav-link">ðŸ—ºï¸ NavLog</a>
   </div>
 
   <script>
-    // Afficher la date/heure de dernière mise à jour du site
+    // Afficher la date/heure de derniÃ¨re mise Ã  jour du site
     (function() {
-      // Date de dernière mise à jour (mise à jour manuellement à chaque déploiement)
+      // Date de derniÃ¨re mise Ã  jour (mise Ã  jour manuellement Ã  chaque dÃ©ploiement)
       var LAST_UPDATE = '2026-02-22T11:16:41';
       var d = new Date(LAST_UPDATE);
       var pad = function(n) { return n < 10 ? '0' + n : n; };
@@ -146,11 +147,11 @@
     })();
   </script>
   <script>
-    // EARLY: si on a un cachedUid, afficher immédiatement l'interface quiz
-    // et masquer le login (évite le flash du formulaire en mode offline)
+    // EARLY: si on a un cachedUid, afficher immÃ©diatement l'interface quiz
+    // et masquer le login (Ã©vite le flash du formulaire en mode offline)
     (function() {
       if (localStorage.getItem('cachedUid')) {
-        // quizContainer sera affiché dès qu'il existera dans le DOM
+        // quizContainer sera affichÃ© dÃ¨s qu'il existera dans le DOM
         document.addEventListener('DOMContentLoaded', function() {
           var lc = document.getElementById('loginContainer');
           var qc = document.getElementById('quizContainer');
@@ -158,7 +159,7 @@
           if (qc) qc.style.display = 'block';
         });
       } else {
-        // Pas de cachedUid → montrer le login
+        // Pas de cachedUid â†’ montrer le login
         document.addEventListener('DOMContentLoaded', function() {
           var lc = document.getElementById('loginContainer');
           if (lc) lc.style.display = 'block';
@@ -169,15 +170,15 @@
 
   <!-- Formulaire de connexion/inscription -->
   <div id="loginContainer" class="container" style="display:none;">
-    <h2 style="text-align:center;">✈️ Connexion</h2>
+    <h2 style="text-align:center;">âœˆï¸ Connexion</h2>
     <form id="loginForm">
       <input type="email" id="email" class="home-input" placeholder="Email" required style="width:100%;margin-bottom:10px;">
-      <input type="password" id="password" class="home-input" placeholder="Mot de passe (min. 6 caractères)" required style="width:100%;margin-bottom:10px;">
+      <input type="password" id="password" class="home-input" placeholder="Mot de passe (min. 6 caractÃ¨res)" required style="width:100%;margin-bottom:10px;">
       <button type="submit" class="home-btn-start" style="width:100%;">Se connecter / S'inscrire</button>
     </form>
   </div>
 
-  <!-- Interface du quiz, affichée après authentification -->
+  <!-- Interface du quiz, affichÃ©e aprÃ¨s authentification -->
   <div id="quizContainer" style="display: none;">
 
     <!-- Daily stats bar -->
@@ -191,12 +192,12 @@
     <!-- Quiz configuration card -->
     <div class="home-card">
       <div class="home-card-header">
-        <span class="home-card-icon">⚙️</span>
+        <span class="home-card-icon">âš™ï¸</span>
         <span class="home-card-title">Configuration du Quiz</span>
       </div>
       <div class="home-form-grid">
         <div class="home-form-group">
-          <label for="categorie" class="home-label">Catégorie</label>
+          <label for="categorie" class="home-label">CatÃ©gorie</label>
           <select id="categorie" class="home-select" onchange="categoryChanged()"></select>
         </div>
         <div class="home-form-group">
@@ -211,35 +212,35 @@
       <div class="home-options">
         <label class="home-checkbox-label">
           <input type="checkbox" id="autoStartCheckbox" onchange="toggleAutoStart()">
-          <span>🚀 Démarrage automatique</span>
+          <span>ðŸš€ DÃ©marrage automatique</span>
         </label>
         <label class="home-checkbox-label">
           <input type="checkbox" id="correctionImmediateCheckbox">
-          <span>⚡ Correction immédiate</span>
+          <span>âš¡ Correction immÃ©diate</span>
         </label>
       </div>
       <button id="btnStart" class="home-btn-start" disabled onclick="demarrerQuiz()">
-        🎯 Démarrer le Quiz
+        ðŸŽ¯ DÃ©marrer le Quiz
       </button>
     </div>
 
     <!-- Quick navigation cards -->
     <div class="home-nav-grid">
       <button class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
-        <span class="home-nav-icon">📊</span>
+        <span class="home-nav-icon">ðŸ“Š</span>
         <span class="home-nav-label">Statistiques</span>
       </button>
       <button class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
-        <span class="home-nav-icon">📖</span>
-        <span class="home-nav-label">Révision</span>
+        <span class="home-nav-icon">ðŸ“–</span>
+        <span class="home-nav-label">RÃ©vision</span>
         <span id="ratesBadge" class="rates-badge" style="display:none;"></span>
       </button>
       <button class="home-nav-card home-nav-search" onclick="window.location='search.html'">
-        <span class="home-nav-icon">🔍</span>
+        <span class="home-nav-icon">ðŸ”</span>
         <span class="home-nav-label">Recherche</span>
       </button>
       <button class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
-        <span class="home-nav-icon">📅</span>
+        <span class="home-nav-icon">ðŸ“…</span>
         <span class="home-nav-label">Historique</span>
       </button>
     </div>
@@ -247,67 +248,67 @@
     <!-- Voice selector card -->
     <div class="home-card home-card-voice" id="voiceSelectorSection">
       <div class="home-card-header">
-        <span class="home-card-icon">🔊</span>
+        <span class="home-card-icon">ðŸ”Š</span>
         <span class="home-card-title">Voix TTS</span>
       </div>
       <div class="voice-selector-row">
         <select id="voiceSelect"></select>
-        <button type="button" id="btnTestVoice" onclick="testSelectedVoice()">▶ Tester</button>
+        <button type="button" id="btnTestVoice" onclick="testSelectedVoice()">â–¶ Tester</button>
       </div>
       <div id="voiceInfo"></div>
     </div>
 
     <!-- Logout -->
     <div style="text-align: center; margin: 1rem auto; max-width: 800px;">
-      <button id="btnLogout" class="home-btn-logout">Déconnexion</button>
+      <button id="btnLogout" class="home-btn-logout">DÃ©connexion</button>
     </div>
   </div>
 
-  <!-- Placeholder pour l'élément manquant -->
+  <!-- Placeholder pour l'Ã©lÃ©ment manquant -->
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260224a"></script>
-  <script src="js/helpers.js?v=20260224a"></script>
-  <script src="js/categories.js?v=20260224a"></script>
-  <script src="js/stats.js?v=20260224a"></script>
-  <script src="js/quiz.js?v=20260224a"></script>
-  <script src="js/init.js?v=20260224a"></script>
-  <script src="js/offline.js?v=20260224a"></script>
+  <script src="js/globals.js?v=20260224b"></script>
+  <script src="js/helpers.js?v=20260224b"></script>
+  <script src="js/categories.js?v=20260224b"></script>
+  <script src="js/stats.js?v=20260224b"></script>
+  <script src="js/quiz.js?v=20260224b"></script>
+  <script src="js/init.js?v=20260224b"></script>
+  <script src="js/offline.js?v=20260224b"></script>
 
-  <!-- Sélecteur de voix TTS : population & test -->
+  <!-- SÃ©lecteur de voix TTS : population & test -->
   <script>
   (function() {
     var select = document.getElementById('voiceSelect');
     var infoDiv = document.getElementById('voiceInfo');
     if (!select) return;
 
-    var femaleNames = ['denise','amelie','amélie','aurelie','aurélie','caroline','virginie','marie',
-      'hortense','eloise','éloïse','sylvie','céline','celine','lea','léa','nathalie','julie',
+    var femaleNames = ['denise','amelie','amÃ©lie','aurelie','aurÃ©lie','caroline','virginie','marie',
+      'hortense','eloise','Ã©loÃ¯se','sylvie','cÃ©line','celine','lea','lÃ©a','nathalie','julie',
       'sophie','isabelle','alice','lucienne','brigitte','aria','jenny','clara','coralie',
-      'josephine','joséphine','vivienne','yvette','charline','renée','renee','salli','kendra',
+      'josephine','josÃ©phine','vivienne','yvette','charline','renÃ©e','renee','salli','kendra',
       'joanna','ivy','kimberly','ruth','emma','olivia','anna'];
     var maleNames = ['paul','thomas','henri','nicolas','pierre','mathieu','guillaume','patrick',
-      'raphael','raphaël','alain','jean','luc','jacques','françois','francois','claude',
+      'raphael','raphaÃ«l','alain','jean','luc','jacques','franÃ§ois','francois','claude',
       'vivien','fabrice','yves','joey','matthew','justin','kevin','stephen','brian','gregory'];
 
     function genderIcon(name) {
       var n = name.toLowerCase();
-      for (var i = 0; i < femaleNames.length; i++) { if (n.indexOf(femaleNames[i]) >= 0) return ' ♀'; }
-      for (var i = 0; i < maleNames.length; i++) { if (n.indexOf(maleNames[i]) >= 0) return ' ♂'; }
+      for (var i = 0; i < femaleNames.length; i++) { if (n.indexOf(femaleNames[i]) >= 0) return ' â™€'; }
+      for (var i = 0; i < maleNames.length; i++) { if (n.indexOf(maleNames[i]) >= 0) return ' â™‚'; }
       return '';
     }
 
     function qualityBadge(name) {
       var n = name.toLowerCase();
-      if (n.indexOf('natural') >= 0 || n.indexOf('neural') >= 0) return ' ✨HD';
-      if (n.indexOf('online') >= 0) return ' ☁️';
+      if (n.indexOf('natural') >= 0 || n.indexOf('neural') >= 0) return ' âœ¨HD';
+      if (n.indexOf('online') >= 0) return ' â˜ï¸';
       return '';
     }
 
     function populateVoices() {
       if (!('speechSynthesis' in window)) {
-        select.innerHTML = '<option>TTS non supporté</option>';
+        select.innerHTML = '<option>TTS non supportÃ©</option>';
         return;
       }
       var voices = speechSynthesis.getVoices();
@@ -320,14 +321,14 @@
 
       var defOpt = document.createElement('option');
       defOpt.value = '';
-      defOpt.textContent = '🔄 Voix par défaut du système';
+      defOpt.textContent = 'ðŸ”„ Voix par dÃ©faut du systÃ¨me';
       select.appendChild(defOpt);
 
       frVoices.forEach(function(v) {
         var opt = document.createElement('option');
         opt.value = v.name;
         var label = v.name + genderIcon(v.name) + qualityBadge(v.name);
-        if (v.localService) label += ' 📱';
+        if (v.localService) label += ' ðŸ“±';
         opt.textContent = label;
         if (v.name === saved) opt.selected = true;
         select.appendChild(opt);
@@ -341,15 +342,15 @@
       var voices = speechSynthesis.getVoices();
       var selectedName = select.value;
       if (!selectedName) {
-        infoDiv.textContent = 'La première voix française disponible sera utilisée.';
+        infoDiv.textContent = 'La premiÃ¨re voix franÃ§aise disponible sera utilisÃ©e.';
         return;
       }
       var voice = voices.find(function(v) { return v.name === selectedName; });
       if (voice) {
         var info = voice.lang;
-        if (voice.localService) info += ' · Locale (hors-ligne)';
-        else info += ' · En ligne';
-        if (voice.default) info += ' · Par défaut';
+        if (voice.localService) info += ' Â· Locale (hors-ligne)';
+        else info += ' Â· En ligne';
+        if (voice.default) info += ' Â· Par dÃ©faut';
         infoDiv.textContent = info;
       }
     }
@@ -366,19 +367,19 @@
 
     var sampleAnswers = [
       "L'angle d'incidence est l'angle entre la corde de l'aile et le vent relatif.",
-      "La portance est proportionnelle au carré de la vitesse.",
-      "En cas de panne moteur, la priorité est de maintenir la vitesse de finesse max.",
-      "Le transpondeur doit être réglé sur 7700 en cas de détresse.",
-      "La pression atmosphérique standard au niveau de la mer est 1013 virgule 25 hectopascals.",
-      "L'effet de sol augmente la portance et diminue la traînée induite.",
-      "La VNE est la vitesse à ne jamais dépasser.",
-      "Le QNH est le calage altimétrique qui permet de lire l'altitude.",
-      "Le facteur de charge en virage à 60 degrés d'inclinaison est de 2G.",
-      "Un NOTAM est un avis aux navigateurs aériens diffusé par les services de l'information aéronautique."
+      "La portance est proportionnelle au carrÃ© de la vitesse.",
+      "En cas de panne moteur, la prioritÃ© est de maintenir la vitesse de finesse max.",
+      "Le transpondeur doit Ãªtre rÃ©glÃ© sur 7700 en cas de dÃ©tresse.",
+      "La pression atmosphÃ©rique standard au niveau de la mer est 1013 virgule 25 hectopascals.",
+      "L'effet de sol augmente la portance et diminue la traÃ®nÃ©e induite.",
+      "La VNE est la vitesse Ã  ne jamais dÃ©passer.",
+      "Le QNH est le calage altimÃ©trique qui permet de lire l'altitude.",
+      "Le facteur de charge en virage Ã  60 degrÃ©s d'inclinaison est de 2G.",
+      "Un NOTAM est un avis aux navigateurs aÃ©riens diffusÃ© par les services de l'information aÃ©ronautique."
     ];
 
     window.testSelectedVoice = function() {
-      if (!('speechSynthesis' in window)) { alert('TTS non supporté sur cet appareil'); return; }
+      if (!('speechSynthesis' in window)) { alert('TTS non supportÃ© sur cet appareil'); return; }
       speechSynthesis.cancel();
       var text = sampleAnswers[Math.floor(Math.random() * sampleAnswers.length)];
       var utterance = new SpeechSynthesisUtterance(text);
@@ -395,18 +396,18 @@
         if (frVoice) utterance.voice = frVoice;
       }
       var btn = document.getElementById('btnTestVoice');
-      btn.textContent = '🔊 Lecture...';
+      btn.textContent = 'ðŸ”Š Lecture...';
       btn.disabled = true;
-      utterance.onend = function() { btn.textContent = '▶ Tester'; btn.disabled = false; };
-      utterance.onerror = function() { btn.textContent = '▶ Tester'; btn.disabled = false; };
+      utterance.onend = function() { btn.textContent = 'â–¶ Tester'; btn.disabled = false; };
+      utterance.onerror = function() { btn.textContent = 'â–¶ Tester'; btn.disabled = false; };
       speechSynthesis.speak(utterance);
     };
   })();
   </script>
 
-  <!-- Gestion de la connexion et déconnexion -->
+  <!-- Gestion de la connexion et dÃ©connexion -->
   <script>
-  // Mise à jour du badge "Ratés du jour" (localStorage rapide + Firestore cross-device)
+  // Mise Ã  jour du badge "RatÃ©s du jour" (localStorage rapide + Firestore cross-device)
   (function() {
     var now = new Date();
     var todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
@@ -427,7 +428,7 @@
       updateBadge(unseen);
     } catch (e) {}
 
-    // 2) Async : Firestore (pour cross-device, ex: PC voit les ratés du téléphone)
+    // 2) Async : Firestore (pour cross-device, ex: PC voit les ratÃ©s du tÃ©lÃ©phone)
     function checkFirestoreBadge() {
       var uid = (window.auth && auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
       if (!uid || !window.db) return;
@@ -453,7 +454,7 @@
         updateBadge(count);
       }).catch(function(){});
     }
-    // Délai pour laisser Firebase s'initialiser
+    // DÃ©lai pour laisser Firebase s'initialiser
     setTimeout(checkFirestoreBadge, 2500);
   })();
   </script>
@@ -464,7 +465,7 @@
       const password = document.getElementById('password').value;
 
       if (password.length < 6) {
-        alert("Le mot de passe doit contenir au moins 6 caractères.");
+        alert("Le mot de passe doit contenir au moins 6 caractÃ¨res.");
         return;
       }
 
@@ -476,8 +477,8 @@
           try {
             const newUser = await auth.createUserWithEmailAndPassword(email, password);
           } catch (creationError) {
-            console.error("Erreur lors de la création du compte :", creationError);
-            alert("Erreur lors de la création du compte : " + creationError.message);
+            console.error("Erreur lors de la crÃ©ation du compte :", creationError);
+            alert("Erreur lors de la crÃ©ation du compte : " + creationError.message);
           }
         } else {
           alert("Erreur de connexion : " + error.message);
@@ -491,7 +492,7 @@
         await auth.signOut();
         window.location.reload();
       } catch (error) {
-        console.error("Erreur lors de la déconnexion :", error);
+        console.error("Erreur lors de la dÃ©connexion :", error);
       }
     });
   </script>

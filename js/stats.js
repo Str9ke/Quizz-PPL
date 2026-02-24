@@ -924,7 +924,7 @@ function _renderCatSessionChart(container, catValue) {
   `;
 
   sessions.forEach((s, idx) => {
-    const pct = s.percent || 0;
+    const pct = Math.min(s.percent || 0, 100);
     const h = Math.max(4, Math.round((pct / 100) * maxBarH));
     const color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
     const d = new Date(s.date);
@@ -1123,7 +1123,7 @@ function _renderSymbolesGlobalSessionChart(container) {
   html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
 
   sessions.forEach(function(s, idx) {
-    var pct = s.percent || 0;
+    var pct = Math.min(s.percent || 0, 100);
     var h = Math.max(4, Math.round((pct / 100) * maxBarH));
     var color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
     var d = new Date(s.date);
@@ -1170,7 +1170,7 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
   html += '  <div class="daily-chart" style="height:' + (maxBarH + 40) + 'px;min-width:' + Math.max(sessions.length * 14, 200) + 'px">';
 
   sessions.forEach(function(s, idx) {
-    var pct = s.percent || 0;
+    var pct = Math.min(s.percent || 0, 100);
     var h = Math.max(4, Math.round((pct / 100) * maxBarH));
     var color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
     var d = new Date(s.date);
@@ -1354,7 +1354,7 @@ function afficherSessionChart(sessionHistory) {
   `;
 
   sessions.forEach((s, idx) => {
-    const pct = s.percent || 0;
+    const pct = Math.min(s.percent || 0, 100);
     const h = Math.max(6, Math.round((pct / 100) * maxBarH));
     const color = pct >= 80 ? '#2ecc71' : pct >= 50 ? '#f39c12' : '#e74c3c';
     const isLast = idx === sessions.length - 1;
