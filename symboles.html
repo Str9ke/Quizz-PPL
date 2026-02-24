@@ -315,7 +315,99 @@
       {cat: 'Quantité de nuages', sym: 'SCT', mean: '3 à 4 octas'},
       {cat: 'Quantité de nuages', sym: 'BKN', mean: '5 à 7 octas'},
       {cat: 'Quantité de nuages', sym: 'OVC', mean: '8 octas'},
-      {cat: 'Quantité de nuages', sym: 'LYR', mean: 'Nuages en couche'}
+      {cat: 'Quantité de nuages', sym: 'LYR', mean: 'Nuages en couche'},
+
+      // === Fronts météo ===
+      {cat: 'Fronts météo', sym: 'Front froid', mean: 'Ligne bleue avec triangles — masse froide repousse la masse chaude'},
+      {cat: 'Fronts météo', sym: 'Front chaud', mean: 'Ligne rouge avec demi-cercles — masse chaude repousse la masse froide'},
+      {cat: 'Fronts météo', sym: 'Front stationnaire', mean: 'Triangles bleus et demi-cercles rouges alternés — fronts immobiles'},
+      {cat: 'Fronts météo', sym: 'Front occlus', mean: 'Ligne violette avec triangles et demi-cercles — front froid rattrape le front chaud'},
+      {cat: 'Fronts météo', sym: 'Thalweg (TROF)', mean: 'Ligne pointillée orange — extension d\'une dépression sans front'},
+      {cat: 'Fronts météo', sym: 'Dorsale (Ridge)', mean: 'Ligne en zigzag jaune — axe de hautes pressions'},
+
+      // === Cartes météo — Centres de pression ===
+      {cat: 'Centres de pression', sym: 'H (Anticyclone)', mean: 'Centre de hautes pressions (anticyclone) — pression en hPa'},
+      {cat: 'Centres de pression', sym: 'L (Dépression)', mean: 'Centre de basses pressions (dépression) — pression en hPa'},
+      {cat: 'Centres de pression', sym: 'Ouragan', mean: 'Symbole cyclone (cercle avec flèches spirales)'},
+      {cat: 'Centres de pression', sym: 'Tempête tropicale', mean: 'Symbole S ouvert — vitesse de vent 34-63 nœuds'},
+      {cat: 'Centres de pression', sym: 'Dépression tropicale', mean: 'L cerclé — vitesse de vent < 34 nœuds'},
+      {cat: 'Centres de pression', sym: 'Onde tropicale', mean: 'Ligne courbe violette — perturbation dans les alizés'},
+
+      // === Barbules de vent ===
+      {cat: 'Barbules de vent', sym: 'Calme (0 KT)', mean: 'Cercle sans hampe — vent nul'},
+      {cat: 'Barbules de vent', sym: '5 KT', mean: 'Hampe + 1 demi-barbule courte'},
+      {cat: 'Barbules de vent', sym: '10 KT', mean: 'Hampe + 1 barbule pleine'},
+      {cat: 'Barbules de vent', sym: '15 KT', mean: 'Hampe + 1 barbule pleine + 1 demi-barbule'},
+      {cat: 'Barbules de vent', sym: '20 KT', mean: 'Hampe + 2 barbules pleines'},
+      {cat: 'Barbules de vent', sym: '25 KT', mean: 'Hampe + 2 barbules pleines + 1 demi-barbule'},
+      {cat: 'Barbules de vent', sym: '35 KT', mean: 'Hampe + 3 barbules pleines + 1 demi-barbule'},
+      {cat: 'Barbules de vent', sym: '50 KT', mean: 'Hampe + 1 fanion triangulaire (drapeau)'},
+      {cat: 'Barbules de vent', sym: '65 KT', mean: 'Hampe + 1 fanion + 1 barbule pleine + 1 demi-barbule'},
+      {cat: 'Barbules de vent', sym: '100 KT', mean: 'Hampe + 2 fanions triangulaires'},
+      {cat: 'Barbules de vent', sym: '125 KT', mean: 'Hampe + 2 fanions + 2 barbules pleines + 1 demi-barbule'},
+
+      // === Givrage sur cartes ===
+      {cat: 'Givrage cartes', sym: 'Givrage modéré (carte)', mean: 'Demi-arc cyan — givrage modéré prévu'},
+      {cat: 'Givrage cartes', sym: 'Givrage fort (carte)', mean: 'Demi-arc cyan avec + — givrage sévère prévu'},
+      {cat: 'Givrage cartes', sym: 'Limite des glaces (Ice Edge)', mean: 'Ligne pointillée cyan — limite de la banquise'},
+      {cat: 'Givrage cartes', sym: 'Limite embruns givrants', mean: 'Ligne tiretée rouge avec carrés — zone d\'embruns givrants'},
+
+      // === Avertissements vent ===
+      {cat: 'Avertissements vent', sym: 'Avis de coup de vent (Gale)', mean: 'Vent 34-47 nœuds — avertissement de coup de vent'},
+      {cat: 'Avertissements vent', sym: 'Avis de tempête (Storm)', mean: 'Vent 48-63 nœuds — avertissement de tempête'},
+      {cat: 'Avertissements vent', sym: 'Avis de force ouragan', mean: 'Vent > 64 nœuds — avertissement de force ouragan'},
+
+      // === Signaux visuels sol-air — Survivants ===
+      {cat: 'Signaux sol-air (survivants)', sym: 'V (sol-air)', mean: 'Demandons assistance'},
+      {cat: 'Signaux sol-air (survivants)', sym: 'X (sol-air)', mean: 'Demandons assistance médicale'},
+      {cat: 'Signaux sol-air (survivants)', sym: 'N (sol-air)', mean: 'Non / réponse négative'},
+      {cat: 'Signaux sol-air (survivants)', sym: 'Y (sol-air)', mean: 'Oui / réponse affirmative'},
+      {cat: 'Signaux sol-air (survivants)', sym: '↑ (sol-air)', mean: 'Nous nous dirigeons dans cette direction'},
+
+      // === Signaux visuels sol-air — Équipes de sauvetage ===
+      {cat: 'Signaux sol-air (sauvetage)', sym: 'LLL (sauvetage)', mean: 'Opérations terminées'},
+      {cat: 'Signaux sol-air (sauvetage)', sym: 'LL (sauvetage)', mean: 'Avons retrouvé tous les occupants'},
+      {cat: 'Signaux sol-air (sauvetage)', sym: '++ (sauvetage)', mean: "N'avons retrouvé qu'une partie des occupants"},
+      {cat: 'Signaux sol-air (sauvetage)', sym: 'XX (sauvetage)', mean: 'Impossible de continuer, retournons à la base'},
+      {cat: 'Signaux sol-air (sauvetage)', sym: '⇄ (sauvetage)', mean: 'Sommes divisés en deux groupes, chacun se dirige dans la direction indiquée'},
+      {cat: 'Signaux sol-air (sauvetage)', sym: '→→ (sauvetage)', mean: "Avons appris que l'aéronef est dans cette direction"},
+      {cat: 'Signaux sol-air (sauvetage)', sym: 'NN (sauvetage)', mean: 'N\'avons rien trouvé, poursuivons les recherches'},
+
+      // === Signaux d'interception ===
+      {cat: "Signaux d'interception", sym: 'Battement d\'ailes (intercepteur)', mean: 'Suivez-moi — l\'intercepteur balance les ailes puis vire'},
+      {cat: "Signaux d'interception", sym: 'Battement d\'ailes (intercepté)', mean: 'Compris, j\'obéis — l\'intercepté balance les ailes et suit'},
+      {cat: "Signaux d'interception", sym: 'Dégagement brusque (intercepteur)', mean: 'Vous pouvez poursuivre votre route'},
+      {cat: "Signaux d'interception", sym: 'Virage en hippodrome (intercepteur)', mean: 'Atterrissez sur cet aérodrome — l\'intercepteur survole la piste et fait un circuit'},
+      {cat: "Signaux d'interception", sym: 'Train sorti + phares (intercepté)', mean: 'Compris, j\'atterris — train sorti, phares allumés, suit l\'intercepteur'},
+      {cat: "Signaux d'interception", sym: 'Train rentré en survolant piste (intercepté)', mean: 'Aérodrome désigné inadéquat — je ne peux pas atterrir ici'},
+      {cat: "Signaux d'interception", sym: 'Feux à éclats irréguliers (intercepté)', mean: 'Impossible d\'obéir / en détresse'},
+      {cat: "Signaux d'interception", sym: 'Cabrer et allumer/éteindre phares (intercepteur)', mean: 'Montez à l\'altitude assignée'},
+
+      // === Signaux de marshalling ===
+      {cat: 'Signaux de marshalling', sym: 'Bras levés au-dessus de la tête', mean: 'Identifie la position de parking — « Follow me / Ce poste-ci »'},
+      {cat: 'Signaux de marshalling', sym: 'Bras repliés, paumes vers soi', mean: 'Avancez tout droit (Come ahead)'},
+      {cat: 'Signaux de marshalling', sym: 'Bras droit tendu, mouvement du gauche', mean: 'Tournez à gauche (du point de vue du pilote)'},
+      {cat: 'Signaux de marshalling', sym: 'Bras gauche tendu, mouvement du droit', mean: 'Tournez à droite (du point de vue du pilote)'},
+      {cat: 'Signaux de marshalling', sym: 'Bras écartés puis ramenés lentement', mean: 'Ralentissez (Slow down)'},
+      {cat: 'Signaux de marshalling', sym: 'Bras croisés au-dessus de la tête', mean: 'Stop — arrêt immédiat'},
+      {cat: 'Signaux de marshalling', sym: 'Main au cou, tranchant (coupez)', mean: 'Coupez les moteurs (Cut engines)'},
+      {cat: 'Signaux de marshalling', sym: 'Main en rotation devant la tête', mean: 'Démarrez le(s) moteur(s) (Start engines)'},
+      {cat: 'Signaux de marshalling', sym: 'Mains vers le bas, paumes en bas', mean: 'Mettez les cales (Chocks in)'},
+      {cat: 'Signaux de marshalling', sym: 'Mains vers l\'extérieur, paumes en haut', mean: 'Retirez les cales (Chocks away)'},
+      {cat: 'Signaux de marshalling', sym: 'Bras droit en angle, pouce levé', mean: 'Tout est paré / Dégagement autorisé (All clear)'},
+      {cat: 'Signaux de marshalling', sym: 'Deux bras levés à 45° vers le haut', mean: 'Guidage terminé, avancez à vue'},
+
+      // === Marques de piste ===
+      {cat: 'Marquages de piste', sym: 'Chiffres peints (ex : 09/27)', mean: 'Numéro de piste — cap magnétique arrondi à la dizaine / 10'},
+      {cat: 'Marquages de piste', sym: 'Ligne axiale pointillée', mean: 'Axe de piste — guidage au roulage et à l\'atterrissage'},
+      {cat: 'Marquages de piste', sym: 'Seuil (bandes transversales)', mean: 'Début de la zone utilisable pour l\'atterrissage'},
+      {cat: 'Marquages de piste', sym: 'Flèches ◄ avant seuil décalé', mean: 'Zone inutilisable pour l\'atterrissage mais disponible au roulement'},
+      {cat: 'Marquages de piste', sym: 'Zone de toucher des roues (rectangles)', mean: 'Zone cible pour le toucher des roues (TDZ — Touchdown Zone)'},
+      {cat: 'Marquages de piste', sym: 'Point d\'attente piste (lignes continues + pointillées)', mean: 'Position d\'attente avant la piste — ne pas franchir sans clairance'},
+      {cat: 'Marquages de piste', sym: 'Ligne axiale jaune (TWY)', mean: 'Axe de voie de circulation (taxiway centerline)'},
+      {cat: 'Marquages de piste', sym: 'Panneau rouge + inscription blanche', mean: 'Panneau obligatoire de type STOP ou désignation de piste'},
+      {cat: 'Marquages de piste', sym: 'Panneau jaune/noir (direction)', mean: 'Panneau d\'information / direction de taxiway'},
+      {cat: 'Marquages de piste', sym: 'Chevrons blancs (zone fermée)', mean: 'Zone inutilisable ou fermée — interdiction de circuler'}
     ];
 
     // ================================================
@@ -412,6 +504,140 @@
       SYM_IMAGES['9 (chiffre)'] = TS('<text x="25" y="31" font-family="Arial,sans-serif" font-size="30" font-weight="bold" fill="#333" text-anchor="middle">6</text>');
       SYM_IMAGES['+ (croix)'] = TS('<line x1="25" y1="6" x2="25" y2="34" stroke="#333" stroke-width="3"/><line x1="11" y1="20" x2="39" y2="20" stroke="#333" stroke-width="3"/>');
       SYM_IMAGES['M (lettre)'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">M</text>');
+
+      // === FRONTS MÉTÉO ===
+      SYM_IMAGES['Front froid'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#2980b9" stroke-width="3"/><polygon points="25,20 20,8 30,8" fill="#2980b9"/><polygon points="50,20 45,8 55,8" fill="#2980b9"/><polygon points="75,20 70,8 80,8" fill="#2980b9"/><polygon points="100,20 95,8 105,8" fill="#2980b9"/>');
+      SYM_IMAGES['Front chaud'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#e74c3c" stroke-width="3"/><path d="M20,20 A8,8 0 0,1 36,20" fill="#e74c3c"/><path d="M46,20 A8,8 0 0,1 62,20" fill="#e74c3c"/><path d="M72,20 A8,8 0 0,1 88,20" fill="#e74c3c"/><path d="M98,20 A8,8 0 0,1 114,20" fill="#e74c3c"/>');
+      SYM_IMAGES['Front stationnaire'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#888" stroke-width="2"/><polygon points="20,20 15,8 25,8" fill="#2980b9"/><polygon points="55,20 50,8 60,8" fill="#2980b9"/><polygon points="90,20 85,8 95,8" fill="#2980b9"/><path d="M32,20 A7,7 0 0,0 46,20" fill="#e74c3c"/><path d="M67,20 A7,7 0 0,0 81,20" fill="#e74c3c"/><path d="M102,20 A7,7 0 0,0 116,20" fill="#e74c3c"/>');
+      SYM_IMAGES['Front occlus'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#9b59b6" stroke-width="3"/><polygon points="22,20 17,8 27,8" fill="#9b59b6"/><path d="M36,20 A7,7 0 0,1 50,20" fill="#9b59b6"/><polygon points="62,20 57,8 67,8" fill="#9b59b6"/><path d="M76,20 A7,7 0 0,1 90,20" fill="#9b59b6"/><polygon points="102,20 97,8 107,8" fill="#9b59b6"/>');
+      SYM_IMAGES['Thalweg (TROF)'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#e67e22" stroke-width="2.5" stroke-dasharray="8,5"/>');
+      SYM_IMAGES['Dorsale (Ridge)'] = S(120,40,'<polyline points="5,30 20,10 35,30 50,10 65,30 80,10 95,30 110,10 115,20" fill="none" stroke="#f1c40f" stroke-width="2.5"/>');
+
+      // === CENTRES DE PRESSION ===
+      SYM_IMAGES['H (Anticyclone)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#2980b9" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#2980b9" text-anchor="middle">H</text>');
+      SYM_IMAGES['L (Dépression)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#e74c3c" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#e74c3c" text-anchor="middle">L</text>');
+      SYM_IMAGES['Ouragan'] = S(60,60,'<circle cx="30" cy="30" r="8" fill="#e74c3c"/><path d="M30,22 Q42,10 38,30 Q34,50 30,38" stroke="#e74c3c" stroke-width="2.5" fill="none"/><path d="M30,38 Q18,50 22,30 Q26,10 30,22" stroke="#e74c3c" stroke-width="2.5" fill="none"/>');
+      SYM_IMAGES['Tempête tropicale'] = S(60,60,'<path d="M18,46 Q18,14 42,14" stroke="#e74c3c" stroke-width="3" fill="none"/><path d="M42,14 Q42,46 18,46" stroke="#e74c3c" stroke-width="3" fill="none"/>');
+      SYM_IMAGES['Dépression tropicale'] = S(60,60,'<circle cx="30" cy="30" r="20" fill="none" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4,3"/><text x="30" y="40" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#e74c3c" text-anchor="middle">L</text>');
+      SYM_IMAGES['Onde tropicale'] = S(100,40,'<path d="M10,30 Q30,5 50,20 Q70,35 90,10" stroke="#9b59b6" stroke-width="3" fill="none"/>');
+
+      // === BARBULES DE VENT ===
+      // Calm = circle
+      SYM_IMAGES['Calme (0 KT)'] = S(50,50,'<circle cx="25" cy="25" r="10" fill="none" stroke="#333" stroke-width="2.5"/>');
+      // 5 KT = staff + short barb
+      SYM_IMAGES['5 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="35" y2="12" stroke="#333" stroke-width="2.5"/>');
+      // 10 KT = staff + full barb
+      SYM_IMAGES['10 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/>');
+      // 15 KT = 1 full + 1 half
+      SYM_IMAGES['15 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="35" y2="18" stroke="#333" stroke-width="2.5"/>');
+      // 20 KT = 2 full barbs
+      SYM_IMAGES['20 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/>');
+      // 25 KT = 2 full + 1 half
+      SYM_IMAGES['25 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/><line x1="25" y1="20" x2="35" y2="24" stroke="#333" stroke-width="2.5"/>');
+      // 35 KT = 3 full + 1 half
+      SYM_IMAGES['35 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><line x1="25" y1="8" x2="40" y2="14" stroke="#333" stroke-width="2.5"/><line x1="25" y1="14" x2="40" y2="20" stroke="#333" stroke-width="2.5"/><line x1="25" y1="20" x2="40" y2="26" stroke="#333" stroke-width="2.5"/><line x1="25" y1="26" x2="35" y2="30" stroke="#333" stroke-width="2.5"/>');
+      // 50 KT = 1 pennant (filled triangle)
+      SYM_IMAGES['50 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/>');
+      // 65 KT = 1 pennant + 1 full + 1 half
+      SYM_IMAGES['65 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/><line x1="25" y1="20" x2="40" y2="26" stroke="#333" stroke-width="2.5"/><line x1="25" y1="26" x2="35" y2="30" stroke="#333" stroke-width="2.5"/>');
+      // 100 KT = 2 pennants
+      SYM_IMAGES['100 KT'] = S(50,50,'<line x1="25" y1="8" x2="25" y2="42" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="42" r="3" fill="#333"/><polygon points="25,8 40,14 25,18" fill="#333"/><polygon points="25,18 40,24 25,28" fill="#333"/>');
+      // 125 KT = 2 pennants + 2 full + 1 half
+      SYM_IMAGES['125 KT'] = S(50,56,'<line x1="25" y1="4" x2="25" y2="48" stroke="#333" stroke-width="2.5"/><circle cx="25" cy="48" r="3" fill="#333"/><polygon points="25,4 40,10 25,14" fill="#333"/><polygon points="25,14 40,20 25,24" fill="#333"/><line x1="25" y1="26" x2="40" y2="32" stroke="#333" stroke-width="2.5"/><line x1="25" y1="32" x2="40" y2="38" stroke="#333" stroke-width="2.5"/><line x1="25" y1="38" x2="35" y2="42" stroke="#333" stroke-width="2.5"/>');
+
+      // === GIVRAGE CARTES ===
+      SYM_IMAGES['Givrage modéré (carte)'] = S(60,50,'<path d="M10,35 Q30,5 50,35" fill="none" stroke="#00bcd4" stroke-width="3"/><line x1="30" y1="10" x2="30" y2="38" stroke="#00bcd4" stroke-width="2"/>');
+      SYM_IMAGES['Givrage fort (carte)'] = S(60,50,'<path d="M10,35 Q30,5 50,35" fill="none" stroke="#00bcd4" stroke-width="3"/><line x1="30" y1="10" x2="30" y2="38" stroke="#00bcd4" stroke-width="2"/><line x1="22" y1="24" x2="38" y2="24" stroke="#00bcd4" stroke-width="2"/><line x1="30" y1="16" x2="30" y2="32" stroke="#00bcd4" stroke-width="2"/>');
+      SYM_IMAGES['Limite des glaces (Ice Edge)'] = S(100,30,'<line x1="5" y1="15" x2="95" y2="15" stroke="#00bcd4" stroke-width="2.5" stroke-dasharray="3,4"/><circle cx="15" cy="15" r="3" fill="#00bcd4"/><circle cx="35" cy="15" r="3" fill="#00bcd4"/><circle cx="55" cy="15" r="3" fill="#00bcd4"/><circle cx="75" cy="15" r="3" fill="#00bcd4"/>');
+      SYM_IMAGES['Limite embruns givrants'] = S(100,30,'<line x1="5" y1="15" x2="95" y2="15" stroke="#e74c3c" stroke-width="2" stroke-dasharray="8,5"/><rect x="12" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="32" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="52" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/><rect x="72" y="10" width="6" height="10" fill="none" stroke="#e74c3c" stroke-width="1.5"/>');
+
+      // === AVERTISSEMENTS VENT ===
+      SYM_IMAGES['Avis de coup de vent (Gale)'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="6" fill="#f39c12" opacity=".15" stroke="#f39c12" stroke-width="1.5"/><text x="40" y="22" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#f39c12" text-anchor="middle">GALE</text><text x="40" y="38" font-family="Arial,sans-serif" font-size="10" fill="#f39c12" text-anchor="middle">34-47 KT</text>');
+      SYM_IMAGES['Avis de tempête (Storm)'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="6" fill="#e74c3c" opacity=".15" stroke="#e74c3c" stroke-width="1.5"/><text x="40" y="22" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#e74c3c" text-anchor="middle">STORM</text><text x="40" y="38" font-family="Arial,sans-serif" font-size="10" fill="#e74c3c" text-anchor="middle">48-63 KT</text>');
+      SYM_IMAGES['Avis de force ouragan'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="6" fill="#8e44ad" opacity=".15" stroke="#8e44ad" stroke-width="1.5"/><text x="40" y="22" font-family="Arial,sans-serif" font-size="9" font-weight="bold" fill="#8e44ad" text-anchor="middle">HURRICANE</text><text x="40" y="38" font-family="Arial,sans-serif" font-size="10" fill="#8e44ad" text-anchor="middle">&gt; 64 KT</text>');
+
+      // === SIGNAUX SOL-AIR — SURVIVANTS ===
+      function solAirSym(letter, color) {
+        return S(60,70,'<rect x="2" y="2" width="56" height="66" rx="6" fill="#f5f0e1"/><text x="30" y="50" font-family="Arial,sans-serif" font-size="42" font-weight="bold" fill="'+(color||'#c0392b')+'" text-anchor="middle">'+letter+'</text>');
+      }
+      SYM_IMAGES['V (sol-air)'] = solAirSym('V');
+      SYM_IMAGES['X (sol-air)'] = solAirSym('X');
+      SYM_IMAGES['N (sol-air)'] = solAirSym('N');
+      SYM_IMAGES['Y (sol-air)'] = solAirSym('Y');
+      SYM_IMAGES['↑ (sol-air)'] = S(60,70,'<rect x="2" y="2" width="56" height="66" rx="6" fill="#f5f0e1"/><line x1="30" y1="58" x2="30" y2="14" stroke="#c0392b" stroke-width="5"/><polygon points="18,24 30,8 42,24" fill="#c0392b"/>');
+
+      // === SIGNAUX SOL-AIR — SAUVETAGE ===
+      function solAirSauv(letters) {
+        var fs = letters.length > 2 ? 26 : 32;
+        return S(80,60,'<rect x="2" y="2" width="76" height="56" rx="6" fill="#f5f0e1"/><text x="40" y="42" font-family="Arial,sans-serif" font-size="'+fs+'" font-weight="bold" fill="#2c3e50" text-anchor="middle">'+letters+'</text>');
+      }
+      SYM_IMAGES['LLL (sauvetage)'] = solAirSauv('LLL');
+      SYM_IMAGES['LL (sauvetage)'] = solAirSauv('LL');
+      SYM_IMAGES['++ (sauvetage)'] = solAirSauv('++');
+      SYM_IMAGES['XX (sauvetage)'] = solAirSauv('XX');
+      SYM_IMAGES['⇄ (sauvetage)'] = S(80,60,'<rect x="2" y="2" width="76" height="56" rx="6" fill="#f5f0e1"/><line x1="14" y1="22" x2="66" y2="22" stroke="#2c3e50" stroke-width="3"/><polygon points="60,16 72,22 60,28" fill="#2c3e50"/><line x1="66" y1="38" x2="14" y2="38" stroke="#2c3e50" stroke-width="3"/><polygon points="20,32 8,38 20,44" fill="#2c3e50"/>');
+      SYM_IMAGES['→→ (sauvetage)'] = S(80,60,'<rect x="2" y="2" width="76" height="56" rx="6" fill="#f5f0e1"/><line x1="10" y1="22" x2="50" y2="22" stroke="#2c3e50" stroke-width="3"/><polygon points="46,16 58,22 46,28" fill="#2c3e50"/><line x1="10" y1="38" x2="50" y2="38" stroke="#2c3e50" stroke-width="3"/><polygon points="46,32 58,38 46,44" fill="#2c3e50"/>');
+      SYM_IMAGES['NN (sauvetage)'] = solAirSauv('NN');
+
+      // === SIGNAUX D'INTERCEPTION ===
+      // Rocking wings (interceptor)
+      SYM_IMAGES["Battement d'ailes (intercepteur)"] = S(100,60,'<g transform="translate(50,30)"><line x1="-35" y1="0" x2="35" y2="0" stroke="#444" stroke-width="2"/><line x1="0" y1="-8" x2="0" y2="14" stroke="#444" stroke-width="3"/><line x1="-12" y1="10" x2="12" y2="10" stroke="#444" stroke-width="2"/><rect x="-4" y="-12" width="8" height="6" rx="2" fill="#888"/></g><path d="M18,16 L12,28" stroke="#e74c3c" stroke-width="2" opacity=".7"/><path d="M82,16 L88,28" stroke="#e74c3c" stroke-width="2" opacity=".7"/><path d="M12,26 Q16,20 20,26" stroke="#e74c3c" stroke-width="1.5" fill="none"/><path d="M80,26 Q84,20 88,26" stroke="#e74c3c" stroke-width="1.5" fill="none"/><text x="50" y="56" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">balance ailes</text>');
+      // Rocking wings (intercepted — comply)
+      SYM_IMAGES["Battement d'ailes (intercepté)"] = S(100,60,'<g transform="translate(50,25)"><line x1="-30" y1="0" x2="30" y2="0" stroke="#2ecc71" stroke-width="2"/><line x1="0" y1="-6" x2="0" y2="12" stroke="#2ecc71" stroke-width="3"/><line x1="-10" y1="8" x2="10" y2="8" stroke="#2ecc71" stroke-width="2"/><rect x="-3" y="-10" width="6" height="5" rx="1" fill="#2ecc71"/></g><path d="M22,14 L16,24" stroke="#2ecc71" stroke-width="2" opacity=".7"/><path d="M78,14 L84,24" stroke="#2ecc71" stroke-width="2" opacity=".7"/><text x="50" y="52" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">compris, j\'obéis</text>');
+      // Break away
+      SYM_IMAGES['Dégagement brusque (intercepteur)'] = S(100,60,'<g transform="translate(35,30)"><line x1="-20" y1="0" x2="20" y2="0" stroke="#444" stroke-width="2"/><line x1="0" y1="-6" x2="0" y2="10" stroke="#444" stroke-width="2.5"/></g><path d="M55,30 Q65,18 80,14" stroke="#e67e22" stroke-width="2.5" fill="none"/><polygon points="76,10 84,14 78,20" fill="#e67e22"/><text x="50" y="54" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">dégagement</text>');
+      // Circuit over aerodrome
+      SYM_IMAGES['Virage en hippodrome (intercepteur)'] = S(100,60,'<rect x="20" y="44" width="60" height="4" rx="1" fill="#888" opacity=".4"/><path d="M30,38 L70,38 Q85,38 85,28 Q85,18 70,18 L30,18 Q15,18 15,28 Q15,38 30,38" fill="none" stroke="#e74c3c" stroke-width="2"/><polygon points="55,15 60,18 55,21" fill="#e74c3c"/><text x="50" y="56" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">atterrissez ici</text>');
+      // Gear down + lights (comply land)
+      SYM_IMAGES['Train sorti + phares (intercepté)'] = S(100,60,'<g transform="translate(50,24)"><line x1="-28" y1="0" x2="28" y2="0" stroke="#2ecc71" stroke-width="2"/><line x1="0" y1="-6" x2="0" y2="12" stroke="#2ecc71" stroke-width="2.5"/><circle cx="-12" cy="16" r="3" fill="#333" stroke="#2ecc71" stroke-width="1"/><circle cx="12" cy="16" r="3" fill="#333" stroke="#2ecc71" stroke-width="1"/></g><circle cx="50" cy="14" r="4" fill="#f1c40f" opacity=".8"><animate attributeName="opacity" values=".4;1;.4" dur="0.6s" repeatCount="indefinite"/></circle><text x="50" y="54" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">train + phares</text>');
+      // Gear up over runway
+      SYM_IMAGES['Train rentré en survolant piste (intercepté)'] = S(100,60,'<rect x="15" y="44" width="70" height="4" rx="1" fill="#888" opacity=".4"/><g transform="translate(50,28)"><line x1="-24" y1="0" x2="24" y2="0" stroke="#e74c3c" stroke-width="2"/><line x1="0" y1="-6" x2="0" y2="8" stroke="#e74c3c" stroke-width="2.5"/></g><line x1="30" y1="24" x2="70" y2="24" stroke="#e74c3c" stroke-width="1" stroke-dasharray="3,2"/><text x="50" y="56" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">inadéquat</text>');
+      // Irregular flashing
+      SYM_IMAGES['Feux à éclats irréguliers (intercepté)'] = S(100,60,'<g transform="translate(50,28)"><line x1="-24" y1="0" x2="24" y2="0" stroke="#888" stroke-width="2"/><line x1="0" y1="-6" x2="0" y2="8" stroke="#888" stroke-width="2.5"/></g><circle cx="34" cy="22" r="4" fill="#f1c40f"><animate attributeName="opacity" values="1;0;1;0;0;1" dur="1s" repeatCount="indefinite"/></circle><circle cx="66" cy="22" r="4" fill="#f1c40f"><animate attributeName="opacity" values="0;1;0;1;1;0" dur="1s" repeatCount="indefinite"/></circle><text x="50" y="54" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">en détresse</text>');
+      // Climb signal
+      SYM_IMAGES["Cabrer et allumer/éteindre phares (intercepteur)"] = S(100,60,'<path d="M20,42 Q40,18 70,12" stroke="#444" stroke-width="2.5" fill="none"/><polygon points="65,7 75,12 67,17" fill="#444"/><circle cx="55" cy="18" r="4" fill="#f1c40f"><animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite"/></circle><text x="50" y="56" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">montez</text>');
+
+      // === SIGNAUX DE MARSHALLING ===
+      function marshFig(headX,headY,lArm,rArm,label,extras) {
+        extras = extras || '';
+        return S(90,80,'<circle cx="'+headX+'" cy="'+headY+'" r="6" fill="#333"/><line x1="'+headX+'" y1="'+(headY+6)+'" x2="'+headX+'" y2="'+(headY+28)+'" stroke="#333" stroke-width="2.5"/><line x1="'+headX+'" y1="'+(headY+28)+'" x2="'+(headX-8)+'" y2="'+(headY+42)+'" stroke="#333" stroke-width="2"/><line x1="'+headX+'" y1="'+(headY+28)+'" x2="'+(headX+8)+'" y2="'+(headY+42)+'" stroke="#333" stroke-width="2"/>'+lArm+rArm+extras+'<text x="45" y="76" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">'+label+'</text>');
+      }
+      // Come ahead
+      SYM_IMAGES['Bras repliés, paumes vers soi'] = marshFig(45,8,'<line x1="45" y1="16" x2="30" y2="24" stroke="#333" stroke-width="2"/><line x1="30" y1="24" x2="34" y2="16" stroke="#333" stroke-width="2"/>','<line x1="45" y1="16" x2="60" y2="24" stroke="#333" stroke-width="2"/><line x1="60" y1="24" x2="56" y2="16" stroke="#333" stroke-width="2"/>','avancez');
+      // Arms up = this bay
+      SYM_IMAGES['Bras levés au-dessus de la tête'] = marshFig(45,12,'<line x1="45" y1="20" x2="32" y2="6" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="20" x2="58" y2="6" stroke="#333" stroke-width="2.5"/>','ce poste-ci','<circle cx="32" cy="4" r="3" fill="#f1c40f"/><circle cx="58" cy="4" r="3" fill="#f1c40f"/>');
+      // Turn left
+      SYM_IMAGES['Bras droit tendu, mouvement du gauche'] = marshFig(45,8,'<line x1="45" y1="16" x2="26" y2="20" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="64" y2="16" stroke="#333" stroke-width="2.5"/><path d="M60,10 L64,16 L60,22" stroke="#f39c12" stroke-width="2" fill="none"/>','tournez G');
+      // Turn right
+      SYM_IMAGES['Bras gauche tendu, mouvement du droit'] = marshFig(45,8,'<line x1="45" y1="16" x2="26" y2="16" stroke="#333" stroke-width="2.5"/><path d="M30,10 L26,16 L30,22" stroke="#f39c12" stroke-width="2" fill="none"/>','<line x1="45" y1="16" x2="64" y2="20" stroke="#333" stroke-width="2.5"/>','tournez D');
+      // Slow down
+      SYM_IMAGES['Bras écartés puis ramenés lentement'] = marshFig(45,8,'<line x1="45" y1="16" x2="24" y2="22" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="66" y2="22" stroke="#333" stroke-width="2.5"/>','ralentissez','<path d="M24,26 L34,22" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="2,2"/><path d="M66,26 L56,22" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="2,2"/>');
+      // Stop
+      SYM_IMAGES['Bras croisés au-dessus de la tête'] = marshFig(45,12,'<line x1="45" y1="20" x2="58" y2="4" stroke="#e74c3c" stroke-width="2.5"/>','<line x1="45" y1="20" x2="32" y2="4" stroke="#e74c3c" stroke-width="2.5"/>','STOP');
+      // Cut engines
+      SYM_IMAGES['Main au cou, tranchant (coupez)'] = marshFig(45,8,'<line x1="45" y1="16" x2="34" y2="12" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="56" y2="20" stroke="#333" stroke-width="2"/>','coupez moteurs','<line x1="30" y1="10" x2="44" y2="10" stroke="#e74c3c" stroke-width="2"/>');
+      // Start engines
+      SYM_IMAGES['Main en rotation devant la tête'] = marshFig(45,8,'<line x1="45" y1="16" x2="56" y2="20" stroke="#333" stroke-width="2"/>','<line x1="45" y1="16" x2="34" y2="20" stroke="#333" stroke-width="2"/>','démarrez','<path d="M30,6 A10,10 0 1,1 30,5.9" fill="none" stroke="#2ecc71" stroke-width="1.5"/><polygon points="34,2 30,6 34,10" fill="#2ecc71"/>');
+      // Chocks in
+      SYM_IMAGES['Mains vers le bas, paumes en bas'] = marshFig(45,8,'<line x1="45" y1="16" x2="30" y2="28" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="60" y2="28" stroke="#333" stroke-width="2.5"/>','cales','<line x1="26" y1="28" x2="34" y2="28" stroke="#f39c12" stroke-width="1.5"/><line x1="56" y1="28" x2="64" y2="28" stroke="#f39c12" stroke-width="1.5"/>');
+      // Chocks away
+      SYM_IMAGES["Mains vers l'extérieur, paumes en haut"] = marshFig(45,8,'<line x1="45" y1="16" x2="24" y2="14" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="66" y2="14" stroke="#333" stroke-width="2.5"/>','dé-calez','<polygon points="20,12 24,8 24,16" fill="#2ecc71"/><polygon points="70,12 66,8 66,16" fill="#2ecc71"/>');
+      // All clear
+      SYM_IMAGES['Bras droit en angle, pouce levé'] = marshFig(45,8,'<line x1="45" y1="16" x2="60" y2="8" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="32" y2="24" stroke="#333" stroke-width="2"/>','paré','<circle cx="62" cy="5" r="3" fill="#2ecc71"/>');
+      // Guidance finished
+      SYM_IMAGES['Deux bras levés à 45° vers le haut'] = marshFig(45,10,'<line x1="45" y1="18" x2="28" y2="4" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="18" x2="62" y2="4" stroke="#333" stroke-width="2.5"/>','guidage fini');
+
+      // === MARQUAGES DE PISTE ===
+      SYM_IMAGES['Chiffres peints (ex : 09/27)'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="4" fill="#555"/><text x="40" y="36" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
+      SYM_IMAGES['Ligne axiale pointillée'] = S(120,30,'<rect x="0" y="0" width="120" height="30" fill="#555"/><line x1="5" y1="15" x2="115" y2="15" stroke="#fff" stroke-width="2" stroke-dasharray="10,8"/>');
+      SYM_IMAGES['Seuil (bandes transversales)'] = S(100,50,'<rect x="0" y="0" width="100" height="50" fill="#555"/><rect x="10" y="4" width="4" height="42" fill="#fff"/><rect x="20" y="4" width="4" height="42" fill="#fff"/><rect x="30" y="4" width="4" height="42" fill="#fff"/><rect x="40" y="4" width="4" height="42" fill="#fff"/><rect x="50" y="4" width="4" height="42" fill="#fff"/><rect x="60" y="4" width="4" height="42" fill="#fff"/><rect x="70" y="4" width="4" height="42" fill="#fff"/><rect x="80" y="4" width="4" height="42" fill="#fff"/>');
+      SYM_IMAGES['Flèches ◄ avant seuil décalé'] = S(100,50,'<rect x="0" y="0" width="100" height="50" fill="#555"/><polygon points="22,25 38,18 38,32" fill="#fff"/><polygon points="52,25 68,18 68,32" fill="#fff"/>');
+      SYM_IMAGES['Zone de toucher des roues (rectangles)'] = S(120,50,'<rect x="0" y="0" width="120" height="50" fill="#555"/><rect x="10" y="10" width="18" height="4" fill="#fff"/><rect x="10" y="36" width="18" height="4" fill="#fff"/><rect x="40" y="10" width="18" height="4" fill="#fff"/><rect x="40" y="36" width="18" height="4" fill="#fff"/><rect x="70" y="10" width="18" height="4" fill="#fff"/><rect x="70" y="36" width="18" height="4" fill="#fff"/>');
+      SYM_IMAGES["Point d'attente piste (lignes continues + pointillées)"] = S(100,40,'<rect x="0" y="0" width="100" height="40" fill="#555"/><line x1="5" y1="14" x2="95" y2="14" stroke="#f1c40f" stroke-width="2.5"/><line x1="5" y1="20" x2="95" y2="20" stroke="#f1c40f" stroke-width="2.5"/><line x1="5" y1="26" x2="95" y2="26" stroke="#f1c40f" stroke-width="2" stroke-dasharray="5,4"/><line x1="5" y1="32" x2="95" y2="32" stroke="#f1c40f" stroke-width="2" stroke-dasharray="5,4"/>');
+      SYM_IMAGES['Ligne axiale jaune (TWY)'] = S(120,30,'<rect x="0" y="0" width="120" height="30" fill="#555"/><line x1="5" y1="15" x2="115" y2="15" stroke="#f1c40f" stroke-width="3"/>');
+      SYM_IMAGES['Panneau rouge + inscription blanche'] = S(80,40,'<rect x="4" y="4" width="72" height="32" rx="3" fill="#c0392b" stroke="#fff" stroke-width="1.5"/><text x="40" y="26" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#fff" text-anchor="middle">09-27</text>');
+      SYM_IMAGES['Panneau jaune/noir (direction)'] = S(90,40,'<rect x="4" y="4" width="82" height="32" rx="3" fill="#f1c40f"/><text x="45" y="26" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#111" text-anchor="middle">← A3</text>');
+      SYM_IMAGES['Chevrons blancs (zone fermée)'] = S(100,50,'<rect x="0" y="0" width="100" height="50" fill="#555"/><polyline points="10,40 25,10 40,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="35,40 50,10 65,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="60,40 75,10 90,40" fill="none" stroke="#fff" stroke-width="2.5"/>');
     })();
 
     // Quick lookup: get SVG for a symbol entry
