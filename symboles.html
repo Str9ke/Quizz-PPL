@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Symboles</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .sym-config { max-width: 700px; margin: 0 auto; }
+    .sym-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 10px 0 14px; }
+    .sym-cat-btn { padding: 7px 10px; font-size: 0.82em; font-weight: 600; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; text-align: left; }
+    .sym-cat-btn:hover { border-color: #667eea; color: #667eea; }
+    .sym-cat-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-color: transparent; }
+    .sym-mode-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+    .sym-mode-btn { padding: 8px 20px; font-size: 0.88em; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; }
+    .sym-mode-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-color: transparent; }
+    .sym-start-btn { display: block; margin: 16px auto; padding: 12px 40px; font-size: 1em; font-weight: 700; border-radius: 24px; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; box-shadow: 0 4px 15px rgba(102,126,234,0.3); transition: all 0.25s; }
+    .sym-start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+    .sym-start-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+    .sym-quiz-area { max-width: 700px; margin: 0 auto; }
+    .sym-progress { text-align: center; font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; }
+    .sym-progress-bar { height: 4px; background: var(--border-color); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+    .sym-progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 2px; transition: width 0.3s; }
+    .sym-question-card { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+    .sym-q-label { font-size: 0.75em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sym-q-prompt { font-size: 1.3em; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; text-align: center; padding: 10px 0; }
+    .sym-q-cat { font-size: 0.72em; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
+    .sym-choices { display: flex; flex-direction: column; gap: 8px; }
+    .sym-choice { padding: 12px 16px; font-size: 0.92em; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-primary); transition: all 0.2s; text-align: left; font-weight: 500; }
+    .sym-choice:hover:not(.sym-locked) { border-color: #667eea; background: rgba(102,126,234,0.06); }
+    .sym-choice.sym-correct { border-color: #4caf50; background: rgba(76,175,80,0.12); color: #4caf50; font-weight: 700; }
+    .sym-choice.sym-wrong { border-color: #f44336; background: rgba(244,67,54,0.1); color: #f44336; }
+    .sym-choice.sym-locked { cursor: default; opacity: 0.7; }
+    .sym-choice.sym-correct.sym-locked { opacity: 1; }
+    .sym-next-btn { display: block; margin: 12px auto 0; padding: 10px 30px; font-size: 0.92em; font-weight: 700; border-radius: 20px; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; transition: all 0.2s; }
+    .sym-result { text-align: center; padding: 30px 20px; }
+    .sym-result-score { font-size: 2.5em; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .sym-result-label { font-size: 1.1em; color: var(--text-secondary); margin: 8px 0 20px; }
+    .sym-result-details { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 20px; }
+    .sym-nb-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
+    .sym-nb-input { width: 70px; padding: 6px 10px; font-size: 0.95em; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-container); color: var(--text-primary); text-align: center; }
+    .sym-select-btns { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
+    .sym-select-btn { padding: 4px 12px; font-size: 0.75em; border-radius: 12px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); }
+    .sym-select-btn:hover { border-color: #667eea; color: #667eea; }
+    .sym-review-list { max-width: 700px; margin: 0 auto; }
+    .sym-review-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 0.85em; }
+    .sym-review-item:last-child { border-bottom: none; }
+    .sym-review-sym { font-weight: 700; color: var(--text-heading); min-width: 80px; }
+    .sym-review-mean { color: var(--text-secondary); flex: 1; text-align: right; }
+    .sym-review-icon { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">🔣</div>
+    <h1 class="home-hero-title">Test des Symboles</h1>
+    <div class="home-hero-subtitle">Entraînez-vous à reconnaître les symboles aéronautiques</div>
+  </div>
+
+  <!-- Top navigation -->
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="symboles.html" class="top-nav-link top-nav-current">🔣 Symboles</a>
+  </div>
+
+  <div id="configPanel" class="home-card sym-config">
+    <div class="home-card-header">
+      <span class="home-card-icon">⚙️</span>
+      <span class="home-card-title">Configuration</span>
+    </div>
+
+    <!-- Mode -->
+    <div style="margin-bottom: 6px; font-size: 0.85em; color: var(--text-secondary); font-weight: 600;">Mode :</div>
+    <div class="sym-mode-row">
+      <button class="sym-mode-btn active" data-mode="symbol" onclick="setMode('symbol', this)">🔣 Symbole → Signification</button>
+      <button class="sym-mode-btn" data-mode="meaning" onclick="setMode('meaning', this)">📝 Signification → Symbole</button>
+    </div>
+
+    <!-- Categories -->
+    <div style="margin: 12px 0 4px; font-size: 0.85em; color: var(--text-secondary); font-weight: 600;">Catégories :</div>
+    <div class="sym-select-btns">
+      <button class="sym-select-btn" onclick="selectAllCats()">Tout sélectionner</button>
+      <button class="sym-select-btn" onclick="deselectAllCats()">Tout désélectionner</button>
+    </div>
+    <div class="sym-cat-grid" id="catGrid"></div>
+
+    <!-- Nb questions -->
+    <div class="sym-nb-row">
+      <label style="font-size: 0.88em; color: var(--text-secondary);">Questions :</label>
+      <input type="number" id="nbQuestions" class="sym-nb-input" value="20" min="1" max="999">
+      <span id="maxLabel" style="font-size: 0.78em; color: var(--text-secondary);"></span>
+    </div>
+
+    <button class="sym-start-btn" id="btnStart" onclick="startQuiz()">🚀 Commencer le test</button>
+  </div>
+
+  <div id="quizPanel" style="display:none;">
+    <div class="sym-quiz-area">
+      <div class="sym-progress" id="progressText"></div>
+      <div class="sym-progress-bar"><div class="sym-progress-fill" id="progressFill"></div></div>
+      <div class="sym-question-card" id="questionCard"></div>
+    </div>
+  </div>
+
+  <div id="resultPanel" style="display:none;" class="home-card sym-config">
+    <div class="sym-result" id="resultContent"></div>
+    <div class="sym-review-list" id="reviewList"></div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+    // ================================================
+    // SYMBOLS DATABASE — extracted from all images
+    // ================================================
+    var SYMBOLS = [
+      // === Alphabet phonétique OTAN ===
+      {cat: 'Alphabet OTAN', sym: 'A', mean: 'Alfa'},
+      {cat: 'Alphabet OTAN', sym: 'B', mean: 'Bravo'},
+      {cat: 'Alphabet OTAN', sym: 'C', mean: 'Charlie'},
+      {cat: 'Alphabet OTAN', sym: 'D', mean: 'Delta'},
+      {cat: 'Alphabet OTAN', sym: 'E', mean: 'Echo'},
+      {cat: 'Alphabet OTAN', sym: 'F', mean: 'Foxtrot'},
+      {cat: 'Alphabet OTAN', sym: 'G', mean: 'Golf'},
+      {cat: 'Alphabet OTAN', sym: 'H', mean: 'Hotel'},
+      {cat: 'Alphabet OTAN', sym: 'I', mean: 'India'},
+      {cat: 'Alphabet OTAN', sym: 'J', mean: 'Juliett'},
+      {cat: 'Alphabet OTAN', sym: 'K', mean: 'Kilo'},
+      {cat: 'Alphabet OTAN', sym: 'L', mean: 'Lima'},
+      {cat: 'Alphabet OTAN', sym: 'M', mean: 'Mike'},
+      {cat: 'Alphabet OTAN', sym: 'N', mean: 'November'},
+      {cat: 'Alphabet OTAN', sym: 'O', mean: 'Oscar'},
+      {cat: 'Alphabet OTAN', sym: 'P', mean: 'Papa'},
+      {cat: 'Alphabet OTAN', sym: 'Q', mean: 'Quebec'},
+      {cat: 'Alphabet OTAN', sym: 'R', mean: 'Romeo'},
+      {cat: 'Alphabet OTAN', sym: 'S', mean: 'Sierra'},
+      {cat: 'Alphabet OTAN', sym: 'T', mean: 'Tango'},
+      {cat: 'Alphabet OTAN', sym: 'U', mean: 'Uniform'},
+      {cat: 'Alphabet OTAN', sym: 'V', mean: 'Victor'},
+      {cat: 'Alphabet OTAN', sym: 'W', mean: 'Whiskey'},
+      {cat: 'Alphabet OTAN', sym: 'X', mean: 'Xray'},
+      {cat: 'Alphabet OTAN', sym: 'Y', mean: 'Yankee'},
+      {cat: 'Alphabet OTAN', sym: 'Z', mean: 'Zulu'},
+
+      // === Feux de navigation ===
+      {cat: 'Feux de navigation', sym: '🟢 gauche · 🔴 droite (face)', mean: "L'avion vient droit sur vous"},
+      {cat: 'Feux de navigation', sym: '⬜ blanc (arrière)', mean: "L'avion est devant vous, même direction"},
+      {cat: 'Feux de navigation', sym: '🟢 vert seul visible', mean: "L'avion se déplace de gauche à droite"},
+      {cat: 'Feux de navigation', sym: '🔴 rouge seul visible', mean: "L'avion se déplace de droite à gauche"},
+      {cat: 'Feux de navigation', sym: '🟢 vert + silhouette inclinée vers vous', mean: "L'avion vient sur vous en virage à gauche"},
+      {cat: 'Feux de navigation', sym: '🔴 rouge + silhouette inclinée s\'éloignant', mean: "L'avion est devant vous en virage à droite"},
+
+      // === Table des angles ===
+      {cat: 'Table des angles', sym: 'cos 30°', mean: '0,8'},
+      {cat: 'Table des angles', sym: 'sin 30°', mean: '0,5'},
+      {cat: 'Table des angles', sym: 'cos 45°', mean: '0,7'},
+      {cat: 'Table des angles', sym: 'sin 45°', mean: '0,7'},
+      {cat: 'Table des angles', sym: 'cos 60°', mean: '0,5'},
+      {cat: 'Table des angles', sym: 'sin 60°', mean: '0,8'},
+
+      // === Échelle de lisibilité ===
+      {cat: 'Échelle de lisibilité', sym: '1/5', mean: 'Illisible'},
+      {cat: 'Échelle de lisibilité', sym: '2/5', mean: 'Lisible par instant'},
+      {cat: 'Échelle de lisibilité', sym: '3/5', mean: 'Lisible difficilement'},
+      {cat: 'Échelle de lisibilité', sym: '4/5', mean: 'Lisible'},
+      {cat: 'Échelle de lisibilité', sym: '5/5', mean: 'Parfaitement lisible'},
+
+      // === Signaux au sol d'aérodrome ===
+      {cat: 'Signaux au sol', sym: '✕ jaune sur fond rouge', mean: 'Atterrissages interdits'},
+      {cat: 'Signaux au sol', sym: 'Diagonale jaune/rouge', mean: "Attention, précautions spéciales à l'approche ou à l'atterrissage"},
+      {cat: 'Signaux au sol', sym: 'Haltère noir (plein)', mean: 'Atterrissage/décollage/circulation sur pistes ou voies de circulation'},
+      {cat: 'Signaux au sol', sym: '✕ blanc', mean: 'Zones impropres aux manœuvres'},
+      {cat: 'Signaux au sol', sym: 'T blanc avec flèche', mean: "Direction d'atterrissage et de décollage"},
+      {cat: 'Signaux au sol', sym: 'Haltère noir avec barres blanches', mean: 'Atterrissage/décollage sur les pistes seulement'},
+      {cat: 'Signaux au sol', sym: 'Flèche blanche tournant à droite', mean: 'Circuit à droite'},
+      {cat: 'Signaux au sol', sym: 'Croix double blanche ( # )', mean: 'Vol de planeur en cours'},
+      {cat: 'Signaux au sol', sym: 'Panneau chiffré vertical sur la TWR', mean: 'Indique la piste en service'},
+      {cat: 'Signaux au sol', sym: 'C dans un cercle', mean: 'Contrôle'},
+      {cat: 'Signaux au sol', sym: 'Manche à air (segments)', mean: 'Indique la direction et la force du vent (5 Kt par segment)'},
+
+      // === Signaux lumineux — Au sol ===
+      {cat: 'Signaux lumineux (au sol)', sym: 'Feu vert continu', mean: 'Autorisé à décoller'},
+      {cat: 'Signaux lumineux (au sol)', sym: 'Feu rouge continu', mean: 'Arrêtez-vous'},
+      {cat: 'Signaux lumineux (au sol)', sym: 'Éclats verts', mean: 'Autorisé à circuler'},
+      {cat: 'Signaux lumineux (au sol)', sym: 'Éclats blancs', mean: 'Rentrez au parking'},
+      {cat: 'Signaux lumineux (au sol)', sym: 'Éclats rouges', mean: 'Dégagez la piste'},
+
+      // === Signaux lumineux — En vol ===
+      {cat: 'Signaux lumineux (en vol)', sym: 'Fusée rouge', mean: "Interdiction d'atterrir"},
+      {cat: 'Signaux lumineux (en vol)', sym: 'Feu vert continu', mean: 'Autorisé à atterrir'},
+      {cat: 'Signaux lumineux (en vol)', sym: 'Feu rouge continu', mean: 'Cédez le passage à un autre aéronef'},
+      {cat: 'Signaux lumineux (en vol)', sym: 'Éclats verts', mean: 'Revenez pour atterrir'},
+      {cat: 'Signaux lumineux (en vol)', sym: 'Éclats blancs', mean: 'Atterrissez immédiatement et dégagez la piste'},
+      {cat: 'Signaux lumineux (en vol)', sym: 'Éclats rouges', mean: "Aérodrome dangereux, n'atterrissez pas"},
+
+      // === Distances déclarées ===
+      {cat: 'Distances déclarées', sym: 'TORA', mean: 'Distance de roulement au décollage disponible (Take-Off Run Available)'},
+      {cat: 'Distances déclarées', sym: 'TODA', mean: 'Distance de décollage disponible (TORA + Clearway)'},
+      {cat: 'Distances déclarées', sym: 'ASDA', mean: "Distance d'accélération-arrêt disponible (TORA + Stopway)"},
+      {cat: 'Distances déclarées', sym: 'LDA', mean: "Distance d'atterrissage disponible (Landing Distance Available)"},
+      {cat: 'Distances déclarées', sym: 'Clearway', mean: 'Prolongement dégagé (après la piste, pour le décollage)'},
+      {cat: 'Distances déclarées', sym: 'Stopway', mean: "Prolongement d'arrêt (après la piste, pour freiner)"},
+      {cat: 'Distances déclarées', sym: 'Displaced threshold', mean: 'Seuil décalé (début de la zone utilisable pour atterrir)'},
+
+      // === Codes METAR — Qualificatifs ===
+      {cat: 'METAR Qualificatifs', sym: '- (tiret)', mean: 'Faible / modéré'},
+      {cat: 'METAR Qualificatifs', sym: '+ (plus)', mean: 'Forte / bien formé'},
+      {cat: 'METAR Qualificatifs', sym: 'VC', mean: 'Au voisinage de'},
+
+      // === Codes METAR — Description ===
+      {cat: 'METAR Description', sym: 'MI', mean: 'Mince'},
+      {cat: 'METAR Description', sym: 'BC', mean: 'Bancs'},
+      {cat: 'METAR Description', sym: 'PR', mean: 'Partiel'},
+      {cat: 'METAR Description', sym: 'DR', mean: 'Chasse-poussière, sable, neige bas'},
+      {cat: 'METAR Description', sym: 'BL', mean: 'Chasse-poussière, sable, neige élevé'},
+      {cat: 'METAR Description', sym: 'SH', mean: 'Averse'},
+      {cat: 'METAR Description', sym: 'TS', mean: 'Orage'},
+      {cat: 'METAR Description', sym: 'FZ', mean: 'Se congelant'},
+
+      // === Codes METAR — Précipitations ===
+      {cat: 'METAR Précipitations', sym: 'DZ', mean: 'Bruine'},
+      {cat: 'METAR Précipitations', sym: 'RA', mean: 'Pluie'},
+      {cat: 'METAR Précipitations', sym: 'SN', mean: 'Neige'},
+      {cat: 'METAR Précipitations', sym: 'SG', mean: 'Neige en grains'},
+      {cat: 'METAR Précipitations', sym: 'PL', mean: 'Granules de glace'},
+      {cat: 'METAR Précipitations', sym: 'GR', mean: 'Grêle'},
+      {cat: 'METAR Précipitations', sym: 'GS', mean: 'Grésil / neige roulée'},
+      {cat: 'METAR Précipitations', sym: 'UP', mean: 'Précipitations inconnues (METAR AUTO)'},
+
+      // === Codes METAR — Obscurcissement ===
+      {cat: 'METAR Obscurcissement', sym: 'BR', mean: 'Brume'},
+      {cat: 'METAR Obscurcissement', sym: 'FG', mean: 'Brouillard'},
+      {cat: 'METAR Obscurcissement', sym: 'FU', mean: 'Fumée'},
+      {cat: 'METAR Obscurcissement', sym: 'VA', mean: 'Cendres volcaniques'},
+      {cat: 'METAR Obscurcissement', sym: 'DU', mean: 'Poussières généralisées'},
+      {cat: 'METAR Obscurcissement', sym: 'SA', mean: 'Sable'},
+      {cat: 'METAR Obscurcissement', sym: 'HZ', mean: 'Brume sèche'},
+
+      // === Codes METAR — Autres phénomènes ===
+      {cat: 'METAR Autres phénomènes', sym: 'PO', mean: 'Tourbillons de poussières/sable'},
+      {cat: 'METAR Autres phénomènes', sym: 'SQ', mean: 'Grain'},
+      {cat: 'METAR Autres phénomènes', sym: 'FC', mean: 'Nuages en entonnoir (trombe terrestre ou marine)'},
+      {cat: 'METAR Autres phénomènes', sym: 'SS', mean: 'Tempête de sable'},
+      {cat: 'METAR Autres phénomènes', sym: 'DS', mean: 'Tempête de poussière'},
+
+      // === Symboles TEMSI — Temps significatif ===
+      {cat: 'Symboles TEMSI', sym: '/// (trois barres obliques)', mean: 'Pluie'},
+      {cat: 'Symboles TEMSI', sym: ', (virgule)', mean: 'Bruine'},
+      {cat: 'Symboles TEMSI', sym: '⊙~ (cercle+tilde)', mean: 'Pluie se congelant'},
+      {cat: 'Symboles TEMSI', sym: '✱ (astérisque/étoile)', mean: 'Neige'},
+      {cat: 'Symboles TEMSI', sym: '▽ (triangle inversé)', mean: 'Averses'},
+      {cat: 'Symboles TEMSI', sym: '△ (triangle)', mean: 'Grêle'},
+      {cat: 'Symboles TEMSI', sym: '≠ (trident)', mean: 'Brouillard givrant'},
+      {cat: 'Symboles TEMSI', sym: 'ψ (simple)', mean: 'Givrage modéré'},
+      {cat: 'Symboles TEMSI', sym: 'ψψ (double)', mean: 'Givrage fort'},
+      {cat: 'Symboles TEMSI', sym: '═ (deux lignes)', mean: 'Brume'},
+      {cat: 'Symboles TEMSI', sym: '≡ (trois lignes)', mean: 'Brouillard étendu'},
+      {cat: 'Symboles TEMSI', sym: '∿ (ondulé)', mean: 'Fumée de grande étendue'},
+      {cat: 'Symboles TEMSI', sym: 'S (lettre)', mean: 'Forte brume de sable'},
+      {cat: 'Symboles TEMSI', sym: '☢ (radioactif)', mean: 'Pollution radioactive'},
+      {cat: 'Symboles TEMSI', sym: '🌋 (volcan)', mean: 'Éruption volcanique'},
+      {cat: 'Symboles TEMSI', sym: '$ barré', mean: 'Tempête de sable ou de poussière'},
+      {cat: 'Symboles TEMSI', sym: '∞ (infini)', mean: 'Brume sèche de grande étendue'},
+      {cat: 'Symboles TEMSI', sym: '~ (tilde)', mean: 'Turbulence modérée'},
+      {cat: 'Symboles TEMSI', sym: '^^ (chevrons)', mean: 'Turbulence forte'},
+      {cat: 'Symboles TEMSI', sym: '-v-v- (ligne ondulée)', mean: 'Ligne de grains forts'},
+      {cat: 'Symboles TEMSI', sym: '⚡ (éclair/flèche)', mean: 'Orages'},
+      {cat: 'Symboles TEMSI', sym: '○ (cercle)', mean: 'Ondes orographiques'},
+      {cat: 'Symboles TEMSI', sym: '9 (chiffre)', mean: 'Cyclone tropical'},
+      {cat: 'Symboles TEMSI', sym: '+ (croix)', mean: 'Chasse neige élevé'},
+      {cat: 'Symboles TEMSI', sym: 'M (lettre)', mean: 'Obscurcissement des montagnes'},
+
+      // === Localisation météo ===
+      {cat: 'Localisation météo', sym: 'COT', mean: 'Sur la côte'},
+      {cat: 'Localisation météo', sym: 'LAN', mean: "À l'intérieur de terres"},
+      {cat: 'Localisation météo', sym: 'LOC', mean: 'Localement'},
+      {cat: 'Localisation météo', sym: 'MAR', mean: 'En mer'},
+      {cat: 'Localisation météo', sym: 'MON', mean: 'Au-dessus des montagnes'},
+      {cat: 'Localisation météo', sym: 'SFC', mean: 'En surface'},
+      {cat: 'Localisation météo', sym: 'VAL', mean: 'Dans les vallées'},
+
+      // === Abréviations CB / TCU ===
+      {cat: 'Abréviations CB/TCU', sym: 'CB', mean: 'Cumulonimbus'},
+      {cat: 'Abréviations CB/TCU', sym: 'TCU', mean: 'Cumulus congestus (Towering Cumulus)'},
+      {cat: 'Abréviations CB/TCU', sym: 'ISOL', mean: 'CB/TCU séparés, couverture < 50 %'},
+      {cat: 'Abréviations CB/TCU', sym: 'OCNL', mean: 'CB/TCU occasionnels, couverture 50‑75 %'},
+      {cat: 'Abréviations CB/TCU', sym: 'FRQ', mean: 'CB/TCU fréquents, couverture > 75 %'},
+      {cat: 'Abréviations CB/TCU', sym: 'EMBD', mean: 'CB noyé(s) dans la masse nuageuse'},
+
+      // === Quantité de nuages ===
+      {cat: 'Quantité de nuages', sym: 'FEW', mean: '1 à 2 octas'},
+      {cat: 'Quantité de nuages', sym: 'SCT', mean: '3 à 4 octas'},
+      {cat: 'Quantité de nuages', sym: 'BKN', mean: '5 à 7 octas'},
+      {cat: 'Quantité de nuages', sym: 'OVC', mean: '8 octas'},
+      {cat: 'Quantité de nuages', sym: 'LYR', mean: 'Nuages en couche'}
+    ];
+
+    // ================================================
+    // STATE
+    // ================================================
+    var selectedCats = new Set();
+    var quizMode = 'symbol'; // 'symbol' or 'meaning'
+    var quizQuestions = [];
+    var currentIdx = 0;
+    var score = 0;
+    var answers = []; // {item, userAnswer, correct}
+
+    // ================================================
+    // CATEGORIES
+    // ================================================
+    function getCategories() {
+      var cats = [];
+      var seen = {};
+      SYMBOLS.forEach(function(s) {
+        if (!seen[s.cat]) { seen[s.cat] = true; cats.push(s.cat); }
+      });
+      return cats;
+    }
+
+    function countCat(cat) {
+      return SYMBOLS.filter(function(s) { return s.cat === cat; }).length;
+    }
+
+    function buildCatGrid() {
+      var grid = document.getElementById('catGrid');
+      var cats = getCategories();
+      var html = '';
+      cats.forEach(function(cat) {
+        var isActive = selectedCats.has(cat);
+        html += '<button class="sym-cat-btn' + (isActive ? ' active' : '') + '" data-cat="' + cat + '" onclick="toggleCat(this)">' + cat + ' <span style="opacity:0.5">(' + countCat(cat) + ')</span></button>';
+      });
+      grid.innerHTML = html;
+      updateMaxLabel();
+    }
+
+    window.toggleCat = function(btn) {
+      var cat = btn.getAttribute('data-cat');
+      if (selectedCats.has(cat)) {
+        selectedCats.delete(cat);
+        btn.classList.remove('active');
+      } else {
+        selectedCats.add(cat);
+        btn.classList.add('active');
+      }
+      updateMaxLabel();
+    };
+
+    window.selectAllCats = function() {
+      getCategories().forEach(function(c) { selectedCats.add(c); });
+      buildCatGrid();
+    };
+
+    window.deselectAllCats = function() {
+      selectedCats.clear();
+      buildCatGrid();
+    };
+
+    function updateMaxLabel() {
+      var pool = getPool();
+      document.getElementById('maxLabel').textContent = '/ ' + pool.length + ' disponibles';
+      document.getElementById('btnStart').disabled = pool.length === 0;
+    }
+
+    function getPool() {
+      if (selectedCats.size === 0) return [];
+      return SYMBOLS.filter(function(s) { return selectedCats.has(s.cat); });
+    }
+
+    // ================================================
+    // MODE
+    // ================================================
+    window.setMode = function(mode, btn) {
+      quizMode = mode;
+      document.querySelectorAll('.sym-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    };
+
+    // ================================================
+    // QUIZ LOGIC
+    // ================================================
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    window.startQuiz = function() {
+      var pool = getPool();
+      if (pool.length === 0) return;
+      var nb = parseInt(document.getElementById('nbQuestions').value) || 20;
+      nb = Math.min(nb, pool.length);
+      quizQuestions = shuffle(pool).slice(0, nb);
+      currentIdx = 0;
+      score = 0;
+      answers = [];
+      document.getElementById('configPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('quizPanel').style.display = 'block';
+      showQuestion();
+    };
+
+    function showQuestion() {
+      var q = quizQuestions[currentIdx];
+      var total = quizQuestions.length;
+      document.getElementById('progressText').textContent = 'Question ' + (currentIdx + 1) + ' / ' + total + '  —  Score : ' + score;
+      document.getElementById('progressFill').style.width = ((currentIdx / total) * 100) + '%';
+
+      // Build 4 choices (1 correct + 3 distractors from same category preferably)
+      var sameCat = SYMBOLS.filter(function(s) { return s.cat === q.cat && s !== q; });
+      var otherPool = SYMBOLS.filter(function(s) { return s !== q; });
+      // Prefer same-cat distractors, fill with others if not enough
+      var distractors = shuffle(sameCat).slice(0, 3);
+      if (distractors.length < 3) {
+        var remaining = shuffle(otherPool.filter(function(s) { return distractors.indexOf(s) < 0; }));
+        distractors = distractors.concat(remaining.slice(0, 3 - distractors.length));
+      }
+
+      var choices = shuffle([q].concat(distractors));
+
+      var prompt, choiceTexts;
+      if (quizMode === 'symbol') {
+        prompt = q.sym;
+        choiceTexts = choices.map(function(c) { return c.mean; });
+      } else {
+        prompt = q.mean;
+        choiceTexts = choices.map(function(c) { return c.sym; });
+      }
+
+      var correctIdx = choices.indexOf(q);
+
+      var html = '<div class="sym-q-label">' + (quizMode === 'symbol' ? 'Que signifie ce symbole ?' : 'Quel symbole correspond ?') + '</div>';
+      html += '<div class="sym-q-prompt">' + escHtml(prompt) + '</div>';
+      html += '<div class="sym-q-cat">' + escHtml(q.cat) + '</div>';
+      html += '<div class="sym-choices">';
+      for (var i = 0; i < choices.length; i++) {
+        html += '<button class="sym-choice" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + escHtml(choiceTexts[i]) + '</button>';
+      }
+      html += '</div>';
+      html += '<div id="nextBtnWrap" style="display:none;"><button class="sym-next-btn" onclick="nextQuestion()">Suivant ▶</button></div>';
+
+      document.getElementById('questionCard').innerHTML = html;
+    }
+
+    window.pickAnswer = function(btn) {
+      var allBtns = btn.parentElement.querySelectorAll('.sym-choice');
+      var alreadyLocked = btn.classList.contains('sym-locked');
+      if (alreadyLocked) return;
+
+      var idx = parseInt(btn.getAttribute('data-idx'));
+      var correctIdx = parseInt(btn.getAttribute('data-correct'));
+      var isCorrect = idx === correctIdx;
+
+      // Lock all
+      allBtns.forEach(function(b) { b.classList.add('sym-locked'); });
+
+      // Highlight
+      allBtns[correctIdx].classList.add('sym-correct');
+      if (!isCorrect) {
+        btn.classList.add('sym-wrong');
+      } else {
+        score++;
+      }
+
+      answers.push({
+        item: quizQuestions[currentIdx],
+        correct: isCorrect
+      });
+
+      // Update score in progress
+      document.getElementById('progressText').textContent = 'Question ' + (currentIdx + 1) + ' / ' + quizQuestions.length + '  —  Score : ' + score;
+
+      document.getElementById('nextBtnWrap').style.display = 'block';
+    };
+
+    window.nextQuestion = function() {
+      currentIdx++;
+      if (currentIdx >= quizQuestions.length) {
+        showResults();
+      } else {
+        showQuestion();
+      }
+    };
+
+    function showResults() {
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'block';
+      var total = quizQuestions.length;
+      var pct = Math.round(100 * score / total);
+      var emoji = pct >= 90 ? '🏆' : pct >= 70 ? '👏' : pct >= 50 ? '💪' : '📚';
+
+      var html = '<div class="sym-result-score">' + pct + '%</div>';
+      html += '<div class="sym-result-label">' + emoji + ' ' + score + ' / ' + total + ' correct' + (score > 1 ? 's' : '') + '</div>';
+      html += '<div class="sym-result-details">' + getModeLabel() + '</div>';
+      html += '<button class="sym-start-btn" onclick="resetQuiz()" style="margin-top:10px;">🔄 Recommencer</button>';
+      html += '<button class="sym-next-btn" onclick="resetToConfig()" style="margin-top:8px;">⚙️ Reconfigurer</button>';
+      document.getElementById('resultContent').innerHTML = html;
+
+      // Review list
+      var rhtml = '<div style="margin-top:16px; border-top: 1px solid var(--border-color); padding-top: 12px;">';
+      rhtml += '<div style="text-align:center; font-weight:600; font-size:0.88em; color:var(--text-secondary); margin-bottom:10px;">Récapitulatif</div>';
+      answers.forEach(function(a) {
+        var icon = a.correct ? '✅' : '❌';
+        rhtml += '<div class="sym-review-item">';
+        rhtml += '<span class="sym-review-sym">' + escHtml(a.item.sym) + '</span>';
+        rhtml += '<span class="sym-review-mean">' + escHtml(a.item.mean) + '</span>';
+        rhtml += '<span class="sym-review-icon">' + icon + '</span>';
+        rhtml += '</div>';
+      });
+      rhtml += '</div>';
+      document.getElementById('reviewList').innerHTML = rhtml;
+    }
+
+    window.resetQuiz = function() {
+      // Restart same config
+      document.getElementById('resultPanel').style.display = 'none';
+      startQuiz();
+    };
+
+    window.resetToConfig = function() {
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('configPanel').style.display = 'block';
+    };
+
+    function getModeLabel() {
+      return quizMode === 'symbol' ? 'Symbole → Signification' : 'Signification → Symbole';
+    }
+
+    function escHtml(t) {
+      return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ================================================
+    // INIT
+    // ================================================
+    selectAllCats();
+    buildCatGrid();
+
+  })();
+  </script>
+</body>
+</html>
