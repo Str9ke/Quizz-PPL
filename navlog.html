@@ -90,7 +90,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .notam-body.open{display:block}
 
 /* Decoded METAR/TAF */
-.wx-decoded{font-size:.78em;color:var(--text-secondary);margin-top:6px;padding:8px;background:rgba(102,126,234,.05);border-radius:8px;line-height:1.5}
+.wx-decoded{font-size:.9em;color:var(--text-secondary);margin-top:6px;padding:8px;background:rgba(102,126,234,.05);border-radius:8px;line-height:1.5}
 
 /* Config panel */
 .config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
@@ -100,6 +100,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .reserve-toggle{padding:8px 16px;font-size:.82em;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
 .reserve-toggle.day{background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;border-color:transparent}
 .reserve-toggle.night{background:linear-gradient(135deg,#3f51b5,#1a237e);color:#fff;border-color:transparent}
+
+/* Wind rose */
+.wind-rose-container{display:flex;justify-content:center;margin:10px 0}
+.wind-slider{width:100%;margin:2px 0;accent-color:#667eea;cursor:pointer}
 
 /* ASI gauge */
 .asi-container{display:flex;justify-content:center;margin:10px 0}
@@ -125,13 +129,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-type-btn:hover{border-color:#667eea}
 .wp-type-btn.selected{background:rgba(102,126,234,.15);border-color:#667eea}
 
+/* Insert WP button between cards */
+.insert-wp-btn{display:block;margin:4px auto;width:26px;height:26px;border-radius:50%;border:2px dashed var(--border-color);background:transparent;color:var(--text-secondary);font-size:1em;cursor:pointer;transition:all .2s;line-height:22px;text-align:center;padding:0}
+.insert-wp-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
+
 /* Leg strip connector */
 .leg-strip{max-width:700px;margin:0 auto;padding:8px 0 8px 44px;position:relative}
 .leg-strip::before{content:'';position:absolute;left:59px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#667eea,#764ba2);opacity:.4}
 .leg-strip::after{content:'';position:absolute;left:54px;bottom:2px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #764ba2;opacity:.5}
-.leg-strip-content{margin-left:28px;padding:8px 14px;background:rgba(102,126,234,.04);border:1px solid rgba(102,126,234,.1);border-radius:10px;font-size:.82em;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
-.leg-strip-content .leg-label{font-weight:700;color:#667eea;white-space:nowrap}
-.leg-strip-content .leg-val{color:var(--text-primary);white-space:nowrap}
+.leg-strip-content{margin-left:28px;padding:12px 18px;background:rgba(102,126,234,.04);border:1px solid rgba(102,126,234,.1);border-radius:10px;font-size:1em;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.leg-strip-content .leg-label{font-weight:800;color:#667eea;white-space:nowrap;font-size:1.1em}
+.leg-strip-content .leg-val{color:var(--text-primary);white-space:nowrap;font-weight:600}
 .leg-strip-content .leg-val small{color:var(--text-secondary);font-weight:400}
 
 /* Add WP button */
@@ -271,11 +279,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label for="cfgWindDir">Vent dir (&#xb0;)</label>
-          <input type="number" id="cfgWindDir" value="0" min="0" max="360" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgWindDir" value="0" min="0" max="360" oninput="window.syncWind('dir-num')">
+          <input type="range" class="wind-slider" id="cfgWindDirSlider" value="0" min="0" max="360" step="5" oninput="window.syncWind('dir-slider')">
         </div>
         <div class="config-item">
           <label for="cfgWindSpd">Vent vit (kt)</label>
-          <input type="number" id="cfgWindSpd" value="0" min="0" max="100" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgWindSpd" value="0" min="0" max="100" oninput="window.syncWind('spd-num')">
+          <input type="range" class="wind-slider" id="cfgWindSpdSlider" value="0" min="0" max="50" step="1" oninput="window.syncWind('spd-slider')">
         </div>
         <div class="config-item">
           <label for="cfgDev">D&#xe9;v. magn. (&#xb0;)</label>
@@ -285,7 +295,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <label>R&#xe9;serve carburant</label>
           <button class="reserve-toggle day" id="reserveBtn" onclick="window.toggleReserve()">&#x2600;&#xFE0F; Jour 30min</button>
         </div>
+        <div class="config-item">
+          <label for="cfgDepTime">Heure d&#xe9;part</label>
+          <input type="time" id="cfgDepTime" value="09:00" onchange="window.recalcNavlog()">
+        </div>
+        <div class="config-item">
+          <label for="cfgTaxi">Roulage/d&#xe9;col. (min)</label>
+          <input type="number" id="cfgTaxi" value="10" min="0" max="60" onchange="window.recalcNavlog()">
+        </div>
+        <div class="config-item">
+          <label for="cfgLanding">Atterrissage (min)</label>
+          <input type="number" id="cfgLanding" value="10" min="0" max="60" onchange="window.recalcNavlog()">
+        </div>
       </div>
+      <div class="wind-rose-container" id="windRoseContainer"></div>
       <div class="asi-container" id="asiGauge"></div>
     </div>
 
@@ -300,6 +323,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="summary-panel" id="summaryPanel">
       <div class="summary-item"><div class="s-label">Distance totale</div><div class="s-value" id="sumDist">0 NM</div></div>
       <div class="summary-item"><div class="s-label">Temps total</div><div class="s-value" id="sumTime">0:00:00</div></div>
+      <div class="summary-item"><div class="s-label">Temps sol</div><div class="s-value" id="sumGround">20 min</div></div>
       <div class="summary-item"><div class="s-label">Carburant trajet</div><div class="s-value" id="sumTripFuel">0 L</div></div>
       <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div></div>
       <div class="summary-item"><div class="s-label">Carburant total</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
@@ -481,6 +505,14 @@ function formatTime(hours){
   return h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
 }
 
+function formatETA(totalMinutes){
+  if(isNaN(totalMinutes)||totalMinutes<0) return '--:--';
+  var h=Math.floor(totalMinutes/60)%24;
+  var m=Math.round(totalMinutes%60);
+  if(m>=60){h=(h+1)%24;m=0;}
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+}
+
 /* ===== THEME TOGGLE ===== */
 function initTheme(){
   var t=localStorage.getItem('theme');
@@ -506,7 +538,6 @@ function switchTab(id){
   var idx=map[id]||0;
   tabs[idx].classList.add('active');
   contents[idx].classList.add('active');
-  // Show calendar toggle only on dossiers tab
   var calBtn=document.getElementById('calToggleBtn');
   if(id==='dossiers'){calBtn.classList.add('visible');}else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
 }
@@ -525,12 +556,10 @@ function setFlightType(type){
       {name:'EBCV',lat:AIRPORT_COORDS.EBCV.lat,lon:AIRPORT_COORDS.EBCV.lon,icon:'tower',dist:10,route:0}
     ];
   } else {
-    if(waypoints.length<4){
-      waypoints=[
-        {name:'EBCV',lat:AIRPORT_COORDS.EBCV.lat,lon:AIRPORT_COORDS.EBCV.lon,icon:'tower',dist:0,route:0}
-      ];
-      for(var i=0;i<9;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
-    }
+    waypoints=[
+      {name:'EBCV',lat:AIRPORT_COORDS.EBCV.lat,lon:AIRPORT_COORDS.EBCV.lon,icon:'tower',dist:0,route:0}
+    ];
+    for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
   }
   renderNavlog();
   recalcNavlog();
@@ -651,7 +680,6 @@ function suggestRunway(icao,windDir,windSpd){
   var best=null, bestHW=-9999;
   for(var i=0;i<rwys.length;i++){
     var r=rwys[i];
-    // Check both ends
     var hdgs=[r.hdg,(r.hdg+180)%360];
     for(var j=0;j<hdgs.length;j++){
       var h=hdgs[j];
@@ -733,9 +761,9 @@ function decodeMetar(raw){
   }
   var tm=raw.match(/(M?\d{2})\/(M?\d{2})/);
   if(tm){
-    var temp=tm[1].replace('M','-');
-    var dew=tm[2].replace('M','-');
-    parts.push('Temp\u00e9rature '+temp+'\u00b0C, point de ros\u00e9e '+dew+'\u00b0C');
+    var temp2=tm[1].replace('M','-');
+    var dew2=tm[2].replace('M','-');
+    parts.push('Temp\u00e9rature '+temp2+'\u00b0C, point de ros\u00e9e '+dew2+'\u00b0C');
   }
   var qm=raw.match(/Q(\d{4})/);
   if(qm) parts.push('QNH '+qm[1]+' hPa');
@@ -780,32 +808,19 @@ function createASI(tas){
     var ra=deg2rad(a-90);
     return {x:cx+Math.cos(ra)*rad,y:cy+Math.sin(ra)*rad};
   }
-  function arc(k1,k2,ri,ro,color,w){
-    var svg='';
-    var rm=(ri+ro)/2;
-    for(var k=k1;k<=k2;k+=1){
-      var a=ktToAngle(k);
-      var p=polar(a,rm);
-      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(w||3)+'" fill="'+color+'" opacity="0.8"/>';
-    }
-    return svg;
-  }
-  var svg='<svg width="200" height="200" viewBox="0 0 200 200">';
-  svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#333" stroke-width="2"/>';
-  // Arcs - draw as thick arcs using path
   function arcPath(k1,k2,radius,color,width){
     var a1=ktToAngle(k1),a2=ktToAngle(k2);
     var p1=polar(a1,radius),p2=polar(a2,radius);
     var largeArc=(a2-a1)>180?1:0;
     return '<path d="M'+p1.x.toFixed(1)+' '+p1.y.toFixed(1)+' A'+radius+' '+radius+' 0 '+largeArc+' 1 '+p2.x.toFixed(1)+' '+p2.y.toFixed(1)+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round"/>';
   }
+  var svg='<svg width="200" height="200" viewBox="0 0 200 200">';
+  svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#333" stroke-width="2"/>';
   svg+=arcPath(40,85,75,'white',6);
   svg+=arcPath(48,102,75,'#4caf50',6);
   svg+=arcPath(102,160,75,'#ffc107',6);
-  // Red line at 160
   var p160=polar(ktToAngle(160),70),p160b=polar(ktToAngle(160),82);
   svg+='<line x1="'+p160.x.toFixed(1)+'" y1="'+p160.y.toFixed(1)+'" x2="'+p160b.x.toFixed(1)+'" y2="'+p160b.y.toFixed(1)+'" stroke="red" stroke-width="3"/>';
-  // Ticks
   for(var k=40;k<=160;k+=10){
     var a=ktToAngle(k);
     var major=(k%20===0);
@@ -817,22 +832,98 @@ function createASI(tas){
       svg+='<text x="'+pt.x.toFixed(1)+'" y="'+(pt.y+3).toFixed(1)+'" text-anchor="middle" fill="#ccc" font-size="9" font-weight="bold">'+k+'</text>';
     }
   }
-  // Needle
   var needleA=ktToAngle(Math.min(Math.max(tas,minKt),maxKt));
   var pn=polar(needleA,65);
   var pb=polar(needleA+180,12);
   svg+='<line x1="'+pb.x.toFixed(1)+'" y1="'+pb.y.toFixed(1)+'" x2="'+pn.x.toFixed(1)+'" y2="'+pn.y.toFixed(1)+'" stroke="#f44336" stroke-width="2.5"/>';
   svg+='<circle cx="100" cy="100" r="5" fill="#f44336"/>';
-  // Labels
   svg+='<text x="100" y="130" text-anchor="middle" fill="#888" font-size="8" font-weight="bold">AIRSPEED</text>';
   svg+='<text x="100" y="142" text-anchor="middle" fill="#888" font-size="7">KNOTS</text>';
   svg+='</svg>';
   return svg;
 }
 
+/* ===== WIND ROSE ===== */
+function updateWindRose(){
+  var dir=parseFloat(document.getElementById('cfgWindDir').value)||0;
+  var spd=parseFloat(document.getElementById('cfgWindSpd').value)||0;
+  var svg='<svg width="160" height="160" viewBox="0 0 160 160">';
+  svg+='<circle cx="80" cy="80" r="72" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>';
+  for(var a=0;a<360;a+=30){
+    var ra=(a-90)*Math.PI/180;
+    var x1=80+Math.cos(ra)*62, y1=80+Math.sin(ra)*62;
+    var x2=80+Math.cos(ra)*70, y2=80+Math.sin(ra)*70;
+    var w=(a%90===0)?2:1;
+    svg+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="#666" stroke-width="'+w+'"/>';
+  }
+  svg+='<text x="80" y="20" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">N</text>';
+  svg+='<text x="80" y="148" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">S</text>';
+  svg+='<text x="148" y="84" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">E</text>';
+  svg+='<text x="14" y="84" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">W</text>';
+  if(spd>0){
+    var fromRA=(dir-90)*Math.PI/180;
+    var tailX=80+Math.cos(fromRA)*58, tailY=80+Math.sin(fromRA)*58;
+    var toRA=(dir+180-90)*Math.PI/180;
+    var headX=80+Math.cos(toRA)*38, headY=80+Math.sin(toRA)*38;
+    svg+='<line x1="'+tailX.toFixed(1)+'" y1="'+tailY.toFixed(1)+'" x2="'+headX.toFixed(1)+'" y2="'+headY.toFixed(1)+'" stroke="#00e5ff" stroke-width="2.5"/>';
+    var angle2=Math.atan2(headY-tailY, headX-tailX);
+    var aLen=10;
+    var px1=headX-aLen*Math.cos(angle2-0.4);
+    var py1=headY-aLen*Math.sin(angle2-0.4);
+    var px2=headX-aLen*Math.cos(angle2+0.4);
+    var py2=headY-aLen*Math.sin(angle2+0.4);
+    svg+='<polygon points="'+headX.toFixed(1)+','+headY.toFixed(1)+' '+px1.toFixed(1)+','+py1.toFixed(1)+' '+px2.toFixed(1)+','+py2.toFixed(1)+'" fill="#00e5ff"/>';
+    svg+='<circle cx="'+tailX.toFixed(1)+'" cy="'+tailY.toFixed(1)+'" r="3" fill="#00e5ff" opacity="0.6"/>';
+  }
+  svg+='<text x="80" y="76" text-anchor="middle" fill="#00e5ff" font-size="16" font-weight="bold">'+spd+'</text>';
+  svg+='<text x="80" y="90" text-anchor="middle" fill="#00e5ff" font-size="9">kt</text>';
+  svg+='<text x="80" y="106" text-anchor="middle" fill="#888" font-size="9">'+dir+'\u00b0</text>';
+  svg+='</svg>';
+  var container=document.getElementById('windRoseContainer');
+  if(container) container.innerHTML=svg;
+}
+
+/* ===== WIND SYNC ===== */
+function syncWind(src){
+  var dirNum=document.getElementById('cfgWindDir');
+  var dirSlider=document.getElementById('cfgWindDirSlider');
+  var spdNum=document.getElementById('cfgWindSpd');
+  var spdSlider=document.getElementById('cfgWindSpdSlider');
+  if(src==='dir-num'){dirSlider.value=Math.min(Math.max(parseFloat(dirNum.value)||0,0),360);}
+  else if(src==='dir-slider'){dirNum.value=dirSlider.value;}
+  else if(src==='spd-num'){spdSlider.value=Math.min(parseFloat(spdNum.value)||0,50);}
+  else if(src==='spd-slider'){spdNum.value=spdSlider.value;}
+  updateWindRose();
+  recalcNavlog();
+}
+window.syncWind=syncWind;
+
+/* ===== METAR/TAF CLEANING ===== */
+function cleanMetar(raw, icao){
+  if(!raw) return null;
+  var trimmed=raw.trim();
+  if(trimmed.charAt(0)==='{') return null;
+  var lines=trimmed.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(line && line.indexOf(icao)>=0) return line;
+  }
+  for(var j=0;j<lines.length;j++){
+    if(lines[j].trim()) return lines[j].trim();
+  }
+  return null;
+}
+
+function cleanTaf(raw, icao){
+  if(!raw) return null;
+  var trimmed=raw.trim();
+  if(trimmed.charAt(0)==='{') return null;
+  return trimmed;
+}
+
 /* ===== WEATHER FETCH ===== */
 function fetchWeather(icao,cb){
-  var metarUrl='https://aviationweather.gov/api/data/metar?ids='+icao+'&format=raw&hours=4';
+  var metarUrl='https://aviationweather.gov/api/data/metar?ids='+icao+'&format=raw&hours=2';
   var tafUrl='https://aviationweather.gov/api/data/taf?ids='+icao+'&format=raw';
   var notamUrl='https://aviationweather.gov/api/data/notam?icaos='+icao;
   var proxy='https://api.allorigins.win/raw?url=';
@@ -860,8 +951,8 @@ function fetchWeather(icao,cb){
 function renderWeatherBlock(icao){
   var data=wxCache[icao];
   if(!data) return '<div class="wx-block"><em>Chargement...</em></div>';
-  var metar=data.metar;
-  var taf=data.taf;
+  var metar=cleanMetar(data.metar, icao);
+  var taf=cleanTaf(data.taf, icao);
   var html='<div class="wx-block">';
   html+='<div class="wx-block-header">';
   html+='<strong>'+icao+'</strong>';
@@ -878,16 +969,12 @@ function renderWeatherBlock(icao){
     }
   }
   html+='</div>';
-  // METAR
   if(metar){
-    var lines=metar.split('\n');
-    var firstMetar=lines[0]||metar;
-    html+='<div style="font-family:monospace;font-size:.82em;margin:4px 0;line-height:1.6">'+colorizeMetar(firstMetar)+'</div>';
-    html+='<div class="wx-decoded">'+decodeMetar(firstMetar)+'</div>';
+    html+='<div style="font-family:monospace;font-size:1em;margin:4px 0;line-height:1.6">'+colorizeMetar(metar)+'</div>';
+    html+='<div class="wx-decoded">'+decodeMetar(metar)+'</div>';
   } else {
-    html+='<div style="color:var(--text-secondary);font-size:.82em">METAR non disponible</div>';
+    html+='<div style="color:var(--text-secondary);font-size:.9em">METAR non disponible</div>';
   }
-  // Runway suggestion
   if(metar){
     var wind2=parseWindFromMetar(metar);
     if(wind2 && RUNWAY_DB[icao]){
@@ -901,20 +988,20 @@ function renderWeatherBlock(icao){
       }
     }
   }
-  // TAF
   if(taf){
-    html+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.82em;font-weight:600;color:var(--text-secondary)">TAF</summary>';
-    html+='<pre style="font-family:monospace;font-size:.78em;white-space:pre-wrap;color:var(--text-primary);margin:4px 0">'+taf+'</pre>';
+    html+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.9em;font-weight:600;color:var(--text-secondary)">TAF</summary>';
+    html+='<pre style="font-family:monospace;font-size:.9em;white-space:pre-wrap;color:var(--text-primary);margin:4px 0">'+taf+'</pre>';
     html+='<div class="wx-decoded" style="margin-top:4px">'+decodeTaf(taf).replace(/\n/g,'<br>')+'</div>';
     html+='</details>';
+  } else {
+    html+='<div style="color:var(--text-secondary);font-size:.9em;margin-top:4px">TAF non disponible</div>';
   }
-  // NOTAMs
   if(data.notams){
     var notamText=data.notams;
     var notamCount=(notamText.match(/NOTAM/g)||[]).length;
     html+='<div style="margin-top:6px">';
     html+='<div class="notam-accordion" onclick="this.nextElementSibling.classList.toggle(\'open\')">';
-    html+='NOTAMs <span class="notam-count">'+notamCount+'</span> &#x25BC;</div>';
+    html+='NOTAMs <span class="notam-count">'+notamCount+'</span> \u25BC</div>';
     html+='<div class="notam-body">'+notamText+'</div>';
     html+='</div>';
     html+='<a href="https://www.sia.aviation-civile.gouv.fr/" target="_blank" rel="noopener" style="font-size:.72em;color:var(--link-color)">V\u00e9rifier sur SIA</a>';
@@ -954,10 +1041,15 @@ function toggleWxAirport(icao){
 function applyWind(icao){
   var data=wxCache[icao];
   if(!data||!data.metar) return;
-  var w=parseWindFromMetar(data.metar);
+  var metar=cleanMetar(data.metar, icao);
+  if(!metar) return;
+  var w=parseWindFromMetar(metar);
   if(!w) return;
   if(w.dir>=0) document.getElementById('cfgWindDir').value=w.dir;
   document.getElementById('cfgWindSpd').value=w.spd;
+  document.getElementById('cfgWindDirSlider').value=(w.dir>=0?w.dir:0);
+  document.getElementById('cfgWindSpdSlider').value=Math.min(w.spd,50);
+  updateWindRose();
   recalcNavlog();
 }
 window.applyWind=applyWind;
@@ -969,7 +1061,6 @@ function initWxButtons(){
     html+='<button class="wx-airport-btn" data-icao="'+WX_AIRPORTS[i]+'" onclick="window.toggleWxAirport(\''+WX_AIRPORTS[i]+'\')">'+WX_AIRPORTS[i]+'</button>';
   }
   el.innerHTML=html;
-  // Auto-load EBCV, EBCI, LFQQ
   loadWeather('EBCV');
   loadWeather('EBCI');
   loadWeather('LFQQ');
@@ -999,7 +1090,10 @@ function getConfig(){
     windDir:parseFloat(document.getElementById('cfgWindDir').value)||0,
     windSpd:parseFloat(document.getElementById('cfgWindSpd').value)||0,
     dev:parseFloat(document.getElementById('cfgDev').value)||-1,
-    reserveMin:reserveMode==='day'?30:45
+    reserveMin:reserveMode==='day'?30:45,
+    depTime:document.getElementById('cfgDepTime').value||'09:00',
+    taxiMin:parseFloat(document.getElementById('cfgTaxi').value)||10,
+    landingMin:parseFloat(document.getElementById('cfgLanding').value)||10
   };
 }
 
@@ -1029,53 +1123,59 @@ function calcLeg(dist,routeTrue,cfg){
 
 function recalcNavlog(){
   var cfg=getConfig();
-  // Update ASI
   document.getElementById('asiGauge').innerHTML=createASI(cfg.tas);
-  // Recalculate each leg
+  updateWindRose();
+  var depParts=(cfg.depTime||'09:00').split(':');
+  var depMinutes=parseInt(depParts[0])*60+parseInt(depParts[1]||0);
+  var cumulativeMin=depMinutes+cfg.taxiMin;
   var totalDist=0,totalTime=0,totalFuel=0;
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
     var prev=waypoints[i-1];
-    // Auto-calculate if both have coords
     if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
       wp.dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
       wp.route=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
     }
     var leg=calcLeg(wp.dist,wp.route,cfg);
     wp._leg=leg;
+    var eteMinutes=leg.ete*60;
+    cumulativeMin+=eteMinutes;
+    wp._eta=cumulativeMin;
     totalDist+=wp.dist;
     totalTime+=leg.ete;
     totalFuel+=leg.fuel;
   }
   var reserveFuel=cfg.fuel*(cfg.reserveMin/60);
-  // Update summary
+  var groundTimeMin=cfg.taxiMin+cfg.landingMin;
+  var totalTimeWithGround=totalTime+groundTimeMin/60;
   document.getElementById('sumDist').textContent=Math.round(totalDist*10)/10+' NM';
-  document.getElementById('sumTime').textContent=formatTime(totalTime);
+  document.getElementById('sumTime').textContent=formatTime(totalTimeWithGround);
+  document.getElementById('sumGround').textContent=Math.round(groundTimeMin)+' min';
   document.getElementById('sumTripFuel').textContent=Math.round(totalFuel*10)/10+' L';
   document.getElementById('sumReserve').textContent=Math.round(reserveFuel*10)/10+' L';
   document.getElementById('sumTotalFuel').textContent=Math.round((totalFuel+reserveFuel)*10)/10+' L';
-  // Update leg strips display (without re-rendering cards to avoid focus loss)
   updateLegStrips();
-  // Update dossier name suggestion
   suggestDossierName();
 }
 
 function updateLegStrips(){
+  var cfg=getConfig();
   for(var i=1;i<waypoints.length;i++){
     var el=document.getElementById('leg-strip-'+i);
     if(!el) continue;
     var wp=waypoints[i];
     var leg=wp._leg;
     if(!leg) continue;
-    var cfg=getConfig();
     var routeM=Math.round(((wp.route+cfg.dev)%360+360)%360);
     var hdgM=Math.round(((leg.hdgMag)%360+360)%360);
-    el.innerHTML='<span class="leg-label">\u2708 LEG '+i+'</span>'+
-      '<span class="leg-val">Route: '+routeM+'\u00b0M \u2192 HDG: '+hdgM+'\u00b0M</span>'+
-      '<span class="leg-val">'+wp.dist+' <small>NM</small></span>'+
+    var etaStr=wp._eta?formatETA(wp._eta):'--:--';
+    el.innerHTML='<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
+      '<span class="leg-val">\u2708 Route: '+routeM+'\u00b0M \u2192 HDG: '+hdgM+'\u00b0M</span>'+
+      '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small></span>'+
       '<span class="leg-val">GS: '+leg.gs+' <small>kt</small></span>'+
-      '<span class="leg-val">ETE: '+formatTime(leg.ete)+'</span>'+
-      '<span class="leg-val">Fuel: '+leg.fuel+' <small>L</small></span>';
+      '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'</span>'+
+      '<span class="leg-val">\u{1F550} ETA: '+etaStr+'</span>'+
+      '<span class="leg-val">\u26FD Fuel: '+leg.fuel+' <small>L</small></span>';
   }
 }
 
@@ -1085,19 +1185,16 @@ function renderNavlog(){
   var html='';
   for(var i=0;i<waypoints.length;i++){
     var wp=waypoints[i];
-    // Leg strip (before card, except first)
     if(i>0){
       html+='<div class="leg-strip"><div class="leg-strip-content" id="leg-strip-'+i+'"></div></div>';
+      html+='<button class="insert-wp-btn" onclick="window.insertWaypoint('+i+')" title="Ins\u00e9rer un waypoint">+</button>';
     }
-    // WP Card
     html+='<div class="wp-card" data-idx="'+i+'">';
     html+='<div class="wp-card-header">';
     html+='<div class="wp-num-badge">'+(i+1)+'</div>';
-    // Type icon with toggle
     var iconEmoji='\u2708\uFE0F';
     for(var ic=0;ic<WP_ICONS.length;ic++){if(WP_ICONS[ic].id===wp.icon) iconEmoji=WP_ICONS[ic].emoji;}
     html+='<span class="wp-type-icon" onclick="window.toggleTypeRow('+i+')" title="Type de point">'+iconEmoji+'</span>';
-    // Airport selector
     html+='<select class="wp-airport-select" onchange="window.selectAirport('+i+',this.value)">';
     html+='<option value="">-- Choix a\u00e9rodrome --</option>';
     for(var a in AIRPORT_COORDS){
@@ -1105,36 +1202,30 @@ function renderNavlog(){
       html+='<option value="'+a+'"'+sel+'>'+a+' - '+(AIRPORT_NAMES[a]||'')+'</option>';
     }
     html+='</select>';
-    // Name input - NO onchange to avoid focus loss!
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
-    // GPS coords
     html+='<div class="wp-coords">';
     html+='<input type="text" value="'+(wp.lat!==null?wp.lat.toFixed(4):'')+'" placeholder="Lat" data-idx="'+i+'" data-coord="lat" onchange="window.setCoord('+i+',\'lat\',this.value)">';
     html+='<input type="text" value="'+(wp.lon!==null?wp.lon.toFixed(4):'')+'" placeholder="Lon" data-idx="'+i+'" data-coord="lon" onchange="window.setCoord('+i+',\'lon\',this.value)">';
     html+='</div>';
-    // Manual distance/route (if no GPS)
     if(i>0){
       html+='<div class="wp-coords" style="margin-left:8px">';
       html+='<input type="number" value="'+wp.dist+'" step="0.1" min="0" placeholder="Dist NM" style="width:65px" onchange="window.setDist('+i+',this.value)">';
       html+='<input type="number" value="'+Math.round(wp.route)+'" min="0" max="360" placeholder="Route\u00b0" style="width:55px" onchange="window.setRoute('+i+',this.value)">';
       html+='</div>';
     }
-    // Remove button
     if(waypoints.length>2){
       html+='<button class="wp-remove-btn" onclick="window.removeWaypoint('+i+')" title="Supprimer">\u00d7</button>';
     }
-    html+='</div>'; // end header
-    // Type buttons row (hidden by default)
+    html+='</div>';
     html+='<div class="wp-type-row" id="type-row-'+i+'">';
     for(var ti=0;ti<WP_ICONS.length;ti++){
       var sel2=wp.icon===WP_ICONS[ti].id?' selected':'';
       html+='<button class="wp-type-btn'+sel2+'" onclick="window.setWpIcon('+i+',\''+WP_ICONS[ti].id+'\')" title="'+WP_ICONS[ti].label+'">'+WP_ICONS[ti].emoji+'</button>';
     }
     html+='</div>';
-    html+='</div>'; // end card
+    html+='</div>';
   }
   board.innerHTML=html;
-  // Attach name input listeners (debounced, no recalc)
   var nameInputs=board.querySelectorAll('.wp-name-input');
   for(var ni=0;ni<nameInputs.length;ni++){
     (function(input){
@@ -1144,6 +1235,16 @@ function renderNavlog(){
         clearTimeout(timer);
         timer=setTimeout(function(){
           waypoints[idx].name=input.value;
+          if(flightType==='local' && idx===0){
+            var lastIdx=waypoints.length-1;
+            waypoints[lastIdx].name=input.value;
+            waypoints[lastIdx].lat=waypoints[0].lat;
+            waypoints[lastIdx].lon=waypoints[0].lon;
+            waypoints[lastIdx].icon=waypoints[0].icon;
+            var lastInput=document.querySelector('.wp-name-input[data-idx="'+lastIdx+'"]');
+            if(lastInput) lastInput.value=input.value;
+            recalcNavlog();
+          }
           suggestDossierName();
         },500);
       });
@@ -1176,6 +1277,15 @@ function selectAirport(i,icao){
     waypoints[i].lat=AIRPORT_COORDS[icao].lat;
     waypoints[i].lon=AIRPORT_COORDS[icao].lon;
   }
+  if(flightType==='local' && i===0){
+    var lastIdx=waypoints.length-1;
+    waypoints[lastIdx].name=icao;
+    waypoints[lastIdx].icon='tower';
+    if(AIRPORT_COORDS[icao]){
+      waypoints[lastIdx].lat=AIRPORT_COORDS[icao].lat;
+      waypoints[lastIdx].lon=AIRPORT_COORDS[icao].lon;
+    }
+  }
   renderNavlog();
   recalcNavlog();
 }
@@ -1185,6 +1295,11 @@ function setCoord(i,type,val){
   var v=parseFloat(val);
   if(isNaN(v)){waypoints[i][type]=null;}
   else{waypoints[i][type]=v;}
+  if(flightType==='local' && i===0){
+    var lastIdx=waypoints.length-1;
+    waypoints[lastIdx].lat=waypoints[0].lat;
+    waypoints[lastIdx].lon=waypoints[0].lon;
+  }
   recalcNavlog();
 }
 window.setCoord=setCoord;
@@ -1202,11 +1317,23 @@ function setRoute(i,val){
 window.setRoute=setRoute;
 
 function addWaypoint(){
-  waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+  var newWp={name:'',lat:null,lon:null,icon:'',dist:0,route:0};
+  if(flightType==='local' && waypoints.length>=2){
+    waypoints.splice(waypoints.length-1,0,newWp);
+  } else {
+    waypoints.push(newWp);
+  }
   renderNavlog();
   recalcNavlog();
 }
 window.addWaypoint=addWaypoint;
+
+function insertWaypoint(pos){
+  waypoints.splice(pos,0,{name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+  renderNavlog();
+  recalcNavlog();
+}
+window.insertWaypoint=insertWaypoint;
 
 function removeWaypoint(i){
   if(waypoints.length<=2) return;
@@ -1248,6 +1375,7 @@ function saveDossier(){
     waypoints:JSON.parse(JSON.stringify(waypoints)),
     wxCache:JSON.parse(JSON.stringify(wxCache)),
     reserveMode:reserveMode,
+    flightType:flightType,
     windyUrls:getWindyUrls(),
     mapImages:getMapImages()
   };
@@ -1281,16 +1409,26 @@ function loadDossier(id){
   var d=null;
   for(var i=0;i<dossiers.length;i++){if(dossiers[i].id===id){d=dossiers[i];break;}}
   if(!d) return;
-  // Restore config
   document.getElementById('cfgTAS').value=d.config.tas;
   document.getElementById('cfgFuel').value=d.config.fuel;
   document.getElementById('cfgWindDir').value=d.config.windDir;
   document.getElementById('cfgWindSpd').value=d.config.windSpd;
   document.getElementById('cfgDev').value=d.config.dev;
+  if(d.config.depTime) document.getElementById('cfgDepTime').value=d.config.depTime;
+  if(d.config.taxiMin!==undefined) document.getElementById('cfgTaxi').value=d.config.taxiMin;
+  if(d.config.landingMin!==undefined) document.getElementById('cfgLanding').value=d.config.landingMin;
+  document.getElementById('cfgWindDirSlider').value=d.config.windDir||0;
+  document.getElementById('cfgWindSpdSlider').value=Math.min(d.config.windSpd||0,50);
   reserveMode=d.reserveMode||'day';
   var btn=document.getElementById('reserveBtn');
   if(reserveMode==='day'){btn.textContent='\u2600\uFE0F Jour 30min';btn.className='reserve-toggle day';}
   else{btn.textContent='\u{1F319} Nuit 45min';btn.className='reserve-toggle night';}
+  if(d.flightType){
+    flightType=d.flightType;
+    var ftBtns=document.querySelectorAll('.flight-type-btn');
+    ftBtns[0].classList.toggle('active',flightType==='local');
+    ftBtns[1].classList.toggle('active',flightType==='nav');
+  }
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
   renderNavlog();
@@ -1396,7 +1534,6 @@ function renderCalendar(){
 }
 
 function filterByDate(y,m,d){
-  // Filter dossier list to show only dossiers from this date
   var dossiers=getDossiers();
   var el=document.getElementById('dossierList');
   var filtered=dossiers.filter(function(dos){
@@ -1443,7 +1580,6 @@ function connectAeroweb(){
     (function(k,m){
       var el=document.getElementById(m.el);
       el.innerHTML='<iframe src="'+m.url+'" style="width:100%;height:500px;border:none" onload="window.onAerowebLoad()" onerror="window.onAerowebError(\''+k+'\')"></iframe>';
-      // Also check stored images
       var stored=sessionStorage.getItem('navlog_map_'+k);
       if(stored){
         el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
@@ -1514,40 +1650,35 @@ function initWindy(){
 function init(){
   initTheme();
   initWxButtons();
-  // Default waypoints
   waypoints=[
     {name:'EBCV',lat:AIRPORT_COORDS.EBCV.lat,lon:AIRPORT_COORDS.EBCV.lon,icon:'tower',dist:0,route:0}
   ];
-  for(var i=0;i<9;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+  for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
   renderNavlog();
   recalcNavlog();
   renderDossierList();
   initWindy();
-  // Calendar
   var now=new Date();
   calYear=now.getFullYear();
   calMonth=now.getMonth();
   renderCalendar();
-  // Dossier name input user-edited flag
   var dnInput=document.getElementById('dossierName');
   if(dnInput){
     dnInput.addEventListener('input',function(){dnInput._userEdited=true;});
   }
-  // Restore AeroWeb session
   if(sessionStorage.getItem('aeroweb_login')){
     document.getElementById('aerowebLogin').value=sessionStorage.getItem('aeroweb_login');
     document.getElementById('aerowebPass').value=sessionStorage.getItem('aeroweb_pass')||'';
   }
-  // Service worker
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});
   }
 }
 
-// Expose on window
 window.haversine=haversine;
 window.trueBearing=trueBearing;
 window.formatTime=formatTime;
+window.formatETA=formatETA;
 window.colorizeMetar=colorizeMetar;
 window.estimateIcing=estimateIcing;
 window.windArrowSVG=windArrowSVG;
@@ -1557,6 +1688,7 @@ window.createASI=createASI;
 window.decodeMetar=decodeMetar;
 window.decodeTaf=decodeTaf;
 window.recalcNavlog=recalcNavlog;
+window.updateWindRose=updateWindRose;
 
 document.addEventListener('DOMContentLoaded',init);
 })();
