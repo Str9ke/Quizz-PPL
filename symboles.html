@@ -26,6 +26,10 @@
     .sym-question-card { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
     .sym-q-label { font-size: 0.75em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     .sym-q-prompt { font-size: 1.3em; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; text-align: center; padding: 10px 0; }
+    .sym-q-prompt svg, .sym-q-prompt img { max-width: 160px; max-height: 100px; display: block; margin: 0 auto 4px; }
+    .sym-q-prompt .sym-svg-wrap { display: flex; justify-content: center; padding: 6px 0; }
+    .sym-choice .sym-choice-svg { display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .sym-choice .sym-choice-svg svg { width: 44px; height: 30px; vertical-align: middle; }
     .sym-q-cat { font-size: 0.72em; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
     .sym-choices { display: flex; flex-direction: column; gap: 8px; }
     .sym-choice { padding: 12px 16px; font-size: 0.92em; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-primary); transition: all 0.2s; text-align: left; font-weight: 500; }
@@ -315,6 +319,112 @@
     ];
 
     // ================================================
+    // SVG IMAGES for visual symbols
+    // ================================================
+    var SYM_IMAGES = {};
+    (function() {
+      // Helper to create SVG string
+      function S(w,h,body){ return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'">'+body+'</svg>'; }
+
+      // === SIGNAUX AU SOL ===
+      // Croix jaune sur fond rouge
+      SYM_IMAGES['✕ jaune sur fond rouge'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#c0392b"/><line x1="12" y1="12" x2="68" y2="68" stroke="#f1c40f" stroke-width="10" stroke-linecap="round"/><line x1="68" y1="12" x2="12" y2="68" stroke="#f1c40f" stroke-width="10" stroke-linecap="round"/>');
+      // Diagonale jaune/rouge
+      SYM_IMAGES['Diagonale jaune/rouge'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#e67e22"/><polygon points="0,0 80,0 0,80" fill="#f1c40f"/><polygon points="80,0 80,80 0,80" fill="#c0392b"/>');
+      // Haltère noir plein
+      SYM_IMAGES['Haltère noir (plein)'] = S(100,50,'<rect width="100" height="50" rx="4" fill="#f5f0e1"/><circle cx="18" cy="25" r="12" fill="#222"/><rect x="30" y="21" width="40" height="8" fill="#222"/><circle cx="82" cy="25" r="12" fill="#222"/>');
+      // X blanc sur noir
+      SYM_IMAGES['✕ blanc'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="14" y1="14" x2="66" y2="66" stroke="#fff" stroke-width="10" stroke-linecap="round"/><line x1="66" y1="14" x2="14" y2="66" stroke="#fff" stroke-width="10" stroke-linecap="round"/>');
+      // T blanc avec flèche
+      SYM_IMAGES['T blanc avec flèche'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="20" y1="20" x2="60" y2="20" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="40" y1="20" x2="40" y2="60" stroke="#fff" stroke-width="7" stroke-linecap="round"/><polygon points="28,55 40,68 52,55" fill="#fff"/>');
+      // Haltère barres blanches
+      SYM_IMAGES['Haltère noir avec barres blanches'] = S(100,50,'<rect width="100" height="50" rx="4" fill="#f5f0e1"/><circle cx="18" cy="25" r="12" fill="#222"/><rect x="30" y="21" width="40" height="8" fill="#222"/><circle cx="82" cy="25" r="12" fill="#222"/><line x1="18" y1="13" x2="18" y2="37" stroke="#fff" stroke-width="3"/><line x1="82" y1="13" x2="82" y2="37" stroke="#fff" stroke-width="3"/>');
+      // Flèche tournant à droite
+      SYM_IMAGES['Flèche blanche tournant à droite'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><path d="M25,55 L25,30 Q25,18 40,18 L55,18" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/><polygon points="50,8 65,18 50,28" fill="#fff"/>');
+      // Croix double (#)
+      SYM_IMAGES['Croix double blanche ( # )'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="28" y1="15" x2="28" y2="65" stroke="#fff" stroke-width="6"/><line x1="52" y1="15" x2="52" y2="65" stroke="#fff" stroke-width="6"/><line x1="15" y1="32" x2="65" y2="32" stroke="#fff" stroke-width="6"/><line x1="15" y1="48" x2="65" y2="48" stroke="#fff" stroke-width="6"/>');
+      // Panneau chiffré
+      SYM_IMAGES['Panneau chiffré vertical sur la TWR'] = S(60,80,'<rect x="5" y="5" width="50" height="70" rx="4" fill="#222" stroke="#fff" stroke-width="2"/><text x="30" y="52" font-family="Arial,sans-serif" font-size="32" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
+      // C dans cercle
+      SYM_IMAGES['C dans un cercle'] = S(70,70,'<circle cx="35" cy="35" r="30" fill="#222" stroke="#fff" stroke-width="3"/><text x="35" y="47" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#fff" text-anchor="middle">C</text>');
+      // Manche à air
+      SYM_IMAGES['Manche à air (segments)'] = S(110,60,'<line x1="10" y1="52" x2="10" y2="8" stroke="#555" stroke-width="3"/><polygon points="10,10 10,42 100,36 100,16" fill="none" stroke="#555" stroke-width="1.5"/><rect x="10" y="10" width="18" height="32" fill="#e74c3c" opacity=".85"/><rect x="28" y="12" width="18" height="28" fill="#fff" opacity=".85"/><rect x="46" y="14" width="18" height="24" fill="#e74c3c" opacity=".85"/><rect x="64" y="16" width="18" height="20" fill="#fff" opacity=".85"/><rect x="82" y="18" width="18" height="18" fill="#e74c3c" opacity=".85"/>');
+
+      // === FEUX DE NAVIGATION ===
+      // Avion face: vert gauche, rouge droite
+      var planeFront = '<line x1="40" y1="10" x2="40" y2="38" stroke="#444" stroke-width="3"/><line x1="8" y1="24" x2="72" y2="24" stroke="#444" stroke-width="2.5"/><line x1="25" y1="36" x2="55" y2="36" stroke="#444" stroke-width="2"/><rect x="37" y="6" width="6" height="8" rx="2" fill="#888"/>';
+      SYM_IMAGES['🟢 gauche · 🔴 droite (face)'] = S(80,48, planeFront + '<circle cx="8" cy="24" r="5" fill="#2ecc71"/><circle cx="72" cy="24" r="5" fill="#e74c3c"/>');
+      // Avion dos: blanc
+      SYM_IMAGES['⬜ blanc (arrière)'] = S(80,48, '<line x1="40" y1="10" x2="40" y2="38" stroke="#444" stroke-width="3"/><line x1="8" y1="24" x2="72" y2="24" stroke="#444" stroke-width="2.5"/><line x1="25" y1="12" x2="55" y2="12" stroke="#444" stroke-width="2"/><rect x="37" y="34" width="6" height="8" rx="2" fill="#888"/><circle cx="40" cy="42" r="5" fill="#fff" stroke="#ccc" stroke-width="1"/>');
+      // Vert seul (avion allant à droite)
+      SYM_IMAGES['🟢 vert seul visible'] = S(80,48,'<g transform="translate(40,24) rotate(-15)"><line x1="-16" y1="0" x2="16" y2="0" stroke="#444" stroke-width="3"/><line x1="-30" y1="6" x2="30" y2="6" stroke="#444" stroke-width="2"/></g><circle cx="14" cy="24" r="5" fill="#2ecc71"/>');
+      // Rouge seul (avion allant à gauche)
+      SYM_IMAGES['🔴 rouge seul visible'] = S(80,48,'<g transform="translate(40,24) rotate(15)"><line x1="-16" y1="0" x2="16" y2="0" stroke="#444" stroke-width="3"/><line x1="-30" y1="6" x2="30" y2="6" stroke="#444" stroke-width="2"/></g><circle cx="66" cy="24" r="5" fill="#e74c3c"/>');
+      // Virage gauche
+      SYM_IMAGES['🟢 vert + silhouette inclinée vers vous'] = S(80,50,'<g transform="translate(40,25) rotate(25)"><ellipse cx="0" cy="-4" rx="6" ry="14" fill="#888" opacity=".4"/><line x1="-22" y1="2" x2="22" y2="2" stroke="#444" stroke-width="2.5"/><line x1="-8" y1="-10" x2="8" y2="-10" stroke="#444" stroke-width="2"/></g><circle cx="18" cy="18" r="5" fill="#2ecc71"/>');
+      // Virage droite
+      SYM_IMAGES["🔴 rouge + silhouette inclinée s'éloignant"] = S(80,50,'<g transform="translate(40,25) rotate(-25)"><ellipse cx="0" cy="-4" rx="6" ry="14" fill="#888" opacity=".4"/><line x1="-22" y1="2" x2="22" y2="2" stroke="#444" stroke-width="2.5"/><line x1="-8" y1="-10" x2="8" y2="-10" stroke="#444" stroke-width="2"/></g><circle cx="62" cy="18" r="5" fill="#e74c3c"/>');
+
+      // === SIGNAUX LUMINEUX (AU SOL) ===
+      function lightSig(color, flashing, label) {
+        var c = color === 'vert' ? '#2ecc71' : color === 'rouge' ? '#e74c3c' : '#fff';
+        var flash = flashing ? '<circle cx="50" cy="28" r="12" fill="'+c+'" opacity=".3"><animate attributeName="opacity" values=".3;1;.3" dur="0.8s" repeatCount="indefinite"/></circle>' : '';
+        return S(100,56,'<rect x="2" y="2" width="96" height="52" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/><circle cx="50" cy="28" r="14" fill="'+c+'" opacity=".9"/>'+flash+'<text x="50" y="50" font-family="Arial,sans-serif" font-size="8" fill="#aaa" text-anchor="middle">'+label+'</text>');
+      }
+      SYM_IMAGES['sol:Feu vert continu'] = lightSig('vert', false, 'continu');
+      SYM_IMAGES['sol:Feu rouge continu'] = lightSig('rouge', false, 'continu');
+      SYM_IMAGES['sol:Éclats verts'] = lightSig('vert', true, 'éclats');
+      SYM_IMAGES['sol:Éclats blancs'] = lightSig('blanc', true, 'éclats');
+      SYM_IMAGES['sol:Éclats rouges'] = lightSig('rouge', true, 'éclats');
+
+      // === SIGNAUX LUMINEUX (EN VOL) ===
+      SYM_IMAGES['vol:Fusée rouge'] = S(80,70,'<rect x="2" y="2" width="76" height="66" rx="8" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/><line x1="40" y1="58" x2="40" y2="22" stroke="#e74c3c" stroke-width="3"/><circle cx="40" cy="18" r="10" fill="#e74c3c" opacity=".9"/><circle cx="40" cy="18" r="16" fill="#e74c3c" opacity=".2"/>');
+      SYM_IMAGES['vol:Feu vert continu'] = lightSig('vert', false, 'continu');
+      SYM_IMAGES['vol:Feu rouge continu'] = lightSig('rouge', false, 'continu');
+      SYM_IMAGES['vol:Éclats verts'] = lightSig('vert', true, 'éclats');
+      SYM_IMAGES['vol:Éclats blancs'] = lightSig('blanc', true, 'éclats');
+      SYM_IMAGES['vol:Éclats rouges'] = lightSig('rouge', true, 'éclats');
+
+      // === SYMBOLES TEMSI ===
+      function TS(body){ return S(50,40, body); }
+      SYM_IMAGES['/// (trois barres obliques)'] = TS('<line x1="12" y1="6" x2="6" y2="34" stroke="#333" stroke-width="2.5"/><line x1="26" y1="6" x2="20" y2="34" stroke="#333" stroke-width="2.5"/><line x1="40" y1="6" x2="34" y2="34" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES[', (virgule)'] = TS('<circle cx="25" cy="20" r="2.5" fill="#333"/><path d="M25,22 Q24,28 21,30" stroke="#333" stroke-width="2" fill="none"/>');
+      SYM_IMAGES['⊙~ (cercle+tilde)'] = TS('<circle cx="16" cy="20" r="7" fill="none" stroke="#333" stroke-width="2"/><circle cx="16" cy="20" r="2" fill="#333"/><path d="M28,18 Q32,12 36,18 Q40,24 44,18" stroke="#333" stroke-width="2" fill="none"/>');
+      SYM_IMAGES['✱ (astérisque/étoile)'] = TS('<line x1="25" y1="6" x2="25" y2="34" stroke="#333" stroke-width="2"/><line x1="11" y1="13" x2="39" y2="27" stroke="#333" stroke-width="2"/><line x1="39" y1="13" x2="11" y2="27" stroke="#333" stroke-width="2"/>');
+      SYM_IMAGES['▽ (triangle inversé)'] = TS('<polygon points="25,34 10,10 40,10" fill="none" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES['△ (triangle)'] = TS('<polygon points="25,6 10,34 40,34" fill="none" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES['≠ (trident)'] = TS('<line x1="15" y1="8" x2="15" y2="32" stroke="#333" stroke-width="2"/><line x1="25" y1="8" x2="25" y2="32" stroke="#333" stroke-width="2"/><line x1="35" y1="8" x2="35" y2="32" stroke="#333" stroke-width="2"/><line x1="10" y1="16" x2="40" y2="16" stroke="#333" stroke-width="2"/><line x1="10" y1="24" x2="40" y2="24" stroke="#333" stroke-width="2"/>');
+      SYM_IMAGES['ψ (simple)'] = TS('<path d="M16,10 Q16,28 25,32 Q34,28 34,10" stroke="#333" stroke-width="2.5" fill="none"/><line x1="25" y1="10" x2="25" y2="34" stroke="#333" stroke-width="2"/>');
+      SYM_IMAGES['ψψ (double)'] = TS('<path d="M6,8 Q6,24 14,28 Q22,24 22,8" stroke="#333" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="32" stroke="#333" stroke-width="1.5"/><path d="M28,8 Q28,24 36,28 Q44,24 44,8" stroke="#333" stroke-width="2" fill="none"/><line x1="36" y1="8" x2="36" y2="32" stroke="#333" stroke-width="1.5"/>');
+      SYM_IMAGES['═ (deux lignes)'] = TS('<line x1="8" y1="16" x2="42" y2="16" stroke="#333" stroke-width="2.5"/><line x1="8" y1="24" x2="42" y2="24" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES['≡ (trois lignes)'] = TS('<line x1="8" y1="10" x2="42" y2="10" stroke="#333" stroke-width="2.5"/><line x1="8" y1="20" x2="42" y2="20" stroke="#333" stroke-width="2.5"/><line x1="8" y1="30" x2="42" y2="30" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES['∿ (ondulé)'] = TS('<path d="M6,20 Q14,8 22,20 Q30,32 38,20 Q44,12 48,20" stroke="#333" stroke-width="2.5" fill="none"/>');
+      SYM_IMAGES['S (lettre)'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">S</text>');
+      SYM_IMAGES['☢ (radioactif)'] = TS('<circle cx="25" cy="20" r="14" fill="none" stroke="#333" stroke-width="2"/><circle cx="25" cy="20" r="4" fill="#333"/><path d="M25,6 L20,16 L30,16Z" fill="#333"/><path d="M13,28 L20,20 L25,26Z" fill="#333"/><path d="M37,28 L30,20 L25,26Z" fill="#333"/>');
+      SYM_IMAGES['🌋 (volcan)'] = TS('<polygon points="25,4 8,36 42,36" fill="none" stroke="#333" stroke-width="2"/><path d="M20,4 Q22,0 25,4 Q28,0 30,4" stroke="#c0392b" stroke-width="1.5" fill="none"/><line x1="25" y1="4" x2="25" y2="12" stroke="#888" stroke-width="1.5"/>');
+      SYM_IMAGES['$ barré'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="26" font-weight="bold" fill="#333" text-anchor="middle">$</text><line x1="25" y1="4" x2="25" y2="36" stroke="#333" stroke-width="2"/>');
+      SYM_IMAGES['∞ (infini)'] = TS('<path d="M12,20 Q12,10 20,10 Q28,10 25,20 Q22,30 30,30 Q38,30 38,20 Q38,10 30,10 Q22,10 25,20 Q28,30 20,30 Q12,30 12,20Z" stroke="#333" stroke-width="2.5" fill="none"/>');
+      SYM_IMAGES['~ (tilde)'] = TS('<path d="M8,20 Q18,8 25,20 Q32,32 42,20" stroke="#333" stroke-width="3" fill="none"/>');
+      SYM_IMAGES['^^ (chevrons)'] = TS('<polyline points="10,28 25,10 40,28" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="10,36 25,18 40,36" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>');
+      SYM_IMAGES['-v-v- (ligne ondulée)'] = TS('<path d="M4,20 L10,20 L14,28 L18,20 L22,20 L26,28 L30,20 L34,20 L38,28 L42,20 L46,20" stroke="#333" stroke-width="2.5" fill="none"/>');
+      SYM_IMAGES['⚡ (éclair/flèche)'] = TS('<polygon points="28,2 18,18 24,18 16,38 36,16 28,16 34,2" fill="#333"/>');
+      SYM_IMAGES['○ (cercle)'] = TS('<circle cx="25" cy="20" r="13" fill="none" stroke="#333" stroke-width="2.5"/>');
+      SYM_IMAGES['9 (chiffre)'] = TS('<text x="25" y="31" font-family="Arial,sans-serif" font-size="30" font-weight="bold" fill="#333" text-anchor="middle">6</text>');
+      SYM_IMAGES['+ (croix)'] = TS('<line x1="25" y1="6" x2="25" y2="34" stroke="#333" stroke-width="3"/><line x1="11" y1="20" x2="39" y2="20" stroke="#333" stroke-width="3"/>');
+      SYM_IMAGES['M (lettre)'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">M</text>');
+    })();
+
+    // Quick lookup: get SVG for a symbol entry
+    function getSymbolImage(item) {
+      // Direct match
+      if (SYM_IMAGES[item.sym]) return SYM_IMAGES[item.sym];
+      // Prefixed match for signaux lumineux (sol:/vol:)
+      if (item.cat === 'Signaux lumineux (au sol)') return SYM_IMAGES['sol:' + item.sym] || null;
+      if (item.cat === 'Signaux lumineux (en vol)') return SYM_IMAGES['vol:' + item.sym] || null;
+      return null;
+    }
+
+    // ================================================
     // STATE
     // ================================================
     var selectedCats = new Set();
@@ -439,23 +549,36 @@
 
       var choices = shuffle([q].concat(distractors));
 
-      var prompt, choiceTexts;
+      var correctIdx = choices.indexOf(q);
+      var promptHtml, choiceHtmls;
+
       if (quizMode === 'symbol') {
-        prompt = q.sym;
-        choiceTexts = choices.map(function(c) { return c.mean; });
+        // Show symbol (image if available) → guess meaning
+        var img = getSymbolImage(q);
+        if (img) {
+          promptHtml = '<div class="sym-svg-wrap">' + img + '</div>';
+        } else {
+          promptHtml = escHtml(q.sym);
+        }
+        choiceHtmls = choices.map(function(c) { return escHtml(c.mean); });
       } else {
-        prompt = q.mean;
-        choiceTexts = choices.map(function(c) { return c.sym; });
+        // Show meaning → guess symbol (image if available)
+        promptHtml = escHtml(q.mean);
+        choiceHtmls = choices.map(function(c) {
+          var cimg = getSymbolImage(c);
+          if (cimg) {
+            return '<span class="sym-choice-svg">' + cimg + '</span> ' + escHtml(c.sym);
+          }
+          return escHtml(c.sym);
+        });
       }
 
-      var correctIdx = choices.indexOf(q);
-
       var html = '<div class="sym-q-label">' + (quizMode === 'symbol' ? 'Que signifie ce symbole ?' : 'Quel symbole correspond ?') + '</div>';
-      html += '<div class="sym-q-prompt">' + escHtml(prompt) + '</div>';
+      html += '<div class="sym-q-prompt">' + promptHtml + '</div>';
       html += '<div class="sym-q-cat">' + escHtml(q.cat) + '</div>';
       html += '<div class="sym-choices">';
       for (var i = 0; i < choices.length; i++) {
-        html += '<button class="sym-choice" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + escHtml(choiceTexts[i]) + '</button>';
+        html += '<button class="sym-choice" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + choiceHtmls[i] + '</button>';
       }
       html += '</div>';
       html += '<div id="nextBtnWrap" style="display:none;"><button class="sym-next-btn" onclick="nextQuestion()">Suivant ▶</button></div>';
@@ -522,8 +645,10 @@
       rhtml += '<div style="text-align:center; font-weight:600; font-size:0.88em; color:var(--text-secondary); margin-bottom:10px;">Récapitulatif</div>';
       answers.forEach(function(a) {
         var icon = a.correct ? '✅' : '❌';
+        var img = getSymbolImage(a.item);
+        var symDisplay = img ? ('<span style="display:inline-block;vertical-align:middle;max-width:50px;">' + img + '</span> ') : '';
         rhtml += '<div class="sym-review-item">';
-        rhtml += '<span class="sym-review-sym">' + escHtml(a.item.sym) + '</span>';
+        rhtml += '<span class="sym-review-sym">' + symDisplay + escHtml(a.item.sym) + '</span>';
         rhtml += '<span class="sym-review-mean">' + escHtml(a.item.mean) + '</span>';
         rhtml += '<span class="sym-review-icon">' + icon + '</span>';
         rhtml += '</div>';
