@@ -384,19 +384,51 @@
       {cat: "Signaux d'interception", sym: 'Feux à éclats irréguliers (intercepté)', mean: 'Impossible d\'obéir / en détresse'},
       {cat: "Signaux d'interception", sym: 'Cabrer et allumer/éteindre phares (intercepteur)', mean: 'Montez à l\'altitude assignée'},
 
-      // === Signaux de marshalling ===
-      {cat: 'Signaux de marshalling', sym: 'Bras levés au-dessus de la tête', mean: 'Identifie la position de parking — « Follow me / Ce poste-ci »'},
-      {cat: 'Signaux de marshalling', sym: 'Bras repliés, paumes vers soi', mean: 'Avancez tout droit (Come ahead)'},
-      {cat: 'Signaux de marshalling', sym: 'Bras droit tendu, mouvement du gauche', mean: 'Tournez à gauche (du point de vue du pilote)'},
-      {cat: 'Signaux de marshalling', sym: 'Bras gauche tendu, mouvement du droit', mean: 'Tournez à droite (du point de vue du pilote)'},
-      {cat: 'Signaux de marshalling', sym: 'Bras écartés puis ramenés lentement', mean: 'Ralentissez (Slow down)'},
-      {cat: 'Signaux de marshalling', sym: 'Bras croisés au-dessus de la tête', mean: 'Stop — arrêt immédiat'},
-      {cat: 'Signaux de marshalling', sym: 'Main au cou, tranchant (coupez)', mean: 'Coupez les moteurs (Cut engines)'},
-      {cat: 'Signaux de marshalling', sym: 'Main en rotation devant la tête', mean: 'Démarrez le(s) moteur(s) (Start engines)'},
-      {cat: 'Signaux de marshalling', sym: 'Mains vers le bas, paumes en bas', mean: 'Mettez les cales (Chocks in)'},
-      {cat: 'Signaux de marshalling', sym: 'Mains vers l\'extérieur, paumes en haut', mean: 'Retirez les cales (Chocks away)'},
-      {cat: 'Signaux de marshalling', sym: 'Bras droit en angle, pouce levé', mean: 'Tout est paré / Dégagement autorisé (All clear)'},
-      {cat: 'Signaux de marshalling', sym: 'Deux bras levés à 45° vers le haut', mean: 'Guidage terminé, avancez à vue'},
+      // === Signaux de marshalling (ICAO AC-08-003) ===
+      // -- Signaleur → Pilote --
+      {cat: 'Signaux de marshalling', sym: '1. Wingwalker / Guide', mean: 'Indication de dégagement — le bout d\'aile est libre pour le mouvement'},
+      {cat: 'Signaux de marshalling', sym: '2. Identification du poste', mean: 'Identifie le poste de stationnement assigné'},
+      {cat: 'Signaux de marshalling', sym: '3. Vers le prochain signaleur', mean: 'Avancez vers le prochain signaleur ou selon les instructions sol/tour'},
+      {cat: 'Signaux de marshalling', sym: '4. Tout droit', mean: 'Avancez tout droit (Straight ahead)'},
+      {cat: 'Signaux de marshalling', sym: '5a. Virage à gauche', mean: 'Tournez à gauche (du point de vue du pilote)'},
+      {cat: 'Signaux de marshalling', sym: '5b. Virage à droite', mean: 'Tournez à droite (du point de vue du pilote)'},
+      {cat: 'Signaux de marshalling', sym: '6a. Arrêt normal', mean: 'Stop — arrêt normal (bras ramenés lentement au-dessus de la tête)'},
+      {cat: 'Signaux de marshalling', sym: '6b. Arrêt d\'urgence', mean: 'Stop d\'urgence — arrêt immédiat (bras croisés brusquement)'},
+      {cat: 'Signaux de marshalling', sym: '7a. Serrer les freins', mean: 'Serrez les freins (main ouverte → poing fermé)'},
+      {cat: 'Signaux de marshalling', sym: '7b. Desserrer les freins', mean: 'Desserrez les freins (poing fermé → main ouverte)'},
+      {cat: 'Signaux de marshalling', sym: '8a. Cales en place', mean: 'Les cales sont insérées (Chocks inserted)'},
+      {cat: 'Signaux de marshalling', sym: '8b. Retrait des cales', mean: 'Les cales sont retirées (Chocks removed)'},
+      {cat: 'Signaux de marshalling', sym: '9. Démarrage moteur(s)', mean: 'Démarrez le(s) moteur(s) — mouvement circulaire de la main droite'},
+      {cat: 'Signaux de marshalling', sym: '10. Coupez les moteurs', mean: 'Coupez les moteurs — mouvement de tranchage devant la gorge'},
+      {cat: 'Signaux de marshalling', sym: '11. Ralentir', mean: 'Ralentissez — baguettes montant et descendant de la taille aux genoux'},
+      {cat: 'Signaux de marshalling', sym: '12. Ralentir moteur(s) côté indiqué', mean: 'Ralentissez le(s) moteur(s) du côté indiqué'},
+      {cat: 'Signaux de marshalling', sym: '13. Reculer', mean: 'Reculez — bras en rotation vers l\'avant à hauteur de taille'},
+      {cat: 'Signaux de marshalling', sym: '14a. Virage en reculant (queue tribord)', mean: 'Reculez en tournant la queue vers tribord (droite)'},
+      {cat: 'Signaux de marshalling', sym: '14b. Virage en reculant (queue bâbord)', mean: 'Reculez en tournant la queue vers bâbord (gauche)'},
+      {cat: 'Signaux de marshalling', sym: '15. Affirmatif / Tout dégagé', mean: 'Affirmatif — tout est dégagé (All clear / pouce levé)'},
+      // -- Hélicoptères --
+      {cat: 'Signaux de marshalling', sym: '16. Vol stationnaire', mean: 'Vol stationnaire — Hover (hélicoptère)'},
+      {cat: 'Signaux de marshalling', sym: '17. Monter', mean: 'Montez (hélicoptère) — paumes vers le haut'},
+      {cat: 'Signaux de marshalling', sym: '18. Descendre', mean: 'Descendez (hélicoptère) — paumes vers le bas'},
+      {cat: 'Signaux de marshalling', sym: '19a. Déplacement horizontal gauche', mean: 'Déplacez-vous horizontalement vers la gauche (hélicoptère)'},
+      {cat: 'Signaux de marshalling', sym: '19b. Déplacement horizontal droite', mean: 'Déplacez-vous horizontalement vers la droite (hélicoptère)'},
+      {cat: 'Signaux de marshalling', sym: '20. Atterrir', mean: 'Atterrissez — bras croisés avec baguettes vers le bas (hélicoptère)'},
+      // -- Divers --
+      {cat: 'Signaux de marshalling', sym: '21. Incendie', mean: 'Incendie — indiquer la zone de feu avec la baguette gauche'},
+      {cat: 'Signaux de marshalling', sym: '22. Maintenir la position', mean: 'Maintenez la position / Attendez (Hold position / Stand by)'},
+      {cat: 'Signaux de marshalling', sym: '23. Libération de l\'aéronef', mean: 'Aéronef autorisé au roulage — salut standard (Dispatch)'},
+      // -- Signaux techniques / services --
+      {cat: 'Signaux de marshalling', sym: '24. Ne pas toucher aux commandes', mean: 'Ne pas toucher aux commandes (communication technique)'},
+      {cat: 'Signaux de marshalling', sym: '25. Connecter alimentation sol', mean: 'Connectez l\'alimentation électrique au sol (forme en T)'},
+      {cat: 'Signaux de marshalling', sym: '26. Déconnecter alimentation sol', mean: 'Déconnectez l\'alimentation au sol (séparer le T)'},
+      {cat: 'Signaux de marshalling', sym: '27. Négatif (technique)', mean: 'Négatif — communication technique (pouce vers le bas)'},
+      {cat: 'Signaux de marshalling', sym: '28. Communication interphone', mean: 'Établir la communication par interphone (mains sur les oreilles)'},
+      {cat: 'Signaux de marshalling', sym: '29. Ouvrir/fermer escaliers', mean: 'Ouvrir ou fermer les escaliers intégrés'},
+      // -- Signaux d'urgence ARFF --
+      {cat: 'Signaux de marshalling', sym: '30. Évacuation recommandée', mean: 'Évacuation recommandée (signal d\'urgence ARFF)'},
+      {cat: 'Signaux de marshalling', sym: '31. Arrêt recommandé', mean: 'Arrêt recommandé — stop (signal d\'urgence ARFF)'},
+      {cat: 'Signaux de marshalling', sym: '32. Urgence maîtrisée', mean: 'Urgence maîtrisée — situation sous contrôle (ARFF)'},
+      {cat: 'Signaux de marshalling', sym: '33. Incendie (urgence ARFF)', mean: 'Incendie détecté — signal d\'urgence pompiers (ARFF)'},
 
       // === Marques de piste ===
       {cat: 'Marquages de piste', sym: 'Chiffres peints (ex : 09/27)', mean: 'Numéro de piste — cap magnétique arrondi à la dizaine / 10'},
@@ -598,22 +630,47 @@
       // Climb signal
       SYM_IMAGES["Cabrer et allumer/éteindre phares (intercepteur)"] = S(100,60,'<path d="M20,42 Q40,18 70,12" stroke="#444" stroke-width="2.5" fill="none"/><polygon points="65,7 75,12 67,17" fill="#444"/><circle cx="55" cy="18" r="4" fill="#f1c40f"><animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite"/></circle><text x="50" y="56" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">montez</text>');
 
-      // === SIGNAUX DE MARSHALLING (FAA — domaine public, Wikimedia Commons) ===
-      var WM = 'https://upload.wikimedia.org/wikipedia/commons/';
-      function marshImg(path, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="' + WM + path + '" alt="' + alt + '"></div>'; }
-      SYM_IMAGES['Bras repliés, paumes vers soi']          = marshImg('d/d0/Aircraft_hand_signal_proceed_straight_ahead.svg','Proceed straight ahead');
-      SYM_IMAGES['Bras levés au-dessus de la tête']        = marshImg('d/db/Aircraft_hand_signal_flagman_directs.svg','Flagman directs pilot');
-      SYM_IMAGES['Bras droit tendu, mouvement du gauche']  = marshImg('0/09/Aircraft_hand_signal_turn_left.svg','Turn left');
-      SYM_IMAGES['Bras gauche tendu, mouvement du droit']  = marshImg('7/7f/Aircraft_hand_signal_turn_right.svg','Turn right');
-      SYM_IMAGES['Bras écartés puis ramenés lentement']    = marshImg('c/cc/Aircraft_hand_signal_slow_down.svg','Slow down');
-      SYM_IMAGES['Bras croisés au-dessus de la tête']      = marshImg('e/e8/Aircraft_hand_signal_stop.svg','Stop');
-      SYM_IMAGES['Main au cou, tranchant (coupez)']        = marshImg('9/90/Aircraft_hand_signal_cut_engines.svg','Cut engines');
-      SYM_IMAGES['Main en rotation devant la tête']        = marshImg('7/72/Aircraft_hand_signal_start_engine.svg','Start engine');
-      SYM_IMAGES['Mains vers le bas, paumes en bas']       = marshImg('9/9b/Aircraft_hand_signal_insert_chocks.svg','Insert chocks');
-      SYM_IMAGES["Mains vers l'extérieur, paumes en haut"] = marshImg('d/d3/Aircraft_hand_signal_pull_chocks.svg','Pull chocks');
-      SYM_IMAGES['Bras droit en angle, pouce levé']        = marshImg('0/00/Aircraft_hand_signal_all_clear.svg','All clear');
-      // Guidance finished — pas d'image FAA, illustration simplifiée
-      SYM_IMAGES['Deux bras levés à 45° vers le haut']     = S(90,80,'<circle cx="45" cy="12" r="6" fill="#333"/><line x1="45" y1="18" x2="45" y2="46" stroke="#333" stroke-width="2.5"/><line x1="45" y1="46" x2="37" y2="60" stroke="#333" stroke-width="2"/><line x1="45" y1="46" x2="53" y2="60" stroke="#333" stroke-width="2"/><line x1="45" y1="26" x2="28" y2="10" stroke="#333" stroke-width="2.5"/><line x1="45" y1="26" x2="62" y2="10" stroke="#333" stroke-width="2.5"/><text x="45" y="76" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">guidage fini</text>');
+      // === SIGNAUX DE MARSHALLING (AC-08-003 ICAO — images locales) ===
+      function marshImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="Symboles/' + file + '" alt="' + alt + '"></div>'; }
+      SYM_IMAGES['1. Wingwalker / Guide']                = marshImg('01-wingwalker.png','Wingwalker');
+      SYM_IMAGES['2. Identification du poste']            = marshImg('02-identify-gate.png','Identify gate');
+      SYM_IMAGES['3. Vers le prochain signaleur']         = marshImg('03-proceed-next-signalman.png','Proceed to next signalman');
+      SYM_IMAGES['4. Tout droit']                         = marshImg('04-straight-ahead.png','Straight ahead');
+      SYM_IMAGES['5a. Virage à gauche']                   = marshImg('05a-turn-left.png','Turn left');
+      SYM_IMAGES['5b. Virage à droite']                   = marshImg('05b-turn-right.png','Turn right');
+      SYM_IMAGES['6a. Arrêt normal']                      = marshImg('06a-normal-stop.png','Normal stop');
+      SYM_IMAGES["6b. Arrêt d'urgence"]                   = marshImg('06b-emergency-stop.png','Emergency stop');
+      SYM_IMAGES['7a. Serrer les freins']                 = marshImg('07a-set-brakes.png','Set brakes');
+      SYM_IMAGES['7b. Desserrer les freins']              = marshImg('07b-release-brakes.png','Release brakes');
+      SYM_IMAGES['8a. Cales en place']                    = marshImg('08a-chocks-inserted.png','Chocks inserted');
+      SYM_IMAGES['8b. Retrait des cales']                 = marshImg('08b-chocks-removed.png','Chocks removed');
+      SYM_IMAGES['9. Démarrage moteur(s)']                = marshImg('09-start-engines.png','Start engines');
+      SYM_IMAGES['10. Coupez les moteurs']                = marshImg('10-cut-engines.png','Cut engines');
+      SYM_IMAGES['11. Ralentir']                          = marshImg('11-slow-down.png','Slow down');
+      SYM_IMAGES['12. Ralentir moteur(s) côté indiqué']   = marshImg('12-slow-down-engine-side.png','Slow down engine on side');
+      SYM_IMAGES['13. Reculer']                           = marshImg('13-move-back.png','Move back');
+      SYM_IMAGES['14a. Virage en reculant (queue tribord)'] = marshImg('14a-backing-tail-starboard.png','Backing tail starboard');
+      SYM_IMAGES['14b. Virage en reculant (queue bâbord)'] = marshImg('14b-backing-tail-port.png','Backing tail port');
+      SYM_IMAGES['15. Affirmatif / Tout dégagé']          = marshImg('15-affirmative-all-clear.png','All clear');
+      SYM_IMAGES['16. Vol stationnaire']                  = marshImg('16-hover.png','Hover');
+      SYM_IMAGES['17. Monter']                            = marshImg('17-move-upwards.png','Move upwards');
+      SYM_IMAGES['18. Descendre']                         = marshImg('18-move-downwards.png','Move downwards');
+      SYM_IMAGES['19a. Déplacement horizontal gauche']    = marshImg('19a-move-horizontally-left.png','Move left');
+      SYM_IMAGES['19b. Déplacement horizontal droite']    = marshImg('19b-move-horizontally-right.png','Move right');
+      SYM_IMAGES['20. Atterrir']                          = marshImg('20-land.png','Land');
+      SYM_IMAGES['21. Incendie']                          = marshImg('21-fire.png','Fire');
+      SYM_IMAGES['22. Maintenir la position']             = marshImg('22-hold-position.png','Hold position');
+      SYM_IMAGES["23. Libération de l'aéronef"]           = marshImg('23-dispatch-aircraft.png','Dispatch aircraft');
+      SYM_IMAGES['24. Ne pas toucher aux commandes']      = marshImg('24-do-not-touch-controls.png','Do not touch controls');
+      SYM_IMAGES['25. Connecter alimentation sol']        = marshImg('25-connect-ground-power.png','Connect ground power');
+      SYM_IMAGES['26. Déconnecter alimentation sol']      = marshImg('26-disconnect-power.png','Disconnect power');
+      SYM_IMAGES['27. Négatif (technique)']               = marshImg('27-negative-technical.png','Negative');
+      SYM_IMAGES['28. Communication interphone']          = marshImg('28-communication-interphone.png','Interphone');
+      SYM_IMAGES['29. Ouvrir/fermer escaliers']           = marshImg('29-open-close-stairs.png','Open close stairs');
+      SYM_IMAGES['30. Évacuation recommandée']            = marshImg('30-recommend-evacuation.png','Recommend evacuation');
+      SYM_IMAGES['31. Arrêt recommandé']                  = marshImg('31-recommended-stop.png','Recommended stop');
+      SYM_IMAGES['32. Urgence maîtrisée']                 = marshImg('32-emergency-contained.png','Emergency contained');
+      SYM_IMAGES['33. Incendie (urgence ARFF)']           = marshImg('33-fire-emergency.png','Fire emergency');
 
       // === MARQUAGES DE PISTE ===
       SYM_IMAGES['Chiffres peints (ex : 09/27)'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="4" fill="#555"/><text x="40" y="36" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
