@@ -894,7 +894,7 @@ function _toggleCatChart(rowEl) {
  */
 function _renderCatSessionChart(container, catValue) {
   const allSessions = window._sessionHistoryCache || [];
-  const sessions = allSessions.filter(s => s.category === catValue).slice(-30);
+  const sessions = allSessions.filter(s => s.category === catValue).slice(-60);
 
   if (!sessions.length) {
     container.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-secondary);font-size:0.85em;">Aucune session pour cette catégorie</div>';
@@ -912,7 +912,7 @@ function _renderCatSessionChart(container, catValue) {
       <span>moy: <b>${avgPct}%</b> · 5 dern.: <b>${avgLast5}%</b></span>
     </div>
     <div class="daily-chart-scroll" style="margin:0 4px 6px">
-      <div class="daily-chart" style="height:${maxBarH + 40}px;min-width:${Math.max(sessions.length * 18, 200)}px">
+      <div class="daily-chart" style="height:${maxBarH + 40}px;min-width:${Math.max(sessions.length * 14, 200)}px">
   `;
 
   sessions.forEach((s, idx) => {

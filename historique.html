@@ -55,7 +55,16 @@
   <div class="home-hero">
     <div class="home-hero-icon">📅</div>
     <h1 class="home-hero-title">Historique des révisions</h1>
-    <div class="home-hero-subtitle">Revoyez vos réponses des 7 derniers jours</div>
+    <div class="home-hero-subtitle">Revoyez vos réponses jour par jour</div>
+  </div>
+
+  <!-- Top navigation -->
+  <div class="top-nav-bar">
+    <a href="index.html" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
   </div>
 
   <!-- Revision history -->
@@ -106,7 +115,9 @@
     let currentResponses = {};
     let _notesCache = {};
     let uid = null;
-    let revisionDayOffset = null;
+    let _selectedDate = null; // Date object for selected calendar day
+    let _calendarMonth = null; // Date object for displayed month
+    let _activityDates = new Set(); // Set of 'YYYY-MM-DD' strings with activity
     let activeFilters = new Set();
     let _lastDayQuestions = []; // cache for re-filtering
 
@@ -501,37 +512,163 @@
       return days[d.getDay()] + ' ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
-    // === Revision History ===
+    // === Calendar Navigation ===
+    function _buildActivityDates() {
+      _activityDates.clear();
+      // Scan all responses for dates with statusLog or timestamp
+      Object.keys(currentResponses).forEach(function(key) {
+        var resp = currentResponses[key];
+        if (!resp) return;
+        // Use statusLog entries
+        if (resp.statusLog && resp.statusLog.length) {
+          resp.statusLog.forEach(function(e) {
+            var d = new Date(e.ts);
+            var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            _activityDates.add(k);
+          });
+        }
+        // Also use timestamp (fallback for old data)
+        var ts = null;
+        if (resp.timestamp) {
+          if (resp.timestamp.seconds !== undefined) ts = resp.timestamp.seconds * 1000;
+          else if (typeof resp.timestamp === 'number') ts = resp.timestamp;
+        } else if (resp.lastUpdated) {
+          if (resp.lastUpdated.seconds !== undefined) ts = resp.lastUpdated.seconds * 1000;
+          else if (typeof resp.lastUpdated === 'number') ts = resp.lastUpdated;
+        }
+        if (ts) {
+          var d = new Date(ts);
+          var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          _activityDates.add(k);
+        }
+      });
+    }
+
     function buildRevisionNav() {
+      _buildActivityDates();
       var nav = document.getElementById('revisionDaysNav');
-      var dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
-      var html = '';
-      for (var i = 0; i < 7; i++) {
-        var d = new Date();
-        d.setDate(d.getDate() - i);
-        var label = i < 3 ? dayLabels[i] : formatShortDate(d);
-        var isActive = revisionDayOffset === i;
-        html += '<button class="revision-day-btn' + (isActive ? ' revision-day-active' : '') + '" onclick="selectRevisionDay(' + i + ')">' + label + '</button>';
+      if (!_calendarMonth) _calendarMonth = new Date();
+      var cm = _calendarMonth;
+      var year = cm.getFullYear();
+      var month = cm.getMonth();
+      var today = new Date();
+      var todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+      var selectedKey = _selectedDate ? (_selectedDate.getFullYear() + '-' + String(_selectedDate.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDate.getDate()).padStart(2, '0')) : null;
+
+      var monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      var dayHeaders = ['L','M','M','J','V','S','D'];
+
+      // First day of month and last day
+      var firstDay = new Date(year, month, 1);
+      var lastDay = new Date(year, month + 1, 0);
+      var startDow = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+      var html = '<div class="cal-header">';
+      html += '<button class="cal-nav-btn" onclick="calPrevMonth()">◀</button>';
+      html += '<span class="cal-month-label">' + monthNames[month] + ' ' + year + '</span>';
+      // Only show next if not in the future
+      var nextMonth = new Date(year, month + 1, 1);
+      if (nextMonth <= new Date(today.getFullYear(), today.getMonth() + 1, 1)) {
+        html += '<button class="cal-nav-btn" onclick="calNextMonth()">▶</button>';
+      } else {
+        html += '<span style="width:32px"></span>';
       }
+      html += '</div>';
+
+      html += '<div class="cal-grid">';
+      dayHeaders.forEach(function(d) { html += '<div class="cal-day-header">' + d + '</div>'; });
+
+      // Empty cells before first day
+      for (var i = 0; i < startDow; i++) {
+        html += '<div class="cal-day cal-day-empty"></div>';
+      }
+
+      // Day cells
+      for (var day = 1; day <= lastDay.getDate(); day++) {
+        var dateObj = new Date(year, month, day);
+        var dateKey = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var isFuture = dateObj > today;
+        var isToday = dateKey === todayKey;
+        var isSelected = dateKey === selectedKey;
+        var hasActivity = _activityDates.has(dateKey);
+        var classes = 'cal-day';
+        if (isFuture) classes += ' cal-day-future';
+        if (isToday) classes += ' cal-day-today';
+        if (isSelected) classes += ' cal-day-selected';
+        if (hasActivity && !isFuture) classes += ' cal-day-active';
+
+        if (isFuture) {
+          html += '<div class="' + classes + '">' + day + '</div>';
+        } else {
+          html += '<div class="' + classes + '" onclick="selectCalendarDay(' + year + ',' + month + ',' + day + ')">' + day;
+          if (hasActivity) html += '<span class="cal-dot"></span>';
+          html += '</div>';
+        }
+      }
+      html += '</div>';
+
+      // Quick day shortcuts
+      html += '<div class="cal-shortcuts">';
+      var shortcuts = [
+        { label: "Aujourd'hui", offset: 0 },
+        { label: 'Hier', offset: 1 },
+        { label: 'Avant-hier', offset: 2 }
+      ];
+      shortcuts.forEach(function(s) {
+        var sd = new Date(today);
+        sd.setDate(sd.getDate() - s.offset);
+        var sk = sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0') + '-' + String(sd.getDate()).padStart(2, '0');
+        var isAct = sk === selectedKey;
+        html += '<button class="cal-shortcut-btn' + (isAct ? ' cal-shortcut-active' : '') + '" onclick="selectCalendarDay(' + sd.getFullYear() + ',' + sd.getMonth() + ',' + sd.getDate() + ')">' + s.label + '</button>';
+      });
+      html += '</div>';
+
       nav.innerHTML = html;
     }
 
-    window.selectRevisionDay = function(offset) {
-      if (revisionDayOffset === offset) {
-        revisionDayOffset = null;
+    window.calPrevMonth = function() {
+      _calendarMonth = new Date(_calendarMonth.getFullYear(), _calendarMonth.getMonth() - 1, 1);
+      buildRevisionNav();
+    };
+    window.calNextMonth = function() {
+      _calendarMonth = new Date(_calendarMonth.getFullYear(), _calendarMonth.getMonth() + 1, 1);
+      buildRevisionNav();
+    };
+
+    window.selectCalendarDay = function(year, month, day) {
+      var newDate = new Date(year, month, day);
+      // Toggle: if same date, deselect
+      if (_selectedDate && _selectedDate.getTime() === newDate.getTime()) {
+        _selectedDate = null;
         buildRevisionNav();
         document.getElementById('revisionResults').innerHTML = '';
         document.getElementById('revisionSummary').innerHTML = '';
+        _updateQuizLaunchBtn(0);
         return;
       }
-      revisionDayOffset = offset;
+      _selectedDate = newDate;
+      // Navigate calendar to selected month if needed
+      _calendarMonth = new Date(year, month, 1);
       buildRevisionNav();
-      loadRevisionDay(offset);
+      loadRevisionDay(_selectedDate);
     };
 
-    function loadRevisionDay(offset) {
+    // Legacy support
+    window.selectRevisionDay = function(offset) {
       var d = new Date();
       d.setDate(d.getDate() - offset);
+      selectCalendarDay(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+
+    function loadRevisionDay(targetDate) {
+      var d;
+      if (targetDate instanceof Date) {
+        d = targetDate;
+      } else {
+        // Legacy: offset from today
+        d = new Date();
+        d.setDate(d.getDate() - targetDate);
+      }
       var startMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       var endMs = startMs + 86400000;
 
@@ -540,6 +677,22 @@
         var key = getKeyFor(q);
         var resp = currentResponses[key];
         if (!resp) return;
+
+        // Utiliser statusLog si disponible pour reconstituer l'historique du jour
+        if (resp.statusLog && resp.statusLog.length) {
+          var dayEntries = resp.statusLog.filter(function(e) {
+            return e.ts >= startMs && e.ts < endMs;
+          });
+          if (dayEntries.length > 0) {
+            // Prendre la PREMIÈRE réponse du jour (statut original)
+            var firstEntry = dayEntries[0];
+            var fakeResp = Object.assign({}, resp, { status: firstEntry.status });
+            dayQuestions.push({ q: q, ts: firstEntry.ts, resp: fakeResp });
+            return;
+          }
+        }
+
+        // Fallback : ancien comportement (pas de statusLog)
         var ts = null;
         if (resp.timestamp) {
           if (resp.timestamp.seconds !== undefined) ts = resp.timestamp.seconds * 1000;
@@ -558,17 +711,25 @@
 
       var container = document.getElementById('revisionResults');
       var summaryDiv = document.getElementById('revisionSummary');
-      var dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
-      var dayLabel = offset < 3 ? dayLabels[offset] : formatShortDate(d);
 
       if (dayQuestions.length === 0) {
         summaryDiv.innerHTML = '';
-        container.innerHTML = '<div class="revision-empty"><p style="text-align:center;color:var(--text-secondary);padding:1rem;">Aucune question répondue ' + (offset === 0 ? 'aujourd\'hui' : dayLabel.toLowerCase()) + '</p></div>';
+        var dateLabel = _formatDateLabel(d);
+        container.innerHTML = '<div class="revision-empty"><p style="text-align:center;color:var(--text-secondary);padding:1rem;">Aucune question répondue ' + dateLabel + '</p></div>';
         return;
       }
 
       // Apply active filters if any
       applyFiltersAndRender();
+    }
+
+    function _formatDateLabel(d) {
+      var today = new Date();
+      var diffDays = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+      if (diffDays === 0) return "aujourd'hui";
+      if (diffDays === 1) return 'hier';
+      if (diffDays === 2) return 'avant-hier';
+      return 'le ' + formatShortDate(d);
     }
 
     // === Auth ===
@@ -659,9 +820,7 @@
       var correct = filtered.filter(function(x) { return x.resp.status === 'réussie'; }).length;
       var wrong = filtered.filter(function(x) { return x.resp.status === 'ratée'; }).length;
       var pct = filtered.length > 0 ? Math.round(100 * correct / filtered.length) : 0;
-      var dayLabels = ['Aujourd\'hui', 'Hier', 'Avant-hier'];
-      var d = new Date(); d.setDate(d.getDate() - (revisionDayOffset || 0));
-      var dayLabel = (revisionDayOffset || 0) < 3 ? dayLabels[revisionDayOffset || 0] : formatShortDate(d);
+      var dayLabel = _selectedDate ? _formatDateLabel(_selectedDate) : "aujourd'hui";
       var filterSuffix = activeFilters.size > 0 ? ' (filtré : ' + filtered.length + '/' + _lastDayQuestions.length + ')' : '';
 
       summaryDiv.innerHTML = '<div class="revision-summary"><strong>' + dayLabel + '</strong> — ' +

@@ -777,6 +777,12 @@ async function validerReponses() {
             nextReview: nextReviewMs,
             timestamp: firebase.firestore.Timestamp.now()
         };
+        // Préserver et enrichir le statusLog (historique des réponses par jour)
+        const existingLog = (currentResponses[key] && currentResponses[key].statusLog) ? [...currentResponses[key].statusLog] : [];
+        existingLog.push({ status, ts: Date.now() });
+        // Garder les 100 dernières entrées max
+        if (existingLog.length > 100) existingLog.splice(0, existingLog.length - 100);
+        entry.statusLog = existingLog;
         // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
         if (wasMarked !== undefined) entry.marked = wasMarked;
         if (wasImportant !== undefined) entry.important = wasImportant;
