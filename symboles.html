@@ -26,10 +26,11 @@
     .sym-question-card { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
     .sym-q-label { font-size: 0.75em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     .sym-q-prompt { font-size: 1.3em; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; text-align: center; padding: 10px 0; }
-    .sym-q-prompt svg, .sym-q-prompt img { max-width: 160px; max-height: 100px; display: block; margin: 0 auto 4px; }
+    .sym-q-prompt svg, .sym-q-prompt img { max-width: 160px; max-height: 140px; display: block; margin: 0 auto 4px; }
     .sym-q-prompt .sym-svg-wrap { display: flex; justify-content: center; padding: 6px 0; }
     .sym-choice .sym-choice-svg { display: inline-block; vertical-align: middle; margin-right: 8px; }
     .sym-choice .sym-choice-svg svg { width: 44px; height: 30px; vertical-align: middle; }
+    .sym-choice .sym-choice-svg img { width: auto; height: 44px; vertical-align: middle; }
     .sym-q-cat { font-size: 0.72em; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
     .sym-choices { display: flex; flex-direction: column; gap: 8px; }
     .sym-choice { padding: 12px 16px; font-size: 0.92em; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-primary); transition: all 0.2s; text-align: left; font-weight: 500; }
@@ -597,35 +598,22 @@
       // Climb signal
       SYM_IMAGES["Cabrer et allumer/éteindre phares (intercepteur)"] = S(100,60,'<path d="M20,42 Q40,18 70,12" stroke="#444" stroke-width="2.5" fill="none"/><polygon points="65,7 75,12 67,17" fill="#444"/><circle cx="55" cy="18" r="4" fill="#f1c40f"><animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite"/></circle><text x="50" y="56" font-family="Arial,sans-serif" font-size="8" fill="#888" text-anchor="middle">montez</text>');
 
-      // === SIGNAUX DE MARSHALLING ===
-      function marshFig(headX,headY,lArm,rArm,label,extras) {
-        extras = extras || '';
-        return S(90,80,'<circle cx="'+headX+'" cy="'+headY+'" r="6" fill="#333"/><line x1="'+headX+'" y1="'+(headY+6)+'" x2="'+headX+'" y2="'+(headY+28)+'" stroke="#333" stroke-width="2.5"/><line x1="'+headX+'" y1="'+(headY+28)+'" x2="'+(headX-8)+'" y2="'+(headY+42)+'" stroke="#333" stroke-width="2"/><line x1="'+headX+'" y1="'+(headY+28)+'" x2="'+(headX+8)+'" y2="'+(headY+42)+'" stroke="#333" stroke-width="2"/>'+lArm+rArm+extras+'<text x="45" y="76" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">'+label+'</text>');
-      }
-      // Come ahead
-      SYM_IMAGES['Bras repliés, paumes vers soi'] = marshFig(45,8,'<line x1="45" y1="16" x2="30" y2="24" stroke="#333" stroke-width="2"/><line x1="30" y1="24" x2="34" y2="16" stroke="#333" stroke-width="2"/>','<line x1="45" y1="16" x2="60" y2="24" stroke="#333" stroke-width="2"/><line x1="60" y1="24" x2="56" y2="16" stroke="#333" stroke-width="2"/>','avancez');
-      // Arms up = this bay
-      SYM_IMAGES['Bras levés au-dessus de la tête'] = marshFig(45,12,'<line x1="45" y1="20" x2="32" y2="6" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="20" x2="58" y2="6" stroke="#333" stroke-width="2.5"/>','ce poste-ci','<circle cx="32" cy="4" r="3" fill="#f1c40f"/><circle cx="58" cy="4" r="3" fill="#f1c40f"/>');
-      // Turn left
-      SYM_IMAGES['Bras droit tendu, mouvement du gauche'] = marshFig(45,8,'<line x1="45" y1="16" x2="26" y2="20" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="64" y2="16" stroke="#333" stroke-width="2.5"/><path d="M60,10 L64,16 L60,22" stroke="#f39c12" stroke-width="2" fill="none"/>','tournez G');
-      // Turn right
-      SYM_IMAGES['Bras gauche tendu, mouvement du droit'] = marshFig(45,8,'<line x1="45" y1="16" x2="26" y2="16" stroke="#333" stroke-width="2.5"/><path d="M30,10 L26,16 L30,22" stroke="#f39c12" stroke-width="2" fill="none"/>','<line x1="45" y1="16" x2="64" y2="20" stroke="#333" stroke-width="2.5"/>','tournez D');
-      // Slow down
-      SYM_IMAGES['Bras écartés puis ramenés lentement'] = marshFig(45,8,'<line x1="45" y1="16" x2="24" y2="22" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="66" y2="22" stroke="#333" stroke-width="2.5"/>','ralentissez','<path d="M24,26 L34,22" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="2,2"/><path d="M66,26 L56,22" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="2,2"/>');
-      // Stop
-      SYM_IMAGES['Bras croisés au-dessus de la tête'] = marshFig(45,12,'<line x1="45" y1="20" x2="58" y2="4" stroke="#e74c3c" stroke-width="2.5"/>','<line x1="45" y1="20" x2="32" y2="4" stroke="#e74c3c" stroke-width="2.5"/>','STOP');
-      // Cut engines
-      SYM_IMAGES['Main au cou, tranchant (coupez)'] = marshFig(45,8,'<line x1="45" y1="16" x2="34" y2="12" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="56" y2="20" stroke="#333" stroke-width="2"/>','coupez moteurs','<line x1="30" y1="10" x2="44" y2="10" stroke="#e74c3c" stroke-width="2"/>');
-      // Start engines
-      SYM_IMAGES['Main en rotation devant la tête'] = marshFig(45,8,'<line x1="45" y1="16" x2="56" y2="20" stroke="#333" stroke-width="2"/>','<line x1="45" y1="16" x2="34" y2="20" stroke="#333" stroke-width="2"/>','démarrez','<path d="M30,6 A10,10 0 1,1 30,5.9" fill="none" stroke="#2ecc71" stroke-width="1.5"/><polygon points="34,2 30,6 34,10" fill="#2ecc71"/>');
-      // Chocks in
-      SYM_IMAGES['Mains vers le bas, paumes en bas'] = marshFig(45,8,'<line x1="45" y1="16" x2="30" y2="28" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="60" y2="28" stroke="#333" stroke-width="2.5"/>','cales','<line x1="26" y1="28" x2="34" y2="28" stroke="#f39c12" stroke-width="1.5"/><line x1="56" y1="28" x2="64" y2="28" stroke="#f39c12" stroke-width="1.5"/>');
-      // Chocks away
-      SYM_IMAGES["Mains vers l'extérieur, paumes en haut"] = marshFig(45,8,'<line x1="45" y1="16" x2="24" y2="14" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="66" y2="14" stroke="#333" stroke-width="2.5"/>','dé-calez','<polygon points="20,12 24,8 24,16" fill="#2ecc71"/><polygon points="70,12 66,8 66,16" fill="#2ecc71"/>');
-      // All clear
-      SYM_IMAGES['Bras droit en angle, pouce levé'] = marshFig(45,8,'<line x1="45" y1="16" x2="60" y2="8" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="16" x2="32" y2="24" stroke="#333" stroke-width="2"/>','paré','<circle cx="62" cy="5" r="3" fill="#2ecc71"/>');
-      // Guidance finished
-      SYM_IMAGES['Deux bras levés à 45° vers le haut'] = marshFig(45,10,'<line x1="45" y1="18" x2="28" y2="4" stroke="#333" stroke-width="2.5"/>','<line x1="45" y1="18" x2="62" y2="4" stroke="#333" stroke-width="2.5"/>','guidage fini');
+      // === SIGNAUX DE MARSHALLING (FAA — domaine public, Wikimedia Commons) ===
+      var WM = 'https://upload.wikimedia.org/wikipedia/commons/';
+      function marshImg(path, alt) { return '<img src="' + WM + path + '" alt="' + alt + '">'; }
+      SYM_IMAGES['Bras repliés, paumes vers soi']          = marshImg('d/d0/Aircraft_hand_signal_proceed_straight_ahead.svg','Proceed straight ahead');
+      SYM_IMAGES['Bras levés au-dessus de la tête']        = marshImg('d/db/Aircraft_hand_signal_flagman_directs.svg','Flagman directs pilot');
+      SYM_IMAGES['Bras droit tendu, mouvement du gauche']  = marshImg('0/09/Aircraft_hand_signal_turn_left.svg','Turn left');
+      SYM_IMAGES['Bras gauche tendu, mouvement du droit']  = marshImg('7/7f/Aircraft_hand_signal_turn_right.svg','Turn right');
+      SYM_IMAGES['Bras écartés puis ramenés lentement']    = marshImg('c/cc/Aircraft_hand_signal_slow_down.svg','Slow down');
+      SYM_IMAGES['Bras croisés au-dessus de la tête']      = marshImg('e/e8/Aircraft_hand_signal_stop.svg','Stop');
+      SYM_IMAGES['Main au cou, tranchant (coupez)']        = marshImg('9/90/Aircraft_hand_signal_cut_engines.svg','Cut engines');
+      SYM_IMAGES['Main en rotation devant la tête']        = marshImg('7/72/Aircraft_hand_signal_start_engine.svg','Start engine');
+      SYM_IMAGES['Mains vers le bas, paumes en bas']       = marshImg('9/9b/Aircraft_hand_signal_insert_chocks.svg','Insert chocks');
+      SYM_IMAGES["Mains vers l'extérieur, paumes en haut"] = marshImg('d/d3/Aircraft_hand_signal_pull_chocks.svg','Pull chocks');
+      SYM_IMAGES['Bras droit en angle, pouce levé']        = marshImg('0/00/Aircraft_hand_signal_all_clear.svg','All clear');
+      // Guidance finished — pas d'image FAA, illustration simplifiée
+      SYM_IMAGES['Deux bras levés à 45° vers le haut']     = S(90,80,'<circle cx="45" cy="12" r="6" fill="#333"/><line x1="45" y1="18" x2="45" y2="46" stroke="#333" stroke-width="2.5"/><line x1="45" y1="46" x2="37" y2="60" stroke="#333" stroke-width="2"/><line x1="45" y1="46" x2="53" y2="60" stroke="#333" stroke-width="2"/><line x1="45" y1="26" x2="28" y2="10" stroke="#333" stroke-width="2.5"/><line x1="45" y1="26" x2="62" y2="10" stroke="#333" stroke-width="2.5"/><text x="45" y="76" font-family="Arial,sans-serif" font-size="7" fill="#888" text-anchor="middle">guidage fini</text>');
 
       // === MARQUAGES DE PISTE ===
       SYM_IMAGES['Chiffres peints (ex : 09/27)'] = S(80,50,'<rect x="2" y="2" width="76" height="46" rx="4" fill="#555"/><text x="40" y="36" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
