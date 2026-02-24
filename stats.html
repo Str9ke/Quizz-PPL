@@ -74,10 +74,10 @@
     })();
   </script>
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <button id="ttsToggle" onclick="(function(){var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})()" title="TTS désactivé">🔇</button>
+  <div class="tts-container" id="ttsContainer" onclick="(function(e){if(e.target.id==='ttsVolume')return;document.getElementById('ttsContainer').classList.toggle('open')})(event)"><div class="tts-volume-track"><input type="range" id="ttsVolume" min="0" max="100" value="80" orient="vertical" oninput="(function(v){localStorage.setItem('ttsVolume',v);document.getElementById('ttsPct').textContent=v+'%'})(this.value)"><div class="tts-volume-pct" id="ttsPct">80%</div></div><button id="ttsToggle" onclick="(function(e){e.stopPropagation();var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})(event)" title="TTS désactivé">🔇</button></div>
   <script>
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
-    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}(function(){var v=localStorage.getItem('ttsVolume');if(v!==null){document.getElementById('ttsVolume').value=v;document.getElementById('ttsPct').textContent=v+'%';}})();
   </script>
   <!-- Hero banner -->
   <div class="home-hero">
