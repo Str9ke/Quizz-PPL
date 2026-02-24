@@ -209,6 +209,7 @@
       'Table des angles': '🛫 Aérodrome',
       'Échelle de lisibilité': '📡 Communication',
       'Signaux au sol': '🛫 Aérodrome',
+      'Aides à la navigation': '🛫 Aérodrome',
       'Signaux lumineux (au sol)': '📡 Communication',
       'Signaux lumineux (en vol)': '📡 Communication',
       'Distances déclarées': '🛫 Aérodrome',
@@ -285,16 +286,27 @@
 
       // === Signaux au sol d'aérodrome ===
       {cat: 'Signaux au sol', sym: '✕ jaune sur fond rouge', mean: 'Atterrissages interdits'},
-      {cat: 'Signaux au sol', sym: 'Diagonale jaune/rouge', mean: "Attention, précautions spéciales à l'approche ou à l'atterrissage"},
-      {cat: 'Signaux au sol', sym: 'Haltère noir (plein)', mean: 'Atterrissage/décollage/circulation sur pistes ou voies de circulation'},
-      {cat: 'Signaux au sol', sym: '✕ blanc', mean: 'Zones impropres aux manœuvres'},
-      {cat: 'Signaux au sol', sym: 'T blanc avec flèche', mean: "Direction d'atterrissage et de décollage"},
-      {cat: 'Signaux au sol', sym: 'Haltère noir avec barres blanches', mean: 'Atterrissage/décollage sur les pistes seulement'},
-      {cat: 'Signaux au sol', sym: 'Flèche blanche tournant à droite', mean: 'Circuit à droite'},
-      {cat: 'Signaux au sol', sym: 'Croix double blanche ( # )', mean: 'Vol de planeur en cours'},
-      {cat: 'Signaux au sol', sym: 'Panneau chiffré vertical sur la TWR', mean: 'Indique la piste en service'},
-      {cat: 'Signaux au sol', sym: 'C dans un cercle', mean: 'Contrôle'},
+      {cat: 'Signaux au sol', sym: 'Diagonale jaune/rouge', mean: "Attention, prendre des précautions spéciales à l'atterrissage"},
+      {cat: 'Signaux au sol', sym: 'Haltère noir (plein)', mean: 'Atterrissage et décollage interdits en dehors des pistes. Roulage interdit en dehors des voies de circulation.'},
+      {cat: 'Signaux au sol', sym: '✕ blanc', mean: 'Indique les zones impropres aux manœuvres des aéronefs'},
+      {cat: 'Signaux au sol', sym: 'T couché', mean: "Direction d'atterrissage et de décollage"},
+      {cat: 'Signaux au sol', sym: 'Haltère noir barré', mean: 'Atterrissage et décollage interdits en dehors des pistes. Roulage autorisé en dehors des voies de circulation.'},
+      {cat: 'Signaux au sol', sym: 'Flèche blanche tournant à droite', mean: 'Tour de piste à droite'},
+      {cat: 'Signaux au sol', sym: 'Double croix blanche ( ++ )', mean: 'Vols de planeurs en cours au-dessus de l\'aérodrome'},
+      {cat: 'Signaux au sol', sym: 'Panneau chiffré (dizaines de degrés)', mean: 'Direction du décollage exprimée en dizaines de degrés du compas magnétique'},
+      {cat: 'Signaux au sol', sym: 'C sur fond jaune', mean: 'Bureau de piste'},
       {cat: 'Signaux au sol', sym: 'Manche à air (segments)', mean: 'Indique la direction et la force du vent (5 Kt par segment)'},
+
+      // === Aides à la navigation (VOR, DME, TACAN, NDB, ILS) ===
+      {cat: 'Aides à la navigation', sym: 'VOR', mean: 'VHF Omnidirectional Range — radiophare omnidirectionnel VHF'},
+      {cat: 'Aides à la navigation', sym: 'VOR/DME', mean: 'VOR colocalisé avec un équipement de mesure de distance DME'},
+      {cat: 'Aides à la navigation', sym: 'VORTAC', mean: 'VOR colocalisé avec un TACAN (usage civil et militaire)'},
+      {cat: 'Aides à la navigation', sym: 'DME', mean: 'Distance Measuring Equipment — mesure de distance sol-air'},
+      {cat: 'Aides à la navigation', sym: 'TACAN', mean: 'Tactical Air Navigation — aide militaire (azimut + distance)'},
+      {cat: 'Aides à la navigation', sym: 'NDB', mean: 'Non-Directional Beacon — radiobalise non directionnelle (ADF)'},
+      {cat: 'Aides à la navigation', sym: 'NDB/DME', mean: 'NDB colocalisé avec un DME'},
+      {cat: 'Aides à la navigation', sym: 'ILS', mean: "Instrument Landing System — système d'atterrissage aux instruments"},
+      {cat: 'Aides à la navigation', sym: 'Locator (L / LOM)', mean: 'NDB de faible portée associé à un ILS (Outer/Middle Marker)'},
 
       // === Signaux lumineux — Au sol ===
       {cat: 'Signaux lumineux (au sol)', sym: 'Feu vert continu', mean: 'Autorisé à décoller'},
@@ -470,6 +482,19 @@
       {cat: 'Fronts météo', sym: 'Thalweg (TROF)', mean: 'Ligne pointillée orange — extension d\'une dépression sans front'},
       {cat: 'Fronts météo', sym: 'Dorsale (Ridge)', mean: 'Ligne en zigzag jaune — axe de hautes pressions'},
 
+      // === Fronts TEMSI (images détaillées) ===
+      {cat: 'Fronts météo', sym: 'TEMSI — Convergence intertropicale (CIT)', mean: 'Zone de convergence intertropicale (ITCZ) — ligne de convergence des alizés'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Crête / Dorsale', mean: 'Axe d\'extension des hautes pressions (ridge) — beau temps relatif'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front chaud', mean: 'Front chaud — demi-cercles rouges côté de l\'avancée de la masse chaude'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front chaud en altitude', mean: 'Front chaud en altitude — ne touche pas le sol, demi-cercles rouges évidés'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front froid', mean: 'Front froid — triangles bleus côté de l\'avancée de la masse froide'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front froid en altitude', mean: 'Front froid en altitude — ne touche pas le sol, triangles bleus évidés'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front occlus', mean: 'Front occlus — triangles et demi-cercles violets du même côté (froid rattrape chaud)'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Front quasi stationnaire', mean: 'Front quasi stationnaire — triangles bleus d\'un côté, demi-cercles rouges de l\'autre'},
+      {cat: 'Fronts météo', sym: "TEMSI — Ligne d'instabilité", mean: "Ligne d'instabilité / ligne de grains — orages violents organisés en ligne"},
+      {cat: 'Fronts météo', sym: 'TEMSI — Ligne de convergence', mean: 'Ligne de convergence — zone de convergence des vents en surface'},
+      {cat: 'Fronts météo', sym: 'TEMSI — Thalweg', mean: 'Thalweg (TROF) — axe de basses pressions, ligne pointillée'},
+
       // === Cartes météo — Centres de pression ===
       {cat: 'Centres de pression', sym: 'H (Anticyclone)', mean: 'Centre de hautes pressions (anticyclone) — pression en hPa'},
       {cat: 'Centres de pression', sym: 'L (Dépression)', mean: 'Centre de basses pressions (dépression) — pression en hPa'},
@@ -618,25 +643,45 @@
       // Croix jaune sur fond rouge
       SYM_IMAGES['✕ jaune sur fond rouge'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#c0392b"/><line x1="12" y1="12" x2="68" y2="68" stroke="#f1c40f" stroke-width="10" stroke-linecap="round"/><line x1="68" y1="12" x2="12" y2="68" stroke="#f1c40f" stroke-width="10" stroke-linecap="round"/>');
       // Diagonale jaune/rouge
-      SYM_IMAGES['Diagonale jaune/rouge'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#e67e22"/><polygon points="0,0 80,0 0,80" fill="#f1c40f"/><polygon points="80,0 80,80 0,80" fill="#c0392b"/>');
+      SYM_IMAGES['Diagonale jaune/rouge'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#c0392b"/><line x1="0" y1="80" x2="80" y2="0" stroke="#f1c40f" stroke-width="14" stroke-linecap="butt"/>');  // Red square + yellow diagonal bar
       // Haltère noir plein
       SYM_IMAGES['Haltère noir (plein)'] = S(100,50,'<rect width="100" height="50" rx="4" fill="#f5f0e1"/><circle cx="18" cy="25" r="12" fill="#222"/><rect x="30" y="21" width="40" height="8" fill="#222"/><circle cx="82" cy="25" r="12" fill="#222"/>');
       // X blanc sur noir
       SYM_IMAGES['✕ blanc'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="14" y1="14" x2="66" y2="66" stroke="#fff" stroke-width="10" stroke-linecap="round"/><line x1="66" y1="14" x2="14" y2="66" stroke="#fff" stroke-width="10" stroke-linecap="round"/>');
       // T blanc avec flèche
-      SYM_IMAGES['T blanc avec flèche'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="20" y1="20" x2="60" y2="20" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="40" y1="20" x2="40" y2="60" stroke="#fff" stroke-width="7" stroke-linecap="round"/><polygon points="28,55 40,68 52,55" fill="#fff"/>');
+      SYM_IMAGES['T couché'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="18" y1="18" x2="18" y2="62" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="18" y1="40" x2="62" y2="40" stroke="#fff" stroke-width="7" stroke-linecap="round"/>');  // ├ shape (T on its side)
       // Haltère barres blanches
-      SYM_IMAGES['Haltère noir avec barres blanches'] = S(100,50,'<rect width="100" height="50" rx="4" fill="#f5f0e1"/><circle cx="18" cy="25" r="12" fill="#222"/><rect x="30" y="21" width="40" height="8" fill="#222"/><circle cx="82" cy="25" r="12" fill="#222"/><line x1="18" y1="13" x2="18" y2="37" stroke="#fff" stroke-width="3"/><line x1="82" y1="13" x2="82" y2="37" stroke="#fff" stroke-width="3"/>');
+      SYM_IMAGES['Haltère noir barré'] = S(100,50,'<rect width="100" height="50" rx="4" fill="#f5f0e1"/><circle cx="18" cy="25" r="12" fill="#222"/><rect x="30" y="21" width="40" height="8" fill="#222"/><circle cx="82" cy="25" r="12" fill="#222"/><line x1="18" y1="10" x2="18" y2="40" stroke="#f5f0e1" stroke-width="4"/><line x1="82" y1="10" x2="82" y2="40" stroke="#f5f0e1" stroke-width="4"/>');  // Dumbbell with bars through circles
       // Flèche tournant à droite
       SYM_IMAGES['Flèche blanche tournant à droite'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><path d="M25,55 L25,30 Q25,18 40,18 L55,18" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/><polygon points="50,8 65,18 50,28" fill="#fff"/>');
       // Croix double (#)
-      SYM_IMAGES['Croix double blanche ( # )'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="28" y1="15" x2="28" y2="65" stroke="#fff" stroke-width="6"/><line x1="52" y1="15" x2="52" y2="65" stroke="#fff" stroke-width="6"/><line x1="15" y1="32" x2="65" y2="32" stroke="#fff" stroke-width="6"/><line x1="15" y1="48" x2="65" y2="48" stroke="#fff" stroke-width="6"/>');
+      SYM_IMAGES['Double croix blanche ( ++ )'] = S(80,80,'<rect width="80" height="80" rx="4" fill="#222"/><line x1="25" y1="18" x2="25" y2="62" stroke="#fff" stroke-width="5"/><line x1="12" y1="40" x2="38" y2="40" stroke="#fff" stroke-width="5"/><line x1="55" y1="18" x2="55" y2="62" stroke="#fff" stroke-width="5"/><line x1="42" y1="40" x2="68" y2="40" stroke="#fff" stroke-width="5"/>');  // Two + signs side by side
       // Panneau chiffré
-      SYM_IMAGES['Panneau chiffré vertical sur la TWR'] = S(60,80,'<rect x="5" y="5" width="50" height="70" rx="4" fill="#222" stroke="#fff" stroke-width="2"/><text x="30" y="52" font-family="Arial,sans-serif" font-size="32" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
+      SYM_IMAGES['Panneau chiffré (dizaines de degrés)'] = S(60,80,'<rect x="5" y="5" width="50" height="70" rx="4" fill="#222" stroke="#fff" stroke-width="2"/><text x="30" y="52" font-family="Arial,sans-serif" font-size="32" font-weight="bold" fill="#fff" text-anchor="middle">09</text>');
       // C dans cercle
-      SYM_IMAGES['C dans un cercle'] = S(70,70,'<circle cx="35" cy="35" r="30" fill="#222" stroke="#fff" stroke-width="3"/><text x="35" y="47" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#fff" text-anchor="middle">C</text>');
+      SYM_IMAGES['C sur fond jaune'] = S(70,70,'<rect x="2" y="2" width="66" height="66" rx="4" fill="#f1c40f" stroke="#222" stroke-width="2"/><text x="35" y="49" font-family="Arial,sans-serif" font-size="38" font-weight="bold" fill="#222" text-anchor="middle">C</text>');
       // Manche à air
       SYM_IMAGES['Manche à air (segments)'] = S(110,60,'<line x1="10" y1="52" x2="10" y2="8" stroke="#555" stroke-width="3"/><polygon points="10,10 10,42 100,36 100,16" fill="none" stroke="#555" stroke-width="1.5"/><rect x="10" y="10" width="18" height="32" fill="#e74c3c" opacity=".85"/><rect x="28" y="12" width="18" height="28" fill="#fff" opacity=".85"/><rect x="46" y="14" width="18" height="24" fill="#e74c3c" opacity=".85"/><rect x="64" y="16" width="18" height="20" fill="#fff" opacity=".85"/><rect x="82" y="18" width="18" height="18" fill="#e74c3c" opacity=".85"/>');
+
+      // === AIDES À LA NAVIGATION ===
+      // VOR — hexagon with central dot and compass-rose ticks
+      SYM_IMAGES['VOR'] = S(80,80,'<polygon points="40,5 70,22 70,58 40,75 10,58 10,22" fill="none" stroke="#2980b9" stroke-width="2.5"/><circle cx="40" cy="40" r="3" fill="#2980b9"/><line x1="40" y1="5" x2="40" y2="12" stroke="#2980b9" stroke-width="1.5"/><line x1="40" y1="68" x2="40" y2="75" stroke="#2980b9" stroke-width="1.5"/><line x1="10" y1="40" x2="17" y2="40" stroke="#2980b9" stroke-width="1.5"/><line x1="63" y1="40" x2="70" y2="40" stroke="#2980b9" stroke-width="1.5"/>');
+      // VOR/DME — hexagon with small square in center
+      SYM_IMAGES['VOR/DME'] = S(80,80,'<polygon points="40,5 70,22 70,58 40,75 10,58 10,22" fill="none" stroke="#2980b9" stroke-width="2.5"/><rect x="32" y="32" width="16" height="16" fill="none" stroke="#2980b9" stroke-width="2"/><circle cx="40" cy="40" r="2" fill="#2980b9"/><line x1="40" y1="5" x2="40" y2="12" stroke="#2980b9" stroke-width="1.5"/><line x1="40" y1="68" x2="40" y2="75" stroke="#2980b9" stroke-width="1.5"/>');
+      // VORTAC — hexagon with 3 radiating arcs (TACAN + VOR)
+      SYM_IMAGES['VORTAC'] = S(80,80,'<polygon points="40,5 70,22 70,58 40,75 10,58 10,22" fill="none" stroke="#2980b9" stroke-width="2.5"/><circle cx="40" cy="40" r="3" fill="#2980b9"/><path d="M37,32 A6,6 0 0,1 43,32" stroke="#2980b9" stroke-width="2" fill="none"/><path d="M47,44 A6,6 0 0,1 47,38" stroke="#2980b9" stroke-width="2" fill="none"/><path d="M33,44 A6,6 0 0,1 33,38" stroke="#2980b9" stroke-width="2" fill="none"/>');
+      // DME — square outline
+      SYM_IMAGES['DME'] = S(60,60,'<rect x="10" y="10" width="40" height="40" fill="none" stroke="#e67e22" stroke-width="2.5"/><circle cx="30" cy="30" r="2.5" fill="#e67e22"/>');
+      // TACAN — circle with 3 equally-spaced lobes
+      SYM_IMAGES['TACAN'] = S(80,80,'<circle cx="40" cy="40" r="18" fill="none" stroke="#8e44ad" stroke-width="2.5"/><circle cx="40" cy="40" r="3" fill="#8e44ad"/><path d="M40,22 L35,10 Q40,6 45,10 Z" fill="#8e44ad"/><path d="M55,49 L66,55 Q66,48 62,45 Z" fill="#8e44ad"/><path d="M25,49 L14,55 Q14,48 18,45 Z" fill="#8e44ad"/>');
+      // NDB — circle with dots radiating
+      SYM_IMAGES['NDB'] = S(80,80,'<circle cx="40" cy="40" r="15" fill="none" stroke="#c0392b" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#c0392b"/><circle cx="40" cy="10" r="2" fill="#c0392b"/><circle cx="40" cy="70" r="2" fill="#c0392b"/><circle cx="10" cy="40" r="2" fill="#c0392b"/><circle cx="70" cy="40" r="2" fill="#c0392b"/><circle cx="19" cy="19" r="1.5" fill="#c0392b"/><circle cx="61" cy="19" r="1.5" fill="#c0392b"/><circle cx="19" cy="61" r="1.5" fill="#c0392b"/><circle cx="61" cy="61" r="1.5" fill="#c0392b"/>');
+      // NDB/DME — NDB circle + small DME square
+      SYM_IMAGES['NDB/DME'] = S(80,80,'<circle cx="40" cy="40" r="18" fill="none" stroke="#c0392b" stroke-width="2"/><rect x="32" y="32" width="16" height="16" fill="none" stroke="#e67e22" stroke-width="2"/><circle cx="40" cy="40" r="2.5" fill="#c0392b"/><circle cx="40" cy="10" r="2" fill="#c0392b"/><circle cx="40" cy="70" r="2" fill="#c0392b"/><circle cx="10" cy="40" r="2" fill="#c0392b"/><circle cx="70" cy="40" r="2" fill="#c0392b"/>');
+      // ILS — localizer feather pattern
+      SYM_IMAGES['ILS'] = S(100,60,'<line x1="50" y1="5" x2="50" y2="55" stroke="#9b59b6" stroke-width="2.5"/><line x1="50" y1="55" x2="20" y2="15" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3"/><line x1="50" y1="55" x2="80" y2="15" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3"/><path d="M42,50 L50,55 L58,50" stroke="#9b59b6" stroke-width="2" fill="none"/><circle cx="50" cy="8" r="3" fill="none" stroke="#9b59b6" stroke-width="1.5"/>');
+      // Locator (L)
+      SYM_IMAGES['Locator (L / LOM)'] = S(70,70,'<circle cx="35" cy="35" r="14" fill="none" stroke="#c0392b" stroke-width="2"/><circle cx="35" cy="35" r="3" fill="#c0392b"/><circle cx="35" cy="8" r="2" fill="#c0392b"/><circle cx="35" cy="62" r="2" fill="#c0392b"/><circle cx="8" cy="35" r="2" fill="#c0392b"/><circle cx="62" cy="35" r="2" fill="#c0392b"/><text x="35" y="68" font-family="Arial,sans-serif" font-size="9" fill="#c0392b" text-anchor="middle">L</text>');
 
       // === FEUX DE NAVIGATION (images d'avion extraites) ===
       function acImg(file, alt) { return '<div style="display:inline-block;background:#1a1a2e;border-radius:10px;padding:6px 10px;"><img src="Symboles/Meteo/aircraft/' + file + '" alt="' + alt + '" style="max-height:100px;max-width:180px;"></div>'; }
@@ -723,6 +768,19 @@
       SYM_IMAGES['Thalweg (TROF)'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#e67e22" stroke-width="2.5" stroke-dasharray="8,5"/>');
       SYM_IMAGES['Dorsale (Ridge)'] = S(120,40,'<polyline points="5,30 20,10 35,30 50,10 65,30 80,10 95,30 110,10 115,20" fill="none" stroke="#f1c40f" stroke-width="2.5"/>');
 
+      // === FRONTS TEMSI (images extraites de la légende TEMSI) ===
+      function temsiImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 14px;min-width:60px;text-align:center;"><img src="Symboles/Symboles%20TEMSI/' + encodeURIComponent(file) + '" alt="' + alt + '" style="height:50px;width:auto;"></div>'; }
+      SYM_IMAGES['TEMSI — Convergence intertropicale (CIT)'] = temsiImg("Capture d'écran 2026-02-24 205436.png", 'CIT');
+      SYM_IMAGES['TEMSI — Crête / Dorsale'] = temsiImg("Capture d'écran 2026-02-24 205441.png", 'Dorsale');
+      SYM_IMAGES['TEMSI — Front chaud'] = temsiImg("Capture d'écran 2026-02-24 205446.png", 'Front chaud');
+      SYM_IMAGES['TEMSI — Front chaud en altitude'] = temsiImg("Capture d'écran 2026-02-24 205452.png", 'Front chaud altitude');
+      SYM_IMAGES['TEMSI — Front froid'] = temsiImg("Capture d'écran 2026-02-24 205457.png", 'Front froid');
+      SYM_IMAGES['TEMSI — Front froid en altitude'] = temsiImg("Capture d'écran 2026-02-24 205502.png", 'Front froid altitude');
+      SYM_IMAGES['TEMSI — Front occlus'] = temsiImg("Capture d'écran 2026-02-24 205506.png", 'Front occlus');
+      SYM_IMAGES['TEMSI — Front quasi stationnaire'] = temsiImg("Capture d'écran 2026-02-24 205510.png", 'Front quasi stationnaire');
+      SYM_IMAGES["TEMSI — Ligne d'instabilité"] = temsiImg("Capture d'écran 2026-02-24 205515.png", "Ligne d'instabilité");
+      SYM_IMAGES['TEMSI — Ligne de convergence'] = temsiImg("Capture d'écran 2026-02-24 205520.png", 'Convergence');
+      SYM_IMAGES['TEMSI — Thalweg'] = temsiImg("Capture d'écran 2026-02-24 205524.png", 'Thalweg');
       // === CENTRES DE PRESSION ===
       SYM_IMAGES['H (Anticyclone)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#2980b9" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#2980b9" text-anchor="middle">H</text>');
       SYM_IMAGES['L (Dépression)'] = S(60,60,'<circle cx="30" cy="30" r="26" fill="none" stroke="#e74c3c" stroke-width="2"/><text x="30" y="42" font-family="Arial,sans-serif" font-size="36" font-weight="bold" fill="#e74c3c" text-anchor="middle">L</text>');

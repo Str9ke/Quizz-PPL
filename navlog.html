@@ -102,8 +102,13 @@
     .navlog-table .cell-input.wp-input { text-align: left; font-weight: 600; min-width: 90px; }
     .navlog-table .cell-calc { color: #667eea; font-weight: 700; }
     .navlog-table .total-row td { font-weight: 700; font-size: 0.95em; border-top: 2px solid var(--border-color); color: var(--text-heading); }
-    .navlog-table .dep-row td { color: var(--text-secondary); font-style: italic; }
+    .navlog-table .dep-row td { color: var(--text-secondary); }
     .navlog-table .dep-row .cell-input { font-style: normal; }
+    .navlog-table .wp-row td { border-bottom: none; font-weight: 600; }
+    .navlog-table .leg-row { background: rgba(102,126,234,.05); }
+    .navlog-table .leg-row td { font-size: 0.82em; padding: 3px 4px; border-bottom: 1.5px solid var(--border-color); }
+    .leg-arrow { color: #667eea; font-size: 0.9em; font-weight: 700; }
+    .leg-label { text-align: left !important; color: var(--text-secondary); font-style: italic; font-size: 0.78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
     .row-remove-btn {
       background: none; border: none; color: var(--text-secondary); cursor: pointer;
       font-size: 1.1em; padding: 2px 5px; border-radius: 4px; opacity: .6;
@@ -514,10 +519,9 @@
         var isDep = (i === 0);
         var isLast = (i === wps.length - 1);
         var canRemove = !isDep && !isLast && wps.length > 2;
-        var hasOverride = w.windDir !== null && w.windSpeed !== null;
 
-        // Main data row
-        html += '<tr class="' + (isDep ? 'dep-row' : '') + '" data-idx="' + i + '">';
+        // ---- WAYPOINT ROW ----
+        html += '<tr class="wp-row' + (isDep ? ' dep-row' : '') + '" data-idx="' + i + '">';
         html += '<td>' + (i + 1) + '</td>';
 
         // Waypoint input
@@ -530,55 +534,57 @@
         // Alt
         html += '<td><input class="cell-input" value="' + esc(w.alt) + '" placeholder="—" style="width:55px" oninput="updateAlt(' + i + ',this.value)"></td>';
 
-        if (isDep) {
-          // Departure row: no leg data
-          html += '<td class="cell-calc">—</td>';
-          html += '<td class="cell-calc">—</td>';
-          html += '<td class="cell-calc">—</td>';
-          html += '<td class="cell-calc">—</td>';
-          html += '<td class="cell-calc">—</td>';
-          html += '<td class="cell-calc">0:00</td>';
-          html += '<td></td>';
-        } else {
-          // Route
-          html += '<td><input class="cell-input" type="number" min="0" max="360" step="1" value="' + esc(w.route) + '" placeholder="°" style="width:50px" oninput="updateRoute(' + i + ',this.value)"></td>';
-          // TH (calculated)
-          html += '<td class="cell-calc" id="th_' + i + '">—</td>';
-          // Dist
-          html += '<td><input class="cell-input" type="number" min="0" max="999" step="0.1" value="' + esc(w.dist) + '" placeholder="NM" style="width:55px" oninput="updateDist(' + i + ',this.value)"></td>';
-          // GS (calculated)
-          html += '<td class="cell-calc" id="gs_' + i + '">—</td>';
-          // Leg time (calculated)
-          html += '<td class="cell-calc" id="time_' + i + '">—</td>';
-          // Cumulative time (calculated)
-          html += '<td class="cell-calc" id="cum_' + i + '">—</td>';
-          // Wind icon
-          html += '<td><button class="wind-icon-btn' + (hasOverride ? ' has-override' : '') + '" onclick="toggleRowWind(' + i + ')" title="Vent pour cette branche">🌬️</button></td>';
-        }
-
-        // Remove button
+        // Empty leg columns on WP row
+        html += '<td></td><td></td><td></td><td></td><td></td><td></td>';
+        // Wind + delete
+        html += '<td></td>';
         html += '<td>' + (canRemove ? '<button class="row-remove-btn" onclick="removeWaypoint(' + i + ')" title="Supprimer">✕</button>' : '') + '</td>';
         html += '</tr>';
 
-        // Per-row wind expansion row
-        if (!isDep) {
-          var display = (expandedWindRow === i) ? '' : 'display:none';
-          var wd = hasOverride ? w.windDir : state.globalWindDir;
-          var ws = hasOverride ? w.windSpeed : state.globalWindSpeed;
-          html += '<tr class="wind-expand-row" id="windRow_' + i + '" style="' + display + '">';
+        // ---- LEG ROW (between WP[i] and WP[i+1]) ----
+        if (i < wps.length - 1) {
+          var nextW = wps[i + 1];
+          var hasOverride = nextW.windDir !== null && nextW.windSpeed !== null;
+          var legIdx = i + 1; // data is stored on wps[i+1]
+
+          html += '<tr class="leg-row" data-leg="' + legIdx + '">';
+          html += '<td class="leg-arrow">↕</td>';
+          html += '<td class="leg-label" colspan="2">' + (w.wp || '?') + ' → ' + (nextW.wp || '?') + '</td>';
+          // Route (editable)
+          html += '<td><input class="cell-input" type="number" min="0" max="360" step="1" value="' + esc(nextW.route) + '" placeholder="°" style="width:50px" oninput="updateRoute(' + legIdx + ',this.value)"></td>';
+          // TH (calculated)
+          html += '<td class="cell-calc" id="th_' + legIdx + '">—</td>';
+          // Dist (editable)
+          html += '<td><input class="cell-input" type="number" min="0" max="999" step="0.1" value="' + esc(nextW.dist) + '" placeholder="NM" style="width:55px" oninput="updateDist(' + legIdx + ',this.value)"></td>';
+          // GS (calculated)
+          html += '<td class="cell-calc" id="gs_' + legIdx + '">—</td>';
+          // Leg time (calculated)
+          html += '<td class="cell-calc" id="time_' + legIdx + '">—</td>';
+          // Cumulative time (calculated)
+          html += '<td class="cell-calc" id="cum_' + legIdx + '">—</td>';
+          // Wind icon
+          html += '<td><button class="wind-icon-btn' + (hasOverride ? ' has-override' : '') + '" onclick="toggleRowWind(' + legIdx + ')" title="Vent pour cette branche">🌬️</button></td>';
+          html += '<td></td>';
+          html += '</tr>';
+
+          // Per-row wind expansion row
+          var display = (expandedWindRow === legIdx) ? '' : 'display:none';
+          var wd = hasOverride ? nextW.windDir : state.globalWindDir;
+          var ws = hasOverride ? nextW.windSpeed : state.globalWindSpeed;
+          html += '<tr class="wind-expand-row" id="windRow_' + legIdx + '" style="' + display + '">';
           html += '<td colspan="11">';
           html += '<div class="wind-expand-content">';
-          html += '<div class="compass-container mini" id="rowCompass_' + i + '">' + createCompassSVG('mini') + '</div>';
+          html += '<div class="compass-container mini" id="rowCompass_' + legIdx + '">' + createCompassSVG('mini') + '</div>';
           html += '<div class="wind-controls">';
           html += '<div class="wind-slider-row"><span style="font-size:.8em;color:var(--text-secondary)">Vitesse</span></div>';
-          html += '<div class="wind-slider-row"><input type="range" min="0" max="50" value="' + ws + '" step="1" id="rowWindSpeed_' + i + '" oninput="setRowWindSpeed(' + i + ',parseInt(this.value))"><span class="wind-val" id="rowWindSpeedLabel_' + i + '">' + ws + ' kt</span></div>';
+          html += '<div class="wind-slider-row"><input type="range" min="0" max="50" value="' + ws + '" step="1" id="rowWindSpeed_' + legIdx + '" oninput="setRowWindSpeed(' + legIdx + ',parseInt(this.value))"><span class="wind-val" id="rowWindSpeedLabel_' + legIdx + '">' + ws + ' kt</span></div>';
           html += '<div class="wind-slider-row"><span style="font-size:.8em;color:var(--text-secondary)">Direction</span></div>';
-          html += '<div class="wind-slider-row"><input type="range" min="0" max="350" value="' + wd + '" step="10" id="rowWindDir_' + i + '" oninput="setRowWindDir(' + i + ',parseInt(this.value))"><span class="wind-val" id="rowWindDirLabel_' + i + '">' + String(wd).padStart(3, '0') + '°</span></div>';
-          html += '</div>'; // wind-controls
-          html += '<div class="wind-expand-actions">';
-          html += '<button onclick="clearRowWind(' + i + ')">↩️ Utiliser vent global</button>';
+          html += '<div class="wind-slider-row"><input type="range" min="0" max="350" value="' + wd + '" step="10" id="rowWindDir_' + legIdx + '" oninput="setRowWindDir(' + legIdx + ',parseInt(this.value))"><span class="wind-val" id="rowWindDirLabel_' + legIdx + '">' + String(wd).padStart(3, '0') + '°</span></div>';
           html += '</div>';
-          html += '</div>'; // wind-expand-content
+          html += '<div class="wind-expand-actions">';
+          html += '<button onclick="clearRowWind(' + legIdx + ')">↩️ Utiliser vent global</button>';
+          html += '</div>';
+          html += '</div>';
           html += '</td></tr>';
         }
       }
@@ -932,12 +938,34 @@
     }
 
     function fetchWeatherForAirport(icao) {
-      var metarUrl = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&format=raw&hours=4';
-      var tafUrl = 'https://aviationweather.gov/api/data/taf?ids=' + icao + '&format=raw';
+      var baseMetar = 'https://aviationweather.gov/api/data/metar?ids=' + icao + '&format=raw&hours=4';
+      var baseTaf = 'https://aviationweather.gov/api/data/taf?ids=' + icao + '&format=raw';
+
+      function tryFetch(url) {
+        return fetch(url).then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        });
+      }
+
+      function fetchWithFallback(url) {
+        return tryFetch(url).then(function(text) {
+          if (!text || text.trim().length === 0) throw new Error('empty');
+          return text;
+        }).catch(function() {
+          // Fallback 1: CORS proxy allorigins
+          return tryFetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+        }).catch(function() {
+          // Fallback 2: CORS proxy corsproxy.io
+          return tryFetch('https://corsproxy.io/?' + encodeURIComponent(url));
+        }).catch(function() {
+          return 'Erreur de chargement';
+        });
+      }
 
       return Promise.all([
-        fetch(metarUrl).then(function(r) { return r.text(); }).catch(function() { return 'Erreur de chargement'; }),
-        fetch(tafUrl).then(function(r) { return r.text(); }).catch(function() { return 'Erreur de chargement'; })
+        fetchWithFallback(baseMetar),
+        fetchWithFallback(baseTaf)
       ]).then(function(texts) {
         var metar = texts[0].trim();
         var taf = texts[1].trim();

@@ -953,12 +953,12 @@ function _renderCatSessionChart(container, catValue) {
  */
 var _SYMBOLES_GROUPS = [
   { label: '🔤 Alphabet OTAN', total: 26 },
-  { label: '🛫 Aérodrome', total: 40 },
+  { label: '🛫 Aérodrome', total: 49 },
   { label: '📡 Communication', total: 36 },
-  { label: '🌦️ Météo', total: 161 },
+  { label: '🌦️ Météo', total: 172 },
   { label: '🧑‍✈️ Marshalling', total: 39 }
 ];
-var _SYMBOLES_TOTAL = 302;
+var _SYMBOLES_TOTAL = 322;
 
 /**
  * Lit les réponses symboles depuis localStorage et calcule les stats par groupe.
