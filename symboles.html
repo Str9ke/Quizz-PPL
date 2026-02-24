@@ -715,7 +715,7 @@
       SYM_IMAGES['M (lettre)'] = TS('<text x="25" y="30" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#333" text-anchor="middle">M</text>');
 
       // === FRONTS MÉTÉO (images locales Carte METEO) ===
-      function meteoImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="Symboles/Carte%20METEO/' + file + '" alt="' + alt + '"></div>'; }
+      function meteoImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 14px;min-width:50px;text-align:center;"><img src="Symboles/Carte%20METEO/' + file + '" alt="' + alt + '" style="height:45px;width:auto;"></div>'; }
       SYM_IMAGES['Front froid'] = meteoImg('meteo-front-froid.png','Front froid');
       SYM_IMAGES['Front chaud'] = meteoImg('meteo-front-chaud.png','Front chaud');
       SYM_IMAGES['Front stationnaire'] = meteoImg('meteo-front-stationnaire.png','Front stationnaire');      SYM_IMAGES['Front occlus'] = S(120,40,'<line x1="5" y1="20" x2="115" y2="20" stroke="#9b59b6" stroke-width="3"/><polygon points="22,20 17,8 27,8" fill="#9b59b6"/><path d="M36,20 A7,7 0 0,1 50,20" fill="#9b59b6"/><polygon points="62,20 57,8 67,8" fill="#9b59b6"/><path d="M76,20 A7,7 0 0,1 90,20" fill="#9b59b6"/><polygon points="102,20 97,8 107,8" fill="#9b59b6"/>');
@@ -850,7 +850,7 @@
       SYM_IMAGES['Chevrons blancs (zone fermée)'] = S(100,50,'<rect x="0" y="0" width="100" height="50" fill="#555"/><polyline points="10,40 25,10 40,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="35,40 50,10 65,40" fill="none" stroke="#fff" stroke-width="2.5"/><polyline points="60,40 75,10 90,40" fill="none" stroke="#fff" stroke-width="2.5"/>');
 
       // === TYPES DE NUAGES (images extraites) ===
-      function cloudImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:4px 8px;"><img src="Symboles/Meteo/clouds/' + file + '" alt="' + alt + '" style="height:60px; width:auto;"></div>'; }
+      function cloudImg(file, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:4px 8px;"><img src="Symboles/Meteo/clouds/' + file + '" alt="' + alt + '" style="height:80px; width:auto; border-radius:6px;"></div>'; }
       SYM_IMAGES['Cirrus (Ci)'] = cloudImg('cirrus.png','Cirrus');
       SYM_IMAGES['Cirrocumulus (Cc)'] = cloudImg('cirrocumulus.png','Cirrocumulus');
       SYM_IMAGES['Cirrostratus (Cs)'] = cloudImg('cirrostratus.png','Cirrostratus');
