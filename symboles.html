@@ -600,7 +600,7 @@
 
       // === SIGNAUX DE MARSHALLING (FAA — domaine public, Wikimedia Commons) ===
       var WM = 'https://upload.wikimedia.org/wikipedia/commons/';
-      function marshImg(path, alt) { return '<img src="' + WM + path + '" alt="' + alt + '">'; }
+      function marshImg(path, alt) { return '<div style="display:inline-block;background:#f5f0e1;border-radius:10px;padding:8px 12px;"><img src="' + WM + path + '" alt="' + alt + '"></div>'; }
       SYM_IMAGES['Bras repliés, paumes vers soi']          = marshImg('d/d0/Aircraft_hand_signal_proceed_straight_ahead.svg','Proceed straight ahead');
       SYM_IMAGES['Bras levés au-dessus de la tête']        = marshImg('d/db/Aircraft_hand_signal_flagman_directs.svg','Flagman directs pilot');
       SYM_IMAGES['Bras droit tendu, mouvement du gauche']  = marshImg('0/09/Aircraft_hand_signal_turn_left.svg','Turn left');
