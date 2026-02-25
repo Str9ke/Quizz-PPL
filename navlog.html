@@ -223,6 +223,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-modal-footer button{padding:8px 20px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
 .map-modal-footer button:hover{opacity:.9}
 
+/* Route map */
+.route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
+#routeMapContainer{height:340px;width:100%;background:#1a1a2e}
+.route-map-card .route-map-info{padding:8px 16px;font-size:.75em;color:var(--text-secondary);text-align:center}
+
 /* Responsive */
 @media(max-width:600px){
   .config-grid{grid-template-columns:1fr 1fr}
@@ -231,6 +237,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .wp-card-header{flex-direction:column;align-items:flex-start}
   .summary-panel{flex-direction:column;align-items:center}
   .dossier-card{flex-direction:column;align-items:flex-start}
+  #routeMapContainer{height:260px}
 }
   </style>
 </head>
@@ -344,6 +351,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div></div>
       <div class="summary-item"><div class="s-label">Carburant total</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
     </div>
+
+    <!-- Route map -->
+    <div class="route-map-card">
+      <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> Carte de la route</div>
+      <div id="routeMapContainer"></div>
+      <div class="route-map-info" id="routeMapInfo">Ajoutez des waypoints pour voir la route</div>
+    </div>
   </div>
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
@@ -352,39 +366,37 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- AeroWeb auth -->
     <div class="aeroweb-card">
       <div class="nl-card-title"><span class="icon">&#x1F510;</span> A&#xe9;roWeb - Cartes A&#xe9;ronautiques</div>
-      <input type="text" id="aerowebLogin" placeholder="Login A&#xe9;roWeb">
-      <input type="password" id="aerowebPass" placeholder="Mot de passe">
-      <button class="aeroweb-btn" onclick="window.connectAeroweb()">Connexion</button>
-      <div class="aeroweb-status" id="aerowebStatus">Non connect&#xe9;</div>
-      <p style="font-size:.72em;color:var(--text-secondary);margin-top:8px">Les identifiants sont stock&#xe9;s en session uniquement (effac&#xe9;s &#xe0; la fermeture du navigateur)</p>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Connectez-vous sur A&#xe9;roWeb puis importez vos captures TEMSI/WINTEM/Fronts ci-dessous.</p>
+      <a class="aeroweb-btn" href="https://aviation.meteo.fr" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;margin-bottom:8px">&#x1F310; Ouvrir A&#xe9;roWeb</a>
+      <div class="aeroweb-status" id="aerowebStatus"></div>
     </div>
 
     <!-- AeroWeb map panels -->
     <div id="aerowebMaps">
       <div class="map-card">
         <div class="map-card-title">&#x1F30D; TEMSI - Temps Significatif</div>
-        <div id="mapTemsi" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Connectez-vous pour charger les cartes</div>
+        <div id="mapTemsi" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr/FR/aviation/OPMET/temsi/temsi.php" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('temsi')">Ou importer une capture</button>
+          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
+          <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer une capture</button>
           <input type="file" id="fileTemsi" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsi',this)">
         </div>
       </div>
       <div class="map-card">
         <div class="map-card-title">&#x1F4A8; WINTEM - Vent &amp; Temp&#xe9;rature</div>
-        <div id="mapWintem" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Connectez-vous pour charger les cartes</div>
+        <div id="mapWintem" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr/FR/aviation/OPMET/wintem/wintem.php" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('wintem')">Ou importer une capture</button>
+          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
+          <button onclick="window.uploadMap('wintem')">&#x1F4F7; Importer une capture</button>
           <input type="file" id="fileWintem" accept="image/*" style="display:none" onchange="window.handleMapUpload('wintem',this)">
         </div>
       </div>
       <div class="map-card">
         <div class="map-card-title">&#x1F300; Fronts</div>
-        <div id="mapFronts" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Connectez-vous pour charger les cartes</div>
+        <div id="mapFronts" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr/FR/aviation/OPMET/cartesvt/cartesvt.php" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('fronts')">Ou importer une capture</button>
+          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
+          <button onclick="window.uploadMap('fronts')">&#x1F4F7; Importer une capture</button>
           <input type="file" id="fileFronts" accept="image/*" style="display:none" onchange="window.handleMapUpload('fronts',this)">
         </div>
       </div>
@@ -400,9 +412,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F517;</span> Liens utiles</div>
       <div class="ext-links-grid">
-        <a class="ext-link" href="https://aviation.meteo.fr/FR/aviation/OPMET/temsi/temsi.php" target="_blank" rel="noopener">&#x1F30D; A&#xe9;roWeb TEMSI</a>
-        <a class="ext-link" href="https://aviation.meteo.fr/FR/aviation/OPMET/wintem/wintem.php" target="_blank" rel="noopener">&#x1F4A8; A&#xe9;roWeb WINTEM</a>
-        <a class="ext-link" href="https://aviation.meteo.fr/FR/aviation/OPMET/cartesvt/cartesvt.php" target="_blank" rel="noopener">&#x1F300; A&#xe9;roWeb Fronts</a>
+        <a class="ext-link" href="https://aviation.meteo.fr" target="_blank" rel="noopener">&#x1F30D; A&#xe9;roWeb (TEMSI/WINTEM)</a>
+        <a class="ext-link" href="https://www.meteociel.fr/modeles/gfs/france/pluie.php" target="_blank" rel="noopener">&#x1F327;&#xFE0F; M&#xe9;t&#xe9;ociel</a>
+        <a class="ext-link" href="https://aviationweather.gov/gfa" target="_blank" rel="noopener">&#x1F300; AviationWeather GFA</a>
         <a class="ext-link" href="https://www.sia.aviation-civile.gouv.fr/" target="_blank" rel="noopener">&#x1F4CB; SIA France</a>
         <a class="ext-link" href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F1E7;&#x1F1EA; BEL AIP / NOTAMs</a>
         <a class="ext-link" href="https://www.wetterzentrale.de/reanalysis.php?var=1&amp;map=1&amp;model=gfs" target="_blank" rel="noopener">&#x1F30D; Wetterzentrale</a>
@@ -467,12 +479,17 @@ var AIRPORT_COORDS = {
   'EBNM':{lat:50.4878,lon:4.7689},
   'EBBR':{lat:50.9014,lon:4.4844},
   'LFQJ':{lat:50.3306,lon:4.0331},
-  'LFQQ':{lat:50.5617,lon:3.0897}
+  'LFQQ':{lat:50.5617,lon:3.0897},
+  'EBCF':{lat:50.1610,lon:4.3960},
+  'EBSP':{lat:50.4825,lon:5.9103},
+  'EBFS':{lat:50.2433,lon:4.6458},
+  'EBLG':{lat:50.6374,lon:5.4432}
 };
 
 var AIRPORT_NAMES = {
   'EBSG':'Saint-Ghislain','EBCV':'Chi\u00e8vres','EBCI':'Charleroi',
-  'EBNM':'Namur','EBBR':'Bruxelles','LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin'
+  'EBNM':'Namur','EBBR':'Bruxelles','LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin',
+  'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge'
 };
 
 var RUNWAY_DB = {
@@ -482,16 +499,23 @@ var RUNWAY_DB = {
   'EBNM':[{rwy:'06/24',hdg:59,len:700,sfc:'grass'}],
   'EBBR':[{rwy:'01/19',hdg:7,len:3211,sfc:'asphalt'},{rwy:'07R/25L',hdg:69,len:2984,sfc:'asphalt'},{rwy:'07L/25R',hdg:69,len:3638,sfc:'asphalt'}],
   'LFQJ':[{rwy:'05/23',hdg:51,len:1110,sfc:'asphalt'}],
-  'LFQQ':[{rwy:'01/19',hdg:7,len:2430,sfc:'asphalt'},{rwy:'08/26',hdg:83,len:3150,sfc:'asphalt'}]
+  'LFQQ':[{rwy:'01/19',hdg:7,len:2430,sfc:'asphalt'},{rwy:'08/26',hdg:83,len:3150,sfc:'asphalt'}],
+  'EBCF':[{rwy:'09/27',hdg:90,len:500,sfc:'grass'}],
+  'EBSP':[{rwy:'05/23',hdg:50,len:900,sfc:'asphalt'}],
+  'EBFS':[{rwy:'08/26',hdg:79,len:2400,sfc:'asphalt'}],
+  'EBLG':[{rwy:'04L/22R',hdg:42,len:2344,sfc:'asphalt'},{rwy:'04R/22L',hdg:42,len:3290,sfc:'asphalt'}]
 };
 
-var WX_AIRPORTS = ['EBSG','EBCV','EBCI','EBNM','EBBR','LFQJ','LFQQ'];
+var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG'];
 
 /* Nearby airport fallback map for METAR */
 var METAR_FALLBACK = {
   'EBSG':['EBCV','LFQQ'],
-  'EBNM':['EBCI'],
-  'LFQJ':['EBCV','LFQQ']
+  'EBNM':['EBCI','EBLG'],
+  'LFQJ':['EBCV','LFQQ'],
+  'EBCF':['EBFS','EBCI'],
+  'EBSP':['EBLG','EBCI'],
+  'EBFS':['EBCI','EBNM']
 };
 
 var WX_FR = {
@@ -1312,7 +1336,7 @@ function initWxButtons(){
     html+='<button class="wx-airport-btn" data-icao="'+WX_AIRPORTS[i]+'" onclick="window.toggleWxAirport(\''+WX_AIRPORTS[i]+'\')">'+WX_AIRPORTS[i]+'</button>';
   }
   el.innerHTML=html;
-  loadWeather('EBSG');
+  loadWeather('EBCV');
   loadWeather('EBCI');
   loadWeather('LFQQ');
 }
@@ -1407,6 +1431,7 @@ function recalcNavlog(){
   document.getElementById('sumTotalFuel').textContent=Math.round((totalFuel+reserveFuel)*10)/10+' L';
   updateLegStrips();
   suggestDossierName();
+  updateRouteMap();
 }
 
 function updateLegStrips(){
@@ -1662,6 +1687,25 @@ function confirmMapSelection(){
   if(idx!==null && idx>=0 && idx<waypoints.length){
     waypoints[idx].lat=mapSelectedLatLon.lat;
     waypoints[idx].lon=mapSelectedLatLon.lon;
+    /* Reverse geocode to auto-fill WP name if empty */
+    if(!waypoints[idx].name){
+      var rIdx=idx;
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+mapSelectedLatLon.lat+'&lon='+mapSelectedLatLon.lon+'&zoom=14&accept-language=fr')
+        .then(function(r){return r.json();})
+        .then(function(data){
+          if(data && data.address && rIdx<waypoints.length && !waypoints[rIdx].name){
+            var name=data.address.village||data.address.town||data.address.city||data.address.hamlet||data.address.suburb||'';
+            if(name){
+              waypoints[rIdx].name=name;
+              var input=document.querySelector('.wp-name-input[data-idx="'+rIdx+'"]');
+              if(input) input.value=name;
+              suggestDossierName();
+              updateRouteMap();
+            }
+          }
+        })
+        .catch(function(){});
+    }
     renderNavlog();
     recalcNavlog();
   }
@@ -1891,43 +1935,9 @@ window.renderDossierList=renderDossierList;
 
 /* ===== AEROWEB ===== */
 function connectAeroweb(){
-  var login=document.getElementById('aerowebLogin').value;
-  var pass=document.getElementById('aerowebPass').value;
-  if(!login||!pass){alert('Entrez vos identifiants A\u00e9roWeb');return;}
-  sessionStorage.setItem('aeroweb_login',login);
-  sessionStorage.setItem('aeroweb_pass',pass);
-  document.getElementById('aerowebStatus').textContent='Connexion en cours...';
-  var maps={
-    temsi:{url:'https://aviation.meteo.fr/FR/aviation/OPMET/temsi/temsi.php',el:'mapTemsi'},
-    wintem:{url:'https://aviation.meteo.fr/FR/aviation/OPMET/wintem/wintem.php',el:'mapWintem'},
-    fronts:{url:'https://aviation.meteo.fr/FR/aviation/OPMET/cartesvt/cartesvt.php',el:'mapFronts'}
-  };
-  for(var key in maps){
-    (function(k,m){
-      var el=document.getElementById(m.el);
-      el.innerHTML='<iframe src="'+m.url+'" style="width:100%;height:500px;border:none" onload="window.onAerowebLoad()" onerror="window.onAerowebError(\''+k+'\')"></iframe>';
-      var stored=sessionStorage.getItem('navlog_map_'+k);
-      if(stored){
-        el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
-      }
-    })(key,maps[key]);
-  }
-  setTimeout(function(){
-    document.getElementById('aerowebStatus').textContent='Cartes charg\u00e9es (v\u00e9rifiez l\'affichage)';
-  },2000);
+  window.open('https://aviation.meteo.fr','_blank');
 }
 window.connectAeroweb=connectAeroweb;
-
-function onAerowebLoad(){
-  document.getElementById('aerowebStatus').textContent='Cartes charg\u00e9es';
-}
-window.onAerowebLoad=onAerowebLoad;
-
-function onAerowebError(key){
-  var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-  if(el){el.innerHTML='<p style="padding:20px;color:var(--text-secondary);font-size:.82em">Impossible de charger. Utilisez le bouton "Ouvrir A\u00e9roWeb" ou importez une capture.</p>';}
-}
-window.onAerowebError=onAerowebError;
 
 function uploadMap(key){
   document.getElementById('file'+key.charAt(0).toUpperCase()+key.slice(1)).click();
@@ -1946,6 +1956,89 @@ function handleMapUpload(key,input){
   reader.readAsDataURL(input.files[0]);
 }
 window.handleMapUpload=handleMapUpload;
+
+/* ===== ROUTE MAP ===== */
+var routeMap=null;
+var routeMapLayers=[];
+
+function initRouteMap(){
+  var container=document.getElementById('routeMapContainer');
+  if(!container) return;
+  routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false}).setView([50.4589,3.8181],9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'\u00a9 OpenStreetMap',
+    maxZoom:18
+  }).addTo(routeMap);
+  /* Airport markers on route map */
+  for(var code in AIRPORT_COORDS){
+    var c=AIRPORT_COORDS[code];
+    L.marker([c.lat,c.lon],{
+      title:code+' - '+(AIRPORT_NAMES[code]||''),
+      icon:L.divIcon({className:'',html:'<span style="font-size:12px;opacity:.6">\u{1F3DB}</span>',iconSize:[16,16],iconAnchor:[8,8]}),
+      interactive:false
+    }).addTo(routeMap).bindTooltip(code,{permanent:false,direction:'top',offset:[0,-6],className:'route-map-tooltip'});
+  }
+}
+
+function updateRouteMap(){
+  if(!routeMap) return;
+  /* Clear old layers */
+  for(var i=0;i<routeMapLayers.length;i++){
+    routeMap.removeLayer(routeMapLayers[i]);
+  }
+  routeMapLayers=[];
+  /* Collect configured WPs */
+  var pts=[];
+  for(var w=0;w<waypoints.length;w++){
+    if(waypoints[w].lat!==null && waypoints[w].lon!==null){
+      pts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon,name:waypoints[w].name||('WP'+(w+1))});
+    }
+  }
+  var infoEl=document.getElementById('routeMapInfo');
+  if(pts.length<2){
+    if(infoEl) infoEl.textContent='Ajoutez des waypoints pour voir la route';
+    return;
+  }
+  if(infoEl) infoEl.textContent=pts.length+' points \u2014 '+pts.map(function(p){return p.name;}).join(' \u2192 ');
+  /* Draw route polyline */
+  var coords=pts.map(function(p){return [p.lat,p.lon];});
+  var polyline=L.polyline(coords,{color:'#667eea',weight:3,opacity:.8,dashArray:'8,6'}).addTo(routeMap);
+  routeMapLayers.push(polyline);
+  /* WP markers with number badges */
+  for(var j=0;j<pts.length;j++){
+    var p=pts[j];
+    var isFirst=(j===0),isLast=(j===pts.length-1);
+    var color=isFirst?'#4caf50':(isLast?'#f44336':'#667eea');
+    var emoji=isFirst?'\u{1F6EB}':(isLast?'\u{1F6EC}':'\u{1F4CD}');
+    var marker=L.marker([p.lat,p.lon],{
+      icon:L.divIcon({
+        className:'',
+        html:'<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:18px">'+emoji+'</span><span style="font-size:10px;font-weight:800;color:'+color+';background:rgba(0,0,0,.7);padding:1px 5px;border-radius:6px;white-space:nowrap">'+p.name+'</span></div>',
+        iconSize:[60,36],
+        iconAnchor:[30,18]
+      })
+    }).addTo(routeMap);
+    routeMapLayers.push(marker);
+  }
+  /* Draw direction arrows along each leg */
+  for(var k=0;k<pts.length-1;k++){
+    var a=pts[k],b=pts[k+1];
+    var midLat=(a.lat+b.lat)/2;
+    var midLon=(a.lon+b.lon)/2;
+    var brg=trueBearing(a.lat,a.lon,b.lat,b.lon);
+    var arrowIcon=L.divIcon({
+      className:'',
+      html:'<div style="font-size:18px;transform:rotate('+(brg-90)+'deg);color:#667eea;text-shadow:0 0 4px rgba(102,126,234,.8)">\u27A4</div>',
+      iconSize:[20,20],
+      iconAnchor:[10,10]
+    });
+    var arrowMarker=L.marker([midLat,midLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
+    routeMapLayers.push(arrowMarker);
+  }
+  /* Fit bounds */
+  var bounds=L.latLngBounds(coords);
+  routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13});
+}
 
 /* ===== WINDY EMBEDS ===== */
 function initWindy(){
@@ -1981,9 +2074,19 @@ function init(){
   ];
   for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
   renderNavlog();
+  initRouteMap();
   recalcNavlog();
   renderDossierList();
   initWindy();
+  /* Restore saved map captures */
+  var mapKeys=['temsi','wintem','fronts'];
+  for(var m=0;m<mapKeys.length;m++){
+    var stored=sessionStorage.getItem('navlog_map_'+mapKeys[m]);
+    if(stored){
+      var el=document.getElementById('map'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
+      if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
+    }
+  }
   var now=new Date();
   calYear=now.getFullYear();
   calMonth=now.getMonth();
@@ -1991,10 +2094,6 @@ function init(){
   var dnInput=document.getElementById('dossierName');
   if(dnInput){
     dnInput.addEventListener('input',function(){dnInput._userEdited=true;});
-  }
-  if(sessionStorage.getItem('aeroweb_login')){
-    document.getElementById('aerowebLogin').value=sessionStorage.getItem('aeroweb_login');
-    document.getElementById('aerowebPass').value=sessionStorage.getItem('aeroweb_pass')||'';
   }
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});
@@ -2015,6 +2114,7 @@ window.decodeMetar=decodeMetar;
 window.decodeTaf=decodeTaf;
 window.recalcNavlog=recalcNavlog;
 window.updateWindRose=updateWindRose;
+window.updateRouteMap=updateRouteMap;
 
 document.addEventListener('DOMContentLoaded',init);
 })();
