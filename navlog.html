@@ -160,6 +160,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .summary-item{text-align:center}
 .summary-item .s-label{font-size:.72em;color:var(--text-secondary);text-transform:uppercase;font-weight:600}
 .summary-item .s-value{font-size:1.3em;font-weight:800;color:var(--text-heading)}
+.summary-item .s-sub{font-size:.68em;color:var(--text-secondary);margin-top:2px}
 
 /* ===== Tab 2: Meteo & Cartes ===== */
 .aeroweb-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:14px}
@@ -173,6 +174,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-card-actions{padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap}
 .map-card-actions a,.map-card-actions button{padding:5px 14px;font-size:.78em;border-radius:12px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);text-decoration:none;transition:all .2s}
 .map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
+.map-del-btn{border-color:#f44336!important;color:#f44336!important}
+.map-del-btn:hover{background:#f44336!important;color:#fff!important}
+.aeroweb-nav-btn{padding:6px 14px;font-size:.78em;font-weight:600;border-radius:14px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.aeroweb-nav-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
+.aeroweb-toggle-btn{padding:8px 20px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
+.aeroweb-toggle-btn:hover{filter:brightness(1.1)}
+.map-paste-zone{cursor:default;transition:outline .2s;border-radius:8px}
+.map-paste-zone:hover{outline:2px dashed rgba(102,126,234,.4);outline-offset:2px}
 
 /* Windy grid */
 .windy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:14px}
@@ -366,7 +375,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="summary-item"><div class="s-label">Temps total</div><div class="s-value" id="sumTime">0:00:00</div></div>
       <div class="summary-item"><div class="s-label">Temps sol</div><div class="s-value" id="sumGround">20 min</div></div>
       <div class="summary-item"><div class="s-label">Carburant trajet</div><div class="s-value" id="sumTripFuel">0 L</div></div>
-      <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div></div>
+      <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div><div class="s-sub" id="sumReserveMode">&#x2600;&#xFE0F; Jour 30 min</div></div>
       <div class="summary-item"><div class="s-label">Carburant total</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
     </div>
 
@@ -384,8 +393,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- AeroWeb auth -->
     <div class="aeroweb-card">
       <div class="nl-card-title"><span class="icon">&#x1F510;</span> A&#xe9;roWeb - Cartes A&#xe9;ronautiques</div>
-      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Connectez-vous sur A&#xe9;roWeb puis importez vos captures TEMSI/WINTEM/Fronts ci-dessous.</p>
-      <a class="aeroweb-btn" href="https://aviation.meteo.fr" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;margin-bottom:8px">&#x1F310; Ouvrir A&#xe9;roWeb</a>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Connectez-vous ci-dessous puis naviguez vers TEMSI / WINTEM / Fronts. Faites une capture d'&#xe9;cran (&#x1F4F8; bouton ci-dessous ou Ctrl+V pour coller).</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr')">&#x1F3E0; Accueil</button>
+        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; TEMSI</button>
+        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; WINTEM</button>
+        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Fronts</button>
+      </div>
+      <button class="aeroweb-toggle-btn" id="aerowebToggle" onclick="window.toggleAeroWebFrame()">&#x25B6; Ouvrir le navigateur A&#xe9;roWeb</button>
+      <div id="aerowebFrameWrap" style="display:none;margin-top:8px">
+        <iframe id="aerowebFrame" src="about:blank" style="width:100%;height:500px;border:1px solid var(--border-color);border-radius:10px;background:#fff" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      </div>
       <div class="aeroweb-status" id="aerowebStatus"></div>
     </div>
 
@@ -393,28 +411,34 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div id="aerowebMaps">
       <div class="map-card">
         <div class="map-card-title">&#x1F30D; TEMSI - Temps Significatif</div>
-        <div id="mapTemsi" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
+        <div id="mapTemsi" class="map-paste-zone" data-key="temsi" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer une capture</button>
+          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; Voir TEMSI</button>
+          <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer</button>
+          <button onclick="window.pasteMapImage('temsi')">&#x1F4CB; Coller</button>
+          <button class="map-del-btn" id="delTemsi" onclick="window.deleteMapImage('temsi')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
           <input type="file" id="fileTemsi" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsi',this)">
         </div>
       </div>
       <div class="map-card">
         <div class="map-card-title">&#x1F4A8; WINTEM - Vent &amp; Temp&#xe9;rature</div>
-        <div id="mapWintem" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
+        <div id="mapWintem" class="map-paste-zone" data-key="wintem" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('wintem')">&#x1F4F7; Importer une capture</button>
+          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; Voir WINTEM</button>
+          <button onclick="window.uploadMap('wintem')">&#x1F4F7; Importer</button>
+          <button onclick="window.pasteMapImage('wintem')">&#x1F4CB; Coller</button>
+          <button class="map-del-btn" id="delWintem" onclick="window.deleteMapImage('wintem')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
           <input type="file" id="fileWintem" accept="image/*" style="display:none" onchange="window.handleMapUpload('wintem',this)">
         </div>
       </div>
       <div class="map-card">
         <div class="map-card-title">&#x1F300; Fronts</div>
-        <div id="mapFronts" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez une capture depuis A&#xe9;roWeb</div>
+        <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <a href="https://aviation.meteo.fr" target="_blank" rel="noopener">Ouvrir A&#xe9;roWeb &#x2197;&#xFE0F;</a>
-          <button onclick="window.uploadMap('fronts')">&#x1F4F7; Importer une capture</button>
+          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Voir Fronts</button>
+          <button onclick="window.uploadMap('fronts')">&#x1F4F7; Importer</button>
+          <button onclick="window.pasteMapImage('fronts')">&#x1F4CB; Coller</button>
+          <button class="map-del-btn" id="delFronts" onclick="window.deleteMapImage('fronts')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
           <input type="file" id="fileFronts" accept="image/*" style="display:none" onchange="window.handleMapUpload('fronts',this)">
         </div>
       </div>
@@ -1095,213 +1119,128 @@ function cleanTaf(raw, icao){
   return filtered.length>0?filtered.join('\n'):null;
 }
 
-/* ===== WEATHER FETCH (with fallback for small airports) ===== */
+/* ===== WEATHER FETCH (with multi-proxy fallback) ===== */
+var CORS_PROXIES=[
+  function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u);},
+  function(u){return 'https://corsproxy.io/?'+encodeURIComponent(u);},
+  function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);}
+];
+
+/* Fetch via proxies sequentially until one works */
+function fetchViaProxy(url,idx){
+  if(!idx) idx=0;
+  if(idx>=CORS_PROXIES.length) return Promise.reject(new Error('all proxies failed'));
+  var proxyUrl=CORS_PROXIES[idx](url);
+  return fetch(proxyUrl,{signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined}).then(function(r){
+    if(!r.ok) throw new Error(r.status);
+    return r.text();
+  }).catch(function(){
+    return fetchViaProxy(url,idx+1);
+  });
+}
+
 function fetchWeather(icao,cb){
   var metarUrl='https://aviationweather.gov/api/data/metar?ids='+icao+'&format=raw&hours=2';
   var tafUrl='https://aviationweather.gov/api/data/taf?ids='+icao+'&format=raw';
   var notamUrl='https://aviationweather.gov/api/data/notam?icaos='+icao;
-  var proxy='https://api.allorigins.win/raw?url=';
   var result={metar:null,taf:null,notams:null,metarSource:null};
   var done=0;
   function check(){if(++done>=3) cb(result);}
 
-  /* --- METAR with multi-source fallback --- */
-  function tryMetar(url){
-    fetch(url).then(function(r){
-      if(!r.ok) throw new Error(r.status);
-      return r.text();
-    }).then(function(t){
-      t=t.trim();
-      if(t && t.charAt(0)!=='{' && t.length>10){
-        result.metar=t;
-        result.metarSource=icao;
-        check();
-      } else {
-        tryVatsim();
-      }
-    }).catch(function(){
-      fetch(proxy+encodeURIComponent(url)).then(function(r){return r.text();}).then(function(t){
-        t=t.trim();
-        if(t && t.charAt(0)!=='{' && t.length>10){
-          result.metar=t;
-          result.metarSource=icao;
-          check();
-        } else {
-          tryVatsim();
-        }
-      }).catch(function(){
-        tryVatsim();
+  function isValidMetar(t){return t && t.charAt(0)!=='{' && t.length>10;}
+  function isValidTaf(t){return t && t.indexOf('TAF')>=0;}
+
+  /* --- METAR: direct → proxied → VATSIM → NWS → fallback airports --- */
+  function tryMetarDirect(url,src){
+    return fetch(url).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
+      t=t.trim();if(isValidMetar(t)){result.metar=t;result.metarSource=src;return true;}return false;
+    }).catch(function(){return false;});
+  }
+  function tryMetarProxied(url,src){
+    return fetchViaProxy(url).then(function(t){
+      t=t.trim();if(isValidMetar(t)){result.metar=t;result.metarSource=src;return true;}return false;
+    }).catch(function(){return false;});
+  }
+
+  (function doMetar(){
+    tryMetarDirect(metarUrl,icao).then(function(ok){
+      if(ok) return check();
+      return tryMetarProxied(metarUrl,icao).then(function(ok2){
+        if(ok2) return check();
+        /* VATSIM */
+        var vUrl='https://metar.vatsim.net/metar.php?id='+icao;
+        return fetchViaProxy(vUrl).then(function(t){
+          t=t.trim();if(t&&t.indexOf(icao)>=0&&t.length>10){result.metar=t;result.metarSource=icao;check();return;}
+          throw new Error('no vatsim');
+        }).catch(function(){
+          /* NWS */
+          var nUrl='https://tgftp.nws.noaa.gov/data/observations/metar/stations/'+icao+'.TXT';
+          return fetchViaProxy(nUrl).then(function(t2){
+            t2=t2.trim();if(t2&&t2.indexOf(icao)>=0&&t2.length>10){result.metar=t2;result.metarSource=icao;check();return;}
+            throw new Error('no nws');
+          }).catch(function(){
+            /* Fallback airports */
+            var fbs=METAR_FALLBACK[icao];
+            if(!fbs||!fbs.length){check();return;}
+            var chain=Promise.resolve(false);
+            fbs.forEach(function(fb){
+              chain=chain.then(function(found){
+                if(found) return true;
+                var fUrl='https://aviationweather.gov/api/data/metar?ids='+fb+'&format=raw&hours=2';
+                return tryMetarDirect(fUrl,fb).then(function(ok3){return ok3||tryMetarProxied(fUrl,fb);});
+              });
+            });
+            chain.then(function(){check();});
+          });
+        });
       });
     });
-  }
+  })();
 
-  function tryVatsim(){
-    var vatsimUrl='https://metar.vatsim.net/metar.php?id='+icao;
-    fetch(proxy+encodeURIComponent(vatsimUrl)).then(function(r){return r.text();}).then(function(t2){
-      t2=t2.trim();
-      if(t2 && t2.indexOf(icao)>=0 && t2.length>10){
-        result.metar=t2;
-        result.metarSource=icao;
-        check();
-      } else {
-        tryNws();
-      }
+  /* --- TAF: direct → proxied → OGIMET → fallback airports --- */
+  (function doTaf(){
+    fetch(tafUrl).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
+      t=t.trim();if(isValidTaf(t)){result.taf=t;check();return;}throw new Error('empty');
     }).catch(function(){
-      tryNws();
-    });
-  }
-
-  function tryNws(){
-    var nwsUrl='https://tgftp.nws.noaa.gov/data/observations/metar/stations/'+icao+'.TXT';
-    fetch(proxy+encodeURIComponent(nwsUrl)).then(function(r){return r.text();}).then(function(t3){
-      t3=t3.trim();
-      if(t3 && t3.indexOf(icao)>=0 && t3.length>10){
-        result.metar=t3;
-        result.metarSource=icao;
-        check();
-      } else {
-        tryFallbackAirports(0);
-      }
-    }).catch(function(){
-      tryFallbackAirports(0);
-    });
-  }
-
-  function tryFallbackAirports(idx){
-    var fallbacks=METAR_FALLBACK[icao];
-    if(!fallbacks || idx>=fallbacks.length){
-      check();
-      return;
-    }
-    var fbIcao=fallbacks[idx];
-    var fbUrl='https://aviationweather.gov/api/data/metar?ids='+fbIcao+'&format=raw&hours=2';
-    fetch(fbUrl).then(function(r){
-      if(!r.ok) throw new Error(r.status);
-      return r.text();
-    }).then(function(t){
-      t=t.trim();
-      if(t && t.charAt(0)!=='{' && t.length>10){
-        result.metar=t;
-        result.metarSource=fbIcao;
-        check();
-      } else {
-        tryFallbackAirports(idx+1);
-      }
-    }).catch(function(){
-      fetch(proxy+encodeURIComponent(fbUrl)).then(function(r){return r.text();}).then(function(t){
-        t=t.trim();
-        if(t && t.charAt(0)!=='{' && t.length>10){
-          result.metar=t;
-          result.metarSource=fbIcao;
-          check();
-        } else {
-          tryFallbackAirports(idx+1);
-        }
+      fetchViaProxy(tafUrl).then(function(t){
+        t=t.trim();if(isValidTaf(t)){result.taf=t;check();return;}throw new Error('empty');
       }).catch(function(){
-        tryFallbackAirports(idx+1);
+        /* OGIMET */
+        var oUrl='https://www.ogimet.com/display_taf2.php?lang=en&lugar='+icao+'&tipo=ALL&ord=REV&nil=SI&send=send';
+        fetchViaProxy(oUrl).then(function(html){
+          var m=html.match(/TAF[^<]+/);if(m){result.taf=m[0].trim();check();return;}throw new Error('no ogimet');
+        }).catch(function(){
+          /* Fallback airports for TAF */
+          var fbs=METAR_FALLBACK[icao];
+          if(!fbs||!fbs.length){check();return;}
+          var chain=Promise.resolve(false);
+          fbs.forEach(function(fb){
+            chain=chain.then(function(found){
+              if(found) return true;
+              var fUrl='https://aviationweather.gov/api/data/taf?ids='+fb+'&format=raw';
+              return fetch(fUrl).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
+                t=t.trim();if(isValidTaf(t)){result.taf=t;result.tafSource=fb;return true;}return false;
+              }).catch(function(){
+                return fetchViaProxy(fUrl).then(function(t){
+                  t=t.trim();if(isValidTaf(t)){result.taf=t;result.tafSource=fb;return true;}return false;
+                }).catch(function(){return false;});
+              });
+            });
+          });
+          chain.then(function(){check();});
+        });
       });
     });
-  }
-
-  /* --- TAF (with multiple source fallback) --- */
-  function tryTaf(url){
-    fetch(url).then(function(r){
-      if(!r.ok) throw new Error(r.status);
-      return r.text();
-    }).then(function(t){
-      t=t.trim();
-      if(t && t.indexOf('TAF')>=0){
-        result.taf=t;
-        check();
-      } else {
-        tryTafProxy(url);
-      }
-    }).catch(function(){
-      tryTafProxy(url);
-    });
-  }
-
-  function tryTafProxy(url){
-    fetch(proxy+encodeURIComponent(url)).then(function(r){return r.text();}).then(function(t){
-      t=t.trim();
-      if(t && t.indexOf('TAF')>=0){
-        result.taf=t;
-        check();
-      } else {
-        tryTafOgimet();
-      }
-    }).catch(function(){
-      tryTafOgimet();
-    });
-  }
-
-  function tryTafOgimet(){
-    /* Try OGIMET as alternative TAF source */
-    var oUrl='https://www.ogimet.com/display_taf2.php?lang=en&lugar='+icao+'&tipo=ALL&ord=REV&nil=SI&send=send';
-    fetch(proxy+encodeURIComponent(oUrl)).then(function(r){return r.text();}).then(function(html){
-      /* Extract TAF from OGIMET HTML response */
-      var tafMatch=html.match(/TAF[^<]+/);
-      if(tafMatch){
-        result.taf=tafMatch[0].trim();
-        check();
-      } else {
-        tryTafFallbackAirport();
-      }
-    }).catch(function(){
-      tryTafFallbackAirport();
-    });
-  }
-
-  function tryTafFallbackAirport(){
-    /* Try to get TAF from fallback airports */
-    var fallbacks=METAR_FALLBACK[icao];
-    if(!fallbacks||fallbacks.length===0){check();return;}
-    var fbIdx=0;
-    function nextFb(){
-      if(fbIdx>=fallbacks.length){check();return;}
-      var fbIcao=fallbacks[fbIdx];
-      var fbUrl='https://aviationweather.gov/api/data/taf?ids='+fbIcao+'&format=raw';
-      fetch(fbUrl).then(function(r){
-        if(!r.ok) throw new Error(r.status);
-        return r.text();
-      }).then(function(t){
-        t=t.trim();
-        if(t && t.indexOf('TAF')>=0){
-          result.taf=t;
-          result.tafSource=fbIcao;
-          check();
-        } else {fbIdx++;nextFb();}
-      }).catch(function(){
-        fetch(proxy+encodeURIComponent(fbUrl)).then(function(r){return r.text();}).then(function(t){
-          t=t.trim();
-          if(t && t.indexOf('TAF')>=0){
-            result.taf=t;
-            result.tafSource=fbIcao;
-            check();
-          } else {fbIdx++;nextFb();}
-        }).catch(function(){fbIdx++;nextFb();});
-      });
-    }
-    nextFb();
-  }
+  })();
 
   /* --- NOTAMs --- */
-  function tryNotam(url){
-    fetch(url).then(function(r){
-      if(!r.ok) throw new Error(r.status);
-      return r.text();
-    }).then(function(t){
+  (function doNotam(){
+    fetch(notamUrl).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
       result.notams=t.trim();check();
     }).catch(function(){
-      fetch(proxy+encodeURIComponent(url)).then(function(r){return r.text();}).then(function(t){
-        result.notams=t.trim();check();
-      }).catch(function(){check();});
+      fetchViaProxy(notamUrl).then(function(t){result.notams=t.trim();check();}).catch(function(){check();});
     });
-  }
-
-  tryMetar(metarUrl);
-  tryTaf(tafUrl);
-  tryNotam(notamUrl);
+  })();
 }
 
 function renderWeatherBlock(icao){
@@ -1522,6 +1461,7 @@ function recalcNavlog(){
   document.getElementById('sumGround').textContent=Math.round(groundTimeMin)+' min';
   document.getElementById('sumTripFuel').textContent=Math.round(totalFuel*10)/10+' L';
   document.getElementById('sumReserve').textContent=Math.round(reserveFuel*10)/10+' L';
+  document.getElementById('sumReserveMode').textContent=reserveMode==='day'?'\u2600\uFE0F Jour 30 min':'\uD83C\uDF19 Nuit 45 min';
   document.getElementById('sumTotalFuel').textContent=Math.round((totalFuel+reserveFuel)*10)/10+' L';
   updateLegStrips();
   suggestDossierName();
@@ -1827,7 +1767,9 @@ function clearWorkspace(){
   ['temsi','wintem','fronts'].forEach(function(key){
     sessionStorage.removeItem('navlog_map_'+key);
     var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-    if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez une capture depuis A\u00e9roWeb</span>';
+    if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</span>';
+    var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+    if(db) db.style.display='none';
   });
   /* Clear extra images */
   extraImages=[];
@@ -1914,10 +1856,10 @@ function openMapModal(idx){
   setTimeout(function(){
     if(!leafletMap){
       leafletMap=L.map('mapContainer').setView([50.4589,3.8181],10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        attribution:'\u00a9 OpenStreetMap',
-        maxZoom:18
-      }).addTo(leafletMap);
+      var osmL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
+      var topoL=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
+      topoL.addTo(leafletMap);
+      L.control.layers({'OSM':osmL,'Topo (VFR)':topoL},{},{position:'topright',collapsed:true}).addTo(leafletMap);
       /* Add airport markers */
       for(var code in AIRPORT_COORDS){
         var c=AIRPORT_COORDS[code];
@@ -2106,6 +2048,8 @@ function loadDossier(id){
         sessionStorage.setItem('navlog_map_'+key,d.mapImages[key]);
         var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
         if(el) el.innerHTML='<img src="'+d.mapImages[key]+'" style="width:100%;max-height:600px;object-fit:contain">';
+        var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+        if(db) db.style.display='';
       }
     });
   }
@@ -2274,10 +2218,105 @@ function handleMapUpload(key,input){
     sessionStorage.setItem('navlog_map_'+key,dataUrl);
     var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
     el.innerHTML='<img src="'+dataUrl+'" style="width:100%;max-height:600px;object-fit:contain">';
+    var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+    if(delBtn) delBtn.style.display='';
   };
   reader.readAsDataURL(input.files[0]);
 }
 window.handleMapUpload=handleMapUpload;
+
+function deleteMapImage(key){
+  sessionStorage.removeItem('navlog_map_'+key);
+  var elId='map'+key.charAt(0).toUpperCase()+key.slice(1);
+  var el=document.getElementById(elId);
+  if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</span>';
+  var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+  if(delBtn) delBtn.style.display='none';
+}
+window.deleteMapImage=deleteMapImage;
+
+/* --- AéroWeb iframe toggle & navigation --- */
+var aeroWebOpen=false;
+function toggleAeroWebFrame(){
+  aeroWebOpen=!aeroWebOpen;
+  var wrap=document.getElementById('aerowebFrameWrap');
+  var btn=document.getElementById('aerowebToggle');
+  if(aeroWebOpen){
+    wrap.style.display='';
+    btn.textContent='\u25BC Fermer le navigateur A\u00e9roWeb';
+    var fr=document.getElementById('aerowebFrame');
+    if(fr.src==='about:blank') fr.src='https://aviation.meteo.fr';
+  } else {
+    wrap.style.display='none';
+    btn.textContent='\u25B6 Ouvrir le navigateur A\u00e9roWeb';
+  }
+}
+window.toggleAeroWebFrame=toggleAeroWebFrame;
+
+function setAeroWebPage(url){
+  var wrap=document.getElementById('aerowebFrameWrap');
+  var fr=document.getElementById('aerowebFrame');
+  if(!aeroWebOpen){toggleAeroWebFrame();}
+  fr.src=url;
+  /* Scroll to iframe */
+  wrap.scrollIntoView({behavior:'smooth',block:'center'});
+}
+window.setAeroWebPage=setAeroWebPage;
+
+/* --- Clipboard paste for map images --- */
+function applyMapImage(key,dataUrl){
+  sessionStorage.setItem('navlog_map_'+key,dataUrl);
+  var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
+  el.innerHTML='<img src="'+dataUrl+'" style="width:100%;max-height:600px;object-fit:contain">';
+  var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+  if(delBtn) delBtn.style.display='';
+}
+
+function pasteMapImage(key){
+  if(!navigator.clipboard||!navigator.clipboard.read){
+    alert('Le presse-papier n\u2019est pas accessible. Utilisez Ctrl+V sur la zone d\u2019image.');
+    return;
+  }
+  navigator.clipboard.read().then(function(items){
+    for(var i=0;i<items.length;i++){
+      var types=items[i].types;
+      for(var t=0;t<types.length;t++){
+        if(types[t].indexOf('image')===0){
+          items[i].getType(types[t]).then(function(blob){
+            var reader=new FileReader();
+            reader.onload=function(e){applyMapImage(key,e.target.result);};
+            reader.readAsDataURL(blob);
+          });
+          return;
+        }
+      }
+    }
+    alert('Aucune image trouv\u00e9e dans le presse-papier.');
+  }).catch(function(){
+    alert('Impossible de lire le presse-papier. V\u00e9rifiez les permissions.');
+  });
+}
+window.pasteMapImage=pasteMapImage;
+
+/* Global paste listener: if a map-paste-zone has focus/hover, paste into it */
+document.addEventListener('paste',function(e){
+  var activeZone=document.querySelector('.map-paste-zone:hover');
+  if(!activeZone) return;
+  var key=activeZone.getAttribute('data-key');
+  if(!key) return;
+  var items=e.clipboardData&&e.clipboardData.items;
+  if(!items) return;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')===0){
+      e.preventDefault();
+      var blob=items[i].getAsFile();
+      var reader=new FileReader();
+      reader.onload=function(ev){applyMapImage(key,ev.target.result);};
+      reader.readAsDataURL(blob);
+      return;
+    }
+  }
+});
 
 /* ===== ROUTE MAP ===== */
 var routeMap=null;
@@ -2287,10 +2326,12 @@ function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
   if(!container) return;
   routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false}).setView([50.4589,3.8181],9);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'\u00a9 OpenStreetMap',
-    maxZoom:18
-  }).addTo(routeMap);
+  var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
+  var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
+  var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
+  var openAipOverlay=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_approved_airspaces_geometries@EPSG%3A900913@png/{z}/{x}/{y}.png',{maxZoom:14,tms:true,opacity:.5});
+  topoLayer.addTo(routeMap);
+  L.control.layers({'OSM':osmLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces a\u00e9riens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
   /* Airport markers on route map */
   for(var code in AIRPORT_COORDS){
     var c=AIRPORT_COORDS[code];
@@ -2407,6 +2448,8 @@ function init(){
     if(stored){
       var el=document.getElementById('map'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
       if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
+      var db=document.getElementById('del'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
+      if(db) db.style.display='';
     }
   }
   /* Restore extra images from session */
