@@ -101,12 +101,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .reserve-toggle.day{background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;border-color:transparent}
 .reserve-toggle.night{background:linear-gradient(135deg,#3f51b5,#1a237e);color:#fff;border-color:transparent}
 
-/* Wind rose */
-.wind-rose-container{display:flex;justify-content:center;margin:10px 0}
-.wind-slider{width:100%;margin:2px 0;accent-color:#667eea;cursor:pointer}
-
-/* ASI gauge */
-.asi-container{display:flex;justify-content:center;margin:10px 0}
+/* Gauges row: wind rose + ASI side by side */
+.gauges-row{display:flex;justify-content:center;align-items:flex-start;gap:24px;flex-wrap:wrap;margin:14px 0}
+.wind-rose-container{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wind-slider{width:100%;margin:4px 0;accent-color:#667eea;cursor:pointer;height:6px}
+.wind-slider-label{font-size:.72em;color:var(--text-secondary);text-align:center;margin-top:2px}
+.asi-container{display:flex;justify-content:center}
 
 /* ===== GAMIFIED NAVLOG - WP Cards & Leg Strips ===== */
 .navlog-board{padding:10px 0}
@@ -308,8 +308,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <input type="number" id="cfgLanding" value="10" min="0" max="60" onchange="window.recalcNavlog()">
         </div>
       </div>
-      <div class="wind-rose-container" id="windRoseContainer"></div>
-      <div class="asi-container" id="asiGauge"></div>
+      <div class="gauges-row">
+        <div class="wind-rose-container" id="windRoseContainer"></div>
+        <div class="asi-container" id="asiGauge"></div>
+      </div>
     </div>
 
     <!-- NavLog board (gamified) -->
@@ -779,6 +781,7 @@ function decodeTaf(raw){
   for(var li=0;li<lines.length;li++){
     var line=lines[li].trim();
     if(!line) continue;
+    if(line.indexOf('METAR')===0) continue;
     if(line.match(/^TAF/)){parts.push('\u{1F4CB} Pr\u00e9vision TAF');continue;}
     if(line.match(/^BECMG/)){parts.push('\u27A1\uFE0F \u00c9volution graduelle :');continue;}
     if(line.match(/^TEMPO/)){parts.push('\u26A1 Temporairement :');continue;}
@@ -847,37 +850,67 @@ function createASI(tas){
 function updateWindRose(){
   var dir=parseFloat(document.getElementById('cfgWindDir').value)||0;
   var spd=parseFloat(document.getElementById('cfgWindSpd').value)||0;
-  var svg='<svg width="160" height="160" viewBox="0 0 160 160">';
-  svg+='<circle cx="80" cy="80" r="72" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>';
-  for(var a=0;a<360;a+=30){
+  var sz=180, cx=90, cy=90, outerR=82;
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'">';
+  // Background with gradient
+  svg+='<defs>';
+  svg+='<radialGradient id="bgGrad"><stop offset="0%" stop-color="#252545"/><stop offset="100%" stop-color="#15152a"/></radialGradient>';
+  svg+='<filter id="glow"><feGaussianBlur stdDeviation="2" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg+='</defs>';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+outerR+'" fill="url(#bgGrad)" stroke="#556" stroke-width="2"/>';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(outerR-2)+'" fill="none" stroke="rgba(102,126,234,.15)" stroke-width="1"/>';
+  // Inner rings
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="55" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="0.5"/>';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="35" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="0.5"/>';
+  // Degree ticks
+  for(var a=0;a<360;a+=10){
     var ra=(a-90)*Math.PI/180;
-    var x1=80+Math.cos(ra)*62, y1=80+Math.sin(ra)*62;
-    var x2=80+Math.cos(ra)*70, y2=80+Math.sin(ra)*70;
-    var w=(a%90===0)?2:1;
-    svg+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="#666" stroke-width="'+w+'"/>';
+    var isMajor=(a%90===0), isMid=(a%30===0);
+    var len=isMajor?12:(isMid?8:4);
+    var x1=cx+Math.cos(ra)*(outerR-2-len), y1=cy+Math.sin(ra)*(outerR-2-len);
+    var x2=cx+Math.cos(ra)*(outerR-2), y2=cy+Math.sin(ra)*(outerR-2);
+    var col=isMajor?'#aab':(isMid?'#667':'#445');
+    var w=isMajor?2:(isMid?1.2:0.6);
+    svg+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'"/>';
   }
-  svg+='<text x="80" y="20" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">N</text>';
-  svg+='<text x="80" y="148" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">S</text>';
-  svg+='<text x="148" y="84" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">E</text>';
-  svg+='<text x="14" y="84" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">W</text>';
+  // Cardinal labels
+  var cards=[{a:0,l:'N',c:'#f44336'},{a:90,l:'E',c:'#ccc'},{a:180,l:'S',c:'#ccc'},{a:270,l:'W',c:'#ccc'}];
+  for(var ci=0;ci<cards.length;ci++){
+    var ca=cards[ci];
+    var ra2=(ca.a-90)*Math.PI/180;
+    var tx=cx+Math.cos(ra2)*58, ty=cy+Math.sin(ra2)*58+4;
+    svg+='<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" fill="'+ca.c+'" font-size="13" font-weight="800">'+ca.l+'</text>';
+  }
+  // Intercardinals
+  var inters=[{a:45,l:'NE'},{a:135,l:'SE'},{a:225,l:'SW'},{a:315,l:'NW'}];
+  for(var ii=0;ii<inters.length;ii++){
+    var ia=inters[ii];
+    var ra3=(ia.a-90)*Math.PI/180;
+    var ix=cx+Math.cos(ra3)*60, iy=cy+Math.sin(ra3)*60+3;
+    svg+='<text x="'+ix.toFixed(1)+'" y="'+iy.toFixed(1)+'" text-anchor="middle" fill="#667" font-size="8" font-weight="600">'+ia.l+'</text>';
+  }
+  // Wind arrow (FROM direction)
   if(spd>0){
     var fromRA=(dir-90)*Math.PI/180;
-    var tailX=80+Math.cos(fromRA)*58, tailY=80+Math.sin(fromRA)*58;
+    var tailX=cx+Math.cos(fromRA)*48, tailY=cy+Math.sin(fromRA)*48;
     var toRA=(dir+180-90)*Math.PI/180;
-    var headX=80+Math.cos(toRA)*38, headY=80+Math.sin(toRA)*38;
-    svg+='<line x1="'+tailX.toFixed(1)+'" y1="'+tailY.toFixed(1)+'" x2="'+headX.toFixed(1)+'" y2="'+headY.toFixed(1)+'" stroke="#00e5ff" stroke-width="2.5"/>';
+    var headX=cx+Math.cos(toRA)*28, headY=cy+Math.sin(toRA)*28;
+    // Shaft with glow
+    svg+='<line x1="'+tailX.toFixed(1)+'" y1="'+tailY.toFixed(1)+'" x2="'+headX.toFixed(1)+'" y2="'+headY.toFixed(1)+'" stroke="#00e5ff" stroke-width="3" filter="url(#glow)" stroke-linecap="round"/>';
+    // Arrowhead
     var angle2=Math.atan2(headY-tailY, headX-tailX);
-    var aLen=10;
-    var px1=headX-aLen*Math.cos(angle2-0.4);
-    var py1=headY-aLen*Math.sin(angle2-0.4);
-    var px2=headX-aLen*Math.cos(angle2+0.4);
-    var py2=headY-aLen*Math.sin(angle2+0.4);
-    svg+='<polygon points="'+headX.toFixed(1)+','+headY.toFixed(1)+' '+px1.toFixed(1)+','+py1.toFixed(1)+' '+px2.toFixed(1)+','+py2.toFixed(1)+'" fill="#00e5ff"/>';
-    svg+='<circle cx="'+tailX.toFixed(1)+'" cy="'+tailY.toFixed(1)+'" r="3" fill="#00e5ff" opacity="0.6"/>';
+    var aLen=12;
+    var px1=headX-aLen*Math.cos(angle2-0.35);
+    var py1=headY-aLen*Math.sin(angle2-0.35);
+    var px2=headX-aLen*Math.cos(angle2+0.35);
+    var py2=headY-aLen*Math.sin(angle2+0.35);
+    svg+='<polygon points="'+headX.toFixed(1)+','+headY.toFixed(1)+' '+px1.toFixed(1)+','+py1.toFixed(1)+' '+px2.toFixed(1)+','+py2.toFixed(1)+'" fill="#00e5ff" filter="url(#glow)"/>';
+    // Tail dot (wind origin)
+    svg+='<circle cx="'+tailX.toFixed(1)+'" cy="'+tailY.toFixed(1)+'" r="4" fill="none" stroke="#00e5ff" stroke-width="1.5" opacity="0.7"/>';
   }
-  svg+='<text x="80" y="76" text-anchor="middle" fill="#00e5ff" font-size="16" font-weight="bold">'+spd+'</text>';
-  svg+='<text x="80" y="90" text-anchor="middle" fill="#00e5ff" font-size="9">kt</text>';
-  svg+='<text x="80" y="106" text-anchor="middle" fill="#888" font-size="9">'+dir+'\u00b0</text>';
+  // Center: speed + direction
+  svg+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#00e5ff" font-size="18" font-weight="800" filter="url(#glow)">'+spd+'<tspan font-size="9" fill="#00bcd4"> kt</tspan></text>';
+  svg+='<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" fill="#8888aa" font-size="10">'+dir+'\u00b0</text>';
   svg+='</svg>';
   var container=document.getElementById('windRoseContainer');
   if(container) container.innerHTML=svg;
@@ -903,13 +936,11 @@ function cleanMetar(raw, icao){
   if(!raw) return null;
   var trimmed=raw.trim();
   if(trimmed.charAt(0)==='{') return null;
+  if(trimmed.length<10) return null;
   var lines=trimmed.split('\n');
   for(var i=0;i<lines.length;i++){
     var line=lines[i].trim();
     if(line && line.indexOf(icao)>=0) return line;
-  }
-  for(var j=0;j<lines.length;j++){
-    if(lines[j].trim()) return lines[j].trim();
   }
   return null;
 }
@@ -918,7 +949,16 @@ function cleanTaf(raw, icao){
   if(!raw) return null;
   var trimmed=raw.trim();
   if(trimmed.charAt(0)==='{') return null;
-  return trimmed;
+  if(trimmed.length<10) return null;
+  if(trimmed.indexOf('TAF')<0) return null;
+  var lines=trimmed.split('\n');
+  var filtered=[];
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(line.indexOf('METAR')===0) continue;
+    if(line) filtered.push(line);
+  }
+  return filtered.length>0?filtered.join('\n'):null;
 }
 
 /* ===== WEATHER FETCH ===== */
@@ -1016,6 +1056,7 @@ function loadWeather(icao){
   fetchWeather(icao,function(result){
     wxCache[icao]=result;
     renderWxPanels();
+    if(icao==='EBCV') applyWind('EBCV');
   });
 }
 
