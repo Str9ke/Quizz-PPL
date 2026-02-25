@@ -121,10 +121,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-coords{font-size:.72em;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
 .wp-coords input{width:80px;padding:3px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em;text-align:center}
 .wp-airport-select{padding:4px 8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.8em;cursor:pointer}
-.wp-remove-btn{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-secondary);font-size:1.2em;cursor:pointer;opacity:.5;transition:all .2s}
+.wp-remove-btn{background:none;border:none;color:var(--text-secondary);font-size:1.1em;cursor:pointer;opacity:.5;transition:all .2s;flex-shrink:0;padding:4px 6px}
 .wp-remove-btn:hover{color:#f44336;opacity:1}
-.wp-map-btn{background:none;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:1.1em;padding:2px 6px;transition:all .2s}
+.wp-map-btn{background:none;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:1.1em;padding:2px 6px;transition:all .2s;flex-shrink:0}
 .wp-map-btn:hover{border-color:#667eea;background:rgba(102,126,234,.08)}
+.wp-drag-handle{cursor:grab;font-size:1.1em;color:var(--text-secondary);opacity:.4;transition:opacity .2s;flex-shrink:0;padding:4px 2px;user-select:none;-webkit-user-select:none}
+.wp-drag-handle:hover{opacity:.8}
+.wp-card.dragging{opacity:.4;border-style:dashed}
+.wp-card.drag-over{border-top:3px solid #667eea}
+.wp-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:auto}
 
 /* WP type buttons row */
 .wp-type-row{display:none;gap:4px;margin-top:6px;flex-wrap:wrap}
@@ -228,6 +233,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
 #routeMapContainer{height:340px;width:100%;background:#1a1a2e}
 .route-map-card .route-map-info{padding:8px 16px;font-size:.75em;color:var(--text-secondary);text-align:center}
+
+/* Clear workspace */
+.clear-ws-btn{display:block;margin:10px auto;padding:8px 20px;font-size:.82em;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid rgba(244,67,54,.3);background:transparent;color:#f44336;transition:all .2s}
+.clear-ws-btn:hover{background:rgba(244,67,54,.08);border-color:#f44336}
+
+/* Extra images */
+.extra-images-area{margin-top:14px;padding:14px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px}
+.extra-images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px}
+.extra-img-thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border-color)}
+.extra-img-thumb img{width:100%;display:block;max-height:200px;object-fit:cover}
+.extra-img-thumb .extra-img-del{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:.9em;display:flex;align-items:center;justify-content:center}
+.extra-img-thumb .extra-img-del:hover{background:#f44336}
 
 /* Responsive */
 @media(max-width:600px){
@@ -340,6 +357,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> NavLog</div>
       <div class="navlog-board" id="navlogBoard"></div>
       <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
+      <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
     </div>
 
     <!-- Summary panel -->
@@ -400,6 +418,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <input type="file" id="fileFronts" accept="image/*" style="display:none" onchange="window.handleMapUpload('fronts',this)">
         </div>
       </div>
+    </div>
+
+    <!-- Extra images for dossier -->
+    <div class="extra-images-area">
+      <div class="nl-card-title"><span class="icon">&#x1F4F8;</span> Images suppl&#xe9;mentaires</div>
+      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px">Ajoutez des captures d'&#xe9;cran, cartes ou documents pour le dossier de vol.</p>
+      <button class="aeroweb-btn" onclick="window.addExtraImage()" style="font-size:.82em;padding:8px 18px">&#x1F4F7; Ajouter image(s)</button>
+      <input type="file" id="fileExtraImages" accept="image/*" multiple style="display:none" onchange="window.handleExtraImages(this)">
+      <div class="extra-images-grid" id="extraImagesGrid"></div>
     </div>
 
     <!-- Windy embeds -->
@@ -1176,7 +1203,7 @@ function fetchWeather(icao,cb){
     });
   }
 
-  /* --- TAF --- */
+  /* --- TAF (with multiple source fallback) --- */
   function tryTaf(url){
     fetch(url).then(function(r){
       if(!r.ok) throw new Error(r.status);
@@ -1185,15 +1212,77 @@ function fetchWeather(icao,cb){
       t=t.trim();
       if(t && t.indexOf('TAF')>=0){
         result.taf=t;
-      }
-      check();
-    }).catch(function(){
-      fetch(proxy+encodeURIComponent(url)).then(function(r){return r.text();}).then(function(t){
-        t=t.trim();
-        if(t && t.indexOf('TAF')>=0) result.taf=t;
         check();
-      }).catch(function(){check();});
+      } else {
+        tryTafProxy(url);
+      }
+    }).catch(function(){
+      tryTafProxy(url);
     });
+  }
+
+  function tryTafProxy(url){
+    fetch(proxy+encodeURIComponent(url)).then(function(r){return r.text();}).then(function(t){
+      t=t.trim();
+      if(t && t.indexOf('TAF')>=0){
+        result.taf=t;
+        check();
+      } else {
+        tryTafOgimet();
+      }
+    }).catch(function(){
+      tryTafOgimet();
+    });
+  }
+
+  function tryTafOgimet(){
+    /* Try OGIMET as alternative TAF source */
+    var oUrl='https://www.ogimet.com/display_taf2.php?lang=en&lugar='+icao+'&tipo=ALL&ord=REV&nil=SI&send=send';
+    fetch(proxy+encodeURIComponent(oUrl)).then(function(r){return r.text();}).then(function(html){
+      /* Extract TAF from OGIMET HTML response */
+      var tafMatch=html.match(/TAF[^<]+/);
+      if(tafMatch){
+        result.taf=tafMatch[0].trim();
+        check();
+      } else {
+        tryTafFallbackAirport();
+      }
+    }).catch(function(){
+      tryTafFallbackAirport();
+    });
+  }
+
+  function tryTafFallbackAirport(){
+    /* Try to get TAF from fallback airports */
+    var fallbacks=METAR_FALLBACK[icao];
+    if(!fallbacks||fallbacks.length===0){check();return;}
+    var fbIdx=0;
+    function nextFb(){
+      if(fbIdx>=fallbacks.length){check();return;}
+      var fbIcao=fallbacks[fbIdx];
+      var fbUrl='https://aviationweather.gov/api/data/taf?ids='+fbIcao+'&format=raw';
+      fetch(fbUrl).then(function(r){
+        if(!r.ok) throw new Error(r.status);
+        return r.text();
+      }).then(function(t){
+        t=t.trim();
+        if(t && t.indexOf('TAF')>=0){
+          result.taf=t;
+          result.tafSource=fbIcao;
+          check();
+        } else {fbIdx++;nextFb();}
+      }).catch(function(){
+        fetch(proxy+encodeURIComponent(fbUrl)).then(function(r){return r.text();}).then(function(t){
+          t=t.trim();
+          if(t && t.indexOf('TAF')>=0){
+            result.taf=t;
+            result.tafSource=fbIcao;
+            check();
+          } else {fbIdx++;nextFb();}
+        }).catch(function(){fbIdx++;nextFb();});
+      });
+    }
+    nextFb();
   }
 
   /* --- NOTAMs --- */
@@ -1220,7 +1309,10 @@ function renderWeatherBlock(icao){
   if(!data) return '<div class="wx-block"><em>Chargement...</em></div>';
   var metarSrc=data.metarSource||icao;
   var metar=data.metar?cleanMetar(data.metar, metarSrc):null;
-  var taf=cleanTaf(data.taf, icao);
+  var tafSrc=data.tafSource||icao;
+  var taf=cleanTaf(data.taf, tafSrc);
+  /* If taf couldn't be cleaned with tafSrc, try with icao */
+  if(!taf && data.taf) taf=cleanTaf(data.taf, icao);
   var html='<div class="wx-block">';
   html+='<div class="wx-block-header">';
   html+='<strong>'+icao+'</strong>';
@@ -1261,7 +1353,9 @@ function renderWeatherBlock(icao){
     }
   }
   if(taf){
-    html+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.9em;font-weight:600;color:var(--text-secondary)">TAF</summary>';
+    var tafLabel='TAF';
+    if(data.tafSource && data.tafSource!==icao) tafLabel='TAF (via '+data.tafSource+')';
+    html+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.9em;font-weight:600;color:var(--text-secondary)">'+tafLabel+'</summary>';
     html+='<pre style="font-family:monospace;font-size:.9em;white-space:pre-wrap;color:var(--text-primary);margin:4px 0">'+taf+'</pre>';
     html+='<div class="wx-decoded" style="margin-top:4px">'+decodeTaf(taf).replace(/\n/g,'<br>')+'</div>';
     html+='</details>';
@@ -1475,8 +1569,9 @@ function renderNavlog(){
       html+='<div class="leg-strip" id="leg-wrap-'+i+'" style="display:none"><div class="leg-strip-content" id="leg-strip-'+i+'"></div></div>';
       html+='<button class="insert-wp-btn" onclick="window.insertWaypoint('+i+')" title="Ins\u00e9rer un waypoint">+</button>';
     }
-    html+='<div class="wp-card" data-idx="'+i+'">';
+    html+='<div class="wp-card" data-idx="'+i+'" draggable="true">';
     html+='<div class="wp-card-header">';
+    html+='<span class="wp-drag-handle" title="Glisser pour r\u00e9ordonner">\u2630</span>';
     html+='<div class="wp-num-badge">'+(i+1)+'</div>';
     var iconEmoji='\u2708\uFE0F';
     for(var ic=0;ic<WP_ICONS.length;ic++){if(WP_ICONS[ic].id===wp.icon) iconEmoji=WP_ICONS[ic].emoji;}
@@ -1489,19 +1584,19 @@ function renderNavlog(){
     }
     html+='</select>';
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
+    html+='<div class="wp-actions">';
     html+='<button class="wp-map-btn" onclick="window.openMapModal('+i+')" title="Choisir sur la carte">\u{1F5FA}\uFE0F</button>';
-    html+='<div class="wp-coords">';
-    html+='<input type="text" value="'+(wp.lat!==null?wp.lat.toFixed(4):'')+'" placeholder="Lat" data-idx="'+i+'" data-coord="lat" onchange="window.setCoord('+i+',\'lat\',this.value)">';
-    html+='<input type="text" value="'+(wp.lon!==null?wp.lon.toFixed(4):'')+'" placeholder="Lon" data-idx="'+i+'" data-coord="lon" onchange="window.setCoord('+i+',\'lon\',this.value)">';
-    html+='</div>';
-    if(i>0){
-      html+='<div class="wp-coords" style="margin-left:8px">';
-      html+='<input type="number" value="'+wp.dist+'" step="0.1" min="0" placeholder="Dist NM" style="width:65px" onchange="window.setDist('+i+',this.value)">';
-      html+='<input type="number" value="'+Math.round(wp.route)+'" min="0" max="360" placeholder="Route\u00b0" style="width:55px" onchange="window.setRoute('+i+',this.value)">';
-      html+='</div>';
-    }
     if(waypoints.length>2 || i>0){
       html+='<button class="wp-remove-btn" onclick="window.removeWaypoint('+i+')" title="Supprimer">\u00d7</button>';
+    }
+    html+='</div>';
+    html+='</div>';
+    html+='<div class="wp-coords" style="margin-left:42px;margin-top:4px">';
+    html+='<input type="text" value="'+(wp.lat!==null?wp.lat.toFixed(4):'')+'" placeholder="Lat" data-idx="'+i+'" data-coord="lat" onchange="window.setCoord('+i+',\'lat\',this.value)">';
+    html+='<input type="text" value="'+(wp.lon!==null?wp.lon.toFixed(4):'')+'" placeholder="Lon" data-idx="'+i+'" data-coord="lon" onchange="window.setCoord('+i+',\'lon\',this.value)">';
+    if(i>0){
+      html+='<input type="number" value="'+wp.dist+'" step="0.1" min="0" placeholder="Dist NM" style="width:65px;margin-left:8px" onchange="window.setDist('+i+',this.value)">';
+      html+='<input type="number" value="'+Math.round(wp.route)+'" min="0" max="360" placeholder="Route\u00b0" style="width:55px" onchange="window.setRoute('+i+',this.value)">';
     }
     html+='</div>';
     html+='<div class="wp-type-row" id="type-row-'+i+'">';
@@ -1513,6 +1608,7 @@ function renderNavlog(){
     html+='</div>';
   }
   board.innerHTML=html;
+  initDragDrop(board);
   var nameInputs=board.querySelectorAll('.wp-name-input');
   for(var ni=0;ni<nameInputs.length;ni++){
     (function(input){
@@ -1631,6 +1727,184 @@ function removeWaypoint(i){
 }
 window.removeWaypoint=removeWaypoint;
 
+/* ===== DRAG & DROP REORDER ===== */
+var dragSrcIdx=null;
+
+function initDragDrop(board){
+  var cards=board.querySelectorAll('.wp-card');
+  for(var c=0;c<cards.length;c++){
+    (function(card){
+      var handle=card.querySelector('.wp-drag-handle');
+      /* Only drag when starting from handle */
+      card.addEventListener('dragstart',function(e){
+        var isFromHandle=handle&&handle.contains(e.target);
+        if(!isFromHandle){e.preventDefault();return;}
+        dragSrcIdx=parseInt(card.getAttribute('data-idx'));
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('text/plain',dragSrcIdx);
+      });
+      card.addEventListener('dragover',function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect='move';
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave',function(){
+        card.classList.remove('drag-over');
+      });
+      card.addEventListener('drop',function(e){
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        var destIdx=parseInt(card.getAttribute('data-idx'));
+        if(dragSrcIdx!==null && dragSrcIdx!==destIdx){
+          var moved=waypoints.splice(dragSrcIdx,1)[0];
+          waypoints.splice(destIdx,0,moved);
+          renderNavlog();
+          recalcNavlog();
+        }
+        dragSrcIdx=null;
+      });
+      card.addEventListener('dragend',function(){
+        card.classList.remove('dragging');
+        dragSrcIdx=null;
+        var overs=board.querySelectorAll('.drag-over');
+        for(var o=0;o<overs.length;o++) overs[o].classList.remove('drag-over');
+      });
+    })(cards[c]);
+  }
+  /* Touch drag support for mobile */
+  var touchSrc=null,touchClone=null,touchStartY=0;
+  for(var tc=0;tc<cards.length;tc++){
+    (function(card){
+      var handle=card.querySelector('.wp-drag-handle');
+      if(!handle) return;
+      handle.addEventListener('touchstart',function(e){
+        touchSrc=parseInt(card.getAttribute('data-idx'));
+        touchStartY=e.touches[0].clientY;
+        card.classList.add('dragging');
+        e.preventDefault();
+      },{passive:false});
+    })(cards[tc]);
+  }
+  document.addEventListener('touchmove',function(e){
+    if(touchSrc===null) return;
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchend',function(e){
+    if(touchSrc===null) return;
+    var touchEndY=e.changedTouches[0].clientY;
+    var destCard=document.elementFromPoint(e.changedTouches[0].clientX,touchEndY);
+    while(destCard && !destCard.classList.contains('wp-card')) destCard=destCard.parentElement;
+    if(destCard){
+      var destIdx=parseInt(destCard.getAttribute('data-idx'));
+      if(touchSrc!==destIdx){
+        var moved=waypoints.splice(touchSrc,1)[0];
+        waypoints.splice(destIdx,0,moved);
+        renderNavlog();
+        recalcNavlog();
+      }
+    }
+    var dragging=document.querySelectorAll('.dragging');
+    for(var d=0;d<dragging.length;d++) dragging[d].classList.remove('dragging');
+    touchSrc=null;
+  });
+}
+
+/* ===== CLEAR WORKSPACE ===== */
+function clearWorkspace(){
+  if(!confirm('Vider tout l\u2019espace de travail ? (NavLog + cartes m\u00e9t\u00e9o + images)')) return;
+  waypoints=[
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
+  ];
+  for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+  flightType='nav';
+  var ftBtns=document.querySelectorAll('.flight-type-btn');
+  ftBtns[0].classList.remove('active');
+  ftBtns[1].classList.add('active');
+  wxCache={};
+  document.getElementById('wxPanels').innerHTML='';
+  /* Clear map captures */
+  ['temsi','wintem','fronts'].forEach(function(key){
+    sessionStorage.removeItem('navlog_map_'+key);
+    var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
+    if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez une capture depuis A\u00e9roWeb</span>';
+  });
+  /* Clear extra images */
+  extraImages=[];
+  sessionStorage.removeItem('navlog_extra_images');
+  renderExtraImages();
+  /* Reset config */
+  document.getElementById('cfgTAS').value=90;
+  document.getElementById('cfgFuel').value=25;
+  document.getElementById('cfgWindDir').value=0;
+  document.getElementById('cfgWindSpd').value=0;
+  document.getElementById('cfgDev').value=-1;
+  document.getElementById('cfgDepTime').value='09:00';
+  document.getElementById('cfgTaxi').value=10;
+  document.getElementById('cfgLanding').value=10;
+  document.getElementById('cfgWindDirSlider').value=0;
+  document.getElementById('cfgWindSpdSlider').value=0;
+  reserveMode='day';
+  var rBtn=document.getElementById('reserveBtn');
+  rBtn.textContent='\u2600\uFE0F Jour 30min';
+  rBtn.className='reserve-toggle day';
+  var dnInput=document.getElementById('dossierName');
+  if(dnInput){dnInput.value='';dnInput._userEdited=false;}
+  renderNavlog();
+  recalcNavlog();
+}
+window.clearWorkspace=clearWorkspace;
+
+/* ===== EXTRA IMAGES ===== */
+var extraImages=[];
+
+function addExtraImage(){
+  document.getElementById('fileExtraImages').click();
+}
+window.addExtraImage=addExtraImage;
+
+function handleExtraImages(input){
+  if(!input.files||!input.files.length) return;
+  for(var f=0;f<input.files.length;f++){
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        extraImages.push({data:e.target.result,name:file.name});
+        sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+        renderExtraImages();
+      };
+      reader.readAsDataURL(file);
+    })(input.files[f]);
+  }
+  input.value='';
+}
+window.handleExtraImages=handleExtraImages;
+
+function removeExtraImage(idx){
+  extraImages.splice(idx,1);
+  sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+  renderExtraImages();
+}
+window.removeExtraImage=removeExtraImage;
+
+function renderExtraImages(){
+  var grid=document.getElementById('extraImagesGrid');
+  if(!grid) return;
+  if(extraImages.length===0){grid.innerHTML='';return;}
+  var html='';
+  for(var i=0;i<extraImages.length;i++){
+    html+='<div class="extra-img-thumb">';
+    html+='<img src="'+extraImages[i].data+'" alt="'+escHTML(extraImages[i].name)+'" title="'+escHTML(extraImages[i].name)+'">';
+    html+='<button class="extra-img-del" onclick="window.removeExtraImage('+i+')" title="Supprimer">\u00d7</button>';
+    html+='</div>';
+  }
+  grid.innerHTML=html;
+}
+
+function getExtraImages(){
+  return JSON.parse(JSON.stringify(extraImages));
+}
+
 /* ===== MAP MODAL (Leaflet WP picker) ===== */
 function openMapModal(idx){
   mapModalWpIdx=idx;
@@ -1690,21 +1964,44 @@ function confirmMapSelection(){
     /* Reverse geocode to auto-fill WP name if empty */
     if(!waypoints[idx].name){
       var rIdx=idx;
-      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+mapSelectedLatLon.lat+'&lon='+mapSelectedLatLon.lon+'&zoom=14&accept-language=fr')
-        .then(function(r){return r.json();})
-        .then(function(data){
-          if(data && data.address && rIdx<waypoints.length && !waypoints[rIdx].name){
-            var name=data.address.village||data.address.town||data.address.city||data.address.hamlet||data.address.suburb||'';
-            if(name){
-              waypoints[rIdx].name=name;
-              var input=document.querySelector('.wp-name-input[data-idx="'+rIdx+'"]');
-              if(input) input.value=name;
-              suggestDossierName();
-              updateRouteMap();
+      var rLat=mapSelectedLatLon.lat;
+      var rLon=mapSelectedLatLon.lon;
+      /* Check if near a known airport first */
+      var nearAirport=null;
+      for(var code in AIRPORT_COORDS){
+        var ac=AIRPORT_COORDS[code];
+        var adist=haversine(rLat,rLon,ac.lat,ac.lon);
+        if(adist<1.5){nearAirport=code;break;}
+      }
+      if(nearAirport){
+        waypoints[rIdx].name=nearAirport;
+        waypoints[rIdx].icon='tower';
+        renderNavlog();
+        recalcNavlog();
+      } else {
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+rLat+'&lon='+rLon+'&zoom=16&accept-language=fr&addressdetails=1')
+          .then(function(r){return r.json();})
+          .then(function(data){
+            if(data && data.address && rIdx<waypoints.length && !waypoints[rIdx].name){
+              var addr=data.address;
+              /* Try specific features first, then broader locations */
+              var name=addr.aerodrome||addr.aeroway||addr.hamlet||addr.village||addr.town||addr.suburb||addr.city_district||addr.city||addr.municipality||'';
+              /* If Nominatim returned a very generic name, try to refine with locality */
+              if(!name && data.display_name){
+                var parts=data.display_name.split(',');
+                if(parts.length>0) name=parts[0].trim();
+              }
+              if(name){
+                waypoints[rIdx].name=name;
+                var input=document.querySelector('.wp-name-input[data-idx="'+rIdx+'"]');
+                if(input) input.value=name;
+                suggestDossierName();
+                updateRouteMap();
+              }
             }
-          }
-        })
-        .catch(function(){});
+          })
+          .catch(function(){});
+      }
     }
     renderNavlog();
     recalcNavlog();
@@ -1747,7 +2044,8 @@ function saveDossier(){
     reserveMode:reserveMode,
     flightType:flightType,
     windyUrls:getWindyUrls(),
-    mapImages:getMapImages()
+    mapImages:getMapImages(),
+    extraImages:getExtraImages()
   };
   dossiers.push(dossier);
   setDossiers(dossiers);
@@ -1801,6 +2099,22 @@ function loadDossier(id){
   }
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
+  /* Restore map captures */
+  if(d.mapImages){
+    ['temsi','wintem','fronts'].forEach(function(key){
+      if(d.mapImages[key]){
+        sessionStorage.setItem('navlog_map_'+key,d.mapImages[key]);
+        var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
+        if(el) el.innerHTML='<img src="'+d.mapImages[key]+'" style="width:100%;max-height:600px;object-fit:contain">';
+      }
+    });
+  }
+  /* Restore extra images */
+  if(d.extraImages){
+    extraImages=d.extraImages;
+    sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+    renderExtraImages();
+  }
   renderNavlog();
   recalcNavlog();
   renderWxPanels();
@@ -1846,10 +2160,18 @@ function renderDossierList(){
       route=d.waypoints[0].name+' \u2192 '+d.waypoints[d.waypoints.length-1].name;
     }
     var mapCount=Object.keys(d.mapImages||{}).length;
+    var extraCount=(d.extraImages||[]).length;
+    var imgInfo='';
+    if(mapCount||extraCount){
+      var parts=[];
+      if(mapCount) parts.push(mapCount+' carte(s)');
+      if(extraCount) parts.push(extraCount+' image(s)');
+      imgInfo=' | '+parts.join(' + ');
+    }
     html+='<div class="dossier-card">';
     html+='<div class="d-name">'+escHTML(d.name)+'</div>';
     html+='<div class="d-date">'+ds+'</div>';
-    html+='<div class="d-route">'+escHTML(route)+(mapCount?' | '+mapCount+' carte(s)':'')+'</div>';
+    html+='<div class="d-route">'+escHTML(route)+imgInfo+'</div>';
     html+='<div class="dossier-card-btns">';
     html+='<button onclick="window.loadDossier('+d.id+')">Charger</button>';
     html+='<button onclick="window.renameDossier('+d.id+')">Renommer</button>';
@@ -2087,6 +2409,12 @@ function init(){
       if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
     }
   }
+  /* Restore extra images from session */
+  try{
+    var storedExtra=sessionStorage.getItem('navlog_extra_images');
+    if(storedExtra) extraImages=JSON.parse(storedExtra);
+    renderExtraImages();
+  }catch(e){}
   var now=new Date();
   calYear=now.getFullYear();
   calMonth=now.getMonth();
