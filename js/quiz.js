@@ -4,19 +4,23 @@
  * _speakCorrectAnswer() – Lit la bonne réponse via Web Speech Synthesis (TTS)
  * Uniquement si l'option TTS est activée (localStorage ttsEnabled)
  */
+var _ttsTimeoutId = null;
 function _speakCorrectAnswer(answerText) {
   if (localStorage.getItem('ttsEnabled') !== '1') return;
   if (!('speechSynthesis' in window)) return;
   // Toggle: if currently speaking, stop
   if (speechSynthesis.speaking) {
     speechSynthesis.cancel();
+    if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
     return;
   }
-  // Annuler toute lecture en cours
+  // Annuler toute lecture en cours + clear pending timeout
   speechSynthesis.cancel();
+  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
   // Petit délai après cancel pour contourner un bug Chrome
   // où speak() est ignoré juste après cancel()
-  setTimeout(() => {
+  _ttsTimeoutId = setTimeout(() => {
+    _ttsTimeoutId = null;
     const utterance = new SpeechSynthesisUtterance(answerText);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.95;
@@ -984,8 +988,11 @@ function _sanitizeNoteHtml(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const allowedTags = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'div', 'ul', 'ol', 'li',
-    'span', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'sub', 'sup', 'blockquote', 'pre', 'code', 'hr']);
-  const allowedAttrs = new Set(['href', 'target', 'style']);
+    'span', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'sub', 'sup', 'blockquote', 'pre', 'code', 'hr',
+    /* KaTeX elements */ 'math', 'semantics', 'annotation', 'mrow', 'mi', 'mo', 'mn', 'mfrac', 'msub',
+    'msup', 'msubsup', 'msqrt', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'mtext',
+    'mspace', 'mpadded', 'menclose', 'mglyph', 'svg', 'line', 'path']);
+  const allowedAttrs = new Set(['href', 'target', 'style', 'class', 'aria-hidden', 'xmlns', 'width', 'height', 'viewbox', 'd', 'x1', 'y1', 'x2', 'y2']);
 
   function clean(node) {
     const children = Array.from(node.childNodes);
@@ -1018,16 +1025,40 @@ function _sanitizeNoteHtml(html) {
 }
 
 /**
+ * _renderKaTeX(text) – Process $$...$$ (display) and $...$ (inline) LaTeX in text.
+ * Returns HTML with rendered math. Requires KaTeX loaded.
+ */
+function _renderKaTeX(html) {
+  if (typeof katex === 'undefined') return html;
+  // Display math: $$...$$
+  html = html.replace(/\$\$([\s\S]+?)\$\$/g, function(m, tex) {
+    try { return katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  // Inline math: $...$  (but not $$)
+  html = html.replace(/\$([^\$\n]+?)\$/g, function(m, tex) {
+    try { return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  return html;
+}
+
+/**
  * _renderNoteText() – Rend le texte d'une note, compatible ancien format (plain text) et nouveau (HTML)
+ * Now also supports KaTeX/LaTeX formulas via $...$ and $$...$$
  */
 function _renderNoteText(text) {
   if (!text) return '';
+  var rendered;
   // Détecte si le texte contient du HTML (balises)
   if (/<[a-z][\s\S]*>/i.test(text)) {
-    return _sanitizeNoteHtml(text);
+    rendered = _sanitizeNoteHtml(text);
+  } else {
+    // Ancien format plain text : échapper et convertir les retours à la ligne
+    rendered = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
   }
-  // Ancien format plain text : échapper et convertir les retours à la ligne
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+  // Process LaTeX/KaTeX
+  return _renderKaTeX(rendered);
 }
 
 /**

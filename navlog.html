@@ -98,6 +98,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
 /* Decoded METAR/TAF */
 .wx-decoded{font-size:.9em;color:var(--text-secondary);margin-top:6px;padding:8px;background:rgba(102,126,234,.05);border-radius:8px;line-height:1.5}
+.alt-info-box{background:rgba(30,30,60,.6);border:1px solid rgba(100,126,234,.3);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:.82em}
+.alt-info-title{font-weight:700;font-size:.9em;color:#667eea;margin-bottom:6px}
+.alt-info-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:var(--text-primary)}
+.alt-info-row small{font-size:.85em;opacity:.8;margin-left:4px}
+
 
 /* Config panel */
 .config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
@@ -112,6 +117,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .gauges-row{display:flex;justify-content:center;align-items:flex-start;gap:24px;flex-wrap:wrap;margin:14px 0}
 .wind-rose-container{display:flex;flex-direction:column;align-items:center;gap:6px}
 .wind-slider{width:100%;margin:4px 0;accent-color:#667eea;cursor:pointer;height:6px}
+.wind-dual-slider{display:flex;gap:16px;width:100%}
+.wind-slider-col{flex:1;display:flex;flex-direction:column;gap:4px}
+.wind-slider-header{display:flex;align-items:center;gap:6px;font-size:.78em;font-weight:600;color:var(--text-secondary)}
+.wind-num{width:52px;padding:4px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:1em;text-align:center;font-weight:700}
+.wind-slider.wind-spd{accent-color:#ff9800}
+
 .wind-slider-label{font-size:.72em;color:var(--text-secondary);text-align:center;margin-top:2px}
 .asi-container{display:flex;justify-content:center}
 
@@ -155,6 +166,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .leg-strip-content .leg-label{font-weight:800;color:#667eea;white-space:nowrap;font-size:1.1em}
 .leg-strip-content .leg-val{color:var(--text-primary);white-space:nowrap;font-weight:600}
 .leg-strip-content .leg-val small{color:var(--text-secondary);font-weight:400}
+.leg-data-row{display:flex;align-items:flex-start;gap:8px}
+.leg-data-col{flex:1;display:flex;flex-direction:column;gap:2px}
+.leg-triangle-col{flex-shrink:0;width:120px}
 .leg-wind-btn{padding:3px 10px;font-size:.74em;border-radius:10px;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06);color:#00e5ff;font-weight:600;transition:all .2s;white-space:nowrap}
 .leg-wind-btn:hover{background:rgba(0,229,255,.18);border-color:#00e5ff}
 .leg-wind-btn.leg-wind-custom{border-color:#ffa726;color:#ffa726;background:rgba(255,167,38,.1)}
@@ -333,15 +347,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <label for="cfgFuel">Conso (L/h)</label>
           <input type="number" id="cfgFuel" value="25" min="5" max="100" step="0.5" onchange="window.recalcNavlog()">
         </div>
-        <div class="config-item">
-          <label for="cfgWindDir">Vent dir (&#xb0;)</label>
-          <input type="number" id="cfgWindDir" value="0" min="0" max="360" oninput="window.syncWind('dir-num')">
-          <input type="range" class="wind-slider" id="cfgWindDirSlider" value="0" min="0" max="360" step="5" oninput="window.syncWind('dir-slider')">
-        </div>
-        <div class="config-item">
-          <label for="cfgWindSpd">Vent vit (kt)</label>
-          <input type="number" id="cfgWindSpd" value="0" min="0" max="100" oninput="window.syncWind('spd-num')">
-          <input type="range" class="wind-slider" id="cfgWindSpdSlider" value="0" min="0" max="50" step="1" oninput="window.syncWind('spd-slider')">
+        <div class="config-item config-wind-group" style="grid-column:span 2">
+          <label>&#x1F4A8; Vent global</label>
+          <div class="wind-dual-slider">
+            <div class="wind-slider-col">
+              <div class="wind-slider-header"><span>Direction</span><input type="number" id="cfgWindDir" value="0" min="0" max="360" class="wind-num" oninput="window.syncWind('dir-num')"><span>&#xb0;</span></div>
+              <input type="range" class="wind-slider" id="cfgWindDirSlider" value="0" min="0" max="360" step="5" oninput="window.syncWind('dir-slider')">
+            </div>
+            <div class="wind-slider-col">
+              <div class="wind-slider-header"><span>Vitesse</span><input type="number" id="cfgWindSpd" value="0" min="0" max="100" class="wind-num" oninput="window.syncWind('spd-num')"><span>kt</span></div>
+              <input type="range" class="wind-slider wind-spd" id="cfgWindSpdSlider" value="0" min="0" max="50" step="1" oninput="window.syncWind('spd-slider')">
+            </div>
+          </div>
         </div>
         <div class="config-item">
           <label for="cfgDev">D&#xe9;v. magn. (&#xb0;)</label>
@@ -365,8 +382,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
       </div>
       <div class="gauges-row">
-        <div class="wind-rose-container" id="windRoseContainer"></div>
         <div class="asi-container" id="asiGauge"></div>
+        <div class="wind-rose-container" id="windRoseContainer"></div>
       </div>
     </div>
 
@@ -576,6 +593,11 @@ var AIRPORT_NAMES = {
   'EBSG':'Saint-Ghislain','EBCV':'Chi\u00e8vres','EBCI':'Charleroi',
   'EBNM':'Namur','EBBR':'Bruxelles','LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin',
   'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge'
+};
+
+var AIRPORT_ELEV = {
+  'EBSG':39,'EBCV':194,'EBCI':614,'EBNM':592,'EBBR':184,
+  'LFQJ':364,'LFQQ':157,'EBCF':1165,'EBSP':1581,'EBFS':935,'EBLG':660
 };
 
 var RUNWAY_DB = {
@@ -972,6 +994,42 @@ function decodeMetar(raw){
   var am=raw.match(/A(\d{4})/);
   if(am) parts.push('Altim\u00e8tre '+am[1].substring(0,2)+'.'+am[1].substring(2)+' inHg');
   return parts.join(' \u2022 ');
+}
+
+/* ===== PRESSURE & DENSITY ALTITUDE ===== */
+function calcPressureDensityAlt(metar, icao){
+  var qm=metar.match(/Q(\d{4})/);
+  var tm=metar.match(/(M?\d{2})\/(M?\d{2})/);
+  if(!qm||!tm) return null;
+  var qnh=parseInt(qm[1]);
+  var tempC=parseInt(tm[1].replace('M','-'));
+  var fieldElev=(AIRPORT_ELEV[icao]||0);
+  var pa=fieldElev+(1013.25-qnh)*28;
+  var isaTempPA=15-(pa/1000)*2;
+  var da=pa+120*(tempC-isaTempPA);
+  var paDelta=Math.round(pa)-fieldElev;
+  var daDelta=Math.round(da)-fieldElev;
+  return {fieldElev:fieldElev,pa:Math.round(pa),da:Math.round(da),paDelta:paDelta,daDelta:daDelta,qnh:qnh,tempC:tempC,isaTemp:Math.round((15-(fieldElev/1000)*2)*10)/10};
+}
+
+function altitudeInfoHtml(metar, icao){
+  var info=calcPressureDensityAlt(metar, icao);
+  if(!info) return '';
+  var paColor=info.paDelta>0?'#ff9800':'#4caf50';
+  var daColor=info.daDelta>0?'#ff9800':'#4caf50';
+  var paArrow=info.paDelta>0?'\u2191':'\u2193';
+  var daArrow=info.daDelta>0?'\u2191':'\u2193';
+  var tkoff=info.da>info.fieldElev?
+    '<span style="color:#ff5722">\u26A0 Distance de d\u00e9collage allong\u00e9e</span>':
+    '<span style="color:#4caf50">\u2705 Distance de d\u00e9collage raccourcie</span>';
+  var html='<div class="alt-info-box">';
+  html+='<div class="alt-info-title">\uD83D\uDCD0 Altitudes calcul\u00e9es \u2014 '+icao+' (\u00e9l\u00e9v. '+info.fieldElev+' ft)</div>';
+  html+='<div class="alt-info-row"><span>Altitude pression (PA)</span><span style="color:'+paColor+';font-weight:700">'+info.pa+' ft <small>('+paArrow+(info.paDelta>0?'+':'')+info.paDelta+' ft)</small></span></div>';
+  html+='<div class="alt-info-row"><span>Altitude densit\u00e9 (DA)</span><span style="color:'+daColor+';font-weight:700">'+info.da+' ft <small>('+daArrow+(info.daDelta>0?'+':'')+info.daDelta+' ft)</small></span></div>';
+  html+='<div class="alt-info-row"><span>ISA \u00e0 '+info.fieldElev+' ft</span><span>'+info.isaTemp+'\u00b0C (r\u00e9el: '+info.tempC+'\u00b0C, \u00e9cart '+(info.tempC>info.isaTemp?'+':'')+(info.tempC-info.isaTemp).toFixed(0)+'\u00b0C)</span></div>';
+  html+='<div class="alt-info-row" style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1)">'+tkoff+'</div>';
+  html+='</div>';
+  return html;
 }
 
 function decodeTaf(raw){
@@ -1378,6 +1436,7 @@ function renderWeatherBlock(icao){
     html+='<div style="font-family:monospace;font-size:1em;margin:4px 0;line-height:1.6">'+colorizeMetar(metar)+'</div>';
     if(ageHtml) html+=ageHtml;
     html+='<div class="wx-decoded">'+decodeMetar(metar)+'</div>';
+    html+=altitudeInfoHtml(metar,icao);
   } else {
     html+='<div style="color:var(--text-secondary);font-size:.9em">METAR non disponible</div>';
   }
@@ -1530,7 +1589,13 @@ function confirmLegWind(){
   if(legWindIdx===null) return;
   var d=parseInt(document.getElementById('legWindDirSlider').value)||0;
   var s=parseInt(document.getElementById('legWindSpdSlider').value)||0;
-  waypoints[legWindIdx].legWind={dir:d,spd:s};
+  /* If values match global config, treat as no custom wind */
+  var cfg=getConfig();
+  if(d===cfg.windDir && s===cfg.windSpd){
+    delete waypoints[legWindIdx].legWind;
+  } else {
+    waypoints[legWindIdx].legWind={dir:d,spd:s};
+  }
   closeLegWind();
   recalcNavlog();
 }
@@ -1664,6 +1729,55 @@ function recalcNavlog(){
   updateRouteMap();
 }
 
+/* ===== WIND TRIANGLE SVG PER LEG ===== */
+function windTriangleSVG(routeTrue, hdgTrue, gs, tas, wDir, wSpd, wca){
+  if(!gs||gs<=0||!tas||tas<=0) return '';
+  var sz=120, cx=sz/2, cy=sz/2;
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:block;margin:4px auto">';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(sz/2-2)+'" fill="rgba(20,20,50,.5)" stroke="#445" stroke-width="1"/>';
+  var dirs=[{l:'N',a:0},{l:'E',a:90},{l:'S',a:180},{l:'W',a:270}];
+  for(var d=0;d<dirs.length;d++){
+    var ar=dirs[d].a*Math.PI/180;
+    var tx=cx+Math.sin(ar)*(sz/2-10),ty=cy-Math.cos(ar)*(sz/2-10);
+    svg+='<text x="'+tx.toFixed(1)+'" y="'+(ty+3).toFixed(1)+'" text-anchor="middle" fill="#666" font-size="8" font-weight="bold">'+dirs[d].l+'</text>';
+  }
+  function pt(deg,r2){var rd=deg*Math.PI/180;return{x:cx+r2*Math.sin(rd),y:cy-r2*Math.cos(rd)};}
+  var sc=sz/2-14;
+  /* Route/Track line (dashed blue) */
+  var rEnd=pt(routeTrue,sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+rEnd.x.toFixed(1)+'" y2="'+rEnd.y.toFixed(1)+'" stroke="#29b6f6" stroke-width="2" stroke-dasharray="5,3"/>';
+  svg+='<text x="'+(rEnd.x+(rEnd.x>cx?6:-6)).toFixed(1)+'" y="'+(rEnd.y-4).toFixed(1)+'" fill="#29b6f6" font-size="7" text-anchor="'+(rEnd.x>cx?'start':'end')+'">TK</text>';
+  /* Heading line (solid white + airplane) */
+  var hEnd=pt(hdgTrue,sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+hEnd.x.toFixed(1)+'" y2="'+hEnd.y.toFixed(1)+'" stroke="#fff" stroke-width="1.8"/>';
+  var ha=hdgTrue*Math.PI/180;
+  var lx=hEnd.x-5*Math.cos(ha)-3*Math.sin(ha),ly=hEnd.y-5*Math.sin(ha)+3*Math.cos(ha);
+  var rx=hEnd.x+5*Math.cos(ha)-3*Math.sin(ha),ry=hEnd.y+5*Math.sin(ha)+3*Math.cos(ha);
+  svg+='<polygon points="'+hEnd.x.toFixed(1)+','+hEnd.y.toFixed(1)+' '+lx.toFixed(1)+','+ly.toFixed(1)+' '+rx.toFixed(1)+','+ry.toFixed(1)+'" fill="#fff"/>';
+  /* Wind vector (red arrow from outer edge toward center) */
+  if(wSpd>0){
+    var wLen=Math.min(wSpd/tas,0.7)*sc;
+    var wFrom=pt(wDir,sc);
+    var wTo=pt(wDir,sc-wLen);
+    svg+='<line x1="'+wFrom.x.toFixed(1)+'" y1="'+wFrom.y.toFixed(1)+'" x2="'+wTo.x.toFixed(1)+'" y2="'+wTo.y.toFixed(1)+'" stroke="#f44336" stroke-width="1.5"/>';
+    svg+='<circle cx="'+wTo.x.toFixed(1)+'" cy="'+wTo.y.toFixed(1)+'" r="2.5" fill="#f44336"/>';
+    svg+='<text x="'+wFrom.x.toFixed(1)+'" y="'+(wFrom.y>cy?wFrom.y+9:wFrom.y-4).toFixed(1)+'" text-anchor="middle" fill="#f44336" font-size="7">W</text>';
+  }
+  /* Drift angle label */
+  var driftDeg=Math.round((wca||0)*10)/10;
+  if(Math.abs(driftDeg)>=0.5){
+    var midA=(routeTrue+hdgTrue)/2;
+    if(Math.abs(routeTrue-hdgTrue)>180) midA+=180;
+    var mp=pt(midA%360,28);
+    var sign2=driftDeg>0?'+':'';
+    svg+='<text x="'+mp.x.toFixed(1)+'" y="'+mp.y.toFixed(1)+'" text-anchor="middle" fill="#ffc107" font-size="9" font-weight="bold">'+sign2+Math.round(driftDeg)+'\u00b0</text>';
+  }
+  /* GS at bottom */
+  svg+='<text x="'+cx+'" y="'+(sz-3)+'" text-anchor="middle" fill="#aaa" font-size="7.5">GS '+gs+' kt</text>';
+  svg+='</svg>';
+  return svg;
+}
+
 function updateLegStrips(){
   var cfg=getConfig();
   for(var i=1;i<waypoints.length;i++){
@@ -1675,7 +1789,8 @@ function updateLegStrips(){
     /* Hide strip if the current WP is empty (no name, no coords) */
     var wpEmpty=(!wp.name && wp.lat===null && wp.lon===null);
     var prevEmpty=(!prev.name && prev.lat===null && prev.lon===null);
-    if(wpEmpty || prevEmpty){
+    var noRouteData=(wp.dist<=0 && wp.route===0);
+    if(wpEmpty || prevEmpty || noRouteData){
       wrapper.style.display='none';
       continue;
     }
@@ -1688,14 +1803,22 @@ function updateLegStrips(){
     var hasLegWind=wp.legWind&&(wp.legWind.dir!==undefined||wp.legWind.spd!==undefined);
     var legWindTxt=hasLegWind?(wp.legWind.dir+'\u00b0/'+wp.legWind.spd+'kt'):(cfg.windDir+'\u00b0/'+cfg.windSpd+'kt');
     var legWindCls=hasLegWind?' leg-wind-custom':'';
-    el.innerHTML='<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
+    var driftDeg=leg.wca?Math.round(leg.wca*10)/10:0;
+    var driftSign=driftDeg>0?'+':'';
+    var awv=((leg.wDir||0)-Math.round(leg.hdgTrue||0));awv=((awv%360)+360)%360;if(awv>180)awv=360-awv;
+    var triSvg=windTriangleSVG(wp.route, leg.hdgTrue, leg.gs, cfg.tas, leg.wDir||0, leg.wSpd||0, leg.wca||0);
+    el.innerHTML='<div class="leg-data-row">'+
+      '<div class="leg-data-col">'+
+      '<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
       '<span class="leg-val">\u2708 Route: '+routeM+'\u00b0M \u2192 HDG: '+hdgM+'\u00b0M</span>'+
-      '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small></span>'+
-      '<span class="leg-val">GS: '+leg.gs+' <small>kt</small></span>'+
-      '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'</span>'+
-      '<span class="leg-val">\u{1F550} ETA: '+etaStr+'</span>'+
+      '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small>  \u2022  GS: '+leg.gs+' <small>kt</small></span>'+
+      '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'  \u2022  \u{1F550} ETA: '+etaStr+'</span>'+
       '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
-      '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>';
+      '<span class="leg-val">\u{1F9ED} D\u00e9rive: '+driftSign+Math.round(driftDeg)+'\u00b0  \u2022  Angle au vent: '+awv+'\u00b0</span>'+
+      '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>'+
+      '</div>'+
+      '<div class="leg-triangle-col">'+triSvg+'</div>'+
+      '</div>';
   }
 }
 
