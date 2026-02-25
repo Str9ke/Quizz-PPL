@@ -181,22 +181,38 @@ function displayHomeProgressBar(responses, dailyHistory) {
   }
 
   // Calculer l'estimation des jours restants
-  // Moyenne sur 7 jours complets (hors aujourd'hui) — même fenêtre que l'objectif et le chart
+  // Basé sur les questions NOUVELLEMENT RÉUSSIES par jour (pas le total des réponses)
   const remaining = ratee + nonvue;
   let daysRemainingHtml = '';
   if (remaining > 0) {
     const today = new Date();
-    let total7 = 0;
+    // Utiliser le compteur de questions maîtrisées (non-vue/ratée → réussie)
+    const masteredDH = (typeof _getDailyMasteredMerged === 'function') ? _getDailyMasteredMerged() : {};
+    let totalMast7 = 0;
     for (let i = 1; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      total7 += mergedDH[key] || 0;
+      totalMast7 += masteredDH[key] || 0;
     }
-    const avg7 = total7 / 7;
-    if (avg7 > 0) {
-      const daysLeft = Math.ceil(remaining / avg7);
-      daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} questions/jour sur 7 jours complets (hors aujourd'hui)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+    const avgMast7 = totalMast7 / 7;
+    if (avgMast7 > 0) {
+      const daysLeft = Math.ceil(remaining / avgMast7);
+      daysRemainingHtml = `<span title="Basé sur ${Math.round(avgMast7)} nouvelles questions réussies/jour (moy. 7j)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+    } else {
+      // Fallback si pas encore de données mastered: utiliser l'ancienne méthode
+      let total7 = 0;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        total7 += mergedDH[key] || 0;
+      }
+      const avg7 = total7 / 7;
+      if (avg7 > 0) {
+        const daysLeft = Math.ceil(remaining / avg7);
+        daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} réponses/jour (moy. 7j — estimation provisoire)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+      }
     }
   }
 
@@ -768,23 +784,38 @@ function afficherStats(groupsData) {
   const gTotal = gRe + gRa + gNv;
   const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
 
-  // Calculer les jours restants (même logique que la page d'accueil)
+  // Calculer les jours restants (basé sur les questions NOUVELLEMENT RÉUSSIES/jour)
   const gRemaining = gRa + gNv;
   let gDaysHtml = '';
   if (gRemaining > 0) {
-    const mergedDH = _getDailyHistoryMerged();
+    const masteredDH = (typeof _getDailyMasteredMerged === 'function') ? _getDailyMasteredMerged() : {};
     const _now = new Date();
-    let t7 = 0;
+    let tMast7 = 0;
     for (let i = 1; i <= 7; i++) {
       const d = new Date(_now);
       d.setDate(d.getDate() - i);
       const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      t7 += mergedDH[k] || 0;
+      tMast7 += masteredDH[k] || 0;
     }
-    const a7 = t7 / 7;
-    if (a7 > 0) {
-      const dL = Math.ceil(gRemaining / a7);
-      gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#667eea;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(a7)}/j)</span></div>`;
+    const aMast7 = tMast7 / 7;
+    if (aMast7 > 0) {
+      const dL = Math.ceil(gRemaining / aMast7);
+      gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#667eea;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(aMast7)} réussies/j)</span></div>`;
+    } else {
+      // Fallback: utiliser l'ancien compteur si pas de données mastered
+      const mergedDH = _getDailyHistoryMerged();
+      let t7 = 0;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(_now);
+        d.setDate(d.getDate() - i);
+        const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        t7 += mergedDH[k] || 0;
+      }
+      const a7 = t7 / 7;
+      if (a7 > 0) {
+        const dL = Math.ceil(gRemaining / a7);
+        gDaysHtml = `<div style="margin-top:6px;font-size:0.85em;color:#667eea;font-weight:600">📆 ~${dL} jour${dL > 1 ? 's' : ''} restant${dL > 1 ? 's' : ''} <span style="font-weight:400;color:var(--text-secondary)">(moy ${Math.round(a7)} rép./j — estimation provisoire)</span></div>`;
+      }
     }
   }
 

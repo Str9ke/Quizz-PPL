@@ -798,6 +798,16 @@ async function validerReponses() {
         }
     });
 
+    // Compter les questions nouvellement maîtrisées
+    // (passées de non-réussie / non-vue → réussie pour la première fois)
+    let _newlyMastered = 0;
+    currentQuestions.forEach(q => {
+        const key = getKeyFor(q);
+        const oldStatus = currentResponses[key]?.status;
+        const newStatus = responsesToSave[key]?.status;
+        if (newStatus === 'réussie' && oldStatus !== 'réussie') _newlyMastered++;
+    });
+
     afficherCorrection();
     const rc = document.getElementById('resultContainer');
     if (rc) {
@@ -829,6 +839,15 @@ async function validerReponses() {
         const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
         dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + currentQuestions.length;
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+        // Compteur de questions nouvellement réussies (pour estimation jours restants)
+        if (_newlyMastered > 0) {
+          const masteredKey = 'dailyMastered_' + localDateKey;
+          const prevMast = parseInt(localStorage.getItem(masteredKey)) || 0;
+          localStorage.setItem(masteredKey, prevMast + _newlyMastered);
+          const dmBackup = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
+          dmBackup[localDateKey] = (dmBackup[localDateKey] || 0) + _newlyMastered;
+          localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmBackup));
+        }
         // Mise à jour visuelle DIRECTE de la barre (streak, objectif, progression)
         updateDailyStatsBar(display);
       } catch (e) { /* localStorage plein — rare */ }

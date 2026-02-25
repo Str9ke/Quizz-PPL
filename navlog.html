@@ -76,6 +76,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
 /* Wind arrow */
 .wind-arrow-container{display:inline-block;vertical-align:middle}
+.wx-wind-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:6px 0;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:12px;cursor:pointer;transition:all .2s}
+.wx-wind-bar:hover{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.5)}
+.wx-wind-arrow svg{width:44px;height:44px}
+.wx-wind-text{font-size:1.05em;font-weight:700;color:#00e5ff;letter-spacing:.5px}
+.wx-wind-apply{margin-left:auto;font-size:.76em;font-weight:600;color:#667eea;background:rgba(102,126,234,.12);padding:4px 12px;border-radius:10px}
 
 /* Runway SVG */
 .runway-svg-wrap{display:inline-block;margin:4px 8px;vertical-align:top}
@@ -150,6 +155,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .leg-strip-content .leg-label{font-weight:800;color:#667eea;white-space:nowrap;font-size:1.1em}
 .leg-strip-content .leg-val{color:var(--text-primary);white-space:nowrap;font-weight:600}
 .leg-strip-content .leg-val small{color:var(--text-secondary);font-weight:400}
+.leg-wind-btn{padding:3px 10px;font-size:.74em;border-radius:10px;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06);color:#00e5ff;font-weight:600;transition:all .2s;white-space:nowrap}
+.leg-wind-btn:hover{background:rgba(0,229,255,.18);border-color:#00e5ff}
+.leg-wind-btn.leg-wind-custom{border-color:#ffa726;color:#ffa726;background:rgba(255,167,38,.1)}
+.leg-wind-btn.leg-wind-custom:hover{background:rgba(255,167,38,.2)}
 
 /* Add WP button */
 .add-wp-btn{display:block;margin:14px auto;padding:10px 28px;font-size:.9em;font-weight:700;border-radius:24px;cursor:pointer;border:2px dashed var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
@@ -300,8 +309,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Flight type selector -->
     <div style="text-align:center;margin-bottom:14px">
       <div class="flight-type-row">
-        <button class="flight-type-btn" onclick="window.setFlightType('local')">&#x1F3D7;&#xFE0F; Vol local</button>
-        <button class="flight-type-btn active" onclick="window.setFlightType('nav')">&#x2708;&#xFE0F; Navigation VFR</button>
+        <button class="flight-type-btn active" onclick="window.setFlightType('local')">&#x1F3D7;&#xFE0F; Vol local</button>
+        <button class="flight-type-btn" onclick="window.setFlightType('nav')">&#x2708;&#xFE0F; Navigation VFR</button>
       </div>
     </div>
 
@@ -395,15 +404,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F510;</span> A&#xe9;roWeb - Cartes A&#xe9;ronautiques</div>
       <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Connectez-vous ci-dessous puis naviguez vers TEMSI / WINTEM / Fronts. Faites une capture d'&#xe9;cran (&#x1F4F8; bouton ci-dessous ou Ctrl+V pour coller).</p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr')">&#x1F3E0; Accueil</button>
-        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; TEMSI</button>
-        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; WINTEM</button>
-        <button class="aeroweb-nav-btn" onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Fronts</button>
+        <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr')">&#x1F3E0; Accueil</button>
+        <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; TEMSI</button>
+        <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; WINTEM</button>
+        <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Fronts</button>
       </div>
-      <button class="aeroweb-toggle-btn" id="aerowebToggle" onclick="window.toggleAeroWebFrame()">&#x25B6; Ouvrir le navigateur A&#xe9;roWeb</button>
-      <div id="aerowebFrameWrap" style="display:none;margin-top:8px">
-        <iframe id="aerowebFrame" src="about:blank" style="width:100%;height:500px;border:1px solid var(--border-color);border-radius:10px;background:#fff" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-      </div>
+      <button class="aeroweb-toggle-btn" id="aerowebToggle" onclick="window.openAeroWebPopup()">&#x1F310; Ouvrir A&#xe9;roWeb (nouvel onglet)</button>
+      <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">Le login fonctionne uniquement dans un onglet s&#xe9;par&#xe9; (cookies tiers bloqu&#xe9;s dans les iframes). Connectez-vous, puis faites une capture et collez-la ici (Ctrl+V).</p>
       <div class="aeroweb-status" id="aerowebStatus"></div>
     </div>
 
@@ -413,7 +420,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-title">&#x1F30D; TEMSI - Temps Significatif</div>
         <div id="mapTemsi" class="map-paste-zone" data-key="temsi" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; Voir TEMSI</button>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; Voir TEMSI</button>
           <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('temsi')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delTemsi" onclick="window.deleteMapImage('temsi')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
@@ -424,7 +431,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-title">&#x1F4A8; WINTEM - Vent &amp; Temp&#xe9;rature</div>
         <div id="mapWintem" class="map-paste-zone" data-key="wintem" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; Voir WINTEM</button>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; Voir WINTEM</button>
           <button onclick="window.uploadMap('wintem')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('wintem')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delWintem" onclick="window.deleteMapImage('wintem')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
@@ -435,7 +442,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-title">&#x1F300; Fronts</div>
         <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</div>
         <div class="map-card-actions">
-          <button onclick="window.setAeroWebPage('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Voir Fronts</button>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Voir Fronts</button>
           <button onclick="window.uploadMap('fronts')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('fronts')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delFronts" onclick="window.deleteMapImage('fronts')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
@@ -518,6 +525,34 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
   </div>
 
+  <!-- Per-leg wind modal -->
+  <div class="map-modal" id="legWindModal" style="display:none">
+    <div class="map-modal-content" style="max-width:360px">
+      <div class="map-modal-header">
+        <span>&#x1F4A8; Vent pour <span id="legWindTitle">LEG</span></span>
+        <button onclick="window.closeLegWind()">&times;</button>
+      </div>
+      <div style="padding:16px;text-align:center">
+        <div id="legWindRose" style="display:flex;justify-content:center;margin-bottom:12px"></div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:.82em;font-weight:600;color:var(--text-secondary)">Direction (&#xB0;)</label>
+          <input type="range" id="legWindDirSlider" min="0" max="360" value="0" style="width:100%" oninput="window.updateLegWindPreview()">
+          <span id="legWindDirVal" style="font-size:1.1em;font-weight:700;color:#00e5ff">000&#xB0;</span>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:.82em;font-weight:600;color:var(--text-secondary)">Vitesse (kt)</label>
+          <input type="range" id="legWindSpdSlider" min="0" max="50" value="0" style="width:100%" oninput="window.updateLegWindPreview()">
+          <span id="legWindSpdVal" style="font-size:1.1em;font-weight:700;color:#00e5ff">0 kt</span>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="aeroweb-btn" onclick="window.confirmLegWind()" style="font-size:.88em;padding:8px 20px">&#x2714; Appliquer</button>
+          <button class="aeroweb-btn" onclick="window.resetLegWind()" style="font-size:.88em;padding:8px 20px;background:linear-gradient(135deg,#f44336,#e91e63)">&#x21BA; Global</button>
+          <button class="aeroweb-btn" onclick="window.closeLegWind()" style="font-size:.88em;padding:8px 20px;background:#555">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (function(){
 'use strict';
@@ -589,7 +624,7 @@ var WP_ICONS = [
 /* ===== STATE ===== */
 var waypoints = [];
 var wxCache = {};
-var flightType = 'nav';
+var flightType = 'local';
 var reserveMode = 'day';
 var calYear, calMonth;
 
@@ -665,21 +700,40 @@ window.switchTab=switchTab;
 
 /* ===== FLIGHT TYPE ===== */
 function setFlightType(type){
+  var oldType=flightType;
   flightType=type;
   var btns=document.querySelectorAll('.flight-type-btn');
   btns[0].classList.toggle('active',type==='local');
   btns[1].classList.toggle('active',type==='nav');
-  if(type==='local'){
-    waypoints=[
-      {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
-      {name:'Zone locale',lat:null,lon:null,icon:'',dist:10,route:0},
-      {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
-    ];
+  /* Preserve existing waypoints if they have data */
+  var hasData=false;
+  for(var w=0;w<waypoints.length;w++){
+    if(waypoints[w].name&&waypoints[w].name!=='EBSG'&&waypoints[w].name!=='Zone locale') hasData=true;
+    if(waypoints[w].lat!==null&&waypoints[w].lon!==null&&waypoints[w].name!=='EBSG') hasData=true;
+  }
+  if(hasData){
+    /* Keep existing waypoints, just adjust for flight type */
+    if(type==='local'){
+      /* Ensure last WP mirrors first WP for local flight */
+      var first=waypoints[0];
+      var last=waypoints[waypoints.length-1];
+      if(last.name!==first.name||last.lat!==first.lat){
+        waypoints.push({name:first.name,lat:first.lat,lon:first.lon,icon:first.icon,dist:0,route:0});
+      }
+    }
   } else {
-    waypoints=[
-      {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
-    ];
-    for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+    if(type==='local'){
+      waypoints=[
+        {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
+        {name:'Zone locale',lat:null,lon:null,icon:'',dist:10,route:0},
+        {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
+      ];
+    } else {
+      waypoints=[
+        {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
+      ];
+      for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+    }
   }
   renderNavlog();
   recalcNavlog();
@@ -759,10 +813,38 @@ function colorizeMetar(raw){
         }
       }
       if(isWx){html+='<span class="metar-wx">'+t+'</span> ';}
+      else if(t==='CAVOK'){html+='<span style="color:#4caf50;font-weight:bold;background:rgba(76,175,80,.12);padding:1px 6px;border-radius:4px">'+t+'</span> ';}
       else{html+=t+' ';}
     }
   }
   return html;
+}
+
+/* Parse METAR timestamp and return age HTML (Belgium = UTC+1 winter / UTC+2 summer) */
+function metarAgeHtml(raw){
+  if(!raw) return '';
+  var m=raw.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+  if(!m) return '';
+  var day=parseInt(m[1]),hour=parseInt(m[2]),min=parseInt(m[3]);
+  var now=new Date();
+  /* Build METAR date in UTC */
+  var metarUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),day,hour,min,0));
+  /* If METAR day is in the future (month wrap), go back one month */
+  if(metarUtc>now) metarUtc.setUTCMonth(metarUtc.getUTCMonth()-1);
+  var diffMs=now.getTime()-metarUtc.getTime();
+  var diffMin=Math.floor(diffMs/60000);
+  /* Belgium local time for display */
+  var beOpts={timeZone:'Europe/Brussels',hour:'2-digit',minute:'2-digit',hour12:false};
+  var beDateOpts={timeZone:'Europe/Brussels',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false};
+  var beStr;
+  try{beStr=metarUtc.toLocaleString('fr-BE',beDateOpts);}catch(e){beStr=m[1]+'/'+m[2]+':'+m[3]+'Z';}
+  var ageStr='';
+  var color='#4caf50';
+  if(diffMin<0){ageStr='dans le futur?';color='#ffa726';}
+  else if(diffMin<60){ageStr='il y a '+diffMin+' min';color='#4caf50';}
+  else if(diffMin<120){ageStr='il y a '+(Math.floor(diffMin/60))+'h'+String(diffMin%60).padStart(2,'0');color='#ffa726';}
+  else{ageStr='il y a '+Math.floor(diffMin/60)+'h'+String(diffMin%60).padStart(2,'0');color='#f44336';}
+  return '<div style="font-size:.78em;color:'+color+';margin:2px 0">\u23F0 '+beStr+' (heure belge) \u2014 '+ageStr+'</div>';
 }
 
 function estimateIcing(raw){
@@ -917,18 +999,18 @@ function decodeTaf(raw){
 }
 
 /* ===== ASI GAUGE (Cessna 150 Badin) ===== */
+/* Real C150: Vs0=42, Vs1=48, Vfe=85, Vno=102, Vne=140, dial 40\u2013160 kt */
 function createASI(tas){
   var cx=100,cy=100;
-  var minKt=40,maxKt=140;
-  /* 0\u00b0 = top (12 o'clock). Sweep clockwise 300\u00b0, gap at bottom. */
-  var startAngle=-150; /* 7 o'clock */
-  var endAngle=150;    /* 5 o'clock */
+  var minKt=40,maxKt=160;
+  /* 0\u00b0 = top (12 o'clock). Gap at top: scale runs CW 1\u21922\u219211 o'clock */
+  var startAngle=30;   /* 1 o'clock  \u2014 40 kt here */
+  var endAngle=330;    /* 11 o'clock \u2014 160 kt here */
   var sweep=endAngle-startAngle; /* 300\u00b0 */
 
   function ktToAngle(kt){
     return startAngle+((kt-minKt)/(maxKt-minKt))*sweep;
   }
-  /* polar: 0\u00b0 = top, clockwise positive */
   function polar(angleDeg,radius){
     var rad=angleDeg*Math.PI/180;
     return {x:cx+radius*Math.sin(rad), y:cy-radius*Math.cos(rad)};
@@ -941,44 +1023,55 @@ function createASI(tas){
   }
 
   var svg='<svg width="200" height="200" viewBox="0 0 200 200">';
-  /* Background */
-  svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#333" stroke-width="2"/>';
+  /* Outer bezel */
+  svg+='<circle cx="100" cy="100" r="97" fill="none" stroke="#555" stroke-width="3"/>';
+  svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#333" stroke-width="1"/>';
 
-  /* Color arcs (outer to inner so they overlay correctly) */
-  /* White arc: Vs0\u2013Vfe 40\u201385 kt (flaps operating range) \u2014 outermost */
-  svg+=arcPath(40,85,78,'#ffffff',5);
-  /* Green arc: Vs1\u2013Vno 48\u2013102 kt (normal operating range) */
-  svg+=arcPath(48,102,72,'#4caf50',5);
-  /* Yellow arc: Vno\u2013Vne 102\u2013140 kt (caution range) */
-  svg+=arcPath(102,140,72,'#ffc107',5);
-  /* Red line at VNE = 140 kt */
-  var pVne1=polar(ktToAngle(140),66),pVne2=polar(ktToAngle(140),82);
-  svg+='<line x1="'+pVne1.x.toFixed(1)+'" y1="'+pVne1.y.toFixed(1)+'" x2="'+pVne2.x.toFixed(1)+'" y2="'+pVne2.y.toFixed(1)+'" stroke="#f44336" stroke-width="3"/>';
+  /* Color arcs \u2014 real C150 V-speeds */
+  /* White arc: Vs0\u2013Vfe = 42\u201385 kt (flaps operating range) */
+  svg+=arcPath(42,85,80,'#ffffff',6);
+  /* Green arc: Vs1\u2013Vno = 48\u2013102 kt (normal operating) */
+  svg+=arcPath(48,102,80,'#4caf50',6);
+  /* Yellow arc: Vno\u2013Vne = 102\u2013140 kt (caution range) */
+  svg+=arcPath(102,140,80,'#ffc107',6);
+  /* Red radial line at VNE = 140 kt */
+  var pVne1=polar(ktToAngle(140),72),pVne2=polar(ktToAngle(140),88);
+  svg+='<line x1="'+pVne1.x.toFixed(1)+'" y1="'+pVne1.y.toFixed(1)+'" x2="'+pVne2.x.toFixed(1)+'" y2="'+pVne2.y.toFixed(1)+'" stroke="#f44336" stroke-width="3.5"/>';
 
-  /* Tick marks */
-  for(var k=40;k<=140;k+=10){
+  /* Tick marks every 10 kt, labels every 20 kt */
+  for(var k=40;k<=160;k+=10){
     var a=ktToAngle(k);
     var major=(k%20===0);
-    var p1t=polar(a,major?58:62);
-    var p2t=polar(a,66);
-    svg+='<line x1="'+p1t.x.toFixed(1)+'" y1="'+p1t.y.toFixed(1)+'" x2="'+p2t.x.toFixed(1)+'" y2="'+p2t.y.toFixed(1)+'" stroke="#ccc" stroke-width="'+(major?2:1)+'"/>';
+    var inner=major?58:64;
+    var outer=72;
+    var p1t=polar(a,inner);
+    var p2t=polar(a,outer);
+    svg+='<line x1="'+p1t.x.toFixed(1)+'" y1="'+p1t.y.toFixed(1)+'" x2="'+p2t.x.toFixed(1)+'" y2="'+p2t.y.toFixed(1)+'" stroke="#ddd" stroke-width="'+(major?2.5:1)+'"/>';
     if(major){
-      var pt=polar(a,50);
-      svg+='<text x="'+pt.x.toFixed(1)+'" y="'+(pt.y+3).toFixed(1)+'" text-anchor="middle" fill="#ccc" font-size="9" font-weight="bold">'+k+'</text>';
+      var pt=polar(a,48);
+      svg+='<text x="'+pt.x.toFixed(1)+'" y="'+(pt.y+4).toFixed(1)+'" text-anchor="middle" fill="#eee" font-size="11" font-weight="bold">'+k+'</text>';
     }
   }
+
+  /* Small 5-kt sub-ticks */
+  for(var k5=45;k5<=155;k5+=10){
+    var a5=ktToAngle(k5);
+    var p5a=polar(a5,67);
+    var p5b=polar(a5,72);
+    svg+='<line x1="'+p5a.x.toFixed(1)+'" y1="'+p5a.y.toFixed(1)+'" x2="'+p5b.x.toFixed(1)+'" y2="'+p5b.y.toFixed(1)+'" stroke="#999" stroke-width="0.7"/>';
+  }
+
+  /* Labels */
+  svg+='<text x="100" y="68" text-anchor="middle" fill="#888" font-size="8" font-weight="bold">AIRSPEED</text>';
+  svg+='<text x="100" y="78" text-anchor="middle" fill="#888" font-size="7">KNOTS</text>';
 
   /* Needle */
   var clampedTas=Math.min(Math.max(tas,minKt),maxKt);
   var needleA=ktToAngle(clampedTas);
-  var pn=polar(needleA,62);
-  var pb=polar(needleA+180,12);
-  svg+='<line x1="'+pb.x.toFixed(1)+'" y1="'+pb.y.toFixed(1)+'" x2="'+pn.x.toFixed(1)+'" y2="'+pn.y.toFixed(1)+'" stroke="#f44336" stroke-width="2.5"/>';
-  svg+='<circle cx="100" cy="100" r="5" fill="#f44336"/>';
-
-  /* Labels */
-  svg+='<text x="100" y="130" text-anchor="middle" fill="#888" font-size="8" font-weight="bold">AIRSPEED</text>';
-  svg+='<text x="100" y="142" text-anchor="middle" fill="#888" font-size="7">KNOTS</text>';
+  var pn=polar(needleA,68);
+  var pb=polar(needleA+180,14);
+  svg+='<line x1="'+pb.x.toFixed(1)+'" y1="'+pb.y.toFixed(1)+'" x2="'+pn.x.toFixed(1)+'" y2="'+pn.y.toFixed(1)+'" stroke="#f44336" stroke-width="2.5" stroke-linecap="round"/>';
+  svg+='<circle cx="100" cy="100" r="6" fill="#222" stroke="#f44336" stroke-width="2"/>';
   svg+='</svg>';
   return svg;
 }
@@ -1264,15 +1357,26 @@ function renderWeatherBlock(icao){
     html+=' <span class="vfr-badge '+cat+'">'+getVFRLabel(cat)+'</span>';
     var icing=estimateIcing(metar);
     html+=' <span class="icing-badge '+icing.level+'">Givrage: '+icing.label+'</span>';
-    var wind=parseWindFromMetar(metar);
-    if(wind){
-      html+=' <span class="wind-arrow-container">'+windArrowSVG(wind.dir,wind.spd)+'</span>';
-      html+=' <button class="wx-apply-btn" onclick="window.applyWind(\''+icao+'\')">Appliquer vent</button>';
-    }
   }
   html+='</div>';
+  /* Wind indicator line — larger, clickable */
   if(metar){
+    var wind=parseWindFromMetar(metar);
+    if(wind){
+      html+='<div class="wx-wind-bar" onclick="window.applyWind(\''+icao+'\')" title="Cliquer pour appliquer ce vent aux calculs">';
+      html+='<span class="wx-wind-arrow">'+windArrowSVG(wind.dir,wind.spd)+'</span>';
+      html+='<span class="wx-wind-text">'+(wind.dir>=0?wind.dir+'\u00b0':'VRB')+' / '+wind.spd+' kt';
+      if(wind.gust) html+=' (G'+wind.gust+')';
+      html+='</span>';
+      html+='<span class="wx-wind-apply">\u21E8 Appliquer</span>';
+      html+='</div>';
+    }
+  }
+  if(metar){
+    /* METAR age */
+    var ageHtml=metarAgeHtml(metar);
     html+='<div style="font-family:monospace;font-size:1em;margin:4px 0;line-height:1.6">'+colorizeMetar(metar)+'</div>';
+    if(ageHtml) html+=ageHtml;
     html+='<div class="wx-decoded">'+decodeMetar(metar)+'</div>';
   } else {
     html+='<div style="color:var(--text-secondary);font-size:.9em">METAR non disponible</div>';
@@ -1322,15 +1426,30 @@ function loadWeather(icao){
   fetchWeather(icao,function(result){
     wxCache[icao]=result;
     renderWxPanels();
-    if(icao==='EBSG') applyWind('EBSG');
+    /* Auto-apply wind from EBCV, fallback EBCI */
+    autoApplyWind();
   });
+}
+
+function autoApplyWind(){
+  if(wxCache['EBCV']&&wxCache['EBCV'].metar){applyWind('EBCV');return;}
+  if(wxCache['EBCI']&&wxCache['EBCI'].metar){applyWind('EBCI');return;}
 }
 
 function renderWxPanels(){
   var el=document.getElementById('wxPanels');
   var html='';
+  /* Render in priority order: EBCV, EBCI, LFQQ first, then others */
+  var priority=['EBCV','EBCI','LFQQ'];
+  var rendered={};
+  for(var p=0;p<priority.length;p++){
+    if(wxCache[priority[p]]){
+      html+=renderWeatherBlock(priority[p]);
+      rendered[priority[p]]=true;
+    }
+  }
   for(var icao in wxCache){
-    html+=renderWeatherBlock(icao);
+    if(!rendered[icao]) html+=renderWeatherBlock(icao);
   }
   el.innerHTML=html;
 }
@@ -1361,6 +1480,75 @@ function applyWind(icao){
   recalcNavlog();
 }
 window.applyWind=applyWind;
+
+/* ===== PER-LEG WIND ===== */
+var legWindIdx=null;
+function openLegWind(idx){
+  legWindIdx=idx;
+  document.getElementById('legWindTitle').textContent='LEG '+idx;
+  document.getElementById('legWindModal').style.display='';
+  var wp=waypoints[idx];
+  var cfg=getConfig();
+  var d=wp.legWind&&wp.legWind.dir!==undefined?wp.legWind.dir:cfg.windDir;
+  var s=wp.legWind&&wp.legWind.spd!==undefined?wp.legWind.spd:cfg.windSpd;
+  document.getElementById('legWindDirSlider').value=d;
+  document.getElementById('legWindSpdSlider').value=s;
+  updateLegWindPreview();
+}
+window.openLegWind=openLegWind;
+
+function updateLegWindPreview(){
+  var d=parseInt(document.getElementById('legWindDirSlider').value)||0;
+  var s=parseInt(document.getElementById('legWindSpdSlider').value)||0;
+  document.getElementById('legWindDirVal').textContent=String(d).padStart(3,'0')+'\u00b0';
+  document.getElementById('legWindSpdVal').textContent=s+' kt';
+  /* Mini wind rose SVG */
+  var sz=120,cx=60,cy=60,r2=52;
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'">';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r2+'" fill="#1a1a2e" stroke="#556" stroke-width="1.5"/>';
+  var dirs=['N','E','S','W'];
+  for(var i=0;i<4;i++){
+    var a=i*90*Math.PI/180;
+    var tx=cx+Math.sin(a)*(r2-10),ty=cy-Math.cos(a)*(r2-10);
+    svg+='<text x="'+tx.toFixed(1)+'" y="'+(ty+3).toFixed(1)+'" text-anchor="middle" fill="#888" font-size="9" font-weight="bold">'+dirs[i]+'</text>';
+  }
+  /* Wind arrow */
+  if(s>0){
+    var ar=d*Math.PI/180;
+    var ax=cx+Math.sin(ar)*(r2-2),ay=cy-Math.cos(ar)*(r2-2);
+    var bx=cx-Math.sin(ar)*(r2-22),by=cy+Math.cos(ar)*(r2-22);
+    svg+='<line x1="'+ax.toFixed(1)+'" y1="'+ay.toFixed(1)+'" x2="'+bx.toFixed(1)+'" y2="'+by.toFixed(1)+'" stroke="#00e5ff" stroke-width="2.5"/>';
+    svg+='<polygon points="'+ax.toFixed(1)+','+ay.toFixed(1)+' '+(ax-6*Math.cos(ar)+6*Math.sin(ar)).toFixed(1)+','+(ay-6*Math.sin(ar)-6*Math.cos(ar)).toFixed(1)+' '+(ax+6*Math.cos(ar)+6*Math.sin(ar)).toFixed(1)+','+(ay+6*Math.sin(ar)-6*Math.cos(ar)).toFixed(1)+'" fill="#00e5ff"/>';
+  }
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="#00e5ff"/>';
+  svg+='</svg>';
+  document.getElementById('legWindRose').innerHTML=svg;
+}
+window.updateLegWindPreview=updateLegWindPreview;
+
+function confirmLegWind(){
+  if(legWindIdx===null) return;
+  var d=parseInt(document.getElementById('legWindDirSlider').value)||0;
+  var s=parseInt(document.getElementById('legWindSpdSlider').value)||0;
+  waypoints[legWindIdx].legWind={dir:d,spd:s};
+  closeLegWind();
+  recalcNavlog();
+}
+window.confirmLegWind=confirmLegWind;
+
+function resetLegWind(){
+  if(legWindIdx===null) return;
+  delete waypoints[legWindIdx].legWind;
+  closeLegWind();
+  recalcNavlog();
+}
+window.resetLegWind=resetLegWind;
+
+function closeLegWind(){
+  document.getElementById('legWindModal').style.display='none';
+  legWindIdx=null;
+}
+window.closeLegWind=closeLegWind;
 
 function initWxButtons(){
   var el=document.getElementById('wxAirportBtns');
@@ -1405,17 +1593,22 @@ function getConfig(){
   };
 }
 
-function calcLeg(dist,routeTrue,cfg){
-  if(dist<=0) return {gs:cfg.tas,ete:0,fuel:0,hdgTrue:routeTrue,hdgMag:routeTrue+cfg.dev};
+function calcLeg(dist,routeTrue,cfg,legWind){
+  var wDir=cfg.windDir,wSpd=cfg.windSpd;
+  if(legWind&&(legWind.dir!==undefined||legWind.spd!==undefined)){
+    wDir=legWind.dir!==undefined?legWind.dir:cfg.windDir;
+    wSpd=legWind.spd!==undefined?legWind.spd:cfg.windSpd;
+  }
+  if(dist<=0) return {gs:cfg.tas,ete:0,fuel:0,hdgTrue:routeTrue,hdgMag:routeTrue+cfg.dev,wDir:wDir,wSpd:wSpd};
   var wca=0;
-  if(cfg.windSpd>0){
-    var awa=deg2rad(cfg.windDir-routeTrue);
-    var sinWCA=cfg.windSpd*Math.sin(awa)/cfg.tas;
+  if(wSpd>0){
+    var awa=deg2rad(wDir-routeTrue);
+    var sinWCA=wSpd*Math.sin(awa)/cfg.tas;
     if(Math.abs(sinWCA)<1) wca=Math.asin(sinWCA);
     else wca=0;
   }
   var hdgTrue=routeTrue+rad2deg(wca);
-  var gs=cfg.tas*Math.cos(wca)+cfg.windSpd*Math.cos(deg2rad(cfg.windDir-routeTrue));
+  var gs=cfg.tas*Math.cos(wca)+wSpd*Math.cos(deg2rad(wDir-routeTrue));
   if(gs<10) gs=10;
   var eteH=dist/gs;
   var fuelL=eteH*cfg.fuel;
@@ -1425,7 +1618,9 @@ function calcLeg(dist,routeTrue,cfg){
     fuel:Math.round(fuelL*10)/10,
     hdgTrue:((hdgTrue%360)+360)%360,
     hdgMag:(((hdgTrue+cfg.dev)%360)+360)%360,
-    wca:rad2deg(wca)
+    wca:rad2deg(wca),
+    wDir:wDir,
+    wSpd:wSpd
   };
 }
 
@@ -1444,7 +1639,7 @@ function recalcNavlog(){
       wp.dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
       wp.route=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
     }
-    var leg=calcLeg(wp.dist,wp.route,cfg);
+    var leg=calcLeg(wp.dist,wp.route,cfg,wp.legWind);
     wp._leg=leg;
     var eteMinutes=leg.ete*60;
     cumulativeMin+=eteMinutes;
@@ -1452,6 +1647,7 @@ function recalcNavlog(){
     totalDist+=wp.dist;
     totalTime+=leg.ete;
     totalFuel+=leg.fuel;
+    wp._cumFuel=Math.round(totalFuel*10)/10;
   }
   var reserveFuel=cfg.fuel*(cfg.reserveMin/60);
   var groundTimeMin=cfg.taxiMin+cfg.landingMin;
@@ -1489,13 +1685,17 @@ function updateLegStrips(){
     var routeM=Math.round(((wp.route+cfg.dev)%360+360)%360);
     var hdgM=Math.round(((leg.hdgMag)%360+360)%360);
     var etaStr=wp._eta?formatETA(wp._eta):'--:--';
+    var hasLegWind=wp.legWind&&(wp.legWind.dir!==undefined||wp.legWind.spd!==undefined);
+    var legWindTxt=hasLegWind?(wp.legWind.dir+'\u00b0/'+wp.legWind.spd+'kt'):(cfg.windDir+'\u00b0/'+cfg.windSpd+'kt');
+    var legWindCls=hasLegWind?' leg-wind-custom':'';
     el.innerHTML='<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
       '<span class="leg-val">\u2708 Route: '+routeM+'\u00b0M \u2192 HDG: '+hdgM+'\u00b0M</span>'+
       '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small></span>'+
       '<span class="leg-val">GS: '+leg.gs+' <small>kt</small></span>'+
       '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'</span>'+
       '<span class="leg-val">\u{1F550} ETA: '+etaStr+'</span>'+
-      '<span class="leg-val">\u26FD Fuel: '+leg.fuel+' <small>L</small></span>';
+      '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
+      '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>';
   }
 }
 
@@ -1754,13 +1954,14 @@ function initDragDrop(board){
 function clearWorkspace(){
   if(!confirm('Vider tout l\u2019espace de travail ? (NavLog + cartes m\u00e9t\u00e9o + images)')) return;
   waypoints=[
-    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
+    {name:'Zone locale',lat:null,lon:null,icon:'',dist:10,route:0},
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
   ];
-  for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
-  flightType='nav';
+  flightType='local';
   var ftBtns=document.querySelectorAll('.flight-type-btn');
-  ftBtns[0].classList.remove('active');
-  ftBtns[1].classList.add('active');
+  ftBtns[0].classList.add('active');
+  ftBtns[1].classList.remove('active');
   wxCache={};
   document.getElementById('wxPanels').innerHTML='';
   /* Clear map captures */
@@ -2235,33 +2436,20 @@ function deleteMapImage(key){
 }
 window.deleteMapImage=deleteMapImage;
 
-/* --- AéroWeb iframe toggle & navigation --- */
-var aeroWebOpen=false;
-function toggleAeroWebFrame(){
-  aeroWebOpen=!aeroWebOpen;
-  var wrap=document.getElementById('aerowebFrameWrap');
-  var btn=document.getElementById('aerowebToggle');
-  if(aeroWebOpen){
-    wrap.style.display='';
-    btn.textContent='\u25BC Fermer le navigateur A\u00e9roWeb';
-    var fr=document.getElementById('aerowebFrame');
-    if(fr.src==='about:blank') fr.src='https://aviation.meteo.fr';
+/* --- AéroWeb popup window (cookies tiers bloqués dans les iframes) --- */
+var _aeroWebWin=null;
+function openAeroWebPopup(url){
+  url=url||'https://aviation.meteo.fr';
+  if(_aeroWebWin && !_aeroWebWin.closed){
+    _aeroWebWin.location.href=url;
+    _aeroWebWin.focus();
   } else {
-    wrap.style.display='none';
-    btn.textContent='\u25B6 Ouvrir le navigateur A\u00e9roWeb';
+    _aeroWebWin=window.open(url,'AeroWeb','width=1100,height=750,menubar=no,toolbar=yes,location=yes,status=no');
   }
+  var st=document.getElementById('aerowebStatus');
+  if(st) st.innerHTML='<span style="color:#4caf50;font-size:.82em">\u2705 Fenêtre AéroWeb ouverte — connectez-vous puis faites Ctrl+V ici pour coller vos captures.</span>';
 }
-window.toggleAeroWebFrame=toggleAeroWebFrame;
-
-function setAeroWebPage(url){
-  var wrap=document.getElementById('aerowebFrameWrap');
-  var fr=document.getElementById('aerowebFrame');
-  if(!aeroWebOpen){toggleAeroWebFrame();}
-  fr.src=url;
-  /* Scroll to iframe */
-  wrap.scrollIntoView({behavior:'smooth',block:'center'});
-}
-window.setAeroWebPage=setAeroWebPage;
+window.openAeroWebPopup=openAeroWebPopup;
 
 /* --- Clipboard paste for map images --- */
 function applyMapImage(key,dataUrl){
@@ -2365,7 +2553,7 @@ function updateRouteMap(){
   if(infoEl) infoEl.textContent=pts.length+' points \u2014 '+pts.map(function(p){return p.name;}).join(' \u2192 ');
   /* Draw route polyline */
   var coords=pts.map(function(p){return [p.lat,p.lon];});
-  var polyline=L.polyline(coords,{color:'#667eea',weight:3,opacity:.8,dashArray:'8,6'}).addTo(routeMap);
+  var polyline=L.polyline(coords,{color:'#ff1493',weight:4,opacity:.9}).addTo(routeMap);
   routeMapLayers.push(polyline);
   /* WP markers with number badges */
   for(var j=0;j<pts.length;j++){
@@ -2432,10 +2620,12 @@ function initWindy(){
 function init(){
   initTheme();
   initWxButtons();
+  /* Default: vol local */
   waypoints=[
-    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
+    {name:'Zone locale',lat:null,lon:null,icon:'',dist:10,route:0},
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
   ];
-  for(var i=0;i<2;i++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
   renderNavlog();
   initRouteMap();
   recalcNavlog();

@@ -155,6 +155,32 @@ function _getDailyHistoryMerged() {
 }
 
 /**
+ * _getDailyMasteredMerged() – Retourne le compteur de questions nouvellement réussies par jour
+ * (non-vue/ratée → réussie). Utilisé pour l'estimation "jours restants" (progression réelle).
+ * Format identique à _getDailyHistoryMerged() : { "YYYY-MM-DD": count }
+ */
+function _getDailyMasteredMerged() {
+  const merged = {};
+  // Source 1: backup persistant
+  try {
+    const backup = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
+    for (const [k, v] of Object.entries(backup)) {
+      merged[k] = Math.max(merged[k] || 0, v);
+    }
+  } catch (e) { /* ignore */ }
+  // Source 2: clés individuelles dailyMastered_* (60 derniers jours)
+  const today = new Date();
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const localKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const lsVal = parseInt(localStorage.getItem('dailyMastered_' + localKey)) || 0;
+    if (lsVal > 0) merged[localKey] = Math.max(merged[localKey] || 0, lsVal);
+  }
+  return merged;
+}
+
+/**
  * _computeStreak() – Calcule la série de jours consécutifs d'activité
  * Si aujourd'hui a de l'activité, inclut aujourd'hui. Sinon, part d'hier.
  */
