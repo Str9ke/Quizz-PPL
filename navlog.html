@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#121218">
   <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260224d" />
+  <link rel="stylesheet" href="style.css?v=20260224e" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
 /* ===== NavLog page styles ===== */
 .navlog-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#1a1a3e 0%,#2d1b4e 50%,#1a1a3e 100%);position:relative;overflow:hidden}
@@ -350,6 +351,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
+    <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
   </div>
 
@@ -600,16 +602,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- ===== SUB: Daily Warnings ===== -->
     <div id="msub-dailywarn" class="meteo-sub-content">
       <div class="map-card">
-        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Skeyes</div>
-        <div class="iframe-card">
-          <iframe id="dailyWarnFrame1" src="about:blank" data-src="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" style="height:600px" loading="lazy"></iframe>
+        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
+        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
+          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
+          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
+          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
         </div>
-        <div class="iframe-blocked-msg">Si la page ne s&#x2019;affiche pas, utilisez les liens ci-dessous.</div>
+        <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
         <div class="map-card-actions">
           <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
           <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
           <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
-          <button onclick="var f=document.getElementById('dailyWarnFrame1');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+          <button onclick="window.clearDailyWarnImages()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
         </div>
       </div>
       <div class="map-card" style="margin-top:14px">
@@ -621,16 +626,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-actions">
           <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Ouvrir en grand</a>
           <button onclick="var f=document.getElementById('dailyWarnFrame2');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-        </div>
-      </div>
-      <!-- Daily Warnings file upload -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F4C4; Daily Warnings &#x2014; Import fichier</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">T&#xe9;l&#xe9;chargez le fichier Daily Warnings depuis <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">Skeyes Warnings Chart</a> puis importez-le ici.</p>
-        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-          <button onclick="document.getElementById('fileDailyWarn').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Importer fichier(s) Daily Warnings</button>
-          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
-          <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
         </div>
       </div>
     </div>
@@ -767,6 +762,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <option value="EBBR">EBBR &mdash; Bruxelles</option>
           <option value="LFQQ">LFQQ &mdash; Lille</option>
           <option value="EBLG">EBLG &mdash; Li&#xe8;ge</option>
+          <option value="EBNM">EBNM &mdash; Namur</option>
+          <option value="LFQJ">LFQJ &mdash; Maubeuge</option>
+          <option value="EBCF">EBCF &mdash; Cerfontaine</option>
+          <option value="EBSP">EBSP &mdash; Spa</option>
+          <option value="EBFS">EBFS &mdash; Florennes</option>
+          <option value="EBTY">EBTY &mdash; Tournai</option>
+          <option value="EBBE">EBBE &mdash; Beauvechain</option>
+          <option value="EBGB">EBGB &mdash; Grimbergen</option>
+          <option value="EBMO">EBMO &mdash; Moorsele</option>
+          <option value="LFAV">LFAV &mdash; Valenciennes</option>
+          <option value="LFQO">LFQO &mdash; Lens</option>
+          <option value="EBAW">EBAW &mdash; Antwerpen</option>
+          <option value="EBOS">EBOS &mdash; Ostende</option>
+          <option value="EBKT">EBKT &mdash; Courtrai</option>
         </select>
         <button onclick="window.perfFromMetar()" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.82em">&#x1F327;&#xFE0F; Remplir depuis METAR</button>
       </div>
@@ -784,7 +793,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
   </div>
 
-  <!-- ==================== TAB 5: DOSSIERS PREVOL ==================== -->
+  <!-- ==================== TAB 5: CHECKLIST BRIEFING ==================== -->
+  <div id="tab-checklist" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x2705;</span> Checklist Briefing Pr&#xe9;vol</div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 12px">Cochez chaque &#xe9;l&#xe9;ment au fur et &#xe0; mesure de votre pr&#xe9;paration. La progression est sauvegard&#xe9;e avec le dossier.</p>
+      <div id="checklistPanel" style="display:grid;gap:2px"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="window.checklistReset()" style="padding:6px 16px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.82em">&#x1F504; Tout d&#xe9;cocher</button>
+        <span id="checklistProgress" style="font-size:.88em;font-weight:700;color:#667eea;display:flex;align-items:center;gap:6px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 6: DOSSIERS PREVOL ==================== -->
   <div id="tab-dossiers" class="navlog-tab-content">
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4BE;</span> Sauvegarder le dossier</div>
@@ -869,18 +891,32 @@ var AIRPORT_COORDS = {
   'EBCF':{lat:50.1610,lon:4.3960},
   'EBSP':{lat:50.4825,lon:5.9103},
   'EBFS':{lat:50.2433,lon:4.6458},
-  'EBLG':{lat:50.6374,lon:5.4432}
+  'EBLG':{lat:50.6374,lon:5.4432},
+  'EBTY':{lat:50.565,lon:3.342},
+  'EBBE':{lat:50.759,lon:4.769},
+  'EBGB':{lat:50.949,lon:4.394},
+  'EBMO':{lat:50.849,lon:3.139},
+  'LFAV':{lat:50.326,lon:3.462},
+  'LFQO':{lat:50.489,lon:2.796},
+  'EBAW':{lat:51.189,lon:4.460},
+  'EBOS':{lat:51.199,lon:2.862},
+  'EBKT':{lat:50.817,lon:3.205}
 };
 
 var AIRPORT_NAMES = {
   'EBSG':'Saint-Ghislain','EBCV':'Chi\u00e8vres','EBCI':'Charleroi',
   'EBNM':'Namur','EBBR':'Bruxelles','LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin',
-  'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge'
+  'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge',
+  'EBTY':'Tournai','EBBE':'Beauvechain','EBGB':'Grimbergen',
+  'EBMO':'Moorsele/Wevelgem','LFAV':'Valenciennes','LFQO':'Lens-B\u00e9nifontaine',
+  'EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem'
 };
 
 var AIRPORT_ELEV = {
   'EBSG':75,'EBCV':194,'EBCI':614,'EBNM':594,'EBBR':184,
-  'LFQJ':447,'LFQQ':157,'EBCF':955,'EBSP':1542,'EBFS':928,'EBLG':659
+  'LFQJ':447,'LFQQ':157,'EBCF':955,'EBSP':1542,'EBFS':928,'EBLG':659,
+  'EBTY':171,'EBBE':370,'EBGB':66,'EBMO':64,'LFAV':177,'LFQO':167,
+  'EBAW':39,'EBOS':13,'EBKT':64
 };
 
 var RUNWAY_DB = {
@@ -897,7 +933,7 @@ var RUNWAY_DB = {
   'EBLG':[{rwy:'04R/22L',hdg:43,len:3690,sfc:'asphalt'},{rwy:'04L/22R',hdg:43,len:2340,sfc:'asphalt'}]
 };
 
-var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG'];
+var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG','EBTY','EBBE','EBGB','EBMO','LFAV','LFQO','EBAW','EBOS','EBKT'];
 
 /* Nearby airport fallback map for METAR */
 var METAR_FALLBACK = {
@@ -994,12 +1030,13 @@ function switchTab(id){
     t.classList.remove('active');
     contents[i].classList.remove('active');
   });
-  var map={nav:0,meteo:1,masse:2,perf:3,dossiers:4};
+  var map={nav:0,meteo:1,masse:2,perf:3,checklist:4,dossiers:5};
   var idx=map[id]||0;
   tabs[idx].classList.add('active');
   contents[idx].classList.add('active');
   var calBtn=document.getElementById('calToggleBtn');
   if(id==='dossiers'){calBtn.classList.add('visible');}else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
+  if(id==='checklist') initChecklist();
   /* Lazy-load active meteo sub-tab on first switch */
   if(id==='meteo'){
     var activeSub=document.querySelector('.meteo-sub-content.active');
@@ -1012,6 +1049,79 @@ function switchTab(id){
   if(id==='perf') window.perfCalc();
 }
 window.switchTab=switchTab;
+
+/* ===== CHECKLIST BRIEFING ===== */
+var CHECKLIST_ITEMS = [
+  {cat:'Documents',items:[
+    'Licence de pilote',
+    'Carte d\'identit\u00e9 / Passeport',
+    'Certificat m\u00e9dical',
+    'Carte VACC (vaccination)',
+    'Navlog papier (fiche de navigation)',
+    'Dossier m\u00e9t\u00e9o (imprim\u00e9)',
+    'NOTAMs (imprim\u00e9s)',
+    'Devis masse & centrage',
+    'Devis carburant'
+  ]},
+  {cat:'\u00c9quipement pilote',items:[
+    'Casque + piles neuves',
+    'Kneeboard',
+    'Lunettes de soleil',
+    'Carte de navigation (OACI 1:500 000)'
+  ]},
+  {cat:'\u00c9lectronique',items:[
+    'Tablette charg\u00e9e (+ c\u00e2ble)',
+    'T\u00e9l\u00e9phone charg\u00e9'
+  ]},
+  {cat:'Ravitaillement',items:[
+    'Bouteille d\'eau',
+    'Caf\u00e9 / collation'
+  ]}
+];
+var _checklistState={};
+var _checklistInited=false;
+function initChecklist(){
+  if(_checklistInited) return;
+  _checklistInited=true;
+  renderChecklist();
+}
+function renderChecklist(){
+  var panel=document.getElementById('checklistPanel');
+  if(!panel) return;
+  var html='';
+  var total=0,done=0;
+  CHECKLIST_ITEMS.forEach(function(cat){
+    html+='<div style="margin-top:10px;margin-bottom:4px;font-weight:700;font-size:.88em;color:#667eea;text-transform:uppercase;letter-spacing:.5px">\ud83d\udccc '+cat.cat+'</div>';
+    cat.items.forEach(function(item){
+      total++;
+      var key=cat.cat+'::'+item;
+      var checked=_checklistState[key]?true:false;
+      if(checked) done++;
+      html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .2s;'+(checked?'background:rgba(76,175,80,.1);':'background:var(--bg-question);')+'margin-bottom:2px" onclick="window.toggleCheckItem(this,\''+key.replace(/'/g,"\\'")+'\')">';
+      html+='<input type="checkbox" '+(checked?'checked':'')+' style="width:18px;height:18px;accent-color:#4caf50;cursor:pointer" data-ck="'+key.replace(/"/g,'&quot;')+'">';
+      html+='<span style="font-size:.88em;'+(checked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-primary)')+'">'+item+'</span>';
+      html+='</label>';
+    });
+  });
+  panel.innerHTML=html;
+  var prog=document.getElementById('checklistProgress');
+  if(prog){
+    var pct=total?Math.round(done*100/total):0;
+    prog.innerHTML=done+'/'+total+' ('+pct+'%) '+(pct===100?'\u2705 Pr\u00eat !':'\u23f3 En cours...');
+  }
+}
+function toggleCheckItem(label,key){
+  _checklistState[key]=!_checklistState[key];
+  renderChecklist();
+}
+window.toggleCheckItem=toggleCheckItem;
+function checklistReset(){
+  _checklistState={};
+  renderChecklist();
+}
+window.checklistReset=checklistReset;
+function getChecklistState(){ return JSON.parse(JSON.stringify(_checklistState)); }
+function setChecklistState(s){ _checklistState=s||{}; renderChecklist(); }
 
 /* ===== METEO SUB-TABS ===== */
 var _meteoSubLoaded={};
@@ -1081,45 +1191,64 @@ function handleNotamSummary(input){
 window.handleNotamSummary=handleNotamSummary;
 
 /* ===== DAILY WARNINGS UPLOAD ===== */
+var dailyWarnImages=JSON.parse(sessionStorage.getItem('navlog_daily_warn_images')||'[]');
+function saveDailyWarnImages(){
+  sessionStorage.setItem('navlog_daily_warn_images',JSON.stringify(dailyWarnImages));
+}
+function getDailyWarnImages(){ return JSON.parse(JSON.stringify(dailyWarnImages)); }
+function setDailyWarnImages(arr){
+  dailyWarnImages=arr||[];
+  saveDailyWarnImages();
+  renderDailyWarnImages();
+}
+function renderDailyWarnImages(){
+  var grid=document.getElementById('dailyWarnPreview');
+  if(!grid) return;
+  grid.innerHTML='';
+  dailyWarnImages.forEach(function(item,idx){
+    if(item.type==='image'){
+      var wrap=document.createElement('div');
+      wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
+      var img=document.createElement('img');
+      img.src=item.data;
+      img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
+      img.title='Cliquer pour agrandir';
+      img.onclick=function(){window.open(img.src,'_blank')};
+      var del=document.createElement('button');
+      del.textContent='\u{1F5D1}\uFE0F';
+      del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+      del.onclick=function(){dailyWarnImages.splice(idx,1);saveDailyWarnImages();renderDailyWarnImages()};
+      wrap.appendChild(img);
+      wrap.appendChild(del);
+      grid.appendChild(wrap);
+    } else {
+      var wrap2=document.createElement('div');
+      wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
+      var link=document.createElement('a');
+      link.href=item.data;
+      link.download=item.name||'fichier';
+      link.textContent='\u{1F4C4} '+(item.name||'fichier');
+      link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
+      var del2=document.createElement('button');
+      del2.textContent='\u{1F5D1}\uFE0F';
+      del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+      del2.onclick=function(){dailyWarnImages.splice(idx,1);saveDailyWarnImages();renderDailyWarnImages()};
+      wrap2.appendChild(link);
+      wrap2.appendChild(del2);
+      grid.appendChild(wrap2);
+    }
+  });
+}
 function handleDailyWarnUpload(input){
   var files=input.files;
   if(!files||!files.length) return;
-  var grid=document.getElementById('dailyWarnPreview');
   for(var i=0;i<files.length;i++){
     (function(file){
       var reader=new FileReader();
       reader.onload=function(e){
-        if(file.type.indexOf('image')>=0){
-          var img=document.createElement('img');
-          img.src=e.target.result;
-          img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
-          img.title='Cliquer pour agrandir';
-          img.onclick=function(){window.open(img.src,'_blank')};
-          var wrap=document.createElement('div');
-          wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
-          var del=document.createElement('button');
-          del.textContent='\u{1F5D1}\uFE0F';
-          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
-          del.onclick=function(){wrap.remove()};
-          wrap.appendChild(img);
-          wrap.appendChild(del);
-          grid.appendChild(wrap);
-        } else {
-          var link=document.createElement('a');
-          link.href=e.target.result;
-          link.download=file.name;
-          link.textContent='\u{1F4C4} '+file.name;
-          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:6px';
-          var wrap2=document.createElement('div');
-          wrap2.style.cssText='position:relative;width:100%';
-          var del2=document.createElement('button');
-          del2.textContent='\u{1F5D1}\uFE0F';
-          del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
-          del2.onclick=function(){wrap2.remove()};
-          wrap2.appendChild(link);
-          wrap2.appendChild(del2);
-          grid.appendChild(wrap2);
-        }
+        dailyWarnImages.push({type:file.type.indexOf('image')>=0?'image':'file',data:e.target.result,name:file.name});
+        saveDailyWarnImages();
+        renderDailyWarnImages();
       };
       reader.readAsDataURL(file);
     })(files[i]);
@@ -1127,6 +1256,53 @@ function handleDailyWarnUpload(input){
   input.value='';
 }
 window.handleDailyWarnUpload=handleDailyWarnUpload;
+function handleDailyWarnDrop(ev){
+  var dt=ev.dataTransfer;
+  if(dt.files&&dt.files.length){
+    for(var i=0;i<dt.files.length;i++){
+      (function(file){
+        var reader=new FileReader();
+        reader.onload=function(e){
+          dailyWarnImages.push({type:file.type.indexOf('image')>=0?'image':'file',data:e.target.result,name:file.name});
+          saveDailyWarnImages();
+          renderDailyWarnImages();
+        };
+        reader.readAsDataURL(file);
+      })(dt.files[i]);
+    }
+  }
+}
+window.handleDailyWarnDrop=handleDailyWarnDrop;
+function clearDailyWarnImages(){
+  if(!confirm('Effacer toutes les images Daily Warnings ?')) return;
+  dailyWarnImages=[];
+  saveDailyWarnImages();
+  renderDailyWarnImages();
+}
+window.clearDailyWarnImages=clearDailyWarnImages;
+/* Ctrl+V paste support for daily warnings */
+document.addEventListener('paste',function(ev){
+  var activeTab=document.querySelector('.meteo-sub-content[id="msub-dailywarn"]');
+  if(!activeTab||activeTab.style.display==='none') return;
+  var items=ev.clipboardData&&ev.clipboardData.items;
+  if(!items) return;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')>=0){
+      var blob=items[i].getAsFile();
+      var reader=new FileReader();
+      reader.onload=function(e){
+        dailyWarnImages.push({type:'image',data:e.target.result,name:'paste_'+Date.now()+'.png'});
+        saveDailyWarnImages();
+        renderDailyWarnImages();
+      };
+      reader.readAsDataURL(blob);
+      ev.preventDefault();
+      break;
+    }
+  }
+});
+/* Restore daily warn images on load */
+if(dailyWarnImages.length) setTimeout(renderDailyWarnImages,500);
 
 /* ===== FLIGHT TYPE ===== */
 function setFlightType(type){
@@ -2728,28 +2904,57 @@ function setDossiers(d){
 function saveDossier(){
   var name=document.getElementById('dossierName').value.trim();
   if(!name){alert('Entrez un nom pour le dossier');return;}
-  var dossiers=getDossiers();
-  var cfg=getConfig();
-  var dossier={
-    id:Date.now(),
-    name:name,
-    date:new Date().toISOString(),
-    config:cfg,
-    waypoints:JSON.parse(JSON.stringify(waypoints)),
-    wxCache:JSON.parse(JSON.stringify(wxCache)),
-    reserveMode:reserveMode,
-    flightType:flightType,
-    windyUrls:getWindyUrls(),
-    mapImages:getMapImages(),
-    extraImages:getExtraImages(),
-    massBalance:typeof getMBData==='function'?getMBData():null
-  };
-  dossiers.push(dossier);
-  setDossiers(dossiers);
-  renderDossierList();
-  alert('Dossier sauvegard\u00e9 !');
+  /* Capture dynamic screenshots before building dossier */
+  captureScreenshots(function(screenshots){
+    var dossiers=getDossiers();
+    var cfg=getConfig();
+    var dossier={
+      id:Date.now(),
+      name:name,
+      date:new Date().toISOString(),
+      config:cfg,
+      waypoints:JSON.parse(JSON.stringify(waypoints)),
+      wxCache:JSON.parse(JSON.stringify(wxCache)),
+      reserveMode:reserveMode,
+      flightType:flightType,
+      windyUrls:getWindyUrls(),
+      mapImages:getMapImages(),
+      extraImages:getExtraImages(),
+      massBalance:typeof getMBData==='function'?getMBData():null,
+      checklist:getChecklistState(),
+      dailyWarnImages:getDailyWarnImages(),
+      screenshots:screenshots
+    };
+    dossiers.push(dossier);
+    setDossiers(dossiers);
+    renderDossierList();
+    alert('Dossier sauvegard\u00e9 !');
+  });
 }
 window.saveDossier=saveDossier;
+
+/* ===== SCREENSHOT CAPTURE ===== */
+function captureScreenshots(cb){
+  var shots={};
+  var pending=0;
+  function done(){ pending--; if(pending<=0) cb(shots); }
+  /* MB chart canvas */
+  var mbCanvas=document.getElementById('mbChart');
+  if(mbCanvas){
+    try{ shots.mbChart=mbCanvas.toDataURL('image/png'); }catch(e){}
+  }
+  /* Route map (Leaflet) via html2canvas */
+  var routeEl=document.getElementById('routeMapContainer');
+  if(routeEl && typeof html2canvas==='function'){
+    pending++;
+    html2canvas(routeEl,{useCORS:true,allowTaint:true,scale:1,logging:false}).then(function(canvas){
+      try{ shots.routeMap=canvas.toDataURL('image/png'); }catch(e){}
+      done();
+    }).catch(function(){ done(); });
+  }
+  /* If nothing async, call back immediately */
+  if(pending<=0) cb(shots);
+}
 
 function getWindyUrls(){
   var layers=['wind','clouds','rain','temp','pressure','rh','visibility','gust'];
@@ -2819,6 +3024,14 @@ function loadDossier(id){
     mbInit();
     setMBData(d.massBalance);
   }
+  /* Restore checklist */
+  if(d.checklist){
+    setChecklistState(d.checklist);
+  }
+  /* Restore daily warnings images */
+  if(d.dailyWarnImages){
+    setDailyWarnImages(d.dailyWarnImages);
+  }
   renderNavlog();
   recalcNavlog();
   renderWxPanels();
@@ -2865,13 +3078,20 @@ function renderDossierList(){
     }
     var mapCount=Object.keys(d.mapImages||{}).length;
     var extraCount=(d.extraImages||[]).length;
+    var dwCount=(d.dailyWarnImages||[]).length;
+    var ssCount=Object.keys(d.screenshots||{}).length;
+    var ckDone=0,ckTotal=0;
+    if(d.checklist){ for(var k in d.checklist){ckTotal++;if(d.checklist[k])ckDone++;} }
     var imgInfo='';
-    if(mapCount||extraCount){
+    if(mapCount||extraCount||dwCount||ssCount){
       var parts=[];
       if(mapCount) parts.push(mapCount+' carte(s)');
       if(extraCount) parts.push(extraCount+' image(s)');
+      if(dwCount) parts.push(dwCount+' warning(s)');
+      if(ssCount) parts.push(ssCount+' capture(s)');
       imgInfo=' | '+parts.join(' + ');
     }
+    if(ckTotal) imgInfo+=' | Checklist '+ckDone+'/'+ckTotal;
     html+='<div class="dossier-card">';
     html+='<div class="d-name">'+escHTML(d.name)+'</div>';
     html+='<div class="d-date">'+ds+'</div>';
@@ -2879,8 +3099,10 @@ function renderDossierList(){
     html+='<div class="dossier-card-btns">';
     html+='<button onclick="window.loadDossier('+d.id+')">Charger</button>';
     html+='<button onclick="window.renameDossier('+d.id+')">Renommer</button>';
+    if(ssCount) html+='<button onclick="window.previewScreenshots('+d.id+')">&#x1F4F8; Captures</button>';
     html+='<button class="d-del" onclick="window.deleteDossier('+d.id+')">Supprimer</button>';
     html+='</div>';
+    html+='<div id="ss-preview-'+d.id+'" style="display:none;padding:8px;gap:8px;flex-wrap:wrap"></div>';
     html+='</div>';
   }
   el.innerHTML=html;
@@ -2958,6 +3180,27 @@ function filterByDate(y,m,d){
 }
 window.filterByDate=filterByDate;
 window.renderDossierList=renderDossierList;
+
+function previewScreenshots(id){
+  var el=document.getElementById('ss-preview-'+id);
+  if(!el) return;
+  if(el.style.display!=='none'){el.style.display='none';return;}
+  var dossiers=getDossiers();
+  var d=null;
+  for(var i=0;i<dossiers.length;i++){if(dossiers[i].id===id){d=dossiers[i];break;}}
+  if(!d||!d.screenshots) return;
+  var labels={routeMap:'\u{1F5FA}\uFE0F Carte route',mbChart:'\u2696\uFE0F Masse & Centrage'};
+  var html='';
+  for(var k in d.screenshots){
+    html+='<div style="margin-bottom:8px;width:100%">';
+    html+='<div style="font-size:.75em;color:var(--text-secondary);margin-bottom:4px">'+(labels[k]||k)+'</div>';
+    html+='<img src="'+d.screenshots[k]+'" style="width:100%;max-height:400px;object-fit:contain;border-radius:8px;border:1px solid var(--border-color);cursor:pointer" onclick="window.open(this.src,\'_blank\')">';
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  el.style.display='flex';
+}
+window.previewScreenshots=previewScreenshots;
 
 /* ===== AEROWEB ===== */
 function connectAeroweb(){
@@ -3697,22 +3940,26 @@ function interpClimb(data,alt){
 }
 
 function perfFromMetar(){
-  // Use the selected airport from the dropdown
   var selEl=document.getElementById('perfMetarAirport');
   var depIcao=selEl?selEl.value:'EBCV';
   if(!wxCache[depIcao]||!wxCache[depIcao].metar){
-    // Try to load it first
     loadWeather(depIcao);
     setTimeout(function(){perfFromMetar();},2000);
     return;
   }
   var wx=wxCache[depIcao];
   if(wx.metar){
-    var m=decodeMetar(wx.metar);
-    if(m.tempC!==undefined) document.getElementById('perfTemp').value=m.tempC;
-    if(m.qnh) document.getElementById('perfQNH').value=m.qnh;
-    if(m.windSpeed!==undefined) document.getElementById('perfWind').value=m.windSpeed;
-    // Set elevation from airport data if available
+    var raw=wx.metar;
+    /* Parse temperature */
+    var tm=raw.match(/(M?\d{2})\/(M?\d{2})/);
+    if(tm){ document.getElementById('perfTemp').value=parseInt(tm[1].replace('M','-')); }
+    /* Parse QNH */
+    var qm=raw.match(/Q(\d{4})/);
+    if(qm){ document.getElementById('perfQNH').value=parseInt(qm[1]); }
+    /* Parse wind speed */
+    var wm=parseWindFromMetar(raw);
+    if(wm){ document.getElementById('perfWind').value=wm.spd; }
+    /* Elevation */
     if(AIRPORT_ELEV[depIcao]) document.getElementById('perfElev').value=AIRPORT_ELEV[depIcao];
   }
   perfCalc();
