@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260226a" />
+  <link rel="stylesheet" href="style.css?v=20260226b" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -196,6 +196,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .leg-data-row{display:flex;align-items:flex-start;gap:8px}
 .leg-data-col{flex:1;display:flex;flex-direction:column;gap:2px}
 .leg-triangle-col{flex-shrink:0;width:120px}
+.leg-wind-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.leg-mini-compass{display:inline-flex;vertical-align:middle}
 .leg-wind-btn{padding:3px 10px;font-size:.74em;border-radius:10px;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06);color:#00e5ff;font-weight:600;transition:all .2s;white-space:nowrap}
 .leg-wind-btn:hover{background:rgba(0,229,255,.18);border-color:#00e5ff}
 .leg-wind-btn.leg-wind-custom{border-color:#ffa726;color:#ffa726;background:rgba(255,167,38,.1)}
@@ -2388,13 +2390,44 @@ function applyLegWindFromMetar(){
 window.applyLegWindFromMetar=applyLegWindFromMetar;
 
 function tryFetchMetarForWind(url,icao,cb){
-  fetch(url).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
-    t=t.trim();if(t&&t.length>10&&t.charAt(0)!=='{'){cb(t);return;}throw new Error('empty');
+  function isValid(t){return t&&t.trim().length>10&&t.trim().charAt(0)!=='{';}
+  function trySource(fetchUrl){
+    return fetch(fetchUrl).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(t){
+      if(isValid(t)) return t.trim();
+      throw new Error('empty');
+    });
+  }
+  function tryProxied(fetchUrl){
+    return fetchViaProxy(fetchUrl).then(function(t){
+      if(isValid(t)) return t.trim();
+      throw new Error('empty');
+    });
+  }
+  /* Try direct, then proxy, then VATSIM, then NWS, then extended hours, then fallback airports */
+  trySource(url).then(cb).catch(function(){
+    return tryProxied(url).then(cb);
   }).catch(function(){
-    fetchViaProxy(url).then(function(t){
-      t=t.trim();if(t&&t.length>10){cb(t);return;}
-      cb(null);
-    }).catch(function(){cb(null);});
+    var vUrl='https://metar.vatsim.net/metar.php?id='+icao;
+    return tryProxied(vUrl).then(cb);
+  }).catch(function(){
+    var nUrl='https://tgftp.nws.noaa.gov/data/observations/metar/stations/'+icao+'.TXT';
+    return tryProxied(nUrl).then(cb);
+  }).catch(function(){
+    /* Try with extended hours */
+    var extUrl='https://aviationweather.gov/api/data/metar?ids='+icao+'&format=raw&hours=24';
+    return trySource(extUrl).then(cb);
+  }).catch(function(){
+    /* Try fallback airports */
+    var fbs=METAR_FALLBACK[icao]||[];
+    if(!fbs.length){cb(null);return;}
+    var chain=Promise.reject();
+    fbs.forEach(function(fb){
+      chain=chain.catch(function(){
+        var fbUrl='https://aviationweather.gov/api/data/metar?ids='+fb+'&format=raw&hours=12';
+        return trySource(fbUrl);
+      });
+    });
+    chain.then(cb).catch(function(){cb(null);});
   });
 }
 
@@ -2601,7 +2634,7 @@ function miniWindCompass(dir,spd,sz){
   if(!spd||spd<=0) return '';
   sz=sz||70;
   var cx=sz/2,cy=sz/2,outerR=sz/2-4;
-  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:block;margin:4px auto">';
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:inline-block;vertical-align:middle">';
   svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+outerR+'" fill="rgba(20,20,40,.7)" stroke="#445" stroke-width="1"/>';
   /* Ticks every 30deg */
   for(var a=0;a<360;a+=30){
@@ -2660,6 +2693,7 @@ function updateLegStrips(){
     var driftSign=driftDeg>0?'+':'';
     var awv=((leg.wDir||0)-Math.round(leg.hdgTrue||0));awv=((awv%360)+360)%360;if(awv>180)awv=360-awv;
     var triSvg=windTriangleSVG(wp.route, leg.hdgTrue, leg.gs, cfg.tas, leg.wDir||0, leg.wSpd||0, leg.wca||0);
+    var miniWC=miniWindCompass(leg.wDir||0,leg.wSpd||0,50);
     el.innerHTML='<div class="leg-data-row">'+
       '<div class="leg-data-col">'+
       '<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
@@ -2667,10 +2701,13 @@ function updateLegStrips(){
       '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small>  \u2022  GS: '+leg.gs+' <small>kt</small></span>'+
       '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'  \u2022  \u{1F550} ETA: '+etaStr+'</span>'+
       '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
-      '<span class="leg-val">\u{1F9ED} D\u00e9rive: '+driftSign+Math.round(driftDeg)+'\u00b0  \u2022  Angle au vent: '+awv+'\u00b0</span>'+
+      '<div class="leg-wind-row">'+
+      '<span class="leg-val">\u{1F9ED} '+driftSign+Math.round(driftDeg)+'\u00b0  \u2022  \u2220'+awv+'\u00b0</span>'+
       '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>'+
+      (miniWC?'<span class="leg-mini-compass">'+miniWC+'</span>':'')+
       '</div>'+
-      '<div class="leg-triangle-col">'+triSvg+miniWindCompass(leg.wDir||0,leg.wSpd||0,70)+'</div>'+
+      '</div>'+
+      '<div class="leg-triangle-col">'+triSvg+'</div>'+
       '</div>';
   }
 }
