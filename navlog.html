@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260224f" />
+  <link rel="stylesheet" href="style.css?v=20260226a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -490,20 +490,36 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div style="padding:10px 0 6px;font-size:.82em;color:var(--text-secondary);text-align:center">
         &#x1F4A1; Ouvrez SOFIA Briefing &#x2192; <b>Autres M&#xe9;t&#xe9;o</b> &#x2192; TEMSI ou WINTEM &#x2192; cliquez sur la carte la plus r&#xe9;cente &#x2192; faites une capture (clic droit &#x2192; Copier l&#x2019;image) et collez-la ici (Ctrl+V)
       </div>
-      <!-- TEMSI -->
+      <!-- TEMSI France -->
       <div class="map-card">
-        <div class="map-card-title">&#x1F30D; TEMSI &#x2014; Temps Significatif</div>
+        <div class="map-card-title">&#x1F1EB;&#x1F1F7; TEMSI France &#x2014; Temps Significatif France</div>
         <div id="mapTemsi" class="map-paste-zone" data-key="temsi" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsi')">
-          <span style="font-size:2em">&#x1F4CB;</span>
-          <span>Collez (Ctrl+V) ou cliquez pour importer la carte TEMSI</span>
+          <span style="font-size:2em">&#x1F1EB;&#x1F1F7;</span>
+          <span>Collez (Ctrl+V) ou cliquez pour importer la carte TEMSI France</span>
         </div>
         <div class="map-card-actions">
           <button onclick="window.openAeroWebPopup('https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/meteoautre.html')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;font-weight:700">&#x1F30D; Ouvrir SOFIA &#x2192; TEMSI</button>
-          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; A&#xe9;roWeb TEMSI</button>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/france')">&#x1F1EB;&#x1F1F7; A&#xe9;roWeb TEMSI France</button>
           <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('temsi')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delTemsi" onclick="window.deleteMapImage('temsi')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
           <input type="file" id="fileTemsi" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsi',this)">
+        </div>
+      </div>
+      <!-- TEMSI EUROC -->
+      <div class="map-card">
+        <div class="map-card-title">&#x1F30D; TEMSI EUROC &#x2014; Temps Significatif Europe</div>
+        <div id="mapTemsiEuroc" class="map-paste-zone" data-key="temsiEuroc" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsiEuroc')">
+          <span style="font-size:2em">&#x1F30D;</span>
+          <span>Collez (Ctrl+V) ou cliquez pour importer la carte TEMSI EUROC</span>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="window.openAeroWebPopup('https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/meteoautre.html')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;font-weight:700">&#x1F30D; Ouvrir SOFIA &#x2192; TEMSI</button>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; A&#xe9;roWeb TEMSI EUROC</button>
+          <button onclick="window.uploadMap('temsiEuroc')">&#x1F4F7; Importer</button>
+          <button onclick="window.pasteMapImage('temsiEuroc')">&#x1F4CB; Coller</button>
+          <button class="map-del-btn" id="delTemsiEuroc" onclick="window.deleteMapImage('temsiEuroc')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
+          <input type="file" id="fileTemsiEuroc" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsiEuroc',this)">
         </div>
       </div>
       <!-- WINTEM -->
@@ -532,7 +548,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <iframe id="frontsFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" style="height:calc(100vh - 160px);min-height:600px" loading="lazy"></iframe>
         </div>
         <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank">Ouvrir meteo.be Fronts &#x2197;&#xFE0F;</a></div>
-        <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:60px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">&#x1F4CB; Capture manuelle : collez (Ctrl+V) ou importez</div>
+        <div class="map-card-title" style="margin-top:16px">&#x1F4F7; Capture manuelle de la carte de Fronts</div>
+        <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('fronts')">
+          <span style="font-size:2em">&#x1F300;</span>
+          <span>Collez (Ctrl+V) ou cliquez pour importer la carte de Fronts</span>
+        </div>
         <div class="map-card-actions">
           <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank" rel="noopener">&#x1F517; meteo.be Fronts</a>
           <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; A&#xe9;roWeb Fronts</button>
@@ -821,6 +841,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4C2;</span> Dossiers sauvegard&#xe9;s</div>
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="window.importDossier()" style="padding:6px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--link-color);cursor:pointer;font-weight:600">&#x1F4E5; Importer un dossier (.json)</button>
+        <input type="file" id="dossierImportFile" accept=".json" style="display:none" onchange="window.handleDossierImport(this)">
+      </div>
       <div id="dossierList"></div>
     </div>
   </div>
@@ -1300,8 +1324,13 @@ function clearDailyWarnImages(){
 window.clearDailyWarnImages=clearDailyWarnImages;
 /* Ctrl+V paste support for daily warnings */
 document.addEventListener('paste',function(ev){
-  var activeTab=document.querySelector('.meteo-sub-content[id="msub-dailywarn"]');
-  if(!activeTab||activeTab.style.display==='none') return;
+  var activeTab=document.getElementById('msub-dailywarn');
+  if(!activeTab||!activeTab.classList.contains('active')) return;
+  /* Also make sure the main meteo tab is visible */
+  var meteoTab=document.getElementById('tab-meteo');
+  if(!meteoTab||!meteoTab.classList.contains('active')) return;
+  /* Skip if hovering over a map-paste-zone (those have their own handler) */
+  if(document.querySelector('.map-paste-zone:hover')) return;
   var items=ev.clipboardData&&ev.clipboardData.items;
   if(!items) return;
   for(var i=0;i<items.length;i++){
@@ -2912,7 +2941,7 @@ function clearWorkspace(){
   wxCache={};
   document.getElementById('wxPanels').innerHTML='';
   /* Clear map captures */
-  ['temsi','wintem','fronts'].forEach(function(key){
+  ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
     sessionStorage.removeItem('navlog_map_'+key);
     var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
     if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</span>';
@@ -3185,7 +3214,7 @@ function getWindyUrls(){
 
 function getMapImages(){
   var maps={};
-  ['temsi','wintem','fronts'].forEach(function(key){
+  ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
     var stored=sessionStorage.getItem('navlog_map_'+key);
     if(stored) maps[key]=stored;
   });
@@ -3221,11 +3250,11 @@ function loadDossier(id){
   wxCache=d.wxCache||{};
   /* Restore map captures */
   if(d.mapImages){
-    ['temsi','wintem','fronts'].forEach(function(key){
+    ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
       if(d.mapImages[key]){
         sessionStorage.setItem('navlog_map_'+key,d.mapImages[key]);
         var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-        if(el) el.innerHTML='<img src="'+d.mapImages[key]+'" style="width:100%;max-height:600px;object-fit:contain">';
+        if(el) el.innerHTML='<img src="'+d.mapImages[key]+'" style="width:100%;object-fit:contain">';
         var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
         if(db) db.style.display='';
       }
@@ -3278,6 +3307,54 @@ function renameDossier(id){
 }
 window.renameDossier=renameDossier;
 
+/* ===== EXPORT / IMPORT DOSSIERS ===== */
+function exportDossier(id){
+  var dossiers=getDossiers();
+  var d=null;
+  for(var i=0;i<dossiers.length;i++){if(dossiers[i].id===id){d=dossiers[i];break;}}
+  if(!d) return;
+  var json=JSON.stringify(d,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='dossier_'+d.name.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ _-]/g,'').replace(/\s+/g,'_')+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.exportDossier=exportDossier;
+
+function importDossier(){
+  document.getElementById('dossierImportFile').click();
+}
+window.importDossier=importDossier;
+
+function handleDossierImport(input){
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var d=JSON.parse(e.target.result);
+      if(!d.name||!d.config){alert('Fichier invalide : ce n\'est pas un dossier NavLog.');return;}
+      /* Assign new ID to avoid conflicts */
+      d.id=Date.now();
+      d.date=d.date||new Date().toISOString();
+      var dossiers=getDossiers();
+      dossiers.push(d);
+      setDossiers(dossiers);
+      renderDossierList();
+      alert('Dossier "'+d.name+'" importé avec succès !');
+    }catch(err){
+      alert('Erreur lors de l\'import : '+err.message);
+    }
+  };
+  reader.readAsText(input.files[0]);
+  input.value='';
+}
+window.handleDossierImport=handleDossierImport;
+
 function renderDossierList(){
   var el=document.getElementById('dossierList');
   var dossiers=getDossiers();
@@ -3316,6 +3393,7 @@ function renderDossierList(){
     html+='<div class="d-route">'+escHTML(route)+imgInfo+'</div>';
     html+='<div class="dossier-card-btns">';
     html+='<button onclick="window.loadDossier('+d.id+')">Charger</button>';
+    html+='<button onclick="window.exportDossier('+d.id+')">&#x1F4E4; Exporter</button>';
     html+='<button onclick="window.renameDossier('+d.id+')">Renommer</button>';
     if(ssCount) html+='<button onclick="window.previewScreenshots('+d.id+')">&#x1F4F8; Captures</button>';
     html+='<button class="d-del" onclick="window.deleteDossier('+d.id+')">Supprimer</button>';
@@ -3438,7 +3516,7 @@ function handleMapUpload(key,input){
     var dataUrl=e.target.result;
     sessionStorage.setItem('navlog_map_'+key,dataUrl);
     var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;max-height:600px;object-fit:contain">';
+    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
     var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
     if(delBtn) delBtn.style.display='';
   };
@@ -3475,7 +3553,7 @@ window.openAeroWebPopup=openAeroWebPopup;
 function applyMapImage(key,dataUrl){
   sessionStorage.setItem('navlog_map_'+key,dataUrl);
   var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-  el.innerHTML='<img src="'+dataUrl+'" style="width:100%;max-height:600px;object-fit:contain">';
+  el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
   var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
   if(delBtn) delBtn.style.display='';
 }
@@ -3663,12 +3741,12 @@ function init(){
   renderDossierList();
   /* initWindy() is now lazy-loaded when Windy sub-tab is activated */
   /* Restore saved map captures */
-  var mapKeys=['temsi','wintem','fronts'];
+  var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
   for(var m=0;m<mapKeys.length;m++){
     var stored=sessionStorage.getItem('navlog_map_'+mapKeys[m]);
     if(stored){
       var el=document.getElementById('map'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
-      if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;max-height:600px;object-fit:contain">';
+      if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;object-fit:contain">';
       var db=document.getElementById('del'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
       if(db) db.style.display='';
     }
