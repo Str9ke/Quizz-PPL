@@ -83,9 +83,11 @@
   <!-- Search bar -->
   <div class="fiches-wrap">
     <div class="fiche-search">
-      <input type="text" id="ficheSearchInput" placeholder="Rechercher dans les fiches…" autocomplete="off">
+      <input type="text" id="ficheSearchInput" placeholder="Rechercher dans les fiches… (ex: décrochage, VOR, METAR…)" autocomplete="off">
+      <span id="ficheSearchClear" style="display:none;cursor:pointer;font-size:1.2em;color:var(--text-secondary);padding:0 6px;align-self:center" title="Effacer">✕</span>
       <button onclick="ficheSearch()">Chercher</button>
     </div>
+    <div id="ficheSearchInfo" style="display:none;font-size:.8em;color:var(--text-secondary);margin:-8px 0 10px 4px"></div>
 
     <!-- Category buttons -->
     <div class="fcat-grid" id="fcatGrid"></div>
@@ -242,6 +244,26 @@ const FICHES = [
 </table>
 <ul>
 <li>Approche = <b>1,3 × Vs</b> ; toucher ≈ 1,1 × Vs</li>
+</ul>`},
+{t:'Spoilers, aérofreins & taxi', html:`
+<ul>
+<li><b>Aérofreins / Spoilers</b> : ↓ portance, ↑ traînée → ↑ taux descente, freinage au sol</li>
+<li>N'influencent pas le cap ; servent en descente et roulage</li>
+<li><b>Centre de pression</b> : point d'application de la résultante aéro ≈ <b>25% corde</b></li>
+<li>Centre de pression recule si incidence ↓ ; avance si incidence ↑</li>
+<li><b>Profil symétrique</b> à incidence nulle → portance <b>nulle</b></li>
+<li><b>Facteur de charge en montée</b> &lt; 1 (composante poids sur trajectoire)</li>
+<li><b>Elevons</b> : commandes mixtes ailerons + profondeur sur ailes delta</li>
+</ul>
+<table>
+<tr><th>Taxi vent de travers</th><th>Ailerons</th><th>Profondeur</th></tr>
+<tr><td>Vent face + gauche</td><td>↑ gauche (manche au vent)</td><td>Neutre ou avant</td></tr>
+<tr><td>Vent face + droite</td><td>↑ droite (manche au vent)</td><td>Neutre ou avant</td></tr>
+<tr><td>Vent arrière + gauche</td><td>↓ gauche (manche opposé)</td><td>Manche en avant</td></tr>
+<tr><td>Vent arrière + droite</td><td>↓ droite (manche opposé)</td><td>Manche en avant</td></tr>
+</table>
+<ul>
+<li>Principe taxi vent de face : manche <b>dans le vent</b> ; vent arrière : manche <b>opposé au vent + en avant</b></li>
 </ul>`}
 ]},
 /* ────────────────── 2. CONNAISSANCE AÉRONEF ────────────────── */
@@ -384,6 +406,52 @@ const FICHES = [
 <li><b>Déviation</b> : masses magnétiques, varie selon l'orientation → table sous le compas</li>
 <li>Erreurs en : virages, accélérations, turbulences</li>
 <li>Lecture optimale : palier rectiligne stabilisé, sans accélération</li>
+</ul>`},
+{t:'Structures, volets & commandes', html:`
+<ul>
+<li><b>Monocoque</b> : seul le revêtement supporte les efforts (sans longerons)</li>
+<li><b>Semi-monocoque</b> : revêtement + longerons + couples + lisses</li>
+<li><b>Cantilever</b> : aile sans haubanage (appui uniquement à l'emplanture)</li>
+<li><b>Haubans</b> : câbles/tiges renforçant l'aile (aile haubanée)</li>
+<li><b>Empennage en T</b> : stabilisateur au sommet de la dérive → risque deep stall</li>
+<li><b>Volets de capot (cowl flaps)</b> : modifient flux air moteur → ↑ refroidissement en montée</li>
+</ul>
+<table>
+<tr><th>Dispositif BdA</th><th>Effet principal</th></tr>
+<tr><td>Bec (slat)</td><td>↑ incidence décrochage, surface fixe ou mobile</td></tr>
+<tr><td>Fente (slot)</td><td>Passage fixe BdA → ré-énergie couche limite</td></tr>
+<tr><td>Volet Krueger</td><td>Volet BdA articulé sous l'intrados</td></tr>
+</table>
+<ul>
+<li><b>Anti-balance tab</b> : augmente l'effort aux commandes (contraire du trim)</li>
+<li><b>Déport en corne</b> : surface gouverne devant l'axe charnière → réduit effort</li>
+</ul>
+<table>
+<tr><th>Commande moteur</th><th>Couleur standard</th></tr>
+<tr><td>Manette des gaz</td><td><b>Noire</b></td></tr>
+<tr><td>Commande de pas (hélice)</td><td><b>Bleue</b></td></tr>
+<tr><td>Mixture</td><td><b>Rouge</b></td></tr>
+<tr><td>Réchauffage carbu</td><td><b>Jaune / Grise</b></td></tr>
+</table>`},
+{t:'Pannes instruments & lubrification', html:`
+<table>
+<tr><th>Panne</th><th>Comportement badin</th></tr>
+<tr><td>Pitot seul bouché</td><td>→ zéro (plus de Pt)</td></tr>
+<tr><td>Pitot + drain bouchés</td><td>IAS <b>figée</b> puis varie comme un altimètre</td></tr>
+<tr><td>Statique bouchée</td><td>IAS figée à ancienne valeur</td></tr>
+<tr><td>Source statique secours</td><td>P statique cockpit légèrement basse → alti <b>sur-indique</b></td></tr>
+</table>
+<ul>
+<li><b>Manomètre dépression (suction gauge)</b> : vérifie fonctionnement pompe à vide → instruments gyro</li>
+<li><b>Ampèremètre</b> charge forte prolongée → risque surchauffe batterie</li>
+</ul>
+<ul>
+<li><b>Huile moteur</b> : triple rôle → <b>lubrification + refroidissement + nettoyage</b></li>
+<li>Huile synthétique : meilleure tenue en température</li>
+<li>Pression huile basse → <b>atterrir immédiatement</b></li>
+<li>T° huile excessive → réduire puissance, enrichir mélange</li>
+<li>Humidité ↑ → mélange <b>s'appauvrit</b> (air humide = moins dense)</li>
+<li>T° ambiante ↑ → mélange <b>s'enrichit</b> (carburant s'évapore davantage)</li>
 </ul>`}
 ]},
 /* ────────────────── 3. MÉTÉOROLOGIE ────────────────── */
@@ -517,6 +585,26 @@ const FICHES = [
 <li><b>TEMPO</b> : fluctuation &lt; 1h ; <b>BECMG</b> : évolution régulière ; <b>NOSIG</b> : pas de changement 2h</li>
 <li>Distinguer METAR du TAF : le <b>QNH</b> n'est que dans le METAR</li>
 <li>WINTEM : petite barre = <b>5 kt</b>, grande = <b>10 kt</b>, triangle = <b>50 kt</b></li>
+</ul>`},
+{t:'Codes METAR AUTO, SPECI & divers', html:`
+<table>
+<tr><th>Code</th><th>Signification (METAR AUTO)</th></tr>
+<tr><td><b>NCD</b></td><td>No Cloud Detected (capteur ne détecte aucun nuage)</td></tr>
+<tr><td><b>NDV</b></td><td>No Directional Variation (vent indéterminé)</td></tr>
+<tr><td><b>///</b></td><td>Donnée non observable (capteur absent/défaillant)</td></tr>
+<tr><td><b>SKC</b></td><td>Sky Clear (ciel dégagé, observé par humain)</td></tr>
+</table>
+<ul>
+<li><b>SPECI</b> = METAR spécial émis lors d'un changement significatif</li>
+<li><b>SNOWTAM</b> = NOTAM neige/état piste en hiver</li>
+<li>TAF court : valide <b>9h</b>, cycle rédaction <b>3h</b> ; TAF long : <b>24-30h</b></li>
+<li>METAR émis toutes les <b>heures</b> (ou 30 min sur gros aérodromes)</li>
+<li><b>ATIS</b> : message automatique, par <b>radio VHF + téléphone</b>, identifié par lettre</li>
+<li><b>ISA au FL180</b> = <b>500 hPa</b>, T° = −21°C</li>
+<li><b>Couche isotherme</b> : T° constante avec l'altitude</li>
+<li><b>Conduction</b> : mécanisme principal de chauffage des basses couches par le sol</li>
+<li><b>DZ</b> = bruine ; <b>RA</b> = pluie ; <b>SN</b> = neige ; <b>TS</b> = orage ; <b>FG</b> = brouillard</li>
+<li><b>Dossier de vol</b> Météo France : METAR, TAF, TEMSI, WINTEM, cartes SWL</li>
 </ul>`}
 ]},
 /* ────────────────── 4. NAVIGATION ────────────────── */
@@ -645,6 +733,46 @@ const FICHES = [
 <li>Mode C : transmet altitude pression (réf. 1013)</li>
 <li>Afficher 7000 + ALT dès déplacement au sol</li>
 <li>Chiffres : <b>0 à 7</b> uniquement</li>
+</ul>`},
+{t:'RMI, VDF & radar', html:`
+<ul>
+<li><b>RMI (Radio Magnetic Indicator)</b> : combine cap magnétique + aiguille(s) pointant vers la station</li>
+<li>Lecture : pointe aiguille = <b>QDM</b> (relèvement vers station) ; queue = <b>QDR</b></li>
+<li>Gisement = QDM − Cap magnétique</li>
+<li>Position : intersection de 2 QDM ou 2 QDR depuis stations différentes</li>
+</ul>
+<ul>
+<li><b>VDF (Goniomètre)</b> : station sol détermine la direction de l'avion → fournit <b>QDM/QDR/QTE</b></li>
+<li>Demander un QDM par radio → le contrôleur donne le cap pour rejoindre la station</li>
+<li>Classes de précision : A (±2°) → D (±10°)</li>
+</ul>
+<ul>
+<li><b>Radar primaire</b> : détecte écho réfléchi, donne position + distance, <b>PAS d'altitude</b></li>
+<li><b>Radar secondaire (SSR)</b> : interroge transpondeur → code + altitude (mode C/S)</li>
+<li>Mode S : transmission données + identification automatique</li>
+</ul>`},
+{t:'Terre, symboles cartes & NOTAM', html:`
+<ul>
+<li>Forme de la Terre = <b>ellipsoïde</b> (géoïde aplati aux pôles)</li>
+<li>Circonférence Terre = <b>21 600 NM</b> = 40 000 km</li>
+<li><b>Tropique du Cancer</b> = 23,5°N ; <b>Tropique du Capricorne</b> = 23,5°S</li>
+<li><b>Cercle polaire</b> = 66,5°N/S</li>
+<li><b>Crépuscule civil</b> : soleil entre 0° et 6° sous l'horizon</li>
+</ul>
+<table>
+<tr><th>Symbole carte OACI</th><th>Signification</th></tr>
+<tr><td>× barré</td><td>Aérodrome désaffecté</td></tr>
+<tr><td>Bleu/violet</td><td>Aérodrome privé</td></tr>
+<tr><td>Vert (piste VAC)</td><td>Piste en herbe / non revêtue</td></tr>
+<tr><td>Triangle + ligne</td><td>Vélisurface (vol à voile)</td></tr>
+<tr><td>Relief &gt; 11 500 ft</td><td>Teinte bleue sur carte OACI</td></tr>
+</table>
+<ul>
+<li><b>VAC</b> (Visual Approach Chart) : carte d'approche à vue, procédures locales</li>
+<li><b>NOTAM</b> (Notice to Airmen) : informations temporaires (travaux, activités, restrictions)</li>
+<li>NOTAM consultables sur le <b>site du SIA</b> avant chaque vol</li>
+<li><b>Composante traversière</b> = Vvent × sin(angle vent/piste)</li>
+<li><b>Vent effectif</b> = Vvent × cos(angle vent/piste)</li>
 </ul>`}
 ]},
 /* ────────────────── 5. RÉGLEMENTATION ────────────────── */
@@ -765,6 +893,36 @@ const FICHES = [
 <li><b>Accident</b> = blessure grave/mortelle ou dommage important ; enquête <b>BEA</b> pour prévention</li>
 <li>Phases SAR : <b>INCERFA → ALERFA → DETRESFA</b></li>
 <li>Oxygène : max FL100 sans O₂ ; pilote &gt; 30 min FL100-130 ; tout le monde &gt; FL130</li>
+</ul>`},
+{t:'VFR on top, MEP & réglementation avancée', html:`
+<ul>
+<li><b>VFR on top</b> : vol VFR au-dessus d'une couche nuageuse, sans vue du sol</li>
+<li>Conditions : maintenir VMC au-dessus, pouvoir redescendre en VMC</li>
+<li><b>Qualification MEP</b> (Multi-Engine Piston) : validité <b>12 mois</b></li>
+<li><b>Temps de vol</b> : dès que l'avion se déplace par ses propres moyens jusqu'à l'arrêt complet</li>
+<li><b>Âge min premier vol double commande</b> : aucun minimum réglementaire</li>
+<li><b>Commission de discipline</b> : peut suspendre ou révoquer une licence</li>
+<li><b>Approche semi-directe</b> : rejoindre directement la base (sans vent arrière)</li>
+<li><b>FIR</b> (Flight Information Region) : espace info vol, couvre tout le territoire</li>
+<li>Survol rassemblement &gt; <b>100 000 personnes</b> = hauteur min <b>5000 ft AAL</b></li>
+<li><b>Accident</b> : enquête dans le <b>pays où il se produit</b></li>
+<li>Marquage axial piste = bande <b>discontinue blanche</b></li>
+<li>Reconnaissance mutuelle licences entre <b>États membres OACI</b></li>
+</ul>`},
+{t:'Aire à signaux & signaleur', html:`
+<table>
+<tr><th>Signal</th><th>Signification</th></tr>
+<tr><td><b>T</b> blanc</td><td>Direction atterrissage/décollage (barre = seuil)</td></tr>
+<tr><td><b>Croix blanche</b></td><td>Piste inutilisable / aérodrome fermé</td></tr>
+<tr><td>Flèche rouge</td><td>Sens circuit (virages à droite si présente)</td></tr>
+<tr><td>Haltère blanc</td><td>Mouvements au sol sur pistes/voies de circulation uniquement</td></tr>
+<tr><td>Haltère + bandes noires</td><td>Prudence à l'atterrissage (travaux)</td></tr>
+<tr><td><b>C</b> noir/fond jaune</td><td>Bureau de piste (reporting office)</td></tr>
+</table>
+<ul>
+<li><b>Signaleur (marshaller)</b> : guide au sol par gestes des bras</li>
+<li>Bras levés en V = <b>venez vers moi</b> ; bras croisés = <b>stop</b></li>
+<li>Bras droit tourné = <b>virez à droite</b> (du point de vue pilote)</li>
 </ul>`}
 ]},
 /* ────────────────── 6. COMMUNICATIONS ────────────────── */
@@ -845,6 +1003,24 @@ const FICHES = [
 <li>Fréquences : 3 premiers en nombre + « décimale » + suite</li>
 <li>Heures en <b>UTC</b>, prononcées normalement si bonne lisibilité</li>
 <li>Position trafic : cadran montre, nez = 12h, droite = 3h</li>
+</ul>`},
+{t:'Phraséologie détaillée & équipements', html:`
+<table>
+<tr><th>Situation</th><th>Annonce</th></tr>
+<tr><td>Entrée fréquence</td><td>[Station] [indicatif complet] bonjour</td></tr>
+<tr><td>Point d'attente</td><td>[indicatif] prêt au départ piste [QFU]</td></tr>
+<tr><td>Après atterrissage</td><td>[indicatif] <b>piste dégagée</b></td></tr>
+<tr><td>Traverser piste</td><td>Contrôleur : « <b>traversez</b> piste [QFU] »</td></tr>
+<tr><td>Trafic non vu</td><td>Pilote : « <b>je surveille</b> »</td></tr>
+<tr><td>Touch-and-go</td><td>Autorisé <b>option</b> = au choix remise de gaz / posé complet / touch-and-go</td></tr>
+</table>
+<ul>
+<li><b>Squelch</b> : bouton radio qui supprime le bruit de fond (souffle)</li>
+<li><b>ELT</b> (balise de détresse) : émet sur <b>121,500 MHz</b> + <b>406 MHz</b> (+ 243 MHz optionnel)</li>
+<li><b>ATIS</b> : disponible par <b>radio VHF</b> et par <b>téléphone</b></li>
+<li><b>VOLMET</b> : diffusion METAR sur VHF, fréquence trouvée sur <b>carte SIA radionavigation</b></li>
+<li>Énonciation heures : « dix zéro cinq » (toujours en UTC)</li>
+<li>Non contrôlé sans AFIS : auto-information sur <b>123,500 MHz</b></li>
 </ul>`}
 ]},
 /* ────────────────── 7. PERFORMANCE HUMAINE ────────────────── */
@@ -924,6 +1100,44 @@ const FICHES = [
 <ul>
 <li>Majorité des accidents : <b>défaillance humaine</b></li>
 <li>Plongée bouteilles → attendre <b>24h</b> avant de voler</li>
+</ul>`},
+{t:'Anatomie, sang & vision détaillée', html:`
+<table>
+<tr><th>Composant sanguin</th><th>Fonction</th></tr>
+<tr><td><b>Globules rouges</b></td><td>Transport O₂ (hémoglobine)</td></tr>
+<tr><td>Globules blancs</td><td>Défense immunitaire</td></tr>
+<tr><td>Plaquettes</td><td>Coagulation</td></tr>
+</table>
+<ul>
+<li>O₂ dans l'air = <b>21%</b> quelle que soit l'altitude (c'est la pression partielle qui ↓)</li>
+<li><b>Temps de conscience utile</b> : temps avant incapacité après dépressurisation, ↓ avec altitude</li>
+</ul>
+<table>
+<tr><th>Élément œil</th><th>Rôle</th></tr>
+<tr><td><b>Cônes</b></td><td>Vision couleurs + détails (diurne, centrale)</td></tr>
+<tr><td><b>Bâtonnets</b></td><td>Vision nocturne + périphérique (faible lumière)</td></tr>
+</table>
+<ul>
+<li><b>Vision centrale</b> : couleurs + détails ; <b>vision périphérique</b> : mouvement + luminosité</li>
+<li><b>Champ visuel</b> ≈ <b>200° horizontal × 130° vertical</b></li>
+<li><b>Myopie</b> = mauvaise vision de loin ; <b>Hypermétropie</b> = mauvaise vision de près</li>
+<li><b>Erreur de parallaxe</b> : lecture erronée instrument si vue en biais</li>
+<li><b>Système nerveux autonome</b> : contrôle respiration, digestion, rythme cardiaque (involontaire)</li>
+<li><b>Système nerveux périphérique</b> : nerfs sensitifs + moteurs reliant cerveau ↔ corps</li>
+</ul>`},
+{t:'Facteurs humains avancés', html:`
+<ul>
+<li><b>Modèle du fromage suisse</b> (Reason) : accident = alignement de trous dans les barrières de sécurité</li>
+<li><b>REX</b> (Retour d'Expérience) : signalement anonyme d'événements → amélioration sécurité</li>
+<li><b>Processus cognitif</b> : percevoir → analyser → décider → agir</li>
+<li>Personnalité pilote optimale : <b>extraverti-stable</b></li>
+<li><b>Changement risqué</b> (risky shift) : en groupe, on accepte + de risque qu'individuellement</li>
+<li><b>Complaisance</b> : liée à l'automatisation → ↓ vigilance si vol monotone/automatisé</li>
+<li><b>Check-list</b> = aide-mémoire (vérification, pas apprentissage)</li>
+<li>Phase mémorisation optimale = phase de <b>résistance</b> au stress</li>
+<li><b>Plongée apnée</b> : moins risqué que bouteilles mais effets possibles ; <b>bouteilles → 24h</b></li>
+<li><b>Mal des transports</b> : fixer l'horizon, ventiler, éviter mouvements tête brusques</li>
+<li><b>Ozone</b> : couche stratosphère protège UV ; irritant si concentré</li>
 </ul>`}
 ]},
 /* ────────────────── 8. PERFORMANCES VOL & MASSE/CENTRAGE ────────────────── */
@@ -983,6 +1197,25 @@ const FICHES = [
 <li>Pluie → Vs ↑ → <b>majorer</b> vitesse approche</li>
 <li>Aquaplanage : freiner modérément, contrôle aérodynamique</li>
 <li>Herbe mouillée → distances ↑ partout</li>
+</ul>`},
+{t:'Masses détaillées & méthode de calcul', html:`
+<table>
+<tr><th>Masse</th><th>Définition</th></tr>
+<tr><td><b>Masse à vide</b></td><td>Avion + huile + fluides non utilisables</td></tr>
+<tr><td><b>Masse en ordre d'exploitation</b></td><td>Masse à vide + équipements fixes + huile plein</td></tr>
+<tr><td><b>MZFW</b> (Zero Fuel Weight)</td><td>Masse max sans carburant → limite structurale <b>emplanture</b></td></tr>
+<tr><td><b>Charge marchande</b></td><td>Masse transportable (passagers + bagages)</td></tr>
+<tr><td><b>Masse max roulage</b></td><td>Masse max pour rouler au sol (&gt; masse max décollage)</td></tr>
+</table>
+<ul>
+<li><b>Datum</b> (point de référence) : point fixe pour tous les bras de levier</li>
+<li><b>Marge statique</b> = distance CG → foyer aérodynamique</li>
+<li>Marge positive → avion stable ; marge ↓ → moins stable</li>
+<li><b>Vx</b> : meilleur angle → franchir obstacle après décollage ; disparaît au plafond</li>
+<li><b>Vy</b> : meilleur taux → atteindre altitude rapidement ; toujours &gt; Vx</li>
+<li>Vx et Vy IAS : quasiment constantes avec l'altitude ; confluent au <b>plafond pratique</b></li>
+<li><b>Altitude pression</b> = altitude lue calage 1013 ; <b>altitude densité</b> = altitude pression corrigée T°</li>
+<li><b>Visite prévol</b> : obligation CdB, vérifier état avion + documents + carburant + centrage</li>
 </ul>`}
 ]},
 /* ────────────────── 9. PROCÉDURES OPÉRATIONNELLES ────────────────── */
@@ -1059,6 +1292,16 @@ const FICHES = [
 <li>Expérience récente nuit : <b>3 dec + 3 att de nuit / 90 jours</b></li>
 <li>Feux position : <b>rouge</b> = gauche, <b>vert</b> = droite, <b>blanc</b> = arrière</li>
 <li>Rouge + vert visibles = avion <b>vient vers vous</b></li>
+</ul>`},
+{t:'Espacement & ELT détails', html:`
+<ul>
+<li><b>Espacement derrière gros porteur</b> : attendre <b>2 min</b> (même piste) ou <b>3 min</b> (piste sécante)</li>
+<li>Roulage derrière avion de ligne : <b>200 m</b> minimum</li>
+<li>Hélicoptère = turbulence de sillage comparable à un <b>gros porteur</b></li>
+<li><b>ELT fréquences</b> : <b>121,500 MHz</b> + <b>406 MHz</b> ; position <b>ARMED</b> en vol</li>
+<li>ELT déclenchement : automatique au choc ; vérifier non-déclenchement après atterrissage dur</li>
+<li><b>Amerrissage</b> : dans le sens du vent si vagues faibles ; sens des vagues si forte houle</li>
+<li>Gonfler gilets <b>hors</b> de l'aéronef ; sortir par la porte <b>au vent</b></li>
 </ul>`}
 ]}
 ]; // end FICHES
@@ -1112,7 +1355,7 @@ function buildContent() {
   $content.innerHTML = '';
   if (!activeCat) {
     // Show welcome
-    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">Sélectionnez une catégorie ci-dessus</h3><p style="color:var(--text-secondary)">Les fiches mémo couvrent 100% des questions du quiz.<br>Chaque fiche est synthétique et organisée par thème.</p></div>';
+    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">Sélectionnez une catégorie ci-dessus</h3><p style="color:var(--text-secondary)">9 catégories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches mémo couvrant ~80% des questions du quiz.<br>Chaque fiche est synthétique et organisée par thème.<br>Utilisez la recherche pour trouver un sujet précis.</p></div>';
     return;
   }
   const cat = FICHES.find(c => c.id === activeCat);
@@ -1137,42 +1380,60 @@ function buildContent() {
   });
 }
 
-/* Search */
+/* Search — multi-word, real-time, result count, clear */
+const $info = document.getElementById('ficheSearchInfo');
+const $clear = document.getElementById('ficheSearchClear');
+let searchTimer = null;
+
 function ficheSearch() {
-  const q = ($search.value || '').trim().toLowerCase();
-  if (!q) { activeCat = null; activeSub = null; buildGrid(); buildSubs(); buildContent(); return; }
+  const raw = ($search.value || '').trim();
+  $clear.style.display = raw ? 'inline' : 'none';
+  if (!raw) { $info.style.display='none'; activeCat = null; activeSub = null; buildGrid(); buildSubs(); buildContent(); return; }
+  const words = raw.toLowerCase().split(/\s+/).filter(Boolean);
   $subRow.innerHTML = '';
-  // Reset grid active states
   activeCat = null; activeSub = null; buildGrid();
   $content.innerHTML = '';
   let found = 0;
   FICHES.forEach(cat => {
     cat.subs.forEach(s => {
-      // Search in text content of html
       const tmp = document.createElement('div'); tmp.innerHTML = s.html;
-      const text = tmp.textContent.toLowerCase();
-      if (text.includes(q) || s.t.toLowerCase().includes(q)) {
-        found++;
-        const sec = document.createElement('div'); sec.className = 'fiche-section';
-        const hdr = document.createElement('div'); hdr.className = 'fiche-section-hdr open';
-        hdr.innerHTML = '<span class="chevron">▶</span> ' + cat.icon + ' ' + cat.title + ' › ' + s.t;
-        const body = document.createElement('div'); body.className = 'fiche-section-body show';
-        const card = document.createElement('div'); card.className = 'fiche-card';
-        // Highlight matches
-        let h = s.html;
-        const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      const text = (s.t + ' ' + tmp.textContent).toLowerCase();
+      // All words must match
+      if (!words.every(w => text.includes(w))) return;
+      found++;
+      const sec = document.createElement('div'); sec.className = 'fiche-section';
+      const hdr = document.createElement('div'); hdr.className = 'fiche-section-hdr open';
+      hdr.innerHTML = '<span class="chevron">▶</span> ' + cat.icon + ' ' + cat.title + ' › ' + s.t;
+      const body = document.createElement('div'); body.className = 'fiche-section-body show';
+      const card = document.createElement('div'); card.className = 'fiche-card';
+      let h = s.html;
+      // Highlight each word
+      words.forEach(w => {
+        const re = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
         h = h.replace(re, '<mark style="background:#e65100;color:#fff;padding:0 2px;border-radius:2px">$1</mark>');
-        card.innerHTML = h;
-        body.appendChild(card);
-        hdr.onclick = () => { hdr.classList.toggle('open'); body.classList.toggle('show'); };
-        sec.appendChild(hdr); sec.appendChild(body);
-        $content.appendChild(sec);
-      }
+      });
+      card.innerHTML = h;
+      body.appendChild(card);
+      hdr.onclick = () => { hdr.classList.toggle('open'); body.classList.toggle('show'); };
+      sec.appendChild(hdr); sec.appendChild(body);
+      $content.appendChild(sec);
     });
   });
-  if (!found) $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:20px"><p>Aucun résultat pour « ' + q + ' »</p></div>';
+  $info.style.display = 'block';
+  $info.textContent = found ? found + ' fiche' + (found>1?'s':'') + ' trouvée' + (found>1?'s':'') + ' pour « ' + raw + ' »' : 'Aucun résultat pour « ' + raw + ' »';
+  if (!found) $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:20px"><p>Aucun résultat pour « ' + raw + ' »</p></div>';
 }
-$search.addEventListener('keydown', e => { if (e.key === 'Enter') ficheSearch(); });
+
+// Real-time search with debounce
+$search.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const v = $search.value.trim();
+  $clear.style.display = v ? 'inline' : 'none';
+  if (!v) { $info.style.display='none'; activeCat=null; activeSub=null; buildGrid(); buildSubs(); buildContent(); return; }
+  searchTimer = setTimeout(ficheSearch, 300);
+});
+$search.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(searchTimer); ficheSearch(); } });
+$clear.addEventListener('click', () => { $search.value=''; $clear.style.display='none'; $info.style.display='none'; activeCat=null; activeSub=null; buildGrid(); buildSubs(); buildContent(); $search.focus(); });
 
 /* Theme toggle */
 (function(){
