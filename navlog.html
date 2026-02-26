@@ -459,6 +459,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
       <button class="meteo-subtab" data-sub="notam" onclick="window.switchMeteoSub('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
+      <button class="meteo-subtab" data-sub="dailywarn" onclick="window.switchMeteoSub('dailywarn')">&#x1F6A8; Daily Warn</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
     </div>
@@ -468,10 +469,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card">
         <div class="map-card-title">&#x1F4E1; Radar de Pr&#xe9;cipitations HD &#x2014; Europe</div>
         <div class="iframe-card">
-          <iframe id="radarFrame" src="about:blank" data-src="https://www.rainviewer.com/map.html?loc=50.459,3.821,9&oFa=1&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar&sm=1&sn=1" style="height:520px" loading="lazy" allow="geolocation"></iframe>
+          <iframe id="radarFrame" src="about:blank" data-src="https://www.rainviewer.com/map.html?loc=50.5,4.0,7&oFa=1&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar&sm=1&sn=1" style="height:520px" loading="lazy" allow="geolocation"></iframe>
         </div>
         <div class="map-card-actions">
-          <a href="https://www.rainviewer.com/map.html?loc=50.459,3.821,9&layer=radar" target="_blank" rel="noopener">&#x1F517; RainViewer</a>
+          <a href="https://www.rainviewer.com/map.html?loc=50.5,4.0,7&layer=radar" target="_blank" rel="noopener">&#x1F517; RainViewer</a>
           <a href="https://meteologix.com/be/radar-hd/europe" target="_blank" rel="noopener">&#x1F4E1; Meteologix Radar HD</a>
           <button onclick="var f=document.getElementById('radarFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
@@ -522,7 +523,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card">
         <div class="map-card-title">&#x1F300; Carte de Fronts &#x2014; Europe</div>
         <div class="iframe-card">
-          <iframe id="frontsFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" style="height:650px" loading="lazy"></iframe>
+          <iframe id="frontsFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" style="height:calc(100vh - 160px);min-height:600px" loading="lazy"></iframe>
         </div>
         <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank">Ouvrir meteo.be Fronts &#x2197;&#xFE0F;</a></div>
         <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:60px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.82em">&#x1F4CB; Capture manuelle : collez (Ctrl+V) ou importez</div>
@@ -569,6 +570,57 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <a href="https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html" target="_blank" rel="noopener">&#x1F4CB; SOFIA Briefing</a>
           <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F1E7;&#x1F1EA; BEL AIP / NOTAMs</a>
           <button onclick="var f=document.getElementById('notamFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <!-- Skeyes PIB -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F1E7;&#x1F1EA; Skeyes PIB &#x2014; Pre-flight Information Bulletin</div>
+        <div class="iframe-card">
+          <iframe id="skeyesPibFrame" src="about:blank" data-src="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" style="height:700px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la page ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank">Ouvrir Skeyes AIP &#x2197;&#xFE0F;</a></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F517; Skeyes AIP</a>
+          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
+          <button onclick="var f=document.getElementById('skeyesPibFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <!-- NOTAM Summary Upload -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Importez un fichier NOTAM Summary (PDF/image) t&#xe9;l&#xe9;charg&#xe9; depuis Skeyes pour le conserver dans votre dossier de vol.</p>
+        <div id="notamSummaryZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <button onclick="document.getElementById('fileNotamSummary').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Choisir fichier(s) NOTAM Summary</button>
+          <input type="file" id="fileNotamSummary" accept="image/*,.pdf" multiple style="display:none" onchange="window.handleNotamSummary(this)">
+          <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SUB: Daily Warnings ===== -->
+    <div id="msub-dailywarn" class="meteo-sub-content">
+      <div class="map-card">
+        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Skeyes</div>
+        <div class="iframe-card">
+          <iframe id="dailyWarnFrame1" src="about:blank" data-src="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" style="height:600px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la page ne s&#x2019;affiche pas, utilisez les liens ci-dessous.</div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
+          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
+          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
+          <button onclick="var f=document.getElementById('dailyWarnFrame1');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F5FA;&#xFE0F; Warnings Chart &#x2014; Carte g&#xe9;ographique</div>
+        <div class="iframe-card">
+          <iframe id="dailyWarnFrame2" src="about:blank" data-src="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" style="height:600px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank">Ouvrir Warnings Chart &#x2197;&#xFE0F;</a></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Ouvrir en grand</a>
+          <button onclick="var f=document.getElementById('dailyWarnFrame2');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
       </div>
     </div>
@@ -698,7 +750,16 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <input type="number" id="perfWind" value="0" min="0" max="40" onchange="window.perfCalc()">
         </div>
       </div>
-      <button onclick="window.perfFromMetar()" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.82em;margin-bottom:14px">&#x1F327;&#xFE0F; Remplir depuis METAR d&#xe9;part</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+        <select id="perfMetarAirport" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.82em">
+          <option value="EBCV">EBCV &mdash; Chi&#xe8;vres (pour EBSG)</option>
+          <option value="EBCI">EBCI &mdash; Charleroi</option>
+          <option value="EBBR">EBBR &mdash; Bruxelles</option>
+          <option value="LFQQ">LFQQ &mdash; Lille</option>
+          <option value="EBLG">EBLG &mdash; Li&#xe8;ge</option>
+        </select>
+        <button onclick="window.perfFromMetar()" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.82em">&#x1F327;&#xFE0F; Remplir depuis METAR</button>
+      </div>
 
       <!-- Results -->
       <div id="perfResults"></div>
@@ -964,8 +1025,50 @@ function switchMeteoSub(id){
     }
     if(id==='windy') initWindy();
   }
+  /* Auto-scroll to content */
+  if(target) setTimeout(function(){target.scrollIntoView({behavior:'smooth',block:'start'});},120);
 }
 window.switchMeteoSub=switchMeteoSub;
+
+/* ===== NOTAM SUMMARY UPLOAD ===== */
+function handleNotamSummary(input){
+  var files=input.files;
+  if(!files||!files.length) return;
+  var grid=document.getElementById('notamSummaryPreview');
+  for(var i=0;i<files.length;i++){
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        if(file.type.indexOf('image')>=0){
+          var img=document.createElement('img');
+          img.src=e.target.result;
+          img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
+          img.title='Cliquer pour agrandir';
+          img.onclick=function(){window.open(img.src,'_blank')};
+          var wrap=document.createElement('div');
+          wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
+          var del=document.createElement('button');
+          del.textContent='\u{1F5D1}\uFE0F';
+          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+          del.onclick=function(){wrap.remove()};
+          wrap.appendChild(img);
+          wrap.appendChild(del);
+          grid.appendChild(wrap);
+        } else {
+          var link=document.createElement('a');
+          link.href=e.target.result;
+          link.download=file.name;
+          link.textContent='\u{1F4C4} '+file.name;
+          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:6px';
+          grid.appendChild(link);
+        }
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+  input.value='';
+}
+window.handleNotamSummary=handleNotamSummary;
 
 /* ===== FLIGHT TYPE ===== */
 function setFlightType(type){
@@ -2951,19 +3054,27 @@ function updateRouteMap(){
     }).addTo(routeMap);
     routeMapLayers.push(marker);
   }
-  /* Draw direction arrows along each leg */
+  /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
-    var midLat=(a.lat+b.lat)/2;
-    var midLon=(a.lon+b.lon)/2;
     var brg=trueBearing(a.lat,a.lon,b.lat,b.lon);
+    /* Place arrow at 40% of leg to avoid midpoint overlap with return leg */
+    var frac=0.4;
+    var arrowLat=a.lat+(b.lat-a.lat)*frac;
+    var arrowLon=a.lon+(b.lon-a.lon)*frac;
+    /* Offset perpendicular to route so out-and-back legs don't overlap */
+    var perpRad=(brg+90)*Math.PI/180;
+    var offsetDeg=0.003;
+    arrowLat+=Math.cos(perpRad)*offsetDeg;
+    arrowLon+=Math.sin(perpRad)*offsetDeg;
+    var svgArrow='<svg width="28" height="28" viewBox="0 0 28 28"><polygon points="28,14 4,2 8,14 4,26" fill="#ff1493" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></svg>';
     var arrowIcon=L.divIcon({
       className:'',
-      html:'<div style="font-size:18px;transform:rotate('+(brg-90)+'deg);color:#667eea;text-shadow:0 0 4px rgba(102,126,234,.8)">\u27A4</div>',
-      iconSize:[20,20],
-      iconAnchor:[10,10]
+      html:svgArrow,
+      iconSize:[28,28],
+      iconAnchor:[14,14]
     });
-    var arrowMarker=L.marker([midLat,midLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
+    var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
   /* Fit bounds */
@@ -3111,10 +3222,10 @@ function mbSelectAircraft(){
   var body=document.getElementById('mbBody');
   var html='';
   html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
-  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+ac.fuelUsable+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(ac.fuelUsable*ac.density).toFixed(1)+'</span> kg</td><td id="mbFuelMom">'+(ac.fuelUsable*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
+  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+ac.fuelUsable+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(ac.fuelUsable*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div></td><td id="mbFuelMom">'+(ac.fuelUsable*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
   if(ac.has2seats){
     html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
-    html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
+    html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }else{
     html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="160" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
     html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
@@ -3134,6 +3245,31 @@ function mbRecalc(){
   document.getElementById('mbFuelKg').textContent=fuelKg.toFixed(1);
   var fuelMom=fuelKg*ac.fuelArm;
   document.getElementById('mbFuelMom').textContent=fuelMom.toFixed(2);
+  // Autonomy calculation based on cruise fuel consumption
+  var autoEl=document.getElementById('mbAutonomy');
+  if(autoEl){
+    var tas=parseFloat(document.getElementById('cfgTAS').value)||90;
+    // Find matching cruise consumption from CRUISE_DATA
+    var conso=21.9; // default L/h at ~90kt
+    if(typeof CRUISE_DATA!=='undefined'){
+      for(var ci=0;ci<CRUISE_DATA.length;ci++){
+        var block=CRUISE_DATA[ci];
+        for(var ri=0;ri<block.rows.length;ri++){
+          if(Math.abs(block.rows[ri].tasKt-tas)<5){conso=block.rows[ri].fuelLh;break;}
+        }
+        if(Math.abs(conso-21.9)>0.1)break;
+      }
+    }
+    var reserveMin=parseFloat(document.getElementById('cfgReserve')?document.getElementById('cfgReserve').value:30)||30;
+    var reserveL=conso*(reserveMin/60);
+    var usableForFlight=fuelL-reserveL;
+    if(usableForFlight<0)usableForFlight=0;
+    var autoH=usableForFlight/conso;
+    var autoMin=Math.floor(autoH*60);
+    var h=Math.floor(autoMin/60);
+    var m=autoMin%60;
+    autoEl.innerHTML='\u26FD Autonomie : <b>'+h+'h'+('0'+m).slice(-2)+'</b> (conso '+conso.toFixed(1)+' L/h, r\u00e9serve '+reserveMin+' min)';
+  }
   var pilot1=parseFloat(document.getElementById('mbPilot1').value)||0;
   var pilotMom=pilot1*ac.pilotArm;
   document.getElementById('mbPilotMom').textContent=pilotMom.toFixed(2);
@@ -3485,17 +3621,15 @@ function interpClimb(data,alt){
 }
 
 function perfFromMetar(){
-  // Prioritize EBCV METAR, then departure airport, then any available
-  var depIcao='EBCV';
+  // Use the selected airport from the dropdown
+  var selEl=document.getElementById('perfMetarAirport');
+  var depIcao=selEl?selEl.value:'EBCV';
   if(!wxCache[depIcao]||!wxCache[depIcao].metar){
-    depIcao=null;
-    if(waypoints.length>0) depIcao=waypoints[0].icao;
-    if(!depIcao){
-      var keys=Object.keys(wxCache);
-      for(var k=0;k<keys.length;k++){if(wxCache[keys[k]]&&wxCache[keys[k]].metar){depIcao=keys[k];break;}}
-    }
+    // Try to load it first
+    loadWeather(depIcao);
+    setTimeout(function(){perfFromMetar();},2000);
+    return;
   }
-  if(!depIcao||!wxCache[depIcao]){alert('Aucun METAR disponible. Chargez d\'abord la m\u00E9t\u00E9o (onglet M\u00E9t\u00E9o & Cartes).');return;}
   var wx=wxCache[depIcao];
   if(wx.metar){
     var m=decodeMetar(wx.metar);
