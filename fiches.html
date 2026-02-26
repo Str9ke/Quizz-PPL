@@ -62,6 +62,10 @@
 /* progress bar for category */
 .fcat-progress{height:3px;background:var(--progressbar-bg);border-radius:2px;margin-top:6px;overflow:hidden}
 .fcat-progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;transition:width .3s}
+/* Reading time */
+.fcat-time{display:block;font-size:.68em;font-weight:400;opacity:.55;margin-top:2px}
+.fiches-total-time{text-align:center;font-size:.82em;color:var(--text-secondary);margin:-4px 0 12px;opacity:.7}
+.fiches-total-time span{font-weight:700;color:#667eea}
   </style>
 </head>
 <body>
@@ -74,8 +78,9 @@
     <a href="historique.html" class="top-nav-link">📅 Historique</a>
     <a href="search.html" class="top-nav-link">🔍 Recherche</a>
     <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
-    <a href="navlog.html" class="top-nav-link">🗺️ NavLog</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
     <a href="fiches.html" class="top-nav-link top-nav-current">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
   </div>
 
   <h1>📝 Fiches Mémo PPL</h1>
@@ -1303,6 +1308,107 @@ const FICHES = [
 <li><b>Amerrissage</b> : dans le sens du vent si vagues faibles ; sens des vagues si forte houle</li>
 <li>Gonfler gilets <b>hors</b> de l'aéronef ; sortir par la porte <b>au vent</b></li>
 </ul>`}
+]},
+/* ────────────────── 10. FICHES DE CALCUL ────────────────── */
+{
+  id:'calculs', icon:'🧮', title:'Fiches de calcul (exercices corrigés)',
+  subs:[
+{t:'Centrage (masse & balance)', html:`
+<h3>Exercice : Centrage d'un Cessna 150</h3>
+<table>
+<tr><th>Poste</th><th>Masse (kg)</th><th>Bras (m)</th><th>Moment (m·kg)</th></tr>
+<tr><td>Avion à vide</td><td>530</td><td>0,838</td><td>444,14</td></tr>
+<tr><td>Carburant (50 L × 0,72)</td><td>36</td><td>1,07</td><td>38,52</td></tr>
+<tr><td>Pilote + passager</td><td>150</td><td>0,99</td><td>148,50</td></tr>
+<tr><td>Bagages zone 1</td><td>10</td><td>1,63</td><td>16,30</td></tr>
+<tr><td class="ok"><b>TOTAL</b></td><td class="ok"><b>726</b></td><td></td><td class="ok"><b>647,46</b></td></tr>
+</table>
+<p><span class="formula">CG = Moment total / Masse totale = 647,46 / 726 = <b>0,892 m</b></span></p>
+<ul>
+<li>MTOW Cessna 150 = <b>726 kg</b> → ✅ Masse OK</li>
+<li>Plage de centrage 150M : <b>0,800 – 0,956 m</b> → ✅ CG dans la plage</li>
+<li class="warn">⚠️ Vérifier aussi le centrage à l'atterrissage (après consommation carburant) !</li>
+<li class="formula">Carburant consommé : 25 L/h × 1,5 h = 37,5 L → 27 kg → nouveau moment = 647,46 − (27 × 1,07) = 618,57<br>Nouveau CG = 618,57 / 699 = <b>0,885 m</b> → ✅ OK</li>
+</ul>`},
+{t:'Correction altimétrique (altitude vraie)', html:`
+<h3>Exercice : Altitude vraie</h3>
+<ul>
+<li><b>Données</b> : QNH = 1013 hPa, altitude indiquée = 5000 ft, température réelle = +5°C</li>
+<li>Temp standard à 5000 ft = 15 − (2 × 5) = <b>+5°C</b> → pas d'écart → Alt vraie ≈ 5000 ft</li>
+</ul>
+<h3>Exercice 2 : Avec écart température</h3>
+<ul>
+<li><b>Données</b> : QNH = 1003 hPa, altitude indiquée = 3000 ft, température réelle = −5°C</li>
+<li>Temp standard à 3000 ft = 15 − (2 × 3) = <b>+9°C</b></li>
+<li>Écart = −5 − 9 = <b>−14°C</b> (atmosphère plus froide)</li>
+<li class="formula">Correction = écart × (altitude / 1000) × 4 ft = −14 × 3 × 4 = <b>−168 ft</b></li>
+<li>Correction pression : (1013 − 1003) × 28 = <b>−280 ft</b></li>
+<li>Altitude vraie ≈ 3000 − 168 − 280 = <b>2552 ft</b></li>
+<li class="warn">⚠️ Atmosphère plus froide → altitude vraie <b>plus basse</b> que l'altitude lue</li>
+</ul>`},
+{t:'Composante de vent traversier', html:`
+<h3>Exercice : Vent traversier</h3>
+<ul>
+<li><b>Données</b> : Piste 24 (QFU 240°), vent 280°/20kt</li>
+<li>Angle vent/piste = 280 − 240 = <b>40°</b></li>
+<li class="formula">Composante traversière = Vvent × sin(angle) = 20 × sin(40°) = 20 × 0,64 = <b>13 kt</b></li>
+<li class="formula">Composante face = Vvent × cos(angle) = 20 × cos(40°) = 20 × 0,77 = <b>15 kt face</b></li>
+</ul>
+<h3>Règles rapides (sans calculatrice)</h3>
+<table>
+<tr><th>Angle</th><th>sin ≈</th><th>cos ≈</th><th>Traversier</th><th>Face/arrière</th></tr>
+<tr><td>30°</td><td>0,5</td><td>0,87</td><td>½ du vent</td><td>⅞ du vent</td></tr>
+<tr><td>45°</td><td>0,71</td><td>0,71</td><td>¾ du vent</td><td>¾ du vent</td></tr>
+<tr><td>60°</td><td>0,87</td><td>0,5</td><td>⅞ du vent</td><td>½ du vent</td></tr>
+<tr><td>90°</td><td>1</td><td>0</td><td>100%</td><td>0</td></tr>
+</table>
+<ul>
+<li class="warn">⚠️ Cessna 150 : composante traversière max démontrée = <b>12 kt</b></li>
+</ul>`},
+{t:'Autonomie & distance franchissable', html:`
+<h3>Exercice : Autonomie carburant</h3>
+<ul>
+<li><b>Données</b> : Réservoir = 85 L utilisables, conso = 25 L/h, réserve jour = 30 min</li>
+<li class="formula">Carburant utilisable pour navigation = 85 − (25 × 0,5) = 85 − 12,5 = <b>72,5 L</b></li>
+<li class="formula">Autonomie = 72,5 / 25 = <b>2h54</b></li>
+<li class="formula">Si TAS = 90 kt : Distance max = 90 × 2,9 = <b>261 NM</b></li>
+</ul>
+<h3>Exercice 2 : Avec vent</h3>
+<ul>
+<li><b>Données</b> : TAS 90 kt, vent face 15 kt, conso 25 L/h, carburant 60 L</li>
+<li class="formula">GS = 90 − 15 = <b>75 kt</b></li>
+<li class="formula">Autonomie = 60 / 25 = <b>2h24</b></li>
+<li class="formula">Distance aller = 75 × 2,4 = <b>180 NM</b></li>
+<li class="warn">⚠️ Retour : GS = 90 + 15 = 105 kt → autonomie inchangée mais distance de retour ≠ aller</li>
+</ul>`},
+{t:'Cap magnétique & dérive', html:`
+<h3>Exercice : Calcul du cap</h3>
+<ul>
+<li><b>Données</b> : Route vraie = 135°, déclinaison = −2° (W), vent 180°/20kt, TAS 90kt</li>
+<li>Route magn = Rv + déclin = 135 + 2 = <b>137°</b> (Ouest = ajouter)</li>
+<li>Angle vent/route = 180 − 135 = <b>45°</b> → vent de droite = dérive gauche</li>
+<li class="formula">Dérive ≈ (Vvent / TAS) × 60 × sin(angle) = (20/90) × 60 × 0,71 ≈ <b>9° gauche</b></li>
+<li>Cap magn = 137 + 9 = <b>146°</b> (corriger vers le vent)</li>
+<li>Dév compas = +1° → Cap compas = 146 − 1 = <b>145°</b></li>
+</ul>
+<p class="formula"><b>Mnémonique</b> : Rv + Dm = Rm + Xm = Cm ± Déviation = Cc</p>`},
+{t:'Conversions courantes', html:`
+<h3>Conversions à connaître</h3>
+<table>
+<tr><th>De</th><th>Vers</th><th>Facteur</th><th>Exemple</th></tr>
+<tr><td>NM</td><td>km</td><td>× 1,852</td><td>10 NM = 18,52 km</td></tr>
+<tr><td>km</td><td>NM</td><td>÷ 1,852</td><td>100 km = 54 NM</td></tr>
+<tr><td>ft</td><td>m</td><td>× 0,3048</td><td>1000 ft = 304,8 m</td></tr>
+<tr><td>kt</td><td>km/h</td><td>× 1,852</td><td>100 kt = 185,2 km/h</td></tr>
+<tr><td>USG</td><td>L</td><td>× 3,785</td><td>10 USG = 37,85 L</td></tr>
+<tr><td>lbs</td><td>kg</td><td>× 0,4536</td><td>100 lbs = 45,36 kg</td></tr>
+<tr><td>hPa</td><td>inHg</td><td>÷ 33,86</td><td>1013 hPa = 29,92 inHg</td></tr>
+<tr><td>°C</td><td>°F</td><td>×1,8 + 32</td><td>15°C = 59°F</td></tr>
+</table>
+<ul>
+<li class="formula">1 hPa ≈ <b>28 ft</b> ; ISA = 15°C au sol, −2°C / 1000 ft</li>
+<li class="formula">1 NM ≈ 1 minute d'arc de latitude = <b>1852 m</b></li>
+</ul>`}
 ]}
 ]; // end FICHES
 
@@ -1320,13 +1426,32 @@ const $search = document.getElementById('ficheSearchInput');
 /* Build category grid */
 function buildGrid() {
   $grid.innerHTML = '';
+  let totalWords = 0;
   FICHES.forEach(cat => {
+    // Calculate reading time for this category
+    let catWords = 0;
+    cat.subs.forEach(s => {
+      const tmp = document.createElement('div'); tmp.innerHTML = s.html;
+      catWords += (tmp.textContent || '').split(/\s+/).filter(Boolean).length;
+    });
+    totalWords += catWords;
+    const catMin = Math.max(1, Math.round(catWords / 180));
     const btn = document.createElement('button');
     btn.className = 'fcat-btn' + (activeCat === cat.id ? ' active' : '');
-    btn.innerHTML = cat.icon + ' ' + cat.title + '<span class="fcat-count">' + cat.subs.length + ' sous-thèmes</span>';
+    btn.innerHTML = cat.icon + ' ' + cat.title + '<span class="fcat-count">' + cat.subs.length + ' sous-thèmes</span><span class="fcat-time">⏱ ~' + catMin + ' min de lecture</span>';
     btn.onclick = () => { activeCat = (activeCat === cat.id) ? null : cat.id; activeSub = null; buildGrid(); buildSubs(); buildContent(); };
     $grid.appendChild(btn);
   });
+  // Total reading time
+  let $total = document.getElementById('fichesTotalTime');
+  if (!$total) {
+    $total = document.createElement('div');
+    $total.id = 'fichesTotalTime';
+    $total.className = 'fiches-total-time';
+    $grid.parentNode.insertBefore($total, $grid.nextSibling);
+  }
+  const totalMin = Math.max(1, Math.round(totalWords / 180));
+  $total.innerHTML = '📚 Temps de lecture total : <span>~' + totalMin + ' min</span> (' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches)';
 }
 
 /* Build sub-category pills */

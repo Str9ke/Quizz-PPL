@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Procédures d'urgence - Cessna F-150L</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+.urg-wrap{max-width:900px;margin:0 auto;padding:0 8px 60px}
+.urg-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#3e1a1a 0%,#4e1b2d 50%,#3e1a1a 100%);position:relative;overflow:hidden;margin-bottom:16px}
+.urg-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 50%,rgba(234,102,102,.08) 0%,transparent 50%);pointer-events:none}
+.urg-hero-icon{font-size:2.5rem}
+.urg-hero-title{font-size:1.5rem;font-weight:800;margin:4px 0 0;background:linear-gradient(135deg,#ff6b6b,#ee5a24,#f9ca24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.urg-hero-sub{font-size:.75rem;color:rgba(160,160,184,.6);margin-top:2px}
+body.light .urg-hero{background:linear-gradient(135deg,#fff0f0 0%,#ffe0e8 50%,#fff0f0 100%)}
+body.light .urg-hero-title{background:linear-gradient(135deg,#c0392b,#e74c3c,#d35400);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* Category nav */
+.urg-cats{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px;justify-content:center}
+.urg-cat-btn{padding:8px 14px;font-size:.8em;font-weight:700;border-radius:20px;cursor:pointer;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.urg-cat-btn:hover{border-color:#ff6b6b;color:#ff6b6b}
+.urg-cat-btn.active{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;border-color:transparent}
+
+/* Procedure cards */
+.urg-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.urg-card-hdr{padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700;font-size:.95em;transition:all .2s;user-select:none}
+.urg-card-hdr:hover{background:rgba(255,107,107,.06)}
+.urg-card-hdr .chevron{transition:transform .25s;font-size:.7em;opacity:.6}
+.urg-card-hdr.open .chevron{transform:rotate(90deg)}
+.urg-card-body{display:none;padding:0 16px 16px}
+.urg-card-body.show{display:block}
+
+/* Step list */
+.urg-steps{list-style:none;padding:0;margin:0;counter-reset:step}
+.urg-steps li{position:relative;padding:8px 10px 8px 40px;border-radius:8px;margin-bottom:4px;font-size:.88em;line-height:1.5}
+.urg-steps li::before{counter-increment:step;content:counter(step);position:absolute;left:8px;top:8px;width:22px;height:22px;border-radius:50%;font-size:.75em;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* Color coding by action type */
+.urg-steps li.action-control{background:rgba(102,126,234,.08);border-left:3px solid #667eea}
+.urg-steps li.action-control::before{background:#667eea;color:#fff}
+.urg-steps li.action-fuel{background:rgba(255,152,0,.08);border-left:3px solid #ff9800}
+.urg-steps li.action-fuel::before{background:#ff9800;color:#fff}
+.urg-steps li.action-elec{background:rgba(156,39,176,.08);border-left:3px solid #9c27b0}
+.urg-steps li.action-elec::before{background:#9c27b0;color:#fff}
+.urg-steps li.action-fire{background:rgba(244,67,54,.08);border-left:3px solid #f44336}
+.urg-steps li.action-fire::before{background:#f44336;color:#fff}
+.urg-steps li.action-flight{background:rgba(76,175,80,.08);border-left:3px solid #4caf50}
+.urg-steps li.action-flight::before{background:#4caf50;color:#fff}
+.urg-steps li.action-warn{background:rgba(255,235,59,.08);border-left:3px solid #fdd835}
+.urg-steps li.action-warn::before{background:#fdd835;color:#333}
+.urg-steps li.action-comms{background:rgba(0,188,212,.08);border-left:3px solid #00bcd4}
+.urg-steps li.action-comms::before{background:#00bcd4;color:#fff}
+
+.urg-note{font-size:.82em;color:var(--text-secondary);background:rgba(255,107,107,.06);padding:8px 12px;border-radius:8px;margin-top:8px;border-left:3px solid #ff6b6b}
+.urg-note b{color:#ff6b6b}
+.urg-legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 16px;font-size:.75em}
+.urg-legend span{display:flex;align-items:center;gap:4px}
+.urg-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* Speed badges */
+.urg-speed{display:inline-block;padding:2px 8px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;font-size:.85em;margin:0 2px}
+
+/* Print */
+@media print{
+  .top-nav-bar,.urg-cats,.urg-hero,#themeToggleBtn{display:none!important}
+  .urg-card-body{display:block!important}
+  body{background:#fff;color:#000}
+}
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark')" title="Changer le thème">🌙</button>
+
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
+    <a href="fiches.html" class="top-nav-link">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link top-nav-current">🚨 Urgences</a>
+  </div>
+
+  <div class="urg-hero">
+    <div class="urg-hero-icon">🚨</div>
+    <h1 class="urg-hero-title">Procédures d'urgence</h1>
+    <p class="urg-hero-sub">Cessna F-150L — Manuel de vol</p>
+  </div>
+
+  <div class="urg-wrap">
+    <!-- Legend -->
+    <div class="urg-legend">
+      <span><span class="dot" style="background:#667eea"></span> Commandes de vol</span>
+      <span><span class="dot" style="background:#ff9800"></span> Carburant / Mélange</span>
+      <span><span class="dot" style="background:#9c27b0"></span> Électrique</span>
+      <span><span class="dot" style="background:#f44336"></span> Incendie</span>
+      <span><span class="dot" style="background:#4caf50"></span> Pilotage</span>
+      <span><span class="dot" style="background:#fdd835"></span> Attention</span>
+      <span><span class="dot" style="background:#00bcd4"></span> Radio</span>
+    </div>
+
+    <!-- Category buttons -->
+    <div class="urg-cats" id="urgCats"></div>
+
+    <!-- Procedures -->
+    <div id="urgContent"></div>
+  </div>
+
+  <script>
+(function(){
+'use strict';
+
+/* ============================================================
+   EMERGENCY PROCEDURES DATA — Cessna F-150L
+   ============================================================ */
+const PROCEDURES = [
+/* ── PANNE MOTEUR ── */
+{cat:'engine', catIcon:'⚙️', catLabel:'Panne moteur', title:'Panne moteur avant le décollage', icon:'🛑', steps:[
+  {t:'Freins', cls:'action-control', txt:'<b>FREINS</b> — Appliquer immédiatement'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → ÉTOUFFOIR'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'},
+  {t:'Magnétos', cls:'action-elec', txt:'<b>Sélecteur magnétos</b> → COUPÉ (OFF)'},
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'}
+]},
+{cat:'engine', catIcon:'⚙️', catLabel:'Panne moteur', title:'Panne moteur après le décollage', icon:'⚠️', steps:[
+  {t:'VI', cls:'action-flight', txt:'<b>Afficher</b> <span class="urg-speed">VI 113 km/h — 61 kt</span>'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → ÉTOUFFOIR'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'},
+  {t:'Magnétos', cls:'action-elec', txt:'<b>Sélecteur magnétos</b> → COUPÉ (OFF)'},
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → MARCHE (ON) — pour les volets'}
+], note:'⛔ Atterrir DROIT DEVANT SOI. Ne JAMAIS tenter de revenir vers l\'aire d\'envol !'},
+{cat:'engine', catIcon:'⚙️', catLabel:'Panne moteur', title:'Panne moteur en vol', icon:'🔧', steps:[
+  {t:'VI', cls:'action-flight', txt:'<b>Afficher</b> <span class="urg-speed">VI 113 km/h — 61 kt</span> (finesse maximum avec hélice en moulinet)'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Vérifier carburant</b> → OUVERT (ON)'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → RICHE'},
+  {t:'Gaz', cls:'action-fuel', txt:'<b>Manette des gaz</b> → OUVERT 2,5 cm'},
+  {t:'Magnétos', cls:'action-elec', txt:'<b>Sélecteur magnétos</b> → BOTH'},
+  {t:'Démarreur', cls:'action-elec', txt:'Si hélice arrêtée : <b>actionner le démarreur</b>'}
+], note:'Si le moteur ne redémarre pas → procédure atterrissage en campagne'},
+
+/* ── INCENDIES ── */
+{cat:'fire', catIcon:'🔥', catLabel:'Incendies', title:'Incendie au sol (veine d\'admission)', icon:'🔥', steps:[
+  {t:'Démarreur', cls:'action-elec', txt:'<b>Démarreur</b> → enclenché (laisser tourner 15-30 s)'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → ÉTOUFFOIR'},
+  {t:'Gaz', cls:'action-fuel', txt:'<b>Manette des gaz</b> → PLEIN GAZ'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'}
+]},
+{cat:'fire', catIcon:'🔥', catLabel:'Incendies', title:'Incendie en vol', icon:'🔥', steps:[
+  {t:'Chauffage', cls:'action-fire', txt:'<b>Réchauffage cabine</b> → FERMÉE'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → ÉTOUFFOIR'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'},
+  {t:'Magnétos', cls:'action-elec', txt:'<b>Sélecteur magnétos</b> → COUPÉ (OFF)'},
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'}
+], note:'Ne JAMAIS tenter de redémarrer le moteur après incendie. Atterrissage de campagne.'},
+{cat:'fire', catIcon:'🔥', catLabel:'Incendies', title:'Incendie cabine', icon:'🧯', steps:[
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'},
+  {t:'Chauffage', cls:'action-fire', txt:'<b>Chauffage cabine et aérateurs</b> → FERMÉS'},
+  {t:'Extincteur', cls:'action-fire', txt:'<b>Utiliser extincteur</b> portatif'}
+]},
+{cat:'fire', catIcon:'🔥', catLabel:'Incendies', title:'Incendie voilure', icon:'🔥', steps:[
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'},
+  {t:'Aérateurs', cls:'action-fire', txt:'<b>Aérateurs</b> → FERMÉS'},
+  {t:'Glissade', cls:'action-flight', txt:'<b>Glissade côté opposé</b> à l\'aile en feu pour éteindre les flammes'},
+  {t:'Atterrir', cls:'action-warn', txt:'<b>Atterrir au plus tôt</b> avec volets RENTRÉS'}
+]},
+{cat:'fire', catIcon:'🔥', catLabel:'Incendies', title:'Incendie réseau électrique', icon:'⚡', steps:[
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'},
+  {t:'Switches', cls:'action-elec', txt:'<b>Tous les interrupteurs</b> → ARRÊT'},
+  {t:'Master ON', cls:'action-elec', txt:'<b>Interrupteur général</b> → MARCHE (ON)'},
+  {t:'Test', cls:'action-elec', txt:'<b>Remettre les interrupteurs</b> un par un pour localiser le court-circuit'}
+]},
+
+/* ── ATTERRISSAGES PARTICULIERS ── */
+{cat:'landing', catIcon:'🛬', catLabel:'Atterrissages', title:'Pneu éclaté ou dégonflé', icon:'💥', steps:[
+  {t:'Volets', cls:'action-control', txt:'<b>Volets</b> → sortir normalement'},
+  {t:'Cabrer', cls:'action-flight', txt:'<b>Atterrir en cabrant</b> — maintenir l\'aile haute côté pneu défectueux'},
+  {t:'Freins', cls:'action-control', txt:'<b>Au sol</b> : frein opposé au maximum pour maintenir la trajectoire'},
+  {t:'Moteur', cls:'action-fuel', txt:'<b>Couper le moteur</b>'}
+]},
+{cat:'landing', catIcon:'🛬', catLabel:'Atterrissages', title:'Sans commande de profondeur', icon:'🔴', steps:[
+  {t:'Stabiliser', cls:'action-flight', txt:'<b>Stabiliser le palier</b> à <span class="urg-speed">VI 97 km/h — 52 kt</span>'},
+  {t:'Volets', cls:'action-control', txt:'<b>Volets</b> → 20°'},
+  {t:'Pilotage', cls:'action-flight', txt:'Utiliser <b>la manette des gaz</b> et le <b>compensateur de profondeur</b> pour contrôler la pente'},
+  {t:'Attention', cls:'action-warn', txt:'<b>Couple piqueur</b> à la réduction : l\'avion risque d\'impacter sur la roulette de nez'}
+]},
+{cat:'landing', catIcon:'🛬', catLabel:'Atterrissages', title:'Atterrissage forcé avec moteur', icon:'🏔️', steps:[
+  {t:'Volets', cls:'action-control', txt:'<b>Volets</b> → 20° initialement'},
+  {t:'VI', cls:'action-flight', txt:'<b>Afficher</b> <span class="urg-speed">VI 113 km/h — 61 kt</span>'},
+  {t:'Contacts', cls:'action-elec', txt:'<b>Couper les contacts</b>'},
+  {t:'Volets full', cls:'action-control', txt:'<b>Volets</b> → 40° — vitesse <span class="urg-speed">104 km/h — 56 kt</span>'},
+  {t:'Portes', cls:'action-warn', txt:'<b>Déverrouiller les portes</b> avant l\'impact'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'}
+]},
+{cat:'landing', catIcon:'🛬', catLabel:'Atterrissages', title:'Atterrissage forcé sans moteur', icon:'🌾', steps:[
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Mélange</b> → ÉTOUFFOIR'},
+  {t:'Carburant', cls:'action-fuel', txt:'<b>Carburant</b> → FERMÉ (OFF)'},
+  {t:'Contacts', cls:'action-elec', txt:'<b>Contacts</b> → COUPÉS (OFF)'},
+  {t:'VI', cls:'action-flight', txt:'<b>Afficher</b> <span class="urg-speed">VI 113 km/h — 61 kt</span>'},
+  {t:'Volets', cls:'action-control', txt:'<b>Volets</b> → selon besoin'},
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'},
+  {t:'Portes', cls:'action-warn', txt:'<b>Déverrouiller les portes</b>'}
+]},
+
+/* ── AMERRISSAGE & SITUATIONS ── */
+{cat:'special', catIcon:'🌊', catLabel:'Situations spéciales', title:'Amerrissage (ditching)', icon:'🌊', steps:[
+  {t:'Objets', cls:'action-warn', txt:'<b>Arrimer les objets lourds</b> dans la cabine'},
+  {t:'Mayday', cls:'action-comms', txt:'<b>MAYDAY</b> sur <span class="urg-speed">121.5 MHz</span> — transmettre position'},
+  {t:'Direction', cls:'action-flight', txt:'<b>Face au vent</b> (ou parallèle aux vagues si vent faible)'},
+  {t:'Volets', cls:'action-control', txt:'<b>Volets</b> → 40° — vitesse <span class="urg-speed">104 km/h — 56 kt</span>'},
+  {t:'Taux', cls:'action-flight', txt:'<b>Taux de descente</b> ≈ 300 ft/min'},
+  {t:'Tête', cls:'action-warn', txt:'<b>Protéger la tête</b> à l\'impact'},
+  {t:'Évacuer', cls:'action-warn', txt:'<b>Évacuer rapidement</b> par la porte au vent'},
+  {t:'Gilets', cls:'action-warn', txt:'<b>Gonfler les gilets</b> APRÈS avoir quitté l\'avion'}
+]},
+{cat:'special', catIcon:'🌊', catLabel:'Situations spéciales', title:'Vol en conditions de givrage', icon:'❄️', steps:[
+  {t:'Pitot', cls:'action-elec', txt:'<b>Réchauffage Pitot</b> → ON'},
+  {t:'Altitude', cls:'action-flight', txt:'<b>Changer d\'altitude</b> pour sortir des conditions givrantes'},
+  {t:'Chauffage', cls:'action-fire', txt:'<b>Chauffage cabine</b> → PLEIN (full hot)'},
+  {t:'RPM', cls:'action-fuel', txt:'<b>Augmenter le régime moteur</b>'},
+  {t:'Carbu', cls:'action-fuel', txt:'<b>Réchauffage carburateur</b> → ON'},
+  {t:'Atterrir', cls:'action-warn', txt:'<b>Atterrir dès que possible</b>'},
+  {t:'Approche', cls:'action-flight', txt:'<b>Vitesse d\'approche majorée</b> : <span class="urg-speed">113 à 129 km/h</span>'},
+  {t:'Virages', cls:'action-warn', txt:'<b>Pas de virages serrés</b>'},
+  {t:'Atterrir', cls:'action-flight', txt:'<b>Atterrir à plat</b> (pas de cabré excessif)'}
+], note:'13 étapes critiques — le givrage peut survenir même en été entre les couches'},
+{cat:'special', catIcon:'🌊', catLabel:'Situations spéciales', title:'Vrille involontaire en IMC', icon:'🌀', steps:[
+  {t:'Gaz', cls:'action-fuel', txt:'<b>Fermer la manette des gaz</b>'},
+  {t:'Ailerons', cls:'action-control', txt:'<b>Ailerons + palonnier</b> → centrer le bille (coordinateur de virage)'},
+  {t:'Vitesse', cls:'action-flight', txt:'<b>Réduire à</b> <span class="urg-speed">129 km/h — 70 kt</span>'},
+  {t:'Stabiliser', cls:'action-flight', txt:'<b>Stabiliser l\'avion</b> — ne pas toucher le manche'},
+  {t:'Palonnier', cls:'action-control', txt:'<b>Utiliser UNIQUEMENT le palonnier</b> pour le contrôle directionnel'},
+  {t:'Carbu', cls:'action-fuel', txt:'<b>Réchauffage carburateur</b> si conditions givrantes'}
+]},
+
+/* ── PANNES ÉLECTRIQUES ── */
+{cat:'elec', catIcon:'⚡', catLabel:'Pannes électriques', title:'Panne électrique complète', icon:'🔌', steps:[
+  {t:'Master', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT (OFF)'},
+  {t:'Atterrir', cls:'action-warn', txt:'<b>Atterrir dès que possible</b>'}
+]},
+{cat:'elec', catIcon:'⚡', catLabel:'Pannes électriques', title:'Panne d\'alternateur', icon:'🔋', steps:[
+  {t:'Non-essentiels', cls:'action-elec', txt:'<b>Couper les équipements non essentiels</b>'},
+  {t:'Reset', cls:'action-elec', txt:'<b>Tenter un reset</b> de l\'alternateur (une seule tentative)'},
+  {t:'Batterie', cls:'action-warn', txt:'Si échec : vol sur <b>batterie uniquement</b> — autonomie limitée'}
+], note:'Ne tenter qu\'un seul reset. Si le problème persiste, atterrir rapidement.'},
+{cat:'elec', catIcon:'⚡', catLabel:'Pannes électriques', title:'Surtension', icon:'⚡', steps:[
+  {t:'Master OFF', cls:'action-elec', txt:'<b>Interrupteur général</b> → ARRÊT puis MARCHE'},
+  {t:'Voyant', cls:'action-warn', txt:'Si le voyant <b>se rallume</b> → atterrir dès que possible'}
+]},
+
+/* ── MOTEUR ── */
+{cat:'motor', catIcon:'🔩', catLabel:'Pannes moteur annexes', title:'Givrage carburateur', icon:'🧊', steps:[
+  {t:'Plein gaz', cls:'action-fuel', txt:'<b>Pleine puissance</b> + <b>plein réchauffage carburateur</b>'},
+  {t:'Attendre', cls:'action-warn', txt:'<b>Attendre</b> que le moteur tourne rond (passage turbulent normal)'},
+  {t:'Réchauf OFF', cls:'action-fuel', txt:'<b>Réchauffage</b> → ARRÊT une fois le moteur stabilisé'},
+  {t:'Continu', cls:'action-fuel', txt:'Si réchauffage continu nécessaire : utiliser le <b>minimum de réchauffage</b> + <b>appauvrir le mélange</b>'}
+]},
+{cat:'motor', catIcon:'🔩', catLabel:'Pannes moteur annexes', title:'Encrassement bougies', icon:'🔧', steps:[
+  {t:'Test', cls:'action-elec', txt:'<b>Tester L puis R</b> pour identifier la ou les bougies'},
+  {t:'Mélange', cls:'action-fuel', txt:'<b>Appauvrir le mélange</b>'},
+  {t:'Si échec', cls:'action-fuel', txt:'Si pas d\'amélioration : essayer <b>mélange plus riche</b>'},
+  {t:'Retour', cls:'action-warn', txt:'<b>Retourner au terrain le plus proche</b> en sélecteur BOTH'}
+]},
+{cat:'motor', catIcon:'🔩', catLabel:'Pannes moteur annexes', title:'Panne magnéto', icon:'🧲', steps:[
+  {t:'Test', cls:'action-elec', txt:'<b>Tester L puis R</b> pour identifier la magnéto défaillante'},
+  {t:'RPM', cls:'action-fuel', txt:'<b>Essayer différents régimes</b> + mélange plus riche'},
+  {t:'Sélecteur', cls:'action-elec', txt:'Si nécessaire : <b>sélectionner la bonne magnéto</b> uniquement'},
+  {t:'Retour', cls:'action-warn', txt:'<b>Retourner au terrain le plus proche</b>'}
+]}
+];
+
+/* ============================================================
+   UI LOGIC
+   ============================================================ */
+const CATS = [];
+const catMap = {};
+PROCEDURES.forEach(p => {
+  if (!catMap[p.cat]) {
+    catMap[p.cat] = true;
+    CATS.push({id: p.cat, icon: p.catIcon, label: p.catLabel});
+  }
+});
+
+let activeCat = null;
+const $cats = document.getElementById('urgCats');
+const $content = document.getElementById('urgContent');
+
+function buildCats() {
+  $cats.innerHTML = '';
+  // "All" button
+  const allBtn = document.createElement('button');
+  allBtn.className = 'urg-cat-btn' + (activeCat === null ? ' active' : '');
+  allBtn.textContent = '📋 Toutes';
+  allBtn.onclick = () => { activeCat = null; buildCats(); buildContent(); };
+  $cats.appendChild(allBtn);
+  CATS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'urg-cat-btn' + (activeCat === c.id ? ' active' : '');
+    btn.textContent = c.icon + ' ' + c.label;
+    btn.onclick = () => { activeCat = (activeCat === c.id) ? null : c.id; buildCats(); buildContent(); };
+    $cats.appendChild(btn);
+  });
+}
+
+function buildContent() {
+  $content.innerHTML = '';
+  const procs = activeCat ? PROCEDURES.filter(p => p.cat === activeCat) : PROCEDURES;
+  procs.forEach(proc => {
+    const card = document.createElement('div');
+    card.className = 'urg-card';
+    const hdr = document.createElement('div');
+    hdr.className = 'urg-card-hdr open';
+    hdr.innerHTML = '<span class="chevron">▶</span> ' + proc.icon + ' ' + proc.title;
+    // Color the header based on category
+    const catColors = {engine:'#667eea', fire:'#f44336', landing:'#4caf50', special:'#ff9800', elec:'#9c27b0', motor:'#00bcd4'};
+    hdr.style.borderLeft = '4px solid ' + (catColors[proc.cat] || '#667eea');
+    const body = document.createElement('div');
+    body.className = 'urg-card-body show';
+    let stepsHtml = '<ol class="urg-steps">';
+    proc.steps.forEach(s => {
+      stepsHtml += '<li class="' + s.cls + '">' + s.txt + '</li>';
+    });
+    stepsHtml += '</ol>';
+    if (proc.note) {
+      stepsHtml += '<div class="urg-note"><b>⚠️ Note :</b> ' + proc.note + '</div>';
+    }
+    body.innerHTML = stepsHtml;
+    hdr.onclick = () => { hdr.classList.toggle('open'); body.classList.toggle('show'); };
+    card.appendChild(hdr);
+    card.appendChild(body);
+    $content.appendChild(card);
+  });
+}
+
+/* Theme */
+(function(){
+  if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+})();
+
+buildCats();
+buildContent();
+})();
+  </script>
+</body>
+</html>

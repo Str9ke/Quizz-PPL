@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#121218">
-  <title>NavLog - Pr&#xe9;paration Vol VFR</title>
+  <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?v=20260224d" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -25,11 +25,33 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
 /* Tabs */
 .navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px}
-.navlog-tab{flex:1;padding:12px 8px;font-size:.9em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center}
+.navlog-tab{flex:1;padding:12px 8px;font-size:.82em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center}
 .navlog-tab:hover{color:#667eea}
 .navlog-tab.active{color:#667eea;border-bottom-color:#667eea}
 .navlog-tab-content{display:none;max-width:960px;margin:0 auto;padding:0 10px 40px}
 .navlog-tab-content.active{display:block}
+
+/* Mass & Balance table */
+.mb-table{width:100%;border-collapse:collapse;font-size:.88em;margin-top:8px}
+.mb-table th{text-align:left;padding:6px 8px;background:rgba(102,126,234,.12);color:#667eea;font-weight:700;border-bottom:2px solid rgba(102,126,234,.3);font-size:.85em}
+.mb-table td{padding:5px 8px;border-bottom:1px solid var(--border-color)}
+.mb-table td:first-child{font-weight:600;color:var(--text-heading);white-space:nowrap}
+.mb-table input[type="number"]{width:70px;padding:4px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--input-bg);color:var(--input-text);font-size:.88em;text-align:right}
+.mb-total td{font-weight:700;border-top:2px solid rgba(102,126,234,.3);background:rgba(102,126,234,.05)}
+.mb-ok{color:#4caf50;font-weight:700}.mb-warn{color:#ff9800;font-weight:700}.mb-danger{color:#f44336;font-weight:700}
+
+/* Performance tables */
+.perf-section{margin-bottom:14px}
+.perf-section h4{margin:0 0 6px;color:#667eea;font-size:.95em;border-bottom:2px solid rgba(102,126,234,.2);padding-bottom:4px}
+.perf-table{width:100%;border-collapse:collapse;font-size:.82em}
+.perf-table th{padding:5px 6px;background:rgba(102,126,234,.1);color:#667eea;font-weight:700;text-align:center;border-bottom:2px solid rgba(102,126,234,.3);font-size:.8em}
+.perf-table td{padding:4px 6px;border-bottom:1px solid var(--border-color);text-align:center}
+.perf-table tr.perf-highlight{background:rgba(102,126,234,.15);font-weight:700}
+.perf-calc-detail{font-size:.82em;color:var(--text-secondary);margin:4px 0 10px;padding:8px 12px;background:rgba(102,126,234,.05);border-radius:8px;border-left:3px solid #667eea}
+.perf-result-box{display:inline-block;padding:8px 16px;border-radius:10px;font-weight:700;font-size:.95em;margin:4px 6px 4px 0}
+.perf-result-box.green{background:rgba(76,175,80,.15);color:#4caf50;border:1px solid rgba(76,175,80,.3)}
+.perf-result-box.orange{background:rgba(255,152,0,.15);color:#ff9800;border:1px solid rgba(255,152,0,.3)}
+.perf-result-box.red{background:rgba(244,67,54,.15);color:#f44336;border:1px solid rgba(244,67,54,.3)}
 
 /* Cards */
 .nl-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
@@ -311,13 +333,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <a href="rates.html" class="top-nav-link">&#x1F4D6; R&#xe9;vision</a>
     <a href="historique.html" class="top-nav-link">&#x1F4C5; Historique</a>
     <a href="symboles.html" class="top-nav-link">&#x1F523; Symboles</a>
-    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; NavLog</a>
+    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; Briefing</a>
     <a href="fiches.html" class="top-nav-link">&#x1F4DD; Fiches</a>
+    <a href="urgences.html" class="top-nav-link">&#x1F6A8; Urgences</a>
   </div>
 
   <div class="navlog-hero">
     <div class="navlog-hero-icon">&#x2708;&#xFE0F;</div>
-    <h1 class="navlog-hero-title">NavLog VFR</h1>
+    <h1 class="navlog-hero-title">Briefing Pr&#xe9;vol</h1>
     <p class="navlog-hero-sub">Pr&#xe9;paration de vol &amp; navigation</p>
   </div>
 
@@ -325,7 +348,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <div class="navlog-tabs">
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navigation</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
-    <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers Pr&#xe9;vol</button>
+    <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
+    <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
+    <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
   </div>
 
   <!-- ==================== TAB 1: NAVIGATION ==================== -->
@@ -602,7 +627,92 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
   </div>
 
-  <!-- ==================== TAB 3: DOSSIERS PREVOL ==================== -->
+  <!-- ==================== TAB 3: MASSE & CENTRAGE ==================== -->
+  <div id="tab-masse" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x2696;&#xFE0F;</span> Fiche de pes&#xe9;e et centrage</div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:.85em;color:var(--text-secondary);font-weight:600">A&#xe9;ronef :</label>
+        <select id="mbAircraft" onchange="window.mbSelectAircraft()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em;margin-left:6px">
+          <option value="OO-WAC">Cessna F-150M &mdash; OO-WAC</option>
+          <option value="OO-WEO">Cessna F-150M &mdash; OO-WEO</option>
+          <option value="OO-FCE">Cessna F-172M &mdash; OO-FCE</option>
+        </select>
+        <span id="mbDateLabel" style="font-size:.78em;color:var(--text-secondary);margin-left:12px"></span>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:.85em;color:var(--text-secondary);font-weight:600">Date du vol :</label>
+        <input type="date" id="mbFlightDate" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em;margin-left:6px">
+      </div>
+      <table class="mb-table" id="mbTable">
+        <thead>
+          <tr><th>Poste</th><th>Bras (m)</th><th>Masse (kg)</th><th>Moment (m&middot;kg)</th></tr>
+        </thead>
+        <tbody id="mbBody"></tbody>
+        <tfoot>
+          <tr class="mb-total" id="mbTotalRow"><td><b>TOTAL D&#xe9;collage</b></td><td id="mbTotalArm">—</td><td id="mbTotalMass">—</td><td id="mbTotalMom">—</td></tr>
+          <tr class="mb-total" id="mbLandRow"><td><b>TOTAL Atterrissage</b></td><td id="mbLandArm">—</td><td id="mbLandMass">—</td><td id="mbLandMom">—</td></tr>
+        </tfoot>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div>
+          <label style="font-size:.82em;color:var(--text-secondary)">D&#xe9;lestage pr&#xe9;vu (L) :</label>
+          <input type="number" id="mbDelestage" value="0" min="0" max="200" step="1" onchange="window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="mbStatus" style="margin-top:12px;padding:10px 14px;border-radius:10px;font-size:.88em;font-weight:600"></div>
+
+      <!-- CG Envelope chart -->
+      <div style="margin-top:16px">
+        <div class="nl-card-title"><span class="icon">&#x1F4C8;</span> Enveloppe de centrage</div>
+        <canvas id="mbChart" width="500" height="340" style="width:100%;max-width:500px;display:block;margin:0 auto"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 4: PERFORMANCE ==================== -->
+  <div id="tab-perf" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances Cessna F-150L</div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:12px">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</p>
+
+      <!-- Inputs -->
+      <div class="config-grid" style="margin-bottom:14px">
+        <div class="config-item">
+          <label for="perfElev">&#xe9;l&#xe9;vation terrain (ft)</label>
+          <input type="number" id="perfElev" value="0" min="0" max="10000" step="100" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfTemp">Temp&#xe9;rature (&#xb0;C)</label>
+          <input type="number" id="perfTemp" value="15" min="-40" max="50" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfQNH">QNH (hPa)</label>
+          <input type="number" id="perfQNH" value="1013" min="950" max="1060" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfWind">Vent face (kt)</label>
+          <input type="number" id="perfWind" value="0" min="0" max="40" onchange="window.perfCalc()">
+        </div>
+      </div>
+      <button onclick="window.perfFromMetar()" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.82em;margin-bottom:14px">&#x1F327;&#xFE0F; Remplir depuis METAR d&#xe9;part</button>
+
+      <!-- Results -->
+      <div id="perfResults"></div>
+    </div>
+
+    <!-- Cruise Performance -->
+    <div class="nl-card" style="margin-top:14px">
+      <div class="nl-card-title"><span class="icon">&#x2708;&#xFE0F;</span> Performances de croisi&#xe8;re</div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:8px">Volets rentr&#xe9;s &mdash; Mélange réglé</p>
+      <div id="cruiseTable"></div>
+      <p style="font-size:.72em;color:var(--text-secondary);margin-top:6px">Notes : Croisi&#xe8;re max normalement limit&#xe9;e &#xe0; 75% puissance. Performances avec car&#xe9;nages de roues. Sans car&#xe9;nages : −3,15 km/h aux vitesses &#xe9;lev&#xe9;es, −1,6 km/h aux faibles.</p>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 5: DOSSIERS PREVOL ==================== -->
   <div id="tab-dossiers" class="navlog-tab-content">
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4BE;</span> Sauvegarder le dossier</div>
@@ -812,7 +922,7 @@ function switchTab(id){
     t.classList.remove('active');
     contents[i].classList.remove('active');
   });
-  var map={nav:0,meteo:1,dossiers:2};
+  var map={nav:0,meteo:1,masse:2,perf:3,dossiers:4};
   var idx=map[id]||0;
   tabs[idx].classList.add('active');
   contents[idx].classList.add('active');
@@ -826,6 +936,8 @@ function switchTab(id){
       if(!_meteoSubLoaded[subId]) switchMeteoSub(subId);
     }
   }
+  if(id==='masse') window.mbInit();
+  if(id==='perf') window.perfCalc();
 }
 window.switchTab=switchTab;
 
@@ -2449,7 +2561,8 @@ function saveDossier(){
     flightType:flightType,
     windyUrls:getWindyUrls(),
     mapImages:getMapImages(),
-    extraImages:getExtraImages()
+    extraImages:getExtraImages(),
+    massBalance:typeof getMBData==='function'?getMBData():null
   };
   dossiers.push(dossier);
   setDossiers(dossiers);
@@ -2520,6 +2633,11 @@ function loadDossier(id){
     extraImages=d.extraImages;
     sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
     renderExtraImages();
+  }
+  /* Restore mass & balance */
+  if(d.massBalance && typeof setMBData==='function'){
+    mbInit();
+    setMBData(d.massBalance);
   }
   renderNavlog();
   recalcNavlog();
@@ -2940,6 +3058,459 @@ window.decodeTaf=decodeTaf;
 window.recalcNavlog=recalcNavlog;
 window.updateWindRose=updateWindRose;
 window.updateRouteMap=updateRouteMap;
+
+/* ========================================================
+   MASS & BALANCE MODULE
+   ======================================================== */
+var MB_DATA = {
+  'OO-WAC': {
+    type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, density:0.72,
+    emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
+    fuelArm:1.07, pilotArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    has2seats:true, weighDate:'18/06/2019',
+    envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
+  },
+  'OO-WEO': {
+    type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, density:0.72,
+    emptyMass:517.82, emptyArm:0.8382, emptyMom:434.04,
+    fuelArm:1.07, pilotArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    has2seats:true, weighDate:'12/06/2014',
+    envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
+  },
+  'OO-FCE': {
+    type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, density:0.72,
+    emptyMass:665.87, emptyArm:0.99345, emptyMom:661.51,
+    fuelArm:1.22, pilotArm:0.94, paxArm:1.06, bag1Arm:2.41, bag2Arm:3.12,
+    has2seats:false, weighDate:'13/04/2012',
+    envelope:[{m:675,mom:605},{m:890,mom:780},{m:1043,mom:1020},{m:1043,mom:1260},{m:675,mom:810}]
+  }
+};
+var mbInited=false;
+function mbInit(){
+  if(mbInited) return;
+  mbInited=true;
+  var today=new Date().toISOString().slice(0,10);
+  document.getElementById('mbFlightDate').value=today;
+  mbSelectAircraft();
+}
+window.mbInit=mbInit;
+
+function mbSelectAircraft(){
+  var sel=document.getElementById('mbAircraft').value;
+  var ac=MB_DATA[sel];
+  if(!ac) return;
+  document.getElementById('mbDateLabel').textContent='Pes\u00e9e du '+ac.weighDate;
+  var body=document.getElementById('mbBody');
+  var html='';
+  html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
+  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+ac.fuelUsable+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(ac.fuelUsable*ac.density).toFixed(1)+'</span> kg</td><td id="mbFuelMom">'+(ac.fuelUsable*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
+  if(ac.has2seats){
+    html+='<tr><td>Pilote &amp; passager</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+  }else{
+    html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="160" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
+  }
+  html+='<tr><td>Bagages zone 1</td><td>'+ac.bag1Arm.toFixed(2)+'</td><td><input type="number" id="mbBag1" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag1Mom">—</td></tr>';
+  html+='<tr><td>Bagages zone 2</td><td>'+ac.bag2Arm.toFixed(2)+'</td><td><input type="number" id="mbBag2" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag2Mom">—</td></tr>';
+  body.innerHTML=html;
+  mbRecalc();
+}
+window.mbSelectAircraft=mbSelectAircraft;
+
+function mbRecalc(){
+  var sel=document.getElementById('mbAircraft').value;
+  var ac=MB_DATA[sel]; if(!ac) return;
+  var fuelL=parseFloat(document.getElementById('mbFuel').value)||0;
+  var fuelKg=fuelL*ac.density;
+  document.getElementById('mbFuelKg').textContent=fuelKg.toFixed(1);
+  var fuelMom=fuelKg*ac.fuelArm;
+  document.getElementById('mbFuelMom').textContent=fuelMom.toFixed(2);
+  var pilot1=parseFloat(document.getElementById('mbPilot1').value)||0;
+  var pilotMom=pilot1*ac.pilotArm;
+  document.getElementById('mbPilotMom').textContent=pilotMom.toFixed(2);
+  var paxMass=0, paxMom=0;
+  if(!ac.has2seats){
+    paxMass=parseFloat(document.getElementById('mbPax').value)||0;
+    paxMom=paxMass*(ac.paxArm||0);
+    document.getElementById('mbPaxMom').textContent=paxMom.toFixed(2);
+  }
+  var bag1=parseFloat(document.getElementById('mbBag1').value)||0;
+  var bag1Mom=bag1*ac.bag1Arm;
+  document.getElementById('mbBag1Mom').textContent=bag1Mom.toFixed(2);
+  var bag2=parseFloat(document.getElementById('mbBag2').value)||0;
+  var bag2Mom=bag2*ac.bag2Arm;
+  document.getElementById('mbBag2Mom').textContent=bag2Mom.toFixed(2);
+  // Totals takeoff
+  var totalMass=ac.emptyMass+fuelKg+pilot1+paxMass+bag1+bag2;
+  var totalMom=ac.emptyMom+fuelMom+pilotMom+paxMom+bag1Mom+bag2Mom;
+  var totalArm=totalMass>0?totalMom/totalMass:0;
+  document.getElementById('mbTotalMass').textContent=totalMass.toFixed(1);
+  document.getElementById('mbTotalMom').textContent=totalMom.toFixed(2);
+  document.getElementById('mbTotalArm').textContent=totalArm.toFixed(4);
+  // Landing (after delestage)
+  var delL=parseFloat(document.getElementById('mbDelestage').value)||0;
+  var delKg=delL*ac.density;
+  var landMass=totalMass-delKg;
+  var landMom=totalMom-(delKg*ac.fuelArm);
+  var landArm=landMass>0?landMom/landMass:0;
+  document.getElementById('mbLandMass').textContent=landMass.toFixed(1);
+  document.getElementById('mbLandMom').textContent=landMom.toFixed(2);
+  document.getElementById('mbLandArm').textContent=landArm.toFixed(4);
+  // Status
+  var massOk=totalMass<=ac.mtow;
+  var cgInEnv=pointInEnvelope(totalMass,totalMom,ac.envelope);
+  var landCgInEnv=pointInEnvelope(landMass,landMom,ac.envelope);
+  var st=document.getElementById('mbStatus');
+  var msgs=[];
+  if(!massOk) msgs.push('<span class="mb-danger">\u274C Masse d\u00e9collage '+totalMass.toFixed(0)+' kg d\u00e9passe MTOW '+ac.mtow+' kg !</span>');
+  else msgs.push('<span class="mb-ok">\u2705 Masse d\u00e9collage '+totalMass.toFixed(0)+' kg \u2264 MTOW '+ac.mtow+' kg</span>');
+  if(!cgInEnv) msgs.push('<span class="mb-danger">\u274C CG d\u00e9collage HORS enveloppe !</span>');
+  else msgs.push('<span class="mb-ok">\u2705 CG d\u00e9collage dans l\'enveloppe</span>');
+  if(!landCgInEnv) msgs.push('<span class="mb-warn">\u26A0\uFE0F CG atterrissage hors enveloppe</span>');
+  else msgs.push('<span class="mb-ok">\u2705 CG atterrissage dans l\'enveloppe</span>');
+  st.innerHTML=msgs.join('<br>');
+  st.style.background=(massOk&&cgInEnv)?'rgba(76,175,80,.1)':'rgba(244,67,54,.1)';
+  st.style.border='1px solid '+((massOk&&cgInEnv)?'rgba(76,175,80,.3)':'rgba(244,67,54,.3)');
+  // Draw chart
+  drawMBChart(ac,totalMass,totalMom,landMass,landMom);
+}
+window.mbRecalc=mbRecalc;
+
+function pointInEnvelope(mass,mom,env){
+  // Ray casting
+  var inside=false;
+  for(var i=0,j=env.length-1;i<env.length;j=i++){
+    var yi=env[i].m,xi=env[i].mom,yj=env[j].m,xj=env[j].mom;
+    if(((yi>mass)!==(yj>mass))&&(mom<(xj-xi)*(mass-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+
+function drawMBChart(ac,toMass,toMom,ldMass,ldMom){
+  var c=document.getElementById('mbChart');
+  if(!c) return;
+  var ctx=c.getContext('2d');
+  var W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  var env=ac.envelope;
+  // Find bounds
+  var minM=Infinity,maxM=0,minMom=Infinity,maxMom=0;
+  env.forEach(function(p){minM=Math.min(minM,p.m);maxM=Math.max(maxM,p.m);minMom=Math.min(minMom,p.mom);maxMom=Math.max(maxMom,p.mom);});
+  var pad=40; var cW=W-pad*2, cH=H-pad*2;
+  var mRange=maxM-minM||1, momRange=maxMom-minMom||1;
+  // Add 10% margin
+  minM-=mRange*0.1;maxM+=mRange*0.1;minMom-=momRange*0.1;maxMom+=momRange*0.1;
+  mRange=maxM-minM;momRange=maxMom-minMom;
+  function tx(mom){return pad+(mom-minMom)/momRange*cW;}
+  function ty(m){return pad+cH-(m-minM)/mRange*cH;}
+  // Grid
+  ctx.strokeStyle='rgba(160,160,184,.15)';ctx.lineWidth=1;
+  for(var g=0;g<5;g++){
+    var gy=pad+cH*g/4;ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(W-pad,gy);ctx.stroke();
+    var gx=pad+cW*g/4;ctx.beginPath();ctx.moveTo(gx,pad);ctx.lineTo(gx,H-pad);ctx.stroke();
+  }
+  // Envelope polygon
+  ctx.beginPath();
+  env.forEach(function(p,i){var x=tx(p.mom),y=ty(p.m);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
+  ctx.closePath();
+  ctx.fillStyle='rgba(102,126,234,.12)';ctx.fill();
+  ctx.strokeStyle='#667eea';ctx.lineWidth=2;ctx.stroke();
+  // Labels on axes
+  ctx.fillStyle='rgba(160,160,184,.7)';ctx.font='10px system-ui';ctx.textAlign='center';
+  ctx.fillText('Moment (m\u00b7kg)',W/2,H-4);
+  ctx.save();ctx.translate(10,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Masse (kg)',0,0);ctx.restore();
+  // Axis values
+  for(var a=0;a<5;a++){
+    var mv=minM+mRange*a/4;ctx.fillText(mv.toFixed(0),pad-5,ty(mv)+3);
+    var mmv=minMom+momRange*a/4;ctx.fillText(mmv.toFixed(0),tx(mmv),H-pad+12);
+  }
+  // Plot points
+  function plotPt(m,mom,label,color){
+    var x=tx(mom),y=ty(m);
+    ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle=color;ctx.font='bold 11px system-ui';ctx.textAlign='left';
+    ctx.fillText(label+' ('+m.toFixed(0)+' kg)',x+10,y+4);
+  }
+  plotPt(toMass,toMom,'D\u00e9co','#667eea');
+  plotPt(ldMass,ldMom,'Atterr','#e040fb');
+}
+
+function getMBData(){
+  var sel=document.getElementById('mbAircraft').value;
+  var ac=MB_DATA[sel]||{};
+  return {
+    aircraft:sel,
+    flightDate:document.getElementById('mbFlightDate').value,
+    fuel:parseFloat(document.getElementById('mbFuel').value)||0,
+    pilot1:parseFloat(document.getElementById('mbPilot1').value)||0,
+    pax:document.getElementById('mbPax')?parseFloat(document.getElementById('mbPax').value)||0:0,
+    bag1:parseFloat(document.getElementById('mbBag1').value)||0,
+    bag2:parseFloat(document.getElementById('mbBag2').value)||0,
+    delestage:parseFloat(document.getElementById('mbDelestage').value)||0
+  };
+}
+function setMBData(d){
+  if(!d) return;
+  if(d.aircraft){document.getElementById('mbAircraft').value=d.aircraft;mbSelectAircraft();}
+  if(d.flightDate) document.getElementById('mbFlightDate').value=d.flightDate;
+  if(d.fuel!==undefined) document.getElementById('mbFuel').value=d.fuel;
+  if(d.pilot1!==undefined) document.getElementById('mbPilot1').value=d.pilot1;
+  var paxEl=document.getElementById('mbPax');
+  if(paxEl&&d.pax!==undefined) paxEl.value=d.pax;
+  if(d.bag1!==undefined) document.getElementById('mbBag1').value=d.bag1;
+  if(d.bag2!==undefined) document.getElementById('mbBag2').value=d.bag2;
+  if(d.delestage!==undefined) document.getElementById('mbDelestage').value=d.delestage;
+  mbRecalc();
+}
+
+/* ========================================================
+   PERFORMANCE MODULE (Cessna F-150L)
+   ======================================================== */
+/* Takeoff distance data: [alt_ft, temp_C, groundRoll_m, over15m_m] */
+var PERF_TO = [
+  {alt:0,    temp:15, roll:224, over15:422},
+  {alt:2500, temp:10, roll:277, over15:605},
+  {alt:5000, temp:5,  roll:340, over15:744},
+  {alt:7500, temp:0,  roll:414, over15:0}  // extrapolated
+];
+/* Wind correction: per 10kt headwind, reduce distances */
+var PERF_TO_WIND = [
+  {alt:0,    temp:15, w10:{roll:152,over15:315}, w20:{roll:93,over15:222}},
+  {alt:2500, temp:10, w10:{roll:192,over15:381}, w20:{roll:120,over15:271}},
+  {alt:5000, temp:5,  w10:{roll:238,over15:460}, w20:{roll:154,over15:332}},
+  {alt:7500, temp:0,  w10:{roll:296,over15:572}, w20:{roll:195,over15:419}}
+];
+/* Landing data */
+var PERF_LD = [
+  {alt:0,    temp:15, roll:136, over15:328},
+  {alt:2500, temp:10, roll:143, over15:346},
+  {alt:5000, temp:5,  roll:151, over15:364},
+  {alt:7500, temp:0,  roll:158, over15:383}
+];
+/* Max climb rate */
+var PERF_CLIMB = [
+  {alt:0,    temp:15, rateMs:3.4, rateFpm:670, vi_kmh:122, fuelLh:26.5},
+  {alt:5000, temp:5,  rateMs:2.2, rateFpm:440, vi_kmh:117, fuelLh:23.0},
+  {alt:10000,temp:-5, rateMs:1.12,rateFpm:220, vi_kmh:113, fuelLh:11.4}
+];
+/* Cruise performance table */
+var CRUISE_DATA = [
+  {alt:2500, rows:[
+    {rpm:2750,hp:92,tasKmh:194,tasKt:105,fuelLh:26.5},
+    {rpm:2700,hp:86,tasKmh:189,tasKt:102,fuelLh:24.2},
+    {rpm:2600,hp:78,tasKmh:180,tasKt:97,fuelLh:21.9},
+    {rpm:2500,hp:68,tasKmh:169,tasKt:91,fuelLh:19.3},
+    {rpm:2400,hp:61,tasKmh:157,tasKt:85,fuelLh:17.4},
+    {rpm:2300,hp:53,tasKmh:143,tasKt:77,fuelLh:15.1},
+    {rpm:2200,hp:46,tasKmh:131,tasKt:71,fuelLh:13.6},
+    {rpm:2100,hp:40,tasKmh:128,tasKt:69,fuelLh:12.1}
+  ]},
+  {alt:5000, rows:[
+    {rpm:2750,hp:85,tasKmh:194,tasKt:105,fuelLh:24.2},
+    {rpm:2700,hp:78,tasKmh:189,tasKt:102,fuelLh:21.9},
+    {rpm:2600,hp:69,tasKmh:178,tasKt:96,fuelLh:19.3},
+    {rpm:2500,hp:61,tasKmh:167,tasKt:90,fuelLh:17.4},
+    {rpm:2400,hp:54,tasKmh:154,tasKt:83,fuelLh:15.1},
+    {rpm:2300,hp:46,tasKmh:139,tasKt:75,fuelLh:13.6},
+    {rpm:2200,hp:40,tasKmh:124,tasKt:67,fuelLh:12.1},
+    {rpm:2100,hp:37,tasKmh:115,tasKt:62,fuelLh:11.4}
+  ]},
+  {alt:7500, rows:[
+    {rpm:2700,hp:74,tasKmh:189,tasKt:102,fuelLh:20.8},
+    {rpm:2600,hp:66,tasKmh:178,tasKt:96,fuelLh:18.5},
+    {rpm:2500,hp:58,tasKmh:169,tasKt:91,fuelLh:16.7},
+    {rpm:2400,hp:52,tasKmh:158,tasKt:85,fuelLh:15.1},
+    {rpm:2300,hp:45,tasKmh:143,tasKt:77,fuelLh:13.6},
+    {rpm:2200,hp:40,tasKmh:124,tasKt:67,fuelLh:12.1}
+  ]},
+  {alt:10000, rows:[
+    {rpm:2700,hp:68,tasKmh:187,tasKt:101,fuelLh:19.3},
+    {rpm:2600,hp:61,tasKmh:176,tasKt:95,fuelLh:17.4},
+    {rpm:2500,hp:54,tasKmh:165,tasKt:89,fuelLh:15.5},
+    {rpm:2400,hp:48,tasKmh:150,tasKt:81,fuelLh:14.0},
+    {rpm:2300,hp:42,tasKmh:132,tasKt:71,fuelLh:12.5}
+  ]},
+  {alt:12500, rows:[
+    {rpm:2650,hp:60,tasKmh:178,tasKt:96,fuelLh:17.0},
+    {rpm:2600,hp:56,tasKmh:171,tasKt:92,fuelLh:16.3},
+    {rpm:2500,hp:50,tasKmh:156,tasKt:84,fuelLh:14.7},
+    {rpm:2400,hp:44,tasKmh:138,tasKt:75,fuelLh:13.2}
+  ]}
+];
+
+function perfCalc(){
+  var elev=parseFloat(document.getElementById('perfElev').value)||0;
+  var temp=parseFloat(document.getElementById('perfTemp').value)||15;
+  var qnh=parseFloat(document.getElementById('perfQNH').value)||1013;
+  var wind=parseFloat(document.getElementById('perfWind').value)||0;
+  // Pressure altitude
+  var pressAlt=elev+((1013-qnh)*28);
+  // ISA deviation
+  var isaTemp=15-(pressAlt/1000)*2;
+  var isaDev=temp-isaTemp;
+  // Interpolate takeoff
+  var to=interpPerf(PERF_TO,pressAlt);
+  // Temperature correction: +10% per 15°C above standard
+  var tempFactor=1+(isaDev/15)*0.1;
+  if(tempFactor<0.85) tempFactor=0.85;
+  var toRoll=to.roll*tempFactor;
+  var toOver=to.over15*tempFactor;
+  // Wind correction
+  if(wind>0){
+    var toW=interpPerfWind(PERF_TO_WIND,pressAlt,wind);
+    toRoll=toW.roll*tempFactor;
+    toOver=toW.over15*tempFactor;
+  }
+  // Landing
+  var ld=interpPerf(PERF_LD,pressAlt);
+  var ldRoll=ld.roll*tempFactor;
+  var ldOver=ld.over15*tempFactor;
+  // Wind correction for landing: -10% per 7.5kt headwind
+  if(wind>0){
+    var wFactor=1-(wind/7.5)*0.1;
+    if(wFactor<0.5) wFactor=0.5;
+    ldRoll*=wFactor;
+    ldOver*=wFactor;
+  }
+  // Climb rate
+  var cl=interpClimb(PERF_CLIMB,pressAlt);
+  var clRate=cl.rateFpm;
+  // Temp correction for climb (approx -1% per °C above ISA)
+  if(isaDev>0) clRate*=(1-isaDev*0.01);
+  var html='';
+  html+='<div class="perf-calc-detail">';
+  html+='\uD83D\uDCCF <b>Altitude pression</b> = '+elev+' + ((1013 \u2212 '+qnh+') \u00D7 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
+  html+='\uD83C\uDF21\uFE0F <b>ISA \u00E0 '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'\u00B0C \u2192 \u00E9cart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'\u00B0C</b>';
+  if(isaDev>0) html+=' (correction +'+((isaDev/15)*10).toFixed(0)+'% distances)';
+  html+='</div>';
+  // Results boxes
+  html+='<div style="margin:10px 0">';
+  html+='<div class="perf-result-box '+(toRoll<300?'green':toRoll<450?'orange':'red')+'">\uD83D\uDEEB D\u00E9collage roulement : <b>'+toRoll.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">\uD83D\uDEEB D\u00E9collage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
+  html+='</div><div style="margin:10px 0">';
+  html+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">\uD83D\uDEEC Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">\uD83D\uDEEC Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
+  html+='</div><div style="margin:10px 0">';
+  html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">\u2B06\uFE0F Taux mont\u00E9e max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h)</div>';
+  html+='</div>';
+  // Takeoff table
+  html+='<div class="perf-section"><h4>\uD83D\uDEEB Distance de d\u00E9collage (volets rentr\u00E9s, piste en dur, masse max 726 kg)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  PERF_TO.forEach(function(r){
+    var hi=Math.abs(r.alt-pressAlt)<1300;
+    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'\u2014')+'</td></tr>';
+  });
+  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Augmenter de 10% par tranche de 15\u00B0C au-dessus de la temp standard.</p></div>';
+  // Landing table
+  html+='<div class="perf-section"><h4>\uD83D\uDEEC Roulement \u00E0 l\'atterrissage (volets baiss\u00E9s, piste en dur, gaz r\u00E9duits)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  PERF_LD.forEach(function(r){
+    var hi=Math.abs(r.alt-pressAlt)<1300;
+    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+r.over15+'</td></tr>';
+  });
+  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Diminuer de 10% par tranche de 7,5 kt de vent debout. Augmenter de 10% par tranche de 15\u00B0C au-dessus de la temp standard.</p></div>';
+  // Climb table
+  html+='<div class="perf-section"><h4>\u2B06\uFE0F Taux de mont\u00E9e maximum (volets rentr\u00E9s, plein gaz)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (\u00B0C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th></tr>';
+  PERF_CLIMB.forEach(function(r){
+    var hi=Math.abs(r.alt-pressAlt)<3000;
+    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.rateFpm+'</td><td>'+r.rateMs.toFixed(2)+'</td><td>'+r.vi_kmh+'</td></tr>';
+  });
+  html+='</table></div>';
+  document.getElementById('perfResults').innerHTML=html;
+  // Build cruise table
+  buildCruiseTable();
+}
+window.perfCalc=perfCalc;
+
+function interpPerf(data,alt){
+  if(alt<=data[0].alt) return {roll:data[0].roll,over15:data[0].over15};
+  for(var i=1;i<data.length;i++){
+    if(alt<=data[i].alt){
+      var f=(alt-data[i-1].alt)/(data[i].alt-data[i-1].alt);
+      return {roll:data[i-1].roll+(data[i].roll-data[i-1].roll)*f, over15:data[i-1].over15+(data[i].over15-data[i-1].over15)*f};
+    }
+  }
+  return {roll:data[data.length-1].roll,over15:data[data.length-1].over15};
+}
+
+function interpPerfWind(data,alt,wind){
+  // Interpolate between 0 wind, 10kt, 20kt
+  var base=interpPerf(PERF_TO,alt);
+  if(wind<=0) return base;
+  var w10=interpPerfRow(data,'w10',alt);
+  var w20=interpPerfRow(data,'w20',alt);
+  if(wind<=10){
+    var f=wind/10;
+    return {roll:base.roll+(w10.roll-base.roll)*f, over15:base.over15+(w10.over15-base.over15)*f};
+  }else{
+    var f2=Math.min((wind-10)/10,1);
+    return {roll:w10.roll+(w20.roll-w10.roll)*f2, over15:w10.over15+(w20.over15-w10.over15)*f2};
+  }
+}
+function interpPerfRow(data,key,alt){
+  if(alt<=data[0].alt) return data[0][key];
+  for(var i=1;i<data.length;i++){
+    if(alt<=data[i].alt){
+      var f=(alt-data[i-1].alt)/(data[i].alt-data[i-1].alt);
+      return {roll:data[i-1][key].roll+(data[i][key].roll-data[i-1][key].roll)*f, over15:data[i-1][key].over15+(data[i][key].over15-data[i-1][key].over15)*f};
+    }
+  }
+  return data[data.length-1][key];
+}
+
+function interpClimb(data,alt){
+  if(alt<=data[0].alt) return data[0];
+  for(var i=1;i<data.length;i++){
+    if(alt<=data[i].alt){
+      var f=(alt-data[i-1].alt)/(data[i].alt-data[i-1].alt);
+      return {rateFpm:data[i-1].rateFpm+(data[i].rateFpm-data[i-1].rateFpm)*f,
+              rateMs:data[i-1].rateMs+(data[i].rateMs-data[i-1].rateMs)*f,
+              vi_kmh:data[i-1].vi_kmh+(data[i].vi_kmh-data[i-1].vi_kmh)*f,
+              fuelLh:data[i-1].fuelLh+(data[i].fuelLh-data[i-1].fuelLh)*f};
+    }
+  }
+  return data[data.length-1];
+}
+
+function perfFromMetar(){
+  // Try to get departure airport METAR
+  var depIcao=null;
+  if(waypoints.length>0) depIcao=waypoints[0].icao;
+  if(!depIcao){
+    var keys=Object.keys(wxCache);
+    if(keys.length>0) depIcao=keys[0];
+  }
+  if(!depIcao||!wxCache[depIcao]){alert('Aucun METAR de d\u00E9part disponible. Chargez d\'abord un a\u00E9rodrome.');return;}
+  var wx=wxCache[depIcao];
+  if(wx.metar){
+    var m=decodeMetar(wx.metar);
+    if(m.tempC!==undefined) document.getElementById('perfTemp').value=m.tempC;
+    if(m.qnh) document.getElementById('perfQNH').value=m.qnh;
+    if(m.windSpeed!==undefined) document.getElementById('perfWind').value=m.windSpeed;
+  }
+  perfCalc();
+}
+window.perfFromMetar=perfFromMetar;
+
+function buildCruiseTable(){
+  var tas=parseFloat(document.getElementById('cfgTAS').value)||90;
+  var fuelUsable=85; // std tank
+  var html='';
+  CRUISE_DATA.forEach(function(block){
+    html+='<div class="perf-section" style="margin-top:10px"><h4>\u2708\uFE0F '+block.alt+' ft</h4>';
+    html+='<table class="perf-table"><tr><th>RPM</th><th>%HP</th><th>TAS km/h</th><th>TAS kt</th><th>Conso L/h</th><th>Autonomie (85L)</th><th>Distance NM</th></tr>';
+    block.rows.forEach(function(r){
+      var endur=(fuelUsable/r.fuelLh);
+      var dist=r.tasKt*endur;
+      var hi=Math.abs(r.tasKt-tas)<5;
+      html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.rpm+'</td><td>'+r.hp+'</td><td>'+r.tasKmh+'</td><td>'+r.tasKt+'</td><td>'+r.fuelLh+'</td><td>'+endur.toFixed(1)+'h</td><td>'+dist.toFixed(0)+'</td></tr>';
+    });
+    html+='</table></div>';
+  });
+  document.getElementById('cruiseTable').innerHTML=html;
+}
 
 document.addEventListener('DOMContentLoaded',init);
 })();
