@@ -186,16 +186,17 @@
 
     <!-- ===== COCKPIT INSTRUMENTS TAB ===== -->
     <div id="tabCockpit" style="display:none;">
-      <!-- Sub-test selector -->
-      <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">
-        <button class="sym-mode-btn active" id="ckpTestFlight" onclick="setCockpitTest('flight')">🎛️ Instruments de vol</button>
-        <button class="sym-mode-btn" id="ckpTestEngine" onclick="setCockpitTest('engine')">⚙️ Instruments moteur & bord</button>
-      </div>
-      <p style="font-size:.85em;color:var(--text-secondary);text-align:center;margin-bottom:12px">
-        Cliquez sur chaque instrument numéroté pour l'identifier — Cessna F-150
+      <p style="font-size:.92em;color:var(--text-secondary);text-align:center;margin-bottom:10px;font-weight:600">
+        🎛️ Tableau de bord — Cessna F-150L (Figure 2, Manuel de vol)
       </p>
+      <p style="font-size:.82em;color:var(--text-secondary);text-align:center;margin-bottom:14px">
+        37 éléments numérotés à identifier. Sélectionnez la bonne réponse pour chaque numéro.
+      </p>
+      <div style="text-align:center;margin-bottom:14px">
+        <img src="IMAGES_EASA_AERODYNAMIQUE/cockpit_c150.png" alt="Tableau de bord Cessna F-150L" style="width:100%;max-width:820px;border-radius:12px;border:2px solid var(--border-color);box-shadow:0 4px 20px rgba(0,0,0,.3)">
+      </div>
       <div id="cockpitPanel" style="max-width:700px;margin:0 auto"></div>
-      <div style="text-align:center;margin-top:10px">
+      <div style="text-align:center;margin-top:12px">
         <button class="cloud-check-btn" onclick="checkCockpitAnswers()">✅ Vérifier</button>
         <button class="cloud-check-btn" onclick="resetCockpitTest()" style="background:transparent;border:1px solid var(--border-color);color:var(--text-secondary);margin-top:6px">🔄 Réinitialiser</button>
       </div>
@@ -1488,71 +1489,63 @@
     // ================================================
     // COCKPIT INSTRUMENT IDENTIFICATION TEST
     // ================================================
-    var COCKPIT_FLIGHT = [
-      {id:1, name:'Anémomètre (ASI)', desc:'Vitesse air indiquée — bandes colorées (Vne, Vno, arc blanc/vert)', x:15, y:20, color:'#4caf50'},
-      {id:2, name:'Horizon artificiel', desc:'Assiette de l\'avion — bleu ciel / marron terre', x:38, y:20, color:'#2196f3'},
-      {id:3, name:'Altimètre', desc:'Altitude en ft — aiguille + fenêtre de calage (QNH/QFE)', x:62, y:20, color:'#ff9800'},
-      {id:4, name:'Coordinateur de virage', desc:'Bille + avion symbolique — inclinaison & dérapage', x:15, y:55, color:'#9c27b0'},
-      {id:5, name:'Indicateur de cap (DG)', desc:'Rose des caps gyroscopique — recalé sur compas magnétique', x:38, y:55, color:'#00bcd4'},
-      {id:6, name:'Variomètre (VSI)', desc:'Taux de montée/descente en ft/min', x:62, y:55, color:'#e91e63'},
-      {id:7, name:'Indicateur VOR/ILS (CDI)', desc:'Aiguille de déviation + sélecteur OBS — navigation VOR', x:85, y:20, color:'#ff5722'},
-      {id:8, name:'Indicateur ADF (RMI)', desc:'Aiguille pointant vers la station NDB — gisement relatif', x:85, y:55, color:'#795548'},
-      {id:9, name:'Compas magnétique', desc:'Suspendu au pare-brise — référence magnétique primaire', x:50, y:3, color:'#607d8b'}
-    ];
-    var COCKPIT_ENGINE = [
-      {id:1, name:'Tachymètre (RPM)', desc:'Régime moteur en tours/minute — zone verte 2100-2550, rouge 2750', x:20, y:20, color:'#4caf50'},
-      {id:2, name:'Jauge carburant', desc:'Niveau de carburant dans le réservoir — graduée en litres ou gallons', x:50, y:20, color:'#ff9800'},
-      {id:3, name:'Pression d\'huile', desc:'Pression du circuit d\'huile en PSI — zone verte 30-60 PSI', x:80, y:20, color:'#f44336'},
-      {id:4, name:'Température d\'huile', desc:'Température de l\'huile moteur en °C — zone verte 75-245°F', x:20, y:55, color:'#e91e63'},
-      {id:5, name:'Ampèremètre', desc:'Charge/décharge du circuit électrique — centre = normal', x:50, y:55, color:'#9c27b0'},
-      {id:6, name:'Indicateur de dépression', desc:'Aspiration gyroscopes (horizon, DG) — normal 4.6-5.4 inHg', x:80, y:55, color:'#00bcd4'},
-      {id:7, name:'Réchauffage carburateur', desc:'Commande tirette — important en conditions givrantes', x:15, y:85, color:'#795548'},
-      {id:8, name:'Mélange (mixture)', desc:'Commande rouge — appauvrir en altitude, étouffoir pour arrêt', x:40, y:85, color:'#f44336'},
-      {id:9, name:'Manette des gaz', desc:'Commande noire — contrôle de la puissance moteur', x:65, y:85, color:'#333'},
-      {id:10, name:'Compensateur profondeur', desc:'Molette de trim — annule l\'effort au manche', x:85, y:85, color:'#607d8b'}
+    var COCKPIT_ITEMS = [
+      {id:1,  name:'Indicateur de virage'},
+      {id:2,  name:'Anémomètre'},
+      {id:3,  name:'Gyro directionnel (OPT)'},
+      {id:4,  name:'Gyro horizon (OPT)'},
+      {id:5,  name:'Montre (OPT)'},
+      {id:6,  name:'Immatriculation appareil'},
+      {id:7,  name:'Variomètre (OPT)'},
+      {id:8,  name:'Altimètre'},
+      {id:9,  name:'Voyants Marker Beacon et commutateurs radio (OPT)'},
+      {id:10, name:'VOR et ILS (OPT)'},
+      {id:11, name:'Rétroviseur avec levier de réglage'},
+      {id:12, name:'Radios (OPT)'},
+      {id:13, name:'Tachymètre'},
+      {id:14, name:'Indicateurs essence et huile'},
+      {id:15, name:'ADF (OPT)'},
+      {id:16, name:'Manomètre de dépression (OPT)'},
+      {id:17, name:'Ampèremètre'},
+      {id:18, name:'Lampe témoin de surtension'},
+      {id:19, name:'Boîte à cartes'},
+      {id:20, name:'Commande climatisation (air chaud et froid)'},
+      {id:21, name:'Commande volets'},
+      {id:22, name:'Allume-cigares (OPT)'},
+      {id:23, name:'Commande de mélange'},
+      {id:24, name:'Commande de Wing Leveler (OPT)'},
+      {id:25, name:'Microphone (OPT)'},
+      {id:26, name:'Volant commande de tab de profondeur'},
+      {id:27, name:'Commande des gaz'},
+      {id:28, name:'Commande réchauffage carburateur'},
+      {id:29, name:'Interrupteurs électriques'},
+      {id:30, name:'Fusibles'},
+      {id:31, name:'Disjoncteur de l\'alternateur'},
+      {id:32, name:'Rhéostat d\'éclairage radio'},
+      {id:33, name:'Rhéostat d\'éclairage instruments'},
+      {id:34, name:'Contact allumage démarrage'},
+      {id:35, name:'Interrupteur général'},
+      {id:36, name:'Commande pompe d\'injection'},
+      {id:37, name:'Frein de parking'}
     ];
 
-    var cockpitTestType = 'flight';
     var cockpitInited = false;
 
-    function setCockpitTest(type) {
-      cockpitTestType = type;
-      document.getElementById('ckpTestFlight').classList.toggle('active', type === 'flight');
-      document.getElementById('ckpTestEngine').classList.toggle('active', type === 'engine');
-      setupCockpitTest();
-    }
-    window.setCockpitTest = setCockpitTest;
-
     function setupCockpitTest() {
-      var instruments = cockpitTestType === 'flight' ? COCKPIT_FLIGHT : COCKPIT_ENGINE;
       var panel = document.getElementById('cockpitPanel');
-      var title = cockpitTestType === 'flight' ? 'Planche de bord — Instruments de vol (T basique)' : 'Planche de bord — Instruments moteur & commandes';
-      // Build the panel as a visual grid
-      var html = '<div style="text-align:center;font-weight:700;margin-bottom:8px;color:#667eea;font-size:.92em">' + title + '</div>';
-      html += '<div style="position:relative;width:100%;aspect-ratio:4/3;background:var(--bg-question);border:2px solid var(--border-color);border-radius:16px;overflow:hidden">';
-      // Draw instrument positions
-      instruments.forEach(function(inst) {
-        var shuffled = instruments.map(function(i) { return i.name; }).sort(function() { return Math.random() - 0.5; });
-        html += '<div style="position:absolute;left:' + inst.x + '%;top:' + inst.y + '%;transform:translate(-50%,-50%);text-align:center;z-index:2">';
-        // Circular instrument face
-        html += '<div style="width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(30,30,50,.9),rgba(15,15,30,.95));border:3px solid ' + inst.color + ';display:flex;align-items:center;justify-content:center;margin:0 auto 4px;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:help" title="' + inst.desc + '">';
-        html += '<span style="color:#fff;font-weight:800;font-size:1.1em">' + inst.id + '</span>';
-        html += '</div>';
-        // Dropdown
-        html += '<select data-answer="' + inst.name + '" class="ckp-sel" style="width:110px;font-size:.7em;padding:3px 4px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);text-align:center">';
-        html += '<option value="">?</option>';
+      // Build shuffled answer list
+      var allNames = COCKPIT_ITEMS.map(function(it) { return it.name; });
+      var html = '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center">';
+      COCKPIT_ITEMS.forEach(function(item) {
+        var shuffled = allNames.slice().sort(function() { return Math.random() - 0.5; });
+        html += '<div style="font-weight:700;color:#667eea;text-align:right;font-size:.88em;white-space:nowrap">' + item.id + '.</div>';
+        html += '<select data-answer="' + item.name.replace(/'/g, '&#39;') + '" class="ckp-sel" style="width:100%;font-size:.82em;padding:5px 8px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text)">';
+        html += '<option value="">— choisir —</option>';
         shuffled.forEach(function(name) {
-          html += '<option value="' + name + '">' + name.split('(')[0].trim() + '</option>';
+          html += '<option value="' + name.replace(/'/g, '&#39;') + '">' + name + '</option>';
         });
         html += '</select>';
-        html += '</div>';
       });
-      // Panel decoration
-      if (cockpitTestType === 'flight') {
-        html += '<div style="position:absolute;left:50%;top:88%;transform:translateX(-50%);font-size:.7em;color:rgba(160,160,184,.4);font-weight:600">── Disposition en T basique ──</div>';
-      } else {
-        html += '<div style="position:absolute;left:50%;top:95%;transform:translateX(-50%);font-size:.7em;color:rgba(160,160,184,.4);font-weight:600">── Commandes & indicateurs moteur ──</div>';
-      }
       html += '</div>';
       panel.innerHTML = html;
       document.getElementById('cockpitScore').textContent = '';
@@ -1563,7 +1556,7 @@
       var correct = 0;
       var total = selects.length;
       selects.forEach(function(sel) {
-        var answer = sel.getAttribute('data-answer');
+        var answer = sel.getAttribute('data-answer').replace(/&#39;/g, "'");
         sel.style.borderColor = '';
         sel.style.background = '';
         if (sel.value === answer) {
@@ -1573,6 +1566,15 @@
         } else {
           sel.style.borderColor = '#f44336';
           sel.style.background = 'rgba(244,67,54,.15)';
+          // Show correct answer after the select
+          var fb = sel.parentNode.querySelector('.ckp-feedback');
+          if (!fb) {
+            fb = document.createElement('span');
+            fb.className = 'ckp-feedback';
+            fb.style.cssText = 'font-size:.75em;color:#f44336;margin-left:6px;font-weight:600';
+            sel.parentNode.appendChild(fb);
+          }
+          fb.textContent = '→ ' + answer;
         }
       });
       var pct = Math.round(correct / total * 100);

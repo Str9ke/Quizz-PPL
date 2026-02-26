@@ -468,10 +468,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card">
         <div class="map-card-title">&#x1F4E1; Radar de Pr&#xe9;cipitations HD &#x2014; Europe</div>
         <div class="iframe-card">
-          <iframe id="radarFrame" src="about:blank" data-src="https://www.rainviewer.com/map.html?loc=49.5,3.0,6&oFa=1&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar&sm=1&sn=1" style="height:520px" loading="lazy" allow="geolocation"></iframe>
+          <iframe id="radarFrame" src="about:blank" data-src="https://www.rainviewer.com/map.html?loc=50.459,3.821,9&oFa=1&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar&sm=1&sn=1" style="height:520px" loading="lazy" allow="geolocation"></iframe>
         </div>
         <div class="map-card-actions">
-          <a href="https://www.rainviewer.com/map.html?loc=49.5,3.0,6&layer=radar" target="_blank" rel="noopener">&#x1F517; RainViewer</a>
+          <a href="https://www.rainviewer.com/map.html?loc=50.459,3.821,9&layer=radar" target="_blank" rel="noopener">&#x1F517; RainViewer</a>
           <a href="https://meteologix.com/be/radar-hd/europe" target="_blank" rel="noopener">&#x1F4E1; Meteologix Radar HD</a>
           <button onclick="var f=document.getElementById('radarFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
@@ -634,6 +634,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div style="margin-bottom:12px">
         <label style="font-size:.85em;color:var(--text-secondary);font-weight:600">A&#xe9;ronef :</label>
         <select id="mbAircraft" onchange="window.mbSelectAircraft()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em;margin-left:6px">
+          <option value="OO-MQA">Cessna F-150M &mdash; OO-MQA</option>
           <option value="OO-WAC">Cessna F-150M &mdash; OO-WAC</option>
           <option value="OO-WEO">Cessna F-150M &mdash; OO-WEO</option>
           <option value="OO-FCE">Cessna F-172M &mdash; OO-FCE</option>
@@ -682,7 +683,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="config-grid" style="margin-bottom:14px">
         <div class="config-item">
           <label for="perfElev">&#xe9;l&#xe9;vation terrain (ft)</label>
-          <input type="number" id="perfElev" value="0" min="0" max="10000" step="100" onchange="window.perfCalc()">
+          <input type="number" id="perfElev" value="67" min="0" max="10000" step="1" onchange="window.perfCalc()">
         </div>
         <div class="config-item">
           <label for="perfTemp">Temp&#xe9;rature (&#xb0;C)</label>
@@ -1923,7 +1924,7 @@ function calcLeg(dist,routeTrue,cfg,legWind){
     else wca=0;
   }
   var hdgTrue=routeTrue+rad2deg(wca);
-  var gs=cfg.tas*Math.cos(wca)+wSpd*Math.cos(deg2rad(wDir-routeTrue));
+  var gs=cfg.tas*Math.cos(wca)-wSpd*Math.cos(deg2rad(wDir-routeTrue));
   if(gs<10) gs=10;
   var eteH=dist/gs;
   var fuelL=eteH*cfg.fuel;
@@ -3063,17 +3064,24 @@ window.updateRouteMap=updateRouteMap;
    MASS & BALANCE MODULE
    ======================================================== */
 var MB_DATA = {
+  'OO-MQA': {
+    type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, density:0.72,
+    emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
+    fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    has2seats:true, weighDate:'—',
+    envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
+  },
   'OO-WAC': {
     type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
-    fuelArm:1.07, pilotArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
   'OO-WEO': {
     type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, density:0.72,
     emptyMass:517.82, emptyArm:0.8382, emptyMom:434.04,
-    fuelArm:1.07, pilotArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
     has2seats:true, weighDate:'12/06/2014',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -3105,7 +3113,8 @@ function mbSelectAircraft(){
   html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
   html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+ac.fuelUsable+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(ac.fuelUsable*ac.density).toFixed(1)+'</span> kg</td><td id="mbFuelMom">'+(ac.fuelUsable*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
   if(ac.has2seats){
-    html+='<tr><td>Pilote &amp; passager</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }else{
     html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="160" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
     html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
@@ -3129,9 +3138,10 @@ function mbRecalc(){
   var pilotMom=pilot1*ac.pilotArm;
   document.getElementById('mbPilotMom').textContent=pilotMom.toFixed(2);
   var paxMass=0, paxMom=0;
-  if(!ac.has2seats){
-    paxMass=parseFloat(document.getElementById('mbPax').value)||0;
-    paxMom=paxMass*(ac.paxArm||0);
+  var paxEl=document.getElementById('mbPax');
+  if(paxEl){
+    paxMass=parseFloat(paxEl.value)||0;
+    paxMom=paxMass*(ac.paxArm||ac.pilotArm);
     document.getElementById('mbPaxMom').textContent=paxMom.toFixed(2);
   }
   var bag1=parseFloat(document.getElementById('mbBag1').value)||0;
@@ -3475,20 +3485,25 @@ function interpClimb(data,alt){
 }
 
 function perfFromMetar(){
-  // Try to get departure airport METAR
-  var depIcao=null;
-  if(waypoints.length>0) depIcao=waypoints[0].icao;
-  if(!depIcao){
-    var keys=Object.keys(wxCache);
-    if(keys.length>0) depIcao=keys[0];
+  // Prioritize EBCV METAR, then departure airport, then any available
+  var depIcao='EBCV';
+  if(!wxCache[depIcao]||!wxCache[depIcao].metar){
+    depIcao=null;
+    if(waypoints.length>0) depIcao=waypoints[0].icao;
+    if(!depIcao){
+      var keys=Object.keys(wxCache);
+      for(var k=0;k<keys.length;k++){if(wxCache[keys[k]]&&wxCache[keys[k]].metar){depIcao=keys[k];break;}}
+    }
   }
-  if(!depIcao||!wxCache[depIcao]){alert('Aucun METAR de d\u00E9part disponible. Chargez d\'abord un a\u00E9rodrome.');return;}
+  if(!depIcao||!wxCache[depIcao]){alert('Aucun METAR disponible. Chargez d\'abord la m\u00E9t\u00E9o (onglet M\u00E9t\u00E9o & Cartes).');return;}
   var wx=wxCache[depIcao];
   if(wx.metar){
     var m=decodeMetar(wx.metar);
     if(m.tempC!==undefined) document.getElementById('perfTemp').value=m.tempC;
     if(m.qnh) document.getElementById('perfQNH').value=m.qnh;
     if(m.windSpeed!==undefined) document.getElementById('perfWind').value=m.windSpeed;
+    // Set elevation from airport data if available
+    if(AIRPORT_ELEV[depIcao]) document.getElementById('perfElev').value=AIRPORT_ELEV[depIcao];
   }
   perfCalc();
 }
