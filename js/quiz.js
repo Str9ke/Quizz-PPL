@@ -244,15 +244,15 @@ async function demarrerQuiz() {
 /**
  * toggleMarquerQuestion() – Marque ou supprime une question marquée
  */
-function toggleMarquerQuestion(questionId, button) {
+function toggleMarquerQuestion(questionIdx, button) {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer ou supprimer une question.");
     return;
   }
 
-  // Trouver la question dans la liste actuelle pour obtenir sa catégorie correcte
-  const question = currentQuestions.find(q => q.id === questionId);
+  // Trouver la question par index dans le tableau (évite collision d'id entre catégories)
+  const question = currentQuestions[questionIdx];
   if (!question) {
     console.error("Question introuvable dans la catégorie sélectionnée.");
     return;
@@ -295,14 +295,14 @@ function toggleMarquerQuestion(questionId, button) {
     });
 }
 
-function toggleImportantQuestion(questionId, button) {
+function toggleImportantQuestion(questionIdx, button) {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour marquer une question comme importante.");
     return;
   }
 
-  const question = currentQuestions.find(q => q.id === questionId);
+  const question = currentQuestions[questionIdx];
   if (!question) {
     console.error("Question introuvable dans la catégorie sélectionnée.");
     return;
@@ -363,13 +363,13 @@ function afficherBoutonsMarquer() {
     const btn = document.createElement('button');
     btn.textContent = isMarked ? "Supprimer" : "Marquer";
     btn.className   = isMarked ? "delete-button" : "mark-button";
-    btn.onclick     = () => toggleMarquerQuestion(q.id, btn);
+    btn.onclick     = () => toggleMarquerQuestion(idx, btn);
     row.appendChild(btn);
 
     const btnImp = document.createElement('button');
     btnImp.textContent = isImportant ? "Retirer Important" : "Important";
     btnImp.className   = isImportant ? "delete-button" : "mark-button";
-    btnImp.onclick     = () => toggleImportantQuestion(q.id, btnImp);
+    btnImp.onclick     = () => toggleImportantQuestion(idx, btnImp);
     row.appendChild(btnImp);
 
     // Bouton Ma note (dans la même ligne)
@@ -566,7 +566,7 @@ function afficherQuiz() {
         <div class="answer-list">
           ${q.choix.map((c, i) => 
             `<label style="display:block;margin-bottom:4px;">
-               <input type="radio" name="q${q.id}" value="${i}"> <span>${c}</span>
+               <input type="radio" name="qidx${idx}" value="${i}"> <span>${c}</span>
              </label>`
           ).join('')}
         </div>
@@ -595,10 +595,10 @@ function afficherQuiz() {
     scoreDiv.innerHTML = `Score : <span id="immScoreVal">0</span> / <span id="immScoreTotal">${currentQuestions.length}</span> — <span id="immScoreAnswered">0</span> répondue(s)`;
     cont.insertBefore(scoreDiv, cont.firstChild);
 
-    currentQuestions.forEach(q => {
-      const radios = document.querySelectorAll(`input[name="q${q.id}"]`);
+    currentQuestions.forEach((q, idx) => {
+      const radios = document.querySelectorAll(`input[name="qidx${idx}"]`);
       radios.forEach(radio => {
-        radio.addEventListener('change', () => handleImmediateAnswer(q, radio));
+        radio.addEventListener('change', () => handleImmediateAnswer(q, radio, idx));
       });
     });
   }
@@ -607,13 +607,13 @@ function afficherQuiz() {
 /**
  * handleImmediateAnswer() – Gère la correction immédiate d'une question
  */
-function handleImmediateAnswer(q, selectedRadio) {
+function handleImmediateAnswer(q, selectedRadio, idx) {
   const selectedVal = parseInt(selectedRadio.value);
   const isCorrect = selectedVal === q.bonne_reponse;
 
-  // Sauvegarder la réponse en mémoire (pour validerReponses)
+  // Sauvegarder la réponse en mémoire (pour validerReponses) — indexé par position dans le tableau
   if (!window._immediateAnswers) window._immediateAnswers = {};
-  window._immediateAnswers[q.id] = selectedVal;
+  window._immediateAnswers[idx] = selectedVal;
 
   // Mettre à jour le score
   window._immediateScore.answered++;
@@ -624,8 +624,8 @@ function handleImmediateAnswer(q, selectedRadio) {
   if (scoreVal) scoreVal.textContent = window._immediateScore.correct;
   if (scoreAnswered) scoreAnswered.textContent = window._immediateScore.answered;
 
-  // Désactiver tous les radios de cette question
-  const allRadios = document.querySelectorAll(`input[name="q${q.id}"]`);
+  // Désactiver tous les radios de cette question (idx passé en paramètre)
+  const allRadios = document.querySelectorAll(`input[name="qidx${idx}"]`);
   allRadios.forEach(r => {
     r.disabled = true;
     const label = r.closest('label');
@@ -741,12 +741,12 @@ async function validerReponses() {
     const immediateAnswers = window._immediateAnswers || {};
 
     let responsesToSave = {};
-    currentQuestions.forEach(q => {
+    currentQuestions.forEach((q, idx) => {
         let selectedVal = null;
-        if (isImmediate && immediateAnswers[q.id] !== undefined) {
-            selectedVal = immediateAnswers[q.id];
+        if (isImmediate && immediateAnswers[idx] !== undefined) {
+            selectedVal = immediateAnswers[idx];
         } else {
-            const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+            const sel = document.querySelector(`input[name="qidx${idx}"]:checked`);
             selectedVal = sel ? parseInt(sel.value) : null;
         }
         const key = getKeyFor(q);
@@ -913,10 +913,10 @@ function afficherCorrection() {
     const key = getKeyFor(q);
     const response = currentResponses[key];
     let checkedVal = null;
-    if (isImmediate && immediateAnswers[q.id] !== undefined) {
-      checkedVal = immediateAnswers[q.id];
+    if (isImmediate && immediateAnswers[idx] !== undefined) {
+      checkedVal = immediateAnswers[idx];
     } else {
-      const checkedInput = document.querySelector(`input[name="q${q.id}"]:checked`);
+      const checkedInput = document.querySelector(`input[name="qidx${idx}"]:checked`);
       checkedVal = checkedInput ? parseInt(checkedInput.value) : null;
     }
 

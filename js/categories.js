@@ -63,14 +63,17 @@ function resolveEpreuveQuestions(data, epreuveCategoryName) {
 }
 
 /**
- * _deduplicateQuestions(questionsArray) – Déduplique par getKeyFor, garde la première occurrence.
+ * _deduplicateQuestions(questionsArray) – Déduplique par getKeyFor ET par texte de question, garde la première occurrence.
  */
 function _deduplicateQuestions(questionsArray) {
-  const seen = new Set();
+  const seenKeys = new Set();
+  const seenText = new Set();
   return questionsArray.filter(q => {
     const key = getKeyFor(q);
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const normText = (q.question || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (seenKeys.has(key) || seenText.has(normText)) return false;
+    seenKeys.add(key);
+    seenText.add(normText);
     return true;
   });
 }
@@ -464,7 +467,7 @@ async function chargerQuestions(cat) {
               await chargerQuestions(subCat);
               all.push(...questions);
             }
-            questions = all;
+            questions = _deduplicateQuestions(all);
           } catch (err) {
             console.error("Erreur de chargement EASA ALL", err);
             questions = [];
@@ -526,7 +529,7 @@ async function chargerQuestions(cat) {
               await chargerQuestions(subCat);
               all.push(...questions);
             }
-            questions = all;
+            questions = _deduplicateQuestions(all);
           } catch (err) {
             console.error("Erreur de chargement AUTRES", err);
             questions = [];
