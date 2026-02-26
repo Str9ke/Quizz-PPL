@@ -623,6 +623,16 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="var f=document.getElementById('dailyWarnFrame2');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
       </div>
+      <!-- Daily Warnings file upload -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F4C4; Daily Warnings &#x2014; Import fichier</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">T&#xe9;l&#xe9;chargez le fichier Daily Warnings depuis <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">Skeyes Warnings Chart</a> puis importez-le ici.</p>
+        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <button onclick="document.getElementById('fileDailyWarn').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Importer fichier(s) Daily Warnings</button>
+          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
+          <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== SUB: Windy ===== -->
@@ -710,7 +720,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <div>
           <label style="font-size:.82em;color:var(--text-secondary)">D&#xe9;lestage pr&#xe9;vu (L) :</label>
-          <input type="number" id="mbDelestage" value="0" min="0" max="200" step="1" onchange="window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+          <input type="number" id="mbDelestage" value="20" min="0" max="200" step="1" onchange="window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
         </div>
       </div>
 
@@ -1069,6 +1079,54 @@ function handleNotamSummary(input){
   input.value='';
 }
 window.handleNotamSummary=handleNotamSummary;
+
+/* ===== DAILY WARNINGS UPLOAD ===== */
+function handleDailyWarnUpload(input){
+  var files=input.files;
+  if(!files||!files.length) return;
+  var grid=document.getElementById('dailyWarnPreview');
+  for(var i=0;i<files.length;i++){
+    (function(file){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        if(file.type.indexOf('image')>=0){
+          var img=document.createElement('img');
+          img.src=e.target.result;
+          img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
+          img.title='Cliquer pour agrandir';
+          img.onclick=function(){window.open(img.src,'_blank')};
+          var wrap=document.createElement('div');
+          wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
+          var del=document.createElement('button');
+          del.textContent='\u{1F5D1}\uFE0F';
+          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+          del.onclick=function(){wrap.remove()};
+          wrap.appendChild(img);
+          wrap.appendChild(del);
+          grid.appendChild(wrap);
+        } else {
+          var link=document.createElement('a');
+          link.href=e.target.result;
+          link.download=file.name;
+          link.textContent='\u{1F4C4} '+file.name;
+          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:6px';
+          var wrap2=document.createElement('div');
+          wrap2.style.cssText='position:relative;width:100%';
+          var del2=document.createElement('button');
+          del2.textContent='\u{1F5D1}\uFE0F';
+          del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+          del2.onclick=function(){wrap2.remove()};
+          wrap2.appendChild(link);
+          wrap2.appendChild(del2);
+          grid.appendChild(wrap2);
+        }
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+  input.value='';
+}
+window.handleDailyWarnUpload=handleDailyWarnUpload;
 
 /* ===== FLIGHT TYPE ===== */
 function setFlightType(type){
@@ -1492,67 +1550,80 @@ function createASI(tas){
 function updateWindRose(){
   var dir=parseFloat(document.getElementById('cfgWindDir').value)||0;
   var spd=parseFloat(document.getElementById('cfgWindSpd').value)||0;
-  var sz=180, cx=90, cy=90, outerR=82;
-  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'">';
-  /* Background with gradient */
-  svg+='<defs>';
-  svg+='<radialGradient id="bgGrad"><stop offset="0%" stop-color="#252545"/><stop offset="100%" stop-color="#15152a"/></radialGradient>';
-  svg+='<filter id="glow"><feGaussianBlur stdDeviation="2" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-  svg+='</defs>';
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+outerR+'" fill="url(#bgGrad)" stroke="#556" stroke-width="2"/>';
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(outerR-2)+'" fill="none" stroke="rgba(102,126,234,.15)" stroke-width="1"/>';
-  /* Inner rings */
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="55" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="0.5"/>';
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="35" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="0.5"/>';
-  /* Degree ticks */
-  for(var a=0;a<360;a+=10){
-    var ra=(a-90)*Math.PI/180;
-    var isMajor=(a%90===0), isMid=(a%30===0);
-    var len=isMajor?12:(isMid?8:4);
-    var x1=cx+Math.cos(ra)*(outerR-2-len), y1=cy+Math.sin(ra)*(outerR-2-len);
-    var x2=cx+Math.cos(ra)*(outerR-2), y2=cy+Math.sin(ra)*(outerR-2);
-    var col=isMajor?'#aab':(isMid?'#667':'#445');
-    var w=isMajor?2:(isMid?1.2:0.6);
-    svg+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'"/>';
+  var tas=parseFloat(document.getElementById('cfgTAS').value)||90;
+  /* Find first active leg's track for the triangle */
+  var trackTrue=0;
+  for(var wi=1;wi<waypoints.length;wi++){
+    if(waypoints[wi].route>0||waypoints[wi].dist>0){trackTrue=waypoints[wi].route;break;}
   }
-  /* Cardinal labels */
-  var cards=[{a:0,l:'N',c:'#f44336'},{a:90,l:'E',c:'#ccc'},{a:180,l:'S',c:'#ccc'},{a:270,l:'W',c:'#ccc'}];
-  for(var ci=0;ci<cards.length;ci++){
-    var ca=cards[ci];
-    var ra2=(ca.a-90)*Math.PI/180;
-    var tx=cx+Math.cos(ra2)*58, ty=cy+Math.sin(ra2)*58+4;
-    svg+='<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" fill="'+ca.c+'" font-size="13" font-weight="800">'+ca.l+'</text>';
-  }
-  /* Intercardinals */
-  var inters=[{a:45,l:'NE'},{a:135,l:'SE'},{a:225,l:'SW'},{a:315,l:'NW'}];
-  for(var ii=0;ii<inters.length;ii++){
-    var ia=inters[ii];
-    var ra3=(ia.a-90)*Math.PI/180;
-    var ix=cx+Math.cos(ra3)*60, iy=cy+Math.sin(ra3)*60+3;
-    svg+='<text x="'+ix.toFixed(1)+'" y="'+iy.toFixed(1)+'" text-anchor="middle" fill="#667" font-size="8" font-weight="600">'+ia.l+'</text>';
-  }
-  /* Wind arrow (FROM direction) */
+  /* Calculate WCA, HDG, GS */
+  var wca=0, hdgTrue=trackTrue, gs=tas;
   if(spd>0){
-    var fromRA=(dir-90)*Math.PI/180;
-    var tailX=cx+Math.cos(fromRA)*48, tailY=cy+Math.sin(fromRA)*48;
-    var toRA=(dir+180-90)*Math.PI/180;
-    var headX=cx+Math.cos(toRA)*28, headY=cy+Math.sin(toRA)*28;
-    /* Shaft with glow */
-    svg+='<line x1="'+tailX.toFixed(1)+'" y1="'+tailY.toFixed(1)+'" x2="'+headX.toFixed(1)+'" y2="'+headY.toFixed(1)+'" stroke="#00e5ff" stroke-width="3" filter="url(#glow)" stroke-linecap="round"/>';
-    /* Arrowhead */
-    var angle2=Math.atan2(headY-tailY, headX-tailX);
-    var aLen=12;
-    var px1=headX-aLen*Math.cos(angle2-0.35);
-    var py1=headY-aLen*Math.sin(angle2-0.35);
-    var px2=headX-aLen*Math.cos(angle2+0.35);
-    var py2=headY-aLen*Math.sin(angle2+0.35);
-    svg+='<polygon points="'+headX.toFixed(1)+','+headY.toFixed(1)+' '+px1.toFixed(1)+','+py1.toFixed(1)+' '+px2.toFixed(1)+','+py2.toFixed(1)+'" fill="#00e5ff" filter="url(#glow)"/>';
-    /* Tail dot (wind origin) */
-    svg+='<circle cx="'+tailX.toFixed(1)+'" cy="'+tailY.toFixed(1)+'" r="4" fill="none" stroke="#00e5ff" stroke-width="1.5" opacity="0.7"/>';
+    var awa=deg2rad(dir-trackTrue);
+    var sinWCA=spd*Math.sin(awa)/tas;
+    if(Math.abs(sinWCA)<1) wca=Math.asin(sinWCA);
+    hdgTrue=trackTrue+rad2deg(wca);
+    gs=tas*Math.cos(wca)-spd*Math.cos(deg2rad(dir-trackTrue));
+    if(gs<10) gs=10;
+    gs=Math.round(gs);
   }
-  /* Center: speed + direction */
-  svg+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" fill="#00e5ff" font-size="18" font-weight="800" filter="url(#glow)">'+spd+'<tspan font-size="9" fill="#00bcd4"> kt</tspan></text>';
-  svg+='<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" fill="#8888aa" font-size="10">'+dir+'\u00b0</text>';
+  hdgTrue=((hdgTrue%360)+360)%360;
+  /* Draw proper wind triangle */
+  var sz=200, cx=sz/2, cy=sz/2;
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'">';
+  svg+='<defs><filter id="glow"><feGaussianBlur stdDeviation="1.5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  svg+='<rect width="'+sz+'" height="'+sz+'" rx="12" fill="rgba(15,15,35,.8)"/>';
+  /* Scale to fit */
+  var maxV=Math.max(tas,gs,spd*1.5);
+  if(maxV<1) maxV=1;
+  var sc=(sz/2-28)/maxV;
+  /* Helper: direction degrees to SVG point */
+  function pt(deg,len){var r=deg*Math.PI/180;return{x:cx+len*Math.sin(r),y:cy-len*Math.cos(r)};}
+  /* North indicator */
+  svg+='<line x1="'+cx+'" y1="'+(cy-sc*maxV-10)+'" x2="'+cx+'" y2="'+(cy-sc*maxV-2)+'" stroke="#f44336" stroke-width="2"/>';
+  svg+='<text x="'+cx+'" y="'+(cy-sc*maxV-12)+'" text-anchor="middle" fill="#f44336" font-size="10" font-weight="800">N</text>';
+  /* ---- TRACK/GS vector (blue dashed) from center ---- */
+  var gsPt=pt(trackTrue,gs*sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#29b6f6" stroke-width="2.5" stroke-dasharray="6,3" filter="url(#glow)"/>';
+  /* GS arrowhead */
+  var gaA=Math.atan2(gsPt.y-cy,gsPt.x-cx);
+  var ga1x=gsPt.x-10*Math.cos(gaA-0.35),ga1y=gsPt.y-10*Math.sin(gaA-0.35);
+  var ga2x=gsPt.x-10*Math.cos(gaA+0.35),ga2y=gsPt.y-10*Math.sin(gaA+0.35);
+  svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+ga1x.toFixed(1)+','+ga1y.toFixed(1)+' '+ga2x.toFixed(1)+','+ga2y.toFixed(1)+'" fill="#29b6f6" filter="url(#glow)"/>';
+  svg+='<text x="'+(gsPt.x+(gsPt.x>=cx?8:-8)).toFixed(1)+'" y="'+(gsPt.y+(gsPt.y>=cy?14:-6)).toFixed(1)+'" fill="#29b6f6" font-size="9" font-weight="700" text-anchor="'+(gsPt.x>=cx?'start':'end')+'">GS '+gs+'</text>';
+  /* ---- HEADING/TAS vector (white solid) from center ---- */
+  var tasPt=pt(hdgTrue,tas*sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+tasPt.x.toFixed(1)+'" y2="'+tasPt.y.toFixed(1)+'" stroke="#ffffff" stroke-width="2" filter="url(#glow)"/>';
+  /* TAS airplane arrowhead */
+  var haA=Math.atan2(tasPt.y-cy,tasPt.x-cx);
+  var ha1x=tasPt.x-10*Math.cos(haA-0.35),ha1y=tasPt.y-10*Math.sin(haA-0.35);
+  var ha2x=tasPt.x-10*Math.cos(haA+0.35),ha2y=tasPt.y-10*Math.sin(haA+0.35);
+  svg+='<polygon points="'+tasPt.x.toFixed(1)+','+tasPt.y.toFixed(1)+' '+ha1x.toFixed(1)+','+ha1y.toFixed(1)+' '+ha2x.toFixed(1)+','+ha2y.toFixed(1)+'" fill="#fff"/>';
+  svg+='<text x="'+(tasPt.x+(tasPt.x>=cx?8:-8)).toFixed(1)+'" y="'+(tasPt.y+(tasPt.y>=cy?14:-6)).toFixed(1)+'" fill="#ccc" font-size="9" font-weight="700" text-anchor="'+(tasPt.x>=cx?'start':'end')+'">TAS '+tas+'</text>';
+  /* ---- WIND vector (red) from TAS endpoint to GS endpoint ---- */
+  if(spd>0){
+    svg+='<line x1="'+tasPt.x.toFixed(1)+'" y1="'+tasPt.y.toFixed(1)+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#f44336" stroke-width="2" filter="url(#glow)"/>';
+    /* Wind arrowhead at GS end */
+    var waA=Math.atan2(gsPt.y-tasPt.y,gsPt.x-tasPt.x);
+    var wa1x=gsPt.x-9*Math.cos(waA-0.4),wa1y=gsPt.y-9*Math.sin(waA-0.4);
+    var wa2x=gsPt.x-9*Math.cos(waA+0.4),wa2y=gsPt.y-9*Math.sin(waA+0.4);
+    svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+wa1x.toFixed(1)+','+wa1y.toFixed(1)+' '+wa2x.toFixed(1)+','+wa2y.toFixed(1)+'" fill="#f44336"/>';
+    /* Wind label at midpoint */
+    var wmx=(tasPt.x+gsPt.x)/2, wmy=(tasPt.y+gsPt.y)/2;
+    svg+='<text x="'+(wmx+(wmx>=cx?6:-6)).toFixed(1)+'" y="'+(wmy-4).toFixed(1)+'" fill="#f44336" font-size="8" font-weight="700" text-anchor="'+(wmx>=cx?'start':'end')+'">W '+spd+'kt '+dir+'\u00b0</text>';
+  }
+  /* WCA angle arc */
+  var wcaDeg=rad2deg(wca);
+  if(Math.abs(wcaDeg)>=0.5){
+    var sign3=wcaDeg>0?'+':'';
+    svg+='<text x="'+cx+'" y="'+(sz-6)+'" text-anchor="middle" fill="#ffc107" font-size="10" font-weight="700">WCA '+sign3+Math.round(wcaDeg)+'\u00b0</text>';
+  } else if(spd===0){
+    svg+='<text x="'+cx+'" y="'+(sz-6)+'" text-anchor="middle" fill="#8888aa" font-size="9">Pas de vent</text>';
+  }
+  /* Origin dot */
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#667eea"/>';
+  /* Legend */
+  svg+='<text x="6" y="'+(sz-6)+'" fill="#666" font-size="7">\u2500\u2500 TK/GS  \u2014\u2014 HDG/TAS  <tspan fill="#f44336">\u2014\u2014 Vent</tspan></text>';
   svg+='</svg>';
   var container=document.getElementById('windRoseContainer');
   if(container) container.innerHTML=svg;
@@ -2086,48 +2157,53 @@ function recalcNavlog(){
 /* ===== WIND TRIANGLE SVG PER LEG ===== */
 function windTriangleSVG(routeTrue, hdgTrue, gs, tas, wDir, wSpd, wca){
   if(!gs||gs<=0||!tas||tas<=0) return '';
-  var sz=120, cx=sz/2, cy=sz/2;
+  var sz=140, cx=sz/2, cy=sz/2;
   var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:block;margin:4px auto">';
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(sz/2-2)+'" fill="rgba(20,20,50,.5)" stroke="#445" stroke-width="1"/>';
-  var dirs=[{l:'N',a:0},{l:'E',a:90},{l:'S',a:180},{l:'W',a:270}];
-  for(var d=0;d<dirs.length;d++){
-    var ar=dirs[d].a*Math.PI/180;
-    var tx=cx+Math.sin(ar)*(sz/2-10),ty=cy-Math.cos(ar)*(sz/2-10);
-    svg+='<text x="'+tx.toFixed(1)+'" y="'+(ty+3).toFixed(1)+'" text-anchor="middle" fill="#666" font-size="8" font-weight="bold">'+dirs[d].l+'</text>';
-  }
-  function pt(deg,r2){var rd=deg*Math.PI/180;return{x:cx+r2*Math.sin(rd),y:cy-r2*Math.cos(rd)};}
-  var sc=sz/2-14;
-  /* Route/Track line (dashed blue) */
-  var rEnd=pt(routeTrue,sc);
-  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+rEnd.x.toFixed(1)+'" y2="'+rEnd.y.toFixed(1)+'" stroke="#29b6f6" stroke-width="2" stroke-dasharray="5,3"/>';
-  svg+='<text x="'+(rEnd.x+(rEnd.x>cx?6:-6)).toFixed(1)+'" y="'+(rEnd.y-4).toFixed(1)+'" fill="#29b6f6" font-size="7" text-anchor="'+(rEnd.x>cx?'start':'end')+'">TK</text>';
-  /* Heading line (solid white + airplane) */
-  var hEnd=pt(hdgTrue,sc);
-  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+hEnd.x.toFixed(1)+'" y2="'+hEnd.y.toFixed(1)+'" stroke="#fff" stroke-width="1.8"/>';
-  var ha=hdgTrue*Math.PI/180;
-  var lx=hEnd.x-5*Math.cos(ha)-3*Math.sin(ha),ly=hEnd.y-5*Math.sin(ha)+3*Math.cos(ha);
-  var rx=hEnd.x+5*Math.cos(ha)-3*Math.sin(ha),ry=hEnd.y+5*Math.sin(ha)+3*Math.cos(ha);
-  svg+='<polygon points="'+hEnd.x.toFixed(1)+','+hEnd.y.toFixed(1)+' '+lx.toFixed(1)+','+ly.toFixed(1)+' '+rx.toFixed(1)+','+ry.toFixed(1)+'" fill="#fff"/>';
-  /* Wind vector (red arrow from outer edge toward center) */
+  svg+='<rect width="'+sz+'" height="'+sz+'" rx="8" fill="rgba(15,15,35,.6)"/>';
+  /* Scale */
+  var maxV=Math.max(tas,gs,wSpd*1.5);
+  if(maxV<1) maxV=1;
+  var sc=(sz/2-18)/maxV;
+  function pt(deg,len){var r=deg*Math.PI/180;return{x:cx+len*Math.sin(r),y:cy-len*Math.cos(r)};}
+  /* North indicator */
+  svg+='<text x="'+cx+'" y="12" text-anchor="middle" fill="#f44336" font-size="8" font-weight="800">N</text>';
+  svg+='<line x1="'+cx+'" y1="14" x2="'+cx+'" y2="20" stroke="#f44336" stroke-width="1.5"/>';
+  /* Track/GS vector (blue dashed) */
+  var gsPt=pt(routeTrue,gs*sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#29b6f6" stroke-width="2" stroke-dasharray="5,3"/>';
+  var gaA=Math.atan2(gsPt.y-cy,gsPt.x-cx);
+  var ga1x=gsPt.x-8*Math.cos(gaA-0.4),ga1y=gsPt.y-8*Math.sin(gaA-0.4);
+  var ga2x=gsPt.x-8*Math.cos(gaA+0.4),ga2y=gsPt.y-8*Math.sin(gaA+0.4);
+  svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+ga1x.toFixed(1)+','+ga1y.toFixed(1)+' '+ga2x.toFixed(1)+','+ga2y.toFixed(1)+'" fill="#29b6f6"/>';
+  svg+='<text x="'+(gsPt.x+(gsPt.x>=cx?5:-5)).toFixed(1)+'" y="'+(gsPt.y+(gsPt.y>=cy?12:-4)).toFixed(1)+'" fill="#29b6f6" font-size="7" font-weight="700" text-anchor="'+(gsPt.x>=cx?'start':'end')+'">TK</text>';
+  /* Heading/TAS vector (white solid) */
+  var tasPt=pt(hdgTrue,tas*sc);
+  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+tasPt.x.toFixed(1)+'" y2="'+tasPt.y.toFixed(1)+'" stroke="#fff" stroke-width="1.8"/>';
+  var haA=Math.atan2(tasPt.y-cy,tasPt.x-cx);
+  var ha1x=tasPt.x-8*Math.cos(haA-0.4),ha1y=tasPt.y-8*Math.sin(haA-0.4);
+  var ha2x=tasPt.x-8*Math.cos(haA+0.4),ha2y=tasPt.y-8*Math.sin(haA+0.4);
+  svg+='<polygon points="'+tasPt.x.toFixed(1)+','+tasPt.y.toFixed(1)+' '+ha1x.toFixed(1)+','+ha1y.toFixed(1)+' '+ha2x.toFixed(1)+','+ha2y.toFixed(1)+'" fill="#fff"/>';
+  svg+='<text x="'+(tasPt.x+(tasPt.x>=cx?5:-5)).toFixed(1)+'" y="'+(tasPt.y+(tasPt.y>=cy?12:-4)).toFixed(1)+'" fill="#ccc" font-size="7" font-weight="700" text-anchor="'+(tasPt.x>=cx?'start':'end')+'">HDG</text>';
+  /* Wind vector (red, from TAS end to GS end) */
   if(wSpd>0){
-    var wLen=Math.min(wSpd/tas,0.7)*sc;
-    var wFrom=pt(wDir,sc);
-    var wTo=pt(wDir,sc-wLen);
-    svg+='<line x1="'+wFrom.x.toFixed(1)+'" y1="'+wFrom.y.toFixed(1)+'" x2="'+wTo.x.toFixed(1)+'" y2="'+wTo.y.toFixed(1)+'" stroke="#f44336" stroke-width="1.5"/>';
-    svg+='<circle cx="'+wTo.x.toFixed(1)+'" cy="'+wTo.y.toFixed(1)+'" r="2.5" fill="#f44336"/>';
-    svg+='<text x="'+wFrom.x.toFixed(1)+'" y="'+(wFrom.y>cy?wFrom.y+9:wFrom.y-4).toFixed(1)+'" text-anchor="middle" fill="#f44336" font-size="7">W</text>';
+    svg+='<line x1="'+tasPt.x.toFixed(1)+'" y1="'+tasPt.y.toFixed(1)+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#f44336" stroke-width="1.5"/>';
+    var waA=Math.atan2(gsPt.y-tasPt.y,gsPt.x-tasPt.x);
+    var wa1x=gsPt.x-7*Math.cos(waA-0.4),wa1y=gsPt.y-7*Math.sin(waA-0.4);
+    var wa2x=gsPt.x-7*Math.cos(waA+0.4),wa2y=gsPt.y-7*Math.sin(waA+0.4);
+    svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+wa1x.toFixed(1)+','+wa1y.toFixed(1)+' '+wa2x.toFixed(1)+','+wa2y.toFixed(1)+'" fill="#f44336"/>';
+    var wmx=(tasPt.x+gsPt.x)/2,wmy=(tasPt.y+gsPt.y)/2;
+    svg+='<text x="'+(wmx+(wmx>=cx?4:-4)).toFixed(1)+'" y="'+(wmy-3).toFixed(1)+'" fill="#f44336" font-size="6.5" text-anchor="'+(wmx>=cx?'start':'end')+'">W</text>';
   }
-  /* Drift angle label */
+  /* WCA label */
   var driftDeg=Math.round((wca||0)*10)/10;
   if(Math.abs(driftDeg)>=0.5){
-    var midA=(routeTrue+hdgTrue)/2;
-    if(Math.abs(routeTrue-hdgTrue)>180) midA+=180;
-    var mp=pt(midA%360,28);
     var sign2=driftDeg>0?'+':'';
-    svg+='<text x="'+mp.x.toFixed(1)+'" y="'+mp.y.toFixed(1)+'" text-anchor="middle" fill="#ffc107" font-size="9" font-weight="bold">'+sign2+Math.round(driftDeg)+'\u00b0</text>';
+    svg+='<text x="'+cx+'" y="'+(sz-4)+'" text-anchor="middle" fill="#ffc107" font-size="8" font-weight="bold">'+sign2+Math.round(driftDeg)+'\u00b0</text>';
   }
+  /* Origin dot */
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="2.5" fill="#667eea"/>';
   /* GS at bottom */
-  svg+='<text x="'+cx+'" y="'+(sz-3)+'" text-anchor="middle" fill="#aaa" font-size="7.5">GS '+gs+' kt</text>';
+  svg+='<text x="'+cx+'" y="'+(sz-14)+'" text-anchor="middle" fill="#aaa" font-size="7">GS '+gs+' kt</text>';
   svg+='</svg>';
   return svg;
 }
@@ -3222,13 +3298,13 @@ function mbSelectAircraft(){
   var body=document.getElementById('mbBody');
   var html='';
   html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
-  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+ac.fuelUsable+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(ac.fuelUsable*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div></td><td id="mbFuelMom">'+(ac.fuelUsable*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
+  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="78" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L &rarr; <span id="mbFuelKg">'+(78*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div></td><td id="mbFuelMom">'+(78*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
   if(ac.has2seats){
-    html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
-    html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
+    html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }else{
-    html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="160" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
-    html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
+    html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="140" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';;
   }
   html+='<tr><td>Bagages zone 1</td><td>'+ac.bag1Arm.toFixed(2)+'</td><td><input type="number" id="mbBag1" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag1Mom">—</td></tr>';
   html+='<tr><td>Bagages zone 2</td><td>'+ac.bag2Arm.toFixed(2)+'</td><td><input type="number" id="mbBag2" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag2Mom">—</td></tr>';

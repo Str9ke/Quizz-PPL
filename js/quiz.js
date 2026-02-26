@@ -831,7 +831,7 @@ async function validerReponses() {
         const _now = new Date();
         const dayKeyUtc = 'dailyAnswered_' + _now.toISOString().slice(0, 10);
         const prev = parseInt(localStorage.getItem(dayKeyUtc)) || 0;
-        const newTotal = prev + currentQuestions.length;
+        const newTotal = prev + correctCount;
         localStorage.setItem(dayKeyUtc, newTotal);
         // Ratchet
         const ratchetKeyUtc = 'dailyCountRatchet_' + _now.toISOString().slice(0, 10);
@@ -841,7 +841,7 @@ async function validerReponses() {
         // Backup persistant en date LOCALE (même format que Firestore/chart)
         const localDateKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
         const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
-        dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + currentQuestions.length;
+        dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + correctCount;
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
         // Compteur de questions nouvellement réussies (pour estimation jours restants)
         if (_newlyMastered > 0) {

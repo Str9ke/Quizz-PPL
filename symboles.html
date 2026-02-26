@@ -1535,9 +1535,10 @@
       var panel = document.getElementById('cockpitPanel');
       // Build shuffled answer list
       var allNames = COCKPIT_ITEMS.map(function(it) { return it.name; });
+      var sortedNames = allNames.slice().sort(function(a, b) { return a.localeCompare(b, 'fr'); });
       var html = '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center">';
       COCKPIT_ITEMS.forEach(function(item) {
-        var shuffled = allNames.slice().sort(function() { return Math.random() - 0.5; });
+        var shuffled = sortedNames;
         html += '<div style="font-weight:700;color:#667eea;text-align:right;font-size:.88em;white-space:nowrap">' + item.id + '.</div>';
         html += '<select data-answer="' + item.name.replace(/'/g, '&#39;') + '" class="ckp-sel" style="width:100%;font-size:.82em;padding:5px 8px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text)">';
         html += '<option value="">— choisir —</option>';
