@@ -411,7 +411,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label for="cfgFuel">Conso (L/h)</label>
-          <input type="number" id="cfgFuel" value="25" min="5" max="100" step="0.5" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgFuel" value="20" min="5" max="100" step="0.5" onchange="window.recalcNavlog()">
         </div>
         <div class="config-item config-wind-group" style="grid-column:span 2">
           <label>&#x1F4A8; Vent global</label>
@@ -875,7 +875,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="config-grid" style="margin-bottom:14px">
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Conso moyenne (L/h)</label>
-          <input type="number" id="fuelBurn" value="25" min="10" max="100" step="0.5" onchange="window.renderFuelLog()">
+          <input type="number" id="fuelBurn" value="20" min="10" max="100" step="0.5" onchange="window.renderFuelLog()">
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Taxi d&#xe9;part (min)</label>
@@ -1207,7 +1207,7 @@ function renderFuelLog(){
   var elSum=document.getElementById('fuelSummary');
   if(!elTable || !elSum) return;
 
-  var fuelBurn = parseFloat(document.getElementById('fuelBurn').value)||25;
+  var fuelBurn = parseFloat(document.getElementById('fuelBurn').value)||20;
   var taxiD = parseFloat(document.getElementById('fuelTaxiD').value)||10;
   var taxiA = parseFloat(document.getElementById('fuelTaxiA').value)||5;
   /* Reserve: select element might return string */
@@ -2792,7 +2792,7 @@ window.toggleReserve=toggleReserve;
 function getConfig(){
   return {
     tas:parseFloat(document.getElementById('cfgTAS').value)||90,
-    fuel:parseFloat(document.getElementById('cfgFuel').value)||25,
+    fuel:parseFloat(document.getElementById('cfgFuel').value)||20,
     windDir:parseFloat(document.getElementById('cfgWindDir').value)||0,
     windSpd:parseFloat(document.getElementById('cfgWindSpd').value)||0,
     dev:parseFloat(document.getElementById('cfgDev').value)||-1,
@@ -2849,9 +2849,11 @@ function recalcNavlog(){
   var cfg=getConfig();
   document.getElementById('asiGauge').innerHTML=createASI(cfg.tas);
   updateWindRose();
-  var depParts=(cfg.depTime||'09:00').split(':');
-  var depMinutes=parseInt(depParts[0])*60+parseInt(depParts[1]||0);
-  var cumulativeMin=depMinutes;
+  /* The user wants straightforward cumulative time (ETE sum) for ETA column, not clock time based on departure */
+  /* "Je veux que ce soit La somme De tous les temps... sans prendre 01h00 précise De départ" */
+  /* So cumulativeMin starts at 0 */
+  var cumulativeMin=0;
+  
   var totalDist=0,totalTime=0,totalFuel=0;
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
@@ -3540,14 +3542,29 @@ function confirmMapSelection(){
             if(data && data.address && rIdx<waypoints.length && !waypoints[rIdx].name){
               var addr=data.address;
               /* Try specific VFR features first: industrial, quarry, lake, tower, then broader locations */
+              /* The user complained about inaccurate names ("Le mythe", "Parc d'activité économique Feluy" repeated) */
+              /* We should try to be more specific or default to city/village if feature is obscure */
+              
               var name = addr.aerodrome || addr.aeroway || 
                          addr.attraction || addr.viewpoint ||
-                         addr.industrial || addr.factory || addr.works ||
                          addr.water_tower || addr.communications_tower || addr.tower || addr.chimney ||
-                         addr.quarry || addr.mine ||
-                         addr.reservoir || addr.lake || addr.water ||
-                         addr.hamlet || addr.village || addr.town || addr.suburb || 
-                         addr.city_district || addr.city || addr.municipality ||
+                         addr.reservoir || addr.lake ||
+                         addr.hamlet || addr.village || addr.town || addr.city || 
+                         addr.municipality;
+              
+              /* Fallback: if we matched an industrial area or obscure name, maybe prefer the city/village */
+              if(!name) {
+                 if(addr.industrial || addr.factory || addr.works) name = addr.industrial || addr.factory || addr.works;
+                 else if(addr.quarry || addr.mine) name = addr.quarry || addr.mine;
+                 else if(addr.suburb || addr.city_district) name = addr.suburb || addr.city_district;
+              }
+              
+              /* Simplify: if it's super long or weird, maybe truncate? */
+              /* User specifically mentioned "Le mythe" (likely "Le Mythe" restaurant/feature?) and duplicate "Parc d'activité..." */
+              
+              if(name) waypoints[rIdx].name=name;
+              else waypoints[rIdx].name='WP '+rIdx;
+              renderNavlog();
                          '';
               /* If Nominatim returned a very generic name, try to refine with locality */
               if(!name && data.display_name){
@@ -3892,6 +3909,9 @@ function renderCalendar(){
 }
 
 function filterByDate(y,m,d){
+  /* Close calendar after selection */
+  document.getElementById('calOverlay').classList.remove('open');
+  
   var dossiers=getDossiers();
   var el=document.getElementById('dossierList');
   var filtered=dossiers.filter(function(dos){
@@ -4707,22 +4727,45 @@ function perfFromMetar(){
 window.perfFromMetar=perfFromMetar;
 
 function buildCruiseTable(){
-  var tas=parseFloat(document.getElementById('cfgTAS').value)||90;
-  var fuelUsable=85; // std tank
+  var currentTas=parseFloat(document.getElementById('cfgTAS').value)||90;
   var html='';
-  CRUISE_DATA.forEach(function(block){
-    html+='<div class="perf-section" style="margin-top:10px"><h4>\u2708\uFE0F '+block.alt+' ft</h4>';
-    html+='<table class="perf-table"><tr><th>RPM</th><th>%HP</th><th>TAS km/h</th><th>TAS kt</th><th>Conso L/h</th><th>Autonomie (85L)</th><th>Distance NM</th></tr>';
-    block.rows.forEach(function(r){
-      var endur=(fuelUsable/r.fuelLh);
-      var dist=r.tasKt*endur;
-      var hi=Math.abs(r.tasKt-tas)<5;
-      html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.rpm+'</td><td>'+r.hp+'</td><td>'+r.tasKmh+'</td><td>'+r.tasKt+'</td><td>'+r.fuelLh+'</td><td>'+endur.toFixed(1)+'h</td><td>'+dist.toFixed(0)+'</td></tr>';
-    });
-    html+='</table></div>';
-  });
+  
+  html+='<div style="font-size:0.9em;color:var(--text-secondary);margin-bottom:8px">\u2139\uFE0F Cliquez sur une ligne pour appliquer la Vitesse (TAS) et la Consommation dans votre configuration.</div>';
+
+  /* Assume CRUISE_DATA is global */
+  if (typeof CRUISE_DATA !== 'undefined') {
+      CRUISE_DATA.forEach(function(block){
+        html+='<div class="perf-section" style="margin-top:10px"><h4>\u2708\uFE0F '+block.alt+' ft</h4>';
+        html+='<table class="perf-table"><tr><th>RPM</th><th>%HP</th><th>TAS km/h</th><th>TAS kt</th><th>Conso L/h</th><th>Autonomie (85L)</th></tr>';
+        block.rows.forEach(function(r){
+          var fuelUsable=85; // std tank usable
+          var endur=(fuelUsable/r.fuelLh);
+          var hi=Math.abs(r.tasKt-currentTas)<3;
+          var style=hi?'background:rgba(76,175,80,.2);font-weight:700':'';
+          
+          html+='<tr style="cursor:pointer;'+style+'" onclick="window.applyPerformance('+r.tasKt+','+r.fuelLh+')" title="Cliquez pour utiliser ces param\u00E8tres">';
+          html+='<td>'+r.rpm+'</td><td>'+r.hp+'</td><td>'+r.tasKmh+'</td><td><b>'+r.tasKt+'</b></td><td><b>'+r.fuelLh+'</b></td><td>'+formatTime(endur)+'</td></tr>';
+        });
+        html+='</table></div>';
+      });
+  }
   document.getElementById('cruiseTable').innerHTML=html;
 }
+
+window.applyPerformance=function(tas, fuel){
+  if(confirm('Appliquer TAS ('+tas+' kt) et Consommation ('+fuel+' L/h) \u00E0 la configuration ?')){
+     document.getElementById('cfgTAS').value=tas;
+     document.getElementById('cfgFuel').value=fuel;
+     /* Also update Fuel Tab input if exists */
+     var fb=document.getElementById('fuelBurn');
+     if(fb) fb.value=fuel;
+     
+     recalcNavlog();
+     if(window.renderFuelLog) window.renderFuelLog();
+     /* rebuild table to show highlight */
+     buildCruiseTable();
+  }
+};
 
 document.addEventListener('DOMContentLoaded',init);
 })();
