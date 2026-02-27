@@ -1226,15 +1226,19 @@ function renderFuelLog(){
   /* waypoints[0] is start (dist=0), waypoints[1] is end of leg 1... */
   /* Loop from 1 to avoid processing the start point as a leg destination */
   for(var i=1;i<waypoints.length;i++){
-    var leg=waypoints[i];
+    var wp=waypoints[i];
+    var legData=wp._leg || {};
+    
     /* Leg distance check to avoid 0 nm confusion */
-    if(leg.dist>0){
-      totalDist+=leg.dist;
-      var t=leg.ete*60; /* ete is decimal hours */
+    if(wp.dist>0){
+      totalDist+=wp.dist;
+      /* ETE comes from _leg object calculated in recalcNavlog */
+      var eteVal = (legData.ete !== undefined && !isNaN(legData.ete)) ? legData.ete : 0;
+      var t=eteVal*60; /* ete is decimal hours */
       tripTimeMin+=t;
       var legFuel = (t/60) * fuelBurn;
       html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
-      html+='<span>Leg '+i+' ('+formatTime(leg.ete)+') <small style="color:#aaa">'+leg.dist+' NM</small></span>';
+      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small></span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L</span>';
       html+='</div>';
     }
@@ -1256,8 +1260,12 @@ function renderFuelLog(){
   
   /* Calculations */
   var tripFuel = (tripTimeMin/60) * fuelBurn;
+  if(isNaN(tripFuel)) tripFuel=0;
+  
   var taxiFuel = ((taxiD+taxiA)/60) * fuelBurn;
   var contFuel = tripFuel * (contPct/100);
+  if(isNaN(contFuel)) contFuel=0;
+  
   var resFuel = (resMin/60) * fuelBurn; /* 30 or 45 min reserve at cruise consumption */
   var extraFuel = extra;
 
@@ -2817,13 +2825,13 @@ function calcLeg(dist,routeTrue,cfg,legWind){
   var gs=cfg.tas*Math.cos(wca)-wSpd*Math.cos(deg2rad(wDir-routeTrue));
   
   /* Prevent infinite time or negative GS */
-  if(gs<1) gs=1; 
+  if(isNaN(gs) || gs<1) gs=1; 
   
   var eteH=dist/gs;
-  if(!isFinite(eteH)) eteH=0;
+  if(isNaN(eteH) || !isFinite(eteH)) eteH=0;
   
   var fuelL=eteH*cfg.fuel;
-  if(!isFinite(fuelL)) fuelL=0;
+  if(isNaN(fuelL) || !isFinite(fuelL)) fuelL=0;
 
   return {
     gs:Math.round(gs),
