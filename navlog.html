@@ -97,7 +97,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .icing-badge.light{background:#ffa726;color:#000}
 .icing-badge.nil{background:#66bb6a;color:#000}
 
-/* Wind arrow */
+/* Wind Triangle Styles */
+.leg-container { display: flex; align-items: center; gap: 12px; }
+.leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
+.leg-alt-slider { -webkit-appearance: slider-vertical; width: 8px; height: 100px; }
+.leg-alt-label { font-size: 0.7em; margin-top: 4px; color: #aaa; text-align: center; font-weight: bold; }
+.leg-data-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.1); }
+.leg-data-col { flex: 1; }
+.tri-vec-tas { stroke: #2196f3; stroke-width: 2.5; } 
+.tri-vec-wind { stroke: #f44336; stroke-width: 2; } 
+.tri-vec-gs { stroke: #4caf50; stroke-width: 2.5; stroke-dasharray: 4,3; } 
+.tri-lbl { font-size: 7px; font-weight: bold; font-family: sans-serif; }
 .wind-arrow-container{display:inline-block;vertical-align:middle}
 .wx-wind-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:6px 0;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:12px;cursor:pointer;transition:all .2s}
 .wx-wind-bar:hover{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.5)}
@@ -327,6 +337,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .dossier-card{flex-direction:column;align-items:flex-start}
   #routeMapContainer{height:260px}
 }
+/* Wind Triangle Styles */
+.leg-container { display: flex; align-items: center; gap: 12px; }
+.leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
+.leg-alt-slider { -webkit-appearance: slider-vertical; width: 8px; height: 100px; }
+.leg-alt-label { font-size: 0.7em; margin-top: 4px; color: #aaa; text-align: center; font-weight: bold; }
+.leg-data-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.1); }
+.leg-data-col { flex: 1; }
+.tri-vec-tas { stroke: #2196f3; stroke-width: 2.5; } 
+.tri-vec-wind { stroke: #f44336; stroke-width: 2; } 
+.tri-vec-gs { stroke: #4caf50; stroke-width: 2.5; stroke-dasharray: 4,3; } 
+.tri-lbl { font-size: 7px; font-weight: bold; font-family: sans-serif; }
   </style>
 </head>
 <body>
@@ -2576,58 +2597,76 @@ function recalcNavlog(){
 }
 
 /* ===== WIND TRIANGLE SVG PER LEG ===== */
+/* Draws a standard aeronautical velocity triangle:
+   - BLUE Vector (Air): Heading & TAS (Origin -> AirPos)
+   - RED Vector (Wind): Wind Dir & Spd (AirPos -> GroundPos)
+   - GREEN Vector (Ground): Track & GS (Origin -> GroundPos)
+   North is UP.
+*/
 function windTriangleSVG(routeTrue, hdgTrue, gs, tas, wDir, wSpd, wca){
-  if(!gs||gs<=0||!tas||tas<=0) return '';
-  var sz=140, cx=sz/2, cy=sz/2;
-  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:block;margin:4px auto">';
-  svg+='<rect width="'+sz+'" height="'+sz+'" rx="8" fill="rgba(15,15,35,.6)"/>';
-  /* Scale */
-  var maxV=Math.max(tas,gs,wSpd*1.5);
-  if(maxV<1) maxV=1;
-  var sc=(sz/2-18)/maxV;
-  function pt(deg,len){var r=deg*Math.PI/180;return{x:cx+len*Math.sin(r),y:cy-len*Math.cos(r)};}
-  /* North indicator */
-  svg+='<text x="'+cx+'" y="12" text-anchor="middle" fill="#f44336" font-size="8" font-weight="800">N</text>';
-  svg+='<line x1="'+cx+'" y1="14" x2="'+cx+'" y2="20" stroke="#f44336" stroke-width="1.5"/>';
-  /* Track/GS vector (blue dashed) */
-  var gsPt=pt(routeTrue,gs*sc);
-  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#29b6f6" stroke-width="2" stroke-dasharray="5,3"/>';
-  var gaA=Math.atan2(gsPt.y-cy,gsPt.x-cx);
-  var ga1x=gsPt.x-8*Math.cos(gaA-0.4),ga1y=gsPt.y-8*Math.sin(gaA-0.4);
-  var ga2x=gsPt.x-8*Math.cos(gaA+0.4),ga2y=gsPt.y-8*Math.sin(gaA+0.4);
-  svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+ga1x.toFixed(1)+','+ga1y.toFixed(1)+' '+ga2x.toFixed(1)+','+ga2y.toFixed(1)+'" fill="#29b6f6"/>';
-  svg+='<text x="'+(gsPt.x+(gsPt.x>=cx?5:-5)).toFixed(1)+'" y="'+(gsPt.y+(gsPt.y>=cy?12:-4)).toFixed(1)+'" fill="#29b6f6" font-size="7" font-weight="700" text-anchor="'+(gsPt.x>=cx?'start':'end')+'">TK</text>';
-  /* Heading/TAS vector (white solid) */
-  var tasPt=pt(hdgTrue,tas*sc);
-  svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+tasPt.x.toFixed(1)+'" y2="'+tasPt.y.toFixed(1)+'" stroke="#fff" stroke-width="1.8"/>';
-  var haA=Math.atan2(tasPt.y-cy,tasPt.x-cx);
-  var ha1x=tasPt.x-8*Math.cos(haA-0.4),ha1y=tasPt.y-8*Math.sin(haA-0.4);
-  var ha2x=tasPt.x-8*Math.cos(haA+0.4),ha2y=tasPt.y-8*Math.sin(haA+0.4);
-  svg+='<polygon points="'+tasPt.x.toFixed(1)+','+tasPt.y.toFixed(1)+' '+ha1x.toFixed(1)+','+ha1y.toFixed(1)+' '+ha2x.toFixed(1)+','+ha2y.toFixed(1)+'" fill="#fff"/>';
-  svg+='<text x="'+(tasPt.x+(tasPt.x>=cx?5:-5)).toFixed(1)+'" y="'+(tasPt.y+(tasPt.y>=cy?12:-4)).toFixed(1)+'" fill="#ccc" font-size="7" font-weight="700" text-anchor="'+(tasPt.x>=cx?'start':'end')+'">HDG</text>';
-  /* Wind vector (red, from TAS end to GS end) */
+  if(!tas || tas<=0) return '';
+  var sz=150, cx=sz/2, cy=sz/2;
+  
+  // Define markers
+  var defs = '<defs>'+
+    '<marker id="arrowTAS" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 L0,0" fill="#2196f3"/></marker>'+
+    '<marker id="arrowWind" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 L0,0" fill="#f44336"/></marker>'+
+    '<marker id="arrowGS" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 L0,0" fill="#4caf50"/></marker>'+
+    '</defs>';
+    
+  var svg='<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="display:block;margin:0 auto;background:rgba(0,0,0,0.2);border-radius:50%">'+defs;
+
+  // Angles are degrees clockwise from North. 
+  // SVG coords: 0 is Right (East). North is -90 deg.
+  // Standard Math: x = r*cos(theta), y = r*sin(theta).
+  // Theta = (deg - 90) * PI/180.
+  
+  // Scaling
+  var maxMag = Math.max(tas, gs) + wSpd; 
+  if(maxMag<1) maxMag=100;
+  var scale = (sz/2 - 15) / maxMag;
+  
+  // Origin (Center of SVG)
+  var ox = cx, oy = cy;
+  
+  // Point A: End of Air Vector (TAS, Heading)
+  var thetaHdg = (hdgTrue - 90) * Math.PI/180;
+  var ax = ox + tas * scale * Math.cos(thetaHdg);
+  var ay = oy + tas * scale * Math.sin(thetaHdg);
+  
+  // Point G based on Track & GS
+  var thetaTrk = (routeTrue - 90) * Math.PI/180;
+  var gx = ox + gs * scale * Math.cos(thetaTrk);
+  var gy = oy + gs * scale * Math.sin(thetaTrk);
+  
+  // Draw Grid/Compass text
+  svg+='<text x="'+cx+'" y="10" text-anchor="middle" fill="#aaa" font-size="8" font-weight="bold">N</text>';
+  svg+='<line x1="'+cx+'" y1="12" x2="'+cx+'" y2="'+(sz-12)+'" stroke="#444" stroke-width="0.5" stroke-dasharray="2,2"/>';
+  svg+='<line x1="12" y1="'+cy+'" x2="'+(sz-12)+'" y2="'+cy+'" stroke="#444" stroke-width="0.5" stroke-dasharray="2,2"/>';
+
+  // Draw Air Vector (Blue)
+  svg+='<line x1="'+ox+'" y1="'+oy+'" x2="'+ax+'" y2="'+ay+'" class="tri-vec-tas" />';
+  // Label TAS
+  svg+='<text x="'+(ox+ax)/2+'" y="'+(oy+ay)/2+'" fill="#2196f3" class="tri-lbl" dx="5">TAS</text>';
+
+  // Draw Wind Vector (Red) - from Air end to Ground end
   if(wSpd>0){
-    svg+='<line x1="'+tasPt.x.toFixed(1)+'" y1="'+tasPt.y.toFixed(1)+'" x2="'+gsPt.x.toFixed(1)+'" y2="'+gsPt.y.toFixed(1)+'" stroke="#f44336" stroke-width="1.5"/>';
-    var waA=Math.atan2(gsPt.y-tasPt.y,gsPt.x-tasPt.x);
-    var wa1x=gsPt.x-7*Math.cos(waA-0.4),wa1y=gsPt.y-7*Math.sin(waA-0.4);
-    var wa2x=gsPt.x-7*Math.cos(waA+0.4),wa2y=gsPt.y-7*Math.sin(waA+0.4);
-    svg+='<polygon points="'+gsPt.x.toFixed(1)+','+gsPt.y.toFixed(1)+' '+wa1x.toFixed(1)+','+wa1y.toFixed(1)+' '+wa2x.toFixed(1)+','+wa2y.toFixed(1)+'" fill="#f44336"/>';
-    var wmx=(tasPt.x+gsPt.x)/2,wmy=(tasPt.y+gsPt.y)/2;
-    svg+='<text x="'+(wmx+(wmx>=cx?4:-4)).toFixed(1)+'" y="'+(wmy-3).toFixed(1)+'" fill="#f44336" font-size="6.5" text-anchor="'+(wmx>=cx?'start':'end')+'">W</text>';
+    svg+='<line x1="'+ax+'" y1="'+ay+'" x2="'+gx+'" y2="'+gy+'" class="tri-vec-wind" />';
+    // Label Wind
+    svg+='<text x="'+(ax+gx)/2+'" y="'+(ay+gy)/2+'" fill="#f44336" class="tri-lbl" dx="5">W</text>';
   }
-  /* WCA label */
-  var driftDeg=Math.round((wca||0)*10)/10;
-  if(Math.abs(driftDeg)>=0.5){
-    var sign2=driftDeg>0?'+':'';
-    svg+='<text x="'+cx+'" y="'+(sz-4)+'" text-anchor="middle" fill="#ffc107" font-size="8" font-weight="bold">'+sign2+Math.round(driftDeg)+'\u00b0</text>';
-  }
-  /* Origin dot */
-  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="2.5" fill="#667eea"/>';
-  /* GS at bottom */
-  svg+='<text x="'+cx+'" y="'+(sz-14)+'" text-anchor="middle" fill="#aaa" font-size="7">GS '+gs+' kt</text>';
-  svg+='</svg>';
-  return svg;
+
+  // Draw Ground Vector (Green)
+  svg+='<line x1="'+ox+'" y1="'+oy+'" x2="'+gx+'" y2="'+gy+'" class="tri-vec-gs" />';
+  // Label GS
+  svg+='<text x="'+(ox+gx)/2+'" y="'+(oy+gy)/2+'" fill="#4caf50" class="tri-lbl" dy="10">GS</text>';
+
+  // Origin dot
+  svg+='<circle cx="'+ox+'" cy="'+oy+'" r="3" fill="#fff"/>';
+
+  return svg + '</svg>';
 }
+
 
 /* ===== MINI WIND COMPASS (per-leg) ===== */
 function miniWindCompass(dir,spd,sz){
@@ -2666,6 +2705,18 @@ function miniWindCompass(dir,spd,sz){
 
 function updateLegStrips(){
   var cfg=getConfig();
+  // Ensure we expose setLegAlt globally if not already
+  if(!window.setLegAlt){
+    window.setLegAlt = function(idx, val){
+        if(!waypoints[idx]) return;
+        waypoints[idx].altitude = parseInt(val);
+        var lbl = document.getElementById('leg-alt-val-'+idx);
+        if(lbl) lbl.textContent = waypoints[idx].altitude + ' ft';
+        // Auto-save logic if needed (e.g. to localStorage)
+        saveNavlog();
+    };
+  }
+
   for(var i=1;i<waypoints.length;i++){
     var el=document.getElementById('leg-strip-'+i);
     var wrapper=document.getElementById('leg-wrap-'+i);
@@ -2683,6 +2734,10 @@ function updateLegStrips(){
     wrapper.style.display='';
     var leg=wp._leg;
     if(!leg) continue;
+    
+    // Altitude handling (default 2000ft if not set)
+    var currentAlt = wp.altitude || 2000;
+    
     var routeM=Math.round(((wp.route+cfg.dev)%360+360)%360);
     var hdgM=Math.round(((leg.hdgMag)%360+360)%360);
     var etaStr=wp._eta?formatETA(wp._eta):'--:--';
@@ -2694,20 +2749,29 @@ function updateLegStrips(){
     var awv=((leg.wDir||0)-Math.round(leg.hdgTrue||0));awv=((awv%360)+360)%360;if(awv>180)awv=360-awv;
     var triSvg=windTriangleSVG(wp.route, leg.hdgTrue, leg.gs, cfg.tas, leg.wDir||0, leg.wSpd||0, leg.wca||0);
     var miniWC=miniWindCompass(leg.wDir||0,leg.wSpd||0,50);
-    el.innerHTML='<div class="leg-data-row">'+
-      '<div class="leg-data-col">'+
-      '<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
-      '<span class="leg-val">\u2708 Route: '+routeM+'\u00b0M \u2192 HDG: '+hdgM+'\u00b0M</span>'+
-      '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small>  \u2022  GS: '+leg.gs+' <small>kt</small></span>'+
-      '<span class="leg-val">\u23F1\uFE0F ETE: '+formatTime(leg.ete)+'  \u2022  \u{1F550} ETA: '+etaStr+'</span>'+
-      '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
-      '<div class="leg-wind-row">'+
-      '<span class="leg-val">\u{1F9ED} '+driftSign+Math.round(driftDeg)+'\u00b0  \u2022  \u2220'+awv+'\u00b0</span>'+
-      '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>'+
-      (miniWC?'<span class="leg-mini-compass">'+miniWC+'</span>':'')+
+
+    el.innerHTML='<div class="leg-container">'+
+      '<div class="leg-alt-slider-col">'+
+         '<input type="range" class="leg-alt-slider" min="0" max="15000" step="500" value="'+currentAlt+'" oninput="window.setLegAlt('+i+', this.value)" title="Altitude de vol">'+
+         '<div class="leg-alt-label" id="leg-alt-val-'+i+'">'+currentAlt+' ft</div>'+
       '</div>'+
+      '<div class="leg-data-row">'+
+        '<div class="leg-data-col">'+
+          '<span class="leg-label">\u2708\uFE0F LEG '+i+'</span>'+
+          '<span class="leg-val">\u2708 Route: <b>'+routeM+'\u00b0M</b> \u2192 HDG: <b>'+hdgM+'\u00b0M</b></span>'+
+          '<span class="leg-val">\u{1F4CF} '+wp.dist+' <small>NM</small>  \u2022  GS: <b>'+leg.gs+'</b> <small>kt</small></span>'+
+          '<span class="leg-val">\u23F1\uFE0F ETE: <b>'+formatTime(leg.ete)+'</b>  \u2022  \u{1F550} ETA: <b>'+etaStr+'</b></span>'+
+          '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.1)">'+
+             '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
+          '</div>'+
+          '<div class="leg-wind-row">'+
+          '<span class="leg-val" title="Dérive">\u{1F9ED} WCA: <b>'+driftSign+Math.round(driftDeg)+'\u00b0</b></span>'+
+          '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>'+
+          (miniWC?'<span class="leg-mini-compass">'+miniWC+'</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="leg-triangle-col">'+triSvg+'</div>'+
       '</div>'+
-      '<div class="leg-triangle-col">'+triSvg+'</div>'+
       '</div>';
   }
 }

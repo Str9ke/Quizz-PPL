@@ -8,7 +8,7 @@ Quiz PPL d’aviation – repo contenant le quiz, ses données et ses scripts.
 ├── quiz.html  
 ├── stats.html  
 ├── style.css  
-├── script.js  
+
 ├── README.md  
 ├── section_easa_procedures_new.json  
 ├── section_easa_aerodynamique.json  
@@ -140,7 +140,7 @@ Il contient les images suivantes:
 - **quiz.html** : affichage du quiz  
 - **stats.html** : affichage des statistiques  
 - **style.css** : styles globaux  
-- **script.js** : logique du quiz et intégration Firestore
+
 
 ## Sécurité — Clés API 🔐
 
