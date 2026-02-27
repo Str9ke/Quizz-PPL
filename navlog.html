@@ -1983,80 +1983,81 @@ function decodeTaf(raw){
   return parts.join('\n');
 }
 
-/* ===== ASI GAUGE (Cessna 150 Badin) ===== */
-/* Real C150: Vs0=42, Vs1=48, Vfe=85, Vno=102, Vne=140, dial 40\u2013160 kt */
 function createASI(tas){
   var cx=100,cy=100;
-  var minKt=40,maxKt=160;
-  /* 0\u00b0 = top (12 o'clock). Gap at top: scale runs CW 1\u21922\u219211 o'clock */
-  var startAngle=30;   /* 1 o'clock  \u2014 40 kt here */
-  var endAngle=330;    /* 11 o'clock \u2014 160 kt here */
-  var sweep=endAngle-startAngle; /* 300\u00b0 */
+  
+  /* C150 scale usually 40-160, but let's make it look like "standard" trainer */
+  /* Standard 40-160 knots */
+  var minKt=40, maxKt=160;
+  var startAngle=30; /* 40 kts at ~1 o'clock */
+  var endAngle=330;  /* 160 kts at ~11 o'clock */
+  var totalAngle=endAngle-startAngle; // 300 degrees sweep
 
-  function ktToAngle(kt){
-    return startAngle+((kt-minKt)/(maxKt-minKt))*sweep;
+  function ktToAng(k){
+    if(k<minKt) k=minKt; if(k>maxKt) k=maxKt;
+    return startAngle + ((k-minKt)/(maxKt-minKt))*totalAngle;
   }
-  function polar(angleDeg,radius){
-    var rad=angleDeg*Math.PI/180;
-    return {x:cx+radius*Math.sin(rad), y:cy-radius*Math.cos(rad)};
+  
+  function polar(ang,r){
+    /* 0 degrees is UP (12 o'clock) */
+    var rad=ang*Math.PI/180;
+    return {x:cx+r*Math.sin(rad), y:cy-r*Math.cos(rad)};
   }
-  function arcPath(k1,k2,radius,color,width){
-    var a1=ktToAngle(k1),a2=ktToAngle(k2);
-    var p1=polar(a1,radius),p2=polar(a2,radius);
-    var largeArc=(a2-a1)>180?1:0;
-    return '<path d="M'+p1.x.toFixed(1)+' '+p1.y.toFixed(1)+' A'+radius+' '+radius+' 0 '+largeArc+' 1 '+p2.x.toFixed(1)+' '+p2.y.toFixed(1)+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round"/>';
+  
+  /* Arc helper */
+  function arc(startK,endK,r,col,w){
+     var a1=ktToAng(startK), a2=ktToAng(endK);
+     var p1=polar(a1,r), p2=polar(a2,r);
+     var large=(a2-a1>180)?1:0;
+     return '<path d="M'+p1.x.toFixed(1)+','+p1.y.toFixed(1)+' A'+r+','+r+' 0 '+large+' 1 '+p2.x.toFixed(1)+','+p2.y.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="butt"/>';
   }
 
   var svg='<svg width="200" height="200" viewBox="0 0 200 200">';
-  /* Outer bezel */
-  svg+='<circle cx="100" cy="100" r="97" fill="none" stroke="#555" stroke-width="3"/>';
-  svg+='<circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#333" stroke-width="1"/>';
+  /* Bezel / Case - Darker for "Room mode" (Standard Instrument) */
+  svg+='<circle cx="100" cy="100" r="95" fill="#111" stroke="#333" stroke-width="5"/>';
+  svg+='<circle cx="100" cy="100" r="90" fill="#1a1a2e" stroke="#000" stroke-width="2"/>';
+  
+  /* Colored Arcs - Standard aviation colors */
+  /* White: Vs0 42 - Vfe 85 */
+  svg+=arc(42,85,82,'white',6);
+  /* Green: Vs1 48 - Vno 102 */
+  svg+=arc(48,102,74,'#2e7d32',6); 
+  /* Yellow: Vno 102 - Vne 140 */
+  svg+=arc(102,140,74,'#fbc02d',6);
+  /* Red Line Vne 140 */
+  var pRed1=polar(ktToAng(140),68), pRed2=polar(ktToAng(140),90);
+  svg+='<line x1="'+pRed1.x+'" y1="'+pRed1.y+'" x2="'+pRed2.x+'" y2="'+pRed2.y+'" stroke="#d32f2f" stroke-width="4"/>';
 
-  /* Color arcs \u2014 real C150 V-speeds */
-  /* White arc: Vs0\u2013Vfe = 42\u201385 kt (flaps operating range) */
-  svg+=arcPath(42,85,80,'#ffffff',6);
-  /* Green arc: Vs1\u2013Vno = 48\u2013102 kt (normal operating) */
-  svg+=arcPath(48,102,80,'#4caf50',6);
-  /* Yellow arc: Vno\u2013Vne = 102\u2013140 kt (caution range) */
-  svg+=arcPath(102,140,80,'#ffc107',6);
-  /* Red radial line at VNE = 140 kt */
-  var pVne1=polar(ktToAngle(140),72),pVne2=polar(ktToAngle(140),88);
-  svg+='<line x1="'+pVne1.x.toFixed(1)+'" y1="'+pVne1.y.toFixed(1)+'" x2="'+pVne2.x.toFixed(1)+'" y2="'+pVne2.y.toFixed(1)+'" stroke="#f44336" stroke-width="3.5"/>';
-
-  /* Tick marks every 10 kt, labels every 20 kt */
-  for(var k=40;k<=160;k+=10){
-    var a=ktToAngle(k);
-    var major=(k%20===0);
-    var inner=major?58:64;
-    var outer=72;
-    var p1t=polar(a,inner);
-    var p2t=polar(a,outer);
-    svg+='<line x1="'+p1t.x.toFixed(1)+'" y1="'+p1t.y.toFixed(1)+'" x2="'+p2t.x.toFixed(1)+'" y2="'+p2t.y.toFixed(1)+'" stroke="#ddd" stroke-width="'+(major?2.5:1)+'"/>';
-    if(major){
-      var pt=polar(a,48);
-      svg+='<text x="'+pt.x.toFixed(1)+'" y="'+(pt.y+4).toFixed(1)+'" text-anchor="middle" fill="#eee" font-size="11" font-weight="bold">'+k+'</text>';
+  /* Graduations */
+  for(var k=40; k<=160; k+=10){
+    var ang=ktToAng(k);
+    var isMajor=(k%20===0); /* 40, 60, 80... Numbers */
+    var len=isMajor?12:7;
+    var rOut=90;
+    var rIn=rOut-len;
+    var p1=polar(ang,rOut), p2=polar(ang,rIn);
+    svg+='<line x1="'+p1.x.toFixed(1)+'" y1="'+p1.y.toFixed(1)+'" x2="'+p2.x.toFixed(1)+'" y2="'+p2.y.toFixed(1)+'" stroke="#eee" stroke-width="'+(isMajor?2.5:1.5)+'"/>';
+    
+    /* Numbers: Only most important (multiples of 20 or 40 depending on space, lets do 20) */
+    if(isMajor){
+       var pTxt=polar(ang, rIn-12);
+       /* Rotate text? No, standard ASI numbers are upright mostly */
+       svg+='<text x="'+pTxt.x.toFixed(1)+'" y="'+(pTxt.y+5).toFixed(1)+'" fill="#eee" font-family="Arial, sans-serif" font-weight="bold" font-size="14" text-anchor="middle">'+k+'</text>';
     }
   }
 
-  /* Small 5-kt sub-ticks */
-  for(var k5=45;k5<=155;k5+=10){
-    var a5=ktToAngle(k5);
-    var p5a=polar(a5,67);
-    var p5b=polar(a5,72);
-    svg+='<line x1="'+p5a.x.toFixed(1)+'" y1="'+p5a.y.toFixed(1)+'" x2="'+p5b.x.toFixed(1)+'" y2="'+p5b.y.toFixed(1)+'" stroke="#999" stroke-width="0.7"/>';
-  }
-
-  /* Labels */
-  svg+='<text x="100" y="68" text-anchor="middle" fill="#888" font-size="8" font-weight="bold">AIRSPEED</text>';
-  svg+='<text x="100" y="78" text-anchor="middle" fill="#888" font-size="7">KNOTS</text>';
-
   /* Needle */
-  var clampedTas=Math.min(Math.max(tas,minKt),maxKt);
-  var needleA=ktToAngle(clampedTas);
-  var pn=polar(needleA,68);
-  var pb=polar(needleA+180,14);
-  svg+='<line x1="'+pb.x.toFixed(1)+'" y1="'+pb.y.toFixed(1)+'" x2="'+pn.x.toFixed(1)+'" y2="'+pn.y.toFixed(1)+'" stroke="#f44336" stroke-width="2.5" stroke-linecap="round"/>';
-  svg+='<circle cx="100" cy="100" r="6" fill="#222" stroke="#f44336" stroke-width="2"/>';
+  var angVal=ktToAng(tas);
+  var pTip=polar(angVal, 85);
+  var pTail=polar(angVal+180, 15);
+  
+  svg+='<line x1="'+pTail.x.toFixed(1)+'" y1="'+pTail.y.toFixed(1)+'" x2="'+pTip.x.toFixed(1)+'" y2="'+pTip.y.toFixed(1)+'" stroke="#fff" stroke-width="4"/>';
+  svg+='<circle cx="100" cy="100" r="5" fill="#444" stroke="#fff" stroke-width="2"/>';
+  
+  /* Labels */
+  svg+='<text x="100" y="65" fill="#888" font-size="9" text-anchor="middle" font-family="sans-serif">AIRSPEED</text>';
+  svg+='<text x="100" y="75" fill="#888" font-size="8" text-anchor="middle" font-family="sans-serif">KNOTS</text>';
+  
   svg+='</svg>';
   return svg;
 }
@@ -2800,19 +2801,30 @@ function calcLeg(dist,routeTrue,cfg,legWind){
     wDir=legWind.dir!==undefined?legWind.dir:cfg.windDir;
     wSpd=legWind.spd!==undefined?legWind.spd:cfg.windSpd;
   }
+  
+  /* Fallback if dist is negligible */
   if(dist<=0) return {gs:cfg.tas,ete:0,fuel:0,hdgTrue:routeTrue,hdgMag:routeTrue+cfg.dev,wDir:wDir,wSpd:wSpd};
+  
   var wca=0;
   if(wSpd>0){
     var awa=deg2rad(wDir-routeTrue);
     var sinWCA=wSpd*Math.sin(awa)/cfg.tas;
+    /* Prevent NaN if wind > TAS (unlikely but possible in sim) */
     if(Math.abs(sinWCA)<1) wca=Math.asin(sinWCA);
-    else wca=0;
+    else wca=0; /* Assume full headwind/tailwind or nonsense */
   }
   var hdgTrue=routeTrue+rad2deg(wca);
   var gs=cfg.tas*Math.cos(wca)-wSpd*Math.cos(deg2rad(wDir-routeTrue));
-  if(gs<10) gs=10;
+  
+  /* Prevent infinite time or negative GS */
+  if(gs<1) gs=1; 
+  
   var eteH=dist/gs;
+  if(!isFinite(eteH)) eteH=0;
+  
   var fuelL=eteH*cfg.fuel;
+  if(!isFinite(fuelL)) fuelL=0;
+
   return {
     gs:Math.round(gs),
     ete:eteH,
