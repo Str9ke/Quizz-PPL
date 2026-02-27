@@ -1694,22 +1694,91 @@ function decodeTaf(raw){
   if(!raw) return '';
   var lines=raw.split(/\n/);
   var parts=[];
+  var wxCodes=['RA','SN','DZ','GR','GS','FG','BR','HZ','FU','DU','SA','SQ','TS','SH','FZ','MI','BC','PR','BL','DR','IC','PL','UP'];
+  var intensity={'+':'fort ','-':'faible ','':'mod\u00e9r\u00e9 '};
+  var cvr={'FEW':'peu','SCT':'\u00e9pars','BKN':'fragment\u00e9','OVC':'couvert','VV':'visibilit\u00e9 verticale'};
+
+  function parseLineRest(txt){
+    var p=[];
+    var w=parseWindFromMetar(txt);
+    if(w){
+      if(w.dir<0) p.push('Vent variable '+w.spd+' kt');
+      else p.push('Vent '+w.dir+'\u00b0/'+w.spd+' kt'+(w.gust?' rafales '+w.gust+' kt':''));
+    }
+    var vis=parseVisibility(txt);
+    if(vis!==null) p.push('Visi '+vis+' m');
+
+    var tokens=txt.split(/\s+/);
+    for(var i=0;i<tokens.length;i++){
+      var t=tokens[i];
+      if(t.match(/^(BECMG|TEMPO|PROB|FM|TAF)/)) continue;
+      
+      /* WX Phenomena */
+      if(t.match(/^[-+]?[A-Z]{2,6}$/) && !{'NCD':1,'NSC':1,'SKC':1,'CLR':1,'AUTO':1,'NOSIG':1,'CAVOK':1,'VRB':1,'RMK':1}[t]){
+          var int=t.charAt(0)==='-'||t.charAt(0)==='+'?t.charAt(0):'';
+          var code=int?t.substring(1):t;
+          var found=false;
+          if(WX_FR[code] || (code.length===4 && WX_FR[code.substring(0,2)])){ found=true; }
+          if(!found && code.length>2){
+            for(var x=0;x<code.length;x+=2) if(WX_FR[code.substring(x,x+2)]) found=true;
+          }
+          if(found){
+             var desc=intensity[int]||'';
+             for(var c=0;c<code.length;c+=2){
+               var cd=code.substring(c,c+2);
+               if(WX_FR[cd]) desc+=WX_FR[cd]+' ';
+             }
+             p.push(desc.trim());
+          }
+      }
+      /* Clouds */
+      if(t==='NCD'||t==='NSC'||t==='SKC'||t==='CLR'){p.push('Ciel clair');}
+      if(t==='CAVOK'){p.push('CAVOK (OK tout)');}
+      if(t.match(/^(FEW|SCT|BKN|OVC|VV)\d{3}/)){
+        var pre=t.substring(0,3);
+        if(t.substring(0,2)==='VV') pre='VV';
+        var alt=parseInt(t.replace(/^[A-Z]+/,''))*100;
+        p.push((cvr[pre]||pre)+' \u00e0 '+alt+' ft');
+      }
+    }
+    return p.length ? p.join(' \u2022 ') : '';
+  }
+
   for(var li=0;li<lines.length;li++){
     var line=lines[li].trim();
     if(!line) continue;
     if(line.indexOf('METAR')===0) continue;
-    if(line.match(/^TAF/)){parts.push('\u{1F4CB} Pr\u00e9vision TAF');continue;}
-    if(line.match(/^BECMG/)){parts.push('\u27A1\uFE0F \u00c9volution graduelle :');continue;}
-    if(line.match(/^TEMPO/)){parts.push('\u26A1 Temporairement :');continue;}
-    if(line.match(/^PROB\d{2}/)){parts.push('\u{1F3B2} Probabilit\u00e9 '+line.match(/PROB(\d{2})/)[1]+'% :');continue;}
-    if(line.match(/^FM\d{6}/)){parts.push('\u{1F552} \u00c0 partir de '+line.substring(2,4)+'h'+line.substring(4,6)+'Z :');continue;}
-    var w=parseWindFromMetar(line);
-    if(w){
-      if(w.dir<0) parts.push('  Vent variable '+w.spd+' kt');
-      else parts.push('  Vent '+w.dir+'\u00b0/'+w.spd+' kt'+(w.gust?' G'+w.gust:''));
+    
+    var header='';
+    var content=line;
+    if(line.match(/^TAF/)){ header='\u{1F4CB} Pr\u00e9vision TAF'; }
+    else if(line.match(/^BECMG/)){ header='\u27A1\uFE0F \u00c9volution graduelle :'; content=line.replace(/^BECMG\s*/,''); }
+    else if(line.match(/^TEMPO/)){ header='\u26A1 Temporairement :'; content=line.replace(/^TEMPO\s*/,''); }
+    else if(line.match(/^PROB\d{2}/)){ 
+       var m=line.match(/PROB(\d{2})/);
+       header='\u{1F3B2} Probabilit\u00e9 '+m[1]+'% :';
+       content=line.replace(/^PROB\d{2}\s*/,''); 
     }
-    var vis=parseVisibility(line);
-    if(vis!==null) parts.push('  Visi '+vis+'m');
+    else if(line.match(/^FM\d{6}/)){
+       var m=line.match(/^FM(\d{2})(\d{2})(\d{2})/);
+       header='\u{1F552} \u00c0 partir de '+m[2]+'h'+m[3]+'Z :';
+       content=line.replace(/^FM\d{6}\s*/,'');
+    }
+    
+    /* Extra check: sometimes TAF lines have time group like 1012/1014 */
+    var timeM=content.match(/^\d{4}\/\d{4}\s+/);
+    if(timeM){
+       content=content.substring(timeM[0].length);
+       header+=' (de '+timeM[0].substring(2,4)+'h \u00e0 '+timeM[0].substring(7,9)+'h)';
+    }
+
+    var details=parseLineRest(content);
+    if(header) parts.push('<b>'+header+'</b> '+details);
+    else {
+        /* Line without header (main body or continuation) */
+        var d=parseLineRest(line);
+        if(d) parts.push(d);
+    }
   }
   return parts.join('\n');
 }
@@ -2753,7 +2822,7 @@ function updateLegStrips(){
     el.innerHTML='<div class="leg-container">'+
       '<div class="leg-alt-slider-col">'+
          '<input type="range" class="leg-alt-slider" min="0" max="5000" step="100" value="'+currentAlt+'" oninput="window.setLegAlt('+i+', this.value)" title="Altitude de vol">'+
-         '<div class="leg-alt-label" id="leg-alt-val-'+i+'">'+currentAlt+' ft</div>'+
+         '<div class="leg-alt-label" id="leg-alt-val-'+i+'" style="font-size:1.3em;color:#fff;text-shadow:0 0 4px #000">'+currentAlt+' ft</div>'+
       '</div>'+
       '<div class="leg-data-row">'+
         '<div class="leg-data-col">'+
