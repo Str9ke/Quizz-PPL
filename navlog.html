@@ -1260,18 +1260,26 @@ function handleNotamSummary(input){
           wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
           var del=document.createElement('button');
           del.textContent='\u{1F5D1}\uFE0F';
-          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
           del.onclick=function(){wrap.remove()};
           wrap.appendChild(img);
           wrap.appendChild(del);
           grid.appendChild(wrap);
         } else {
+          var wrap2=document.createElement('div');
+          wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
           var link=document.createElement('a');
           link.href=e.target.result;
           link.download=file.name;
           link.textContent='\u{1F4C4} '+file.name;
-          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:6px';
-          grid.appendChild(link);
+          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
+          var del2=document.createElement('button');
+          del2.textContent='\u{1F5D1}\uFE0F';
+          del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
+          del2.onclick=function(){wrap2.remove()};
+          wrap2.appendChild(link);
+          wrap2.appendChild(del2);
+          grid.appendChild(wrap2);
         }
       };
       reader.readAsDataURL(file);
