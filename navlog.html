@@ -2752,7 +2752,7 @@ function updateLegStrips(){
 
     el.innerHTML='<div class="leg-container">'+
       '<div class="leg-alt-slider-col">'+
-         '<input type="range" class="leg-alt-slider" min="0" max="15000" step="500" value="'+currentAlt+'" oninput="window.setLegAlt('+i+', this.value)" title="Altitude de vol">'+
+         '<input type="range" class="leg-alt-slider" min="0" max="5000" step="100" value="'+currentAlt+'" oninput="window.setLegAlt('+i+', this.value)" title="Altitude de vol">'+
          '<div class="leg-alt-label" id="leg-alt-val-'+i+'">'+currentAlt+' ft</div>'+
       '</div>'+
       '<div class="leg-data-row">'+
@@ -3204,8 +3204,16 @@ function confirmMapSelection(){
           .then(function(data){
             if(data && data.address && rIdx<waypoints.length && !waypoints[rIdx].name){
               var addr=data.address;
-              /* Try specific features first, then broader locations */
-              var name=addr.aerodrome||addr.aeroway||addr.hamlet||addr.village||addr.town||addr.suburb||addr.city_district||addr.city||addr.municipality||'';
+              /* Try specific VFR features first: industrial, quarry, lake, tower, then broader locations */
+              var name = addr.aerodrome || addr.aeroway || 
+                         addr.attraction || addr.viewpoint ||
+                         addr.industrial || addr.factory || addr.works ||
+                         addr.water_tower || addr.communications_tower || addr.tower || addr.chimney ||
+                         addr.quarry || addr.mine ||
+                         addr.reservoir || addr.lake || addr.water ||
+                         addr.hamlet || addr.village || addr.town || addr.suburb || 
+                         addr.city_district || addr.city || addr.municipality ||
+                         '';
               /* If Nominatim returned a very generic name, try to refine with locality */
               if(!name && data.display_name){
                 var parts=data.display_name.split(',');
