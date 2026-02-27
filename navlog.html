@@ -491,6 +491,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="dailywarn" onclick="window.switchMeteoSub('dailywarn')">&#x1F6A8; Daily Warn</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
+      <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
     </div>
 
     <!-- ===== SUB: Radar ===== -->
@@ -708,6 +709,30 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="aeroweb-btn" onclick="window.addExtraImage()" style="font-size:.82em;padding:8px 18px">&#x1F4F7; Ajouter image(s)</button>
         <input type="file" id="fileExtraImages" accept="image/*" multiple style="display:none" onchange="window.handleExtraImages(this)">
         <div class="extra-images-grid" id="extraImagesGrid"></div>
+      </div>
+    </div>
+
+    <!-- ===== SUB: OPMET ===== -->
+    <div id="msub-opmet" class="meteo-sub-content">
+      <div class="map-card">
+        <div class="map-card-title">&#x1F4C4; OPMET (Skeyes)</div>
+        <div style="padding:16px;text-align:center">
+          <p style="font-size:.9em;color:var(--text-secondary);margin-bottom:12px">Importez votre briefing OPMET (PDF) depuis le site de Skeyes pour l'inclure au dossier.</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a href="https://ops.skeyes.be/" target="_blank" rel="noopener" class="aeroweb-btn" style="text-decoration:none;display:inline-flex;align-items:center;background:#005BBB">&#x1F30D; Ouvrir Skeyes</a>
+            <button class="aeroweb-btn" onclick="document.getElementById('opmetFile').click()">&#x1F4E5; Importer PDF</button>
+            <button class="aeroweb-btn map-del-btn" onclick="window.clearOpmet()">&#x1F5D1;&#xFE0F; Effacer</button>
+          </div>
+          <input type="file" id="opmetFile" accept="application/pdf" style="display:none" onchange="window.handleOpmetUpload(this)">
+        </div>
+        <div id="opmetViewer" style="height:600px;background:#525659;margin:0 16px 16px;border-radius:8px;display:none">
+          <iframe id="opmetFrame" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>
+        </div>
+        <div id="opmetPlaceholder" style="margin:0 16px 16px;padding:60px 20px;text-align:center;color:var(--text-secondary);border:2px dashed var(--border-color);border-radius:10px;background:rgba(0,0,0,0.1)">
+           <div style="font-size:3em;opacity:.3;margin-bottom:10px">&#x1F4C4;</div>
+           <div>Aucun document OPMET import&#xe9;</div>
+           <div style="font-size:.8em;opacity:.7">Le PDF s'affichera ici</div>
+        </div>
       </div>
     </div>
 
@@ -1125,6 +1150,7 @@ var CHECKLIST_ITEMS = [
     'Carte(s) VAC',
     'Navlog papier (fiche de navigation)',
     'Dossier m\u00e9t\u00e9o (imprim\u00e9)',
+    'OPMET (Skeyes/PDF)',
     'NOTAMs (imprim\u00e9s)',
     'Devis masse & centrage',
     'Devis carburant'
@@ -3175,6 +3201,52 @@ function removeExtraImage(idx){
   renderExtraImages();
 }
 window.removeExtraImage=removeExtraImage;
+
+/* ===== OPMET PDF ===== */
+var opmetPdfData = sessionStorage.getItem('navlog_opmet_pdf');
+function handleOpmetUpload(input){
+  if(input.files && input.files[0]){
+    var file=input.files[0];
+    if(file.type!=='application/pdf'){alert('Veuillez s\u00e9lectionner un fichier PDF.');return;}
+    var reader=new FileReader();
+    reader.onload=function(e){
+      opmetPdfData = e.target.result;
+      sessionStorage.setItem('navlog_opmet_pdf', opmetPdfData);
+      renderOpmet();
+    };
+    reader.readAsDataURL(file);
+  }
+  input.value='';
+}
+window.handleOpmetUpload=handleOpmetUpload;
+
+function clearOpmet(){
+  if(!confirm('Supprimer le fichier OPMET ?')) return;
+  opmetPdfData = null;
+  sessionStorage.removeItem('navlog_opmet_pdf');
+  renderOpmet();
+}
+window.clearOpmet=clearOpmet;
+
+function renderOpmet(){
+  var viewer = document.getElementById('opmetViewer');
+  var frame = document.getElementById('opmetFrame');
+  var placeholder = document.getElementById('opmetPlaceholder');
+  if(!viewer || !placeholder) return;
+  
+  if(opmetPdfData){
+    viewer.style.display = 'block';
+    placeholder.style.display = 'none';
+    frame.src = opmetPdfData;
+  } else {
+    viewer.style.display = 'none';
+    placeholder.style.display = 'block';
+    frame.src = 'about:blank';
+  }
+}
+window.renderOpmet=renderOpmet;
+/* Init OPMET on load */
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(renderOpmet, 500); });
 
 function renderExtraImages(){
   var grid=document.getElementById('extraImagesGrid');
