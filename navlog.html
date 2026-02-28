@@ -4256,6 +4256,14 @@ function initRouteMap(){
 
     renderNavlog();
     recalcNavlog();
+    /* Après le rebuild, aligner le haut de la carte avec le haut du viewport */
+    requestAnimationFrame(function(){
+      var mapCard = document.getElementById('routeMapContainer');
+      if(mapCard){
+        var cardTop = mapCard.getBoundingClientRect().top + (window.scrollY || window.pageYOffset);
+        window.scrollTo({top: cardTop - 8, behavior: 'instant'});
+      }
+    });
   });
 
   /* Airport markers on route map */
