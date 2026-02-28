@@ -516,7 +516,10 @@
       var btn = document.getElementById('syncBtn');
       if(btn){ btn.textContent='\u23F3 Synchro\u2026'; btn.disabled=true; }
       try{
-        var docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'server' });
+        /* source:'server' peut échouer avec enableMultiTabIndexedDbPersistence → fallback sans option */
+        var docSnap;
+        try { docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'server' }); }
+        catch(srcErr) { docSnap = await db.collection('quizProgress').doc(uid).get(); }
         var data = docSnap.exists ? docSnap.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
         /* dailyHistory */
@@ -546,7 +549,8 @@
         setTimeout(function(){ if(btn){ btn.textContent='\uD83D\uDD04 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 2800);
       }catch(e){
         console.error('[forceSyncFromServer] error', e);
-        if(btn){ btn.textContent='\u274C Erreur'; btn.disabled=false; setTimeout(function(){ btn.textContent='\uD83D\uDD04 Synchroniser'; },2500); }
+        var errMsg = e && e.message ? e.message.slice(0,40) : 'inconnue';
+        if(btn){ btn.textContent='\u274C ' + errMsg; btn.disabled=false; setTimeout(function(){ btn.textContent='\uD83D\uDD04 Synchroniser'; btn.style.cssText=''; btn.disabled=false; },4000); }
       }
     };
   </script>
