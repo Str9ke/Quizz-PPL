@@ -2852,17 +2852,21 @@ function toggleReserve(){
 window.toggleReserve=toggleReserve;
 
 /* ===== NAVLOG CALCULATION ===== */
+function _v(id,def){
+  var el=document.getElementById(id);
+  return el?el.value:(def!==undefined?String(def):'');
+}
 function getConfig(){
   return {
-    tas:parseFloat(document.getElementById('cfgTAS').value)||90,
-    fuel:parseFloat(document.getElementById('cfgFuel').value)||20,
-    windDir:parseFloat(document.getElementById('cfgWindDir').value)||0,
-    windSpd:parseFloat(document.getElementById('cfgWindSpd').value)||0,
-    dev:parseFloat(document.getElementById('cfgDev').value)||-1,
+    tas:parseFloat(_v('cfgTAS'))||90,
+    fuel:parseFloat(_v('cfgFuel'))||20,
+    windDir:parseFloat(_v('cfgWindDir'))||0,
+    windSpd:parseFloat(_v('cfgWindSpd'))||0,
+    dev:parseFloat(_v('cfgDev'))||-1,
     reserveMin:reserveMode==='day'?30:45,
-    depTime:document.getElementById('cfgDepTime').value||'09:00',
-    taxiMin:parseFloat(document.getElementById('cfgTaxi').value)||10,
-    landingMin:parseFloat(document.getElementById('cfgLanding').value)||10
+    depTime:_v('cfgDepTime')||'09:00',
+    taxiMin:parseFloat(_v('cfgTaxi'))||10,
+    landingMin:parseFloat(_v('cfgLanding'))||10
   };
 }
 
@@ -3782,11 +3786,11 @@ function saveDossier(){
   var btn=document.getElementById('dossierSaveBtn');
   if(btn){ btn.textContent='⏳ Sauvegarde…'; btn.disabled=true; btn.style.opacity='.7'; }
 
+  var dossierId=Date.now(); /* declared outside try so captureScreenshots callback can use it */
   try{
     /* Sauvegarder immediatement, sans attendre html2canvas */
     var dossiers=getDossiers();
     var cfg=getConfig();
-    var dossierId=Date.now();
     var dossier={
       id:dossierId,
       name:name,
