@@ -1580,9 +1580,11 @@ function renderFuelLog(){
   if(tripTimeMin>0) col2+=timeRow('Temps Vol (Trip)', tripTimeMin);
   else col2+=timeRow('Temps Vol (Trip)', 0);
   
+  col2+=timeRow('Taxi D\u00e9part', taxiD);
+  col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
   if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
   col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
-  col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700;color:#4caf50">AUTONOMIE</span><span style="font-weight:800;font-size:1.2em;color:#4caf50">'+formatTime(enduranceMin/60)+'</span></div>';
+  col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:800;font-size:1.2em;color:#ffa726">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
   col2+='</div></div>';
 
   elSum.innerHTML=col1+col2;
@@ -2937,23 +2939,15 @@ function retryWeather(icao){
 window.retryWeather=retryWeather;
 
 function refreshAllMetars(){
-  /* Collect all airports to reload: waypoints + already cached */
-  var toLoad=[];
-  waypoints.forEach(function(wp){
-    var n=wp.name?wp.name.trim().toUpperCase():'';
-    if(n && toLoad.indexOf(n)<0) toLoad.push(n);
-  });
-  Object.keys(wxCache).forEach(function(k){
-    if(toLoad.indexOf(k)<0) toLoad.push(k);
-  });
-  /* Also expand fallbacks */
-  var extra=[];
-  toLoad.forEach(function(k){
-    if(METAR_FALLBACK[k]) METAR_FALLBACK[k].forEach(function(f){
-      if(toLoad.indexOf(f)<0 && extra.indexOf(f)<0) extra.push(f);
+  /* Only reload airports currently displayed (in wxCache) */
+  var toLoad=Object.keys(wxCache);
+  if(!toLoad.length){
+    /* Nothing cached yet — load from waypoints */
+    waypoints.forEach(function(wp){
+      var n=wp.name?wp.name.trim().toUpperCase():'';
+      if(n && toLoad.indexOf(n)<0) toLoad.push(n);
     });
-  });
-  toLoad=toLoad.concat(extra);
+  }
   /* Clear cache */
   toLoad.forEach(function(k){ delete wxCache[k]; });
   renderWxPanels();
@@ -3912,7 +3906,7 @@ function initDragDrop(board){
 
 /* ===== CLEAR WORKSPACE ===== */
 function clearWorkspace(){
-  if(!confirm('Vider tout l\u2019espace de travail ? (NavLog + cartes m\u00e9t\u00e9o + images)')) return;
+  if(!confirm('Vider compl\u00e8tement l\u2019espace de travail ?\nNavLog, m\u00e9t\u00e9o, NOTAMs, cartes, OPMET, tout sera effac\u00e9.')) return;
   waypoints=[
     {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
     {name:'Zone locale',lat:null,lon:null,icon:'',dist:10,route:0},
@@ -3936,6 +3930,22 @@ function clearWorkspace(){
   extraImages=[];
   localStorage.removeItem('navlog_extra_images');
   renderExtraImages();
+  /* Clear OPMET */
+  opmetPdfData=null;
+  localStorage.removeItem('navlog_opmet_pdf');
+  if(typeof renderOpmet==='function') renderOpmet();
+  /* Clear daily warnings */
+  dailyWarnImages=[];
+  localStorage.removeItem('navlog_daily_warn_images');
+  if(typeof renderDailyWarnImages==='function') renderDailyWarnImages();
+  /* Clear notam summary */
+  notamSummaryItems=[];
+  localStorage.removeItem('navlog_notam_summary');
+  if(typeof renderNotamSummary==='function') renderNotamSummary();
+  /* Clear checklist */
+  if(typeof setChecklistState==='function') setChecklistState({});
+  /* Clear mass & balance */
+  if(typeof mbInit==='function') mbInit();
   /* Reset config */
   document.getElementById('cfgTAS').value=90;
   document.getElementById('cfgFuel').value=25;
@@ -3955,6 +3965,7 @@ function clearWorkspace(){
   if(dnInput){dnInput.value='';dnInput._userEdited=false;}
   renderNavlog();
   recalcNavlog();
+  _toast('\uD83E\uDDF9 Espace de travail vid\u00e9','success',2500);
 }
 window.clearWorkspace=clearWorkspace;
 
@@ -5982,6 +5993,7 @@ function perfFromMetar(){
   } else {
     infoLines.push('&#x1f4e1; METAR\u00a0: <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' \u2014 '+AIRPORT_NAMES[usedIcao]:''));
   }
+  infoLines.push(metarAgeHtml(raw)||'');
 
   if(wm){
     var windStr = (wm.dir >= 0 ? wm.dir+'\u00b0' : 'VRB') + ' / ' + wm.spd + ' kt' + (wm.gust ? ' rafales ' + wm.gust + ' kt' : '');
