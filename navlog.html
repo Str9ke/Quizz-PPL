@@ -170,6 +170,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 /* ===== GAMIFIED NAVLOG - WP Cards & Leg Strips ===== */
 .navlog-board{padding:10px 0}
 .wp-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:14px 16px;margin:0 auto;max-width:700px;position:relative;border-left:4px solid;border-image:linear-gradient(180deg,#667eea,#764ba2) 1;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:all .25s}
+.wp-card.etape-card{border-image:linear-gradient(180deg,#ff9500,#e65100) 1;box-shadow:0 4px 16px rgba(255,149,0,.18)}
+.wp-etape-btn{background:none;border:none;font-size:1em;cursor:pointer;padding:2px 4px;opacity:.45;transition:all .2s;flex-shrink:0;line-height:1}
+.wp-etape-btn.active{opacity:1}
 .wp-card:hover{box-shadow:0 6px 24px rgba(102,126,234,.15);border-color:rgba(102,126,234,.3)}
 .wp-card-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .wp-num-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;flex-shrink:0}
@@ -532,7 +535,40 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
   <div id="tab-notam" class="navlog-tab-content">
+      <!-- NOTAM Summary Upload -->
       <div class="map-card">
+        <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Importez votre NOTAM Summary (PDF/image/texte) depuis Skeyes pour le conserver dans votre dossier de vol.</p>
+        <div id="notamSummaryZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:8px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileNotamSummary').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleNotamSummaryDrop(event)">
+          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
+          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
+          <input type="file" id="fileNotamSummary" accept="*" multiple style="display:none" onchange="window.handleNotamSummary(this)">
+        </div>
+        <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('fileNotamSummary').click()">&#x1F4C2; Choisir fichier(s)</button>
+          <button onclick="window.clearNotamSummary()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
+        </div>
+      </div>
+      <!-- Daily Warnings Section -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
+        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
+          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
+          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
+          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
+        </div>
+        <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
+          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
+          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
+          <button onclick="window.clearDailyWarnImages()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
+        </div>
+      </div>
+      <!-- NOTAMs Benelux map -->
+      <div class="map-card" style="margin-top:14px">
         <div class="map-card-title">&#x26A0;&#xFE0F; NOTAMs &#x2014; Carte Benelux</div>
         <div class="iframe-card">
           <iframe id="notamFrame" src="about:blank" data-src="https://notaminfo.com/netherlandsmap" style="height:600px" loading="lazy"></iframe>
@@ -559,33 +595,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="var f=document.getElementById('skeyesPibFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
       </div>
-      <!-- NOTAM Summary Upload -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Importez un fichier NOTAM Summary (PDF/image) t&#xe9;l&#xe9;charg&#xe9; depuis Skeyes pour le conserver dans votre dossier de vol.</p>
-        <div id="notamSummaryZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-          <button onclick="document.getElementById('fileNotamSummary').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Choisir fichier(s) NOTAM Summary</button>
-          <input type="file" id="fileNotamSummary" accept="image/*,.pdf" multiple style="display:none" onchange="window.handleNotamSummary(this)">
-          <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
-        </div>
-      </div>
-      <!-- Daily Warnings Section -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
-        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
-          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
-          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
-          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
-        </div>
-        <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
-        <div class="map-card-actions">
-          <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
-          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
-          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
-          <button onclick="window.clearDailyWarnImages()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
-        </div>
-      </div>
+      <!-- Warnings Chart -->
       <div class="map-card" style="margin-top:14px">
         <div class="map-card-title">&#x1F5FA;&#xFE0F; Warnings Chart &#x2014; Carte g&#xe9;ographique</div>
         <div class="iframe-card">
@@ -603,17 +613,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- Sub-tabs -->
     <div class="meteo-subtabs">
-      <button class="meteo-subtab active" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
-      <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
+      <button class="meteo-subtab active" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
+      <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
+      <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
-      <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
     </div>
 
     <!-- ===== SUB: Radar ===== -->
-    <div id="msub-radar" class="meteo-sub-content active">
+    <div id="msub-radar" class="meteo-sub-content">
       <div class="map-card">
         <div class="map-card-title">&#x1F4E1; Radar de Pr&#xe9;cipitations HD &#x2014; Europe</div>
         <div class="iframe-card">
@@ -628,7 +638,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
 
     <!-- ===== SUB: TEMSI / WINTEM ===== -->
-    <div id="msub-charts" class="meteo-sub-content">
+    <div id="msub-charts" class="meteo-sub-content active">
       <div style="padding:10px 0 6px;font-size:.82em;color:var(--text-secondary);text-align:center">
         &#x1F4A1; Ouvrez SOFIA Briefing &#x2192; <b>Autres M&#xe9;t&#xe9;o</b> &#x2192; TEMSI ou WINTEM &#x2192; cliquez sur la carte la plus r&#xe9;cente &#x2192; faites une capture (clic droit &#x2192; Copier l&#x2019;image) et collez-la ici (Ctrl+V)
       </div>
@@ -857,9 +867,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances Cessna F-150L</div>
       <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:12px">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</p>
 
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:10px">
-        <div id="perfCrosswindInfo" style="font-size:0.85em;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;flex-grow:1;line-height:1.8">Cliquez sur &laquo;&nbsp;Auto-remplir&nbsp;&raquo; pour utiliser le METAR de l&rsquo;a&#xe9;rodrome de d&#xe9;part.</div>
-        <button onclick="window.perfFromMetar()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F327;&#xFE0F; Auto-remplir via METAR</button>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <select id="perfMetarSelect" style="flex:1;min-width:180px;padding:6px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em" onchange="window.perfFromMetar()">
+            <option value="">-- Station auto (d&eacute;part) --</option>
+          </select>
+          <button onclick="window.updatePerfMetarList();window.perfFromMetar()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F327;&#xFE0F; Appliquer METAR</button>
+        </div>
+        <div id="perfCrosswindInfo" style="font-size:0.85em;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;line-height:1.8">S&eacute;lectionnez une station ou cliquez &laquo;&nbsp;Appliquer METAR&nbsp;&raquo; pour remplir automatiquement.</div>
       </div>
 
       <!-- Inputs -->
@@ -1342,13 +1357,22 @@ function renderFuelLog(){
   if(isNaN(tripFuel)) tripFuel=0;
   
   var taxiFuel = ((taxiD+taxiA)/60) * fuelBurn;
+  /* Étapes intermédiaires: taxi supplémentaire par escale */
+  var etapeFuel=0; var etapeCount=0; var etapeTimeMin=0;
+  for(var ei=1;ei<waypoints.length-1;ei++){
+    if(waypoints[ei]&&waypoints[ei].isEtape){
+      etapeFuel+=((taxiD+taxiA)/60)*fuelBurn;
+      etapeTimeMin+=taxiD+taxiA;
+      etapeCount++;
+    }
+  }
   var contFuel = tripFuel * (contPct/100);
   if(isNaN(contFuel)) contFuel=0;
   
   var resFuel = (resMin/60) * fuelBurn; /* 30 or 45 min reserve at cruise consumption */
   var extraFuel = extra;
 
-  var totalBlockFuel = tripFuel + taxiFuel + contFuel + resFuel + extraFuel;
+  var totalBlockFuel = tripFuel + taxiFuel + etapeFuel + contFuel + resFuel + extraFuel;
   
   /* Left Column: Fuel Breakdown */
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
@@ -1357,6 +1381,7 @@ function renderFuelLog(){
   else col1+=row('D\u00e9lestage (Trip)', 0, 'var(--text-secondary)');
   
   col1+=row('Roulage (Taxi)', taxiFuel);
+  if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
   col1+=row('Marge ('+contPct+'%)', contFuel);
   col1+=row('R\u00e9serve ('+resMin+' min)', resFuel);
   col1+=row('Suppl\u00e9mentaire', extraFuel);
@@ -1365,7 +1390,7 @@ function renderFuelLog(){
   col1+='</div></div>';
   
   /* Right Column: Time Breakdown */
-  var totalBlockTimeMin = tripTimeMin + taxiD + taxiA;
+  var totalBlockTimeMin = tripTimeMin + taxiD + taxiA + etapeTimeMin;
   var enduranceMin = (totalBlockFuel / fuelBurn) * 60;
   
   function timeRow(label, min){
@@ -1382,6 +1407,7 @@ function renderFuelLog(){
   
   col2+=timeRow('Taxi D\u00e9part', taxiD);
   col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
+  if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
   col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
   col2+='<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:700">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
   col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700;color:#4caf50">AUTONOMIE</span><span style="font-weight:800;font-size:1.2em;color:#4caf50">'+formatTime(enduranceMin/60)+'</span></div>';
@@ -1519,6 +1545,20 @@ function handleNotamSummary(input){
           wrap.appendChild(img);
           wrap.appendChild(del);
           grid.appendChild(wrap);
+        } else if(file.type==='application/pdf'){
+          var wrap2=document.createElement('div');
+          wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
+          var blobUrl2=_dataUrlToObjectUrl(e.target.result);
+          var ifrm=document.createElement('iframe');
+          ifrm.src=blobUrl2+'#toolbar=0&navpanes=0';
+          ifrm.style.cssText='width:100%;height:500px;border:none;border-radius:8px';
+          var del2=document.createElement('button');
+          del2.textContent='\u{1F5D1}\uFE0F';
+          del2.style.cssText='position:absolute;top:4px;right:4px;z-index:10;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
+          del2.onclick=function(){wrap2.remove();try{URL.revokeObjectURL(blobUrl2);}catch(ex){}};
+          wrap2.appendChild(ifrm);
+          wrap2.appendChild(del2);
+          grid.appendChild(wrap2);
         } else {
           var wrap2=document.createElement('div');
           wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
@@ -1542,6 +1582,16 @@ function handleNotamSummary(input){
   input.value='';
 }
 window.handleNotamSummary=handleNotamSummary;
+
+function clearNotamSummary(){
+  var p=document.getElementById('notamSummaryPreview'); if(p) p.innerHTML='';
+}
+window.clearNotamSummary=clearNotamSummary;
+function handleNotamSummaryDrop(event){
+  var files=(event.dataTransfer&&event.dataTransfer.files)?event.dataTransfer.files:[];
+  if(files.length){ handleNotamSummary({files:files,value:''}); }
+}
+window.handleNotamSummaryDrop=handleNotamSummaryDrop;
 
 /* ===== DAILY WARNINGS UPLOAD ===== */
 var dailyWarnImages=JSON.parse(sessionStorage.getItem('navlog_daily_warn_images')||'[]');
@@ -3206,7 +3256,7 @@ function renderNavlog(){
       html+='<div class="leg-strip" id="leg-wrap-'+i+'" style="display:none"><div class="leg-strip-content" id="leg-strip-'+i+'"></div></div>';
       html+='<button class="insert-wp-btn" onclick="window.insertWaypoint('+i+')" title="Ins\u00e9rer un waypoint">+</button>';
     }
-    html+='<div class="wp-card" data-idx="'+i+'" draggable="true">';
+    html+='<div class="wp-card'+(wp.isEtape?' etape-card':'')+'" data-idx="'+i+'" draggable="true">';
     html+='<div class="wp-card-header">';
     html+='<span class="wp-drag-handle" title="Glisser pour r\u00e9ordonner">\u2630</span>';
     html+='<div class="wp-num-badge">'+(i+1)+'</div>';
@@ -3222,6 +3272,9 @@ function renderNavlog(){
     html+='</select>';
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
     html+='<div class="wp-actions">';
+    if(i>0 && i<waypoints.length-1){
+      html+='<button class="wp-etape-btn'+(wp.isEtape?' active':'')+'" onclick="window.toggleEtape('+i+')" title="\u00c9tape interm\u00e9diaire (escale)">'+(wp.isEtape?'\uD83D\uDFE0':'\u2B55')+'</button>';
+    }
     html+='<button class="wp-map-btn" onclick="window.openMapModal('+i+')" title="Choisir sur la carte">\u{1F5FA}\uFE0F</button>';
     if(waypoints.length>2 || i>0){
       html+='<button class="wp-remove-btn" onclick="window.removeWaypoint('+i+')" title="Supprimer">\u00d7</button>';
@@ -3367,6 +3420,15 @@ function insertWaypoint(pos){
   recalcNavlog();
 }
 window.insertWaypoint=insertWaypoint;
+
+function toggleEtape(i){
+  if(!waypoints[i]) return;
+  waypoints[i].isEtape=!waypoints[i].isEtape;
+  renderNavlog();
+  recalcNavlog();
+  updateRouteMap();
+}
+window.toggleEtape=toggleEtape;
 
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
@@ -4391,7 +4453,7 @@ function _applyMapData(key, dataUrl){
   if(!el) return;
   if(dataUrl.indexOf('data:application/pdf')===0){
     var blobUrl=_dataUrlToObjectUrl(dataUrl);
-    el.innerHTML='<iframe src="'+blobUrl+'" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
+    el.innerHTML='<iframe src="'+blobUrl+'#toolbar=0&navpanes=0" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
   } else {
     el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
   }
@@ -4639,8 +4701,9 @@ function updateRouteMap(){
   for(var j=0;j<pts.length;j++){
     var p=pts[j];
     var isFirst=(j===0),isLast=(j===pts.length-1);
-    var color=isFirst?'#4caf50':(isLast?'#f44336':'#667eea');
-    var emoji=isFirst?'\u{1F6EB}':(isLast?'\u{1F6EC}':'\u{1F4CD}');
+    var isEtape=(!isFirst&&!isLast&&waypoints[p.idx]&&waypoints[p.idx].isEtape);
+    var color=isFirst?'#4caf50':(isLast?'#f44336':(isEtape?'#ff9500':'#667eea'));
+    var emoji=isFirst?'\u{1F6EB}':(isLast?'\u{1F6EC}':(isEtape?'\uD83D\uDFE0':'\u{1F4CD}'));
     var marker=L.marker([p.lat,p.lon],{
       draggable: true,
       title: 'Glissez pour déplacer, cliquez pour supprimer',
@@ -5290,7 +5353,24 @@ function interpClimb(data,alt){
   return data[data.length-1];
 }
 
+function updatePerfMetarList(){
+  var sel=document.getElementById('perfMetarSelect');
+  if(!sel) return;
+  var current=sel.value;
+  while(sel.options.length>1) sel.remove(1);
+  var sorted=Object.keys(wxCache).filter(function(k){return wxCache[k]&&wxCache[k].metar;}).sort();
+  sorted.forEach(function(icao){
+    var opt=document.createElement('option');
+    opt.value=icao;
+    opt.textContent=icao+(AIRPORT_NAMES[icao]?' — '+AIRPORT_NAMES[icao]:'');
+    if(icao===current) opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+window.updatePerfMetarList=updatePerfMetarList;
+
 function perfFromMetar(){
+  updatePerfMetarList();
   /* 1 — Departure ICAO from first waypoint */
   var depIcao = (waypoints.length > 0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
 
@@ -5298,7 +5378,10 @@ function perfFromMetar(){
   var candidates = depIcao ? [depIcao] : [];
   if(depIcao && METAR_FALLBACK[depIcao]) candidates = candidates.concat(METAR_FALLBACK[depIcao]);
   var usedIcao = null;
-  for(var ci = 0; ci < candidates.length; ci++){
+  /* Manual select override */
+  var _psel=document.getElementById('perfMetarSelect');
+  if(_psel && _psel.value && wxCache[_psel.value] && wxCache[_psel.value].metar){ usedIcao=_psel.value; }
+  if(!usedIcao) for(var ci = 0; ci < candidates.length; ci++){
     var cc = candidates[ci];
     if(cc && wxCache[cc] && wxCache[cc].metar){ usedIcao = cc; break; }
   }
