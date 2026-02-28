@@ -4200,8 +4200,21 @@ function initRouteMap(){
   var _mc = routeMap.getContainer();
   _mc.setAttribute('tabindex', '-1');
   _mc.style.outline = 'none';
+  /* Surcharger focus() pour ne jamais scroller */
   var _origFocus = _mc.focus.bind(_mc);
   _mc.focus = function(opts) { _origFocus(Object.assign({}, opts, {preventScroll: true})); };
+  /* Verrou de scroll sur mousedown : capter la position AVANT que quoi que ce soit
+     ne scrolle, puis la forcer en boucle pendant 500ms (couvre focus + fitBounds + renderNavlog) */
+  _mc.addEventListener('mousedown', function(){
+    var _lockY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    var _lockTimer = setInterval(function(){
+      if(document.documentElement.scrollTop !== _lockY || document.body.scrollTop !== _lockY){
+        document.documentElement.scrollTop = _lockY;
+        document.body.scrollTop = _lockY;
+      }
+    }, 8);
+    setTimeout(function(){ clearInterval(_lockTimer); }, 500);
+  }, true);
   var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
   var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
   var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
