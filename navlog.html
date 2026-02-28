@@ -461,7 +461,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- Weather panel -->
     <div class="nl-card">
-      <div class="nl-card-title"><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</div>
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
       <div class="wx-airport-btns" id="wxAirportBtns"></div>
       <div id="wxPanels"></div>
     </div>
@@ -1580,11 +1580,8 @@ function renderFuelLog(){
   if(tripTimeMin>0) col2+=timeRow('Temps Vol (Trip)', tripTimeMin);
   else col2+=timeRow('Temps Vol (Trip)', 0);
   
-  col2+=timeRow('Taxi D\u00e9part', taxiD);
-  col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
   if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
   col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
-  col2+='<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:700">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
   col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700;color:#4caf50">AUTONOMIE</span><span style="font-weight:800;font-size:1.2em;color:#4caf50">'+formatTime(enduranceMin/60)+'</span></div>';
   col2+='</div></div>';
 
