@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <style>
 /* ===== NavLog page styles ===== */
 .navlog-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#1a1a3e 0%,#2d1b4e 50%,#1a1a3e 100%);position:relative;overflow:hidden}
@@ -938,6 +941,21 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">&#x2139;&#xFE0F; Un fichier <strong>.json</strong> est automatiquement t&eacute;l&eacute;charg&eacute; &agrave; chaque sauvegarde &mdash; il contient tout votre dossier avec toutes les images et peut &ecirc;tre ouvert sur n'importe quel appareil.</p>
     </div>
     <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x2601;&#xFE0F;</span> Synchronisation cloud</div>
+      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 10px">Votre code unique ci-dessous synchronise vos dossiers dans le cloud. Entrez ce m&ecirc;me code sur un autre appareil pour retrouver vos dossiers.</p>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <span style="font-size:.8em;color:var(--text-secondary)">Votre code&nbsp;:</span>
+        <code id="syncCodeDisplay" style="font-size:1.1em;font-weight:700;letter-spacing:2px;padding:4px 10px;border-radius:6px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.3);color:#a78bfa;cursor:pointer" title="Cliquer pour copier" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent).then(function(){var el=document.getElementById('syncCopied');el.style.opacity='1';setTimeout(function(){el.style.opacity='0';},1500);})">—</code>
+        <span id="syncCopied" style="font-size:.75em;color:#4ade80;opacity:0;transition:opacity .3s">&#x2713; copi&eacute; !</span>
+        <button onclick="var c=prompt('Modifier votre code de sync (8 caract&egrave;res A-Z 2-9)\nActuel : '+window._getSyncCode());if(c&&c.trim().length>=6){localStorage.setItem('navlog_syncCode',c.trim().toUpperCase().slice(0,8));window._renderSyncCodeUI();}" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.75em">&#x270F;&#xFE0F; Modifier</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:.8em;color:var(--text-secondary);white-space:nowrap">Sync depuis un autre appareil&nbsp;:</span>
+        <input type="text" id="syncCodeInput" placeholder="Code de l'autre appareil" maxlength="8" style="flex:1;min-width:140px;max-width:200px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.88em;text-transform:uppercase;letter-spacing:1px">
+        <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳ En cours…';window.syncDossiersFromCloud(code,function(n){btn.disabled=false;btn.textContent='⬇\uFE0F Importer';if(n>0)alert(n+' dossier(s) import\u00e9(s) depuis le cloud.');else alert('Aucun dossier trouv\u00e9 pour ce code.');});" class="navlog-btn primary" style="white-space:nowrap">&#x2B07;&#xFE0F; Importer</button>
+      </div>
+    </div>
+    <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4C2;</span> Dossiers sauvegard&#xe9;s</div>
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="window.importDossier()" class="navlog-btn primary">&#x1F4E5; Ouvrir un dossier .json &mdash; depuis un autre appareil</button>
@@ -1178,7 +1196,12 @@ function switchTab(id){
   if(target) target.classList.add('active');
 
   var calBtn=document.getElementById('calToggleBtn');
-  if(id==='dossiers'){calBtn.classList.add('visible');}else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
+  if(id==='dossiers'){
+    calBtn.classList.add('visible');
+    _renderSyncCodeUI();
+    /* Sync silently from cloud each time dossiers tab is opened */
+    syncDossiersFromCloud();
+  }else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
   
   if(id==='checklist') initChecklist();
   if(id==='fuel') window.renderFuelLog();
@@ -3746,6 +3769,7 @@ function saveDossier(){
   };
   dossiers.push(dossier);
   setDossiers(dossiers);
+  _fbSaveDossier(dossier);
   renderDossierList();
 
   /* Telecharger automatiquement le fichier JSON (portable, tous appareils) */
@@ -3782,6 +3806,113 @@ function _downloadDossierJson(d){
   }catch(e){console.warn('Download failed',e);}
 }
 window._downloadDossierJson=_downloadDossierJson;
+
+/* ===== FIREBASE CLOUD SYNC ===== */
+var _fbDB = null;
+var _FB_COLLECTION = 'navlog_dossiers';
+
+function _initFirebase(){
+  if(_fbDB) return _fbDB;
+  try{
+    var cfg = (window.FIREBASE_CONFIG)||{};
+    if(!cfg.apiKey) return null;
+    var app = (typeof firebase!=='undefined')
+      ? (firebase.apps.length ? firebase.app() : firebase.initializeApp({
+          apiKey: cfg.apiKey,
+          projectId: 'quizaviation-b79ff',
+          authDomain: 'quizaviation-b79ff.firebaseapp.com'
+        }))
+      : null;
+    if(!app) return null;
+    _fbDB = firebase.firestore(app);
+    return _fbDB;
+  }catch(e){ return null; }
+}
+
+function _getSyncCode(){
+  var code = localStorage.getItem('navlog_syncCode');
+  if(!code){
+    var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    code='';
+    for(var i=0;i<8;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+    localStorage.setItem('navlog_syncCode',code);
+  }
+  return code;
+}
+window._getSyncCode=_getSyncCode;
+
+function _stripImagesForCloud(d){
+  var s=JSON.parse(JSON.stringify(d));
+  delete s.mapImages; delete s.extraImages;
+  delete s.screenshots; delete s.dailyWarnImages;
+  return s;
+}
+
+function _fbSaveDossier(dossier){
+  var db=_initFirebase(); if(!db) return;
+  var syncCode=_getSyncCode();
+  var stripped=_stripImagesForCloud(dossier);
+  db.collection(_FB_COLLECTION).doc(syncCode+'__'+dossier.id)
+    .set({ syncCode:syncCode, id:dossier.id, name:dossier.name,
+           date:dossier.date, data:JSON.stringify(stripped) })
+    .catch(function(e){ console.warn('Firebase save error',e); });
+}
+
+function _fbDeleteDossier(dossierId){
+  var db=_initFirebase(); if(!db) return;
+  var syncCode=_getSyncCode();
+  db.collection(_FB_COLLECTION).doc(syncCode+'__'+dossierId)
+    .delete().catch(function(e){ console.warn('Firebase delete error',e); });
+}
+
+function _fbLoadAllDossiers(syncCode, cb){
+  var db=_initFirebase(); if(!db){ cb([]); return; }
+  db.collection(_FB_COLLECTION)
+    .where('syncCode','==',syncCode)
+    .get()
+    .then(function(snapshot){
+      var loaded=[];
+      snapshot.forEach(function(doc){
+        try{ loaded.push(JSON.parse(doc.data().data)); }catch(e){}
+      });
+      cb(loaded);
+    }).catch(function(){ cb([]); });
+}
+
+function syncDossiersFromCloud(syncCodeOverride, cb){
+  var syncCode=syncCodeOverride||_getSyncCode();
+  _fbLoadAllDossiers(syncCode, function(cloudDossiers){
+    if(!cloudDossiers.length){ if(cb) cb(0); return; }
+    var local=getDossiers();
+    cloudDossiers.forEach(function(d){
+      var found=false;
+      for(var i=0;i<local.length;i++){
+        if(local[i].id===d.id){
+          /* Merge: keep local images, update data from cloud */
+          local[i]=Object.assign({},d,{
+            mapImages:local[i].mapImages,
+            extraImages:local[i].extraImages,
+            screenshots:local[i].screenshots,
+            dailyWarnImages:local[i].dailyWarnImages
+          });
+          found=true; break;
+        }
+      }
+      if(!found) local.push(d);
+    });
+    setDossiers(local);
+    renderDossierList();
+    if(cb) cb(cloudDossiers.length);
+  });
+}
+window.syncDossiersFromCloud=syncDossiersFromCloud;
+
+function _renderSyncCodeUI(){
+  var el=document.getElementById('syncCodeDisplay');
+  if(!el) return;
+  el.textContent=_getSyncCode();
+}
+window._renderSyncCodeUI=_renderSyncCodeUI;
 
 /* ===== SCREENSHOT CAPTURE ===== */
 function captureScreenshots(cb){
@@ -3899,6 +4030,7 @@ function deleteDossier(id){
   var dossiers=getDossiers();
   dossiers=dossiers.filter(function(d){return d.id!==id;});
   setDossiers(dossiers);
+  _fbDeleteDossier(id);
   renderDossierList();
 }
 window.deleteDossier=deleteDossier;
@@ -4414,7 +4546,30 @@ function updateRouteMap(){
     var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
-  /* Toujours recadrer sur l'ensemble de la route, sans animation (évite tout scroll) */
+  /* Leg info labels: TH / ETE / distance — at midpoint, offset to the left of route */
+  for(var m=0;m<pts.length-1;m++){
+    var la=pts[m],lb=pts[m+1];
+    var wp2=waypoints[lb.idx];
+    if(!wp2||!wp2._leg) continue;
+    var hdg=Math.round(wp2._leg.hdgTrue!==undefined?wp2._leg.hdgTrue:(wp2.route||0));
+    var eteMin=Math.round((wp2._leg.ete||0)*60);
+    var legDist=Math.round((wp2.dist||0)*10)/10;
+    /* Position at midpoint, offset perpendicular (left side of direction of travel) */
+    var midLat2=(la.lat+lb.lat)*0.5;
+    var midLon2=(la.lon+lb.lon)*0.5;
+    var brgM=trueBearing(la.lat,la.lon,lb.lat,lb.lon);
+    var perpRadM=(brgM-90)*Math.PI/180;
+    midLat2+=Math.cos(perpRadM)*0.005;
+    midLon2+=Math.sin(perpRadM)*0.005;
+    var labelHtml='<div style="background:rgba(8,8,26,.85);color:#e8e8ff;font-size:10px;font-weight:700;border-radius:7px;padding:3px 8px;white-space:nowrap;line-height:1.7;text-align:center;border:1px solid rgba(102,126,234,.65);box-shadow:0 2px 6px rgba(0,0,0,.6)">'
+      +'<div>\uD83E\uDDED\uFE0F&nbsp;'+hdg+'&deg;&nbsp;T</div>'
+      +'<div>\u23F1\uFE0F&nbsp;'+eteMin+'&nbsp;min&emsp;\uD83D\uDCCF&nbsp;'+legDist+'&nbsp;NM</div>'
+      +'</div>';
+    var legLabelIcon=L.divIcon({className:'',html:labelHtml,iconSize:[90,48],iconAnchor:[45,24]});
+    var legLabelMarker=L.marker([midLat2,midLon2],{icon:legLabelIcon,interactive:false}).addTo(routeMap);
+    routeMapLayers.push(legLabelMarker);
+  }
+  /* Recadrer sur l'ensemble de la route, sans animation */
   try{
     if(coords.length===1){
       routeMap.setView(coords[0],11,{animate:false});
