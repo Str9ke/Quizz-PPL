@@ -167,7 +167,21 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wind-slider-label{font-size:.72em;color:var(--text-secondary);text-align:center;margin-top:2px}
 .asi-container{display:flex;justify-content:center}
 
-/* ===== GAMIFIED NAVLOG - WP Cards & Leg Strips ===== */
+/* ===== FPL FORM ===== */
+.fpl-form{display:flex;flex-direction:column;gap:6px}
+.fpl-block{border:1px solid var(--border-color);border-radius:8px;overflow:hidden;background:var(--bg-container)}
+.fpl-block-hdr{background:rgba(102,126,234,.12);padding:4px 10px;font-size:.7em;color:#667eea;font-weight:700;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border-color)}
+.fpl-row{display:grid;gap:6px;padding:8px 10px}
+.fpl-row.r2{grid-template-columns:1fr 1fr}
+.fpl-row.r3{grid-template-columns:1fr 1fr 1fr}
+.fpl-row.r4{grid-template-columns:auto auto auto 1fr}
+.fpl-row.r5{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
+.fpl-f{display:flex;flex-direction:column;gap:2px}
+.fpl-f label{font-size:.66em;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.fpl-f input,.fpl-f textarea,.fpl-f select{background:var(--input-bg);border:1px solid var(--input-border);border-radius:6px;padding:5px 8px;color:var(--text-primary);font-family:monospace;font-size:.9em;font-weight:600;letter-spacing:.05em;width:100%;box-sizing:border-box}
+.fpl-f textarea{resize:vertical;min-height:52px;line-height:1.5}
+.fpl-preview{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px 14px;font-family:monospace;font-size:.83em;line-height:1.8;white-space:pre-wrap;color:#58c26e;margin-top:4px}
+/* ===== GAMIFIED NAVLOG - WP Cards & Leg Strips =====*/
 .navlog-board{padding:10px 0}
 .wp-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:14px 16px;margin:0 auto;max-width:700px;position:relative;border-left:4px solid;border-image:linear-gradient(180deg,#667eea,#764ba2) 1;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:all .25s}
 .wp-card.etape-card{border-image:linear-gradient(180deg,#ff9500,#e65100) 1;box-shadow:0 4px 16px rgba(255,149,0,.18)}
@@ -429,6 +443,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
     <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
+    <button class="navlog-tab" onclick="window.switchTab('fpl')">&#x2708;&#xFE0F; FPL</button>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
   </div>
 
@@ -978,6 +993,154 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
   </div>
 
+  <!-- ==================== TAB FPL: PLAN DE VOL OACI ==================== -->
+  <div id="tab-fpl" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x2708;&#xFE0F;</span> Plan de Vol OACI &mdash; ICAO FPL</div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 12px">Pré-rempli automatiquement depuis la configuration Navlog. Modifiez les champs si nécessaire.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button onclick="window.renderFPL()" class="navlog-btn primary">&#x21BA; Auto-remplir</button>
+        <button onclick="window.copyFPL()" class="navlog-btn">&#x1F4CB; Copier format OACI</button>
+        <button onclick="window.printFPL()" class="navlog-btn">&#x1F5A8;&#xFE0F; Imprimer</button>
+      </div>
+      <div class="fpl-form" id="fplForm">
+
+        <!-- En-tête -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">En-tête du message</div>
+          <div class="fpl-row r2">
+            <div class="fpl-f"><label>Priorité</label><input id="fpl_priority" value="FF" maxlength="2"></div>
+            <div class="fpl-f"><label>Adresse destinataire</label><input id="fpl_addr" value="EBBBZTZX"></div>
+          </div>
+          <div class="fpl-row r2">
+            <div class="fpl-f"><label>Heure &amp; date de dépôt (DDHHmm)</label><input id="fpl_filingtime" placeholder="ex: 281200"></div>
+            <div class="fpl-f"><label>Adresse expéditrice</label><input id="fpl_origaddr" placeholder="ex: EBCVZFZX"></div>
+          </div>
+        </div>
+
+        <!-- Field 7 + 8 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">Identification &amp; règles de vol</div>
+          <div class="fpl-row r3">
+            <div class="fpl-f"><label>7 — Indicatif d'appel</label><input id="fpl_ident" placeholder="F-GABI" maxlength="7" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>8 — Règles de vol</label>
+              <select id="fpl_flightrules">
+                <option value="V">V — VFR</option>
+                <option value="I">I — IFR</option>
+                <option value="Y">Y — IFR puis VFR</option>
+                <option value="Z">Z — VFR puis IFR</option>
+              </select>
+            </div>
+            <div class="fpl-f"><label>8 — Type de vol</label>
+              <select id="fpl_flighttype">
+                <option value="G">G — Aviation générale</option>
+                <option value="S">S — Vols réguliers</option>
+                <option value="N">N — Non régulier</option>
+                <option value="M">M — Militaire</option>
+                <option value="X">X — Autre</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 9 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">9 — Nombre, type d'aéronef, catégorie de turbulence de sillage</div>
+          <div class="fpl-row r3">
+            <div class="fpl-f"><label>Nombre</label><input id="fpl_acnum" value="1" maxlength="2" style="width:60px"></div>
+            <div class="fpl-f"><label>Type d'aéronef (OACI)</label><input id="fpl_actype" value="C150" maxlength="4" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>Cat. turbulence de sillage</label>
+              <select id="fpl_wake">
+                <option value="L">L — Légère (&lt;7t)</option>
+                <option value="M">M — Moyenne</option>
+                <option value="H">H — Lourde</option>
+                <option value="J">J — Super</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 10 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">10 — Équipements de radio-communication, navigation et approche / transpondeur</div>
+          <div class="fpl-row r2">
+            <div class="fpl-f"><label>COM/NAV (ex: S, SDE2, SDE2E3GHIJ)</label><input id="fpl_equip" value="S" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>Transpondeur SSR (ex: A, C, S, SEB2)</label><input id="fpl_ssr" value="A" style="text-transform:uppercase"></div>
+          </div>
+        </div>
+
+        <!-- Field 13 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">13 — Aérodrome de départ et heure estimée de départ (EOBT)</div>
+          <div class="fpl-row r2">
+            <div class="fpl-f"><label>Indicateur OACI départ</label><input id="fpl_dep" placeholder="EBCV" maxlength="4" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>EOBT (HHmm UTC)</label><input id="fpl_eobt" placeholder="0900" maxlength="4"></div>
+          </div>
+        </div>
+
+        <!-- Field 15 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">15 — Vitesse et niveau de croisière / Route</div>
+          <div class="fpl-row r3">
+            <div class="fpl-f"><label>Vitesse (N0090)</label><input id="fpl_speed" placeholder="N0090" maxlength="5" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>Niveau (VFR, A020, F035…)</label><input id="fpl_level" placeholder="VFR" maxlength="5" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>Route (DCT WP DCT WP DCT)</label><input id="fpl_route" placeholder="DCT" style="text-transform:uppercase"></div>
+          </div>
+        </div>
+
+        <!-- Field 16 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">16 — Aérodrome de destination, durée totale estimée, dégagements</div>
+          <div class="fpl-row r4">
+            <div class="fpl-f"><label>Destination</label><input id="fpl_dest" placeholder="EBCI" maxlength="4" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>EET (HHmm)</label><input id="fpl_eet" placeholder="0100" maxlength="4"></div>
+            <div class="fpl-f"><label>Dégagement 1</label><input id="fpl_altn1" placeholder="EBLG" maxlength="4" style="text-transform:uppercase"></div>
+            <div class="fpl-f"><label>Dégagement 2</label><input id="fpl_altn2" placeholder="" maxlength="4" style="text-transform:uppercase"></div>
+          </div>
+        </div>
+
+        <!-- Field 18 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">18 — Renseignements divers (0 si rien)</div>
+          <div class="fpl-row">
+            <div class="fpl-f"><label>Renseignements divers (REG/ DOF/ OPR/ PBN/…)</label><textarea id="fpl_other" placeholder="DOF/260228 REG/F-GABI OPR/NOM PBN/B1"></textarea></div>
+          </div>
+        </div>
+
+        <!-- Field 19 -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">19 — Renseignements complémentaires</div>
+          <div class="fpl-row r5">
+            <div class="fpl-f"><label>E/ Autonomie (HHmm)</label><input id="fpl_end" placeholder="0200" maxlength="4"></div>
+            <div class="fpl-f"><label>P/ Personnes à bord</label><input id="fpl_pob" value="02" maxlength="3"></div>
+            <div class="fpl-f"><label>R/ Radio de secours</label>
+              <select id="fpl_radio"><option value="V">V — VHF 121.5</option><option value="U">U — UHF</option><option value="E">E — ELT</option><option value="VE">VE — VHF+ELT</option></select>
+            </div>
+            <div class="fpl-f"><label>J/ Gilets de sauvetage</label>
+              <select id="fpl_survive"><option value="L">L — Lumière</option><option value="F">FL — Lumière+Fluor.</option><option value="N">N — Aucun</option></select>
+            </div>
+            <div class="fpl-f"><label>C/ Nom du PIC</label><input id="fpl_pic" placeholder="DUPONT PAUL"></div>
+          </div>
+          <div class="fpl-row">
+            <div class="fpl-f"><label>Remarques complémentaires (D/ N/ etc.)</label><input id="fpl_rem" placeholder="D/01 008 ROUGE N/"></div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="fpl-block">
+          <div class="fpl-block-hdr">Aperçu format OACI</div>
+          <div class="fpl-row">
+            <div id="fpl_preview" class="fpl-preview">(FPL-...\n...)</div>
+          </div>
+          <div style="padding:0 10px 10px">
+            <button onclick="window.buildFPLPreview()" class="navlog-btn" style="font-size:.8em;padding:5px 14px">🔄 Actualiser l'aperçu</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== TAB 6: DOSSIERS PREVOL ==================== -->
   <div id="tab-dossiers" class="navlog-tab-content">
     <div class="nl-card">
@@ -1258,6 +1421,7 @@ function switchTab(id){
   
   if(id==='checklist') initChecklist();
   if(id==='fuel') window.renderFuelLog();
+  if(id==='fpl') window.renderFPL();
 
   /* Lazy-load NOTAMs iframes on first visit */
   if(id==='notam' && !window._notamLoaded){
@@ -1417,6 +1581,140 @@ function renderFuelLog(){
   elSum.innerHTML=col1+col2;
 }
 window.renderFuelLog=renderFuelLog;
+
+/* ===== FLIGHT PLAN (FPL) ===== */
+function renderFPL(){
+  /* Pull from config */
+  var dep  = (waypoints.length>0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  var dest = (waypoints.length>1 && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+
+  /* EOBT from departure time config */
+  var deptime = (document.getElementById('cfgDepTime')||{value:'09:00'}).value||'09:00';
+  var eobt = deptime.replace(':','');
+
+  /* Speed */
+  var tas = Math.round(parseFloat((document.getElementById('cfgTAS')||{value:90}).value)||90);
+  var speedStr = 'N'+String(tas).padStart(4,'0');
+
+  /* Altitude: first non-departure waypoint altitude, default 2000ft → A020 */
+  var altFt = 2000;
+  for(var ai=1;ai<waypoints.length;ai++){ if(waypoints[ai].altitude){ altFt=waypoints[ai].altitude; break; } }
+  var levelStr = 'A'+String(Math.round(altFt/100)).padStart(3,'0');
+
+  /* Route: intermediate waypoints, DCT between them */
+  var midParts=[];
+  for(var ri=1;ri<waypoints.length-1;ri++){
+    if(waypoints[ri].name) midParts.push(waypoints[ri].name.trim().toUpperCase());
+  }
+  var routeStr = midParts.length>0 ? midParts.join(' DCT ') : 'DCT';
+
+  /* EET: sum of all leg ETEs */
+  var totalMin=0;
+  for(var ei=1;ei<waypoints.length;ei++){
+    if(waypoints[ei]._leg && !isNaN(waypoints[ei]._leg.ete)) totalMin+=waypoints[ei]._leg.ete*60;
+  }
+  var eetStr = String(Math.floor(totalMin/60)).padStart(2,'0')+String(Math.round(totalMin%60)).padStart(2,'0');
+
+  /* Endurance: block fuel / consumption * 60 min */
+  var fuelBurnVal = parseFloat((document.getElementById('fuelBurn')||document.getElementById('cfgFuel')||{value:20}).value)||20;
+  var taxiDMin = parseFloat((document.getElementById('fuelTaxiD')||{value:10}).value)||10;
+  var taxiAMin = parseFloat((document.getElementById('fuelTaxiA')||{value:5}).value)||5;
+  var resFuelMin = 30;
+  var tripFuelL = 0;
+  for(var fi=1;fi<waypoints.length;fi++){ if(waypoints[fi]._leg && waypoints[fi]._leg.fuel) tripFuelL+=waypoints[fi]._leg.fuel; }
+  var blockFuel = tripFuelL + ((taxiDMin+taxiAMin)/60*fuelBurnVal) + (tripFuelL*(5/100)) + (resFuelMin/60*fuelBurnVal);
+  if(blockFuel<1) blockFuel=36; /* fallback: Cessna 150 usable fuel */
+  var endMin = Math.round((blockFuel/fuelBurnVal)*60);
+  var endStr = String(Math.floor(endMin/60)).padStart(2,'0')+String(endMin%60).padStart(2,'0');
+
+  /* Today's date for DOF */
+  var now=new Date();
+  var dof=String(now.getFullYear()).slice(-2)+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+  var ddhhmm=String(now.getDate()).padStart(2,'0')+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+
+  /* Fill fields (only if element exists and user hasn't manually set them) */
+  var set=function(id,val,force){
+    var el=document.getElementById(id);
+    if(el && (force||!el._fpluserEdited)) el.value=val;
+  };
+  set('fpl_dep',dep);
+  set('fpl_dest',dest);
+  set('fpl_eobt',eobt);
+  set('fpl_speed',speedStr);
+  set('fpl_level',levelStr);
+  set('fpl_route',routeStr);
+  set('fpl_eet',eetStr);
+  set('fpl_end',endStr);
+  set('fpl_filingtime',ddhhmm);
+  set('fpl_other','DOF/'+dof+' REG/ OPR/ PBN/B1');
+
+  /* Mark all inputs as auto-filled so subsequent manual edits are preserved */
+  document.querySelectorAll('#fplForm input, #fplForm textarea').forEach(function(el){
+    el.addEventListener('input', function(){ el._fpluserEdited=true; }, {once:true});
+  });
+
+  buildFPLPreview();
+}
+window.renderFPL=renderFPL;
+
+function buildFPLPreview(){
+  var g=function(id){ var el=document.getElementById('fpl_'+id); return el?el.value.trim():''; };
+  var flr=g('flightrules'), flt=g('flighttype');
+  var lines=[];
+  lines.push('(FPL');
+  lines.push('-'+g('ident'));
+  lines.push('-'+flr+flt);
+  lines.push('-'+g('acnum')+'/'+g('actype')+'/'+g('wake'));
+  lines.push('-'+g('equip')+'/'+g('ssr'));
+  lines.push('-'+g('dep')+g('eobt'));
+  lines.push('-'+g('speed')+g('level')+' '+g('route'));
+  var f16 = g('dest')+g('eet');
+  if(g('altn1')) f16+=' '+g('altn1');
+  if(g('altn2')) f16+=' '+g('altn2');
+  lines.push('-'+f16);
+  lines.push('-'+(g('other')||'0'));
+  var f19='E/'+g('end')+' P/'+g('pob')+' R/'+g('radio')+' J/'+g('survive');
+  if(g('rem')) f19+=' '+g('rem');
+  if(g('pic')) f19+=' C/'+g('pic');
+  lines.push('-'+f19);
+  lines.push(')');
+  var prev=document.getElementById('fpl_preview');
+  if(prev) prev.textContent=lines.join('\n');
+}
+window.buildFPLPreview=buildFPLPreview;
+
+function copyFPL(){
+  buildFPLPreview();
+  var prev=document.getElementById('fpl_preview');
+  var txt=prev?prev.textContent:'';
+  if(!txt) return;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      var btn=document.querySelector('[onclick*=\"copyFPL\"]');
+      if(btn){ var orig=btn.innerHTML; btn.innerHTML='\u2705 Copié !'; setTimeout(function(){btn.innerHTML=orig;},2000); }
+    });
+  } else {
+    prompt('Copiez ce texte OACI :', txt);
+  }
+}
+window.copyFPL=copyFPL;
+
+function printFPL(){
+  buildFPLPreview();
+  var win=window.open('','_blank','width=700,height=700');
+  if(!win) return;
+  var g=function(id){ var el=document.getElementById('fpl_'+id); return el?el.value.trim():''; };
+  var prev=document.getElementById('fpl_preview');
+  win.document.write('<html><head><title>Plan de vol OACI</title><style>body{font-family:monospace;margin:30px}h1{font-size:14pt;border-bottom:2px solid #000}.fpl{white-space:pre;font-size:11pt;background:#f9f9f9;border:1px solid #ccc;padding:12px;border-radius:4px}table{border-collapse:collapse;width:100%;font-size:10pt}td,th{border:1px solid #666;padding:4px 8px}th{background:#eee;font-weight:700}</style></head><body>');
+  win.document.write('<h1>FPL \u2014 Plan de vol OACI</h1>');
+  win.document.write('<table>');
+  var rows=[['7 \u2014 Indicatif',g('ident')],['8 \u2014 R\u00e8gles / Type',g('flightrules')+' / '+g('flighttype')],['9 \u2014 Aéronef',g('acnum')+'/'+g('actype')+'/'+g('wake')],['10 \u2014 \u00c9quipements',g('equip')+'/'+g('ssr')],['13 \u2014 D\u00e9part',g('dep')+' '+g('eobt')+'z'],['15 \u2014 Vitesse/Niveau/Route',g('speed')+' '+g('level')+' '+g('route')],['16 \u2014 Destination/EET/D\u00e9gag.',g('dest')+' '+g('eet')+' '+g('altn1')+' '+g('altn2')],['18 \u2014 Divers',g('other')],['19 \u2014 Compl\u00e9mentaires','E/'+g('end')+' P/'+g('pob')+' R/'+g('radio')+' '+g('rem')+' C/'+g('pic')]];
+  rows.forEach(function(r){win.document.write('<tr><th style="white-space:nowrap">'+r[0]+'</th><td>'+r[1]+'</td></tr>');});
+  win.document.write('</table><br><div class="fpl">'+(prev?prev.textContent.replace(/</g,'&lt;'):'')+'</div></body></html>');
+  win.document.close();
+  win.print();
+}
+window.printFPL=printFPL;
 
 /* ===== CHECKLIST BRIEFING ===== */
 var CHECKLIST_ITEMS = [
@@ -1887,7 +2185,8 @@ function windArrowSVG(dir,spd){
     return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#00e5ff" stroke-width="2" stroke-dasharray="4 3"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="3s" repeatCount="indefinite"/></circle><text x="18" y="22" text-anchor="middle" fill="#00e5ff" font-size="10" font-weight="bold">VRB</text></svg>';
   }
   var r=dir-180;
-  return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="rgba(20,20,40,0.7)" stroke="#445" stroke-width="1"/><g transform="rotate('+r+' 18 18)"><line x1="18" y1="4" x2="18" y2="28" stroke="#00e5ff" stroke-width="2"/><polygon points="18,4 14,12 22,12" fill="#00e5ff"/></g><text x="18" y="22" text-anchor="middle" fill="#fff" font-size="7">'+spd+'</text></svg>';
+  /* DO NOT CHANGE: user wants black circle background */
+  return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#000" stroke="#333" stroke-width="1"/><g transform="rotate('+r+' 18 18)"><line x1="18" y1="4" x2="18" y2="28" stroke="#00e5ff" stroke-width="2"/><polygon points="18,4 14,12 22,12" fill="#00e5ff"/></g><text x="18" y="22" text-anchor="middle" fill="#fff" font-size="7">'+spd+'</text></svg>';
 }
 
 function suggestRunway(icao,windDir,windSpd){
@@ -3476,6 +3775,11 @@ function toggleEtape(i){
   renderNavlog();
   recalcNavlog();
   updateRouteMap();
+  /* Scroll back to the toggled waypoint card */
+  requestAnimationFrame(function(){
+    var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
+    if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
+  });
 }
 window.toggleEtape=toggleEtape;
 
@@ -4504,7 +4808,7 @@ function _applyMapData(key, dataUrl){
     var blobUrl=_dataUrlToObjectUrl(dataUrl);
     el.innerHTML='<iframe src="'+blobUrl+'#toolbar=0&navpanes=0" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
   } else {
-    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
+    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain;pointer-events:none;border-radius:8px">';
   }
   var delBtn=document.getElementById('del'+cap);
   if(delBtn) delBtn.style.display='';
