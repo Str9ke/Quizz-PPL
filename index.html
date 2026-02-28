@@ -516,6 +516,10 @@
       var btn = document.getElementById('syncBtn');
       if(btn){ btn.textContent='\u23F3 Synchro\u2026'; btn.disabled=true; }
       try{
+        /* 1. D'abord uploader les données locales → Firestore (push bidirectionnel) */
+        if (typeof saveDailyMastered === 'function') {
+          try { await saveDailyMastered(uid); } catch(e){ console.warn('[sync] saveDailyMastered upload:', e); }
+        }
         /* source:'server' peut échouer avec enableMultiTabIndexedDbPersistence → fallback sans option */
         var docSnap;
         try { docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'server' }); }
