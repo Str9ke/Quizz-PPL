@@ -3169,7 +3169,10 @@ function renderNavlog(){
     html+='</div>';
   }
   /* preserve scroll position during DOM rebuild */
-  var _scrollY=window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0;
+  /* Si on vient d'un clic carte, utiliser le scroll pré-clic (plus fiable) */
+  var _scrollY = (typeof window._mapPreClickScrollY === 'number')
+    ? window._mapPreClickScrollY
+    : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
   board.innerHTML=html;
   /* Restaurer immédiatement (avant relayouts) */
   document.documentElement.scrollTop=_scrollY;
@@ -4204,8 +4207,37 @@ function initRouteMap(){
   osmLayer.addTo(routeMap); /* OSM is safer default, Geoportail might lack keys */
   L.control.layers({'OSM':osmLayer,'OACI (France)':oaciLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces aériens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
 
+  /* ── Anti-scroll : Leaflet appelle container.focus() sur chaque mousedown, ce
+     qui demande au navigateur de scroller jusqu'au container.  On capture le
+     scroll AVANT (mousedown capture) puis on le restaure dès que focus se
+     déclenche (focus capture). ─────────────────────────────────────────── */
+  var _mc = routeMap.getContainer();
+  _mc.addEventListener('mousedown', function(){
+    window._mapPreClickScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+  }, true /* capture — avant Leaflet */);
+  _mc.addEventListener('focus', function(){
+    if(typeof window._mapPreClickScrollY === 'number'){
+      var sy = window._mapPreClickScrollY;
+      /* synchrone : avant que le navigateur finisse son scroll-to-element */
+      document.documentElement.scrollTop = sy;
+      document.body.scrollTop = sy;
+      /* + dans le prochain frame au cas où le navigateur diffère */
+      requestAnimationFrame(function(){
+        document.documentElement.scrollTop = sy;
+        document.body.scrollTop = sy;
+        window.scrollTo({top:sy,behavior:'instant'});
+      });
+    }
+  }, true /* capture */);
+
   routeMap.on('click', function(e){
-    var coord = e.latlng;
+    /* Restaurer le scroll capturé avant que Leaflet focus() ait scrollé */
+    if(typeof window._mapPreClickScrollY === 'number'){
+      var _sy = window._mapPreClickScrollY;
+      window._mapPreClickScrollY = undefined;
+      document.documentElement.scrollTop = _sy;
+      document.body.scrollTop = _sy;
+    }
     var name = 'WP' + (waypoints.length + 1);
     var newWp = {name: name, lat: coord.lat, lon: coord.lng, icon: '', dist: 0, route: 0};
     
