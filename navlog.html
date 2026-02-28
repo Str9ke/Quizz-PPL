@@ -4194,10 +4194,14 @@ function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
   if(!container) return;
   routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false,keyboard:false}).setView([50.4589,3.8181],9);
-  /* Retirer tabindex pour que cliquer sur la carte ne déclenche jamais
-     de scroll-to-focus du navigateur */
-  routeMap.getContainer().setAttribute('tabindex', '-1');
-  routeMap.getContainer().style.outline = 'none';
+  /* Empêcher tout scroll causé par focus() sur le conteneur Leaflet.
+     Leaflet appelle container.focus() dans son gestionnaire interne même avec keyboard:false.
+     On surcharge focus() pour toujours passer preventScroll:true. */
+  var _mc = routeMap.getContainer();
+  _mc.setAttribute('tabindex', '-1');
+  _mc.style.outline = 'none';
+  var _origFocus = _mc.focus.bind(_mc);
+  _mc.focus = function(opts) { _origFocus(Object.assign({}, opts, {preventScroll: true})); };
   var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
   var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
   var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
@@ -4253,9 +4257,19 @@ function initRouteMap(){
       p2.dist = Math.round(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
     }
 
-    /* renderNavlog handles scroll preservation internally via double rAF */
+    /* Verrou de scroll : capturer avant le rebuild DOM, forcer la restauration
+       sur plusieurs frames pour contrer tout reflow/focus résiduel */
+    var _savedY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    function _restoreScroll(){
+      document.documentElement.scrollTop = _savedY;
+      document.body.scrollTop = _savedY;
+    }
     renderNavlog();
     recalcNavlog();
+    _restoreScroll();
+    requestAnimationFrame(function(){ _restoreScroll();
+      requestAnimationFrame(function(){ _restoreScroll(); });
+    });
   });
 
   /* Airport markers on route map */
