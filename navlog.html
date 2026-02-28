@@ -4394,8 +4394,29 @@ function saveDossier(){
     for(var i=0;i<updated.length;i++){
       if(updated[i].id===dossierId){
         updated[i].cloudFiles=cloudFiles;
+        /* Replace base64 with cloud URLs to free localStorage quota */
+        if(updated[i].dailyWarnImages&&cloudFiles.dailyWarnImages){
+          updated[i].dailyWarnImages=updated[i].dailyWarnImages.map(function(item,j){
+            return cloudFiles.dailyWarnImages[j]?{type:item.type,name:item.name,data:cloudFiles.dailyWarnImages[j]}:item;
+          });
+        }
+        if(updated[i].extraImages&&cloudFiles.extraImages){
+          updated[i].extraImages=updated[i].extraImages.map(function(item,j){
+            return cloudFiles.extraImages[j]?{type:item.type,name:item.name,data:cloudFiles.extraImages[j]}:item;
+          });
+        }
+        if(updated[i].mapImages&&cloudFiles.mapImages){
+          Object.keys(cloudFiles.mapImages).forEach(function(k){ if(cloudFiles.mapImages[k]) updated[i].mapImages[k]=cloudFiles.mapImages[k]; });
+        }
+        if(cloudFiles.opmetPdf) updated[i].opmetPdf=cloudFiles.opmetPdf;
+        if(updated[i].notamSummary&&cloudFiles.notamSummary){
+          updated[i].notamSummary=updated[i].notamSummary.map(function(item,j){
+            return cloudFiles.notamSummary[j]?{type:item.type,name:item.name,data:cloudFiles.notamSummary[j]}:item;
+          });
+        }
         setDossiers(updated);
         _fbSaveDossier(updated[i]);
+        renderDossierList();
         _toast('\u2601\uFE0F Fichiers sauvegard\u00e9s dans le cloud','success',2500);
         break;
       }
@@ -4719,11 +4740,18 @@ function loadDossier(id){
   if(d.checklist){
     setChecklistState(d.checklist);
   }
-  /* Restore daily warnings images — merge cloud URLs */
+  /* Restore daily warnings images — merge cloud URLs, fallback to cloud-only if local data lost */
   if(d.dailyWarnImages&&d.dailyWarnImages.length){
     var dw=d.dailyWarnImages.map(function(item,i){
       var cloudUrl=cloudFiles.dailyWarnImages&&cloudFiles.dailyWarnImages[i];
       return {type:item.type, data:cloudUrl||item.data, name:item.name};
+    });
+    setDailyWarnImages(dw);
+  } else if(cloudFiles.dailyWarnImages&&cloudFiles.dailyWarnImages.some(Boolean)){
+    /* Local base64 was stripped (storage quota exceeded); restore from cloud URLs */
+    var dw=cloudFiles.dailyWarnImages.filter(Boolean).map(function(url,i){
+      var isPdf=url.indexOf('.pdf')>-1||url.indexOf('pdf')>-1;
+      return {type:isPdf?'pdf':'image', data:url, name:'TEMSI/WINTEM '+(i+1)};
     });
     setDailyWarnImages(dw);
   }
@@ -4847,9 +4875,10 @@ function _dossierCardHTML(d){
   if(wps.length>1) stats.push(wps.length+' pts');
   if(totalDist>0) stats.push(Math.round(totalDist)+' NM');
   if(totalEte>0){ var h=Math.floor(totalEte),m=Math.round((totalEte-h)*60); stats.push((h?h+'h':'')+m+'min'); }
-  var mapCount=Object.keys(d.mapImages||{}).length;
-  var extraCount=(d.extraImages||[]).length;
-  var dwCount=(d.dailyWarnImages||[]).length;
+  var cf=d.cloudFiles||{};
+  var mapCount=Object.keys(d.mapImages||{}).length||Object.keys(cf.mapImages||{}).length;
+  var extraCount=(d.extraImages||[]).length||((cf.extraImages||[]).filter(Boolean).length);
+  var dwCount=(d.dailyWarnImages||[]).length||((cf.dailyWarnImages||[]).filter(Boolean).length);
   var ssCount=Object.keys(d.screenshots||{}).length;
   var ckDone=0,ckTotal=0;
   if(d.checklist){ for(var k in d.checklist){ckTotal++;if(d.checklist[k])ckDone++;} }
@@ -5939,9 +5968,10 @@ function perfFromMetar(){
   var candidates = depIcao ? [depIcao] : [];
   if(depIcao && METAR_FALLBACK[depIcao]) candidates = candidates.concat(METAR_FALLBACK[depIcao]);
   var usedIcao = null;
+  var wasManualSel = false;
   /* Manual select override */
   var _psel=document.getElementById('perfMetarSelect');
-  if(_psel && _psel.value && wxCache[_psel.value] && wxCache[_psel.value].metar){ usedIcao=_psel.value; }
+  if(_psel && _psel.value && wxCache[_psel.value] && wxCache[_psel.value].metar){ usedIcao=_psel.value; wasManualSel=true; }
   if(!usedIcao) for(var ci = 0; ci < candidates.length; ci++){
     var cc = candidates[ci];
     if(cc && wxCache[cc] && wxCache[cc].metar){ usedIcao = cc; break; }
@@ -5978,9 +6008,10 @@ function perfFromMetar(){
   /* Parse QNH */
   var qm = raw.match(/Q(\d{4})/);
   if(qm) document.getElementById('perfQNH').value = parseInt(qm[1]);
-  /* Elevation: prefer departure airport, then METAR source */
-  if(AIRPORT_ELEV[depIcao])       document.getElementById('perfElev').value = AIRPORT_ELEV[depIcao];
-  else if(AIRPORT_ELEV[usedIcao]) document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
+  /* Elevation: if user manually selected an airport use its elevation; otherwise prefer departure */
+  if(wasManualSel && AIRPORT_ELEV[usedIcao]) document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
+  else if(AIRPORT_ELEV[depIcao])             document.getElementById('perfElev').value = AIRPORT_ELEV[depIcao];
+  else if(AIRPORT_ELEV[usedIcao])            document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
 
   /* Wind + crosswind */
   var wm = parseWindFromMetar(raw);
