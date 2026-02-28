@@ -12,6 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <style>
@@ -1162,17 +1163,23 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x2601;&#xFE0F;</span> Synchronisation cloud</div>
-      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 10px">Votre code unique ci-dessous synchronise vos dossiers dans le cloud. Entrez ce m&ecirc;me code sur un autre appareil pour retrouver vos dossiers.</p>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <span style="font-size:.8em;color:var(--text-secondary)">Votre code&nbsp;:</span>
-        <code id="syncCodeDisplay" style="font-size:1.1em;font-weight:700;letter-spacing:2px;padding:4px 10px;border-radius:6px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.3);color:#a78bfa;cursor:pointer" title="Cliquer pour copier" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent).then(function(){var el=document.getElementById('syncCopied');el.style.opacity='1';setTimeout(function(){el.style.opacity='0';},1500);})">—</code>
-        <span id="syncCopied" style="font-size:.75em;color:#4ade80;opacity:0;transition:opacity .3s">&#x2713; copi&eacute; !</span>
-        <button onclick="var c=prompt('Modifier votre code de sync (8 caract&egrave;res A-Z 2-9)\nActuel : '+window._getSyncCode());if(c&&c.trim().length>=6){localStorage.setItem('navlog_syncCode',c.trim().toUpperCase().slice(0,8));window._renderSyncCodeUI();}" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.75em">&#x270F;&#xFE0F; Modifier</button>
+      <!-- Connecté via compte Quiz -->
+      <div id="syncLoggedIn" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="syncEmailDisplay" style="font-size:.82em;color:#a78bfa">&#x1F464; —</span>
+          <button id="syncNowBtn" onclick="window._navlogSyncNow()" style="padding:6px 14px;border-radius:10px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-size:.78em;font-weight:700">&#x1F504; Synchroniser</button>
+        </div>
+        <p style="font-size:.73em;color:var(--text-secondary);margin:8px 0 0">&#x2705; Vos dossiers sont automatiquement synchronis&eacute;s sur tous vos appareils connect&eacute;s avec ce compte.</p>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:.8em;color:var(--text-secondary);white-space:nowrap">Sync depuis un autre appareil&nbsp;:</span>
-        <input type="text" id="syncCodeInput" placeholder="Code de l'autre appareil" maxlength="8" style="flex:1;min-width:140px;max-width:200px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.88em;text-transform:uppercase;letter-spacing:1px">
-        <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳ En cours…';window.syncDossiersFromCloud(code,function(n){btn.disabled=false;btn.textContent='⬇\uFE0F Importer';if(n>0)alert(n+' dossier(s) import\u00e9(s) depuis le cloud.');else alert('Aucun dossier trouv\u00e9 pour ce code.');});" class="navlog-btn primary" style="white-space:nowrap">&#x2B07;&#xFE0F; Importer</button>
+      <!-- Non connecté -->
+      <div id="syncNotLoggedIn" style="display:none">
+        <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 10px">&#x26A0;&#xFE0F; Non connect&eacute; — connectez-vous sur la page <strong>Accueil du Quiz</strong> pour synchroniser automatiquement sur tous vos appareils.</p>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:.8em;color:var(--text-secondary)">Code manuel&nbsp;:</span>
+          <code id="syncCodeDisplay" style="font-size:1em;font-weight:700;letter-spacing:2px;padding:3px 8px;border-radius:6px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.3);color:#a78bfa">—</code>
+          <input type="text" id="syncCodeInput" placeholder="Code d'un autre appareil" maxlength="8" style="flex:1;min-width:130px;max-width:180px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.82em;text-transform:uppercase">
+          <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳…';window.syncDossiersFromCloud(code,function(n){btn.disabled=false;btn.textContent='\u2B07\uFE0F Importer';if(n>0)_toast(n+' dossier(s) import\u00e9(s)','success',2500);else _toast('Aucun dossier trouv\u00e9 pour ce code','error',2500);});" class="navlog-btn primary" style="white-space:nowrap;padding:5px 10px">&#x2B07;&#xFE0F; Importer</button>
+        </div>
       </div>
     </div>
     <div class="nl-card" id="dossiersSavedSection">
@@ -4468,6 +4475,8 @@ window._downloadDossierJson=_downloadDossierJson;
 /* ===== FIREBASE CLOUD SYNC ===== */
 var _fbDB = null;
 var _fbStorage = null;
+var _fbAuth = null;
+var _navlogUid = localStorage.getItem('cachedUid') || null; // UID du compte connecté (partagé avec l'app Quiz)
 var _FB_COLLECTION = 'navlog_dossiers';
 
 function _initFirebase(){
@@ -4486,6 +4495,7 @@ function _initFirebase(){
     if(!app) return null;
     _fbDB = firebase.firestore(app);
     try{ _fbStorage = firebase.storage(app); }catch(e){ console.warn('Storage init failed',e); }
+    try{ _fbAuth = firebase.auth(app); }catch(e){ console.warn('Auth init failed',e); }
     return _fbDB;
   }catch(e){ return null; }
 }
@@ -4563,6 +4573,9 @@ function _uploadDossierFiles(dossier, cb){
 }
 
 function _getSyncCode(){
+  // Priorité 1 : UID Firebase (même compte que l'app Quiz → sync automatique cross-device)
+  if(_navlogUid) return _navlogUid;
+  // Priorité 2 : code manuel existant en localStorage
   var code = localStorage.getItem('navlog_syncCode');
   if(!code){
     var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -4573,6 +4586,46 @@ function _getSyncCode(){
   return code;
 }
 window._getSyncCode=_getSyncCode;
+
+/* Synchronisation manuelle depuis le bouton */
+function _navlogSyncNow(){
+  var btn=document.getElementById('syncNowBtn');
+  if(btn){btn.textContent='⏳ En cours…';btn.disabled=true;}
+  syncDossiersFromCloud(null,function(n){
+    if(btn){btn.textContent='🔄 Synchroniser';btn.disabled=false;}
+    _toast(n>0?('✅ '+n+' dossier(s) synchronisé(s)'):'✅ Dossiers à jour','success',2500);
+  });
+}
+window._navlogSyncNow=_navlogSyncNow;
+
+/* Initialisation Auth au chargement de la page */
+(function _initNavlogAuth(){
+  var db=_initFirebase();
+  if(!_fbAuth) return;
+  _fbAuth.onAuthStateChanged(function(user){
+    var oldUid=_navlogUid;
+    if(user){
+      _navlogUid=user.uid;
+      localStorage.setItem('cachedUid',user.uid);
+      /* Mise à jour de l'UI */
+      var li=document.getElementById('syncLoggedIn');
+      var lo=document.getElementById('syncNotLoggedIn');
+      var em=document.getElementById('syncEmailDisplay');
+      if(li) li.style.display='block';
+      if(lo) lo.style.display='none';
+      if(em) em.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));
+      /* Si UID vient d'être détecté ou a changé → sync silencieuse */
+      if(oldUid!==user.uid) syncDossiersFromCloud();
+    } else {
+      _navlogUid=null;
+      var li2=document.getElementById('syncLoggedIn');
+      var lo2=document.getElementById('syncNotLoggedIn');
+      if(li2) li2.style.display='none';
+      if(lo2) lo2.style.display='block';
+      _renderSyncCodeUI();
+    }
+  });
+})();
 
 function _stripImagesForCloud(d){
   var s=JSON.parse(JSON.stringify(d));
@@ -4651,9 +4704,19 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
 window.syncDossiersFromCloud=syncDossiersFromCloud;
 
 function _renderSyncCodeUI(){
-  var el=document.getElementById('syncCodeDisplay');
-  if(!el) return;
-  el.textContent=_getSyncCode();
+  if(_navlogUid){
+    var li=document.getElementById('syncLoggedIn');
+    var lo=document.getElementById('syncNotLoggedIn');
+    if(li) li.style.display='block';
+    if(lo) lo.style.display='none';
+  } else {
+    var li2=document.getElementById('syncLoggedIn');
+    var lo2=document.getElementById('syncNotLoggedIn');
+    if(li2) li2.style.display='none';
+    if(lo2) lo2.style.display='block';
+    var el=document.getElementById('syncCodeDisplay');
+    if(el) el.textContent=_getSyncCode();
+  }
 }
 window._renderSyncCodeUI=_renderSyncCodeUI;
 
