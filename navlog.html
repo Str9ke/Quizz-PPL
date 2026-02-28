@@ -312,7 +312,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
-#routeMapContainer{height:340px;width:100%;background:#1a1a2e}
+#routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px}
 .route-map-card .route-map-toolbar{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
 /* Navlog action buttons */
@@ -345,7 +345,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .wp-card-header{flex-direction:column;align-items:flex-start}
   .summary-panel{flex-direction:column;align-items:center}
   .dossier-card{flex-direction:column;align-items:flex-start}
-  #routeMapContainer{height:260px}
+  #routeMapContainer{min-height:unset;max-height:85vw}
 }
 /* Wind Triangle Styles */
 .leg-container { display: flex; align-items: center; gap: 12px; }
@@ -4193,7 +4193,9 @@ var routeMapLayers=[];
 function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
   if(!container) return;
-  routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false}).setView([50.4589,3.8181],9);
+  routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false,keyboard:false}).setView([50.4589,3.8181],9);
+  /* keyboard:false empêche Leaflet d'appeler container.focus() sur chaque clic,
+     ce qui évite le scroll-to-element automatique du navigateur. */
   var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
   var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
   var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
@@ -4398,29 +4400,14 @@ function updateRouteMap(){
     var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
-  /* Auto-fit : seulement lors de l'ajout initial (0→N), jamais animé.
-     - Première mise en route (flag) → fitBounds pour tout voir
-     - Waypoint supplémentaire → panTo uniquement sur le dernier point si hors vue
-     - Évite tout scroll de page parasite */
-  if(!window._mapFittedOnce){
-    /* Première fois qu'on a des points : ajuster sur toute la route */
-    try{
-      if(coords.length===1){
-        routeMap.setView(coords[0],11,{animate:false});
-      } else {
-        routeMap.fitBounds(L.latLngBounds(coords),{padding:[40,40],maxZoom:13,animate:false});
-      }
-    }catch(e){}
-    window._mapFittedOnce=true;
-  } else {
-    /* Route déjà affichée : seulement pan vers le dernier point s'il est hors vue */
-    var lastCoord=coords[coords.length-1];
-    try{
-      if(!routeMap.getBounds().contains(L.latLng(lastCoord))){
-        routeMap.panTo(lastCoord,{animate:false});
-      }
-    }catch(e){}
-  }
+  /* Toujours recadrer sur l'ensemble de la route, sans animation (évite tout scroll) */
+  try{
+    if(coords.length===1){
+      routeMap.setView(coords[0],11,{animate:false});
+    } else {
+      routeMap.fitBounds(L.latLngBounds(coords),{padding:[50,50],maxZoom:13,animate:false});
+    }
+  }catch(e){}
 }
 
 /* Recentrer manuellement la carte sur la route (bouton 'Recentrer') */
