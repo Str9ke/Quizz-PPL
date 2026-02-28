@@ -12,9 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
 /* ===== NavLog page styles ===== */
-/* Disable browser scroll-anchoring: prevents automatic scroll adjustment
-   when waypoint rows are inserted/removed in the navlog board */
-body{overflow-anchor:none}
 .navlog-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#1a1a3e 0%,#2d1b4e 50%,#1a1a3e 100%);position:relative;overflow:hidden}
 .navlog-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 50%,rgba(102,126,234,.08) 0%,transparent 50%),radial-gradient(ellipse at 70% 50%,rgba(118,75,162,.08) 0%,transparent 50%);pointer-events:none}
 .navlog-hero-icon{font-size:2.5rem;filter:drop-shadow(0 2px 8px rgba(102,126,234,.4))}
@@ -3171,20 +3168,19 @@ function renderNavlog(){
     html+='</div>';
     html+='</div>';
   }
-  /* preserve scroll position during DOM rebuild */
-  var _scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+  /* Compensation de scroll : quand le board grandit (nouveau WP ajouté),
+     on compense en ajoutant la hauteur gagnée au scrollY pour que la vue
+     reste visuellement fixe sur la carte / le bas de page. */
+  var _boardBefore = (document.getElementById('navlogBoard')||{}).offsetHeight || 0;
+  var _scrollBefore = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   board.innerHTML=html;
-  /* Restaurer immédiatement (avant relayouts) */
-  document.documentElement.scrollTop=_scrollY;
-  document.body.scrollTop=_scrollY;
+  var _boardAfter = (document.getElementById('navlogBoard')||{}).offsetHeight || 0;
+  var _targetScroll = _scrollBefore + (_boardAfter - _boardBefore);
+  document.documentElement.scrollTop = _targetScroll;
+  document.body.scrollTop = _targetScroll;
   requestAnimationFrame(function(){
-    document.documentElement.scrollTop=_scrollY;
-    document.body.scrollTop=_scrollY;
-    window.scrollTo({top:_scrollY,behavior:'instant'});
-    requestAnimationFrame(function(){
-      document.documentElement.scrollTop=_scrollY;
-      document.body.scrollTop=_scrollY;
-    });
+    document.documentElement.scrollTop = _targetScroll;
+    document.body.scrollTop = _targetScroll;
   });
   initDragDrop(board);
   var nameInputs=board.querySelectorAll('.wp-name-input');
@@ -4203,18 +4199,6 @@ function initRouteMap(){
   /* Surcharger focus() pour ne jamais scroller */
   var _origFocus = _mc.focus.bind(_mc);
   _mc.focus = function(opts) { _origFocus(Object.assign({}, opts, {preventScroll: true})); };
-  /* Verrou de scroll sur mousedown : capter la position AVANT que quoi que ce soit
-     ne scrolle, puis la forcer en boucle pendant 500ms (couvre focus + fitBounds + renderNavlog) */
-  _mc.addEventListener('mousedown', function(){
-    var _lockY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-    var _lockTimer = setInterval(function(){
-      if(document.documentElement.scrollTop !== _lockY || document.body.scrollTop !== _lockY){
-        document.documentElement.scrollTop = _lockY;
-        document.body.scrollTop = _lockY;
-      }
-    }, 8);
-    setTimeout(function(){ clearInterval(_lockTimer); }, 500);
-  }, true);
   var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
   var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
   var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
@@ -4270,19 +4254,8 @@ function initRouteMap(){
       p2.dist = Math.round(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
     }
 
-    /* Verrou de scroll : capturer avant le rebuild DOM, forcer la restauration
-       sur plusieurs frames pour contrer tout reflow/focus résiduel */
-    var _savedY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-    function _restoreScroll(){
-      document.documentElement.scrollTop = _savedY;
-      document.body.scrollTop = _savedY;
-    }
     renderNavlog();
     recalcNavlog();
-    _restoreScroll();
-    requestAnimationFrame(function(){ _restoreScroll();
-      requestAnimationFrame(function(){ _restoreScroll(); });
-    });
   });
 
   /* Airport markers on route map */
