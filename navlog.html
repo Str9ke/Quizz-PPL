@@ -28,8 +28,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .theme-toggle:hover{border-color:#667eea;transform:scale(1.1)}
 
 /* Tabs */
-.navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px}
-.navlog-tab{flex:1;padding:12px 8px;font-size:.82em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center}
+.navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.navlog-tabs::-webkit-scrollbar{display:none}
+.navlog-tab{flex:0 0 auto;padding:12px 10px;font-size:.82em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center;white-space:nowrap}
 .navlog-tab:hover{color:#667eea}
 .navlog-tab.active{color:#667eea;border-bottom-color:#667eea}
 .navlog-tab-content{display:none;max-width:960px;margin:0 auto;padding:0 10px 40px}
@@ -331,7 +332,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
-#routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px}
+#routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px;overflow:hidden}
 .route-map-card .route-map-toolbar{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
 /* Navlog action buttons */
@@ -365,6 +366,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .summary-panel{flex-direction:column;align-items:center}
   .dossier-card .d-header{flex-wrap:wrap}
   #routeMapContainer{min-height:unset;max-height:85vw}
+  .navlog-tab{font-size:.7em;padding:10px 8px}
 }
 /* Wind Triangle Styles */
 .leg-container { display: flex; align-items: center; gap: 12px; }
@@ -404,11 +406,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <!-- Tabs -->
   <div class="navlog-tabs">
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
-    <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
+    <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o</button>
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
-    <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
-    <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
-    <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carburant</button>
+    <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; M&amp;CG</button>
+    <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
+    <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
   </div>
@@ -1206,7 +1208,11 @@ function switchTab(id){
   /* ID-based activation — robust regardless of DOM order */
   tabs.forEach(function(t){
     var onc=t.getAttribute('onclick')||'';
-    if(onc.indexOf("'" + id + "'") >= 0) t.classList.add('active');
+    if(onc.indexOf("'" + id + "'") >= 0){
+      t.classList.add('active');
+      /* Scroll active tab into view in the scrollable tab bar (mobile) */
+      try{ t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }catch(e){}
+    }
   });
   var target=document.getElementById('tab-'+id);
   if(target) target.classList.add('active');
@@ -1243,6 +1249,10 @@ function switchTab(id){
     }
   }
   if(id==='masse') window.mbInit();
+  /* Refresh route map size whenever nav tab is shown (Leaflet needs this after hidden/resize) */
+  if(id==='nav' && typeof routeMap!=='undefined' && routeMap){
+    setTimeout(function(){ routeMap.invalidateSize(); }, 80);
+  }
   if(id==='perf'){
     window.perfCalc();
     /* Auto-remplir vent/temp si un METAR est déjà disponible */
@@ -4456,6 +4466,13 @@ function initRouteMap(){
 
   osmLayer.addTo(routeMap); /* OSM is safer default, Geoportail might lack keys */
   L.control.layers({'OSM':osmLayer,'OACI (France)':oaciLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces aériens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
+
+  /* Force Leaflet to recalculate container size (fixes mobile rendering in partial viewport) */
+  setTimeout(function(){ routeMap.invalidateSize(); }, 150);
+  /* Also invalidate on window resize */
+  window.addEventListener('resize', function(){
+    if(routeMap) routeMap.invalidateSize();
+  });
 
   routeMap.on('click', function(e){
     var coord = e.latlng;
