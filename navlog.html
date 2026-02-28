@@ -273,12 +273,21 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .dossier-save-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .dossier-save-row input{flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em}
 .dossier-save-btn{padding:8px 20px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-.dossier-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.dossier-card .d-name{font-weight:700;color:var(--text-heading);flex:1;min-width:150px}
-.dossier-card .d-date{font-size:.78em;color:var(--text-secondary)}
-.dossier-card .d-route{font-size:.78em;color:var(--text-secondary)}
-.dossier-card-btns{display:flex;gap:6px}
+.dossier-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s;cursor:pointer}
+.dossier-card:hover{border-color:#667eea;box-shadow:0 0 0 2px rgba(102,126,234,.15)}
+.dossier-card-body{padding:13px 16px 10px}
+.dossier-card-body:hover .d-load-hint{opacity:1}
+.dossier-card .d-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.dossier-card .d-name{font-weight:700;font-size:.97em;color:var(--text-heading);flex:1}
+.dossier-card .d-date{font-size:.72em;color:var(--text-secondary);white-space:nowrap;padding-top:2px}
+.dossier-card .d-route{font-size:.88em;font-weight:600;color:#a78bfa;margin-bottom:5px;letter-spacing:.01em}
+.dossier-card .d-stats{display:flex;gap:8px;flex-wrap:wrap;font-size:.72em;color:var(--text-secondary);align-items:center}
+.dossier-card .d-stats .d-stat{background:rgba(102,126,234,.08);border:1px solid rgba(102,126,234,.15);border-radius:6px;padding:1px 7px}
+.d-load-hint{font-size:.7em;color:#667eea;opacity:0;transition:opacity .2s;margin-top:6px}
+.dossier-card-btns{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--border-color);background:rgba(0,0,0,.06)}
 .dossier-card-btns button{padding:5px 12px;font-size:.75em;border-radius:10px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.dossier-card-btns .d-load-btn{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08);font-weight:700}
+.dossier-card-btns .d-load-btn:hover{background:rgba(102,126,234,.2)}
 .dossier-card-btns button:hover{border-color:#667eea;color:#667eea}
 .dossier-card-btns .d-del:hover{border-color:#f44336;color:#f44336}
 
@@ -347,7 +356,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .ext-links-grid{grid-template-columns:1fr}
   .wp-card-header{flex-direction:column;align-items:flex-start}
   .summary-panel{flex-direction:column;align-items:center}
-  .dossier-card{flex-direction:column;align-items:flex-start}
+  .dossier-card .d-header{flex-wrap:wrap}
   #routeMapContainer{min-height:unset;max-height:85vw}
 }
 /* Wind Triangle Styles */
@@ -1199,6 +1208,7 @@ function switchTab(id){
   if(id==='dossiers'){
     calBtn.classList.add('visible');
     _renderSyncCodeUI();
+    renderDossierList();
     /* Sync silently from cloud each time dossiers tab is opened */
     syncDossiersFromCloud();
   }else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
@@ -4095,52 +4105,73 @@ function handleDossierImport(input){
 }
 window.handleDossierImport=handleDossierImport;
 
+function _dossierCardHTML(d){
+  var date=new Date(d.date);
+  var ds=date.toLocaleDateString('fr-FR')+' '+date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  /* Route: all WP names, abbreviated if many */
+  var route='';
+  var wps=d.waypoints||[];
+  if(wps.length>=2){
+    if(wps.length<=5){
+      route=wps.map(function(w){return escHTML(w.name||'?');}).join(' \u2192 ');
+    } else {
+      route=escHTML(wps[0].name||'?');
+      route+=' \u2192 \u2026 ('+( wps.length-2 )+' interm.) \u2192 ';
+      route+=escHTML(wps[wps.length-1].name||'?');
+    }
+  } else if(wps.length===1){ route=escHTML(wps[0].name||'?'); }
+  /* Stats: total distance + ETE from _leg */
+  var totalDist=0, totalEte=0;
+  for(var j=1;j<wps.length;j++){
+    if(wps[j]._leg){
+      totalDist+=(wps[j]._leg.dist||wps[j].dist||0);
+      totalEte+=(wps[j]._leg.ete||0);
+    } else if(wps[j].dist){ totalDist+=wps[j].dist; }
+  }
+  var stats=[];
+  if(wps.length>1) stats.push(wps.length+' pts');
+  if(totalDist>0) stats.push(Math.round(totalDist)+' NM');
+  if(totalEte>0){ var h=Math.floor(totalEte),m=Math.round((totalEte-h)*60); stats.push((h?h+'h':'')+m+'min'); }
+  var mapCount=Object.keys(d.mapImages||{}).length;
+  var extraCount=(d.extraImages||[]).length;
+  var dwCount=(d.dailyWarnImages||[]).length;
+  var ssCount=Object.keys(d.screenshots||{}).length;
+  var ckDone=0,ckTotal=0;
+  if(d.checklist){ for(var k in d.checklist){ckTotal++;if(d.checklist[k])ckDone++;} }
+  if(mapCount) stats.push('\uD83D\uDDFA\uFE0F '+mapCount+' carte'+(mapCount>1?'s':''));
+  if(extraCount+dwCount) stats.push('\uD83D\uDCF7 '+(extraCount+dwCount)+' img');
+  if(ssCount) stats.push('\uD83D\uDCF8 '+ssCount);
+  if(ckTotal) stats.push('\u2705 '+ckDone+'/'+ckTotal);
+  var statsHTML=stats.map(function(s){return '<span class="d-stat">'+s+'</span>';}).join('');
+  var h='<div class="dossier-card" onclick="window.loadDossier('+d.id+')" title="Cliquer pour charger">';
+  h+='<div class="dossier-card-body">';
+  h+='<div class="d-header"><span class="d-name">'+escHTML(d.name)+'</span><span class="d-date">'+ds+'</span></div>';
+  if(route) h+='<div class="d-route">\u2708\uFE0F '+route+'</div>';
+  if(statsHTML) h+='<div class="d-stats">'+statsHTML+'</div>';
+  h+='<div class="d-load-hint">&#x1F4C2; Cliquer pour charger ce dossier</div>';
+  h+='</div>';
+  h+='<div class="dossier-card-btns" onclick="event.stopPropagation()">';
+  h+='<button class="d-load-btn" onclick="window.loadDossier('+d.id+')">\u2708\uFE0F Charger</button>';
+  h+='<button onclick="window.exportDossier('+d.id+')">&#x1F4E4; Exporter</button>';
+  h+='<button onclick="window.renameDossier('+d.id+')">&#x270F;&#xFE0F; Renommer</button>';
+  if(ssCount) h+='<button onclick="window.previewScreenshots('+d.id+')">&#x1F4F8; Captures</button>';
+  h+='<button class="d-del" onclick="window.deleteDossier('+d.id+')">&#x1F5D1;&#xFE0F; Supprimer</button>';
+  h+='</div>';
+  h+='<div id="ss-preview-'+d.id+'" style="display:none;padding:8px;gap:8px;flex-wrap:wrap"></div>';
+  h+='</div>';
+  return h;
+}
+
 function renderDossierList(){
   var el=document.getElementById('dossierList');
+  if(!el) return;
   var dossiers=getDossiers();
   if(dossiers.length===0){
-    el.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center">Aucun dossier sauvegard\u00e9</p>';
+    el.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:12px 0">Aucun dossier sauvegard\u00e9 &mdash; utilisez le bouton ci-dessus pour sauvegarder.</p>';
     return;
   }
   var html='';
-  for(var i=dossiers.length-1;i>=0;i--){
-    var d=dossiers[i];
-    var date=new Date(d.date);
-    var ds=date.toLocaleDateString('fr-FR')+' '+date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    var route='';
-    if(d.waypoints&&d.waypoints.length>0){
-      route=d.waypoints[0].name+' \u2192 '+d.waypoints[d.waypoints.length-1].name;
-    }
-    var mapCount=Object.keys(d.mapImages||{}).length;
-    var extraCount=(d.extraImages||[]).length;
-    var dwCount=(d.dailyWarnImages||[]).length;
-    var ssCount=Object.keys(d.screenshots||{}).length;
-    var ckDone=0,ckTotal=0;
-    if(d.checklist){ for(var k in d.checklist){ckTotal++;if(d.checklist[k])ckDone++;} }
-    var imgInfo='';
-    if(mapCount||extraCount||dwCount||ssCount){
-      var parts=[];
-      if(mapCount) parts.push(mapCount+' carte(s)');
-      if(extraCount) parts.push(extraCount+' image(s)');
-      if(dwCount) parts.push(dwCount+' warning(s)');
-      if(ssCount) parts.push(ssCount+' capture(s)');
-      imgInfo=' | '+parts.join(' + ');
-    }
-    if(ckTotal) imgInfo+=' | Checklist '+ckDone+'/'+ckTotal;
-    html+='<div class="dossier-card">';
-    html+='<div class="d-name">'+escHTML(d.name)+'</div>';
-    html+='<div class="d-date">'+ds+'</div>';
-    html+='<div class="d-route">'+escHTML(route)+imgInfo+'</div>';
-    html+='<div class="dossier-card-btns">';
-    html+='<button onclick="window.loadDossier('+d.id+')">Charger</button>';
-    html+='<button onclick="window.exportDossier('+d.id+')">&#x1F4E4; Exporter</button>';
-    html+='<button onclick="window.renameDossier('+d.id+')">Renommer</button>';
-    if(ssCount) html+='<button onclick="window.previewScreenshots('+d.id+')">&#x1F4F8; Captures</button>';
-    html+='<button class="d-del" onclick="window.deleteDossier('+d.id+')">Supprimer</button>';
-    html+='</div>';
-    html+='<div id="ss-preview-'+d.id+'" style="display:none;padding:8px;gap:8px;flex-wrap:wrap"></div>';
-    html+='</div>';
-  }
+  for(var i=dossiers.length-1;i>=0;i--) html+=_dossierCardHTML(dossiers[i]);
   el.innerHTML=html;
 }
 
@@ -4202,18 +4233,7 @@ function filterByDate(y,m,d){
     return;
   }
   var html='';
-  for(var i=filtered.length-1;i>=0;i--){
-    var dos=filtered[i];
-    var date=new Date(dos.date);
-    var ds=date.toLocaleDateString('fr-FR')+' '+date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    html+='<div class="dossier-card">';
-    html+='<div class="d-name">'+escHTML(dos.name)+'</div>';
-    html+='<div class="d-date">'+ds+'</div>';
-    html+='<div class="dossier-card-btns">';
-    html+='<button onclick="window.loadDossier('+dos.id+')">Charger</button>';
-    html+='<button class="d-del" onclick="window.deleteDossier('+dos.id+')">Supprimer</button>';
-    html+='</div></div>';
-  }
+  for(var i=filtered.length-1;i>=0;i--) html+=_dossierCardHTML(filtered[i]);
   html+='<p style="text-align:center;margin-top:8px"><a href="#" onclick="window.renderDossierList();return false" style="color:var(--link-color);font-size:.82em">Voir tous les dossiers</a></p>';
   el.innerHTML=html;
 }
