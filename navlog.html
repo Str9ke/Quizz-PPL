@@ -374,7 +374,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <!-- Tabs -->
   <div class="navlog-tabs">
-    <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navigation</button>
+    <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
+    <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
@@ -481,6 +482,74 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </div>
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
+  <div id="tab-notam" class="navlog-tab-content">
+      <div class="map-card">
+        <div class="map-card-title">&#x26A0;&#xFE0F; NOTAMs &#x2014; Carte Benelux</div>
+        <div class="iframe-card">
+          <iframe id="notamFrame" src="about:blank" data-src="https://notaminfo.com/netherlandsmap" style="height:600px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://notaminfo.com/netherlandsmap" target="_blank">Ouvrir NotamInfo &#x2197;&#xFE0F;</a></div>
+        <div class="map-card-actions">
+          <a href="https://notaminfo.com/netherlandsmap" target="_blank" rel="noopener">&#x1F517; NotamInfo Benelux</a>
+          <a href="https://notaminfo.com/nationalmap" target="_blank" rel="noopener">&#x1F1EB;&#x1F1F7; NotamInfo France</a>
+          <a href="https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html" target="_blank" rel="noopener">&#x1F4CB; SOFIA Briefing</a>
+          <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F1E7;&#x1F1EA; BEL AIP / NOTAMs</a>
+          <button onclick="var f=document.getElementById('notamFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <!-- Skeyes PIB -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F1E7;&#x1F1EA; Skeyes PIB &#x2014; Pre-flight Information Bulletin</div>
+        <div class="iframe-card">
+          <iframe id="skeyesPibFrame" src="about:blank" data-src="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" style="height:700px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la page ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank">Ouvrir Skeyes AIP &#x2197;&#xFE0F;</a></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F517; Skeyes AIP</a>
+          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
+          <button onclick="var f=document.getElementById('skeyesPibFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <!-- NOTAM Summary Upload -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Importez un fichier NOTAM Summary (PDF/image) t&#xe9;l&#xe9;charg&#xe9; depuis Skeyes pour le conserver dans votre dossier de vol.</p>
+        <div id="notamSummaryZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+          <button onclick="document.getElementById('fileNotamSummary').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Choisir fichier(s) NOTAM Summary</button>
+          <input type="file" id="fileNotamSummary" accept="image/*,.pdf" multiple style="display:none" onchange="window.handleNotamSummary(this)">
+          <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
+        </div>
+      </div>
+      <!-- Daily Warnings Section -->
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
+        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
+          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
+          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
+          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
+        </div>
+        <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
+          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
+          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
+          <button onclick="window.clearDailyWarnImages()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
+        </div>
+      </div>
+      <div class="map-card" style="margin-top:14px">
+        <div class="map-card-title">&#x1F5FA;&#xFE0F; Warnings Chart &#x2014; Carte g&#xe9;ographique</div>
+        <div class="iframe-card">
+          <iframe id="dailyWarnFrame2" src="about:blank" data-src="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" style="height:600px" loading="lazy"></iframe>
+        </div>
+        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank">Ouvrir Warnings Chart &#x2197;&#xFE0F;</a></div>
+        <div class="map-card-actions">
+          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Ouvrir en grand</a>
+          <button onclick="var f=document.getElementById('dailyWarnFrame2');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+    </div>
+
   <div id="tab-meteo" class="navlog-tab-content">
 
     <!-- Sub-tabs -->
@@ -489,7 +558,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
-      <button class="meteo-subtab" data-sub="notam" onclick="window.switchMeteoSub('notam')">&#x26A0;&#xFE0F; NOTAMs & Daily Warn</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
       <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
@@ -608,73 +676,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
 
     <!-- ===== SUB: NOTAMs ===== -->
-    <div id="msub-notam" class="meteo-sub-content">
-      <div class="map-card">
-        <div class="map-card-title">&#x26A0;&#xFE0F; NOTAMs &#x2014; Carte Benelux</div>
-        <div class="iframe-card">
-          <iframe id="notamFrame" src="about:blank" data-src="https://notaminfo.com/netherlandsmap" style="height:600px" loading="lazy"></iframe>
-        </div>
-        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://notaminfo.com/netherlandsmap" target="_blank">Ouvrir NotamInfo &#x2197;&#xFE0F;</a></div>
-        <div class="map-card-actions">
-          <a href="https://notaminfo.com/netherlandsmap" target="_blank" rel="noopener">&#x1F517; NotamInfo Benelux</a>
-          <a href="https://notaminfo.com/nationalmap" target="_blank" rel="noopener">&#x1F1EB;&#x1F1F7; NotamInfo France</a>
-          <a href="https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html" target="_blank" rel="noopener">&#x1F4CB; SOFIA Briefing</a>
-          <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F1E7;&#x1F1EA; BEL AIP / NOTAMs</a>
-          <button onclick="var f=document.getElementById('notamFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-        </div>
-      </div>
-      <!-- Skeyes PIB -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F1E7;&#x1F1EA; Skeyes PIB &#x2014; Pre-flight Information Bulletin</div>
-        <div class="iframe-card">
-          <iframe id="skeyesPibFrame" src="about:blank" data-src="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" style="height:700px" loading="lazy"></iframe>
-        </div>
-        <div class="iframe-blocked-msg">Si la page ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank">Ouvrir Skeyes AIP &#x2197;&#xFE0F;</a></div>
-        <div class="map-card-actions">
-          <a href="https://ops.skeyes.be/html/belgocontrol_static/eaip/eAIP_Main/html/index-en-GB.html" target="_blank" rel="noopener">&#x1F517; Skeyes AIP</a>
-          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
-          <button onclick="var f=document.getElementById('skeyesPibFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-        </div>
-      </div>
-      <!-- NOTAM Summary Upload -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Importez un fichier NOTAM Summary (PDF/image) t&#xe9;l&#xe9;charg&#xe9; depuis Skeyes pour le conserver dans votre dossier de vol.</p>
-        <div id="notamSummaryZone" style="padding:12px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-          <button onclick="document.getElementById('fileNotamSummary').click()" style="padding:8px 20px;border-radius:12px;border:1px dashed var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.85em">&#x1F4C2; Choisir fichier(s) NOTAM Summary</button>
-          <input type="file" id="fileNotamSummary" accept="image/*,.pdf" multiple style="display:none" onchange="window.handleNotamSummary(this)">
-          <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
-        </div>
-      </div>
-      <!-- Daily Warnings Section -->
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
-        <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
-          <div style="font-size:2em;opacity:.5">&#x1F4E5;</div>
-          <div style="font-size:.85em;color:var(--text-secondary)">Cliquer, glisser-d&#xe9;poser ou Ctrl+V pour importer</div>
-          <input type="file" id="fileDailyWarn" accept="image/*,.pdf,.html,.htm" multiple style="display:none" onchange="window.handleDailyWarnUpload(this)">
-        </div>
-        <div id="dailyWarnPreview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;width:calc(100% - 32px)"></div>
-        <div class="map-card-actions">
-          <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">&#x1F4CB; Daily Warnings (texte)</a>
-          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Warnings Chart (carte)</a>
-          <a href="https://ops.skeyes.be" target="_blank" rel="noopener">&#x1F310; Skeyes Portal</a>
-          <button onclick="window.clearDailyWarnImages()" style="color:#e53935">&#x1F5D1;&#xFE0F; Tout effacer</button>
-        </div>
-      </div>
-      <div class="map-card" style="margin-top:14px">
-        <div class="map-card-title">&#x1F5FA;&#xFE0F; Warnings Chart &#x2014; Carte g&#xe9;ographique</div>
-        <div class="iframe-card">
-          <iframe id="dailyWarnFrame2" src="about:blank" data-src="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" style="height:600px" loading="lazy"></iframe>
-        </div>
-        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank">Ouvrir Warnings Chart &#x2197;&#xFE0F;</a></div>
-        <div class="map-card-actions">
-          <a href="https://ops.skeyes.be/opersite/warningsChartGeo.do?cmd=whtmlcharttoday" target="_blank" rel="noopener">&#x1F5FA;&#xFE0F; Ouvrir en grand</a>
-          <button onclick="var f=document.getElementById('dailyWarnFrame2');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-        </div>
-      </div>
-    </div>
+    
 
     <!-- ===== SUB: Windy ===== -->
     <div id="msub-windy" class="meteo-sub-content">
@@ -1560,11 +1562,10 @@ function clearDailyWarnImages(){
 window.clearDailyWarnImages=clearDailyWarnImages;
 /* Ctrl+V paste support for daily warnings */
 document.addEventListener('paste',function(ev){
-  var activeTab=document.getElementById('msub-notam');
+  var activeTab=document.getElementById('tab-notam');
   if(!activeTab||!activeTab.classList.contains('active')) return;
   /* Also make sure the main meteo tab is visible */
-  var meteoTab=document.getElementById('tab-meteo');
-  if(!meteoTab||!meteoTab.classList.contains('active')) return;
+  /* main tab check handled by tab-notam instead */
   /* Skip if hovering over a map-paste-zone (those have their own handler) */
   if(document.querySelector('.map-paste-zone:hover')) return;
   var items=ev.clipboardData&&ev.clipboardData.items;
@@ -3599,8 +3600,7 @@ function confirmMapSelection(){
               
               if(name) waypoints[rIdx].name=name;
               else waypoints[rIdx].name='WP '+rIdx;
-              renderNavlog();
-                         '';
+              
               /* If Nominatim returned a very generic name, try to refine with locality */
               if(!name && data.display_name){
                 var parts=data.display_name.split(',');
@@ -3611,15 +3611,20 @@ function confirmMapSelection(){
                 var input=document.querySelector('.wp-name-input[data-idx="'+rIdx+'"]');
                 if(input) input.value=name;
                 suggestDossierName();
-                updateRouteMap();
               }
             }
+            renderNavlog();
+            recalcNavlog();
           })
-          .catch(function(){});
+          .catch(function(){
+            renderNavlog();
+            recalcNavlog();
+          });
       }
+    } else {
+      renderNavlog();
+      recalcNavlog();
     }
-    renderNavlog();
-    recalcNavlog();
   }
   closeMapModal();
 }
@@ -4142,8 +4147,8 @@ function initRouteMap(){
       attribution: '\u00a9 IGN/SIA', maxZoom: 11
   });
 
-  oaciLayer.addTo(routeMap);
-  L.control.layers({'OACI (France)':oaciLayer, 'OSM':osmLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces aériens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
+  osmLayer.addTo(routeMap); /* OSM is safer default, Geoportail might lack keys */
+  L.control.layers({'OSM':osmLayer,'OACI (France)':oaciLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces aériens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
 
   routeMap.on('click', function(e){
     var coord = e.latlng;
@@ -4176,7 +4181,7 @@ function initRouteMap(){
       var p1 = pts[pts.length-2];
       var p2 = pts[pts.length-1];
       p2.route = Math.round(trueBearing(p1.lat, p1.lon, p2.lat, p2.lon));
-      p2.dist = Math.round(haversineDist(p1.lat, p1.lon, p2.lat, p2.lon));
+      p2.dist = Math.round(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
     }
     
     renderNavlog();

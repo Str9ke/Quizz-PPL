@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20260226b" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+/* ===== NavLog page styles ===== */
+.navlog-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#1a1a3e 0%,#2d1b4e 50%,#1a1a3e 100%);position:relative;overflow:hidden}
+.navlog-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 50%,rgba(102,126,234,.08) 0%,transparent 50%),radial-gradient(ellipse at 70% 50%,rgba(118,75,162,.08) 0%,transparent 50%);pointer-events:none}
+.navlog-hero-icon{font-size:2.5rem;filter:drop-shadow(0 2px 8px rgba(102,126,234,.4))}
+.navlog-hero-title{font-size:1.5rem;font-weight:800;margin:4px 0 0;background:linear-gradient(135deg,#a78bfa,#c084fc,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.navlog-hero-sub{font-size:.75rem;color:rgba(160,160,184,.6);margin-top:2px}
+body.light .navlog-hero{background:linear-gradient(135deg,#f0edff 0%,#e8e0f7 50%,#f0edff 100%)}
+body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* Theme toggle */
+.theme-toggle{position:fixed;top:8px;right:12px;z-index:999;background:var(--bg-container);border:1px solid var(--border-color);border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--text-primary)}
+.theme-toggle:hover{border-color:#667eea;transform:scale(1.1)}
+
+/* Tabs */
+.navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px}
+.navlog-tab{flex:1;padding:12px 8px;font-size:.82em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center}
+.navlog-tab:hover{color:#667eea}
+.navlog-tab.active{color:#667eea;border-bottom-color:#667eea}
+.navlog-tab-content{display:none;max-width:960px;margin:0 auto;padding:0 10px 40px}
+.navlog-tab-content.active{display:block}
+
+/* Mass & Balance table */
+.mb-table{width:100%;border-collapse:collapse;font-size:.88em;margin-top:8px}
+.mb-table th{text-align:left;padding:6px 8px;background:rgba(102,126,234,.12);color:#667eea;font-weight:700;border-bottom:2px solid rgba(102,126,234,.3);font-size:.85em}
+.mb-table td{padding:5px 8px;border-bottom:1px solid var(--border-color)}
+.mb-table td:first-child{font-weight:600;color:var(--text-heading);white-space:nowrap}
+.mb-table input[type="number"]{width:70px;padding:4px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--input-bg);color:var(--input-text);font-size:.88em;text-align:right}
+.mb-total td{font-weight:700;border-top:2px solid rgba(102,126,234,.3);background:rgba(102,126,234,.05)}
+.mb-ok{color:#4caf50;font-weight:700}.mb-warn{color:#ff9800;font-weight:700}.mb-danger{color:#f44336;font-weight:700}
+
+/* Performance tables */
+.perf-section{margin-bottom:14px}
+.perf-section h4{margin:0 0 6px;color:#667eea;font-size:.95em;border-bottom:2px solid rgba(102,126,234,.2);padding-bottom:4px}
+.perf-table{width:100%;border-collapse:collapse;font-size:.82em}
+.perf-table th{padding:5px 6px;background:rgba(102,126,234,.1);color:#667eea;font-weight:700;text-align:center;border-bottom:2px solid rgba(102,126,234,.3);font-size:.8em}
+.perf-table td{padding:4px 6px;border-bottom:1px solid var(--border-color);text-align:center}
+.perf-table tr.perf-highlight{background:rgba(102,126,234,.15);font-weight:700}
+.perf-calc-detail{font-size:.82em;color:var(--text-secondary);margin:4px 0 10px;padding:8px 12px;background:rgba(102,126,234,.05);border-radius:8px;border-left:3px solid #667eea}
+.perf-result-box{display:inline-block;padding:8px 16px;border-radius:10px;font-weight:700;font-size:.95em;margin:4px 6px 4px 0}
+.perf-result-box.green{background:rgba(76,175,80,.15);color:#4caf50;border:1px solid rgba(76,175,80,.3)}
+.perf-result-box.orange{background:rgba(255,152,0,.15);color:#ff9800;border:1px solid rgba(255,152,0,.3)}
+.perf-result-box.red{background:rgba(244,67,54,.15);color:#f44336;border:1px solid rgba(244,67,54,.3)}
+
+/* Cards */
+.nl-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.nl-card-title{font-size:1em;font-weight:700;color:var(--text-heading);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.nl-card-title .icon{font-size:1.2em}
+
+/* Flight type selector */
+.flight-type-row{display:flex;gap:12px;justify-content:center;margin-bottom:14px}
+.flight-type-btn{padding:10px 24px;font-size:.88em;font-weight:600;border-radius:24px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.flight-type-btn.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
+
+/* Weather */
+.wx-airport-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.wx-airport-btn{padding:6px 14px;font-size:.82em;font-weight:600;border-radius:16px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.wx-airport-btn.active{background:#667eea;color:#fff;border-color:transparent}
+.wx-airport-btn.loaded{border-color:#667eea}
+.wx-block{margin-bottom:12px;padding:12px;background:var(--bg-question);border-radius:10px;border:1px solid var(--border-color)}
+.wx-block-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+
+/* VFR badge */
+.vfr-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75em;font-weight:700;color:#fff;text-transform:uppercase}
+.vfr-badge.vfr{background:#4caf50}
+.vfr-badge.mvfr{background:#2196f3}
+.vfr-badge.ifr{background:#f44336}
+.vfr-badge.lifr{background:#e040fb}
+
+/* METAR colors */
+.metar-wind{color:#00e5ff}
+.metar-vis{color:#448aff}
+.metar-cloud{color:#90a4ae;font-weight:700}
+.metar-ceil{color:#ff5252;font-weight:700}
+.metar-temp{color:#ffd740}
+.metar-qnh{color:#ce93d8}
+.metar-wx{color:#ffab40;font-weight:700}
+@keyframes temp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.temp-blink{animation:temp-pulse 1s ease-in-out infinite}
+
+/* Icing badge */
+.icing-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.72em;font-weight:600;margin-left:6px}
+.icing-badge.severe{background:#d32f2f;color:#fff}
+.icing-badge.moderate{background:#f57c00;color:#fff}
+.icing-badge.light{background:#ffa726;color:#000}
+.icing-badge.nil{background:#66bb6a;color:#000}
+
+/* Wind Triangle Styles */
+.leg-container { display: flex; align-items: center; gap: 12px; }
+.leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
+.leg-alt-slider { -webkit-appearance: slider-vertical; width: 8px; height: 100px; }
+.leg-alt-label { font-size: 0.7em; margin-top: 4px; color: #aaa; text-align: center; font-weight: bold; }
+.leg-data-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.1); }
+.leg-data-col { flex: 1; }
+.tri-vec-tas { stroke: #2196f3; stroke-width: 2.5; } 
+.tri-vec-wind { stroke: #f44336; stroke-width: 2; } 
+.tri-vec-gs { stroke: #4caf50; stroke-width: 2.5; stroke-dasharray: 4,3; } 
+.tri-lbl { font-size: 7px; font-weight: bold; font-family: sans-serif; }
+.wind-arrow-container{display:inline-block;vertical-align:middle}
+.wx-wind-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:6px 0;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:12px;cursor:pointer;transition:all .2s}
+.wx-wind-bar:hover{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.5)}
+.wx-wind-arrow svg{width:44px;height:44px}
+.wx-wind-text{font-size:1.05em;font-weight:700;color:#00e5ff;letter-spacing:.5px}
+.wx-wind-apply{margin-left:auto;font-size:.76em;font-weight:600;color:#667eea;background:rgba(102,126,234,.12);padding:4px 12px;border-radius:10px}
+
+/* Runway SVG */
+.runway-svg-wrap{display:inline-block;margin:4px 8px;vertical-align:top}
+
+/* Apply wind button */
+.wx-apply-btn{padding:3px 10px;font-size:.72em;border-radius:12px;cursor:pointer;border:1px solid #667eea;background:rgba(102,126,234,.1);color:#667eea;transition:all .2s;margin-left:8px}
+.wx-apply-btn:hover{background:#667eea;color:#fff}
+
+/* NOTAM */
+.notam-accordion{cursor:pointer;padding:8px 12px;background:var(--bg-question);border:1px solid var(--border-color);border-radius:8px;color:var(--text-secondary);font-size:.82em;display:flex;align-items:center;gap:6px}
+.notam-accordion:hover{border-color:#667eea}
+.notam-count{background:#667eea;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+.notam-body{display:none;padding:8px 12px;font-size:.78em;background:var(--bg-question);border:1px solid var(--border-color);border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;white-space:pre-wrap;color:var(--text-secondary)}
+.notam-body.open{display:block}
+
+/* Decoded METAR/TAF */
+.wx-decoded{font-size:.9em;color:var(--text-secondary);margin-top:6px;padding:8px;background:rgba(102,126,234,.05);border-radius:8px;line-height:1.5}
+.alt-info-box{background:rgba(30,30,60,.6);border:1px solid rgba(100,126,234,.3);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:.82em}
+.alt-info-title{font-weight:700;font-size:.9em;color:#667eea;margin-bottom:6px}
+.alt-info-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:var(--text-primary)}
+.alt-info-row small{font-size:.85em;opacity:.8;margin-left:4px}
+
+
+/* Config panel */
+.config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.config-item{display:flex;flex-direction:column;gap:3px}
+.config-item label{font-size:.78em;font-weight:600;color:var(--text-secondary)}
+.config-item input,.config-item select{padding:7px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em}
+.reserve-toggle{padding:8px 16px;font-size:.82em;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.reserve-toggle.day{background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;border-color:transparent}
+.reserve-toggle.night{background:linear-gradient(135deg,#3f51b5,#1a237e);color:#fff;border-color:transparent}
+
+/* Gauges row: wind rose + ASI side by side */
+.gauges-row{display:flex;justify-content:center;align-items:flex-start;gap:24px;flex-wrap:wrap;margin:14px 0}
+.wind-rose-container{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wind-slider{width:100%;margin:4px 0;cursor:pointer;height:6px;-webkit-appearance:none;appearance:none;background:#2a2a4a;border-radius:3px;outline:none}
+.wind-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#667eea;border:2px solid #8899ff;cursor:pointer;box-shadow:0 0 6px rgba(102,126,234,.5)}
+.wind-slider.wind-spd{accent-color:#ff9800}
+.wind-slider.wind-spd::-webkit-slider-thumb{background:#ff9800;border:2px solid #ffb74d;box-shadow:0 0 6px rgba(255,152,0,.5)}
+.wind-slider::-webkit-slider-runnable-track{height:6px;border-radius:3px}
+.wind-slider.wind-spd::-webkit-slider-runnable-track{background:linear-gradient(90deg,#2a2a4a,rgba(255,152,0,.25))}
+.wind-dual-slider{display:flex;gap:16px;width:100%}
+.wind-slider-col{flex:1;display:flex;flex-direction:column;gap:4px}
+.wind-slider-header{display:flex;align-items:center;gap:6px;font-size:.78em;font-weight:600;color:var(--text-secondary)}
+.wind-num{width:52px;padding:4px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:1em;text-align:center;font-weight:700}
+
+.wind-slider-label{font-size:.72em;color:var(--text-secondary);text-align:center;margin-top:2px}
+.asi-container{display:flex;justify-content:center}
+
+/* ===== GAMIFIED NAVLOG - WP Cards & Leg Strips ===== */
+.navlog-board{padding:10px 0}
+.wp-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:14px 16px;margin:0 auto;max-width:700px;position:relative;border-left:4px solid;border-image:linear-gradient(180deg,#667eea,#764ba2) 1;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:all .25s}
+.wp-card:hover{box-shadow:0 6px 24px rgba(102,126,234,.15);border-color:rgba(102,126,234,.3)}
+.wp-card-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wp-num-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;flex-shrink:0}
+.wp-type-icon{font-size:1.3em;cursor:pointer;flex-shrink:0}
+.wp-name-input{flex:1;min-width:120px;padding:6px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.92em;font-weight:600}
+.wp-coords{font-size:.72em;color:var(--text-secondary);display:flex;gap:4px;align-items:center}
+.wp-coords input{width:80px;padding:3px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em;text-align:center}
+.wp-airport-select{padding:4px 8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.8em;cursor:pointer}
+.wp-remove-btn{background:none;border:none;color:var(--text-secondary);font-size:1.1em;cursor:pointer;opacity:.5;transition:all .2s;flex-shrink:0;padding:4px 6px}
+.wp-remove-btn:hover{color:#f44336;opacity:1}
+.wp-map-btn{background:none;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:1.1em;padding:2px 6px;transition:all .2s;flex-shrink:0}
+.wp-map-btn:hover{border-color:#667eea;background:rgba(102,126,234,.08)}
+.wp-drag-handle{cursor:grab;font-size:1.1em;color:var(--text-secondary);opacity:.4;transition:opacity .2s;flex-shrink:0;padding:4px 2px;user-select:none;-webkit-user-select:none}
+.wp-drag-handle:hover{opacity:.8}
+.wp-card.dragging{opacity:.4;border-style:dashed}
+.wp-card.drag-over{border-top:3px solid #667eea}
+.wp-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:auto}
+
+/* WP type buttons row */
+.wp-type-row{display:none;gap:4px;margin-top:6px;flex-wrap:wrap}
+.wp-type-row.open{display:flex}
+.wp-type-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border-color);background:transparent;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
+.wp-type-btn:hover{border-color:#667eea}
+.wp-type-btn.selected{background:rgba(102,126,234,.15);border-color:#667eea}
+
+/* Insert WP button between cards */
+.insert-wp-btn{display:block;margin:4px auto;width:26px;height:26px;border-radius:50%;border:2px dashed var(--border-color);background:transparent;color:var(--text-secondary);font-size:1em;cursor:pointer;transition:all .2s;line-height:22px;text-align:center;padding:0}
+.insert-wp-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
+
+/* Leg strip connector */
+.leg-strip{max-width:700px;margin:0 auto;padding:8px 0 8px 44px;position:relative}
+.leg-strip::before{content:'';position:absolute;left:59px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#667eea,#764ba2);opacity:.4}
+.leg-strip::after{content:'';position:absolute;left:54px;bottom:2px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #764ba2;opacity:.5}
+.leg-strip-content{margin-left:28px;padding:12px 18px;background:rgba(102,126,234,.04);border:1px solid rgba(102,126,234,.1);border-radius:10px;font-size:1em;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.leg-strip-content .leg-label{font-weight:800;color:#667eea;white-space:nowrap;font-size:1.1em}
+.leg-strip-content .leg-val{color:var(--text-primary);white-space:nowrap;font-weight:600}
+.leg-strip-content .leg-val small{color:var(--text-secondary);font-weight:400}
+.leg-data-row{display:flex;align-items:flex-start;gap:8px}
+.leg-data-col{flex:1;display:flex;flex-direction:column;gap:2px}
+.leg-triangle-col{flex-shrink:0;width:120px}
+.leg-wind-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.leg-mini-compass{display:inline-flex;vertical-align:middle}
+.leg-wind-btn{padding:3px 10px;font-size:.74em;border-radius:10px;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.06);color:#00e5ff;font-weight:600;transition:all .2s;white-space:nowrap}
+.leg-wind-btn:hover{background:rgba(0,229,255,.18);border-color:#00e5ff}
+.leg-wind-btn.leg-wind-custom{border-color:#ffa726;color:#ffa726;background:rgba(255,167,38,.1)}
+.leg-wind-btn.leg-wind-custom:hover{background:rgba(255,167,38,.2)}
+
+/* Add WP button */
+.add-wp-btn{display:block;margin:14px auto;padding:10px 28px;font-size:.9em;font-weight:700;border-radius:24px;cursor:pointer;border:2px dashed var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.add-wp-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.05)}
+
+/* Summary panel */
+.summary-panel{max-width:700px;margin:14px auto;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,.08),rgba(118,75,162,.08));border:1px solid rgba(102,126,234,.2);border-radius:14px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-around}
+.summary-item{text-align:center}
+.summary-item .s-label{font-size:.72em;color:var(--text-secondary);text-transform:uppercase;font-weight:600}
+.summary-item .s-value{font-size:1.3em;font-weight:800;color:var(--text-heading)}
+.summary-item .s-sub{font-size:.68em;color:var(--text-secondary);margin-top:2px}
+
+/* ===== Tab 2: Meteo & Cartes ===== */
+.aeroweb-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:14px}
+.aeroweb-card input{padding:8px 12px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em;width:100%;box-sizing:border-box;margin-bottom:8px}
+.aeroweb-btn{padding:10px 24px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
+.aeroweb-btn:hover{opacity:.9;transform:translateY(-1px)}
+.aeroweb-status{font-size:.82em;color:var(--text-secondary);margin-top:6px}
+.map-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.map-card-title{padding:10px 16px;font-weight:700;font-size:.9em;color:var(--text-heading);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px}
+.map-card iframe,.map-card img{width:100%;display:block;border:none}
+.map-card-actions{padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap}
+.map-card-actions a,.map-card-actions button{padding:5px 14px;font-size:.78em;border-radius:12px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);text-decoration:none;transition:all .2s}
+.map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
+.map-del-btn{border-color:#f44336!important;color:#f44336!important}
+.map-del-btn:hover{background:#f44336!important;color:#fff!important}
+.aeroweb-nav-btn{padding:6px 14px;font-size:.78em;font-weight:600;border-radius:14px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.aeroweb-nav-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
+.aeroweb-toggle-btn{padding:8px 20px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
+.aeroweb-toggle-btn:hover{filter:brightness(1.1)}
+.map-paste-zone{cursor:default;transition:outline .2s;border-radius:8px}
+.map-paste-zone:hover{outline:2px dashed rgba(102,126,234,.4);outline-offset:2px}
+
+/* Windy grid */
+.windy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:14px}
+.windy-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden}
+.windy-card-title{padding:8px 14px;font-weight:700;font-size:.82em;color:var(--text-heading);border-bottom:1px solid var(--border-color)}
+.windy-card iframe{width:100%;height:280px;border:none}
+
+/* External links */
+.ext-links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px}
+.ext-link{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-container);text-decoration:none;color:var(--text-primary);font-size:.82em;font-weight:600;transition:all .2s}
+.ext-link:hover{border-color:#667eea;background:rgba(102,126,234,.05)}
+/* Meteo sub-tabs */
+.meteo-subtabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;padding:4px;background:var(--bg-question);border-radius:12px}
+.meteo-subtab{padding:7px 12px;font-size:.76em;font-weight:600;border-radius:10px;cursor:pointer;border:none;background:transparent;color:var(--text-secondary);transition:all .2s;white-space:nowrap}
+.meteo-subtab:hover{color:#667eea;background:rgba(102,126,234,.08)}
+.meteo-subtab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.meteo-sub-content{display:none}.meteo-sub-content.active{display:block}
+.iframe-card{position:relative;width:100%;background:var(--bg-question);border-radius:8px;overflow:hidden;min-height:200px}
+.iframe-card iframe{width:100%;border:none;display:block}
+.iframe-blocked-msg{padding:16px;text-align:center;font-size:.82em;color:var(--text-secondary);background:rgba(102,126,234,.04);border-radius:8px;margin:8px 16px}
+.iframe-blocked-msg a{color:#667eea;font-weight:600}
+
+/* ===== Tab 3: Dossiers ===== */
+.dossier-save-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.dossier-save-row input{flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em}
+.dossier-save-btn{padding:8px 20px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.dossier-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dossier-card .d-name{font-weight:700;color:var(--text-heading);flex:1;min-width:150px}
+.dossier-card .d-date{font-size:.78em;color:var(--text-secondary)}
+.dossier-card .d-route{font-size:.78em;color:var(--text-secondary)}
+.dossier-card-btns{display:flex;gap:6px}
+.dossier-card-btns button{padding:5px 12px;font-size:.75em;border-radius:10px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
+.dossier-card-btns button:hover{border-color:#667eea;color:#667eea}
+.dossier-card-btns .d-del:hover{border-color:#f44336;color:#f44336}
+
+/* Calendar overlay */
+.cal-overlay{position:fixed;top:0;right:-320px;width:300px;height:100vh;background:var(--bg-container);border-left:1px solid var(--border-color);box-shadow:-4px 0 20px rgba(0,0,0,.3);z-index:998;transition:right .3s;padding:16px;overflow-y:auto}
+.cal-overlay.open{right:0}
+.cal-overlay .cal-month-title{text-align:center;font-weight:700;font-size:1em;color:var(--text-heading);margin-bottom:8px}
+.cal-overlay .cal-nav{display:flex;justify-content:space-between;margin-bottom:8px}
+.cal-overlay .cal-nav button{background:none;border:none;color:var(--text-secondary);font-size:1.2em;cursor:pointer}
+.cal-overlay .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.78em}
+.cal-overlay .cal-grid .cal-day-header{font-weight:700;color:var(--text-secondary);padding:4px}
+.cal-overlay .cal-grid .cal-day{padding:6px;border-radius:6px;cursor:pointer;color:var(--text-primary);transition:all .15s}
+.cal-overlay .cal-grid .cal-day:hover{background:rgba(102,126,234,.1)}
+.cal-overlay .cal-grid .cal-day.has-dossier{position:relative}
+.cal-overlay .cal-grid .cal-day.has-dossier::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:#4caf50;border-radius:50%}
+.cal-overlay .cal-grid .cal-day.today{font-weight:700;color:#667eea}
+.cal-toggle-btn{position:fixed;bottom:20px;right:20px;z-index:997;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;font-size:1.3em;cursor:pointer;box-shadow:0 4px 16px rgba(102,126,234,.3);display:none}
+.cal-toggle-btn.visible{display:flex;align-items:center;justify-content:center}
+
+/* Runway suggestion */
+.rwy-suggest{font-size:.82em;padding:8px 12px;background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.2);border-radius:8px;margin-top:8px;color:var(--text-primary)}
+.rwy-suggest strong{color:#4caf50}
+
+/* Map modal (Leaflet WP picker) */
+.map-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:1100;display:flex;align-items:center;justify-content:center}
+.map-modal-content{background:var(--bg-container,#1e1e2e);border:1px solid var(--border-color,#333);border-radius:14px;width:92%;max-width:640px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.map-modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-color,#333);font-weight:700;color:var(--text-heading,#eee)}
+.map-modal-header button{background:none;border:none;color:var(--text-secondary,#aaa);font-size:1.5em;cursor:pointer}
+.map-modal-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border-color,#333)}
+.map-modal-footer span{font-size:.85em;color:var(--text-secondary,#aaa)}
+.map-modal-footer button{padding:8px 20px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
+.map-modal-footer button:hover{opacity:.9}
+
+/* Route map */
+.route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
+#routeMapContainer{height:340px;width:100%;background:#1a1a2e}
+.route-map-card .route-map-info{padding:8px 16px;font-size:.75em;color:var(--text-secondary);text-align:center}
+
+/* Clear workspace */
+.clear-ws-btn{display:block;margin:10px auto;padding:8px 20px;font-size:.82em;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid rgba(244,67,54,.3);background:transparent;color:#f44336;transition:all .2s}
+.clear-ws-btn:hover{background:rgba(244,67,54,.08);border-color:#f44336}
+
+/* Extra images */
+.extra-images-area{margin-top:14px;padding:14px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px}
+.extra-images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px}
+.extra-img-thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border-color)}
+.extra-img-thumb img{width:100%;display:block;max-height:200px;object-fit:cover}
+.extra-img-thumb .extra-img-del{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:.9em;display:flex;align-items:center;justify-content:center}
+.extra-img-thumb .extra-img-del:hover{background:#f44336}
+
+/* Responsive */
+@media(max-width:600px){
+  .config-grid{grid-template-columns:1fr 1fr}
+  .windy-grid{grid-template-columns:1fr}
+  .ext-links-grid{grid-template-columns:1fr}
+  .wp-card-header{flex-direction:column;align-items:flex-start}
+  .summary-panel{flex-direction:column;align-items:center}
+  .dossier-card{flex-direction:column;align-items:flex-start}
+  #routeMapContainer{height:260px}
+}
+/* Wind Triangle Styles */
+.leg-container { display: flex; align-items: center; gap: 12px; }
+.leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
+.leg-alt-slider { -webkit-appearance: slider-vertical; width: 8px; height: 100px; }
+.leg-alt-label { font-size: 0.7em; margin-top: 4px; color: #aaa; text-align: center; font-weight: bold; }
+.leg-data-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.1); }
+.leg-data-col { flex: 1; }
+.tri-vec-tas { stroke: #2196f3; stroke-width: 2.5; } 
+.tri-vec-wind { stroke: #f44336; stroke-width: 2; } 
+.tri-vec-gs { stroke: #4caf50; stroke-width: 2.5; stroke-dasharray: 4,3; } 
+.tri-lbl { font-size: 7px; font-weight: bold; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="window.toggleTheme()" title="Changer le th&#xe8;me">&#x1F319;</button>
+
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">&#x1F3E0; Accueil</a>
+    <a href="quiz.html" class="top-nav-link">&#x1F3AF; Quiz</a>
+    <a href="search.html" class="top-nav-link">&#x1F50D; Recherche</a>
+    <a href="stats.html" class="top-nav-link">&#x1F4CA; Stats</a>
+    <a href="rates.html" class="top-nav-link">&#x1F4D6; R&#xe9;vision</a>
+    <a href="historique.html" class="top-nav-link">&#x1F4C5; Historique</a>
+    <a href="symboles.html" class="top-nav-link">&#x1F523; Symboles</a>
+    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; Briefing</a>
+    <a href="fiches.html" class="top-nav-link">&#x1F4DD; Fiches</a>
+    <a href="urgences.html" class="top-nav-link">&#x1F6A8; Urgences</a>
+  </div>
+
+  <div class="navlog-hero">
+    <div class="navlog-hero-icon">&#x2708;&#xFE0F;</div>
+    <h1 class="navlog-hero-title">Briefing Pr&#xe9;vol</h1>
+    <p class="navlog-hero-sub">Pr&#xe9;paration de vol &amp; navigation</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="navlog-tabs">
+    <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navigation</button>
+    <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
+    <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
+    <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
+    <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carburant</button>
+    <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
+    <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
+  </div>
+
+  <!-- ==================== TAB 1: NAVIGATION ==================== -->
+  <div id="tab-nav" class="navlog-tab-content active">
+
+    <!-- Flight type selector -->
+    <div style="text-align:center;margin-bottom:14px">
+      <div class="flight-type-row">
+        <button class="flight-type-btn active" onclick="window.setFlightType('local')">&#x1F3D7;&#xFE0F; Vol local</button>
+        <button class="flight-type-btn" onclick="window.setFlightType('nav')">&#x2708;&#xFE0F; Navigation VFR</button>
+      </div>
+    </div>
+
+    <!-- Weather panel -->
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</div>
+      <div class="wx-airport-btns" id="wxAirportBtns"></div>
