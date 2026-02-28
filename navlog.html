@@ -635,7 +635,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- TEMSI France -->
       <div class="map-card">
         <div class="map-card-title">&#x1F1EB;&#x1F1F7; TEMSI France &#x2014; Temps Significatif France</div>
-        <div id="mapTemsi" class="map-paste-zone" data-key="temsi" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsi')">
+        <div id="mapTemsi" class="map-paste-zone" data-key="temsi" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsi')" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleMapDrop('temsi',event)">
           <span style="font-size:2em">&#x1F1EB;&#x1F1F7;</span>
           <span>Collez (Ctrl+V) ou cliquez pour importer la carte TEMSI France</span>
         </div>
@@ -645,13 +645,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="window.uploadMap('temsi')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('temsi')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delTemsi" onclick="window.deleteMapImage('temsi')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
-          <input type="file" id="fileTemsi" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsi',this)">
+          <input type="file" id="fileTemsi" accept="image/*,application/pdf" style="display:none" onchange="window.handleMapUpload('temsi',this)">
         </div>
       </div>
       <!-- TEMSI EUROC -->
       <div class="map-card">
         <div class="map-card-title">&#x1F30D; TEMSI EUROC &#x2014; Temps Significatif Europe</div>
-        <div id="mapTemsiEuroc" class="map-paste-zone" data-key="temsiEuroc" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsiEuroc')">
+        <div id="mapTemsiEuroc" class="map-paste-zone" data-key="temsiEuroc" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('temsiEuroc')" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleMapDrop('temsiEuroc',event)">
           <span style="font-size:2em">&#x1F30D;</span>
           <span>Collez (Ctrl+V) ou cliquez pour importer la carte TEMSI EUROC</span>
         </div>
@@ -661,13 +661,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="window.uploadMap('temsiEuroc')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('temsiEuroc')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delTemsiEuroc" onclick="window.deleteMapImage('temsiEuroc')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
-          <input type="file" id="fileTemsiEuroc" accept="image/*" style="display:none" onchange="window.handleMapUpload('temsiEuroc',this)">
+          <input type="file" id="fileTemsiEuroc" accept="image/*,application/pdf" style="display:none" onchange="window.handleMapUpload('temsiEuroc',this)">
         </div>
       </div>
       <!-- WINTEM -->
       <div class="map-card">
         <div class="map-card-title">&#x1F4A8; WINTEM &#x2014; Vent &amp; Temp&#xe9;rature en altitude</div>
-        <div id="mapWintem" class="map-paste-zone" data-key="wintem" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('wintem')">
+        <div id="mapWintem" class="map-paste-zone" data-key="wintem" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('wintem')" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleMapDrop('wintem',event)">
           <span style="font-size:2em">&#x1F4A8;</span>
           <span>Collez (Ctrl+V) ou cliquez pour importer la carte WINTEM</span>
         </div>
@@ -677,7 +677,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="window.uploadMap('wintem')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('wintem')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delWintem" onclick="window.deleteMapImage('wintem')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
-          <input type="file" id="fileWintem" accept="image/*" style="display:none" onchange="window.handleMapUpload('wintem',this)">
+          <input type="file" id="fileWintem" accept="image/*,application/pdf" style="display:none" onchange="window.handleMapUpload('wintem',this)">
         </div>
       </div>
     </div>
@@ -753,10 +753,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
       <!-- Extra images for dossier -->
       <div class="extra-images-area">
-        <div class="nl-card-title"><span class="icon">&#x1F4F8;</span> Images suppl&#xe9;mentaires</div>
-        <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px">Ajoutez des captures d'&#xe9;cran, cartes ou documents pour le dossier de vol.</p>
-        <button class="aeroweb-btn" onclick="window.addExtraImage()" style="font-size:.82em;padding:8px 18px">&#x1F4F7; Ajouter image(s)</button>
-        <input type="file" id="fileExtraImages" accept="image/*" multiple style="display:none" onchange="window.handleExtraImages(this)">
+        <div class="nl-card-title"><span class="icon">&#x1F4F8;</span> Documents suppl&#xe9;mentaires</div>
+        <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px">Ajoutez des captures, cartes, PDF ou tout autre fichier pour le dossier de vol.</p>
+        <div id="extraDropZone" style="border:2px dashed var(--border-color);border-radius:10px;padding:18px 12px;text-align:center;font-size:.82em;color:var(--text-secondary);cursor:pointer;transition:border-color .2s;margin-bottom:8px" onclick="document.getElementById('fileExtraImages').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleExtraDropEvent(event)">&#x1F4C2; Glissez-d&#xe9;posez vos fichiers ici ou <u>cliquez pour parcourir</u><br><small style="opacity:.6">Images, PDF, tout type de fichier accept&#xe9;</small></div>
+        <input type="file" id="fileExtraImages" accept="*" multiple style="display:none" onchange="window.handleExtraImages(this)">
         <div class="extra-images-grid" id="extraImagesGrid"></div>
       </div>
     </div>
@@ -1836,7 +1836,7 @@ function windArrowSVG(dir,spd){
     return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#00e5ff" stroke-width="2" stroke-dasharray="4 3"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="3s" repeatCount="indefinite"/></circle><text x="18" y="22" text-anchor="middle" fill="#00e5ff" font-size="10" font-weight="bold">VRB</text></svg>';
   }
   var r=dir-180;
-  return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="#333" stroke-width="1"/><g transform="rotate('+r+' 18 18)"><line x1="18" y1="4" x2="18" y2="28" stroke="#00e5ff" stroke-width="2"/><polygon points="18,4 14,12 22,12" fill="#00e5ff"/></g><text x="18" y="22" text-anchor="middle" fill="#fff" font-size="7">'+spd+'</text></svg>';
+  return '<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="rgba(20,20,40,0.7)" stroke="#445" stroke-width="1"/><g transform="rotate('+r+' 18 18)"><line x1="18" y1="4" x2="18" y2="28" stroke="#00e5ff" stroke-width="2"/><polygon points="18,4 14,12 22,12" fill="#00e5ff"/></g><text x="18" y="22" text-anchor="middle" fill="#fff" font-size="7">'+spd+'</text></svg>';
 }
 
 function suggestRunway(icao,windDir,windSpd){
@@ -3514,27 +3514,28 @@ window.clearWorkspace=clearWorkspace;
 /* ===== EXTRA IMAGES ===== */
 var extraImages=[];
 
-function addExtraImage(){
-  document.getElementById('fileExtraImages').click();
-}
-window.addExtraImage=addExtraImage;
 
+function _addExtraFile(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    extraImages.push({data:e.target.result,name:file.name,type:file.type});
+    sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+    renderExtraImages();
+  };
+  reader.readAsDataURL(file);
+}
 function handleExtraImages(input){
   if(!input.files||!input.files.length) return;
-  for(var f=0;f<input.files.length;f++){
-    (function(file){
-      var reader=new FileReader();
-      reader.onload=function(e){
-        extraImages.push({data:e.target.result,name:file.name});
-        sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
-        renderExtraImages();
-      };
-      reader.readAsDataURL(file);
-    })(input.files[f]);
-  }
+  for(var f=0;f<input.files.length;f++) _addExtraFile(input.files[f]);
   input.value='';
 }
 window.handleExtraImages=handleExtraImages;
+function handleExtraDropEvent(event){
+  var files=event.dataTransfer?event.dataTransfer.files:null;
+  if(!files||!files.length) return;
+  for(var f=0;f<files.length;f++) _addExtraFile(files[f]);
+}
+window.handleExtraDropEvent=handleExtraDropEvent;
 
 function removeExtraImage(idx){
   extraImages.splice(idx,1);
@@ -3595,8 +3596,15 @@ function renderExtraImages(){
   if(extraImages.length===0){grid.innerHTML='';return;}
   var html='';
   for(var i=0;i<extraImages.length;i++){
-    html+='<div class="extra-img-thumb">';
-    html+='<img src="'+extraImages[i].data+'" alt="'+escHTML(extraImages[i].name)+'" title="'+escHTML(extraImages[i].name)+'">';
+    var item=extraImages[i];
+    var isPdf=(item.type==='application/pdf')||(item.name&&item.name.toLowerCase().endsWith('.pdf'));
+    html+='<div class="extra-img-thumb" style="'+(isPdf?'grid-column:1/-1;':'')+'">';
+    if(isPdf){
+      html+='<div style="padding:6px 0 2px;font-size:.75em;font-weight:700;color:#667eea">&#x1F4C4; '+escHTML(item.name)+'</div>';
+      html+='<iframe src="'+item.data+'" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>';
+    } else {
+      html+='<img src="'+item.data+'" alt="'+escHTML(item.name)+'" title="'+escHTML(item.name)+'">';
+    }
     html+='<button class="extra-img-del" onclick="window.removeExtraImage('+i+')" title="Supprimer">\u00d7</button>';
     html+='</div>';
   }
@@ -4366,20 +4374,35 @@ function uploadMap(key){
 }
 window.uploadMap=uploadMap;
 
+function _applyMapData(key, dataUrl){
+  sessionStorage.setItem('navlog_map_'+key, dataUrl);
+  var cap = key.charAt(0).toUpperCase()+key.slice(1);
+  var el = document.getElementById('map'+cap);
+  if(!el) return;
+  if(dataUrl.indexOf('data:application/pdf')===0){
+    el.innerHTML='<iframe src="'+dataUrl+'" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>';
+  } else {
+    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
+  }
+  var delBtn=document.getElementById('del'+cap);
+  if(delBtn) delBtn.style.display='';
+}
 function handleMapUpload(key,input){
   if(!input.files||!input.files[0]) return;
   var reader=new FileReader();
-  reader.onload=function(e){
-    var dataUrl=e.target.result;
-    sessionStorage.setItem('navlog_map_'+key,dataUrl);
-    var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-    el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
-    var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
-    if(delBtn) delBtn.style.display='';
-  };
+  reader.onload=function(e){ _applyMapData(key, e.target.result); };
   reader.readAsDataURL(input.files[0]);
+  input.value='';
 }
 window.handleMapUpload=handleMapUpload;
+function handleMapDrop(key, event){
+  var files=event.dataTransfer?event.dataTransfer.files:null;
+  if(!files||!files.length) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ _applyMapData(key, e.target.result); };
+  reader.readAsDataURL(files[0]);
+}
+window.handleMapDrop=handleMapDrop;
 
 function deleteMapImage(key){
   sessionStorage.removeItem('navlog_map_'+key);
@@ -4407,13 +4430,7 @@ function openAeroWebPopup(url){
 window.openAeroWebPopup=openAeroWebPopup;
 
 /* --- Clipboard paste for map images --- */
-function applyMapImage(key,dataUrl){
-  sessionStorage.setItem('navlog_map_'+key,dataUrl);
-  var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-  el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain">';
-  var delBtn=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
-  if(delBtn) delBtn.style.display='';
-}
+function applyMapImage(key,dataUrl){ _applyMapData(key, dataUrl); }
 
 function pasteMapImage(key){
   if(!navigator.clipboard||!navigator.clipboard.read){
@@ -4774,12 +4791,7 @@ function init(){
   var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
   for(var m=0;m<mapKeys.length;m++){
     var stored=sessionStorage.getItem('navlog_map_'+mapKeys[m]);
-    if(stored){
-      var el=document.getElementById('map'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
-      if(el) el.innerHTML='<img src="'+stored+'" style="width:100%;object-fit:contain">';
-      var db=document.getElementById('del'+mapKeys[m].charAt(0).toUpperCase()+mapKeys[m].slice(1));
-      if(db) db.style.display='';
-    }
+    if(stored){ _applyMapData(mapKeys[m], stored); }
   }
   /* Restore extra images from session */
   try{
