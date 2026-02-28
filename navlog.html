@@ -374,9 +374,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <!-- Tabs -->
   <div class="navlog-tabs">
-    <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o &amp; Cartes</button>
+    <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; Masse &amp; CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Performance</button>
     <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carburant</button>
@@ -465,6 +465,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Summary panel -->
     <div class="summary-panel" id="summaryPanel">
       <div class="summary-item"><div class="s-label">Distance totale</div><div class="s-value" id="sumDist">0 NM</div></div>
+      <div class="summary-item"><div class="s-label">Temps en vol</div><div class="s-value" id="sumFlight">0:00</div></div>
       <div class="summary-item"><div class="s-label">Temps total</div><div class="s-value" id="sumTime">0:00:00</div></div>
       <div class="summary-item"><div class="s-label">Temps sol</div><div class="s-value" id="sumGround">20 min</div></div>
       <div class="summary-item"><div class="s-label">Carburant trajet</div><div class="s-value" id="sumTripFuel">0 L</div></div>
@@ -1172,25 +1173,34 @@ function switchTab(id){
   var tabs=document.querySelectorAll('.navlog-tab');
   var contents=document.querySelectorAll('.navlog-tab-content');
   
-  // Map tab IDs to their index in the DOM order
-  // Order: nav, meteo, masse, perf, fuel, checklist, dossiers
-  var map={nav:0,meteo:1,masse:2,perf:3,fuel:4,checklist:5,dossiers:6};
-  
   tabs.forEach(function(t){t.classList.remove('active');});
   contents.forEach(function(c){c.classList.remove('active');});
 
-  var idx=map[id];
-  if(idx===undefined) idx=0; // fallback
-  
-  if(tabs[idx]) tabs[idx].classList.add('active');
-  if(contents[idx]) contents[idx].classList.add('active');
+  /* ID-based activation — robust regardless of DOM order */
+  tabs.forEach(function(t){
+    var onc=t.getAttribute('onclick')||'';
+    if(onc.indexOf("'" + id + "'") >= 0) t.classList.add('active');
+  });
+  var target=document.getElementById('tab-'+id);
+  if(target) target.classList.add('active');
 
   var calBtn=document.getElementById('calToggleBtn');
   if(id==='dossiers'){calBtn.classList.add('visible');}else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
   
   if(id==='checklist') initChecklist();
   if(id==='fuel') window.renderFuelLog();
-  
+
+  /* Lazy-load NOTAMs iframes on first visit */
+  if(id==='notam' && !window._notamLoaded){
+    window._notamLoaded=true;
+    var notamTab=document.getElementById('tab-notam');
+    if(notamTab){
+      notamTab.querySelectorAll('iframe[data-src]').forEach(function(f){
+        if(!f.src||f.src==='about:blank'||f.src===window.location.href) f.src=f.dataset.src;
+      });
+    }
+  }
+
   /* Lazy-load active meteo sub-tab on first switch */
   if(id==='meteo'){
     var activeSub=document.querySelector('.meteo-sub-content.active');
@@ -2912,6 +2922,7 @@ function recalcNavlog(){
   var groundTimeMin=cfg.taxiMin+cfg.landingMin;
   var totalTimeWithGround=totalTime+groundTimeMin/60;
   document.getElementById('sumDist').textContent=Math.round(totalDist*10)/10+' NM';
+  document.getElementById('sumFlight').textContent=formatTime(totalTime);
   document.getElementById('sumTime').textContent=formatTime(totalTimeWithGround);
   document.getElementById('sumGround').textContent=Math.round(groundTimeMin)+' min';
   document.getElementById('sumTripFuel').textContent=Math.round(totalFuel*10)/10+' L';
@@ -3151,7 +3162,10 @@ function renderNavlog(){
     html+='</div>';
     html+='</div>';
   }
+  /* preserve scroll position during DOM rebuild */
+  var _scrollY=window.scrollY||document.documentElement.scrollTop||0;
   board.innerHTML=html;
+  window.scrollTo({top:_scrollY,behavior:'instant'});
   initDragDrop(board);
   var nameInputs=board.querySelectorAll('.wp-name-input');
   for(var ni=0;ni<nameInputs.length;ni++){
@@ -3503,10 +3517,18 @@ function openMapModal(idx){
   mapModalWpIdx=idx;
   mapSelectedLatLon=null;
   document.getElementById('mapModal').style.display='';
-  document.getElementById('mapCoords').textContent='Cliquez sur la carte';
+  var wp=waypoints[idx];
+  var hasCoords=(wp && wp.lat!==null && wp.lon!==null);
+  if(hasCoords){
+    document.getElementById('mapCoords').textContent='Point actuel : Lat: '+wp.lat+'  Lon: '+wp.lon+' — cliquer pour modifier';
+  } else {
+    document.getElementById('mapCoords').textContent='Cliquez sur la carte';
+  }
   setTimeout(function(){
     if(!leafletMap){
-      leafletMap=L.map('mapContainer').setView([50.4589,3.8181],10);
+      var initView = hasCoords ? [wp.lat, wp.lon] : [50.4589, 3.8181];
+      var initZoom = hasCoords ? 12 : 10;
+      leafletMap=L.map('mapContainer').setView(initView, initZoom);
       var osmL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OSM',maxZoom:18});
       var topoL=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
       topoL.addTo(leafletMap);
@@ -3530,12 +3552,22 @@ function openMapModal(idx){
     } else {
       leafletMap.invalidateSize();
       /* Center on current WP if it has coords */
-      var wp=waypoints[idx];
-      if(wp && wp.lat!==null && wp.lon!==null){
+      if(hasCoords){
         leafletMap.setView([wp.lat,wp.lon],12);
       }
     }
+    /* Remove old click-selection marker but place marker at current WP coords if any */
     if(leafletMarker){leafletMap.removeLayer(leafletMarker);leafletMarker=null;}
+    if(hasCoords){
+      leafletMarker=L.marker([wp.lat,wp.lon],{
+        icon:L.divIcon({
+          className:'',
+          html:'<div style="background:#667eea;border:2px solid #fff;border-radius:50%;width:14px;height:14px;box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',
+          iconSize:[14,14],iconAnchor:[7,7]
+        })
+      }).addTo(leafletMap);
+      leafletMarker.bindTooltip((wp.name||'WP '+(idx+1))+' (position actuelle)',{permanent:false,direction:'top'});
+    }
   },100);
 }
 window.openMapModal=openMapModal;
@@ -4184,8 +4216,13 @@ function initRouteMap(){
       p2.dist = Math.round(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
     }
     
+    /* preserve scroll position — prevent page jumping to top on click */
+    var scrollY=window.scrollY||document.documentElement.scrollTop||0;
     renderNavlog();
     recalcNavlog();
+    requestAnimationFrame(function(){
+      window.scrollTo({top:scrollY,behavior:'instant'});
+    });
   });
 
   /* Airport markers on route map */
