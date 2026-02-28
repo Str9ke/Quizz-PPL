@@ -1944,7 +1944,7 @@ function renderDailyWarnImages(){
     } else if(item.type==='pdf'){
       var wrapPdf=document.createElement('div');
       wrapPdf.style.cssText='position:relative;width:100%;margin-bottom:6px';
-      var blobUrlDw=_dataUrlToObjectUrl(item.data);
+      var blobUrlDw=_isHttpUrl(item.data)?item.data:_dataUrlToObjectUrl(item.data);
       var ifrmDw=document.createElement('iframe');
       ifrmDw.src=blobUrlDw+'#toolbar=0&navpanes=0';
       ifrmDw.style.cssText='width:100%;height:500px;border:none;border-radius:8px';
@@ -4078,8 +4078,8 @@ function renderExtraImages(){
     html+='<div class="extra-img-thumb" style="'+(isPdf?'grid-column:1/-1;':'')+'">';
     if(isPdf){
       html+='<div style="padding:6px 0 2px;font-size:.75em;font-weight:700;color:#667eea">&#x1F4C4; '+escHTML(item.name)+'</div>';
-      var blobUrl=_dataUrlToObjectUrl(item.data);
-      html+='<iframe src="'+blobUrl+'" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>';
+      var blobUrl=_isHttpUrl(item.data)?item.data:_dataUrlToObjectUrl(item.data);
+      html+='<iframe src="'+blobUrl+'#toolbar=0&navpanes=0" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>';
     } else {
       html+='<img src="'+item.data+'" alt="'+escHTML(item.name)+'" title="'+escHTML(item.name)+'">';
     }
@@ -4999,6 +4999,8 @@ function _applyMapData(key, dataUrl){
   if(dataUrl.indexOf('data:application/pdf')===0){
     var blobUrl=_dataUrlToObjectUrl(dataUrl);
     el.innerHTML='<iframe src="'+blobUrl+'#toolbar=0&navpanes=0" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
+  } else if(_isHttpUrl(dataUrl)&&(dataUrl.indexOf('.pdf')>0||dataUrl.indexOf('%2Fopmet')>0)){
+    el.innerHTML='<iframe src="'+dataUrl+'#toolbar=0&navpanes=0" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
   } else {
     el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain;pointer-events:none;border-radius:8px">';
   }
