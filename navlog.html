@@ -474,6 +474,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Route map -->
     <div class="route-map-card">
       <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> Carte de la route</div>
+      <button class="navlog-btn secondary" style="position: absolute; bottom: 10px; right: 10px; z-index: 1000;" onclick="returnToStart()"><i class="fa fa-undo"></i> Revenir au départ</button>
       <div id="routeMapContainer"></div>
       <div class="route-map-info" id="routeMapInfo">Ajoutez des waypoints pour voir la route</div>
     </div>
@@ -488,8 +489,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
-      <button class="meteo-subtab" data-sub="notam" onclick="window.switchMeteoSub('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
-      <button class="meteo-subtab" data-sub="dailywarn" onclick="window.switchMeteoSub('dailywarn')">&#x1F6A8; Daily Warn</button>
+      <button class="meteo-subtab" data-sub="notam" onclick="window.switchMeteoSub('notam')">&#x26A0;&#xFE0F; NOTAMs & Daily Warn</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
       <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
@@ -646,11 +646,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <div id="notamSummaryPreview" style="display:flex;flex-wrap:wrap;gap:8px;width:100%"></div>
         </div>
       </div>
-    </div>
-
-    <!-- ===== SUB: Daily Warnings ===== -->
-    <div id="msub-dailywarn" class="meteo-sub-content">
-      <div class="map-card">
+      <!-- Daily Warnings Section -->
+      <div class="map-card" style="margin-top:14px">
         <div class="map-card-title">&#x1F6A8; Daily Warnings &#x2014; Import & Affichage</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Consultez les Daily Warnings sur <a href="https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday" target="_blank" rel="noopener">Skeyes</a>, puis importez la capture ici (ou collez avec Ctrl+V).</p>
         <div id="dailyWarnUploadZone" style="padding:12px 16px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed var(--border-color);border-radius:12px;margin:10px 16px;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('fileDailyWarn').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleDailyWarnDrop(event)">
@@ -808,6 +805,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances Cessna F-150L</div>
       <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:12px">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</p>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div id="perfCrosswindInfo" style="font-size:0.85em; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px; flex-grow:1; margin-right:10px;">Cliquez sur Auto-remplir pour utiliser le METAR du d&#xe9;part.</div>
+        <button onclick="window.perfFromMetar()" class="navlog-btn primary" style="padding:6px 12px; font-size:0.85em;">&#x21BB; Auto-remplir via METAR</button>
+      </div>
 
       <!-- Inputs -->
       <div class="config-grid" style="margin-bottom:14px">
@@ -1143,10 +1145,11 @@ function formatTime(hours){
 
 function formatETA(totalMinutes){
   if(isNaN(totalMinutes)||totalMinutes<0) return '--:--';
-  var h=Math.floor(totalMinutes/60)%24;
-  var m=Math.round(totalMinutes%60);
-  if(m>=60){h=(h+1)%24;m=0;}
-  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+  var totalSeconds = Math.round(totalMinutes * 60);
+  var h = Math.floor(totalSeconds / 3600);
+  var m = Math.floor((totalSeconds % 3600) / 60);
+  var s = totalSeconds % 60;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
 }
 
 /* ===== THEME TOGGLE ===== */
@@ -1222,6 +1225,7 @@ function renderFuelLog(){
   /* Trip Fuel */
   var tripTimeMin=0; 
   var totalDist=0;
+  var tripFuel=0;
   
   /* waypoints[0] is start (dist=0), waypoints[1] is end of leg 1... */
   /* Loop from 1 to avoid processing the start point as a leg destination */
@@ -1236,10 +1240,11 @@ function renderFuelLog(){
       var eteVal = (legData.ete !== undefined && !isNaN(legData.ete)) ? legData.ete : 0;
       var t=eteVal*60; /* ete is decimal hours */
       tripTimeMin+=t;
-      var legFuel = (t/60) * fuelBurn;
+      var legFuel = legData.fuel || 0;
+      tripFuel += legFuel;
       html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
       html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small></span>';
-      html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L</span>';
+      html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
     }
   }
@@ -1259,7 +1264,6 @@ function renderFuelLog(){
   }
   
   /* Calculations */
-  var tripFuel = (tripTimeMin/60) * fuelBurn;
   if(isNaN(tripFuel)) tripFuel=0;
   
   var taxiFuel = ((taxiD+taxiA)/60) * fuelBurn;
@@ -1326,6 +1330,7 @@ var CHECKLIST_ITEMS = [
     'Dossier m\u00e9t\u00e9o (imprim\u00e9)',
     'OPMET (Skeyes/PDF)',
     'NOTAMs (imprim\u00e9s)',
+    'Performances d\u00e9collage/atterrissage',
     'Devis masse & centrage',
     'Devis carburant'
   ]},
@@ -1555,7 +1560,7 @@ function clearDailyWarnImages(){
 window.clearDailyWarnImages=clearDailyWarnImages;
 /* Ctrl+V paste support for daily warnings */
 document.addEventListener('paste',function(ev){
-  var activeTab=document.getElementById('msub-dailywarn');
+  var activeTab=document.getElementById('msub-notam');
   if(!activeTab||!activeTab.classList.contains('active')) return;
   /* Also make sure the main meteo tab is visible */
   var meteoTab=document.getElementById('tab-meteo');
@@ -2803,7 +2808,34 @@ function getConfig(){
   };
 }
 
-function calcLeg(dist,routeTrue,cfg,legWind){
+function getFuelBurnForLeg(alt, tas, defaultBurn){
+  if(!alt || alt < 2500) return defaultBurn;
+  
+  /* Find closest altitude block in CRUISE_DATA */
+  var bestBlock = CRUISE_DATA[0];
+  var minAltDiff = Math.abs(alt - bestBlock.alt);
+  for(var i=1; i<CRUISE_DATA.length; i++){
+    var diff=Math.abs(alt - CRUISE_DATA[i].alt);
+    if(diff < minAltDiff){
+      minAltDiff = diff;
+      bestBlock = CRUISE_DATA[i];
+    }
+  }
+  
+  /* Find closest TAS in that block */
+  var bestRow = bestBlock.rows[0];
+  var minTasDiff = Math.abs(tas - bestRow.tasKt);
+  for(var j=1; j<bestBlock.rows.length; j++){
+    var tDiff = Math.abs(tas - bestBlock.rows[j].tasKt);
+    if(tDiff < minTasDiff){
+      minTasDiff = tDiff;
+      bestRow = bestBlock.rows[j];
+    }
+  }
+  return bestRow.fuelLh;
+}
+
+function calcLeg(dist,routeTrue,cfg,legWind,legAlt){
   var wDir=cfg.windDir,wSpd=cfg.windSpd;
   if(legWind&&(legWind.dir!==undefined||legWind.spd!==undefined)){
     wDir=legWind.dir!==undefined?legWind.dir:cfg.windDir;
@@ -2830,13 +2862,15 @@ function calcLeg(dist,routeTrue,cfg,legWind){
   var eteH=dist/gs;
   if(isNaN(eteH) || !isFinite(eteH)) eteH=0;
   
-  var fuelL=eteH*cfg.fuel;
+  var fuelCons = getFuelBurnForLeg(legAlt, cfg.tas, cfg.fuel);
+  var fuelL=eteH*fuelCons;
   if(isNaN(fuelL) || !isFinite(fuelL)) fuelL=0;
 
   return {
     gs:Math.round(gs),
     ete:eteH,
     fuel:Math.round(fuelL*10)/10,
+    fuelBurnLh: fuelCons,
     hdgTrue:((hdgTrue%360)+360)%360,
     hdgMag:(((hdgTrue+cfg.dev)%360)+360)%360,
     wca:rad2deg(wca),
@@ -2862,7 +2896,8 @@ function recalcNavlog(){
       wp.dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
       wp.route=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
     }
-    var leg=calcLeg(wp.dist,wp.route,cfg,wp.legWind);
+    var legAlt = wp.altitude || 2000;
+    var leg=calcLeg(wp.dist,wp.route,cfg,wp.legWind,legAlt);
     wp._leg=leg;
     var eteMinutes=leg.ete*60;
     cumulativeMin+=eteMinutes;
@@ -3606,7 +3641,28 @@ function getDossiers(){
   try{return JSON.parse(localStorage.getItem('navlog_dossiers'))||[];}catch(e){return [];}
 }
 function setDossiers(d){
-  localStorage.setItem('navlog_dossiers',JSON.stringify(d));
+  try {
+    localStorage.setItem('navlog_dossiers',JSON.stringify(d));
+  } catch(e) {
+    if(e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED'){
+      var reduced = d.map(function(item){
+        var newItem = JSON.parse(JSON.stringify(item));
+        delete newItem.mapImages;
+        delete newItem.extraImages;
+        delete newItem.screenshots;
+        delete newItem.dailyWarnImages;
+        return newItem;
+      });
+      try {
+        localStorage.setItem('navlog_dossiers',JSON.stringify(reduced));
+        alert('Stockage limité : les images de ce dossier ont été supprimées pour permettre la sauvegarde.');
+      } catch(e2) {
+        alert('Erreur critique de stockage : impossible de sauvegarder le dossier.');
+      }
+    } else {
+      throw e;
+    }
+  }
 }
 
 function saveDossier(){
@@ -4080,8 +4136,53 @@ function initRouteMap(){
   var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenTopoMap',maxZoom:17});
   var icaoLayer=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png',{attribution:'\u00a9 OpenAIP',maxZoom:14,tms:true});
   var openAipOverlay=L.tileLayer('https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_approved_airspaces_geometries@EPSG%3A900913@png/{z}/{x}/{y}.png',{maxZoom:14,tms:true,opacity:.5});
-  topoLayer.addTo(routeMap);
-  L.control.layers({'OSM':osmLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces a\u00e9riens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
+  
+  /* Ajout carte OACI (Geoportail France VFR) */
+  var oaciLayer = L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+      attribution: '\u00a9 IGN/SIA', maxZoom: 11
+  });
+
+  oaciLayer.addTo(routeMap);
+  L.control.layers({'OACI (France)':oaciLayer, 'OSM':osmLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{'Espaces aériens':openAipOverlay},{position:'topright',collapsed:true}).addTo(routeMap);
+
+  routeMap.on('click', function(e){
+    var coord = e.latlng;
+    var name = 'WP' + (waypoints.length + 1);
+    var newWp = {name: name, lat: coord.lat, lon: coord.lng, icon: '', dist: 0, route: 0};
+    
+    // Auto-name if near an airport
+    var minDist = 0.1;
+    for(var code in AIRPORT_COORDS) {
+      var dLat = AIRPORT_COORDS[code].lat - coord.lat;
+      var dLon = AIRPORT_COORDS[code].lon - coord.lng;
+      var d = Math.sqrt(dLat*dLat + dLon*dLon);
+      if(d < minDist) {
+        minDist = d;
+        name = code;
+      }
+    }
+    newWp.name = name;
+    
+    // Add to waypoints
+    if(flightType === 'local' && waypoints.length >= 2){
+      waypoints.splice(waypoints.length-1, 0, newWp);
+    } else {
+      waypoints.push(newWp);
+    }
+    
+    // recalculate dists and routes for new WP if previous exists
+    var pts = waypoints.filter(function(p){ return p.lat!==null && p.lon!==null; });
+    if(pts.length >= 2){
+      var p1 = pts[pts.length-2];
+      var p2 = pts[pts.length-1];
+      p2.route = Math.round(trueBearing(p1.lat, p1.lon, p2.lat, p2.lon));
+      p2.dist = Math.round(haversineDist(p1.lat, p1.lon, p2.lat, p2.lon));
+    }
+    
+    renderNavlog();
+    recalcNavlog();
+  });
+
   /* Airport markers on route map */
   for(var code in AIRPORT_COORDS){
     var c=AIRPORT_COORDS[code];
@@ -4092,6 +4193,26 @@ function initRouteMap(){
     }).addTo(routeMap).bindTooltip(code,{permanent:false,direction:'top',offset:[0,-6],className:'route-map-tooltip'});
   }
 }
+
+function returnToStart(){
+  if(waypoints.length === 0) return;
+  var start = waypoints[0];
+  if(start.lat !== null && start.lon !== null){
+    waypoints.push({
+      name: start.name,
+      lat: start.lat,
+      lon: start.lon,
+      icon: start.icon,
+      dist: 0,
+      route: 0
+    });
+    renderNavlog();
+    recalcNavlog();
+  } else {
+    alert("Le point de départ n'a pas de coordonnées.");
+  }
+}
+window.returnToStart = returnToStart;
 
 function updateRouteMap(){
   if(!routeMap) return;
@@ -4124,13 +4245,34 @@ function updateRouteMap(){
     var color=isFirst?'#4caf50':(isLast?'#f44336':'#667eea');
     var emoji=isFirst?'\u{1F6EB}':(isLast?'\u{1F6EC}':'\u{1F4CD}');
     var marker=L.marker([p.lat,p.lon],{
+      draggable: true,
+      title: 'Glissez pour déplacer, cliquez pour supprimer',
       icon:L.divIcon({
         className:'',
-        html:'<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:18px">'+emoji+'</span><span style="font-size:10px;font-weight:800;color:'+color+';background:rgba(0,0,0,.7);padding:1px 5px;border-radius:6px;white-space:nowrap">'+p.name+'</span></div>',
+        html:'<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:18px;cursor:pointer;">'+emoji+'</span><span style="font-size:10px;font-weight:800;color:'+color+';background:rgba(0,0,0,.7);padding:1px 5px;border-radius:6px;white-space:nowrap">'+p.name+'</span></div>',
         iconSize:[60,36],
         iconAnchor:[30,18]
       })
     }).addTo(routeMap);
+
+    (function(idx){
+      marker.on('dragend', function(e){
+        var coord = e.target.getLatLng();
+        waypoints[idx].lat = coord.lat;
+        waypoints[idx].lon = coord.lng;
+        // Optionally update dist/route
+        renderNavlog();
+        recalcNavlog();
+      });
+      marker.on('click', function(){
+        if(confirm('Supprimer ce waypoint ?')) {
+          waypoints.splice(idx, 1);
+          renderNavlog();
+          recalcNavlog();
+        }
+      });
+    })(p.idx);
+
     routeMapLayers.push(marker);
   }
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
@@ -4258,7 +4400,7 @@ var MB_DATA = {
     type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    has2seats:true, weighDate:'—',
+    has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
   'OO-WAC': {
@@ -4700,10 +4842,15 @@ function interpClimb(data,alt){
 }
 
 function perfFromMetar(){
-  var selEl=document.getElementById('perfMetarAirport');
-  var depIcao=selEl?selEl.value:'EBCV';
+  var depIcao='';
+  if(waypoints.length>0 && waypoints[0].name) {
+    depIcao = waypoints[0].name;
+  }
+  if(!depIcao || !AIRPORT_NAMES[depIcao] || !RUNWAY_DB[depIcao]) depIcao='EBCV';
+
   if(!wxCache[depIcao]||!wxCache[depIcao].metar){
     loadWeather(depIcao);
+    document.getElementById('perfCrosswindInfo').innerHTML = '<span style="color:#ffa726">Chargement METAR pour '+depIcao+'...</span>';
     setTimeout(function(){perfFromMetar();},2000);
     return;
   }
@@ -4716,11 +4863,31 @@ function perfFromMetar(){
     /* Parse QNH */
     var qm=raw.match(/Q(\d{4})/);
     if(qm){ document.getElementById('perfQNH').value=parseInt(qm[1]); }
-    /* Parse wind speed */
-    var wm=parseWindFromMetar(raw);
-    if(wm){ document.getElementById('perfWind').value=wm.spd; }
     /* Elevation */
     if(AIRPORT_ELEV[depIcao]) document.getElementById('perfElev').value=AIRPORT_ELEV[depIcao];
+    
+    /* Wind and Crosswind Calculation */
+    var wm=parseWindFromMetar(raw);
+    var xwindInfo = '';
+    if(wm){ 
+      var bestRwy = suggestRunway(depIcao, wm.dir, wm.spd);
+      if(bestRwy) {
+        // Use Headwind for takeoff perf
+        document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
+        xwindInfo = '<span style="color:#4caf50;">Piste '+bestRwy.rwy+' ('+bestRwy.hdg+'°) \u2014 Vent travers: <b>'+bestRwy.xw+' kt</b> | Face: <b>'+bestRwy.hw+' kt</b></span>';
+      } else {
+        document.getElementById('perfWind').value = wm.spd;
+        xwindInfo = '<span style="color:#ffa726;">Piste inconnue \u2014 Vent: '+wm.spd+' kt</span>';
+      }
+    } else {
+      document.getElementById('perfWind').value = 0;
+      xwindInfo = '<span>Vent calme / non détecté</span>';
+    }
+    
+    var infoEl = document.getElementById('perfCrosswindInfo');
+    if(infoEl) {
+      infoEl.innerHTML = '\u{1F32C}\uFE0F <b>'+depIcao+'</b> : ' + xwindInfo;
+    }
   }
   perfCalc();
 }
