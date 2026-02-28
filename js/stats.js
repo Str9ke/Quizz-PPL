@@ -200,18 +200,32 @@ function displayHomeProgressBar(responses, dailyHistory) {
       const daysLeft = Math.ceil(remaining / avgMast7);
       daysRemainingHtml = `<span title="Basé sur ${Math.round(avgMast7)} nouvelles questions réussies/jour (moy. 7j)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
     } else {
-      // Fallback si pas encore de données mastered: utiliser l'ancienne méthode
-      let total7 = 0;
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        total7 += mergedDH[key] || 0;
+      // Fallback: enrichir mergedDH avec _getDailyHistoryMerged() pour maximaliser les données
+      const fullLocalDH = (typeof _getDailyHistoryMerged === 'function') ? _getDailyHistoryMerged() : {};
+      for (const [k, v] of Object.entries(fullLocalDH)) {
+        mergedDH[k] = Math.max(mergedDH[k] || 0, v);
       }
-      const avg7 = total7 / 7;
-      if (avg7 > 0) {
-        const daysLeft = Math.ceil(remaining / avg7);
-        daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avg7)} réponses/jour (moy. 7j — estimation provisoire)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+      // Essayer 7 jours (hors aujourd'hui), puis 30 jours en fallback
+      const windows = [7, 30];
+      for (const win of windows) {
+        let totalW = 0, activeDays = 0;
+        for (let i = 1; i <= win; i++) {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          const val = mergedDH[key] || 0;
+          totalW += val;
+          if (val > 0) activeDays++;
+        }
+        // Diviser par le nombre de jours actifs (non-zéro) pour une moyenne réaliste
+        const activeDivisor = activeDays > 0 ? activeDays : win;
+        const avgW = totalW / activeDivisor;
+        if (avgW > 0) {
+          const daysLeft = Math.ceil(remaining / avgW);
+          const label = win === 7 ? 'moy. 7j' : 'moy. 30j';
+          daysRemainingHtml = `<span title="Basé sur la moyenne de ${Math.round(avgW)} réponses/jour (${label} — estimation provisoire)">📆 ~${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}</span>`;
+          break;
+        }
       }
     }
   }

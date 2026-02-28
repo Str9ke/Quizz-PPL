@@ -313,7 +313,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
 #routeMapContainer{height:340px;width:100%;background:#1a1a2e}
-.route-map-card .route-map-info{padding:8px 16px;font-size:.75em;color:var(--text-secondary);text-align:center}
+.route-map-card .route-map-toolbar{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
+.route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
+/* Navlog action buttons */
+.navlog-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;font-size:.82em;font-weight:600;border-radius:12px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;white-space:nowrap;vertical-align:middle;line-height:1.2}
+.navlog-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.06)}
+.navlog-btn.primary{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
+.navlog-btn.primary:hover{background:rgba(102,126,234,.18)}
+.navlog-btn.success{border-color:#4caf50;color:#4caf50;background:rgba(76,175,80,.08)}
+.navlog-btn.success:hover{background:rgba(76,175,80,.18)}
+.navlog-btn.danger{border-color:#ef5350;color:#ef5350}
+.navlog-btn.danger:hover{background:rgba(239,83,80,.1)}
 
 /* Clear workspace */
 .clear-ws-btn{display:block;margin:10px auto;padding:8px 20px;font-size:.82em;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid rgba(244,67,54,.3);background:transparent;color:#f44336;transition:all .2s}
@@ -476,9 +486,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Route map -->
     <div class="route-map-card">
       <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> Carte de la route</div>
-      <button class="navlog-btn secondary" style="position: absolute; bottom: 10px; right: 10px; z-index: 1000;" onclick="returnToStart()"><i class="fa fa-undo"></i> Revenir au départ</button>
       <div id="routeMapContainer"></div>
-      <div class="route-map-info" id="routeMapInfo">Ajoutez des waypoints pour voir la route</div>
+      <div class="route-map-toolbar">
+        <div class="route-map-info" id="routeMapInfo">Ajoutez des waypoints pour voir la route</div>
+        <button class="navlog-btn primary" onclick="window.fitRouteMap()" title="Recentrer la carte sur la route">&#x2316; Recentrer</button>
+        <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
+      </div>
     </div>
   </div>
 
@@ -986,7 +999,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
             <select id="legWindMetarAirport" style="padding:6px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em;flex:1">
               <option value="">-- A&#xe9;rodrome --</option>
             </select>
-            <button onclick="window.applyLegWindFromMetar()" style="padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer;font-size:.82em;font-weight:600;white-space:nowrap">&#x1F4E1; METAR</button>
+            <button onclick="window.applyLegWindFromMetar()" class="navlog-btn primary">&#x1F4E1; METAR</button>
           </div>
           <div id="legWindMetarStatus" style="font-size:.75em;color:var(--text-secondary);margin-top:4px"></div>
         </div>
@@ -3141,13 +3154,19 @@ function renderNavlog(){
     html+='</div>';
     html+='</div>';
   }
-  /* preserve scroll position during DOM rebuild (double rAF survives layout recalc) */
-  var _scrollY=window.scrollY||document.documentElement.scrollTop||0;
+  /* preserve scroll position during DOM rebuild */
+  var _scrollY=window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0;
   board.innerHTML=html;
+  /* Restaurer immédiatement (avant relayouts) */
+  document.documentElement.scrollTop=_scrollY;
+  document.body.scrollTop=_scrollY;
   requestAnimationFrame(function(){
+    document.documentElement.scrollTop=_scrollY;
+    document.body.scrollTop=_scrollY;
     window.scrollTo({top:_scrollY,behavior:'instant'});
     requestAnimationFrame(function(){
-      window.scrollTo({top:_scrollY,behavior:'instant'});
+      document.documentElement.scrollTop=_scrollY;
+      document.body.scrollTop=_scrollY;
     });
   });
   initDragDrop(board);
@@ -3722,7 +3741,11 @@ window.saveDossier=saveDossier;
 function captureScreenshots(cb){
   var shots={};
   var pending=0;
-  function done(){ pending--; if(pending<=0) cb(shots); }
+  var _done=false;
+  function safeCb(){ if(!_done){ _done=true; cb(shots); } }
+  function done(){ pending--; if(pending<=0) safeCb(); }
+  /* Timeout de sécurité 8s (html2canvas peut bloquer sur les tiles CORS) */
+  setTimeout(safeCb, 8000);
   /* MB chart canvas */
   var mbCanvas=document.getElementById('mbChart');
   if(mbCanvas){
@@ -3738,7 +3761,7 @@ function captureScreenshots(cb){
     }).catch(function(){ done(); });
   }
   /* If nothing async, call back immediately */
-  if(pending<=0) cb(shots);
+  if(pending<=0) safeCb();
 }
 
 function getWindyUrls(){
@@ -4328,10 +4351,33 @@ function updateRouteMap(){
     var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
-  /* Fit bounds */
+  /* Fit bounds — seulement si un point est hors vue (évite le reset de zoom) ; jamais animé (évite le saut de page) */
   var bounds=L.latLngBounds(coords);
-  routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13});
+  try{
+    if(coords.length===1){
+      /* Premier point: centrer sans changer le zoom si déjà raisonnable */
+      if(!routeMap.getBounds().contains(L.latLng(coords[0]))){
+        routeMap.setView(coords[0],routeMap.getZoom()<8?11:routeMap.getZoom(),{animate:false});
+      }
+    } else if(!routeMap.getBounds().contains(bounds)){
+      routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13,animate:false});
+    }
+  }catch(e){
+    routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13,animate:false});
+  }
 }
+
+/* Recentrer manuellement la carte sur la route (bouton 'Recentrer') */
+window.fitRouteMap=function(){
+  if(!routeMap||!waypoints||waypoints.length===0) return;
+  var coords=waypoints.map(function(w){return[w.lat,w.lon];}).filter(function(c){return c[0]&&c[1];});
+  if(coords.length===0) return;
+  if(coords.length===1){
+    routeMap.setView(coords[0],11,{animate:false});
+  } else {
+    routeMap.fitBounds(L.latLngBounds(coords),{padding:[40,40],maxZoom:13,animate:false});
+  }
+};
 
 /* ===== WINDY EMBEDS ===== */
 var _windyInited=false;
