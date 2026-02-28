@@ -13,6 +13,7 @@
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <style>
 /* ===== NavLog page styles ===== */
 .navlog-hero{text-align:center;padding:1.5rem 1rem 1rem;background:linear-gradient(135deg,#1a1a3e 0%,#2d1b4e 50%,#1a1a3e 100%);position:relative;overflow:hidden}
@@ -1829,59 +1830,66 @@ function switchMeteoSub(id){
 window.switchMeteoSub=switchMeteoSub;
 
 /* ===== NOTAM SUMMARY UPLOAD ===== */
+/* ===== NOTAM SUMMARY PERSISTENCE ===== */
+var notamSummaryItems=[];
+function saveNotamSummaryItems(){
+  try{ localStorage.setItem('navlog_notam_summary',JSON.stringify(notamSummaryItems)); }catch(e){}
+}
+function renderNotamSummary(){
+  var grid=document.getElementById('notamSummaryPreview');
+  if(!grid) return;
+  grid.innerHTML='';
+  notamSummaryItems.forEach(function(item,idx){
+    var wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
+    if(item.type==='image'){
+      var img=document.createElement('img');
+      img.src=item.data;
+      img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
+      img.title='Cliquer pour agrandir';
+      img.onclick=function(){window.open(img.src,'_blank')};
+      var del=document.createElement('button');
+      del.textContent='\u{1F5D1}\uFE0F';
+      del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
+      (function(i){del.onclick=function(){notamSummaryItems.splice(i,1);saveNotamSummaryItems();renderNotamSummary();};})(idx);
+      wrap.appendChild(img); wrap.appendChild(del);
+    } else if(item.type==='pdf'){
+      wrap.style.cssText='position:relative;width:100%;margin-bottom:6px';
+      var ifrSrc=_isHttpUrl(item.data)?item.data+'#toolbar=0&navpanes=0':_dataUrlToObjectUrl(item.data)+'#toolbar=0&navpanes=0';
+      var ifrm=document.createElement('iframe');
+      ifrm.src=ifrSrc;
+      ifrm.style.cssText='width:100%;height:500px;border:none;border-radius:8px';
+      var del2=document.createElement('button');
+      del2.textContent='\u{1F5D1}\uFE0F';
+      del2.style.cssText='position:absolute;top:4px;right:4px;z-index:10;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
+      (function(i){del2.onclick=function(){notamSummaryItems.splice(i,1);saveNotamSummaryItems();renderNotamSummary();};})(idx);
+      wrap.appendChild(ifrm); wrap.appendChild(del2);
+    } else {
+      wrap.style.cssText='position:relative;width:100%;margin-bottom:6px';
+      var link=document.createElement('a');
+      link.href=item.data; link.download=item.name||'fichier';
+      link.textContent='\u{1F4C4} '+(item.name||'fichier');
+      link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
+      var del3=document.createElement('button');
+      del3.textContent='\u{1F5D1}\uFE0F';
+      del3.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
+      (function(i){del3.onclick=function(){notamSummaryItems.splice(i,1);saveNotamSummaryItems();renderNotamSummary();};})(idx);
+      wrap.appendChild(link); wrap.appendChild(del3);
+    }
+    grid.appendChild(wrap);
+  });
+}
 function handleNotamSummary(input){
   var files=input.files;
   if(!files||!files.length) return;
-  var grid=document.getElementById('notamSummaryPreview');
   for(var i=0;i<files.length;i++){
     (function(file){
       var reader=new FileReader();
       reader.onload=function(e){
-        if(file.type.indexOf('image')>=0){
-          var img=document.createElement('img');
-          img.src=e.target.result;
-          img.style.cssText='max-width:100%;border-radius:8px;border:1px solid var(--border-color);cursor:pointer';
-          img.title='Cliquer pour agrandir';
-          img.onclick=function(){window.open(img.src,'_blank')};
-          var wrap=document.createElement('div');
-          wrap.style.cssText='position:relative;margin-bottom:8px;width:100%';
-          var del=document.createElement('button');
-          del.textContent='\u{1F5D1}\uFE0F';
-          del.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
-          del.onclick=function(){wrap.remove()};
-          wrap.appendChild(img);
-          wrap.appendChild(del);
-          grid.appendChild(wrap);
-        } else if(file.type==='application/pdf'){
-          var wrap2=document.createElement('div');
-          wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
-          var blobUrl2=_dataUrlToObjectUrl(e.target.result);
-          var ifrm=document.createElement('iframe');
-          ifrm.src=blobUrl2+'#toolbar=0&navpanes=0';
-          ifrm.style.cssText='width:100%;height:500px;border:none;border-radius:8px';
-          var del2=document.createElement('button');
-          del2.textContent='\u{1F5D1}\uFE0F';
-          del2.style.cssText='position:absolute;top:4px;right:4px;z-index:10;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
-          del2.onclick=function(){wrap2.remove();try{URL.revokeObjectURL(blobUrl2);}catch(ex){}};
-          wrap2.appendChild(ifrm);
-          wrap2.appendChild(del2);
-          grid.appendChild(wrap2);
-        } else {
-          var wrap2=document.createElement('div');
-          wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
-          var link=document.createElement('a');
-          link.href=e.target.result;
-          link.download=file.name;
-          link.textContent='\u{1F4C4} '+file.name;
-          link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
-          var del2=document.createElement('button');
-          del2.textContent='\u{1F5D1}\uFE0F';
-          del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em;display:flex;align-items:center;justify-content:center';
-          del2.onclick=function(){wrap2.remove()};
-          wrap2.appendChild(link);
-          wrap2.appendChild(del2);
-          grid.appendChild(wrap2);
-        }
+        var t=file.type.indexOf('image')>=0?'image':(file.type==='application/pdf'?'pdf':'file');
+        notamSummaryItems.push({type:t,data:e.target.result,name:file.name});
+        saveNotamSummaryItems();
+        renderNotamSummary();
       };
       reader.readAsDataURL(file);
     })(files[i]);
@@ -1891,7 +1899,9 @@ function handleNotamSummary(input){
 window.handleNotamSummary=handleNotamSummary;
 
 function clearNotamSummary(){
-  var p=document.getElementById('notamSummaryPreview'); if(p) p.innerHTML='';
+  notamSummaryItems=[];
+  saveNotamSummaryItems();
+  renderNotamSummary();
 }
 window.clearNotamSummary=clearNotamSummary;
 function handleNotamSummaryDrop(event){
@@ -1901,9 +1911,9 @@ function handleNotamSummaryDrop(event){
 window.handleNotamSummaryDrop=handleNotamSummaryDrop;
 
 /* ===== DAILY WARNINGS UPLOAD ===== */
-var dailyWarnImages=JSON.parse(sessionStorage.getItem('navlog_daily_warn_images')||'[]');
+var dailyWarnImages=JSON.parse(localStorage.getItem('navlog_daily_warn_images')||'[]');
 function saveDailyWarnImages(){
-  sessionStorage.setItem('navlog_daily_warn_images',JSON.stringify(dailyWarnImages));
+  localStorage.setItem('navlog_daily_warn_images',JSON.stringify(dailyWarnImages));
 }
 function getDailyWarnImages(){ return JSON.parse(JSON.stringify(dailyWarnImages)); }
 function setDailyWarnImages(arr){
@@ -3918,7 +3928,7 @@ function clearWorkspace(){
   document.getElementById('wxPanels').innerHTML='';
   /* Clear map captures */
   ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
-    sessionStorage.removeItem('navlog_map_'+key);
+    localStorage.removeItem('navlog_map_'+key);
     var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
     if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</span>';
     var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
@@ -3926,7 +3936,7 @@ function clearWorkspace(){
   });
   /* Clear extra images */
   extraImages=[];
-  sessionStorage.removeItem('navlog_extra_images');
+  localStorage.removeItem('navlog_extra_images');
   renderExtraImages();
   /* Reset config */
   document.getElementById('cfgTAS').value=90;
@@ -3958,7 +3968,7 @@ function _addExtraFile(file){
   var reader=new FileReader();
   reader.onload=function(e){
     extraImages.push({data:e.target.result,name:file.name,type:file.type});
-    sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+    localStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
     renderExtraImages();
   };
   reader.readAsDataURL(file);
@@ -3978,13 +3988,13 @@ window.handleExtraDropEvent=handleExtraDropEvent;
 
 function removeExtraImage(idx){
   extraImages.splice(idx,1);
-  sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+  localStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
   renderExtraImages();
 }
 window.removeExtraImage=removeExtraImage;
 
 /* ===== OPMET PDF ===== */
-var opmetPdfData = sessionStorage.getItem('navlog_opmet_pdf');
+var opmetPdfData = localStorage.getItem('navlog_opmet_pdf');
 function handleOpmetUpload(input){
   if(input.files && input.files[0]){
     var file=input.files[0];
@@ -3992,7 +4002,7 @@ function handleOpmetUpload(input){
     var reader=new FileReader();
     reader.onload=function(e){
       opmetPdfData = e.target.result;
-      sessionStorage.setItem('navlog_opmet_pdf', opmetPdfData);
+      localStorage.setItem('navlog_opmet_pdf', opmetPdfData);
       renderOpmet();
     };
     reader.readAsDataURL(file);
@@ -4008,15 +4018,16 @@ function handleOpmetDrop(ev){
   var reader=new FileReader();
   reader.onload=function(e){
     opmetPdfData=e.target.result;
-    sessionStorage.setItem('navlog_opmet_pdf',opmetPdfData);
+    localStorage.setItem('navlog_opmet_pdf',opmetPdfData);
     renderOpmet();
   };
   reader.readAsDataURL(file);
 }
 window.handleOpmetDrop=handleOpmetDrop;
+function clearOpmet(){
   if(!confirm('Supprimer le fichier OPMET ?')) return;
   opmetPdfData = null;
-  sessionStorage.removeItem('navlog_opmet_pdf');
+  localStorage.removeItem('navlog_opmet_pdf');
   renderOpmet();
 }
 window.clearOpmet=clearOpmet;
@@ -4030,16 +4041,22 @@ function renderOpmet(){
   if(opmetPdfData){
     viewer.style.display = 'block';
     placeholder.style.display = 'none';
-    /* Use blob URL — Chrome blocks data: iframes; also hides toolbar */
-    try{
-      var arr2=opmetPdfData.split(','), mime2=arr2[0].match(/:(.*?);/)[1];
-      var bstr2=atob(arr2[1]), n2=bstr2.length, u82=new Uint8Array(n2);
-      while(n2--) u82[n2]=bstr2.charCodeAt(n2);
-      var blobUrl2=URL.createObjectURL(new Blob([u82],{type:mime2}));
-      if(frame._opmetBlob){ try{URL.revokeObjectURL(frame._opmetBlob);}catch(ex){} }
-      frame._opmetBlob=blobUrl2;
-      frame.src = (mime2==='application/pdf') ? blobUrl2+'#toolbar=0&navpanes=0' : blobUrl2;
-    } catch(ex){ frame.src = opmetPdfData; }
+    if(_isHttpUrl(opmetPdfData)){
+      /* Cloud URL — use directly */
+      if(frame._opmetBlob){ try{URL.revokeObjectURL(frame._opmetBlob);}catch(ex){} frame._opmetBlob=null; }
+      frame.src = opmetPdfData + '#toolbar=0&navpanes=0';
+    } else {
+      /* Base64 data URL — convert to blob URL */
+      try{
+        var arr2=opmetPdfData.split(','), mime2=arr2[0].match(/:(.*?);/)[1];
+        var bstr2=atob(arr2[1]), n2=bstr2.length, u82=new Uint8Array(n2);
+        while(n2--) u82[n2]=bstr2.charCodeAt(n2);
+        var blobUrl2=URL.createObjectURL(new Blob([u82],{type:mime2}));
+        if(frame._opmetBlob){ try{URL.revokeObjectURL(frame._opmetBlob);}catch(ex){} }
+        frame._opmetBlob=blobUrl2;
+        frame.src = (mime2==='application/pdf') ? blobUrl2+'#toolbar=0&navpanes=0' : blobUrl2;
+      } catch(ex){ frame.src = opmetPdfData; }
+    }
   } else {
     viewer.style.display = 'none';
     placeholder.style.display = 'block';
@@ -4309,6 +4326,9 @@ function saveDossier(){
       massBalance:typeof getMBData==='function'?getMBData():null,
       checklist:getChecklistState(),
       dailyWarnImages:getDailyWarnImages(),
+      opmetPdf:opmetPdfData||null,
+      notamSummary:notamSummaryItems?JSON.parse(JSON.stringify(notamSummaryItems)):[],
+      cloudFiles:null,
       screenshots:{}
     };
     dossiers.push(dossier);
@@ -4357,6 +4377,21 @@ function saveDossier(){
       }
     }
   });
+
+  /* Upload fichiers vers Firebase Storage en arriere-plan */
+  _uploadDossierFiles(dossier, function(cloudFiles){
+    if(!cloudFiles) return;
+    var updated=getDossiers();
+    for(var i=0;i<updated.length;i++){
+      if(updated[i].id===dossierId){
+        updated[i].cloudFiles=cloudFiles;
+        setDossiers(updated);
+        _fbSaveDossier(updated[i]);
+        _toast('\u2601\uFE0F Fichiers sauvegard\u00e9s dans le cloud','success',2500);
+        break;
+      }
+    }
+  });
 }
 window.saveDossier=saveDossier;
 
@@ -4379,6 +4414,7 @@ window._downloadDossierJson=_downloadDossierJson;
 
 /* ===== FIREBASE CLOUD SYNC ===== */
 var _fbDB = null;
+var _fbStorage = null;
 var _FB_COLLECTION = 'navlog_dossiers';
 
 function _initFirebase(){
@@ -4390,13 +4426,87 @@ function _initFirebase(){
       ? (firebase.apps.length ? firebase.app() : firebase.initializeApp({
           apiKey: cfg.apiKey,
           projectId: 'quizaviation-b79ff',
-          authDomain: 'quizaviation-b79ff.firebaseapp.com'
+          authDomain: 'quizaviation-b79ff.firebaseapp.com',
+          storageBucket: 'quizaviation-b79ff.appspot.com'
         }))
       : null;
     if(!app) return null;
     _fbDB = firebase.firestore(app);
+    try{ _fbStorage = firebase.storage(app); }catch(e){ console.warn('Storage init failed',e); }
     return _fbDB;
   }catch(e){ return null; }
+}
+
+/* Upload a single dataUrl (or https url) to Firebase Storage, returns HTTPS URL via callback */
+function _uploadToStorage(dataUrl, path, cb){
+  if(!_fbStorage){ cb(null); return; }
+  if(_isHttpUrl(dataUrl)){ cb(dataUrl); return; /* already a URL */ }
+  try{
+    var arr=dataUrl.split(','), mime=arr[0].match(/:(.*?);/)[1];
+    var bstr=atob(arr[1]), n=bstr.length, u8=new Uint8Array(n);
+    while(n--) u8[n]=bstr.charCodeAt(n);
+    var blob=new Blob([u8],{type:mime});
+    var ext=(mime==='application/pdf')?'pdf':(mime.split('/')[1]||'bin');
+    var ref=_fbStorage.ref(path+'.'+ext);
+    ref.put(blob).then(function(snap){
+      snap.ref.getDownloadURL().then(function(url){ cb(url); }).catch(function(){ cb(null); });
+    }).catch(function(e){ console.warn('Storage upload error',path,e); cb(null); });
+  }catch(e){ console.warn('Storage prep error',e); cb(null); }
+}
+
+/* Upload dossier binary files to Firebase Storage; returns cloudFiles object via cb */
+function _uploadDossierFiles(dossier, cb){
+  _initFirebase();
+  if(!_fbStorage){ cb(null); return; }
+  var syncCode=_getSyncCode();
+  var base='navlog/'+syncCode+'/'+dossier.id;
+  var tasks=[];
+  /* Map images */
+  if(dossier.mapImages){
+    Object.keys(dossier.mapImages).forEach(function(key){
+      if(dossier.mapImages[key]) tasks.push({group:'mapImages',key:key,data:dossier.mapImages[key],path:base+'/map_'+key});
+    });
+  }
+  /* Extra images */
+  if(dossier.extraImages){
+    dossier.extraImages.forEach(function(item,i){
+      if(item&&item.data) tasks.push({group:'extraImages',key:i,data:item.data,path:base+'/extra_'+i});
+    });
+  }
+  /* Daily warnings */
+  if(dossier.dailyWarnImages){
+    dossier.dailyWarnImages.forEach(function(item,i){
+      if(item&&item.data) tasks.push({group:'dailyWarnImages',key:i,data:item.data,path:base+'/dw_'+i});
+    });
+  }
+  /* OPMET PDF */
+  if(dossier.opmetPdf) tasks.push({group:'single',key:'opmetPdf',data:dossier.opmetPdf,path:base+'/opmet'});
+  /* Notam summary */
+  if(dossier.notamSummary){
+    dossier.notamSummary.forEach(function(item,i){
+      if(item&&item.data) tasks.push({group:'notamSummary',key:i,data:item.data,path:base+'/notam_'+i});
+    });
+  }
+  if(!tasks.length){ cb(null); return; }
+  var done=0, total=tasks.length;
+  var cloudFiles={mapImages:{},extraImages:[],dailyWarnImages:[],opmetPdf:null,notamSummary:[]};
+  /* Pre-fill arrays with nulls */
+  if(dossier.extraImages) for(var ei=0;ei<dossier.extraImages.length;ei++) cloudFiles.extraImages.push(null);
+  if(dossier.dailyWarnImages) for(var di=0;di<dossier.dailyWarnImages.length;di++) cloudFiles.dailyWarnImages.push(null);
+  if(dossier.notamSummary) for(var ni=0;ni<dossier.notamSummary.length;ni++) cloudFiles.notamSummary.push(null);
+  tasks.forEach(function(t){
+    _uploadToStorage(t.data, t.path, function(url){
+      if(url){
+        if(t.group==='mapImages') cloudFiles.mapImages[t.key]=url;
+        else if(t.group==='extraImages') cloudFiles.extraImages[t.key]=url;
+        else if(t.group==='dailyWarnImages') cloudFiles.dailyWarnImages[t.key]=url;
+        else if(t.group==='single') cloudFiles[t.key]=url;
+        else if(t.group==='notamSummary') cloudFiles.notamSummary[t.key]=url;
+      }
+      done++;
+      if(done===total) cb(cloudFiles);
+    });
+  });
 }
 
 function _getSyncCode(){
@@ -4415,6 +4525,8 @@ function _stripImagesForCloud(d){
   var s=JSON.parse(JSON.stringify(d));
   delete s.mapImages; delete s.extraImages;
   delete s.screenshots; delete s.dailyWarnImages;
+  delete s.opmetPdf; delete s.notamSummary;
+  /* Keep cloudFiles — they are just URLs (tiny) and needed for cross-device */
   return s;
 }
 
@@ -4458,12 +4570,16 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
       var found=false;
       for(var i=0;i<local.length;i++){
         if(local[i].id===d.id){
-          /* Merge: keep local images, update data from cloud */
+          /* Merge: keep local images/files, update data from cloud (cloudFiles URLs come from cloud) */
           local[i]=Object.assign({},d,{
             mapImages:local[i].mapImages,
             extraImages:local[i].extraImages,
             screenshots:local[i].screenshots,
-            dailyWarnImages:local[i].dailyWarnImages
+            dailyWarnImages:local[i].dailyWarnImages,
+            opmetPdf:local[i].opmetPdf||null,
+            notamSummary:local[i].notamSummary||[],
+            /* cloudFiles from d (cloud) takes priority — has Storage URLs */
+            cloudFiles: d.cloudFiles || local[i].cloudFiles || null
           });
           found=true; break;
         }
@@ -4523,7 +4639,7 @@ function getWindyUrls(){
 function getMapImages(){
   var maps={};
   ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
-    var stored=sessionStorage.getItem('navlog_map_'+key);
+    var stored=localStorage.getItem('navlog_map_'+key);
     if(stored) maps[key]=stored;
   });
   return maps;
@@ -4557,22 +4673,32 @@ function loadDossier(id){
   window._mapFittedOnce=false;  /* force re-fit on new route */
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
-  /* Restore map captures */
-  if(d.mapImages){
-    ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
-      if(d.mapImages[key]){
-        sessionStorage.setItem('navlog_map_'+key,d.mapImages[key]);
-        var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
-        if(el) el.innerHTML='<img src="'+d.mapImages[key]+'" style="width:100%;object-fit:contain">';
-        var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
-        if(db) db.style.display='';
+  /* Restore map captures — prefer cloud URLs, fall back to local base64 */
+  var cloudFiles = d.cloudFiles || {};
+  ['temsi','temsiEuroc','wintem','fronts'].forEach(function(key){
+    var url = (cloudFiles.mapImages&&cloudFiles.mapImages[key]) || (d.mapImages&&d.mapImages[key]);
+    if(url){
+      localStorage.setItem('navlog_map_'+key, url);
+      var el=document.getElementById('map'+key.charAt(0).toUpperCase()+key.slice(1));
+      if(el){
+        if(!_isHttpUrl(url)&&url.indexOf('data:application/pdf')===0){
+          var bu=_dataUrlToObjectUrl(url);
+          el.innerHTML='<iframe src="'+bu+'#toolbar=0&navpanes=0" style="width:100%;height:560px;border:none;border-radius:8px"></iframe>';
+        } else {
+          el.innerHTML='<img src="'+url+'" style="width:100%;object-fit:contain">';
+        }
       }
+      var db=document.getElementById('del'+key.charAt(0).toUpperCase()+key.slice(1));
+      if(db) db.style.display='';
+    }
+  });
+  /* Restore extra images — merge cloud URLs with metadata */
+  if(d.extraImages&&d.extraImages.length){
+    extraImages=d.extraImages.map(function(item,i){
+      var cloudUrl=cloudFiles.extraImages&&cloudFiles.extraImages[i];
+      return {data:cloudUrl||item.data, name:item.name, type:item.type};
     });
-  }
-  /* Restore extra images */
-  if(d.extraImages){
-    extraImages=d.extraImages;
-    sessionStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+    localStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
     renderExtraImages();
   }
   /* Restore mass & balance */
@@ -4584,9 +4710,29 @@ function loadDossier(id){
   if(d.checklist){
     setChecklistState(d.checklist);
   }
-  /* Restore daily warnings images */
-  if(d.dailyWarnImages){
-    setDailyWarnImages(d.dailyWarnImages);
+  /* Restore daily warnings images — merge cloud URLs */
+  if(d.dailyWarnImages&&d.dailyWarnImages.length){
+    var dw=d.dailyWarnImages.map(function(item,i){
+      var cloudUrl=cloudFiles.dailyWarnImages&&cloudFiles.dailyWarnImages[i];
+      return {type:item.type, data:cloudUrl||item.data, name:item.name};
+    });
+    setDailyWarnImages(dw);
+  }
+  /* Restore OPMET PDF */
+  var opmetCloudUrl=cloudFiles.opmetPdf;
+  if(opmetCloudUrl||d.opmetPdf){
+    opmetPdfData=opmetCloudUrl||d.opmetPdf;
+    localStorage.setItem('navlog_opmet_pdf',opmetPdfData);
+    renderOpmet();
+  }
+  /* Restore notam summary — merge cloud URLs */
+  if(d.notamSummary&&d.notamSummary.length){
+    notamSummaryItems=d.notamSummary.map(function(item,i){
+      var cloudUrl=cloudFiles.notamSummary&&cloudFiles.notamSummary[i];
+      return {type:item.type, data:cloudUrl||item.data, name:item.name};
+    });
+    saveNotamSummaryItems();
+    renderNotamSummary();
   }
   renderNavlog();
   recalcNavlog();
@@ -4835,6 +4981,8 @@ function uploadMap(key){
 }
 window.uploadMap=uploadMap;
 
+function _isHttpUrl(s){ return typeof s==='string'&&(s.startsWith('https://')||s.startsWith('http://')); }
+
 function _dataUrlToObjectUrl(dataUrl){
   try{
     var arr=dataUrl.split(','), mime=arr[0].match(/:(.*?);/)[1];
@@ -4844,7 +4992,7 @@ function _dataUrlToObjectUrl(dataUrl){
   }catch(e){return dataUrl;}
 }
 function _applyMapData(key, dataUrl){
-  sessionStorage.setItem('navlog_map_'+key, dataUrl);
+  localStorage.setItem('navlog_map_'+key, dataUrl);
   var cap = key.charAt(0).toUpperCase()+key.slice(1);
   var el = document.getElementById('map'+cap);
   if(!el) return;
@@ -4875,7 +5023,7 @@ function handleMapDrop(key, event){
 window.handleMapDrop=handleMapDrop;
 
 function deleteMapImage(key){
-  sessionStorage.removeItem('navlog_map_'+key);
+  localStorage.removeItem('navlog_map_'+key);
   var elId='map'+key.charAt(0).toUpperCase()+key.slice(1);
   var el=document.getElementById(elId);
   if(el) el.innerHTML='<span style="color:var(--text-secondary);font-size:.82em">Importez ou collez (Ctrl+V) une capture</span>';
@@ -5261,14 +5409,19 @@ function init(){
   /* Restore saved map captures */
   var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
   for(var m=0;m<mapKeys.length;m++){
-    var stored=sessionStorage.getItem('navlog_map_'+mapKeys[m]);
+    var stored=localStorage.getItem('navlog_map_'+mapKeys[m]);
     if(stored){ _applyMapData(mapKeys[m], stored); }
   }
-  /* Restore extra images from session */
+  /* Restore extra images */
   try{
-    var storedExtra=sessionStorage.getItem('navlog_extra_images');
+    var storedExtra=localStorage.getItem('navlog_extra_images');
     if(storedExtra) extraImages=JSON.parse(storedExtra);
     renderExtraImages();
+  }catch(e){}
+  /* Restore notam summary */
+  try{
+    var storedNotam=localStorage.getItem('navlog_notam_summary');
+    if(storedNotam){ notamSummaryItems=JSON.parse(storedNotam)||[]; renderNotamSummary(); }
   }catch(e){}
   var now=new Date();
   calYear=now.getFullYear();
