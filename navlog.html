@@ -933,13 +933,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F4BE;</span> Sauvegarder le dossier</div>
       <div class="dossier-save-row">
         <input type="text" id="dossierName" placeholder="Nom du dossier">
-        <button class="dossier-save-btn" onclick="window.saveDossier()">&#x1F4BE; Sauvegarder</button>
+        <button class="dossier-save-btn" onclick="window.saveDossier()">&#x1F4BE; Sauvegarder &amp; T&eacute;l&eacute;charger</button>
       </div>
+      <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">&#x2139;&#xFE0F; Un fichier <strong>.json</strong> est automatiquement t&eacute;l&eacute;charg&eacute; &agrave; chaque sauvegarde &mdash; il contient tout votre dossier avec toutes les images et peut &ecirc;tre ouvert sur n'importe quel appareil.</p>
     </div>
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F4C2;</span> Dossiers sauvegard&#xe9;s</div>
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="window.importDossier()" style="padding:6px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg);color:var(--link-color);cursor:pointer;font-weight:600">&#x1F4E5; Importer un dossier (.json)</button>
+        <button onclick="window.importDossier()" class="navlog-btn primary">&#x1F4E5; Ouvrir un dossier .json &mdash; depuis un autre appareil</button>
         <input type="file" id="dossierImportFile" accept=".json" style="display:none" onchange="window.handleDossierImport(this)">
       </div>
       <div id="dossierList"></div>
@@ -3721,34 +3722,66 @@ function setDossiers(d){
 function saveDossier(){
   var name=document.getElementById('dossierName').value.trim();
   if(!name){alert('Entrez un nom pour le dossier');return;}
-  /* Capture dynamic screenshots before building dossier */
+
+  /* Sauvegarder immediatement, sans attendre html2canvas */
+  var dossiers=getDossiers();
+  var cfg=getConfig();
+  var dossierId=Date.now();
+  var dossier={
+    id:dossierId,
+    name:name,
+    date:new Date().toISOString(),
+    config:cfg,
+    waypoints:JSON.parse(JSON.stringify(waypoints)),
+    wxCache:JSON.parse(JSON.stringify(wxCache)),
+    reserveMode:reserveMode,
+    flightType:flightType,
+    windyUrls:getWindyUrls(),
+    mapImages:getMapImages(),
+    extraImages:getExtraImages(),
+    massBalance:typeof getMBData==='function'?getMBData():null,
+    checklist:getChecklistState(),
+    dailyWarnImages:getDailyWarnImages(),
+    screenshots:{}
+  };
+  dossiers.push(dossier);
+  setDossiers(dossiers);
+  renderDossierList();
+
+  /* Telecharger automatiquement le fichier JSON (portable, tous appareils) */
+  _downloadDossierJson(dossier);
+
+  /* Capturer screenshots en arriere-plan et mettre a jour si ca reussit */
   captureScreenshots(function(screenshots){
-    var dossiers=getDossiers();
-    var cfg=getConfig();
-    var dossier={
-      id:Date.now(),
-      name:name,
-      date:new Date().toISOString(),
-      config:cfg,
-      waypoints:JSON.parse(JSON.stringify(waypoints)),
-      wxCache:JSON.parse(JSON.stringify(wxCache)),
-      reserveMode:reserveMode,
-      flightType:flightType,
-      windyUrls:getWindyUrls(),
-      mapImages:getMapImages(),
-      extraImages:getExtraImages(),
-      massBalance:typeof getMBData==='function'?getMBData():null,
-      checklist:getChecklistState(),
-      dailyWarnImages:getDailyWarnImages(),
-      screenshots:screenshots
-    };
-    dossiers.push(dossier);
-    setDossiers(dossiers);
-    renderDossierList();
-    alert('Dossier sauvegard\u00e9 !');
+    if(!screenshots||Object.keys(screenshots).length===0) return;
+    var updated=getDossiers();
+    for(var i=0;i<updated.length;i++){
+      if(updated[i].id===dossierId){
+        updated[i].screenshots=screenshots;
+        setDossiers(updated);
+        break;
+      }
+    }
   });
 }
 window.saveDossier=saveDossier;
+
+function _downloadDossierJson(d){
+  try{
+    var json=JSON.stringify(d);
+    var blob=new Blob([json],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    var safeName=(d.name||'dossier').replace(/[^a-zA-Z0-9 _-]/g,'_').replace(/ +/g,'_');
+    a.download='dossier_'+safeName+'_'+(new Date().toISOString().slice(0,10))+'.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){console.warn('Download failed',e);}
+}
+window._downloadDossierJson=_downloadDossierJson;
 
 /* ===== SCREENSHOT CAPTURE ===== */
 function captureScreenshots(cb){
