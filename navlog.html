@@ -4626,7 +4626,7 @@ function updateRouteMap(){
     var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
-  /* Leg info labels: TH / ETE / distance — at midpoint, offset to the left of route */
+  /* Leg info labels: TH / ETE / distance — rotated along bearing, compact single line */
   for(var m=0;m<pts.length-1;m++){
     var la=pts[m],lb=pts[m+1];
     var wp2=waypoints[lb.idx];
@@ -4634,18 +4634,24 @@ function updateRouteMap(){
     var hdg=Math.round(wp2._leg.hdgTrue!==undefined?wp2._leg.hdgTrue:(wp2.route||0));
     var eteMin=Math.round((wp2._leg.ete||0)*60);
     var legDist=Math.round((wp2.dist||0)*10)/10;
-    /* Position at midpoint, offset perpendicular (left side of direction of travel) */
+    /* Midpoint */
     var midLat2=(la.lat+lb.lat)*0.5;
     var midLon2=(la.lon+lb.lon)*0.5;
+    /* Bearing of leg */
     var brgM=trueBearing(la.lat,la.lon,lb.lat,lb.lon);
-    var perpRadM=(brgM-90)*Math.PI/180;
-    midLat2+=Math.cos(perpRadM)*0.005;
-    midLon2+=Math.sin(perpRadM)*0.005;
-    var labelHtml='<div style="background:rgba(8,8,26,.85);color:#e8e8ff;font-size:10px;font-weight:700;border-radius:7px;padding:3px 8px;white-space:nowrap;line-height:1.7;text-align:center;border:1px solid rgba(102,126,234,.65);box-shadow:0 2px 6px rgba(0,0,0,.6)">'
-      +'<div>\uD83E\uDDED\uFE0F&nbsp;'+hdg+'&deg;&nbsp;T</div>'
-      +'<div>\u23F1\uFE0F&nbsp;'+eteMin+'&nbsp;min&emsp;\uD83D\uDCCF&nbsp;'+legDist+'&nbsp;NM</div>'
+    /* CSS rotation: convert map bearing to CSS angle, keep text readable (never upside-down) */
+    var cssRot=brgM-90;
+    if(cssRot>90) cssRot-=180;
+    if(cssRot<-90) cssRot+=180;
+    /* Perpendicular offset (left side of direction) so label doesn't sit on the line */
+    var perpRad=(brgM-90)*Math.PI/180;
+    var offsetDeg=0.004;
+    midLat2+=Math.cos(perpRad)*offsetDeg;
+    midLon2+=Math.sin(perpRad)*offsetDeg;
+    var labelHtml='<div style="display:inline-block;background:rgba(6,6,22,.88);color:#dde0ff;font-size:9.5px;font-weight:700;border-radius:20px;padding:2px 7px;white-space:nowrap;border:1px solid rgba(102,126,234,.55);box-shadow:0 1px 5px rgba(0,0,0,.55);transform:rotate('+cssRot+'deg);transform-origin:center center;line-height:1.5">'
+      +hdg+'&deg;T &nbsp;\u23F1'+eteMin+'mn &nbsp;\uD83D\uDCCF'+legDist+'NM'
       +'</div>';
-    var legLabelIcon=L.divIcon({className:'',html:labelHtml,iconSize:[90,48],iconAnchor:[45,24]});
+    var legLabelIcon=L.divIcon({className:'',html:labelHtml,iconSize:[120,18],iconAnchor:[60,9]});
     var legLabelMarker=L.marker([midLat2,midLon2],{icon:legLabelIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(legLabelMarker);
   }
@@ -4973,17 +4979,19 @@ function drawMBChart(ac,toMass,toMom,ldMass,ldMom){
 }
 
 function getMBData(){
-  var sel=document.getElementById('mbAircraft').value;
-  var ac=MB_DATA[sel]||{};
+  function mbv(id){ var el=document.getElementById(id); return el?parseFloat(el.value)||0:0; }
+  function mbvs(id){ var el=document.getElementById(id); return el?el.value:''; }
+  var selEl=document.getElementById('mbAircraft');
+  var sel=selEl?selEl.value:'';
   return {
     aircraft:sel,
-    flightDate:document.getElementById('mbFlightDate').value,
-    fuel:parseFloat(document.getElementById('mbFuel').value)||0,
-    pilot1:parseFloat(document.getElementById('mbPilot1').value)||0,
-    pax:document.getElementById('mbPax')?parseFloat(document.getElementById('mbPax').value)||0:0,
-    bag1:parseFloat(document.getElementById('mbBag1').value)||0,
-    bag2:parseFloat(document.getElementById('mbBag2').value)||0,
-    delestage:parseFloat(document.getElementById('mbDelestage').value)||0
+    flightDate:mbvs('mbFlightDate'),
+    fuel:mbv('mbFuel'),
+    pilot1:mbv('mbPilot1'),
+    pax:mbv('mbPax'),
+    bag1:mbv('mbBag1'),
+    bag2:mbv('mbBag2'),
+    delestage:mbv('mbDelestage')
   };
 }
 function setMBData(d){
