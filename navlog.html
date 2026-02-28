@@ -4322,6 +4322,7 @@ function saveDossier(){
     var cfg=getConfig();
     var dossier={
       id:dossierId,
+      syncCode:_getSyncCode(),
       name:name,
       date:new Date().toISOString(),
       config:cfg,
@@ -4675,11 +4676,35 @@ function getMapImages(){
   return maps;
 }
 
-function loadDossier(id){
+function loadDossier(id, _freshCloudFiles){
   var dossiers=getDossiers();
   var d=null;
   for(var i=0;i<dossiers.length;i++){if(dossiers[i].id===id){d=dossiers[i];break;}}
   if(!d) return;
+
+  /* Inject fresh cloudFiles if provided by async Firestore fetch */
+  if(_freshCloudFiles) d.cloudFiles=_freshCloudFiles;
+
+  /* If cloudFiles look incomplete and we know the origin syncCode, fetch fresh from Firestore */
+  if(!_freshCloudFiles && d.syncCode){
+    var _cf=d.cloudFiles||{};
+    var _incomplete=(!_cf.notamSummary||!_cf.notamSummary.some(Boolean))||
+                    (!_cf.dailyWarnImages||!_cf.dailyWarnImages.some(Boolean));
+    if(_incomplete){
+      var _db=_initFirebase();
+      if(_db){
+        _toast('\u2601\uFE0F Synchro fichiers cloud\u2026','',2500);
+        _db.collection(_FB_COLLECTION).doc(d.syncCode+'__'+id).get()
+          .then(function(doc){
+            var freshCF=null;
+            if(doc.exists){ try{ freshCF=JSON.parse(doc.data().data).cloudFiles; }catch(e){} }
+            loadDossier(id, freshCF||{});
+          }).catch(function(){ loadDossier(id, {}); });
+        return; /* will re-enter with _freshCloudFiles set */
+      }
+    }
+  }
+
   document.getElementById('cfgTAS').value=d.config.tas;
   document.getElementById('cfgFuel').value=d.config.fuel;
   document.getElementById('cfgWindDir').value=d.config.windDir;
@@ -4893,11 +4918,15 @@ function _dossierCardHTML(d){
   var mapCount=Object.keys(d.mapImages||{}).length||Object.keys(cf.mapImages||{}).length;
   var extraCount=(d.extraImages||[]).length||((cf.extraImages||[]).filter(Boolean).length);
   var dwCount=(d.dailyWarnImages||[]).length||((cf.dailyWarnImages||[]).filter(Boolean).length);
+  var notamCount=(d.notamSummary||[]).length||((cf.notamSummary||[]).filter(Boolean).length);
+  var hasOpmet=!!(d.opmetPdf||cf.opmetPdf);
   var ssCount=Object.keys(d.screenshots||{}).length;
   var ckDone=0,ckTotal=0;
   if(d.checklist){ for(var k in d.checklist){ckTotal++;if(d.checklist[k])ckDone++;} }
   if(mapCount) stats.push('\uD83D\uDDFA\uFE0F '+mapCount+' carte'+(mapCount>1?'s':''));
   if(extraCount+dwCount) stats.push('\uD83D\uDCF7 '+(extraCount+dwCount)+' img');
+  if(hasOpmet) stats.push('\uD83D\uDCCB OPMET');
+  if(notamCount) stats.push('\uD83D\uDCCB '+notamCount+' NOTAM'+(notamCount>1?'s':''));
   if(ssCount) stats.push('\uD83D\uDCF8 '+ssCount);
   if(ckTotal) stats.push('\u2705 '+ckDone+'/'+ckTotal);
   var statsHTML=stats.map(function(s){return '<span class="d-stat">'+s+'</span>';}).join('');
