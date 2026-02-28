@@ -328,6 +328,8 @@ async function saveDailyMastered(uid) {
   } catch (e) { console.warn('[saveDailyMastered] error:', e); }
 }
 window.saveDailyMastered = saveDailyMastered;
+
+/**
  * Utilise arrayUnion pour un ajout atomique sans read-modify-write.
  * Cela garantit que les sessions ajoutées sur différents appareils ne s'écrasent pas.
  */

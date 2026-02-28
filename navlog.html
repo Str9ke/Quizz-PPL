@@ -4639,6 +4639,10 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
       }
       if(!found) local.push(d);
     });
+    // Supprimer les dossiers locaux qui ont été effacés sur un autre appareil :
+    // un dossier avec syncCode mais absent du cloud a été supprimé ailleurs.
+    var cloudIds = new Set(cloudDossiers.map(function(d){ return d.id; }));
+    local = local.filter(function(d){ return cloudIds.has(d.id) || !d.syncCode; });
     setDossiers(local);
     renderDossierList();
     if(cb) cb(cloudDossiers.length);
