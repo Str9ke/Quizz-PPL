@@ -2287,9 +2287,10 @@ function cleanTaf(raw, icao){
 
 /* ===== WEATHER FETCH (with multi-proxy fallback) ===== */
 var CORS_PROXIES=[
-  function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u);},
   function(u){return 'https://corsproxy.io/?'+encodeURIComponent(u);},
-  function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);}
+  function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
+  function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u);},
+  function(u){return 'https://proxy.cors.sh/'+u;}
 ];
 
 /* Fetch via proxies sequentially until one works */
@@ -2329,38 +2330,43 @@ function fetchWeather(icao,cb){
   }
 
   (function doMetar(){
-    tryMetarDirect(metarUrl,icao).then(function(ok){
-      if(ok) return check();
-      return tryMetarProxied(metarUrl,icao).then(function(ok2){
-        if(ok2) return check();
-        /* VATSIM */
-        var vUrl='https://metar.vatsim.net/metar.php?id='+icao;
-        return fetchViaProxy(vUrl).then(function(t){
-          t=t.trim();if(t&&t.indexOf(icao)>=0&&t.length>10){result.metar=t;result.metarSource=icao;check();return;}
-          throw new Error('no vatsim');
-        }).catch(function(){
-          /* NWS */
-          var nUrl='https://tgftp.nws.noaa.gov/data/observations/metar/stations/'+icao+'.TXT';
-          return fetchViaProxy(nUrl).then(function(t2){
-            t2=t2.trim();if(t2&&t2.indexOf(icao)>=0&&t2.length>10){result.metar=t2;result.metarSource=icao;check();return;}
-            throw new Error('no nws');
-          }).catch(function(){
-            /* Fallback airports */
-            var fbs=METAR_FALLBACK[icao];
-            if(!fbs||!fbs.length){check();return;}
-            var chain=Promise.resolve(false);
-            fbs.forEach(function(fb){
-              chain=chain.then(function(found){
-                if(found) return true;
-                var fUrl='https://aviationweather.gov/api/data/metar?ids='+fb+'&format=raw&hours=2';
-                return tryMetarDirect(fUrl,fb).then(function(ok3){return ok3||tryMetarProxied(fUrl,fb);});
-              });
-            });
-            chain.then(function(){check();});
+    /* Sources tried in order — VATSIM direct is 2nd because it allows CORS from browser */
+    var vUrl='https://metar.vatsim.net/metar.php?id='+icao;
+    var nUrl='https://tgftp.nws.noaa.gov/data/observations/metar/stations/'+icao+'.TXT';
+    function tryDirect(url){
+      return fetch(url).then(function(r){if(!r.ok)throw new Error();return r.text();})
+        .then(function(t){t=t.trim();if(t&&t.indexOf(icao)>=0&&t.length>10){result.metar=t;result.metarSource=icao;return true;}return false;})
+        .catch(function(){return false;});
+    }
+    function tryProxied(url){
+      return fetchViaProxy(url).then(function(t){t=t.trim();if(t&&t.indexOf(icao)>=0&&t.length>10){result.metar=t;result.metarSource=icao;return true;}return false;}).catch(function(){return false;});
+    }
+    var sources=[
+      function(){return tryMetarDirect(metarUrl,icao);},           /* 1. AWG direct (CORS blocked but try) */
+      function(){return tryDirect(vUrl);},                          /* 2. VATSIM direct (CORS allowed ✓) */
+      function(){return tryMetarProxied(metarUrl,icao);},           /* 3. AWG via proxy */
+      function(){return tryProxied(vUrl);},                         /* 4. VATSIM via proxy */
+      function(){return tryDirect(nUrl);},                          /* 5. NOAA NWS direct */
+      function(){return tryProxied(nUrl);}                          /* 6. NOAA NWS via proxy */
+    ];
+    function trySource(idx){
+      if(idx>=sources.length){
+        var fbs=METAR_FALLBACK[icao];
+        if(!fbs||!fbs.length){check();return;}
+        var chain=Promise.resolve(false);
+        fbs.forEach(function(fb){
+          chain=chain.then(function(found){
+            if(found) return true;
+            var fUrl='https://aviationweather.gov/api/data/metar?ids='+fb+'&format=raw&hours=2';
+            return tryMetarDirect(fUrl,fb).then(function(ok3){return ok3||tryMetarProxied(fUrl,fb);});
           });
         });
-      });
-    });
+        chain.then(function(){check();});
+        return;
+      }
+      sources[idx]().then(function(ok){if(ok) return check(); trySource(idx+1);});
+    }
+    trySource(0);
   })();
 
   /* --- TAF: direct → proxied → OGIMET → fallback airports --- */
