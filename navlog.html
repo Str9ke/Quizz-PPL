@@ -1202,9 +1202,15 @@ function switchTab(id){
     }
   }
   if(id==='masse') window.mbInit();
-  if(id==='perf') window.perfCalc();
+  if(id==='perf'){
+    window.perfCalc();
+    /* Auto-remplir vent/temp si un METAR est déjà disponible */
+    setTimeout(function(){ if(typeof perfFromMetar==='function') perfFromMetar(); }, 150);
+  }
+  _activeTab = id;
 }
 window.switchTab=switchTab;
+var _activeTab='nav';  /* onglet courant */
 
 function renderFuelLog(){
   /* Recalculate everything just in case */
@@ -2425,6 +2431,12 @@ function renderWeatherBlock(icao){
   return html;
 }
 
+function _autoPerfIfActive(){
+  if(typeof _activeTab!=='undefined' && _activeTab==='perf' && typeof perfFromMetar==='function'){
+    setTimeout(perfFromMetar, 80);
+  }
+}
+
 function loadWeather(icao){
   var btn=document.querySelector('.wx-airport-btn[data-icao="'+icao+'"]');
   if(btn) btn.classList.add('loaded');
@@ -2432,6 +2444,7 @@ function loadWeather(icao){
     wxCache[icao]=result;
     renderWxPanels();
     autoApplyWind();
+    _autoPerfIfActive();
     /* Auto-retry with extended hours if METAR not found */
     if(!result.metar){
       setTimeout(function(){
@@ -2445,6 +2458,7 @@ function loadWeather(icao){
           }
           renderWxPanels();
           autoApplyWind();
+          _autoPerfIfActive();
         });
       },2000);
     }
@@ -3807,6 +3821,7 @@ function loadDossier(id){
     ftBtns[0].classList.toggle('active',flightType==='local');
     ftBtns[1].classList.toggle('active',flightType==='nav');
   }
+  window._mapFittedOnce=false;  /* force re-fit on new route */
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
   /* Restore map captures */
@@ -4351,19 +4366,28 @@ function updateRouteMap(){
     var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(arrowMarker);
   }
-  /* Fit bounds — seulement si un point est hors vue (évite le reset de zoom) ; jamais animé (évite le saut de page) */
-  var bounds=L.latLngBounds(coords);
-  try{
-    if(coords.length===1){
-      /* Premier point: centrer sans changer le zoom si déjà raisonnable */
-      if(!routeMap.getBounds().contains(L.latLng(coords[0]))){
-        routeMap.setView(coords[0],routeMap.getZoom()<8?11:routeMap.getZoom(),{animate:false});
+  /* Auto-fit : seulement lors de l'ajout initial (0→N), jamais animé.
+     - Première mise en route (flag) → fitBounds pour tout voir
+     - Waypoint supplémentaire → panTo uniquement sur le dernier point si hors vue
+     - Évite tout scroll de page parasite */
+  if(!window._mapFittedOnce){
+    /* Première fois qu'on a des points : ajuster sur toute la route */
+    try{
+      if(coords.length===1){
+        routeMap.setView(coords[0],11,{animate:false});
+      } else {
+        routeMap.fitBounds(L.latLngBounds(coords),{padding:[40,40],maxZoom:13,animate:false});
       }
-    } else if(!routeMap.getBounds().contains(bounds)){
-      routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13,animate:false});
-    }
-  }catch(e){
-    routeMap.fitBounds(bounds,{padding:[40,40],maxZoom:13,animate:false});
+    }catch(e){}
+    window._mapFittedOnce=true;
+  } else {
+    /* Route déjà affichée : seulement pan vers le dernier point s'il est hors vue */
+    var lastCoord=coords[coords.length-1];
+    try{
+      if(!routeMap.getBounds().contains(L.latLng(lastCoord))){
+        routeMap.panTo(lastCoord,{animate:false});
+      }
+    }catch(e){}
   }
 }
 
