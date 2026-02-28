@@ -189,6 +189,10 @@
     <!-- Progression card -->
     <div class="home-card home-card-progress">
       <div id="progressionContainer" style="margin: 0;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">
+        <span id="connectedEmailDisplay" style="font-size:.75em;color:var(--text-secondary,#aaa)"></span>
+        <button id="syncBtn" onclick="window.forceSyncFromServer()" style="padding:6px 14px;border-radius:10px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-size:.78em;font-weight:700">&#x1F504; Synchroniser</button>
+      </div>
     </div>
 
     <!-- Quiz configuration card -->
@@ -498,6 +502,53 @@
         console.error("Erreur lors de la déconnexion :", error);
       }
     });
+
+    /* Show connected email */
+    auth.onAuthStateChanged(function(user){
+      var el = document.getElementById('connectedEmailDisplay');
+      if(el) el.textContent = user ? ('\uD83D\uDC64 ' + (user.email || user.uid.slice(0,8))) : '';
+    });
+
+    /* Force full sync from Firestore server */
+    window.forceSyncFromServer = async function(){
+      var uid = (auth && auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      if(!uid){ alert('Non connect\u00e9 \u2014 veuillez vous connecter d\'abord.'); return; }
+      var btn = document.getElementById('syncBtn');
+      if(btn){ btn.textContent='\u23F3 Synchro\u2026'; btn.disabled=true; }
+      try{
+        var docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'server' });
+        var data = docSnap.exists ? docSnap.data() : {};
+        currentResponses = normalizeResponses(data.responses || {});
+        /* dailyHistory */
+        var dh = data.dailyHistory || {};
+        var dhB = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        for(var k in dh){ if(dh[k] > (dhB[k]||0)) dhB[k]=dh[k]; }
+        localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhB));
+        /* dailyMastered */
+        var dm = data.dailyMastered || {};
+        var dmB = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
+        for(var k in dm){ if(dm[k] > (dmB[k]||0)) dmB[k]=dm[k]; }
+        localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmB));
+        /* ratchet today */
+        var now = new Date();
+        var todayKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+        var todayUtcKey = now.toISOString().slice(0,10);
+        var serverToday = dh[todayKey]||0;
+        var localRatchet = parseInt(localStorage.getItem('dailyCountRatchet_'+todayUtcKey))||0;
+        if(serverToday > localRatchet){
+          localStorage.setItem('dailyCountRatchet_'+todayUtcKey, serverToday);
+          localStorage.setItem('dailyAnswered_'+todayUtcKey, serverToday);
+        }
+        displayHomeProgressBar(currentResponses, dh);
+        updateDailyStatsBar();
+        if(typeof updateModeCounts === 'function') updateModeCounts();
+        if(btn){ btn.textContent='\u2705 Synchronis\u00e9 !'; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+        setTimeout(function(){ if(btn){ btn.textContent='\uD83D\uDD04 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 2800);
+      }catch(e){
+        console.error('[forceSyncFromServer] error', e);
+        if(btn){ btn.textContent='\u274C Erreur'; btn.disabled=false; setTimeout(function(){ btn.textContent='\uD83D\uDD04 Synchroniser'; },2500); }
+      }
+    };
   </script>
 </body>
 </html>

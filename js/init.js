@@ -158,6 +158,16 @@ async function initIndex() {
         if (v > (dhBackup[k] || 0)) { dhBackup[k] = v; changed = true; }
       }
       if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
+      // Sync dailyMastered depuis Firestore → localStorage (pour jours restants cross-device)
+      const serverDM = docData.dailyMastered || {};
+      if (Object.keys(serverDM).length) {
+        const dmBackup = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
+        let dmChanged = false;
+        for (const [k, v] of Object.entries(serverDM)) {
+          if (v > (dmBackup[k] || 0)) { dmBackup[k] = v; dmChanged = true; }
+        }
+        if (dmChanged) localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmBackup));
+      }
       // Mettre à jour le ratchet d'aujourd'hui avec la valeur serveur
       const _now = new Date();
       const todayKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');

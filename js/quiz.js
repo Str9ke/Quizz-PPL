@@ -851,6 +851,9 @@ async function validerReponses() {
           const dmBackup = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
           dmBackup[localDateKey] = (dmBackup[localDateKey] || 0) + _newlyMastered;
           localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmBackup));
+          // Sync cross-device : écrire vers Firestore
+          const _mUid = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+          if (_mUid && typeof saveDailyMastered === 'function') saveDailyMastered(_mUid).catch(() => {});
         }
         // Mise à jour visuelle DIRECTE de la barre (streak, objectif, progression)
         updateDailyStatsBar(display);

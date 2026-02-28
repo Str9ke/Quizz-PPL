@@ -303,7 +303,31 @@ async function saveDailyCount(uid) {
 }
 
 /**
- * saveSessionResult() – Sauvegarde le résultat d'une session de quiz dans Firestore
+ * saveDailyMastered — Sauvegarde le compteur de questions nouvellement maîtrisées
+ * dans Firestore (champ dailyMastered) pour sync cross-device.
+ * Utilise max(local, serveur) pour ne jamais écraser une valeur plus haute.
+ */
+async function saveDailyMastered(uid) {
+  if (!navigator.onLine) return;
+  try {
+    const dmBackup = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
+    if (!Object.keys(dmBackup).length) return;
+    const docRef = db.collection('quizProgress').doc(uid);
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      const serverDM = doc.exists ? (doc.data().dailyMastered || {}) : {};
+      const update = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(dmBackup)) {
+        const best = Math.max(v, serverDM[k] || 0);
+        if (best > (serverDM[k] || 0)) { update['dailyMastered.' + k] = best; changed = true; }
+      }
+      if (!changed) return;
+      transaction.set(docRef, update, { merge: true });
+    });
+  } catch (e) { console.warn('[saveDailyMastered] error:', e); }
+}
+window.saveDailyMastered = saveDailyMastered;
  * Utilise arrayUnion pour un ajout atomique sans read-modify-write.
  * Cela garantit que les sessions ajoutées sur différents appareils ne s'écrasent pas.
  */
