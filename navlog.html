@@ -4722,11 +4722,18 @@ function loadDossier(id){
       if(db) db.style.display='';
     }
   });
-  /* Restore extra images — merge cloud URLs with metadata */
+  /* Restore extra images — merge cloud URLs with metadata; fallback cloud-only */
   if(d.extraImages&&d.extraImages.length){
     extraImages=d.extraImages.map(function(item,i){
       var cloudUrl=cloudFiles.extraImages&&cloudFiles.extraImages[i];
       return {data:cloudUrl||item.data, name:item.name, type:item.type};
+    });
+    localStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
+    renderExtraImages();
+  } else if(cloudFiles.extraImages&&cloudFiles.extraImages.some(Boolean)){
+    extraImages=cloudFiles.extraImages.filter(Boolean).map(function(url,i){
+      var isPdf=url.indexOf('.pdf')>-1; var isImg=url.match(/\.(jpe?g|png|gif|webp|bmp)/i);
+      return {data:url, name:'Document '+(i+1), type:isPdf?'pdf':(isImg?'image':'file')};
     });
     localStorage.setItem('navlog_extra_images',JSON.stringify(extraImages));
     renderExtraImages();
@@ -4762,11 +4769,18 @@ function loadDossier(id){
     localStorage.setItem('navlog_opmet_pdf',opmetPdfData);
     renderOpmet();
   }
-  /* Restore notam summary — merge cloud URLs */
+  /* Restore notam summary — merge cloud URLs; fallback cloud-only if local stripped */
   if(d.notamSummary&&d.notamSummary.length){
     notamSummaryItems=d.notamSummary.map(function(item,i){
       var cloudUrl=cloudFiles.notamSummary&&cloudFiles.notamSummary[i];
       return {type:item.type, data:cloudUrl||item.data, name:item.name};
+    });
+    saveNotamSummaryItems();
+    renderNotamSummary();
+  } else if(cloudFiles.notamSummary&&cloudFiles.notamSummary.some(Boolean)){
+    notamSummaryItems=cloudFiles.notamSummary.filter(Boolean).map(function(url,i){
+      var isPdf=url.indexOf('.pdf')>-1; var isImg=url.match(/\.(jpe?g|png|gif|webp|bmp)/i);
+      return {type:isPdf?'pdf':(isImg?'image':'file'), data:url, name:'NOTAM '+(i+1)};
     });
     saveNotamSummaryItems();
     renderNotamSummary();
