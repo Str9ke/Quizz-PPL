@@ -952,7 +952,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F4BE;</span> Sauvegarder le dossier</div>
       <div class="dossier-save-row">
         <input type="text" id="dossierName" placeholder="Nom du dossier">
-        <button class="dossier-save-btn" onclick="window.saveDossier()">&#x1F4BE; Sauvegarder &amp; T&eacute;l&eacute;charger</button>
+        <button class="dossier-save-btn" id="dossierSaveBtn" onclick="window.saveDossier()">&#x1F4BE; Sauvegarder</button>
       </div>
       <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">&#x2139;&#xFE0F; Un fichier <strong>.json</strong> est automatiquement t&eacute;l&eacute;charg&eacute; &agrave; chaque sauvegarde &mdash; il contient tout votre dossier avec toutes les images et peut &ecirc;tre ouvert sur n'importe quel appareil.</p>
     </div>
@@ -971,8 +971,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳ En cours…';window.syncDossiersFromCloud(code,function(n){btn.disabled=false;btn.textContent='⬇\uFE0F Importer';if(n>0)alert(n+' dossier(s) import\u00e9(s) depuis le cloud.');else alert('Aucun dossier trouv\u00e9 pour ce code.');});" class="navlog-btn primary" style="white-space:nowrap">&#x2B07;&#xFE0F; Importer</button>
       </div>
     </div>
-    <div class="nl-card">
-      <div class="nl-card-title"><span class="icon">&#x1F4C2;</span> Dossiers sauvegard&#xe9;s</div>
+    <div class="nl-card" id="dossiersSavedSection">
+      <div class="nl-card-title"><span class="icon">&#x1F4C2;</span> Dossiers sauvegard&#xe9;s <span id="dossierCount" style="font-size:.72em;font-weight:400;color:var(--text-secondary)"></span></div>
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="window.importDossier()" class="navlog-btn primary">&#x1F4E5; Ouvrir un dossier .json &mdash; depuis un autre appareil</button>
         <input type="file" id="dossierImportFile" accept=".json" style="display:none" onchange="window.handleDossierImport(this)">
@@ -3770,53 +3770,73 @@ function _toast(msg, type, duration){
 window._toast=_toast;
 
 function saveDossier(){
-  var name=document.getElementById('dossierName').value.trim();
+  var nameInput=document.getElementById('dossierName');
+  var name=nameInput.value.trim();
   if(!name){
     _toast('⚠️ Entrez un nom pour le dossier','error',2800);
-    document.getElementById('dossierName').focus();
+    nameInput.focus();
     return;
   }
 
-  /* Sauvegarder immediatement, sans attendre html2canvas */
-  var dossiers=getDossiers();
-  var cfg=getConfig();
-  var dossierId=Date.now();
-  var dossier={
-    id:dossierId,
-    name:name,
-    date:new Date().toISOString(),
-    config:cfg,
-    waypoints:JSON.parse(JSON.stringify(waypoints)),
-    wxCache:JSON.parse(JSON.stringify(wxCache)),
-    reserveMode:reserveMode,
-    flightType:flightType,
-    windyUrls:getWindyUrls(),
-    mapImages:getMapImages(),
-    extraImages:getExtraImages(),
-    massBalance:typeof getMBData==='function'?getMBData():null,
-    checklist:getChecklistState(),
-    dailyWarnImages:getDailyWarnImages(),
-    screenshots:{}
-  };
-  dossiers.push(dossier);
-  setDossiers(dossiers);
-  _fbSaveDossier(dossier);
-  renderDossierList();
+  /* Visual feedback on button immediately */
+  var btn=document.getElementById('dossierSaveBtn');
+  if(btn){ btn.textContent='⏳ Sauvegarde…'; btn.disabled=true; btn.style.opacity='.7'; }
 
-  /* Visual feedback: clear input, toast, scroll to new card */
-  document.getElementById('dossierName').value='';
-  _toast('✅ Dossier «\u00a0'+name+'\u00a0» sauvegardé !\u2002☁️ Sync cloud en cours…','success',4000);
-  requestAnimationFrame(function(){
-    var firstCard=document.querySelector('#dossierList .dossier-card');
-    if(firstCard){
-      firstCard.classList.add('new-flash');
-      firstCard.scrollIntoView({behavior:'smooth',block:'center'});
-      setTimeout(function(){firstCard.classList.remove('new-flash');},1200);
+  try{
+    /* Sauvegarder immediatement, sans attendre html2canvas */
+    var dossiers=getDossiers();
+    var cfg=getConfig();
+    var dossierId=Date.now();
+    var dossier={
+      id:dossierId,
+      name:name,
+      date:new Date().toISOString(),
+      config:cfg,
+      waypoints:JSON.parse(JSON.stringify(waypoints)),
+      wxCache:JSON.parse(JSON.stringify(wxCache)),
+      reserveMode:reserveMode,
+      flightType:flightType,
+      windyUrls:getWindyUrls(),
+      mapImages:getMapImages(),
+      extraImages:getExtraImages(),
+      massBalance:typeof getMBData==='function'?getMBData():null,
+      checklist:getChecklistState(),
+      dailyWarnImages:getDailyWarnImages(),
+      screenshots:{}
+    };
+    dossiers.push(dossier);
+    setDossiers(dossiers);
+    _fbSaveDossier(dossier);
+    renderDossierList();
+
+    /* Visual feedback: clear input, restore button green, toast */
+    nameInput.value='';
+    if(btn){
+      btn.textContent='✅ Sauvegardé !';
+      btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)';
+      btn.disabled=false; btn.style.opacity='1';
+      setTimeout(function(){ btn.textContent='💾 Sauvegarder'; btn.style.background=''; }, 2500);
     }
-  });
+    _toast('✅ Dossier «\u00a0'+name+'\u00a0» sauvegardé ! Voir ci-dessous ↓','success',4000);
 
-  /* Telecharger automatiquement le fichier JSON (portable, tous appareils) */
-  _downloadDossierJson(dossier);
+    /* Scroll to the dossiers list section */
+    requestAnimationFrame(function(){
+      var section=document.getElementById('dossiersSavedSection');
+      if(section) section.scrollIntoView({behavior:'smooth',block:'start'});
+      var firstCard=document.querySelector('#dossierList .dossier-card');
+      if(firstCard) firstCard.classList.add('new-flash');
+      setTimeout(function(){ if(firstCard) firstCard.classList.remove('new-flash'); },1200);
+    });
+
+    /* Telecharger JSON apres un delai (laisser le scroll se faire d'abord) */
+    setTimeout(function(){ _downloadDossierJson(dossier); }, 700);
+
+  }catch(err){
+    console.error('saveDossier error',err);
+    _toast('❌ Erreur : '+err.message,'error',6000);
+    if(btn){ btn.textContent='💾 Sauvegarder'; btn.disabled=false; btn.style.opacity='1'; btn.style.background=''; }
+    return;
+  }
 
   /* Capturer screenshots en arriere-plan et mettre a jour si ca reussit */
   captureScreenshots(function(screenshots){
@@ -4199,6 +4219,9 @@ function renderDossierList(){
   var el=document.getElementById('dossierList');
   if(!el) return;
   var dossiers=getDossiers();
+  /* Update count badge */
+  var badge=document.getElementById('dossierCount');
+  if(badge) badge.textContent=dossiers.length>0?'('+dossiers.length+')':'';
   if(dossiers.length===0){
     el.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:12px 0">Aucun dossier sauvegard\u00e9 &mdash; utilisez le bouton ci-dessus pour sauvegarder.</p>';
     return;
