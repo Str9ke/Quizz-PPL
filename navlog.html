@@ -4238,7 +4238,7 @@ function initRouteMap(){
       document.documentElement.scrollTop = _sy;
       document.body.scrollTop = _sy;
     }
-    var name = 'WP' + (waypoints.length + 1);
+    var coord = e.latlng;
     var newWp = {name: name, lat: coord.lat, lon: coord.lng, icon: '', dist: 0, route: 0};
     
     // Auto-name if near an airport
