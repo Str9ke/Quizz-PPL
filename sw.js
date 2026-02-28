@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v59h';
+const CACHE_NAME = 'quiz-ppl-v60a';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -124,6 +124,21 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('securetoken') ||
       url.hostname.includes('googleapis.com')) {
     return; // Ne pas intercepter — laisser le réseau gérer
+  }
+
+  // IGNORER les APIs météo et proxies CORS — toujours en réseau direct
+  if (url.hostname.includes('aviationweather.gov') ||
+      url.hostname.includes('metar.vatsim.net') ||
+      url.hostname.includes('noaa.gov') ||
+      url.hostname.includes('nws.noaa.gov') ||
+      url.hostname.includes('corsproxy.io') ||
+      url.hostname.includes('allorigins.win') ||
+      url.hostname.includes('codetabs.com') ||
+      url.hostname.includes('cors.sh') ||
+      url.hostname.includes('ogimet.com') ||
+      url.hostname.includes('meteo.fr') ||
+      url.hostname.includes('meteo.be')) {
+    return; // Ne pas intercepter
   }
 
   // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
