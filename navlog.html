@@ -809,9 +809,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances Cessna F-150L</div>
       <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:12px">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</p>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div id="perfCrosswindInfo" style="font-size:0.85em; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px; flex-grow:1; margin-right:10px;">Cliquez sur Auto-remplir pour utiliser le METAR du d&#xe9;part.</div>
-        <button onclick="window.perfFromMetar()" class="navlog-btn primary" style="padding:6px 12px; font-size:0.85em;">&#x21BB; Auto-remplir via METAR</button>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:10px">
+        <div id="perfCrosswindInfo" style="font-size:0.85em;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;flex-grow:1;line-height:1.8">Cliquez sur &laquo;&nbsp;Auto-remplir&nbsp;&raquo; pour utiliser le METAR de l&rsquo;a&#xe9;rodrome de d&#xe9;part.</div>
+        <button onclick="window.perfFromMetar()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F327;&#xFE0F; Auto-remplir via METAR</button>
       </div>
 
       <!-- Inputs -->
@@ -833,30 +833,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <input type="number" id="perfWind" value="0" min="0" max="40" onchange="window.perfCalc()">
         </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-        <select id="perfMetarAirport" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.82em">
-          <option value="EBCV">EBCV &mdash; Chi&#xe8;vres (pour EBSG)</option>
-          <option value="EBCI">EBCI &mdash; Charleroi</option>
-          <option value="EBBR">EBBR &mdash; Bruxelles</option>
-          <option value="LFQQ">LFQQ &mdash; Lille</option>
-          <option value="EBLG">EBLG &mdash; Li&#xe8;ge</option>
-          <option value="EBNM">EBNM &mdash; Namur</option>
-          <option value="LFQJ">LFQJ &mdash; Maubeuge</option>
-          <option value="EBCF">EBCF &mdash; Cerfontaine</option>
-          <option value="EBSP">EBSP &mdash; Spa</option>
-          <option value="EBFS">EBFS &mdash; Florennes</option>
-          <option value="EBTY">EBTY &mdash; Tournai</option>
-          <option value="EBBE">EBBE &mdash; Beauvechain</option>
-          <option value="EBGB">EBGB &mdash; Grimbergen</option>
-          <option value="EBMO">EBMO &mdash; Moorsele</option>
-          <option value="LFAV">LFAV &mdash; Valenciennes</option>
-          <option value="LFQO">LFQO &mdash; Lens</option>
-          <option value="EBAW">EBAW &mdash; Antwerpen</option>
-          <option value="EBOS">EBOS &mdash; Ostende</option>
-          <option value="EBKT">EBKT &mdash; Courtrai</option>
-        </select>
-        <button onclick="window.perfFromMetar()" style="padding:6px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.82em">&#x1F327;&#xFE0F; Remplir depuis METAR</button>
-      </div>
+
+      <!-- Crosswind visual diagram (filled by perfFromMetar) -->
+      <div id="perfCrosswindDiagram" style="margin-bottom:12px"></div>
 
       <!-- Results -->
       <div id="perfResults"></div>
@@ -3162,10 +3141,15 @@ function renderNavlog(){
     html+='</div>';
     html+='</div>';
   }
-  /* preserve scroll position during DOM rebuild */
+  /* preserve scroll position during DOM rebuild (double rAF survives layout recalc) */
   var _scrollY=window.scrollY||document.documentElement.scrollTop||0;
   board.innerHTML=html;
-  window.scrollTo({top:_scrollY,behavior:'instant'});
+  requestAnimationFrame(function(){
+    window.scrollTo({top:_scrollY,behavior:'instant'});
+    requestAnimationFrame(function(){
+      window.scrollTo({top:_scrollY,behavior:'instant'});
+    });
+  });
   initDragDrop(board);
   var nameInputs=board.querySelectorAll('.wp-name-input');
   for(var ni=0;ni<nameInputs.length;ni++){
@@ -4200,14 +4184,22 @@ function initRouteMap(){
     }
     newWp.name = name;
     
-    // Add to waypoints
-    if(flightType === 'local' && waypoints.length >= 2){
+    /* Fill first empty WP slot (no coords yet) instead of always inserting a new row */
+    var emptySlotIdx = -1;
+    var searchFrom = (flightType === 'local') ? 1 : 0;
+    var searchTo   = (flightType === 'local' && waypoints.length >= 2) ? waypoints.length - 1 : waypoints.length;
+    for(var wi = searchFrom; wi < searchTo; wi++){
+      if(waypoints[wi].lat === null && waypoints[wi].lon === null){ emptySlotIdx = wi; break; }
+    }
+    if(emptySlotIdx >= 0){
+      waypoints[emptySlotIdx] = newWp;   /* overwrite the empty placeholder */
+    } else if(flightType === 'local' && waypoints.length >= 2){
       waypoints.splice(waypoints.length-1, 0, newWp);
     } else {
       waypoints.push(newWp);
     }
-    
-    // recalculate dists and routes for new WP if previous exists
+
+    // recalculate dists and routes for new WP
     var pts = waypoints.filter(function(p){ return p.lat!==null && p.lon!==null; });
     if(pts.length >= 2){
       var p1 = pts[pts.length-2];
@@ -4215,14 +4207,10 @@ function initRouteMap(){
       p2.route = Math.round(trueBearing(p1.lat, p1.lon, p2.lat, p2.lon));
       p2.dist = Math.round(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
     }
-    
-    /* preserve scroll position — prevent page jumping to top on click */
-    var scrollY=window.scrollY||document.documentElement.scrollTop||0;
+
+    /* renderNavlog handles scroll preservation internally via double rAF */
     renderNavlog();
     recalcNavlog();
-    requestAnimationFrame(function(){
-      window.scrollTo({top:scrollY,behavior:'instant'});
-    });
   });
 
   /* Airport markers on route map */
@@ -4884,56 +4872,171 @@ function interpClimb(data,alt){
 }
 
 function perfFromMetar(){
-  var depIcao='';
-  if(waypoints.length>0 && waypoints[0].name) {
-    depIcao = waypoints[0].name;
-  }
-  if(!depIcao || !AIRPORT_NAMES[depIcao] || !RUNWAY_DB[depIcao]) depIcao='EBCV';
+  /* 1 — Departure ICAO from first waypoint */
+  var depIcao = (waypoints.length > 0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
 
-  if(!wxCache[depIcao]||!wxCache[depIcao].metar){
-    loadWeather(depIcao);
-    document.getElementById('perfCrosswindInfo').innerHTML = '<span style="color:#ffa726">Chargement METAR pour '+depIcao+'...</span>';
-    setTimeout(function(){perfFromMetar();},2000);
+  /* 2 — Candidate list: dep → METAR_FALLBACK entries */
+  var candidates = depIcao ? [depIcao] : [];
+  if(depIcao && METAR_FALLBACK[depIcao]) candidates = candidates.concat(METAR_FALLBACK[depIcao]);
+  var usedIcao = null;
+  for(var ci = 0; ci < candidates.length; ci++){
+    var cc = candidates[ci];
+    if(cc && wxCache[cc] && wxCache[cc].metar){ usedIcao = cc; break; }
+  }
+
+  /* 3 — Still nothing: find nearest loaded METAR from wxCache */
+  if(!usedIcao){
+    var depCoords = AIRPORT_COORDS[depIcao] || {lat:50.45, lon:3.82};
+    var minD = 9999;
+    for(var ac in wxCache){
+      if(!wxCache[ac].metar || !AIRPORT_COORDS[ac]) continue;
+      var dLat = AIRPORT_COORDS[ac].lat - depCoords.lat;
+      var dLon = AIRPORT_COORDS[ac].lon - depCoords.lon;
+      var dd = Math.sqrt(dLat*dLat + dLon*dLon);
+      if(dd < minD){ minD = dd; usedIcao = ac; }
+    }
+  }
+
+  /* 4 — Nothing at all: trigger a METAR load and retry in 2 s */
+  if(!usedIcao){
+    var tryIcao = depIcao || 'EBCV';
+    loadWeather(tryIcao);
+    document.getElementById('perfCrosswindInfo').innerHTML = '<span style="color:#ffa726">&#x23f3; Chargement METAR '+tryIcao+'&hellip;</span>';
+    setTimeout(function(){ perfFromMetar(); }, 2000);
     return;
   }
-  var wx=wxCache[depIcao];
-  if(wx.metar){
-    var raw=wx.metar;
-    /* Parse temperature */
-    var tm=raw.match(/(M?\d{2})\/(M?\d{2})/);
-    if(tm){ document.getElementById('perfTemp').value=parseInt(tm[1].replace('M','-')); }
-    /* Parse QNH */
-    var qm=raw.match(/Q(\d{4})/);
-    if(qm){ document.getElementById('perfQNH').value=parseInt(qm[1]); }
-    /* Elevation */
-    if(AIRPORT_ELEV[depIcao]) document.getElementById('perfElev').value=AIRPORT_ELEV[depIcao];
-    
-    /* Wind and Crosswind Calculation */
-    var wm=parseWindFromMetar(raw);
-    var xwindInfo = '';
-    if(wm){ 
-      var bestRwy = suggestRunway(depIcao, wm.dir, wm.spd);
-      if(bestRwy) {
-        // Use Headwind for takeoff perf
-        document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
-        xwindInfo = '<span style="color:#4caf50;">Piste '+bestRwy.rwy+' ('+bestRwy.hdg+'°) \u2014 Vent travers: <b>'+bestRwy.xw+' kt</b> | Face: <b>'+bestRwy.hw+' kt</b></span>';
-      } else {
-        document.getElementById('perfWind').value = wm.spd;
-        xwindInfo = '<span style="color:#ffa726;">Piste inconnue \u2014 Vent: '+wm.spd+' kt</span>';
-      }
-    } else {
-      document.getElementById('perfWind').value = 0;
-      xwindInfo = '<span>Vent calme / non détecté</span>';
-    }
-    
-    var infoEl = document.getElementById('perfCrosswindInfo');
-    if(infoEl) {
-      infoEl.innerHTML = '\u{1F32C}\uFE0F <b>'+depIcao+'</b> : ' + xwindInfo;
-    }
+
+  var raw = wxCache[usedIcao].metar;
+  var isNearby = (usedIcao !== depIcao);
+
+  /* Parse temperature */
+  var tm = raw.match(/(M?\d{2})\/(M?\d{2})/);
+  if(tm) document.getElementById('perfTemp').value = parseInt(tm[1].replace('M','-'));
+  /* Parse QNH */
+  var qm = raw.match(/Q(\d{4})/);
+  if(qm) document.getElementById('perfQNH').value = parseInt(qm[1]);
+  /* Elevation: prefer departure airport, then METAR source */
+  if(AIRPORT_ELEV[depIcao])       document.getElementById('perfElev').value = AIRPORT_ELEV[depIcao];
+  else if(AIRPORT_ELEV[usedIcao]) document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
+
+  /* Wind + crosswind */
+  var wm = parseWindFromMetar(raw);
+  var infoLines = [];
+  var diagHtml = '';
+
+  /* METAR source confirm */
+  if(isNearby){
+    infoLines.push('&#x26a0;&#xfe0f; Pas de METAR charg\u00e9 pour <b>'+depIcao+'</b> \u2014 utilis\u00e9\u00a0: <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' ('+AIRPORT_NAMES[usedIcao]+')':''));
+  } else {
+    infoLines.push('&#x1f4e1; METAR\u00a0: <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' \u2014 '+AIRPORT_NAMES[usedIcao]:''));
   }
+
+  if(wm){
+    var windStr = (wm.dir >= 0 ? wm.dir+'\u00b0' : 'VRB') + ' / ' + wm.spd + ' kt' + (wm.gust ? ' rafales ' + wm.gust + ' kt' : '');
+    infoLines.push('&#x1f4a8; Vent utilis\u00e9\u00a0: <b>'+windStr+'</b>');
+
+    /* Runway suggestion: prefer departure, fall back to METAR source */
+    var rwyIcao = (RUNWAY_DB && RUNWAY_DB[depIcao]) ? depIcao : usedIcao;
+    var bestRwy = (RUNWAY_DB && RUNWAY_DB[rwyIcao]) ? suggestRunway(rwyIcao, wm.dir, wm.spd) : null;
+
+    if(bestRwy){
+      document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
+      var xwColor = bestRwy.xw <= 10 ? '#4caf50' : bestRwy.xw <= 15 ? '#ffa726' : '#ef5350';
+      infoLines.push('&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'\u00b0) \u2014 Face\u00a0: <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers\u00a0: <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>');
+      diagHtml = buildCrosswindDiagram(wm.dir, wm.spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw);
+    } else {
+      document.getElementById('perfWind').value = wm.spd;
+      infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+rwyIcao+' \u2014 vent appliqu\u00e9\u00a0: '+wm.spd+' kt</span>');
+    }
+  } else {
+    document.getElementById('perfWind').value = 0;
+    infoLines.push('Vent calme / non d\u00e9tect\u00e9');
+  }
+
+  var infoEl = document.getElementById('perfCrosswindInfo');
+  if(infoEl) infoEl.innerHTML = infoLines.join('<br>');
+  var diagEl = document.getElementById('perfCrosswindDiagram');
+  if(diagEl) diagEl.innerHTML = diagHtml;
+
   perfCalc();
 }
 window.perfFromMetar=perfFromMetar;
+
+/* ===== CROSSWIND DECOMPOSITION DIAGRAM =====
+   Runway drawn vertically (heading = up). Wind vector decomposed into:
+   - HW (headwind, cyan, along runway axis)
+   - XW (crosswind, colour-coded, horizontal)
+   All three vectors form a right triangle.                                     */
+function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
+  if(!windSpd || windSpd <= 0) return '';
+  var W=260, H=215, cx=130, cy=107;
+  /* Angle of wind relative to runway (runway = 0 = up in diagram) */
+  var relDeg = ((windDir - rwyHdg) % 360 + 360) % 360;
+  if(relDeg > 180) relDeg -= 360;            /* clamp -180..+180 */
+  var relRad = relDeg * Math.PI / 180;
+  var scale  = Math.min(58 / windSpd, 4.5);
+  /* Tail of wind vector (where wind comes FROM in diagram) */
+  var wTX = (cx + Math.sin(relRad) * windSpd * scale).toFixed(1);
+  var wTY = (cy - Math.cos(relRad) * windSpd * scale).toFixed(1);
+  /* Component endpoints — form a right triangle with (cx,cy) */
+  var hwEndY = (cy - hw * scale).toFixed(1);           /* up = headwind  */
+  var xwSign = Math.sin(relRad) >= 0 ? 1 : -1;
+  var xwEndX = (cx + xwSign * xw * scale).toFixed(1);  /* horizontal XW  */
+  var xwColor = xw <= 10 ? '#4caf50' : xw <= 15 ? '#ffa726' : '#ef5350';
+  var rwyNum  = Math.round(rwyHdg / 10) % 36 || 36;
+  var rwyOpp  = (rwyNum + 18) % 36 || 36;
+
+  var s = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;margin:6px auto">';
+  s += '<rect width="'+W+'" height="'+H+'" rx="10" fill="rgba(0,0,0,0.45)"/>';
+  s += '<text x="'+W/2+'" y="14" fill="#aaa" font-size="10" text-anchor="middle" font-family="sans-serif">';
+  s += 'Vent '+windDir+'\u00b0 / '+windSpd+' kt \u2014 Piste '+rwyHdg+'\u00b0</text>';
+
+  /* Runway strip (vertical) */
+  s += '<rect x="'+(cx-9)+'" y="'+(cy-72)+'" width="18" height="144" rx="3" fill="rgba(255,255,255,0.09)" stroke="#666" stroke-width="1"/>';
+  for(var dy = cy-63; dy < cy+63; dy += 15)
+    s += '<rect x="'+(cx-1.5)+'" y="'+dy+'" width="3" height="9" fill="#fff" opacity="0.35"/>';
+  s += '<text x="'+cx+'" y="'+(cy-80)+'" fill="#888" font-size="9" text-anchor="middle">'+('0'+rwyNum).slice(-2)+'</text>';
+  s += '<text x="'+cx+'" y="'+(cy+92)+'" fill="#888" font-size="9" text-anchor="middle">'+('0'+rwyOpp).slice(-2)+'</text>';
+
+  /* Arrow markers */
+  s += '<defs>'
+    +'<marker id="cwAW" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#ff9800"/></marker>'
+    +'<marker id="cwAH" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#00e5ff"/></marker>'
+    +'<marker id="cwAX" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="'+xwColor+'"/></marker>'
+    +'</defs>';
+
+  /* Dashed right-angle guide lines */
+  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+cx+'" y2="'+wTY+'" stroke="#333" stroke-width="1" stroke-dasharray="4,3"/>';
+  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+wTX+'" y2="'+cy+'" stroke="#333" stroke-width="1" stroke-dasharray="4,3"/>';
+
+  /* Wind vector: tail to center */
+  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+cx+'" y2="'+cy+'" stroke="#ff9800" stroke-width="2.5" marker-end="url(#cwAW)"/>';
+
+  /* HW arrow (along runway, upward = headwind opposing takeoff) */
+  if(Math.abs(hw) > 0.3){
+    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+hwEndY+'" stroke="#00e5ff" stroke-width="2" marker-end="url(#cwAH)"/>';
+    var hwLY = ((cy + parseFloat(hwEndY)) / 2).toFixed(1);
+    s += '<text x="'+(cx+7)+'" y="'+hwLY+'" fill="#00e5ff" font-size="10" font-weight="bold" font-family="sans-serif">Face '+hw+' kt</text>';
+  } else {
+    s += '<text x="'+(cx+7)+'" y="'+cy+'" fill="#00e5ff" font-size="9" font-family="sans-serif">Face \u22480</text>';
+  }
+
+  /* XW arrow (horizontal, perpendicular to runway) */
+  if(xw > 0.3){
+    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+xwEndX+'" y2="'+cy+'" stroke="'+xwColor+'" stroke-width="2" marker-end="url(#cwAX)"/>';
+    var xwLX = ((cx + parseFloat(xwEndX)) / 2).toFixed(1);
+    s += '<text x="'+xwLX+'" y="'+(cy-6)+'" fill="'+xwColor+'" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">Travers '+xw+' kt</text>';
+  }
+
+  /* Status bar */
+  var status = xw <= 10 ? '\u2705 Acceptable (lim. Cessna 150 : 15 kt)'
+              : xw <= 15 ? '\u26a0\ufe0f Attention \u2014 limite 15 kt'
+              : '\u26a0\ufe0f D\u00e9pass\u00e9 \u2014 limite 15 kt';
+  s += '<text x="'+W/2+'" y="'+(H-5)+'" fill="'+xwColor+'" font-size="9.5" text-anchor="middle">'+status+'</text>';
+  s += '</svg>';
+  return s;
+}
+window.buildCrosswindDiagram = buildCrosswindDiagram;
 
 function buildCruiseTable(){
   var currentTas=parseFloat(document.getElementById('cfgTAS').value)||90;
