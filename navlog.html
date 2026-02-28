@@ -797,10 +797,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
             <button class="aeroweb-btn" onclick="document.getElementById('opmetFile').click()">&#x1F4E5; Importer PDF</button>
             <button class="aeroweb-btn map-del-btn" onclick="window.clearOpmet()">&#x1F5D1;&#xFE0F; Effacer</button>
           </div>
-          <input type="file" id="opmetFile" accept="application/pdf" style="display:none" onchange="window.handleOpmetUpload(this)">
+          <input type="file" id="opmetFile" accept="application/pdf,image/*" style="display:none" onchange="window.handleOpmetUpload(this)">
         </div>
-        <div id="opmetViewer" style="height:600px;background:#525659;margin:0 16px 16px;border-radius:8px;display:none">
-          <iframe id="opmetFrame" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>
+        <!-- Drop zone — always targetable to replace existing doc -->
+        <div id="opmetDropZone" style="margin:0 16px 8px;border:2px dashed var(--border-color);border-radius:10px;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85em;color:var(--text-secondary);cursor:pointer;transition:border-color .2s"
+          onclick="document.getElementById('opmetFile').click()"
+          ondragover="event.preventDefault();this.style.borderColor='#667eea'"
+          ondragleave="this.style.borderColor=''"
+          ondrop="event.preventDefault();this.style.borderColor='';window.handleOpmetDrop(event)">
+          <span>&#x1F4E5;</span><span>Glisser-d&#xe9;poser un PDF ici &mdash; ou cliquer pour remplacer</span>
+        </div>
+        <div id="opmetViewer" style="margin:0 16px 16px;border-radius:8px;display:none">
+          <iframe id="opmetFrame" style="width:100%;height:680px;border:none;border-radius:8px"></iframe>
         </div>
         <div id="opmetPlaceholder" style="margin:0 16px 16px;padding:60px 20px;text-align:center;color:var(--text-secondary);border:2px dashed var(--border-color);border-radius:10px;background:rgba(0,0,0,0.1)">
            <div style="font-size:3em;opacity:.3;margin-bottom:10px">&#x1F4C4;</div>
@@ -1923,21 +1931,34 @@ function renderDailyWarnImages(){
       wrap.appendChild(img);
       wrap.appendChild(del);
       grid.appendChild(wrap);
+    } else if(item.type==='pdf'){
+      var wrapPdf=document.createElement('div');
+      wrapPdf.style.cssText='position:relative;width:100%;margin-bottom:6px';
+      var blobUrlDw=_dataUrlToObjectUrl(item.data);
+      var ifrmDw=document.createElement('iframe');
+      ifrmDw.src=blobUrlDw+'#toolbar=0&navpanes=0';
+      ifrmDw.style.cssText='width:100%;height:500px;border:none;border-radius:8px';
+      var delPdf=document.createElement('button');
+      delPdf.textContent='\u{1F5D1}\uFE0F';
+      delPdf.style.cssText='position:absolute;top:4px;right:4px;z-index:10;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+      (function(i,bu){ delPdf.onclick=function(){dailyWarnImages.splice(i,1);saveDailyWarnImages();renderDailyWarnImages();try{URL.revokeObjectURL(bu);}catch(ex){}}; })(idx,blobUrlDw);
+      wrapPdf.appendChild(ifrmDw);
+      wrapPdf.appendChild(delPdf);
+      grid.appendChild(wrapPdf);
     } else {
-      var wrap2=document.createElement('div');
-      wrap2.style.cssText='position:relative;width:100%;margin-bottom:6px';
-      var link=document.createElement('a');
-      link.href=item.data;
-      link.download=item.name||'fichier';
-      link.textContent='\u{1F4C4} '+(item.name||'fichier');
-      link.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
-      var del2=document.createElement('button');
-      del2.textContent='\u{1F5D1}\uFE0F';
-      del2.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
-      del2.onclick=function(){dailyWarnImages.splice(idx,1);saveDailyWarnImages();renderDailyWarnImages()};
-      wrap2.appendChild(link);
-      wrap2.appendChild(del2);
-      grid.appendChild(wrap2);
+      /* Other file types: show as download link */
+      var wrapFile=document.createElement('div');
+      wrapFile.style.cssText='position:relative;width:100%;margin-bottom:6px';
+      var linkFile=document.createElement('a');
+      linkFile.href=item.data; linkFile.download=item.name||'fichier';
+      linkFile.textContent='\u{1F4C4} '+(item.name||'fichier');
+      linkFile.style.cssText='display:block;padding:8px 12px;background:var(--bg-question);border-radius:8px;color:var(--text-secondary);text-decoration:none';
+      var delFile=document.createElement('button');
+      delFile.textContent='\u{1F5D1}\uFE0F';
+      delFile.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1em';
+      (function(i){ delFile.onclick=function(){dailyWarnImages.splice(i,1);saveDailyWarnImages();renderDailyWarnImages()}; })(idx);
+      wrapFile.appendChild(linkFile); wrapFile.appendChild(delFile);
+      grid.appendChild(wrapFile);
     }
   });
 }
@@ -1948,7 +1969,8 @@ function handleDailyWarnUpload(input){
     (function(file){
       var reader=new FileReader();
       reader.onload=function(e){
-        dailyWarnImages.push({type:file.type.indexOf('image')>=0?'image':'file',data:e.target.result,name:file.name});
+        var t=file.type.indexOf('image')>=0?'image':(file.type==='application/pdf'?'pdf':'file');
+        dailyWarnImages.push({type:t,data:e.target.result,name:file.name});
         saveDailyWarnImages();
         renderDailyWarnImages();
       };
@@ -1965,7 +1987,8 @@ function handleDailyWarnDrop(ev){
       (function(file){
         var reader=new FileReader();
         reader.onload=function(e){
-          dailyWarnImages.push({type:file.type.indexOf('image')>=0?'image':'file',data:e.target.result,name:file.name});
+          var t=file.type.indexOf('image')>=0?'image':(file.type==='application/pdf'?'pdf':'file');
+          dailyWarnImages.push({type:t,data:e.target.result,name:file.name});
           saveDailyWarnImages();
           renderDailyWarnImages();
         };
@@ -3978,7 +4001,19 @@ function handleOpmetUpload(input){
 }
 window.handleOpmetUpload=handleOpmetUpload;
 
-function clearOpmet(){
+function handleOpmetDrop(ev){
+  var files=ev.dataTransfer&&ev.dataTransfer.files;
+  if(!files||!files.length) return;
+  var file=files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    opmetPdfData=e.target.result;
+    sessionStorage.setItem('navlog_opmet_pdf',opmetPdfData);
+    renderOpmet();
+  };
+  reader.readAsDataURL(file);
+}
+window.handleOpmetDrop=handleOpmetDrop;
   if(!confirm('Supprimer le fichier OPMET ?')) return;
   opmetPdfData = null;
   sessionStorage.removeItem('navlog_opmet_pdf');
@@ -3995,7 +4030,16 @@ function renderOpmet(){
   if(opmetPdfData){
     viewer.style.display = 'block';
     placeholder.style.display = 'none';
-    frame.src = opmetPdfData;
+    /* Use blob URL — Chrome blocks data: iframes; also hides toolbar */
+    try{
+      var arr2=opmetPdfData.split(','), mime2=arr2[0].match(/:(.*?);/)[1];
+      var bstr2=atob(arr2[1]), n2=bstr2.length, u82=new Uint8Array(n2);
+      while(n2--) u82[n2]=bstr2.charCodeAt(n2);
+      var blobUrl2=URL.createObjectURL(new Blob([u82],{type:mime2}));
+      if(frame._opmetBlob){ try{URL.revokeObjectURL(frame._opmetBlob);}catch(ex){} }
+      frame._opmetBlob=blobUrl2;
+      frame.src = (mime2==='application/pdf') ? blobUrl2+'#toolbar=0&navpanes=0' : blobUrl2;
+    } catch(ex){ frame.src = opmetPdfData; }
   } else {
     viewer.style.display = 'none';
     placeholder.style.display = 'block';
