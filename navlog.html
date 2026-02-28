@@ -367,6 +367,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .dossier-card .d-header{flex-wrap:wrap}
   #routeMapContainer{min-height:unset;max-height:85vw}
   .navlog-tab{font-size:.7em;padding:10px 8px}
+  .leg-triangle-col{display:none}
+  .leg-container{gap:4px}
+  .leg-alt-slider-col{width:30px}
+  .leg-strip{padding-left:10px}
+  .leg-strip-content{margin-left:4px;padding:8px 10px}
+  .leg-strip-content .leg-val{white-space:normal;word-break:break-word}
 }
 /* Wind Triangle Styles */
 .leg-container { display: flex; align-items: center; gap: 12px; }
@@ -3353,6 +3359,10 @@ function removeWaypoint(i){
   waypoints.splice(i,1);
   renderNavlog();
   recalcNavlog();
+  requestAnimationFrame(function(){
+    var mapCard=document.getElementById('routeMapContainer');
+    if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
+  });
 }
 window.removeWaypoint=removeWaypoint;
 
@@ -4608,12 +4618,20 @@ function updateRouteMap(){
         // Optionally update dist/route
         renderNavlog();
         recalcNavlog();
+        requestAnimationFrame(function(){
+          var mapCard=document.getElementById('routeMapContainer');
+          if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
+        });
       });
       marker.on('click', function(){
         if(confirm('Supprimer ce waypoint ?')) {
           waypoints.splice(idx, 1);
           renderNavlog();
           recalcNavlog();
+          requestAnimationFrame(function(){
+            var mapCard=document.getElementById('routeMapContainer');
+            if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
+          });
         }
       });
     })(p.idx);
