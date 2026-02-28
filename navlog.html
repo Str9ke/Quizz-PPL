@@ -290,6 +290,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .dossier-card-btns .d-load-btn:hover{background:rgba(102,126,234,.2)}
 .dossier-card-btns button:hover{border-color:#667eea;color:#667eea}
 .dossier-card-btns .d-del:hover{border-color:#f44336;color:#f44336}
+/* Toast notification */
+#nl-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);z-index:2000;background:rgba(30,30,50,.96);border:1px solid rgba(102,126,234,.4);border-radius:14px;padding:12px 22px;font-size:.88em;font-weight:600;color:#fff;box-shadow:0 4px 24px rgba(0,0,0,.4);pointer-events:none;opacity:0;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:90vw;text-align:center}
+#nl-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#nl-toast.success{border-color:#4caf50;color:#a7f3c1}
+#nl-toast.error{border-color:#f44336;color:#fca5a5}
+.dossier-card.new-flash{animation:dossier-flash .9s ease-out 1}
+@keyframes dossier-flash{0%{box-shadow:0 0 0 3px #667eea,0 0 24px rgba(102,126,234,.5)}60%{box-shadow:0 0 0 2px rgba(102,126,234,.5),0 0 14px rgba(102,126,234,.2)}100%{box-shadow:none}}
 
 /* Calendar overlay */
 .cal-overlay{position:fixed;top:0;right:-320px;width:300px;height:100vh;background:var(--bg-container);border-left:1px solid var(--border-color);box-shadow:-4px 0 20px rgba(0,0,0,.3);z-index:998;transition:right .3s;padding:16px;overflow-y:auto}
@@ -3752,9 +3759,23 @@ function setDossiers(d){
   }
 }
 
+function _toast(msg, type, duration){
+  var el=document.getElementById('nl-toast');
+  if(!el){ el=document.createElement('div'); el.id='nl-toast'; document.body.appendChild(el); }
+  el.textContent=msg;
+  el.className='show '+(type||'');
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){ el.className=(type||''); },duration||3200);
+}
+window._toast=_toast;
+
 function saveDossier(){
   var name=document.getElementById('dossierName').value.trim();
-  if(!name){alert('Entrez un nom pour le dossier');return;}
+  if(!name){
+    _toast('⚠️ Entrez un nom pour le dossier','error',2800);
+    document.getElementById('dossierName').focus();
+    return;
+  }
 
   /* Sauvegarder immediatement, sans attendre html2canvas */
   var dossiers=getDossiers();
@@ -3781,6 +3802,18 @@ function saveDossier(){
   setDossiers(dossiers);
   _fbSaveDossier(dossier);
   renderDossierList();
+
+  /* Visual feedback: clear input, toast, scroll to new card */
+  document.getElementById('dossierName').value='';
+  _toast('✅ Dossier «\u00a0'+name+'\u00a0» sauvegardé !\u2002☁️ Sync cloud en cours…','success',4000);
+  requestAnimationFrame(function(){
+    var firstCard=document.querySelector('#dossierList .dossier-card');
+    if(firstCard){
+      firstCard.classList.add('new-flash');
+      firstCard.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(function(){firstCard.classList.remove('new-flash');},1200);
+    }
+  });
 
   /* Telecharger automatiquement le fichier JSON (portable, tous appareils) */
   _downloadDossierJson(dossier);
@@ -4653,6 +4686,7 @@ function init(){
   initRouteMap();
   recalcNavlog();
   renderDossierList();
+  _renderSyncCodeUI();
   /* initWindy() is now lazy-loaded when Windy sub-tab is activated */
   /* Restore saved map captures */
   var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
