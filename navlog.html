@@ -873,6 +873,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
             <option value="">-- Station auto (d&eacute;part) --</option>
           </select>
           <button onclick="window.updatePerfMetarList();window.perfFromMetar()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F327;&#xFE0F; Appliquer METAR</button>
+          <button onclick="window.refreshAllMetars()" class="navlog-btn" style="white-space:nowrap;padding:8px 14px;font-size:0.85em;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et recharge tous les METARs">&#x1F504; Actualiser</button>
         </div>
         <div id="perfCrosswindInfo" style="font-size:0.85em;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;line-height:1.8">S&eacute;lectionnez une station ou cliquez &laquo;&nbsp;Appliquer METAR&nbsp;&raquo; pour remplir automatiquement.</div>
       </div>
@@ -2604,6 +2605,54 @@ function retryWeather(icao){
   });
 }
 window.retryWeather=retryWeather;
+
+function refreshAllMetars(){
+  /* Collect all airports to reload: waypoints + already cached */
+  var toLoad=[];
+  waypoints.forEach(function(wp){
+    var n=wp.name?wp.name.trim().toUpperCase():'';
+    if(n && toLoad.indexOf(n)<0) toLoad.push(n);
+  });
+  Object.keys(wxCache).forEach(function(k){
+    if(toLoad.indexOf(k)<0) toLoad.push(k);
+  });
+  /* Also expand fallbacks */
+  var extra=[];
+  toLoad.forEach(function(k){
+    if(METAR_FALLBACK[k]) METAR_FALLBACK[k].forEach(function(f){
+      if(toLoad.indexOf(f)<0 && extra.indexOf(f)<0) extra.push(f);
+    });
+  });
+  toLoad=toLoad.concat(extra);
+  /* Clear cache */
+  toLoad.forEach(function(k){ delete wxCache[k]; });
+  renderWxPanels();
+  /* Reload all */
+  var btn=document.querySelector('[onclick*="refreshAllMetars"]');
+  if(btn){ btn.textContent='\u23f3 Chargement\u2026'; btn.disabled=true; }
+  var pending=toLoad.length;
+  if(!pending){
+    if(btn){ btn.textContent='\uD83D\uDD04 Actualiser'; btn.disabled=false; }
+    return;
+  }
+  function done(){
+    pending--;
+    if(pending<=0){
+      updatePerfMetarList();
+      perfFromMetar();
+      if(btn){ btn.innerHTML='\uD83D\uDD04 Actualiser'; btn.disabled=false; }
+    }
+  }
+  toLoad.forEach(function(icao){
+    fetchWeather(icao,function(result){
+      wxCache[icao]=result;
+      renderWxPanels();
+      autoApplyWind();
+      done();
+    });
+  });
+}
+window.refreshAllMetars=refreshAllMetars;
 /* Extended fetch: tries hours=24, then hours=48, then nearest airport METARs */
 function fetchWeatherExtended(icao,cb){
   var result={metar:null,taf:null,notams:null,metarSource:null};
