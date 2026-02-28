@@ -1742,6 +1742,7 @@ var CHECKLIST_ITEMS = [
   {cat:'\u00c9quipement pilote',items:[
     'Casque + piles neuves',
     'Kneeboard',
+    'Montre / Chrono',
     'Post-it rempli',
     'Timetics',
     'Post-it direction vent',
@@ -4949,6 +4950,72 @@ function exportDossier(id){
 }
 window.exportDossier=exportDossier;
 
+/* Télécharger tous les fichiers (images, PDFs) d'un dossier */
+function downloadAllDossierFiles(id){
+  var dossiers=getDossiers();
+  var d=null;
+  for(var i=0;i<dossiers.length;i++){if(dossiers[i].id===id){d=dossiers[i];break;}}
+  if(!d){_toast('Dossier introuvable','error',2000);return;}
+  var cf=d.cloudFiles||{};
+  var files=[];
+  var base=d.name.replace(/[^a-zA-Z0-9\-_]/g,'_');
+  /* Cartes météo (TEMSI, WINTEM, etc.) : prefer cloud URLs */
+  var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
+  mapKeys.forEach(function(k){
+    var src=(cf.mapImages&&cf.mapImages[k])||((d.mapImages||{})[k]);
+    if(src) files.push({src:src,name:base+'_'+k});
+  });
+  /* Extra images */
+  var extras=d.extraImages||[];
+  var cfExtras=cf.extraImages||[];
+  for(var ei=0;ei<Math.max(extras.length,cfExtras.length);ei++){
+    var src2=cfExtras[ei]||((extras[ei])&&(extras[ei].data||extras[ei]))||null;
+    if(src2){
+      var ename=(extras[ei]&&extras[ei].name)?extras[ei].name:(base+'_extra'+(ei+1));
+      files.push({src:src2,name:ename});
+    }
+  }
+  /* Daily warnings (TEMSI/SIGMET images) */
+  var dw=d.dailyWarnImages||[];
+  var cfDw=cf.dailyWarnImages||[];
+  for(var di=0;di<Math.max(dw.length,cfDw.length);di++){
+    var src3=cfDw[di]||(dw[di]&&(dw[di].data||dw[di]))||null;
+    if(src3) files.push({src:src3,name:base+'_meteo_warn'+(di+1)});
+  }
+  /* NOTAM items */
+  var notams=d.notamSummary||[];
+  var cfNotams=cf.notamSummary||[];
+  for(var ni=0;ni<Math.max(notams.length,cfNotams.length);ni++){
+    var src4=cfNotams[ni]||(notams[ni]&&(notams[ni].url||notams[ni].data||notams[ni]))||null;
+    if(src4&&(typeof src4==='string')&&src4.length>10) files.push({src:src4,name:base+'_notam'+(ni+1)});
+  }
+  /* OPMET PDF */
+  var opmet=cf.opmetPdf||d.opmetPdf;
+  if(opmet) files.push({src:opmet,name:base+'_OPMET.pdf'});
+
+  if(!files.length){_toast('Aucun fichier à télécharger dans ce dossier','error',2500);return;}
+  _toast('\u2B07\uFE0F Téléchargement de '+files.length+' fichier'+(files.length>1?'s':'')+'\u2026','success',2500);
+  files.forEach(function(f,idx){
+    setTimeout(function(){
+      var a=document.createElement('a');
+      a.href=f.src;
+      /* Deviner l'extension depuis l'URL ou la donnée */
+      var ext='';
+      if(typeof f.src==='string'){
+        var m=f.src.match(/\.([a-z]{2,4})(\?|$)/i);if(m) ext='.'+m[1].toLowerCase();
+        else if(f.src.indexOf('data:image/png')===0) ext='.png';
+        else if(f.src.indexOf('data:image/jpeg')===0||f.src.indexOf('data:image/jpg')===0) ext='.jpg';
+        else if(f.src.indexOf('data:application/pdf')===0) ext='.pdf';
+      }
+      var fname=f.name.indexOf('.')>0?f.name:f.name+ext;
+      a.download=fname;
+      a.target='_blank';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+    },idx*300);
+  });
+}
+window.downloadAllDossierFiles=downloadAllDossierFiles;
+
 function importDossier(){
   document.getElementById('dossierImportFile').click();
 }
@@ -5030,6 +5097,7 @@ function _dossierCardHTML(d){
   h+='</div>';
   h+='<div class="dossier-card-btns" onclick="event.stopPropagation()">';
   h+='<button class="d-load-btn" onclick="window.loadDossier('+d.id+')">\u2708\uFE0F Charger</button>';
+  h+='<button onclick="window.downloadAllDossierFiles('+d.id+')">\u2B07\uFE0F Fichiers</button>';
   h+='<button onclick="window.exportDossier('+d.id+')">&#x1F4E4; Exporter</button>';
   h+='<button onclick="window.renameDossier('+d.id+')">&#x270F;&#xFE0F; Renommer</button>';
   if(ssCount) h+='<button onclick="window.previewScreenshots('+d.id+')">&#x1F4F8; Captures</button>';
