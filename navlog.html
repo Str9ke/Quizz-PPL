@@ -1741,7 +1741,7 @@ var CHECKLIST_ITEMS = [
     'Lunettes de soleil'
   ]},
   {cat:'Documents de vol',items:[
-    'Carte de navigation (OACI 1:500 000)',
+    {label:'Carte de navigation (OACI 1:500 000)',sub:['Post-it rempli','Timetics','Post-it direction vent']},
     'Carte(s) VAC',
     'Navlog papier (fiche de navigation)',
     'TEMSI / WINTEM',
@@ -1775,14 +1775,27 @@ function renderChecklist(){
   CHECKLIST_ITEMS.forEach(function(cat){
     html+='<div style="margin-top:10px;margin-bottom:4px;font-weight:700;font-size:.88em;color:#667eea;text-transform:uppercase;letter-spacing:.5px">\ud83d\udccc '+cat.cat+'</div>';
     cat.items.forEach(function(item){
+      var label=typeof item==='object'?item.label:item;
+      var sub=typeof item==='object'&&item.sub?item.sub:[];
       total++;
-      var key=cat.cat+'::'+item;
+      var key=cat.cat+'::'+label;
       var checked=_checklistState[key]?true:false;
       if(checked) done++;
       html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .2s;'+(checked?'background:rgba(76,175,80,.1);':'background:var(--bg-question);')+'margin-bottom:2px" onclick="window.toggleCheckItem(this,\''+key.replace(/'/g,"\\'")+'\')">';
       html+='<input type="checkbox" '+(checked?'checked':'')+' style="width:18px;height:18px;accent-color:#4caf50;cursor:pointer" data-ck="'+key.replace(/"/g,'&quot;')+'">';
-      html+='<span style="font-size:.88em;'+(checked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-primary)')+'">'+item+'</span>';
+      html+='<span style="font-size:.88em;'+(checked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-primary)')+'">'+label+'</span>';
       html+='</label>';
+      /* Sub-items — indented */
+      sub.forEach(function(subItem){
+        total++;
+        var subKey=cat.cat+'::'+label+'::'+subItem;
+        var subChecked=_checklistState[subKey]?true:false;
+        if(subChecked) done++;
+        html+='<label style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 36px;border-radius:8px;cursor:pointer;transition:background .2s;'+(subChecked?'background:rgba(76,175,80,.08);':'background:var(--bg-question);')+'margin-bottom:2px;opacity:.9" onclick="window.toggleCheckItem(this,\''+subKey.replace(/'/g,"\\'")+'\')">';
+        html+='<input type="checkbox" '+(subChecked?'checked':'')+' style="width:16px;height:16px;accent-color:#4caf50;cursor:pointer" data-ck="'+subKey.replace(/"/g,'&quot;')+'">';
+        html+='<span style="font-size:.83em;'+(subChecked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-secondary)')+'">↳ '+subItem+'</span>';
+        html+='</label>';
+      });
     });
   });
   panel.innerHTML=html;
@@ -5077,7 +5090,8 @@ function _isHttpUrl(s){ return typeof s==='string'&&(s.startsWith('https://')||s
 
 function _isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<768; }
 function _pdfWidget(url,height){
-  if(_isMobile())
+  /* HTTPS URLs work in <iframe> on Android Chrome — only use button for local blob: URLs */
+  if(_isMobile() && !_isHttpUrl(url))
     return '<a href="'+url+'" target="_blank" rel="noopener" style="display:block;text-align:center;padding:16px 20px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:12px;font-weight:700;font-size:1.05em;text-decoration:none;margin:8px 0;box-shadow:0 4px 14px rgba(102,126,234,.4)">📄 Ouvrir le PDF</a>';
   return '<iframe src="'+url+'#toolbar=0&navpanes=0" style="width:100%;height:'+(height||520)+'px;border:none;border-radius:8px"></iframe>';
 }
@@ -5097,7 +5111,7 @@ function _applyMapData(key, dataUrl){
   if(dataUrl.indexOf('data:application/pdf')===0){
     var blobUrl=_dataUrlToObjectUrl(dataUrl);
     el.innerHTML=_pdfWidget(blobUrl,560);
-  } else if(_isHttpUrl(dataUrl)&&(dataUrl.indexOf('.pdf')>0||dataUrl.indexOf('%2Fopmet')>0)){
+  } else if(_isHttpUrl(dataUrl)&&/\.pdf(\?|$)/i.test(dataUrl)){
     el.innerHTML=_pdfWidget(dataUrl,560);
   } else {
     el.innerHTML='<img src="'+dataUrl+'" style="width:100%;object-fit:contain;pointer-events:none;border-radius:8px">';
