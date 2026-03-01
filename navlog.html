@@ -5379,11 +5379,27 @@ function renderAltProfile(){
   var sub=document.getElementById('altProfileSubtitle');
   if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM';
 
-  /* Altitudes effectives par waypoint */
+  /* Helper : élévation terrain interpolée à une distance donnée */
+  function _terrainAtDist(d){
+    if(!_altTerrainCache||!_altTerrainCache.length) return 0;
+    var n=_altTerrainCache.length-1;
+    var k=(d/totalDist)*n;
+    var k0=Math.max(0,Math.floor(k)),k1=Math.min(n,k0+1);
+    var frac=k-k0;
+    return Math.round(_altTerrainCache[k0]*(1-frac)+_altTerrainCache[k1]*frac);
+  }
+
+  /* Altitudes effectives par waypoint
+     - Départ / arrivée : altitude terrain (sol)
+     - isEtape (escale intermédiaire) : altitude terrain interpolée (posé au sol)
+     - Waypoint normal : altitude de croisière saisie */
   var wpAlts=[];
+  var cumDistWp=0;
   for(var i=0;i<waypoints.length;i++){
+    if(i>0) cumDistWp+=(waypoints[i].dist||0);
     if(i===0) wpAlts.push(depElev);
     else if(i===waypoints.length-1) wpAlts.push(arrElev);
+    else if(waypoints[i].isEtape) wpAlts.push(_terrainAtDist(cumDistWp));
     else wpAlts.push(waypoints[i].altitude||2000);
   }
 
@@ -5436,18 +5452,19 @@ function renderAltProfile(){
   var legHits='',cumD3=0;
   for(var i=1;i<waypoints.length-1;i++){
     var ld3=waypoints[i].dist||0;
-    var midX=xS(cumD3+ld3/2);
-    var midY=yS(wpAlts[i]);
-    /* Zone invisible de drag (large) centrée sur la poignée */
-    legHits+='<rect x="'+(midX-22)+'" y="'+(midY-16)+'" width="44" height="32" fill="transparent" cursor="ns-resize" class="alt-leg-hit" data-wpidx="'+i+'" rx="4"/>';
-    /* Poignée visuelle ≡ : 3 traits horizontaux */
-    legHits+='<g style="pointer-events:none">';
-    legHits+='<rect x="'+(midX-11)+'" y="'+(midY-4)+'" width="22" height="10" rx="5" fill="rgba(102,126,234,.18)" stroke="rgba(167,139,250,.45)" stroke-width="1"/>';
-    legHits+='<line x1="'+(midX-7)+'" y1="'+(midY-1)+'" x2="'+(midX+7)+'" y2="'+(midY-1)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-    legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+2)+'" x2="'+(midX+7)+'" y2="'+(midY+2)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-    legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+5)+'" x2="'+(midX+7)+'" y2="'+(midY+5)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-    legHits+='</g>';
-    cumD3+=ld3;
+    /* isEtape = posé au sol, altitude verrouillée → pas de poignée de drag */
+    if(!waypoints[i].isEtape){
+      var midX=xS(cumD3+ld3/2);
+      var midY=yS(wpAlts[i]);
+      legHits+='<rect x="'+(midX-22)+'" y="'+(midY-16)+'" width="44" height="32" fill="transparent" cursor="ns-resize" class="alt-leg-hit" data-wpidx="'+i+'" rx="4"/>';
+      legHits+='<g style="pointer-events:none">';
+      legHits+='<rect x="'+(midX-11)+'" y="'+(midY-4)+'" width="22" height="10" rx="5" fill="rgba(102,126,234,.18)" stroke="rgba(167,139,250,.45)" stroke-width="1"/>';
+      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY-1)+'" x2="'+(midX+7)+'" y2="'+(midY-1)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
+      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+2)+'" x2="'+(midX+7)+'" y2="'+(midY+2)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
+      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+5)+'" x2="'+(midX+7)+'" y2="'+(midY+5)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
+      legHits+='</g>';
+    }
+    cumD3+=ld3; /* toujours incrémenter, même si poignée masquée */
   }
 
   /* Waypoint markers + labels — drag sur cercles intérieurs */
@@ -5455,14 +5472,17 @@ function renderAltProfile(){
   for(var i=0;i<waypoints.length;i++){
     if(i>0) cumD2+=(waypoints[i].dist||0);
     var isL2=i===waypoints.length-1;
+    var isEtp=!!waypoints[i].isEtape;
     var wA=wpAlts[i];
     var wx=xS(cumD2),wy=yS(wA);
-    var isDrag=i>0&&!isL2;
-    /* Cercle hit invisible large pour drag */
+    /* Drag uniquement sur waypoints intermédiaires non-étapes */
+    var isDrag=i>0&&!isL2&&!isEtp;
     if(isDrag) wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="12" fill="transparent" cursor="ns-resize" class="alt-wp-hit" data-wpidx="'+i+'"/>';
-    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="'+(isL2||i===0?'#a78bfa':'#667eea')+'" stroke="#fff" stroke-width="1.5" style="pointer-events:none"/>';
+    var dotColor=isL2||i===0?'#a78bfa':(isEtp?'#ff9500':'#667eea');
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="'+dotColor+'" stroke="#fff" stroke-width="1.5" style="pointer-events:none"/>';
     wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
     if(isDrag) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wA+'ft</text>';
+    else if(isEtp) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="#ff9500" style="pointer-events:none">'+wA+'ft↓</text>';
     else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
   }
 
