@@ -5492,27 +5492,12 @@ function renderAltProfile(){
     else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
   }
 
-  /* Terrain layer : on corrige les élévations aux aérodromes/étapes avec les valeurs officielles */
+  /* Terrain layer : données brutes de l'API, sans patch artificiel */
   var terrainPath='';
-  var tArr=null; /* tableau terrain corrigé, utilisé aussi par le crosshair */
+  var tArr=null; /* tableau terrain utilisé aussi par le crosshair */
   if(_altTerrainCache&&_altTerrainCache.length){
     var n=_altTerrainCache.length-1;
-    /* Copie du cache pour ne pas polluer les valeurs brutes */
-    var tArr=_altTerrainCache.slice();
-    /* Pour chaque waypoint départ/arrivée/étape, on patchs le point terrain le plus proche */
-    var _cumPatch=0;
-    for(var pi=0;pi<waypoints.length;pi++){
-      if(pi>0) _cumPatch+=(waypoints[pi].dist||0);
-      var isEtp2=waypoints[pi].isEtape,isFirst2=pi===0,isLast2=pi===waypoints.length-1;
-      if(isFirst2||isLast2||isEtp2){
-        var icao2=(waypoints[pi].name||'').trim().toUpperCase();
-        if(AIRPORT_ELEV[icao2]!==undefined){
-          var ki=Math.round(_cumPatch/totalDist*n);
-          ki=Math.max(0,Math.min(n,ki));
-          tArr[ki]=Math.max(tArr[ki],AIRPORT_ELEV[icao2]);
-        }
-      }
-    }
+    tArr=_altTerrainCache; /* référence directe, pas de modification */
     terrainPath='M'+xS(0)+','+yS(tArr[0]);
     for(var k=1;k<=n;k++) terrainPath+=' L'+xS(totalDist*(k/n))+','+yS(tArr[k]);
     terrainPath+=' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
