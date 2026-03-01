@@ -4922,6 +4922,7 @@ function loadDossier(id, _freshCloudFiles){
     ftBtns[1].classList.toggle('active',flightType==='nav');
   }
   window._mapFittedOnce=false;  /* force re-fit on new route */
+  _altTerrainCache=null;        /* terrain doit être rechargé pour cette route */
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
   /* Restore map captures — prefer cloud URLs, fall back to local base64 */
@@ -5368,20 +5369,40 @@ function renderAltProfile(){
   var container=document.getElementById('altProfileContainer');if(!container) return;
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonn\u00e9es pour afficher le profil.</p>';return;}
-  var depElev=(window.AIRPORT_ELEV&&AIRPORT_ELEV[waypoints[0]?waypoints[0].name:''])||0;
-  var arrElev=(window.AIRPORT_ELEV&&AIRPORT_ELEV[waypoints[waypoints.length-1]?waypoints[waypoints.length-1].name:''])||0;
+
+  /* Élévations dep/arr : si terrainCache disponible, on utilise le premier/dernier point */
+  var depElev=(_altTerrainCache&&_altTerrainCache.length)?_altTerrainCache[0]:0;
+  var arrElev=(_altTerrainCache&&_altTerrainCache.length)?_altTerrainCache[_altTerrainCache.length-1]:0;
+
   var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
   if(totalDist<=0) return;
-  var sub=document.getElementById('altProfileSubtitle');if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM';
-  var maxAlt=Math.max(depElev,arrElev,500);for(var i=1;i<waypoints.length;i++) maxAlt=Math.max(maxAlt,waypoints[i].altitude||2000);
-  maxAlt=Math.ceil((maxAlt+600)/500)*500;
-  var W=560,H=210,ml=54,mr=14,mt=20,mb=40;var cw=W-ml-mr,ch=H-mt-mb;
+
+  var sub=document.getElementById('altProfileSubtitle');
+  if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM';
+
+  /* Altitudes effectives par waypoint */
+  var wpAlts=[];
+  for(var i=0;i<waypoints.length;i++){
+    if(i===0) wpAlts.push(depElev);
+    else if(i===waypoints.length-1) wpAlts.push(arrElev);
+    else wpAlts.push(waypoints[i].altitude||2000);
+  }
+
+  var maxAlt=0;for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
+  if(_altTerrainCache) for(var i=0;i<_altTerrainCache.length;i++) maxAlt=Math.max(maxAlt,_altTerrainCache[i]);
+  maxAlt=Math.ceil((maxAlt+600)/500)*500;if(maxAlt<1000) maxAlt=1000;
+
+  var W=560,H=210,ml=54,mr=14,mt=20,mb=40;
+  var cw=W-ml-mr,ch=H-mt-mb;
   function xS(d){return ml+(d/totalDist)*cw;}
   function yS(a){return mt+ch-((a/maxAlt)*ch);}
-  var pts=[{x:0,y:depElev}];var cumDist=0;var CPR=300;
+
+  /* Profil de vol : montée rapide au début du leg, descente avant la fin */
+  var CPR=300;
+  var pts=[{x:0,y:wpAlts[0]}];var cumDist=0;
   for(var i=1;i<waypoints.length;i++){
-    var ld=waypoints[i].dist||0,isLast=i===waypoints.length-1;
-    var la=isLast?arrElev:(waypoints[i].altitude||2000);
+    var ld=waypoints[i].dist||0;
+    var la=wpAlts[i];
     var pa=pts[pts.length-1].y,ad=la-pa;
     if(ld>0&&Math.abs(ad)>50){
       var td=Math.min(Math.abs(ad)/CPR,ld*0.65);
@@ -5394,6 +5415,8 @@ function renderAltProfile(){
   var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
   for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
   var fillD=pD+' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
+
+  /* Grilles */
   var yStep=maxAlt>4000?1000:500;var yGrid='',xGrid='';
   for(var alt=0;alt<=maxAlt;alt+=yStep){
     var yy=yS(alt);
@@ -5408,60 +5431,161 @@ function renderAltProfile(){
   }
   xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
   yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
+
+  /* Zones de drag sur les segments (rectangles invisibles larges) */
+  var legHits='',cumD3=0;
+  for(var i=1;i<waypoints.length;i++){
+    var ld3=waypoints[i].dist||0;
+    var x1=xS(cumD3),x2=xS(cumD3+ld3);
+    /* Hit zone : rectangle pleine hauteur du graphique, transparent */
+    if(i>0&&i<waypoints.length-1){
+      legHits+='<rect x="'+x1+'" y="'+mt+'" width="'+(x2-x1)+'" height="'+ch+'" fill="transparent" cursor="ns-resize" class="alt-leg-hit" data-wpidx="'+i+'" style="cursor:ns-resize"/>';
+    }
+    cumD3+=ld3;
+  }
+
+  /* Waypoint markers + labels — drag sur cercles intérieurs */
   var wpMk='',cumD2=0;
   for(var i=0;i<waypoints.length;i++){
     if(i>0) cumD2+=(waypoints[i].dist||0);
     var isL2=i===waypoints.length-1;
-    var wA=i===0?depElev:(isL2?arrElev:(waypoints[i].altitude||2000));
+    var wA=wpAlts[i];
     var wx=xS(cumD2),wy=yS(wA);
-    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="#667eea" stroke="#fff" stroke-width="1.5"/>';
+    var isDrag=i>0&&!isL2;
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="7" fill="transparent" '+(isDrag?'cursor="ns-resize" class="alt-wp-hit" data-wpidx="'+i+'"':'')+'/>';
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="'+(isL2||i===0?'#a78bfa':'#667eea')+'" stroke="#fff" stroke-width="1.5" style="pointer-events:none"/>';
     wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
-    if(i>0&&!isL2) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa">'+(waypoints[i].altitude||2000)+'ft</text>';
-    else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)">'+wA+'ft</text>';
+    if(isDrag) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wA+'ft</text>';
+    else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
   }
-  var dhSvg='',cumD3=0;
-  for(var i=1;i<waypoints.length-1;i++){
-    var ld2=(waypoints[i].dist||0),lA=waypoints[i].altitude||2000;
-    var mx=xS(cumD3+ld2/2),my=yS(lA);
-    dhSvg+='<polygon points="'+mx+','+(my-9)+' '+(mx+7)+','+my+' '+mx+','+(my+9)+' '+(mx-7)+','+my+'" fill="rgba(102,126,234,.2)" stroke="#a78bfa" stroke-width="1.5" cursor="ns-resize" class="alt-drag-handle" onmousedown="window._altDragStart(event,'+i+')" ontouchstart="window._altDragStartTouch(event,'+i+')" title="Glisser haut/bas pour modifier l\'altitude du leg '+i+'"/>';
-    cumD3+=ld2;
+
+  /* Terrain layer placeholder (sera rempli asynchronement) */
+  var terrainPath='';
+  if(_altTerrainCache&&_altTerrainCache.length){
+    var n=_altTerrainCache.length-1;
+    terrainPath='M'+xS(0)+','+yS(_altTerrainCache[0]);
+    for(var k=1;k<=n;k++) terrainPath+=' L'+xS(totalDist*(k/n))+','+yS(_altTerrainCache[k]);
+    terrainPath+=' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
   }
-  container.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block">'+
+
+  container.innerHTML='<svg id="altSvg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'+
     '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3"/>'+
     yGrid+xGrid+
+    (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1"/>':'')+
     '<path d="'+fillD+'" fill="rgba(102,126,234,.17)"/>'+
     '<path d="'+pD+'" fill="none" stroke="#667eea" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
-    '<g id="terrainLayer"></g>'+
-    wpMk+dhSvg+'</svg>';
-  _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb);
+    legHits+wpMk+
+    '<g id="terrainLayer">'+(terrainPath?'':'')+'</g>'+
+    '</svg>';
+
+  /* Attache les événements après injection HTML */
+  var svg=document.getElementById('altSvg');
+  if(svg){
+    svg.querySelectorAll('.alt-leg-hit,.alt-wp-hit').forEach(function(el){
+      el.addEventListener('mousedown',function(e){
+        var idx=parseInt(el.dataset.wpidx);
+        window._altDragStart(e,idx);
+      });
+      el.addEventListener('touchstart',function(e){
+        var idx=parseInt(el.dataset.wpidx);
+        window._altDragStartTouch(e,idx);
+      },{passive:false});
+    });
+  }
+
+  /* Lance fetch terrain si pas encore en cache */
+  if(!_altTerrainCache) _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb);
 }
+
+var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
+
 function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
-  var segs=[];for(var i=1;i<waypoints.length;i++) if(waypoints[i-1].lat!==null&&waypoints[i-1].lon!==null&&waypoints[i].lat!==null&&waypoints[i].lon!==null) segs.push({lat1:waypoints[i-1].lat,lon1:waypoints[i-1].lon,lat2:waypoints[i].lat,lon2:waypoints[i].lon,dist:waypoints[i].dist||0});
+  var segs=[];
+  for(var i=1;i<waypoints.length;i++){
+    if(waypoints[i-1].lat!==null&&waypoints[i-1].lon!==null&&waypoints[i].lat!==null&&waypoints[i].lon!==null)
+      segs.push({lat1:waypoints[i-1].lat,lon1:waypoints[i-1].lon,lat2:waypoints[i].lat,lon2:waypoints[i].lon,dist:waypoints[i].dist||0});
+  }
   if(!segs.length) return;
-  var n=18,locs=[],xs=[];
-  for(var s=0;s<=n;s++){var td=totalDist*(s/n),cd=0;
-    for(var si=0;si<segs.length;si++){var sg=segs[si];if(cd+sg.dist>=td||si===segs.length-1){var t=sg.dist>0?((td-cd)/sg.dist):0;t=Math.max(0,Math.min(1,t));locs.push((sg.lat1+t*(sg.lat2-sg.lat1)).toFixed(5)+','+(sg.lon1+t*(sg.lon2-sg.lon1)).toFixed(5));xs.push(td);break;}cd+=sg.dist;}}
+  var n=24,locs=[],xs=[];
+  for(var s=0;s<=n;s++){
+    var td=totalDist*(s/n),cd=0;
+    for(var si=0;si<segs.length;si++){
+      var sg=segs[si];
+      if(cd+sg.dist>=td||si===segs.length-1){
+        var t=sg.dist>0?((td-cd)/sg.dist):0;t=Math.max(0,Math.min(1,t));
+        locs.push((sg.lat1+t*(sg.lat2-sg.lat1)).toFixed(5)+','+(sg.lon1+t*(sg.lon2-sg.lon1)).toFixed(5));
+        xs.push(td);break;
+      }
+      cd+=sg.dist;
+    }
+  }
+  /* Indicateur de chargement */
+  var layer=document.getElementById('terrainLayer');
+  if(layer) layer.innerHTML='<text x="'+((54+(W-54-14)/2))+'" y="'+(20+(H-20-40)/2)+'" text-anchor="middle" font-size="9" fill="rgba(150,100,40,.6)">Chargement terrain...</text>';
+
   fetch('https://api.opentopodata.org/v1/srtm30m?locations='+locs.join('|'))
     .then(function(r){return r.json();})
     .then(function(data){
-      if(!data.results) return;
-      var cw2=W-ml-mr,ch2=H-mt-mb;
-      function xS2(d){return ml+(d/totalDist)*cw2;}
-      function yS2(a){return mt+ch2-((a/maxAlt)*ch2);}
-      var tpts=data.results.map(function(r,i){return {x:xs[i],e:(r&&r.elevation)||0};});
-      var p2='M'+xS2(tpts[0].x)+','+yS2(tpts[0].e);
-      for(var j=1;j<tpts.length;j++) p2+=' L'+xS2(tpts[j].x)+','+yS2(tpts[j].e);
-      p2+=' L'+(ml+cw2)+','+(mt+ch2)+' L'+ml+','+(mt+ch2)+' Z';
-      var layer=document.getElementById('terrainLayer');
-      if(layer) layer.innerHTML='<path d="'+p2+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1"/>';
-    }).catch(function(){});
+      if(!data.results||!data.results.length) return;
+      var elevs=data.results.map(function(r){return (r&&r.elevation!=null)?Math.max(0,r.elevation):0;});
+      _altTerrainCache=elevs;
+      /* Recalcule maxAlt avec le terrain */
+      var newMax=maxAlt;for(var k=0;k<elevs.length;k++) newMax=Math.max(newMax,elevs[k]+200);
+      /* Redessine avec le cache */
+      renderAltProfile();
+    })
+    .catch(function(err){
+      var layer2=document.getElementById('terrainLayer');
+      if(layer2) layer2.innerHTML='<text x="'+((54+(W-54-14)/2))+'" y="'+(20+(H-20-40)/2)+'" text-anchor="middle" font-size="9" fill="rgba(200,100,40,.6)">Terrain non disponible</text>';
+    });
 }
 window.renderAltProfile=renderAltProfile;
-function _altDragStart(e,wpIdx){e.preventDefault();e.stopPropagation();_altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000};document.addEventListener('mousemove',_altDragMove);document.addEventListener('mouseup',_altDragEnd);}
-function _altDragStartTouch(e,wpIdx){if(!e.touches) return;var t=e.touches[0];_altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000};document.addEventListener('touchmove',_altDragMoveT,{passive:false});document.addEventListener('touchend',_altDragEnd);}
-function _altDragMove(e){if(!_altDragState) return;var dy=_altDragState.startY-e.clientY;var na=Math.round(Math.max(0,Math.min(10000,_altDragState.startAlt+dy*15))/100)*100;if(na!==(waypoints[_altDragState.wpIdx].altitude||2000)){waypoints[_altDragState.wpIdx].altitude=na;var lbl=document.getElementById('leg-alt-val-'+_altDragState.wpIdx);if(lbl) lbl.textContent=na+' ft';recalcNavlog();}}
-function _altDragMoveT(e){e.preventDefault();if(!_altDragState||!e.touches) return;_altDragMove({clientY:e.touches[0].clientY});}
-function _altDragEnd(){if(_altDragState) saveNavlog();_altDragState=null;document.removeEventListener('mousemove',_altDragMove);document.removeEventListener('mouseup',_altDragEnd);document.removeEventListener('touchmove',_altDragMoveT);document.removeEventListener('touchend',_altDragEnd);}
+function _altDragStart(e,wpIdx){
+  e.preventDefault();e.stopPropagation();
+  _altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000};
+  document.addEventListener('mousemove',_altDragMove,{capture:true});
+  document.addEventListener('mouseup',_altDragEnd,{capture:true});
+}
+function _altDragStartTouch(e,wpIdx){
+  if(!e.touches) return;
+  e.preventDefault();
+  var t=e.touches[0];
+  _altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000};
+  document.addEventListener('touchmove',_altDragMoveT,{passive:false,capture:true});
+  document.addEventListener('touchend',_altDragEnd,{capture:true});
+}
+function _altDragMove(e){
+  if(!_altDragState) return;
+  var dy=_altDragState.startY-e.clientY;
+  var na=Math.round(Math.max(100,Math.min(18000,_altDragState.startAlt+dy*20))/100)*100;
+  if(na!==(waypoints[_altDragState.wpIdx].altitude||2000)){
+    waypoints[_altDragState.wpIdx].altitude=na;
+    /* Met à jour le champ altitude dans la bande navlog si visible */
+    var lbl=document.getElementById('leg-alt-val-'+_altDragState.wpIdx);
+    if(lbl) lbl.textContent=na+' ft';
+    var inp=document.getElementById('wp-alt-'+_altDragState.wpIdx);
+    if(inp) inp.value=na;
+    /* Redessine seulement le profil, pas le navlog entier */
+    renderAltProfile();
+  }
+}
+function _altDragMoveT(e){
+  e.preventDefault();
+  if(!_altDragState||!e.touches) return;
+  _altDragMove({clientY:e.touches[0].clientY});
+}
+function _altDragEnd(e){
+  if(_altDragState){
+    /* Maintenant on recalcule tout */
+    recalcNavlog();
+    saveNavlog();
+  }
+  _altDragState=null;
+  document.removeEventListener('mousemove',_altDragMove,{capture:true});
+  document.removeEventListener('mouseup',_altDragEnd,{capture:true});
+  document.removeEventListener('touchmove',_altDragMoveT,{capture:true});
+  document.removeEventListener('touchend',_altDragEnd,{capture:true});
+}
 window._altDragStart=_altDragStart;window._altDragStartTouch=_altDragStartTouch;
 
 function importDossier(){
