@@ -427,6 +427,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .note-tb-btn:hover{background:rgba(102,126,234,.2)}
 .note-editor{min-height:90px;border:1px solid var(--border-color);border-radius:8px;padding:10px;outline:none;font-size:.88em;line-height:1.65;color:var(--text-primary);background:var(--bg-input);word-break:break-word}
 .note-editor:empty:before{content:attr(data-placeholder);color:var(--text-secondary);pointer-events:none}
+/* Surlignages: texte toujours sombre pour lisibilité */
+.note-editor [style*="background-color"],.note-content [style*="background-color"]{color:#111!important;border-radius:2px;padding:0 2px}
 .note-content{font-size:.88em;line-height:1.7;word-break:break-word}
 .note-date{font-size:.72em;color:var(--text-secondary);margin-bottom:6px}
 /* dossier nav-done */
@@ -1045,11 +1047,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('italic')"><i>I</i></button>
           <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('underline')"><u>S</u></button>
           <span style="margin-left:4px;font-size:.75em;color:var(--text-secondary)">Surligner&nbsp;:</span>
-          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#fffb8f')" style="background:#fffb8f;color:#000;border-color:#e6c200" title="Jaune">A</button>
-          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#ffd6a0')" style="background:#ffd6a0;color:#000;border-color:#f09800" title="Orange">A</button>
-          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#ffaaaa')" style="background:#ffaaaa;color:#000;border-color:#e53935" title="Rouge">A</button>
-          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#b6ffb0')" style="background:#b6ffb0;color:#000;border-color:#43a047" title="Vert">A</button>
-          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#a8d8ff')" style="background:#a8d8ff;color:#000;border-color:#1976d2" title="Bleu">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();window._noteHL('#fffb8f')" style="background:#fffb8f;color:#111;border-color:#e6c200" title="Jaune">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();window._noteHL('#ffd6a0')" style="background:#ffd6a0;color:#111;border-color:#f09800" title="Orange">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();window._noteHL('#ffaaaa')" style="background:#ffaaaa;color:#111;border-color:#e53935" title="Rouge">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();window._noteHL('#b6ffb0')" style="background:#b6ffb0;color:#111;border-color:#43a047" title="Vert">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();window._noteHL('#a8d8ff')" style="background:#a8d8ff;color:#111;border-color:#1976d2" title="Bleu">A</button>
           <button class="note-tb-btn" style="margin-left:auto" onmousedown="event.preventDefault();document.execCommand('removeFormat')" title="Effacer la mise en forme">&#x2715; Format</button>
         </div>
         <div id="noteEditor" class="note-editor" contenteditable="true" data-placeholder="Entrez votre note..."></div>
@@ -5266,6 +5268,26 @@ function _noteDragSetup(container){
 }
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;window.renderNotes=renderNotes;
+
+/* Surlignage avec toggle : recliquer = supprime le surlignage */
+function _noteHL(color){
+  /* Normalise la couleur hex en rgb pour comparaison avec queryCommandValue */
+  function hexToRgb(h){
+    var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+    return 'rgb('+r+', '+g+', '+b+')';
+  }
+  var cur=document.queryCommandValue('hiliteColor')||'';
+  if(cur===hexToRgb(color)||cur.replace(/\s/g,'')===hexToRgb(color).replace(/\s/g,'')){
+    /* Même couleur : on supprime le surlignage */
+    document.execCommand('hiliteColor',false,'transparent');
+    document.execCommand('foreColor',false,'inherit');
+  } else {
+    document.execCommand('hiliteColor',false,color);
+    /* Force texte sombre pour lisibilité quelle que soit le thème */
+    document.execCommand('foreColor',false,'#111111');
+  }
+}
+window._noteHL=_noteHL;
 
 /* ===== ALTITUDE PROFILE CHART ===== */
 var _altDragState=null;
