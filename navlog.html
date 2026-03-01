@@ -1528,7 +1528,10 @@ function switchTab(id){
     /* Auto-remplir vent/temp si un METAR est déjà disponible */
     setTimeout(function(){ if(typeof perfFromMetar==='function') perfFromMetar(); }, 150);
   }
-  if(id==='notes') setTimeout(renderNotes,0);
+  if(id==='notes'){
+    renderNotes(); /* affichage immédiat depuis le cache local */
+    _loadNotesCloud(function(){ renderNotes(); }); /* sync cloud puis rafraîchit */
+  }
   _activeTab = id;
 }
 window.switchTab=switchTab;
@@ -5132,6 +5135,45 @@ window.toggleNavDone=toggleNavDone;
 
 /* ===== NOTES DE VOL ===== */
 var _navlogNotes=JSON.parse(localStorage.getItem('navlog_notes')||'[]');
+var _notesSyncing=false;
+
+function _saveNotesLocal(){
+  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+}
+function _saveNotesCloud(){
+  if(!window._fbDB||!window._navlogUid) return;
+  window._fbDB.collection('navlogNotes').doc(window._navlogUid)
+    .set({notes:_navlogNotes,updatedAt:new Date().toISOString()})
+    .catch(function(e){console.warn('[Notes] cloud save:',e);});
+}
+function _loadNotesCloud(cb){
+  if(!window._fbDB||!window._navlogUid){if(cb) cb();return;}
+  if(_notesSyncing) return;
+  _notesSyncing=true;
+  window._fbDB.collection('navlogNotes').doc(window._navlogUid).get()
+    .then(function(doc){
+      if(doc.exists&&doc.data().notes&&doc.data().notes.length){
+        var cloud=doc.data().notes;
+        var cloudIds={};
+        cloud.forEach(function(n){cloudIds[n.id]=true;});
+        var localOnly=_navlogNotes.filter(function(n){return !cloudIds[n.id];});
+        if(localOnly.length){
+          /* Merge : priorité au cloud + notes locales orphelines */
+          _navlogNotes=cloud.concat(localOnly);
+          _navlogNotes.sort(function(a,b){return b.id-a.id;});
+          _saveNotesCloud();
+        } else {
+          _navlogNotes=cloud;
+        }
+        _saveNotesLocal();
+      } else if(_navlogNotes.length){
+        /* Pas encore de données cloud : on pousse le local */
+        _saveNotesCloud();
+      }
+    })
+    .catch(function(e){console.warn('[Notes] cloud load:',e);})
+    .finally(function(){_notesSyncing=false;if(cb) cb();});
+}
 
 function toggleNoteEditor(){
   var wrap=document.getElementById('noteEditorWrap');
@@ -5147,15 +5189,17 @@ function saveCurrentNote(){
   var html=ed.innerHTML.trim();
   if(!html||html==='<br>'){_toast('Note vide','error',2000);return;}
   _navlogNotes.unshift({id:Date.now(),html:html,date:new Date().toISOString()});
-  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  _saveNotesLocal();
+  _saveNotesCloud();
   toggleNoteEditor();
   renderNotes();
-  _toast('Note ajout\u00e9e','success',1800);
+  _toast('Note ajout\u00e9e \u2601\uFE0F','success',1800);
 }
 function deleteNote(id){
   if(!confirm('Supprimer cette note ?')) return;
   _navlogNotes=_navlogNotes.filter(function(n){return n.id!==id;});
-  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  _saveNotesLocal();
+  _saveNotesCloud();
   renderNotes();
 }
 function moveNote(id,dir){
@@ -5164,7 +5208,8 @@ function moveNote(id,dir){
   var sw=idx+dir;
   if(sw<0||sw>=_navlogNotes.length) return;
   var tmp=_navlogNotes[idx];_navlogNotes[idx]=_navlogNotes[sw];_navlogNotes[sw]=tmp;
-  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  _saveNotesLocal();
+  _saveNotesCloud();
   renderNotes();
 }
 function renderNotes(){
@@ -5209,7 +5254,8 @@ function _noteDragSetup(container){
           var moved=_navlogNotes.splice(si,1)[0];
           var newDi=_navlogNotes.findIndex(function(n){return n.id===dId;});
           _navlogNotes.splice(after?newDi+1:newDi,0,moved);
-          localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+          _saveNotesLocal();
+          _saveNotesCloud();
           renderNotes();
         }
       }
