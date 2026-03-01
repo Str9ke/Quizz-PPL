@@ -5369,9 +5369,12 @@ function renderAltProfile(){
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonn\u00e9es pour afficher le profil.</p>';return;}
 
-  /* Élévations dep/arr : si terrainCache disponible, on utilise le premier/dernier point */
-  var depElev=(_altTerrainCache&&_altTerrainCache.length)?_altTerrainCache[0]:0;
-  var arrElev=(_altTerrainCache&&_altTerrainCache.length)?_altTerrainCache[_altTerrainCache.length-1]:0;
+  /* Élévations dep/arr : AIRPORT_ELEV en priorité, sinon terrain cache */
+  function _wpElev(wpIdx,distAtWp){
+    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
+    if(AIRPORT_ELEV[icao]!==undefined) return AIRPORT_ELEV[icao];
+    return _terrainAtDist(distAtWp);
+  }
 
   var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
   if(totalDist<=0) return;
@@ -5389,6 +5392,9 @@ function renderAltProfile(){
     return Math.round(_altTerrainCache[k0]*(1-frac)+_altTerrainCache[k1]*frac);
   }
 
+  var depElev=_wpElev(0,0);
+  var arrElev=_wpElev(waypoints.length-1,totalDist);
+
   /* Altitudes effectives par waypoint
      - Départ / arrivée : altitude terrain (sol)
      - isEtape (escale intermédiaire) : altitude terrain interpolée (posé au sol)
@@ -5399,7 +5405,7 @@ function renderAltProfile(){
     if(i>0) cumDistWp+=(waypoints[i].dist||0);
     if(i===0) wpAlts.push(depElev);
     else if(i===waypoints.length-1) wpAlts.push(arrElev);
-    else if(waypoints[i].isEtape) wpAlts.push(_terrainAtDist(cumDistWp));
+    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i,cumDistWp));
     else wpAlts.push(waypoints[i].altitude||2000);
   }
 
