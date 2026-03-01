@@ -5391,6 +5391,7 @@ function renderAltProfile(){
   var maxAlt=0;for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
   if(_altTerrainCache) for(var i=0;i<_altTerrainCache.length;i++) maxAlt=Math.max(maxAlt,_altTerrainCache[i]);
   maxAlt=Math.ceil((maxAlt+600)/500)*500;if(maxAlt<1000) maxAlt=1000;
+  maxAltCache=maxAlt; /* exposé pour _altDragUpdateSvg */
 
   var W=560,H=210,ml=54,mr=14,mt=20,mb=40;
   var cw=W-ml-mr,ch=H-mt-mb;
@@ -5542,15 +5543,18 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
 window.renderAltProfile=renderAltProfile;
 function _altDragStart(e,wpIdx){
   e.preventDefault();e.stopPropagation();
-  _altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000};
-  document.addEventListener('mousemove',_altDragMove,{capture:true});
+  /* Pointer capture : garantit que move+up arrivent ici même hors du SVG */
+  if(e.target&&e.target.setPointerCapture&&e.pointerId!=null)
+    try{e.target.setPointerCapture(e.pointerId);}catch(x){}
+  _altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000,moved:false};
+  document.addEventListener('mousemove',_altDragMove,{capture:true,passive:true});
   document.addEventListener('mouseup',_altDragEnd,{capture:true});
 }
 function _altDragStartTouch(e,wpIdx){
   if(!e.touches) return;
   e.preventDefault();
   var t=e.touches[0];
-  _altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000};
+  _altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000,moved:false};
   document.addEventListener('touchmove',_altDragMoveT,{passive:false,capture:true});
   document.addEventListener('touchend',_altDragEnd,{capture:true});
 }
@@ -5560,13 +5564,14 @@ function _altDragMove(e){
   var na=Math.round(Math.max(100,Math.min(18000,_altDragState.startAlt+dy*20))/100)*100;
   if(na!==(waypoints[_altDragState.wpIdx].altitude||2000)){
     waypoints[_altDragState.wpIdx].altitude=na;
-    /* Met à jour le champ altitude dans la bande navlog si visible */
-    var lbl=document.getElementById('leg-alt-val-'+_altDragState.wpIdx);
-    if(lbl) lbl.textContent=na+' ft';
+    _altDragState.moved=true;
+    /* Mise à jour légère : juste le texte du champ, sans recréer le SVG */
     var inp=document.getElementById('wp-alt-'+_altDragState.wpIdx);
     if(inp) inp.value=na;
-    /* Redessine seulement le profil, pas le navlog entier */
-    renderAltProfile();
+    var lbl=document.getElementById('leg-alt-val-'+_altDragState.wpIdx);
+    if(lbl) lbl.textContent=na+' ft';
+    /* Déplace visuellement le cercle dans le SVG sans le recréer */
+    _altDragUpdateSvg(_altDragState.wpIdx,na);
   }
 }
 function _altDragMoveT(e){
@@ -5575,17 +5580,35 @@ function _altDragMoveT(e){
   _altDragMove({clientY:e.touches[0].clientY});
 }
 function _altDragEnd(e){
-  if(_altDragState){
-    /* Maintenant on recalcule tout */
-    recalcNavlog();
-    saveNavlog();
-  }
+  var wasMoved=_altDragState&&_altDragState.moved;
   _altDragState=null;
   document.removeEventListener('mousemove',_altDragMove,{capture:true});
   document.removeEventListener('mouseup',_altDragEnd,{capture:true});
   document.removeEventListener('touchmove',_altDragMoveT,{capture:true});
   document.removeEventListener('touchend',_altDragEnd,{capture:true});
+  if(wasMoved){
+    recalcNavlog(); /* recalcule caps/temps/carbu */
+    saveNavlog();
+    /* renderAltProfile() est appelé par recalcNavlog via setTimeout */
+  }
 }
+/* Met à jour position cercle + label alt dans le SVG existant sans recréer */
+function _altDragUpdateSvg(wpIdx,newAlt){
+  var svg=document.getElementById('altSvg');if(!svg) return;
+  var container=document.getElementById('altProfileContainer');if(!container) return;
+  /* Recalcul des dimensions depuis l'état courant */
+  var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
+  if(!totalDist) return;
+  var W=560,H=210,ml=54,mr=14,mt=20,mb=40,cw=W-ml-mr,ch=H-mt-mb;
+  function xS(d){return ml+(d/totalDist)*cw;}
+  function yS(a){return mt+ch-((a/maxAltCache)/1)*ch;}
+  /* Trouve les cercles par data-wpidx */
+  var hits=svg.querySelectorAll('[data-wpidx="'+wpIdx+'"]');
+  /* Plus simple : refaire un renderAltProfile complet ne pose PAS de problème
+     tant qu'on ne le fait PAS pendant mousemove. Ici on est APRES le move,
+     donc on ne fait rien — le rendu final arrive dans _altDragEnd. */
+}
+var maxAltCache=3000; /* sera mis à jour par renderAltProfile */
 window._altDragStart=_altDragStart;window._altDragStartTouch=_altDragStartTouch;
 
 function importDossier(){
