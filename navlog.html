@@ -424,6 +424,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .note-card.nc-amber{border-left-color:#e65100;background:rgba(230,81,0,.09)}
 .note-card.nc-green{border-left-color:#1b5e20;background:rgba(27,94,32,.09)}
 .note-card.nc-blue {border-left-color:#0d47a1;background:rgba(13,71,161,.09)}
+.note-card.nc-gold {border-left-color:#f57f17;background:rgba(245,127,23,.09)}
+.note-card.nc-steel{border-left-color:#37474f;background:rgba(55,71,79,.13)}
+.note-card.nc-plum {border-left-color:#4a148c;background:rgba(74,20,140,.10)}
+.note-card.nc-teal {border-left-color:#004d40;background:rgba(0,77,64,.09)}
+.note-card.nc-rose {border-left-color:#880e4f;background:rgba(136,14,79,.09)}
 .note-color-dot{width:17px;height:17px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;display:inline-block;flex-shrink:0;transition:transform .15s,border-color .15s,box-shadow .15s}
 .note-color-dot:hover{transform:scale(1.15)}
 .note-color-dot.nc-sel{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.5);transform:scale(1.2)}
@@ -1069,8 +1074,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <span class="note-color-dot" data-nc="" onclick="window._setNoteColor('')" style="background:rgba(120,120,140,.35);border-color:rgba(200,200,200,.2)" title="Aucune">&#10006;</span>
           <span class="note-color-dot" data-nc="red"   onclick="window._setNoteColor('red')"   style="background:#b71c1c" title="Rouge"></span>
           <span class="note-color-dot" data-nc="amber" onclick="window._setNoteColor('amber')" style="background:#e65100" title="Ambre"></span>
+          <span class="note-color-dot" data-nc="gold"  onclick="window._setNoteColor('gold')"  style="background:#f57f17" title="Or"></span>
           <span class="note-color-dot" data-nc="green" onclick="window._setNoteColor('green')" style="background:#1b5e20" title="Vert"></span>
+          <span class="note-color-dot" data-nc="teal"  onclick="window._setNoteColor('teal')"  style="background:#004d40" title="Teal"></span>
           <span class="note-color-dot" data-nc="blue"  onclick="window._setNoteColor('blue')"  style="background:#0d47a1" title="Bleu"></span>
+          <span class="note-color-dot" data-nc="plum"  onclick="window._setNoteColor('plum')"  style="background:#4a148c" title="Prune"></span>
+          <span class="note-color-dot" data-nc="rose"  onclick="window._setNoteColor('rose')"  style="background:#880e4f" title="Rose"></span>
+          <span class="note-color-dot" data-nc="steel" onclick="window._setNoteColor('steel')" style="background:#37474f" title="Gris acier"></span>
           <div style="flex:1;display:flex;justify-content:flex-end;gap:8px">
             <button class="navlog-btn primary" onclick="window.saveCurrentNote()">&#x2713; Enregistrer</button>
             <button class="navlog-btn" onclick="window.toggleNoteEditor()">Annuler</button>
