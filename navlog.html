@@ -5492,24 +5492,43 @@ function renderAltProfile(){
     else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
   }
 
-  /* Terrain layer placeholder (sera rempli asynchronement) */
+  /* Terrain layer : on corrige les élévations aux aérodromes/étapes avec les valeurs officielles */
   var terrainPath='';
+  var tArr=null; /* tableau terrain corrigé, utilisé aussi par le crosshair */
   if(_altTerrainCache&&_altTerrainCache.length){
     var n=_altTerrainCache.length-1;
-    terrainPath='M'+xS(0)+','+yS(_altTerrainCache[0]);
-    for(var k=1;k<=n;k++) terrainPath+=' L'+xS(totalDist*(k/n))+','+yS(_altTerrainCache[k]);
+    /* Copie du cache pour ne pas polluer les valeurs brutes */
+    var tArr=_altTerrainCache.slice();
+    /* Pour chaque waypoint départ/arrivée/étape, on patchs le point terrain le plus proche */
+    var _cumPatch=0;
+    for(var pi=0;pi<waypoints.length;pi++){
+      if(pi>0) _cumPatch+=(waypoints[pi].dist||0);
+      var isEtp2=waypoints[pi].isEtape,isFirst2=pi===0,isLast2=pi===waypoints.length-1;
+      if(isFirst2||isLast2||isEtp2){
+        var icao2=(waypoints[pi].name||'').trim().toUpperCase();
+        if(AIRPORT_ELEV[icao2]!==undefined){
+          var ki=Math.round(_cumPatch/totalDist*n);
+          ki=Math.max(0,Math.min(n,ki));
+          tArr[ki]=Math.max(tArr[ki],AIRPORT_ELEV[icao2]);
+        }
+      }
+    }
+    terrainPath='M'+xS(0)+','+yS(tArr[0]);
+    for(var k=1;k<=n;k++) terrainPath+=' L'+xS(totalDist*(k/n))+','+yS(tArr[k]);
     terrainPath+=' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
   }
 
   container.innerHTML='<svg id="altSvg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'+
-    '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3"/>'+
+    /* Overlay au fond — sous les hit zones — pour capter les mousemove sur la zone vide */
+    '<rect id="altOverlay" x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="transparent" style="cursor:crosshair"/>'+
+    '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3" style="pointer-events:none"/>'+
     yGrid+xGrid+
-    (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1"/>':'')+
-    '<path d="'+fillD+'" fill="rgba(102,126,234,.17)"/>'+
-    '<path d="'+pD+'" fill="none" stroke="#667eea" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
+    (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')+
+    '<path d="'+fillD+'" fill="rgba(102,126,234,.17)" style="pointer-events:none"/>'+
+    '<path d="'+pD+'" fill="none" stroke="#667eea" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="pointer-events:none"/>'+
     legHits+wpMk+
     '<g id="terrainLayer">'+(terrainPath?'':'')+'</g>'+
-    /* Crosshair (masqué par défaut, affiché au survol) */
+    /* Crosshair (masqué par défaut) */
     '<g id="altCrosshair" visibility="hidden" style="pointer-events:none">'+
       '<line id="altCrossLine" x1="0" y1="'+mt+'" x2="0" y2="'+(mt+ch)+'" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-dasharray="4,3"/>'+
       '<rect id="altCrossRect" x="0" y="'+(mt-13)+'" width="70" height="14" rx="3" fill="rgba(15,15,35,.78)"/>'+
@@ -5530,8 +5549,8 @@ function renderAltProfile(){
         window._altDragStartTouch(e,idx);
       },{passive:false});
     });
-    /* Crosshair : suit la souris et affiche l'altitude terrain */
-    svg.addEventListener('mousemove',function(ev){
+    /* Crosshair : écoute mousemove sur le SVG entier (bulle depuis tous les enfants) */
+    function _updateCrosshair(ev){
       var rect=svg.getBoundingClientRect();
       if(!rect.width) return;
       var scaleX=W/rect.width;
@@ -5544,24 +5563,23 @@ function renderAltProfile(){
       if(svgX<ml||svgX>ml+cw){g.setAttribute('visibility','hidden');return;}
       g.setAttribute('visibility','visible');
       ln.setAttribute('x1',svgX);ln.setAttribute('x2',svgX);
-      /* Interpolation altitude terrain */
       var label='';
-      if(_altTerrainCache&&_altTerrainCache.length>1){
-        var nt=_altTerrainCache.length-1;
-        var d=(svgX-ml)/cw*totalDist;
-        var k=d/totalDist*nt;
-        var k0=Math.max(0,Math.floor(k)),k1=Math.min(nt,k0+1);
-        var frac=k-k0;
-        var elev=Math.round(_altTerrainCache[k0]*(1-frac)+_altTerrainCache[k1]*frac);
+      if(tArr&&tArr.length>1){
+        var nt2=tArr.length-1;
+        var d2=(svgX-ml)/cw*totalDist;
+        var k2=d2/totalDist*nt2;
+        var k0=Math.max(0,Math.floor(k2)),k1=Math.min(nt2,k0+1);
+        var frac=k2-k0;
+        var elev=Math.round(tArr[k0]*(1-frac)+tArr[k1]*frac);
         label='Sol : '+elev+' ft';
       }
       tx.textContent=label;
-      /* Positionne le fond + texte en haut, décalé si trop près du bord */
       var tw=Math.max(58,label.length*5.4+10);
       var rx=Math.min(ml+cw-tw/2-2,Math.max(ml+tw/2+2,svgX));
       rc.setAttribute('x',rx-tw/2);rc.setAttribute('width',tw);
       tx.setAttribute('x',rx);
-    });
+    }
+    svg.addEventListener('mousemove',_updateCrosshair);
     svg.addEventListener('mouseleave',function(){
       var g=document.getElementById('altCrosshair');
       if(g) g.setAttribute('visibility','hidden');
