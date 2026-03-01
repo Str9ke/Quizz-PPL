@@ -412,6 +412,26 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .tri-vec-wind { stroke: #f44336; stroke-width: 2; } 
 .tri-vec-gs { stroke: #4caf50; stroke-width: 2.5; stroke-dasharray: 4,3; } 
 .tri-lbl { font-size: 7px; font-weight: bold; font-family: sans-serif; }
+/* ===== ALTITUDE PROFILE CHART ===== */
+.alt-profile-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.alt-profile-wrap svg{min-width:380px;display:block}
+.alt-drag-handle{cursor:ns-resize;transition:fill .15s}
+.alt-drag-handle:hover{fill:rgba(102,126,234,.35)!important}
+/* ===== NOTES TAB ===== */
+.note-card{background:var(--bg-question);border-radius:10px;padding:12px 14px;border:1px solid var(--border-color);position:relative;transition:border-color .2s,box-shadow .2s;margin-bottom:8px}
+.note-card.is-dragging{opacity:.45;border-style:dashed}
+.note-card.drag-over-top{box-shadow:0 -3px 0 #667eea}
+.note-card.drag-over-bot{box-shadow:0 3px 0 #667eea}
+.note-toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;align-items:center;padding:6px 8px;background:rgba(0,0,0,.15);border-radius:8px}
+.note-tb-btn{padding:3px 9px;border-radius:6px;border:1px solid var(--border-color);background:transparent;cursor:pointer;color:var(--text-primary);font-size:.85em;font-weight:700;line-height:1.4;transition:background .15s}
+.note-tb-btn:hover{background:rgba(102,126,234,.2)}
+.note-editor{min-height:90px;border:1px solid var(--border-color);border-radius:8px;padding:10px;outline:none;font-size:.88em;line-height:1.65;color:var(--text-primary);background:var(--bg-input);word-break:break-word}
+.note-editor:empty:before{content:attr(data-placeholder);color:var(--text-secondary);pointer-events:none}
+.note-content{font-size:.88em;line-height:1.7;word-break:break-word}
+.note-date{font-size:.72em;color:var(--text-secondary);margin-bottom:6px}
+/* dossier nav-done */
+.dossier-card.nav-done{border-color:#4caf50!important;background:linear-gradient(135deg,rgba(76,175,80,.07) 0%,transparent 60%)!important}
+.nav-done-badge{display:inline-block;background:#4caf50;color:#fff;padding:2px 9px;border-radius:20px;font-size:.72em;font-weight:700;margin-left:6px;vertical-align:middle}
   </style>
 </head>
 <body>
@@ -445,6 +465,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
     <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
+    <button class="navlog-tab" onclick="window.switchTab('notes')">&#x1F4DD; Notes</button>
     <button class="navlog-tab" onclick="window.switchTab('fpl')">&#x2708;&#xFE0F; FPL</button>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
   </div>
@@ -525,6 +546,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="navlog-board" id="navlogBoard"></div>
       <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
       <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
+    </div>
+
+    <!-- Altitude profile -->
+    <div class="nl-card" id="altProfileCard" style="padding-bottom:8px">
+      <div class="nl-card-title"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span></div>
+      <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
+      <p style="font-size:.72em;color:var(--text-secondary);margin:6px 0 0">Glisser le losange &#x25C6; verticalement pour modifier l'altitude d'un leg. Le terrain (marron) est chargé depuis Open-Elevation.</p>
     </div>
 
     <!-- Summary panel -->
@@ -1003,6 +1031,38 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
   </div>
 
+  <!-- ==================== TAB NOTES ==================== -->
+  <div id="tab-notes" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">&#x1F4DD;</span> Notes de vol</span>
+        <button id="noteAddBtn" onclick="window.toggleNoteEditor()" style="padding:5px 14px;border-radius:10px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-size:.82em;font-weight:700">&#xFF0B; Ajouter</button>
+      </div>
+      <!-- Editor (hidden by default) -->
+      <div id="noteEditorWrap" style="display:none;margin-bottom:16px">
+        <div class="note-toolbar">
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('bold')"><b>G</b></button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('italic')"><i>I</i></button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('underline')"><u>S</u></button>
+          <span style="margin-left:4px;font-size:.75em;color:var(--text-secondary)">Surligner&nbsp;:</span>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#fffb8f')" style="background:#fffb8f;color:#000;border-color:#e6c200" title="Jaune">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#ffd6a0')" style="background:#ffd6a0;color:#000;border-color:#f09800" title="Orange">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#ffaaaa')" style="background:#ffaaaa;color:#000;border-color:#e53935" title="Rouge">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#b6ffb0')" style="background:#b6ffb0;color:#000;border-color:#43a047" title="Vert">A</button>
+          <button class="note-tb-btn" onmousedown="event.preventDefault();document.execCommand('hiliteColor',false,'#a8d8ff')" style="background:#a8d8ff;color:#000;border-color:#1976d2" title="Bleu">A</button>
+          <button class="note-tb-btn" style="margin-left:auto" onmousedown="event.preventDefault();document.execCommand('removeFormat')" title="Effacer la mise en forme">&#x2715; Format</button>
+        </div>
+        <div id="noteEditor" class="note-editor" contenteditable="true" data-placeholder="Entrez votre note..."></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="navlog-btn primary" onclick="window.saveCurrentNote()">&#x2713; Enregistrer</button>
+          <button class="navlog-btn" onclick="window.toggleNoteEditor()">Annuler</button>
+        </div>
+      </div>
+      <!-- Notes list -->
+      <div id="notesList"></div>
+    </div>
+  </div>
+
   <!-- ==================== TAB FPL: PLAN DE VOL OACI ==================== -->
   <div id="tab-fpl" class="navlog-tab-content">
     <div class="nl-card">
@@ -1468,6 +1528,7 @@ function switchTab(id){
     /* Auto-remplir vent/temp si un METAR est déjà disponible */
     setTimeout(function(){ if(typeof perfFromMetar==='function') perfFromMetar(); }, 150);
   }
+  if(id==='notes') setTimeout(renderNotes,0);
   _activeTab = id;
 }
 window.switchTab=switchTab;
@@ -1744,9 +1805,6 @@ var CHECKLIST_ITEMS = [
   {cat:'\u00c9quipement pilote',items:[
     'Casque + piles neuves',
     'Kneeboard',
-    'Post-it rempli',
-    'Timetics',
-    'Post-it direction vent',
     'Lunettes de soleil'
   ]},
   {cat:'Documents de vol',items:[
@@ -3471,6 +3529,8 @@ function recalcNavlog(){
   updateLegStrips();
   suggestDossierName();
   updateRouteMap();
+  /* Altitude profile chart (defer to avoid blocking render loop) */
+  setTimeout(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); },0);
 }
 
 /* ===== WIND TRIANGLE SVG PER LEG ===== */
@@ -5056,6 +5116,211 @@ function downloadAllDossierFiles(id){
 }
 window.downloadAllDossierFiles=downloadAllDossierFiles;
 
+/* ===== NAV DONE ===== */
+function toggleNavDone(id,checked){
+  var dossiers=getDossiers();
+  for(var i=0;i<dossiers.length;i++){
+    if(dossiers[i].id===id){dossiers[i].navDone=checked;break;}
+  }
+  setDossiers(dossiers);
+  renderDossierList();
+  var d=getDossiers().find(function(x){return x.id===id;});
+  if(d) _fbSaveDossier(d);
+  _toast(checked?'\u2705 Navigation marqu\u00e9e effectu\u00e9e':'Navigation non effectu\u00e9e','success',2000);
+}
+window.toggleNavDone=toggleNavDone;
+
+/* ===== NOTES DE VOL ===== */
+var _navlogNotes=JSON.parse(localStorage.getItem('navlog_notes')||'[]');
+
+function toggleNoteEditor(){
+  var wrap=document.getElementById('noteEditorWrap');
+  if(!wrap) return;
+  var vis=wrap.style.display!=='none';
+  wrap.style.display=vis?'none':'block';
+  var btn=document.getElementById('noteAddBtn');
+  if(btn) btn.textContent=vis?'\uFF0B Ajouter':'\u2715 Annuler';
+  if(!vis){var ed=document.getElementById('noteEditor');if(ed){ed.innerHTML='';ed.focus();}}
+}
+function saveCurrentNote(){
+  var ed=document.getElementById('noteEditor');if(!ed) return;
+  var html=ed.innerHTML.trim();
+  if(!html||html==='<br>'){_toast('Note vide','error',2000);return;}
+  _navlogNotes.unshift({id:Date.now(),html:html,date:new Date().toISOString()});
+  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  toggleNoteEditor();
+  renderNotes();
+  _toast('Note ajout\u00e9e','success',1800);
+}
+function deleteNote(id){
+  if(!confirm('Supprimer cette note ?')) return;
+  _navlogNotes=_navlogNotes.filter(function(n){return n.id!==id;});
+  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  renderNotes();
+}
+function moveNote(id,dir){
+  var idx=_navlogNotes.findIndex(function(n){return n.id===id;});
+  if(idx<0) return;
+  var sw=idx+dir;
+  if(sw<0||sw>=_navlogNotes.length) return;
+  var tmp=_navlogNotes[idx];_navlogNotes[idx]=_navlogNotes[sw];_navlogNotes[sw]=tmp;
+  localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+  renderNotes();
+}
+function renderNotes(){
+  var el=document.getElementById('notesList');if(!el) return;
+  if(!_navlogNotes.length){
+    el.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Aucune note &mdash; cliquez sur &#xFF0B; Ajouter.</p>';
+    return;
+  }
+  var html='';
+  _navlogNotes.forEach(function(note,idx){
+    var d=new Date(note.date);
+    var ds=d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    html+='<div class="note-card" draggable="true" data-noteid="'+note.id+'">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+    html+='<span style="color:var(--text-secondary);cursor:grab;font-size:1.1em;user-select:none" title="Glisser pour r\u00e9ordonner">&#x2630;</span>';
+    html+='<span class="note-date">'+ds+'</span>';
+    html+='<div style="display:flex;gap:3px">';
+    if(idx>0) html+='<button onclick="window.moveNote('+note.id+',-1)" style="padding:2px 7px;border-radius:5px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.78em">&#x2191;</button>';
+    if(idx<_navlogNotes.length-1) html+='<button onclick="window.moveNote('+note.id+',1)" style="padding:2px 7px;border-radius:5px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.78em">&#x2193;</button>';
+    html+='<button onclick="window.deleteNote('+note.id+')" style="padding:2px 7px;border-radius:5px;border:1px solid #e53935;background:transparent;color:#e53935;cursor:pointer;font-size:.78em">&#x2715;</button>';
+    html+='</div></div>';
+    html+='<div class="note-content">'+note.html+'</div>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+  _noteDragSetup(el);
+}
+function _noteDragSetup(container){
+  var items=container.querySelectorAll('.note-card[draggable]'),dragSrc=null;
+  items.forEach(function(item){
+    item.addEventListener('dragstart',function(e){dragSrc=this;this.classList.add('is-dragging');e.dataTransfer.effectAllowed='move';});
+    item.addEventListener('dragend',function(){this.classList.remove('is-dragging');container.querySelectorAll('.note-card').forEach(function(c){c.classList.remove('drag-over-top','drag-over-bot');});});
+    item.addEventListener('dragover',function(e){e.preventDefault();var r=this.getBoundingClientRect(),mid=r.top+r.height/2;this.classList.toggle('drag-over-top',e.clientY<mid);this.classList.toggle('drag-over-bot',e.clientY>=mid);return false;});
+    item.addEventListener('dragleave',function(){this.classList.remove('drag-over-top','drag-over-bot');});
+    item.addEventListener('drop',function(e){
+      e.preventDefault();this.classList.remove('drag-over-top','drag-over-bot');
+      if(dragSrc&&dragSrc!==this){
+        var sId=parseInt(dragSrc.dataset.noteid),dId=parseInt(this.dataset.noteid);
+        var si=_navlogNotes.findIndex(function(n){return n.id===sId;}),di=_navlogNotes.findIndex(function(n){return n.id===dId;});
+        if(si>=0&&di>=0){
+          var r2=this.getBoundingClientRect(),after=e.clientY>=r2.top+r2.height/2;
+          var moved=_navlogNotes.splice(si,1)[0];
+          var newDi=_navlogNotes.findIndex(function(n){return n.id===dId;});
+          _navlogNotes.splice(after?newDi+1:newDi,0,moved);
+          localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
+          renderNotes();
+        }
+      }
+    });
+  });
+}
+window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
+window.deleteNote=deleteNote;window.moveNote=moveNote;window.renderNotes=renderNotes;
+
+/* ===== ALTITUDE PROFILE CHART ===== */
+var _altDragState=null;
+function renderAltProfile(){
+  var container=document.getElementById('altProfileContainer');if(!container) return;
+  var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
+  if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonn\u00e9es pour afficher le profil.</p>';return;}
+  var depElev=(window.AIRPORT_ELEV&&AIRPORT_ELEV[waypoints[0]?waypoints[0].name:''])||0;
+  var arrElev=(window.AIRPORT_ELEV&&AIRPORT_ELEV[waypoints[waypoints.length-1]?waypoints[waypoints.length-1].name:''])||0;
+  var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
+  if(totalDist<=0) return;
+  var sub=document.getElementById('altProfileSubtitle');if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM';
+  var maxAlt=Math.max(depElev,arrElev,500);for(var i=1;i<waypoints.length;i++) maxAlt=Math.max(maxAlt,waypoints[i].altitude||2000);
+  maxAlt=Math.ceil((maxAlt+600)/500)*500;
+  var W=560,H=210,ml=54,mr=14,mt=20,mb=40;var cw=W-ml-mr,ch=H-mt-mb;
+  function xS(d){return ml+(d/totalDist)*cw;}
+  function yS(a){return mt+ch-((a/maxAlt)*ch);}
+  var pts=[{x:0,y:depElev}];var cumDist=0;var CPR=300;
+  for(var i=1;i<waypoints.length;i++){
+    var ld=waypoints[i].dist||0,isLast=i===waypoints.length-1;
+    var la=isLast?arrElev:(waypoints[i].altitude||2000);
+    var pa=pts[pts.length-1].y,ad=la-pa;
+    if(ld>0&&Math.abs(ad)>50){
+      var td=Math.min(Math.abs(ad)/CPR,ld*0.65);
+      if(ad>0) pts.push({x:cumDist+td,y:la});
+      else pts.push({x:cumDist+ld-td,y:pa});
+    }
+    pts.push({x:cumDist+ld,y:la,wpIdx:i});
+    cumDist+=ld;
+  }
+  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
+  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+  var fillD=pD+' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
+  var yStep=maxAlt>4000?1000:500;var yGrid='',xGrid='';
+  for(var alt=0;alt<=maxAlt;alt+=yStep){
+    var yy=yS(alt);
+    yGrid+='<line x1="'+ml+'" y1="'+yy+'" x2="'+(W-mr)+'" y2="'+yy+'" stroke="rgba(160,160,200,.12)" stroke-width="1"/>';
+    yGrid+='<text x="'+(ml-5)+'" y="'+(yy+4)+'" text-anchor="end" font-size="9" fill="rgba(160,160,200,.65)">'+alt+'</text>';
+  }
+  var xStep2=totalDist>80?20:(totalDist>40?10:(totalDist>15?5:2));
+  for(var d2=0;d2<=totalDist+0.01;d2+=xStep2){
+    var xx2=xS(Math.min(d2,totalDist));
+    xGrid+='<line x1="'+xx2+'" y1="'+mt+'" x2="'+xx2+'" y2="'+(mt+ch)+'" stroke="rgba(160,160,200,.12)" stroke-width="1"/>';
+    xGrid+='<text x="'+xx2+'" y="'+(mt+ch+14)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.65)">'+Math.round(d2)+'</text>';
+  }
+  xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
+  yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
+  var wpMk='',cumD2=0;
+  for(var i=0;i<waypoints.length;i++){
+    if(i>0) cumD2+=(waypoints[i].dist||0);
+    var isL2=i===waypoints.length-1;
+    var wA=i===0?depElev:(isL2?arrElev:(waypoints[i].altitude||2000));
+    var wx=xS(cumD2),wy=yS(wA);
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="#667eea" stroke="#fff" stroke-width="1.5"/>';
+    wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
+    if(i>0&&!isL2) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa">'+(waypoints[i].altitude||2000)+'ft</text>';
+    else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)">'+wA+'ft</text>';
+  }
+  var dhSvg='',cumD3=0;
+  for(var i=1;i<waypoints.length-1;i++){
+    var ld2=(waypoints[i].dist||0),lA=waypoints[i].altitude||2000;
+    var mx=xS(cumD3+ld2/2),my=yS(lA);
+    dhSvg+='<polygon points="'+mx+','+(my-9)+' '+(mx+7)+','+my+' '+mx+','+(my+9)+' '+(mx-7)+','+my+'" fill="rgba(102,126,234,.2)" stroke="#a78bfa" stroke-width="1.5" cursor="ns-resize" class="alt-drag-handle" onmousedown="window._altDragStart(event,'+i+')" ontouchstart="window._altDragStartTouch(event,'+i+')" title="Glisser haut/bas pour modifier l\'altitude du leg '+i+'"/>';
+    cumD3+=ld2;
+  }
+  container.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block">'+
+    '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3"/>'+
+    yGrid+xGrid+
+    '<path d="'+fillD+'" fill="rgba(102,126,234,.17)"/>'+
+    '<path d="'+pD+'" fill="none" stroke="#667eea" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<g id="terrainLayer"></g>'+
+    wpMk+dhSvg+'</svg>';
+  _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb);
+}
+function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
+  var segs=[];for(var i=1;i<waypoints.length;i++) if(waypoints[i-1].lat!==null&&waypoints[i-1].lon!==null&&waypoints[i].lat!==null&&waypoints[i].lon!==null) segs.push({lat1:waypoints[i-1].lat,lon1:waypoints[i-1].lon,lat2:waypoints[i].lat,lon2:waypoints[i].lon,dist:waypoints[i].dist||0});
+  if(!segs.length) return;
+  var n=18,locs=[],xs=[];
+  for(var s=0;s<=n;s++){var td=totalDist*(s/n),cd=0;
+    for(var si=0;si<segs.length;si++){var sg=segs[si];if(cd+sg.dist>=td||si===segs.length-1){var t=sg.dist>0?((td-cd)/sg.dist):0;t=Math.max(0,Math.min(1,t));locs.push((sg.lat1+t*(sg.lat2-sg.lat1)).toFixed(5)+','+(sg.lon1+t*(sg.lon2-sg.lon1)).toFixed(5));xs.push(td);break;}cd+=sg.dist;}}
+  fetch('https://api.opentopodata.org/v1/srtm30m?locations='+locs.join('|'))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(!data.results) return;
+      var cw2=W-ml-mr,ch2=H-mt-mb;
+      function xS2(d){return ml+(d/totalDist)*cw2;}
+      function yS2(a){return mt+ch2-((a/maxAlt)*ch2);}
+      var tpts=data.results.map(function(r,i){return {x:xs[i],e:(r&&r.elevation)||0};});
+      var p2='M'+xS2(tpts[0].x)+','+yS2(tpts[0].e);
+      for(var j=1;j<tpts.length;j++) p2+=' L'+xS2(tpts[j].x)+','+yS2(tpts[j].e);
+      p2+=' L'+(ml+cw2)+','+(mt+ch2)+' L'+ml+','+(mt+ch2)+' Z';
+      var layer=document.getElementById('terrainLayer');
+      if(layer) layer.innerHTML='<path d="'+p2+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1"/>';
+    }).catch(function(){});
+}
+window.renderAltProfile=renderAltProfile;
+function _altDragStart(e,wpIdx){e.preventDefault();e.stopPropagation();_altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000};document.addEventListener('mousemove',_altDragMove);document.addEventListener('mouseup',_altDragEnd);}
+function _altDragStartTouch(e,wpIdx){if(!e.touches) return;var t=e.touches[0];_altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000};document.addEventListener('touchmove',_altDragMoveT,{passive:false});document.addEventListener('touchend',_altDragEnd);}
+function _altDragMove(e){if(!_altDragState) return;var dy=_altDragState.startY-e.clientY;var na=Math.round(Math.max(0,Math.min(10000,_altDragState.startAlt+dy*15))/100)*100;if(na!==(waypoints[_altDragState.wpIdx].altitude||2000)){waypoints[_altDragState.wpIdx].altitude=na;var lbl=document.getElementById('leg-alt-val-'+_altDragState.wpIdx);if(lbl) lbl.textContent=na+' ft';recalcNavlog();}}
+function _altDragMoveT(e){e.preventDefault();if(!_altDragState||!e.touches) return;_altDragMove({clientY:e.touches[0].clientY});}
+function _altDragEnd(){if(_altDragState) saveNavlog();_altDragState=null;document.removeEventListener('mousemove',_altDragMove);document.removeEventListener('mouseup',_altDragEnd);document.removeEventListener('touchmove',_altDragMoveT);document.removeEventListener('touchend',_altDragEnd);}
+window._altDragStart=_altDragStart;window._altDragStartTouch=_altDragStartTouch;
+
 function importDossier(){
   document.getElementById('dossierImportFile').click();
 }
@@ -5128,9 +5393,11 @@ function _dossierCardHTML(d){
   if(ssCount) stats.push('\uD83D\uDCF8 '+ssCount);
   if(ckTotal) stats.push('\u2705 '+ckDone+'/'+ckTotal);
   var statsHTML=stats.map(function(s){return '<span class="d-stat">'+s+'</span>';}).join('');
-  var h='<div class="dossier-card" onclick="window.loadDossier('+d.id+')" title="Cliquer pour charger">';
+  var navDone=!!d.navDone;
+  var h='<div class="dossier-card'+(navDone?' nav-done':'')+' " onclick="window.loadDossier('+d.id+')" title="Cliquer pour charger">';
   h+='<div class="dossier-card-body">';
-  h+='<div class="d-header"><span class="d-name">'+escHTML(d.name)+'</span><span class="d-date">'+ds+'</span></div>';
+  h+='<div class="d-header"><span class="d-name">'+escHTML(d.name)+(navDone?' <span class="nav-done-badge">\u2713 Vol effectu\u00e9</span>':'')+'</span><span class="d-date">'+ds+'</span></div>';
+  h+='<div onclick="event.stopPropagation()" style="margin:3px 0 6px"><label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:.8em;color:'+(navDone?'#4caf50':'var(--text-secondary)')+';"><input type="checkbox" '+(navDone?'checked':'')+' onchange="window.toggleNavDone('+d.id+',this.checked)" style="width:15px;height:15px;accent-color:#4caf50;cursor:pointer">'+(navDone?'\u2705 Navigation effectu\u00e9e':'Marquer comme effectu\u00e9e')+'</label></div>';
   if(route) h+='<div class="d-route">\u2708\uFE0F '+route+'</div>';
   if(statsHTML) h+='<div class="d-stats">'+statsHTML+'</div>';
   h+='<div class="d-load-hint">&#x1F4C2; Cliquer pour charger ce dossier</div>';
