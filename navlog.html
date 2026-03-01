@@ -5140,6 +5140,7 @@ window.toggleNavDone=toggleNavDone;
 /* ===== NOTES DE VOL ===== */
 var _navlogNotes=JSON.parse(localStorage.getItem('navlog_notes')||'[]');
 var _notesSyncing=false;
+var _editNoteId=null;
 
 function _saveNotesLocal(){
   localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
@@ -5186,18 +5187,32 @@ function toggleNoteEditor(){
   wrap.style.display=vis?'none':'block';
   var btn=document.getElementById('noteAddBtn');
   if(btn) btn.textContent=vis?'\uFF0B Ajouter':'\u2715 Annuler';
+  if(vis){ _editNoteId=null; }
   if(!vis){var ed=document.getElementById('noteEditor');if(ed){ed.innerHTML='';ed.focus();}}
 }
 function saveCurrentNote(){
   var ed=document.getElementById('noteEditor');if(!ed) return;
   var html=ed.innerHTML.trim();
   if(!html||html==='<br>'){_toast('Note vide','error',2000);return;}
-  _navlogNotes.unshift({id:Date.now(),html:html,date:new Date().toISOString()});
+  if(_editNoteId!==null){
+    for(var i=0;i<_navlogNotes.length;i++){
+      if(_navlogNotes[i].id===_editNoteId){
+        _navlogNotes[i].html=html;
+        _navlogNotes[i].edited=new Date().toISOString();
+        break;
+      }
+    }
+    _editNoteId=null;
+    _toast('Note mise \u00e0 jour \u2601\uFE0F','success',1800);
+  } else {
+    _navlogNotes.unshift({id:Date.now(),html:html,date:new Date().toISOString()});
+    _toast('Note ajout\u00e9e \u2601\uFE0F','success',1800);
+  }
   _saveNotesLocal();
   _saveNotesCloud();
-  toggleNoteEditor();
+  var wrap=document.getElementById('noteEditorWrap');if(wrap) wrap.style.display='none';
+  var btn=document.getElementById('noteAddBtn');if(btn) btn.textContent='\uFF0B Ajouter';
   renderNotes();
-  _toast('Note ajout\u00e9e \u2601\uFE0F','success',1800);
 }
 function deleteNote(id){
   if(!confirm('Supprimer cette note ?')) return;
@@ -5233,6 +5248,7 @@ function renderNotes(){
     html+='<div style="display:flex;gap:3px">';
     if(idx>0) html+='<button onclick="window.moveNote('+note.id+',-1)" style="padding:2px 7px;border-radius:5px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.78em">&#x2191;</button>';
     if(idx<_navlogNotes.length-1) html+='<button onclick="window.moveNote('+note.id+',1)" style="padding:2px 7px;border-radius:5px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.78em">&#x2193;</button>';
+    html+='<button onclick="window.editNote('+note.id+')" style="padding:2px 7px;border-radius:5px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;cursor:pointer;font-size:.78em">&#x270F;</button>';
     html+='<button onclick="window.deleteNote('+note.id+')" style="padding:2px 7px;border-radius:5px;border:1px solid #e53935;background:transparent;color:#e53935;cursor:pointer;font-size:.78em">&#x2715;</button>';
     html+='</div></div>';
     html+='<div class="note-content">'+note.html+'</div>';
@@ -5268,6 +5284,23 @@ function _noteDragSetup(container){
 }
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;window.renderNotes=renderNotes;
+
+function editNote(id){
+  var note=_navlogNotes.find(function(n){return n.id===id;});if(!note) return;
+  _editNoteId=id;
+  var wrap=document.getElementById('noteEditorWrap');
+  if(wrap) wrap.style.display='block';
+  var btn=document.getElementById('noteAddBtn');if(btn) btn.textContent='\u2715 Annuler';
+  var ed=document.getElementById('noteEditor');
+  if(ed){ed.innerHTML=note.html;ed.focus();/* place cursor à la fin */
+    var range=document.createRange(),sel=window.getSelection();
+    range.selectNodeContents(ed);range.collapse(false);
+    sel.removeAllRanges();sel.addRange(range);
+  }
+  /* Scroll vers l'éditeur */
+  if(wrap) wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+window.editNote=editNote;
 
 /* Surlignage avec toggle : recliquer = supprime le surlignage */
 function _noteHL(color){
