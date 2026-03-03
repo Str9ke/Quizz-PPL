@@ -6573,9 +6573,17 @@ function syncAircraftSelection(reg){
   var mbSel=document.getElementById('mbAircraft');if(mbSel) mbSel.value=reg;
   var pSel=document.getElementById('perfAircraft');if(pSel) pSel.value=reg;
   var fSel=document.getElementById('fuelAircraft');if(fSel) fSel.value=reg;
+  // Auto-apply default cruise performance for the selected aircraft
+  var _is172=reg==='OO-FCE';
+  var _defTas=_is172?114:91;          // F172M: 114 kt (@2400rpm/2500ft) | C150: 91 kt (@2500rpm/2500ft)
+  var _defFuel=_is172?32.0:19.3;      // matching L/h
+  var _tasFld=document.getElementById('cfgTAS');if(_tasFld) _tasFld.value=_defTas;
+  var _fuFld=document.getElementById('cfgFuel');if(_fuFld) _fuFld.value=_defFuel;
+  var _fbFld=document.getElementById('fuelBurn');if(_fbFld) _fbFld.value=_defFuel;
   // Run mbSelectAircraft to rebuild mass&balance and update all labels
   mbSelectAircraft();
-  // Recalculate perf (also rebuilds cruise table)
+  // Recalculate navlog + perf (also rebuilds cruise table)
+  recalcNavlog();
   perfCalc();
   // Refresh fuel rental cost section
   if(window.renderFuelLog) renderFuelLog();
