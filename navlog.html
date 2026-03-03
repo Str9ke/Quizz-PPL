@@ -931,8 +931,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <!-- ==================== TAB 4: PERFORMANCE ==================== -->
   <div id="tab-perf" class="navlog-tab-content">
     <div class="nl-card">
-      <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances Cessna F-150L</div>
-      <p style="font-size:.82em;color:var(--text-secondary);margin-bottom:12px">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</p>
+      <div class="nl-card-title"><span class="icon">&#x1F4CA;</span> Performances &mdash; <span id="perfAircraftLabel">Cessna F-150M &mdash; OO-MQA</span></div>
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:.85em;color:var(--text-secondary);font-weight:600">A&#xe9;ronef :</label>
+        <select id="perfAircraft" onchange="window.syncAircraftSelection(this.value)" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em">
+          <option value="OO-MQA">Cessna F-150M &mdash; OO-MQA</option>
+          <option value="OO-WAC">Cessna F-150M &mdash; OO-WAC</option>
+          <option value="OO-WEO">Cessna F-150M &mdash; OO-WEO</option>
+          <option value="OO-FCE">Cessna F-172M &mdash; OO-FCE</option>
+        </select>
+        <span id="perfAircraftDesc" style="font-size:.82em;color:var(--text-secondary)">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</span>
+      </div>
 
       <div style="margin-bottom:10px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
@@ -985,8 +994,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <div id="tab-fuel" class="navlog-tab-content">
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x26FD;</span> Devis Carburant</div>
-      
-      <!-- Fuel Config -->
+      <!-- Aircraft info banner -->
+      <div style="margin-bottom:12px;padding:8px 12px;border-radius:8px;background:rgba(102,126,234,.1);font-size:.85em;font-weight:600;color:#a78bfa">&#x2708;&#xFE0F; A&#xe9;ronef : <span id="fuelAircraftLabel">Cessna F-150M &mdash; OO-MQA</span> &mdash; <span id="fuelTankLabel" style="font-weight:400;color:var(--text-secondary)">R&#xe9;servoir utilisable&nbsp;: 85 L</span></div>
       <div class="config-grid" style="margin-bottom:14px">
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Conso moyenne (L/h)</label>
@@ -6439,6 +6448,18 @@ window.mbInit=mbInit;
 
 function mbSelectAircraft(){
   var sel=document.getElementById('mbAircraft').value;
+  // Sync aircraft state across tabs
+  window._perfAircraft=sel;
+  localStorage.setItem('perfAircraft',sel);
+  var pSel=document.getElementById('perfAircraft');if(pSel) pSel.value=sel;
+  // Update fuel/perf labels from MB_DATA
+  var _syncAc=MB_DATA[sel];
+  if(_syncAc){
+    var _fl=document.getElementById('fuelAircraftLabel');if(_fl) _fl.textContent=_syncAc.type+' \u2014 '+sel;
+    var _tl=document.getElementById('fuelTankLabel');if(_tl) _tl.textContent='R\u00e9servoir utilisable\u00a0: '+_syncAc.fuelUsable+' L';
+    var _pl=document.getElementById('perfAircraftLabel');if(_pl) _pl.textContent=_syncAc.type+' \u2014 '+sel;
+    var _pd=document.getElementById('perfAircraftDesc');if(_pd) _pd.textContent='Bas\u00e9 sur le manuel de vol \u2014 Masse max '+(sel==='OO-FCE'?1043:726)+' kg';
+  }
   var ac=MB_DATA[sel];
   if(!ac) return;
   document.getElementById('mbDateLabel').textContent='Pes\u00e9e du '+ac.weighDate;
@@ -6459,6 +6480,20 @@ function mbSelectAircraft(){
   mbRecalc();
 }
 window.mbSelectAircraft=mbSelectAircraft;
+
+/* Sync aircraft selector across Masse&Centrage, Perf and Fuel tabs */
+function syncAircraftSelection(reg){
+  window._perfAircraft=reg;
+  localStorage.setItem('perfAircraft',reg);
+  // Sync both selectors
+  var mbSel=document.getElementById('mbAircraft');if(mbSel) mbSel.value=reg;
+  var pSel=document.getElementById('perfAircraft');if(pSel) pSel.value=reg;
+  // Run mbSelectAircraft to rebuild mass&balance and update all labels
+  mbSelectAircraft();
+  // Recalculate perf (also rebuilds cruise table)
+  perfCalc();
+}
+window.syncAircraftSelection=syncAircraftSelection;
 
 function mbRecalc(){
   var sel=document.getElementById('mbAircraft').value;
@@ -6710,7 +6745,76 @@ var CRUISE_DATA = [
   ]}
 ];
 
+/* ===== Cessna F-172M (OO-FCE) — Lycoming O-360-A4M 150 HP — Manuel de vol ACMB ===== */
+var PERF_TO_172 = [
+  {alt:0,    temp:15, roll:275, over15:500},
+  {alt:2500, temp:10, roll:317, over15:579},
+  {alt:5000, temp:5,  roll:366, over15:670},
+  {alt:7500, temp:0,  roll:423, over15:777}
+];
+var PERF_TO_WIND_172 = [
+  {alt:0,    temp:15, w10:{roll:193,over15:350}, w20:{roll:119,over15:245}},
+  {alt:2500, temp:10, w10:{roll:222,over15:405}, w20:{roll:137,over15:285}},
+  {alt:5000, temp:5,  w10:{roll:256,over15:470}, w20:{roll:158,over15:335}},
+  {alt:7500, temp:0,  w10:{roll:296,over15:545}, w20:{roll:184,over15:393}}
+];
+var PERF_LD_172 = [
+  {alt:0,    temp:15, roll:183, over15:397},
+  {alt:2500, temp:10, roll:193, over15:415},
+  {alt:5000, temp:5,  roll:204, over15:436},
+  {alt:7500, temp:0,  roll:215, over15:458}
+];
+var PERF_CLIMB_172 = [
+  {alt:0,    temp:15, rateMs:3.91, rateFpm:770, vi_kmh:120, fuelLh:37.0},
+  {alt:5000, temp:5,  rateMs:2.74, rateFpm:540, vi_kmh:120, fuelLh:34.0},
+  {alt:10000,temp:-5, rateMs:1.52, rateFpm:300, vi_kmh:120, fuelLh:30.0}
+];
+var CRUISE_DATA_172 = [
+  {alt:2500,  rows:[
+    {rpm:2550,hp:75,tasKmh:226,tasKt:122,fuelLh:38.0},
+    {rpm:2500,hp:72,tasKmh:220,tasKt:119,fuelLh:36.0},
+    {rpm:2400,hp:65,tasKmh:211,tasKt:114,fuelLh:32.0},
+    {rpm:2300,hp:58,tasKmh:198,tasKt:107,fuelLh:29.0},
+    {rpm:2200,hp:51,tasKmh:185,tasKt:100,fuelLh:26.0},
+    {rpm:2100,hp:44,tasKmh:169,tasKt:91, fuelLh:22.0}
+  ]},
+  {alt:5000,  rows:[
+    {rpm:2550,hp:75,tasKmh:231,tasKt:125,fuelLh:37.0},
+    {rpm:2500,hp:73,tasKmh:226,tasKt:122,fuelLh:36.0},
+    {rpm:2400,hp:66,tasKmh:215,tasKt:116,fuelLh:32.0},
+    {rpm:2300,hp:59,tasKmh:202,tasKt:109,fuelLh:29.0},
+    {rpm:2200,hp:52,tasKmh:189,tasKt:102,fuelLh:26.0},
+    {rpm:2100,hp:45,tasKmh:174,tasKt:94, fuelLh:22.0}
+  ]},
+  {alt:7500,  rows:[
+    {rpm:2550,hp:75,tasKmh:237,tasKt:128,fuelLh:36.0},
+    {rpm:2500,hp:73,tasKmh:231,tasKt:125,fuelLh:35.0},
+    {rpm:2400,hp:66,tasKmh:220,tasKt:119,fuelLh:31.0},
+    {rpm:2300,hp:59,tasKmh:207,tasKt:112,fuelLh:28.0},
+    {rpm:2200,hp:52,tasKmh:193,tasKt:104,fuelLh:24.0}
+  ]},
+  {alt:10000, rows:[
+    {rpm:2550,hp:74,tasKmh:241,tasKt:130,fuelLh:36.0},
+    {rpm:2500,hp:71,tasKmh:235,tasKt:127,fuelLh:34.0},
+    {rpm:2400,hp:65,tasKmh:224,tasKt:121,fuelLh:30.0},
+    {rpm:2300,hp:59,tasKmh:209,tasKt:113,fuelLh:27.0},
+    {rpm:2200,hp:52,tasKmh:196,tasKt:106,fuelLh:24.0}
+  ]}
+];
+window._perfAircraft = localStorage.getItem('perfAircraft') || 'OO-MQA';
+
 function perfCalc(){
+  var acReg=window._perfAircraft||'OO-MQA';
+  var is172=acReg==='OO-FCE';
+  var _TO  =is172?PERF_TO_172      :PERF_TO;
+  var _TOW =is172?PERF_TO_WIND_172 :PERF_TO_WIND;
+  var _LD  =is172?PERF_LD_172      :PERF_LD;
+  var _CL  =is172?PERF_CLIMB_172   :PERF_CLIMB;
+  var acType=(MB_DATA[acReg]||{}).type||(is172?'Cessna F-172M':'Cessna F-150M');
+  var acMtow=is172?1043:726;
+  // Update perf tab labels
+  var _al=document.getElementById('perfAircraftLabel');if(_al) _al.textContent=acType+' \u2014 '+acReg;
+  var _ad=document.getElementById('perfAircraftDesc');if(_ad) _ad.textContent='Bas\u00e9 sur le manuel de vol \u2014 Masse max '+acMtow+' kg';
   var elev=parseFloat(document.getElementById('perfElev').value)||0;
   var temp=parseFloat(document.getElementById('perfTemp').value)||15;
   var qnh=parseFloat(document.getElementById('perfQNH').value)||1013;
@@ -6721,7 +6825,7 @@ function perfCalc(){
   var isaTemp=15-(pressAlt/1000)*2;
   var isaDev=temp-isaTemp;
   // Interpolate takeoff
-  var to=interpPerf(PERF_TO,pressAlt);
+  var to=interpPerf(_TO,pressAlt);
   // Temperature correction: +10% per 15°C above standard
   var tempFactor=1+(isaDev/15)*0.1;
   if(tempFactor<0.85) tempFactor=0.85;
@@ -6729,12 +6833,12 @@ function perfCalc(){
   var toOver=to.over15*tempFactor;
   // Wind correction
   if(wind>0){
-    var toW=interpPerfWind(PERF_TO_WIND,pressAlt,wind);
+    var toW=interpPerfWind(_TOW,pressAlt,wind,_TO);
     toRoll=toW.roll*tempFactor;
     toOver=toW.over15*tempFactor;
   }
   // Landing
-  var ld=interpPerf(PERF_LD,pressAlt);
+  var ld=interpPerf(_LD,pressAlt);
   var ldRoll=ld.roll*tempFactor;
   var ldOver=ld.over15*tempFactor;
   // Wind correction for landing: -10% per 7.5kt headwind
@@ -6745,7 +6849,7 @@ function perfCalc(){
     ldOver*=wFactor;
   }
   // Climb rate
-  var cl=interpClimb(PERF_CLIMB,pressAlt);
+  var cl=interpClimb(_CL,pressAlt);
   var clRate=cl.rateFpm;
   // Temp correction for climb (approx -1% per °C above ISA)
   if(isaDev>0) clRate*=(1-isaDev*0.01);
@@ -6766,9 +6870,9 @@ function perfCalc(){
   html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">\u2B06\uFE0F Taux mont\u00E9e max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h)</div>';
   html+='</div>';
   // Takeoff table
-  html+='<div class="perf-section"><h4>\uD83D\uDEEB Distance de d\u00E9collage (volets rentr\u00E9s, piste en dur, masse max 726 kg)</h4>';
+  html+='<div class="perf-section"><h4>\uD83D\uDEEB Distance de d\u00E9collage (volets rentr\u00E9s, piste en dur, masse max '+acMtow+' kg)</h4>';
   html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
-  PERF_TO.forEach(function(r){
+  _TO.forEach(function(r){
     var hi=Math.abs(r.alt-pressAlt)<1300;
     html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'\u2014')+'</td></tr>';
   });
@@ -6776,7 +6880,7 @@ function perfCalc(){
   // Landing table
   html+='<div class="perf-section"><h4>\uD83D\uDEEC Roulement \u00E0 l\'atterrissage (volets baiss\u00E9s, piste en dur, gaz r\u00E9duits)</h4>';
   html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
-  PERF_LD.forEach(function(r){
+  _LD.forEach(function(r){
     var hi=Math.abs(r.alt-pressAlt)<1300;
     html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+r.over15+'</td></tr>';
   });
@@ -6784,7 +6888,7 @@ function perfCalc(){
   // Climb table
   html+='<div class="perf-section"><h4>\u2B06\uFE0F Taux de mont\u00E9e maximum (volets rentr\u00E9s, plein gaz)</h4>';
   html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (\u00B0C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th></tr>';
-  PERF_CLIMB.forEach(function(r){
+  _CL.forEach(function(r){
     var hi=Math.abs(r.alt-pressAlt)<3000;
     html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.rateFpm+'</td><td>'+r.rateMs.toFixed(2)+'</td><td>'+r.vi_kmh+'</td></tr>';
   });
@@ -6806,9 +6910,9 @@ function interpPerf(data,alt){
   return {roll:data[data.length-1].roll,over15:data[data.length-1].over15};
 }
 
-function interpPerfWind(data,alt,wind){
+function interpPerfWind(data,alt,wind,baseTO){
   // Interpolate between 0 wind, 10kt, 20kt
-  var base=interpPerf(PERF_TO,alt);
+  var base=interpPerf(baseTO||PERF_TO,alt);
   if(wind<=0) return base;
   var w10=interpPerfRow(data,'w10',alt);
   var w20=interpPerfRow(data,'w20',alt);
@@ -7036,28 +7140,25 @@ function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
 window.buildCrosswindDiagram = buildCrosswindDiagram;
 
 function buildCruiseTable(){
+  var acReg=window._perfAircraft||'OO-MQA';
+  var is172=acReg==='OO-FCE';
+  var cData=is172?CRUISE_DATA_172:CRUISE_DATA;
+  var fuelUsable=is172?144:85;
   var currentTas=parseFloat(document.getElementById('cfgTAS').value)||90;
   var html='';
-  
   html+='<div style="font-size:0.9em;color:var(--text-secondary);margin-bottom:8px">\u2139\uFE0F Cliquez sur une ligne pour appliquer la Vitesse (TAS) et la Consommation dans votre configuration.</div>';
-
-  /* Assume CRUISE_DATA is global */
-  if (typeof CRUISE_DATA !== 'undefined') {
-      CRUISE_DATA.forEach(function(block){
-        html+='<div class="perf-section" style="margin-top:10px"><h4>\u2708\uFE0F '+block.alt+' ft</h4>';
-        html+='<table class="perf-table"><tr><th>RPM</th><th>%HP</th><th>TAS km/h</th><th>TAS kt</th><th>Conso L/h</th><th>Autonomie (85L)</th></tr>';
-        block.rows.forEach(function(r){
-          var fuelUsable=85; // std tank usable
-          var endur=(fuelUsable/r.fuelLh);
-          var hi=Math.abs(r.tasKt-currentTas)<3;
-          var style=hi?'background:rgba(76,175,80,.2);font-weight:700':'';
-          
-          html+='<tr style="cursor:pointer;'+style+'" onclick="window.applyPerformance('+r.tasKt+','+r.fuelLh+')" title="Cliquez pour utiliser ces param\u00E8tres">';
-          html+='<td>'+r.rpm+'</td><td>'+r.hp+'</td><td>'+r.tasKmh+'</td><td><b>'+r.tasKt+'</b></td><td><b>'+r.fuelLh+'</b></td><td>'+formatTime(endur)+'</td></tr>';
-        });
-        html+='</table></div>';
-      });
-  }
+  cData.forEach(function(block){
+    html+='<div class="perf-section" style="margin-top:10px"><h4>\u2708\uFE0F '+block.alt+' ft</h4>';
+    html+='<table class="perf-table"><tr><th>RPM</th><th>%HP</th><th>TAS km/h</th><th>TAS kt</th><th>Conso L/h</th><th>Autonomie ('+fuelUsable+' L)</th></tr>';
+    block.rows.forEach(function(r){
+      var endur=(fuelUsable/r.fuelLh);
+      var hi=Math.abs(r.tasKt-currentTas)<3;
+      var style=hi?'background:rgba(76,175,80,.2);font-weight:700':'';
+      html+='<tr style="cursor:pointer;'+style+'" onclick="window.applyPerformance('+r.tasKt+','+r.fuelLh+')" title="Cliquez pour utiliser ces param\u00E8tres">';
+      html+='<td>'+r.rpm+'</td><td>'+r.hp+'</td><td>'+r.tasKmh+'</td><td><b>'+r.tasKt+'</b></td><td><b>'+r.fuelLh+'</b></td><td>'+formatTime(endur)+'</td></tr>';
+    });
+    html+='</table></div>';
+  });
   document.getElementById('cruiseTable').innerHTML=html;
 }
 
