@@ -4991,7 +4991,12 @@ function loadDossier(id, _freshCloudFiles){
   if(d.config.fuelResType){var _frt=document.getElementById('fuelResType');if(_frt)_frt.value=d.config.fuelResType;}
   if(d.config.fuelContingency!==undefined){var _fco=document.getElementById('fuelContingency');if(_fco)_fco.value=d.config.fuelContingency;}
   if(d.config.fuelExtra!==undefined){var _fex=document.getElementById('fuelExtra');if(_fex)_fex.value=d.config.fuelExtra;}
-  if(d.config.perfAircraft) syncAircraftSelection(d.config.perfAircraft);
+  // syncAircraftSelection with keepCruise=true : syncs selectors/labels only, preserves saved TAS/fuel
+  if(d.config.perfAircraft) syncAircraftSelection(d.config.perfAircraft, true);
+  // Re-apply saved cruise values AFTER sync (syncAircraftSelection may recalc but won't overwrite now)
+  document.getElementById('cfgTAS').value=d.config.tas;
+  document.getElementById('cfgFuel').value=d.config.fuel;
+  if(d.config.fuelBurn!==undefined){var _fb2=document.getElementById('fuelBurn');if(_fb2)_fb2.value=d.config.fuelBurn;}
   document.getElementById('cfgWindDirSlider').value=d.config.windDir||0;
   document.getElementById('cfgWindSpdSlider').value=Math.min(d.config.windSpd||0,50);
   reserveMode=d.reserveMode||'day';
@@ -6460,13 +6465,11 @@ function init(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});
   }
-  /* Restore aircraft selection across tabs */
+  /* Restore aircraft selection across tabs + apply default cruise performance */
   var _savedAc=localStorage.getItem('perfAircraft')||'OO-MQA';
-  window._perfAircraft=_savedAc;
-  var _fSel=document.getElementById('fuelAircraft');if(_fSel) _fSel.value=_savedAc;
-  var _pSel=document.getElementById('perfAircraft');if(_pSel) _pSel.value=_savedAc;
-  var _mSel=document.getElementById('mbAircraft');if(_mSel) _mSel.value=_savedAc;
+  syncAircraftSelection(_savedAc); /* applies TAS/fuel defaults for the saved aircraft */
   /* Restore saved altitude default */
+  // (mbSelectAircraft was called inside syncAircraftSelection)
   var _savedAlt=localStorage.getItem('navlogCfgAlt');
   if(_savedAlt){var _caEl=document.getElementById('cfgAlt');if(_caEl)_caEl.value=_savedAlt;var _casEl=document.getElementById('cfgAltSlider');if(_casEl)_casEl.value=_savedAlt;}
 }
@@ -6565,21 +6568,24 @@ function mbSelectAircraft(){
 }
 window.mbSelectAircraft=mbSelectAircraft;
 
-/* Sync aircraft selector across Masse&Centrage, Perf and Fuel tabs */
-function syncAircraftSelection(reg){
+/* Sync aircraft selector across Masse&Centrage, Perf and Fuel tabs.
+   keepCruise=true : ne pas écraser TAS/conso (utilisé lors du chargement d'un dossier) */
+function syncAircraftSelection(reg, keepCruise){
   window._perfAircraft=reg;
   localStorage.setItem('perfAircraft',reg);
   // Sync all three selectors
   var mbSel=document.getElementById('mbAircraft');if(mbSel) mbSel.value=reg;
   var pSel=document.getElementById('perfAircraft');if(pSel) pSel.value=reg;
   var fSel=document.getElementById('fuelAircraft');if(fSel) fSel.value=reg;
-  // Auto-apply default cruise performance for the selected aircraft
-  var _is172=reg==='OO-FCE';
-  var _defTas=_is172?114:91;          // F172M: 114 kt (@2400rpm/2500ft) | C150: 91 kt (@2500rpm/2500ft)
-  var _defFuel=_is172?32.0:19.3;      // matching L/h
-  var _tasFld=document.getElementById('cfgTAS');if(_tasFld) _tasFld.value=_defTas;
-  var _fuFld=document.getElementById('cfgFuel');if(_fuFld) _fuFld.value=_defFuel;
-  var _fbFld=document.getElementById('fuelBurn');if(_fbFld) _fbFld.value=_defFuel;
+  // Auto-apply default cruise performance unless caller wants to keep existing values
+  if(!keepCruise){
+    var _is172=reg==='OO-FCE';
+    var _defTas=_is172?114:91;      // F172M: 114 kt | C150: 91 kt
+    var _defFuel=_is172?32.0:19.3; // matching L/h
+    var _tasFld=document.getElementById('cfgTAS');if(_tasFld) _tasFld.value=_defTas;
+    var _fuFld=document.getElementById('cfgFuel');if(_fuFld) _fuFld.value=_defFuel;
+    var _fbFld=document.getElementById('fuelBurn');if(_fbFld) _fbFld.value=_defFuel;
+  }
   // Run mbSelectAircraft to rebuild mass&balance and update all labels
   mbSelectAircraft();
   // Recalculate navlog + perf (also rebuilds cruise table)
