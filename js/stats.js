@@ -980,9 +980,9 @@ function _renderCatSessionChart(container, catValue) {
     return;
   }
 
-  const avgPct = Math.round(sessions.reduce((s, x) => s + x.percent, 0) / sessions.length);
+  const avgPct = Math.round(sessions.reduce((s, x) => s + Math.min(x.percent || 0, 100), 0) / sessions.length);
   const last5 = sessions.slice(-5);
-  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + x.percent, 0) / last5.length) : 0;
+  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + Math.min(x.percent || 0, 100), 0) / last5.length) : 0;
   const maxBarH = 120;
 
   let html = `
@@ -1180,9 +1180,9 @@ function _renderSymbolesGlobalSessionChart(container) {
     return;
   }
 
-  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
+  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + Math.min(x.percent || 0, 100); }, 0) / sessions.length);
   var last5 = sessions.slice(-5);
-  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
+  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + Math.min(x.percent || 0, 100); }, 0) / last5.length) : 0;
   var maxBarH = 120;
 
   var html = '';
@@ -1227,9 +1227,9 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
     return;
   }
 
-  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + x.percent; }, 0) / sessions.length);
+  var avgPct = Math.round(sessions.reduce(function(s, x) { return s + Math.min(x.percent || 0, 100); }, 0) / sessions.length);
   var last5 = sessions.slice(-5);
-  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + x.percent; }, 0) / last5.length) : 0;
+  var avgLast5 = last5.length ? Math.round(last5.reduce(function(s, x) { return s + Math.min(x.percent || 0, 100); }, 0) / last5.length) : 0;
   var maxBarH = 120;
 
   var html = '';
@@ -1407,9 +1407,9 @@ function afficherSessionChart(sessionHistory) {
 
   // Calculs globaux
   const totalSessions = sessions.length;
-  const avgPct = Math.round(sessions.reduce((s, x) => s + x.percent, 0) / totalSessions);
+  const avgPct = Math.round(sessions.reduce((s, x) => s + Math.min(x.percent || 0, 100), 0) / totalSessions);
   const last5 = sessions.slice(-5);
-  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + x.percent, 0) / last5.length) : 0;
+  const avgLast5 = last5.length ? Math.round(last5.reduce((s, x) => s + Math.min(x.percent || 0, 100), 0) / last5.length) : 0;
 
   const maxBarH = 100; // pixels max height
 
