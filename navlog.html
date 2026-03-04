@@ -1150,7 +1150,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span class="tts-time">0:00 / 0:00</span>
         <div class="tts-rate-wrap">
           <span class="tts-rate-lbl">&times;1.0</span>
-          <input type="range" class="tts-rate-slider" min="10" max="20" step="1" value="10" title="Vitesse de lecture (1.0 &#x2192; 2.0)"
+          <input type="range" class="tts-rate-slider" min="5" max="20" step="1" value="10" title="Vitesse de lecture (0.5 &#x2192; 2.0)"
             oninput="this.previousElementSibling.textContent='\u00d7'+(this.value/10).toFixed(1);_ttsSetRate('tts-notes',this.value/10)">
         </div>
         <div class="tts-vol-wrap">
@@ -5476,16 +5476,39 @@ window.deleteNote=deleteNote;window.moveNote=moveNote;
 window._notesSyncManual=function(){
   var btn=document.getElementById('notesSyncBtn');
   var st=document.getElementById('notesSyncStatus');
-  if(btn){btn.disabled=true;btn.textContent='\u23F3 Sync...';}
-  if(st)st.textContent='Synchronisation...';
-  _saveNotesCloud();
-  setTimeout(function(){
-    _loadNotesCloud(function(){
-      renderNotes();
+  function _doSync(){
+    if(!window._navlogUid){
+      if(st){st.style.color='#f44336';st.textContent='\u26A0\uFE0F Connectez-vous d\'abord';setTimeout(function(){st.textContent='';st.style.color='';},4000);}
       if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
-      if(st){st.textContent='\u2705 Synchronis\u00e9';setTimeout(function(){st.textContent='';},3000);}
+      return;
+    }
+    _saveNotesCloud();
+    setTimeout(function(){
+      _loadNotesCloud(function(){
+        renderNotes();
+        if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
+        if(st){st.style.color='';st.textContent='\u2705 Synchronis\u00e9';setTimeout(function(){st.textContent='';},3000);}
+      });
+    },800);
+  }
+  if(btn){btn.disabled=true;btn.textContent='\u23F3 Sync...';}
+  if(st){st.style.color='';st.textContent='Connexion...';}
+  if(window._navlogUid){
+    _doSync();
+  } else if(window._fbAuth){
+    /* Attendre que Firebase Auth résolve (max 5s) */
+    var _done=false;
+    var _to=setTimeout(function(){if(!_done){_done=true;_doSync();}},5000);
+    var _unsub=window._fbAuth.onAuthStateChanged(function(user){
+      if(_done)return;
+      _done=true;clearTimeout(_to);
+      if(user){window._navlogUid=user.uid;localStorage.setItem('cachedUid',user.uid);}
+      _unsub();
+      _doSync();
     });
-  },600);
+  } else {
+    _doSync();
+  }
 };
 
 /* ===== TTS PLAYER ENGINE ===== */
