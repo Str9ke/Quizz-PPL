@@ -1132,9 +1132,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
       </div>
       <!-- Notes cloud sync -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap">
-        <span id="notesSyncStatus" style="font-size:.74em;color:var(--text-secondary)"></span>
-        <button class="navlog-btn" id="notesSyncBtn" onclick="_notesSyncManual()" title="Envoyer et r&#xe9;cup&#xe9;rer les notes depuis le cloud">☁️ Sync notes</button>
+      <div id="notesSyncBar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;padding:8px 12px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px">
+        <div id="notesSyncInfo" style="display:flex;align-items:center;gap:8px;font-size:.76em;color:var(--text-secondary)">
+          <span id="notesSyncStatus"></span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="navlog-btn" id="notesLoginBtn" onclick="window._notesLoginGoogle()" style="font-size:.76em;padding:5px 10px;border-color:#4285F4;color:#4285F4;display:none">
+            &#x1F510; Se connecter
+          </button>
+          <span id="notesUserEmail" style="font-size:.74em;color:#a78bfa;display:none"></span>
+          <button class="navlog-btn" id="notesSyncBtn" onclick="_notesSyncManual()" title="Envoyer et récupérer les notes depuis le cloud">&#x2601;&#xFE0F; Sync notes</button>
+        </div>
       </div>
       <!-- TTS Player -->
       <div class="tts-player" id="tts-notes">
@@ -4846,6 +4854,7 @@ window._navlogSyncNow=_navlogSyncNow;
       if(li) li.style.display='block';
       if(lo) lo.style.display='none';
       if(em) em.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));
+      _notesUpdateAuthUI(user);
       /* Si UID vient d'être détecté ou a changé → sync silencieuse */
       if(oldUid!==user.uid){
         syncDossiersFromCloud();
@@ -4862,10 +4871,12 @@ window._navlogSyncNow=_navlogSyncNow;
       if(_navlogUid){
         if(li2)li2.style.display='block';
         if(lo2)lo2.style.display='none';
+        _notesUpdateAuthUI({uid:_navlogUid});
       } else {
         if(li2)li2.style.display='none';
         if(lo2)lo2.style.display='block';
         _renderSyncCodeUI();
+        _notesUpdateAuthUI(null);
       }
     }
   });
@@ -5479,6 +5490,33 @@ function _noteDragSetup(container){
 }
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;
+
+function _notesUpdateAuthUI(user){
+  var loginBtn=document.getElementById('notesLoginBtn');
+  var emailEl=document.getElementById('notesUserEmail');
+  var st=document.getElementById('notesSyncStatus');
+  if(user&&user.uid){
+    if(loginBtn)loginBtn.style.display='none';
+    if(emailEl){emailEl.style.display='';emailEl.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));}
+    if(st){st.style.color='';st.textContent='';}
+  } else {
+    if(loginBtn)loginBtn.style.display='';
+    if(emailEl)emailEl.style.display='none';
+    if(st){st.style.color='#f57c00';st.textContent='\u26A0\uFE0F Non connecté';}
+  }
+}
+window._notesLoginGoogle=function(){
+  _initFirebase();
+  if(!window._fbAuth)return;
+  var provider=new firebase.auth.GoogleAuthProvider();
+  window._fbAuth.signInWithPopup(provider).then(function(result){
+    window._navlogUid=result.user.uid;
+    localStorage.setItem('cachedUid',result.user.uid);
+    _notesUpdateAuthUI(result.user);
+    /* Sync immediately after login */
+    window._notesSyncManual();
+  }).catch(function(e){console.warn('Google login error',e);});
+};
 
 /* sync manuel notes cloud */
 window._notesSyncManual=function(){
