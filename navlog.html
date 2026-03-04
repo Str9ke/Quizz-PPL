@@ -459,6 +459,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .tts-rate-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .tts-rate-lbl{font-size:.75em;color:#667eea;font-weight:700;min-width:28px;text-align:right}
 .tts-rate-slider{width:70px;cursor:pointer}
+.tts-vol-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tts-vol-icon{font-size:.9em;color:var(--text-secondary)}
+.tts-vol-slider{width:58px;cursor:pointer}
+.tts-voice-wrap{display:flex;align-items:center;flex-shrink:0;margin-left:2px}
+.tts-voice-sel{font-size:.72em;padding:2px 5px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-container);color:var(--text-primary);cursor:pointer;max-width:145px}
   </style>
 </head>
 <body>
@@ -1142,6 +1147,16 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <span class="tts-rate-lbl">&times;1.0</span>
           <input type="range" class="tts-rate-slider" min="10" max="20" step="1" value="10" title="Vitesse de lecture (1.0 &#x2192; 2.0)"
             oninput="this.previousElementSibling.textContent='\u00d7'+(this.value/10).toFixed(1);_ttsSetRate('tts-notes',this.value/10)">
+        </div>
+        <div class="tts-vol-wrap">
+          <span class="tts-vol-icon" title="Volume">&#x1F50A;</span>
+          <input type="range" class="tts-vol-slider" min="0" max="100" step="5" value="100" title="Volume"
+            oninput="_ttsSetVol('tts-notes',this.value/100)">
+        </div>
+        <div class="tts-voice-wrap">
+          <select class="tts-voice-sel" title="Voix" onchange="_ttsSetVoice('tts-notes',this.value)">
+            <option value="">&#x1F3A4; Auto</option>
+          </select>
         </div>
       </div>
       <!-- Notes list -->
@@ -4827,7 +4842,11 @@ window._navlogSyncNow=_navlogSyncNow;
       if(lo) lo.style.display='none';
       if(em) em.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));
       /* Si UID vient d'être détecté ou a changé → sync silencieuse */
-      if(oldUid!==user.uid) syncDossiersFromCloud();
+      if(oldUid!==user.uid){
+        syncDossiersFromCloud();
+        /* Synchroniser les notes depuis le cloud dès que l'UID est connu */
+        setTimeout(function(){_loadNotesCloud(function(){renderNotes();});},800);
+      }
     } else {
       _navlogUid=null;
       var li2=document.getElementById('syncLoggedIn');
@@ -5456,7 +5475,7 @@ window.deleteNote=deleteNote;window.moveNote=moveNote;
 
 /* ===== TTS PLAYER ENGINE ===== */
 (function(){
-  var _S={text:'',charOffset:0,totalChars:0,playing:false,paused:false,rate:1.0,dur:0,activeId:null};
+  var _S={text:'',charOffset:0,totalChars:0,playing:false,paused:false,rate:1.0,vol:1.0,voiceName:'',dur:0,activeId:null};
   var _CPS=14; /* chars per second at rate 1.0 (French) */
   var _seeking=false;
   function _fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
@@ -5478,7 +5497,8 @@ window.deleteNote=deleteNote;window.moveNote=moveNote;
     var snippet=_S.text.substring(_S.charOffset);
     if(!snippet.trim()){_S.charOffset=0;snippet=_S.text;}
     var utt=new SpeechSynthesisUtterance(snippet);
-    utt.lang='fr-FR';utt.rate=_S.rate;
+    utt.lang='fr-FR';utt.rate=_S.rate;utt.volume=_S.vol;
+    if(_S.voiceName){var _vv=window.speechSynthesis.getVoices().find(function(v){return v.name===_S.voiceName;});if(_vv)utt.voice=_vv;}
     _S.playing=true;_S.paused=false;
     _setBtn(pid,'playing');
     var t0=Date.now(),sc=_S.charOffset;
@@ -5541,6 +5561,38 @@ window.deleteNote=deleteNote;window.moveNote=moveNote;
     _setProg(pid,_S.totalChars>0?_S.charOffset/_S.totalChars*100:0,0,_S.dur);
     if(was)_speak(pid);
   };
+  window._ttsSetVol=function(pid,vol){
+    var was=_S.playing;
+    _S.vol=Math.max(0,Math.min(1,vol));
+    if(was){window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;_speak(pid);}
+  };
+  window._ttsSetVoice=function(pid,name){
+    var was=_S.playing||_S.paused;
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
+    _S.voiceName=name||'';
+    if(was)_speak(pid);
+  };
+  function _ttsPopulateVoices(pid){
+    var p=document.getElementById(pid);if(!p)return;
+    var sel=p.querySelector('.tts-voice-sel');if(!sel)return;
+    var voices=window.speechSynthesis.getVoices().filter(function(v){return v.lang&&v.lang.startsWith('fr');});
+    if(!voices.length)return;
+    var prev=_S.voiceName||sel.value;
+    sel.innerHTML='<option value="">🎤 Auto</option>';
+    voices.forEach(function(v){var o=document.createElement('option');o.value=v.name;o.textContent=v.name;sel.appendChild(o);});
+    if(prev){sel.value=prev;}
+    else{
+      var ggl=voices.find(function(v){return v.name.toLowerCase().indexOf('google')>=0;});
+      if(ggl){sel.value=ggl.name;_S.voiceName=ggl.name;}
+    }
+  }
+  (function(){
+    if(typeof window.speechSynthesis!=='undefined'){
+      window.speechSynthesis.onvoiceschanged=function(){_ttsPopulateVoices('tts-notes');};
+      _ttsPopulateVoices('tts-notes');
+      setTimeout(function(){_ttsPopulateVoices('tts-notes');},700);
+    }
+  })();
 })();
 
 function editNote(id){
