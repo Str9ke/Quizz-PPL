@@ -5341,8 +5341,10 @@ function _saveNotesLocal(){
   localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
 }
 function _saveNotesCloud(){
+  /* Email key always wins — ensures cross-browser sync works regardless of Auth state */
   var key=window._navlogNotesKey||window._navlogUid;
   if(!window._fbDB||!key) return;
+  console.log('[Notes] save → key:',key,'notes:',_navlogNotes.length);
   window._fbDB.collection('navlogNotes').doc(key)
     .set({notes:_navlogNotes,updatedAt:new Date().toISOString()})
     .catch(function(e){console.warn('[Notes] cloud save:',e);});
@@ -5350,7 +5352,8 @@ function _saveNotesCloud(){
 function _loadNotesCloud(cb){
   var key=window._navlogNotesKey||window._navlogUid;
   if(!window._fbDB||!key){if(cb) cb();return;}
-  if(_notesSyncing) return;
+  console.log('[Notes] load → key:',key);
+  if(_notesSyncing){if(cb) cb();return;} /* Don't block caller — call cb so UI doesn't freeze */
   _notesSyncing=true;
   window._fbDB.collection('navlogNotes').doc(key).get()
     .then(function(doc){
@@ -5534,7 +5537,7 @@ window._notesLoginGoogle=function(){}; /* no longer needed */
 /* sync manuel notes cloud */
 window._notesSyncManual=function(){
   var btn=document.getElementById('notesSyncBtn');
-  /* Ensure key is set from input field */
+  /* Ensure key is set from input field — email always takes priority */
   var input=document.getElementById('notesEmailInput');
   if(input&&input.value.trim()){
     var email=input.value.trim();
@@ -5545,12 +5548,20 @@ window._notesSyncManual=function(){
     _notesSetStatus('\u26A0\uFE0F Entrez votre email d\'abord','#f44336',4000);
     return;
   }
+  /* Init Firebase if not yet done */
+  if(!window._fbDB) _initFirebase();
+  if(!window._fbDB){
+    _notesSetStatus('\u274C Firebase non disponible','#f44336',4000);
+    return;
+  }
   if(btn){btn.disabled=true;btn.textContent='\u23F3...';}
-  _notesSetStatus('Synchronisation...','',0);
+  _notesSetStatus('Cl\u00e9: '+window._navlogNotesKey,'#888',0);
+  /* Force reset du lock en cas de sync auto bloquée */
+  _notesSyncing=false;
   _loadNotesCloud(function(){
     renderNotes();
     if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync';}
-    _notesSetStatus('\u2705 Synchronis\u00e9','#4caf50',3000);
+    _notesSetStatus('\u2705 Synchronis\u00e9 ('+_navlogNotes.length+' notes)','#4caf50',5000);
   });
 };
 
