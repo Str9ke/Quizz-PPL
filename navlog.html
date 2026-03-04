@@ -489,7 +489,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </div>
 
   <!-- Tabs -->
-  <div class="navlog-tabs">
+  <div class="navlog-tabs" id="navlogTabs">
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o</button>
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
@@ -6729,6 +6729,11 @@ function init(){
   // (mbSelectAircraft was called inside syncAircraftSelection)
   var _savedAlt=localStorage.getItem('navlogCfgAlt');
   if(_savedAlt){var _caEl=document.getElementById('cfgAlt');if(_caEl)_caEl.value=_savedAlt;var _casEl=document.getElementById('cfgAltSlider');if(_casEl)_casEl.value=_savedAlt;}
+  /* Scroll so the tab bar sits at the top of the viewport */
+  setTimeout(function(){
+    var _tabs=document.getElementById('navlogTabs');
+    if(_tabs) _tabs.scrollIntoView({behavior:'smooth',block:'start'});
+  },120);
 }
 
 window.haversine=haversine;
