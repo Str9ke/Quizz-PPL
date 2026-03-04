@@ -5482,14 +5482,16 @@ window._notesSyncManual=function(){
       if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
       return;
     }
-    _saveNotesCloud();
-    setTimeout(function(){
-      _loadNotesCloud(function(){
-        renderNotes();
-        if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
-        if(st){st.style.color='';st.textContent='\u2705 Synchronis\u00e9';setTimeout(function(){st.textContent='';},3000);}
-      });
-    },800);
+    /* NE PAS sauvegarder avant de charger : sur un nouveau navigateur _navlogNotes=[]
+       ce qui écraserait les notes cloud. _loadNotesCloud gère déjà le merge :
+       - cloud vide + local plein → pousse le local vers cloud
+       - cloud plein + local vide → charge le cloud en local
+       - les deux pleins → fusionne par id */
+    _loadNotesCloud(function(){
+      renderNotes();
+      if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
+      if(st){st.style.color='';st.textContent='\u2705 Synchronis\u00e9';setTimeout(function(){st.textContent='';},3000);}
+    });
   }
   if(btn){btn.disabled=true;btn.textContent='\u23F3 Sync...';}
   if(st){st.style.color='';st.textContent='Connexion...';}
