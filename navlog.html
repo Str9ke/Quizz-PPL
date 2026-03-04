@@ -1132,17 +1132,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
       </div>
       <!-- Notes cloud sync -->
-      <div id="notesSyncBar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;padding:8px 12px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px">
-        <div id="notesSyncInfo" style="display:flex;align-items:center;gap:8px;font-size:.76em;color:var(--text-secondary)">
-          <span id="notesSyncStatus"></span>
+      <div id="notesSyncBar" style="margin-bottom:10px;padding:8px 12px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="email" id="notesEmailInput" placeholder="votre@email.com pour synchro" autocomplete="email"
+            style="flex:1;min-width:160px;padding:5px 9px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.78em"
+            oninput="window._notesEmailChanged()">
+          <button class="navlog-btn" id="notesSyncBtn" onclick="_notesSyncManual()" title="Synchroniser les notes avec le cloud">&#x2601;&#xFE0F; Sync</button>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <button class="navlog-btn" id="notesLoginBtn" onclick="window._notesLoginGoogle()" style="font-size:.76em;padding:5px 10px;border-color:#4285F4;color:#4285F4;display:none">
-            &#x1F510; Se connecter
-          </button>
-          <span id="notesUserEmail" style="font-size:.74em;color:#a78bfa;display:none"></span>
-          <button class="navlog-btn" id="notesSyncBtn" onclick="_notesSyncManual()" title="Envoyer et récupérer les notes depuis le cloud">&#x2601;&#xFE0F; Sync notes</button>
-        </div>
+        <div id="notesSyncStatus" style="font-size:.72em;margin-top:4px;display:none"></div>
       </div>
       <!-- TTS Player -->
       <div class="tts-player" id="tts-notes">
@@ -5344,16 +5341,18 @@ function _saveNotesLocal(){
   localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
 }
 function _saveNotesCloud(){
-  if(!window._fbDB||!window._navlogUid) return;
-  window._fbDB.collection('navlogNotes').doc(window._navlogUid)
+  var key=window._navlogNotesKey||window._navlogUid;
+  if(!window._fbDB||!key) return;
+  window._fbDB.collection('navlogNotes').doc(key)
     .set({notes:_navlogNotes,updatedAt:new Date().toISOString()})
     .catch(function(e){console.warn('[Notes] cloud save:',e);});
 }
 function _loadNotesCloud(cb){
-  if(!window._fbDB||!window._navlogUid){if(cb) cb();return;}
+  var key=window._navlogNotesKey||window._navlogUid;
+  if(!window._fbDB||!key){if(cb) cb();return;}
   if(_notesSyncing) return;
   _notesSyncing=true;
-  window._fbDB.collection('navlogNotes').doc(window._navlogUid).get()
+  window._fbDB.collection('navlogNotes').doc(key).get()
     .then(function(doc){
       if(doc.exists&&doc.data().notes&&doc.data().notes.length){
         var cloud=doc.data().notes;
@@ -5491,77 +5490,68 @@ function _noteDragSetup(container){
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;
 
-function _notesUpdateAuthUI(user){
-  var loginBtn=document.getElementById('notesLoginBtn');
-  var emailEl=document.getElementById('notesUserEmail');
-  var st=document.getElementById('notesSyncStatus');
-  if(user&&user.uid){
-    if(loginBtn)loginBtn.style.display='none';
-    if(emailEl){emailEl.style.display='';emailEl.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));}
-    if(st){st.style.color='';st.textContent='';}
-  } else {
-    if(loginBtn)loginBtn.style.display='';
-    if(emailEl)emailEl.style.display='none';
-    if(st){st.style.color='#f57c00';st.textContent='\u26A0\uFE0F Non connecté';}
+function _notesEmailToKey(email){
+  /* Convert email to safe Firestore document id */
+  return email.trim().toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,80);
+}
+function _notesInitFromEmail(){
+  var saved=localStorage.getItem('notesEmail')||'';
+  var input=document.getElementById('notesEmailInput');
+  if(input&&saved) input.value=saved;
+  if(saved){
+    window._navlogNotesKey=_notesEmailToKey(saved);
+    var st=document.getElementById('notesSyncStatus');
+    if(st){st.textContent='\uD83D\uDC64 '+saved;st.style.color='#a78bfa';st.style.display='block';}
   }
 }
-window._notesLoginGoogle=function(){
-  _initFirebase();
-  if(!window._fbAuth)return;
-  var provider=new firebase.auth.GoogleAuthProvider();
-  window._fbAuth.signInWithPopup(provider).then(function(result){
-    window._navlogUid=result.user.uid;
-    localStorage.setItem('cachedUid',result.user.uid);
-    _notesUpdateAuthUI(result.user);
-    /* Sync immediately after login */
-    window._notesSyncManual();
-  }).catch(function(e){console.warn('Google login error',e);});
+window._notesEmailChanged=function(){
+  var input=document.getElementById('notesEmailInput');
+  if(!input)return;
+  var email=input.value.trim();
+  localStorage.setItem('notesEmail',email);
+  window._navlogNotesKey=email?_notesEmailToKey(email):null;
 };
+function _notesSetStatus(msg,color,autohide){
+  var st=document.getElementById('notesSyncStatus');
+  if(!st)return;st.textContent=msg;st.style.color=color||'';st.style.display='block';
+  if(autohide)setTimeout(function(){var saved=localStorage.getItem('notesEmail');if(st)st.textContent=saved?'\uD83D\uDC64 '+saved:'';},autohide);
+}
+
+function _notesUpdateAuthUI(user){
+  /* kept for compat with onAuthStateChanged calls — update email input if UID known */
+  if(user&&user.email){
+    var input=document.getElementById('notesEmailInput');
+    if(input&&!input.value){
+      input.value=user.email;
+      localStorage.setItem('notesEmail',user.email);
+      window._navlogNotesKey=_notesEmailToKey(user.email);
+    }
+    _notesSetStatus('\uD83D\uDC64 '+user.email,'#a78bfa',0);
+  }
+}
+window._notesLoginGoogle=function(){}; /* no longer needed */
 
 /* sync manuel notes cloud */
 window._notesSyncManual=function(){
   var btn=document.getElementById('notesSyncBtn');
-  var st=document.getElementById('notesSyncStatus');
-  function _doSync(){
-    /* Fallback: use cachedUid from localStorage if Firebase Auth not available on this origin */
-    if(!window._navlogUid){
-      var _cu=localStorage.getItem('cachedUid');
-      if(_cu){window._navlogUid=_cu;}
-    }
-    if(!window._navlogUid){
-      if(st){st.style.color='#f44336';st.textContent='\u26A0\uFE0F Connectez-vous d\'abord';setTimeout(function(){st.textContent='';st.style.color='';},4000);}
-      if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
-      return;
-    }
-    /* NE PAS sauvegarder avant de charger : sur un nouveau navigateur _navlogNotes=[]
-       ce qui écraserait les notes cloud. _loadNotesCloud gère déjà le merge :
-       - cloud vide + local plein → pousse le local vers cloud
-       - cloud plein + local vide → charge le cloud en local
-       - les deux pleins → fusionne par id */
-    _loadNotesCloud(function(){
-      renderNotes();
-      if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
-      if(st){st.style.color='';st.textContent='\u2705 Synchronis\u00e9';setTimeout(function(){st.textContent='';},3000);}
-    });
+  /* Ensure key is set from input field */
+  var input=document.getElementById('notesEmailInput');
+  if(input&&input.value.trim()){
+    var email=input.value.trim();
+    localStorage.setItem('notesEmail',email);
+    window._navlogNotesKey=_notesEmailToKey(email);
   }
-  if(btn){btn.disabled=true;btn.textContent='\u23F3 Sync...';}
-  if(st){st.style.color='';st.textContent='Connexion...';}
-  if(window._navlogUid){
-    _doSync();
-  } else if(window._fbAuth){
-    /* Attendre que Firebase Auth résolve (max 5s) */
-    var _done=false;
-    var _to=setTimeout(function(){if(!_done){_done=true;_doSync();}},5000);
-    var _unsub=window._fbAuth.onAuthStateChanged(function(user){
-      if(_done)return;
-      _done=true;clearTimeout(_to);
-      if(user){window._navlogUid=user.uid;localStorage.setItem('cachedUid',user.uid);}
-      _unsub();
-      _doSync();
-    });
-  } else {
-    _doSync();
+  if(!window._navlogNotesKey){
+    _notesSetStatus('\u26A0\uFE0F Entrez votre email d\'abord','#f44336',4000);
+    return;
   }
+  if(btn){btn.disabled=true;btn.textContent='\u23F3...';}
+  _notesSetStatus('Synchronisation...','',0);
+  _loadNotesCloud(function(){
+    renderNotes();
+    if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync';}
+    _notesSetStatus('\u2705 Synchronis\u00e9','#4caf50',3000);
+  });
 };
 
 /* ===== TTS PLAYER ENGINE ===== */
@@ -6731,6 +6721,8 @@ function init(){
   recalcNavlog();
   renderDossierList();
   _renderSyncCodeUI();
+  /* Load notes cloud key from stored email */
+  _notesInitFromEmail();
   /* initWindy() is now lazy-loaded when Windy sub-tab is activated */
   /* Restore saved map captures */
   var mapKeys=['temsi','temsiEuroc','wintem','fronts'];
