@@ -4853,12 +4853,20 @@ window._navlogSyncNow=_navlogSyncNow;
         setTimeout(function(){_loadNotesCloud(function(){renderNotes();});},800);
       }
     } else {
-      _navlogUid=null;
+      /* Ne pas écraser le cachedUid si Firebase Auth n'est pas dispo sur ce domaine */
+      var _cached=localStorage.getItem('cachedUid');
+      if(!_cached) _navlogUid=null;
+      /* else on garde _navlogUid tel quel (initialisé depuis cachedUid au démarrage) */
       var li2=document.getElementById('syncLoggedIn');
       var lo2=document.getElementById('syncNotLoggedIn');
-      if(li2) li2.style.display='none';
-      if(lo2) lo2.style.display='block';
-      _renderSyncCodeUI();
+      if(_navlogUid){
+        if(li2)li2.style.display='block';
+        if(lo2)lo2.style.display='none';
+      } else {
+        if(li2)li2.style.display='none';
+        if(lo2)lo2.style.display='block';
+        _renderSyncCodeUI();
+      }
     }
   });
 })();
@@ -5477,6 +5485,11 @@ window._notesSyncManual=function(){
   var btn=document.getElementById('notesSyncBtn');
   var st=document.getElementById('notesSyncStatus');
   function _doSync(){
+    /* Fallback: use cachedUid from localStorage if Firebase Auth not available on this origin */
+    if(!window._navlogUid){
+      var _cu=localStorage.getItem('cachedUid');
+      if(_cu){window._navlogUid=_cu;}
+    }
     if(!window._navlogUid){
       if(st){st.style.color='#f44336';st.textContent='\u26A0\uFE0F Connectez-vous d\'abord';setTimeout(function(){st.textContent='';st.style.color='';},4000);}
       if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync notes';}
