@@ -5441,15 +5441,18 @@ function _noteDragSetup(container){
 }
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;
-window.renderNotes=function(){
-  renderNotes();
-  /* Update TTS text after notes change */
-  setTimeout(function(){
-    var texts=[];
-    _navlogNotes.forEach(function(n){texts.push(_ttsHtmlToText(n.html));});
-    _ttsSetText('tts-notes',texts.join('. '));
-  },50);
-};
+/* TTS hook: save original reference BEFORE override to avoid infinite recursion */
+(function(){
+  var _origRN=window.renderNotes;
+  window.renderNotes=function(){
+    if(_origRN) _origRN();
+    setTimeout(function(){
+      var texts=[];
+      _navlogNotes.forEach(function(n){if(typeof _ttsHtmlToText==='function')texts.push(_ttsHtmlToText(n.html));});
+      if(typeof _ttsSetText==='function')_ttsSetText('tts-notes',texts.join('. '));
+    },50);
+  };
+})();
 
 /* ===== TTS PLAYER ENGINE ===== */
 (function(){

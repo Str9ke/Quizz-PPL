@@ -1514,7 +1514,7 @@ function buildContent() {
     $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">S&#xe9;lectionnez une cat&#xe9;gorie ci-dessus</h3><p style="color:var(--text-secondary)">9 cat&#xe9;gories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches m&#xe9;mo couvrant ~80% des questions du quiz.<br>Chaque fiche est synth&#xe9;tique et organis&#xe9;e par th&#xe8;me.<br>Utilisez la recherche pour trouver un sujet pr&#xe9;cis.</p></div>';
     /* Hide TTS player when no category selected */
     var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='none';
-    _ttsStop('tts-fiches');
+    if(typeof _ttsStop==='function')_ttsStop('tts-fiches');
     return;
   }
   const cat = FICHES.find(c => c.id === activeCat);
@@ -1539,10 +1539,10 @@ function buildContent() {
   });
   /* Update TTS player text for this category/sub */
   var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='';
-  var _txt=subs.map(function(s){
-    return s.t+'. '+_ttsHtmlToText(s.html);
-  }).join('. ');
-  _ttsSetText('tts-fiches',_txt);
+  if(typeof _ttsHtmlToText==='function'&&typeof _ttsSetText==='function'){
+    var _txt=subs.map(function(s){return s.t+'. '+_ttsHtmlToText(s.html);}).join('. ');
+    _ttsSetText('tts-fiches',_txt);
+  }
 }
 
 /* Search — multi-word, real-time, result count, clear */
