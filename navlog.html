@@ -5340,30 +5340,51 @@ window._setNoteColor=_setNoteColor;
 function _saveNotesLocal(){
   localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
 }
+/* ---- Notes cloud via Firestore REST API (pas de SDK) ---- */
+var _FS_NOTES_URL='https://firestore.googleapis.com/v1/projects/quizaviation-b79ff/databases/(default)/documents/navlogNotes/';
+function _fsKey(){return (window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)||'';}
+function _notesKey(){return window._navlogNotesKey||window._navlogUid;}
+
 function _saveNotesCloud(){
-  /* Email key always wins — ensures cross-browser sync works regardless of Auth state */
-  var key=window._navlogNotesKey||window._navlogUid;
-  if(!window._fbDB||!key) return;
-  console.log('[Notes] save → key:',key,'notes:',_navlogNotes.length);
-  window._fbDB.collection('navlogNotes').doc(key)
-    .set({notes:_navlogNotes,updatedAt:new Date().toISOString()})
-    .catch(function(e){console.warn('[Notes] cloud save:',e);});
+  var key=_notesKey(), apiKey=_fsKey();
+  if(!key||!apiKey) return;
+  console.log('[Notes] save →',key,'('+_navlogNotes.length+' notes)');
+  fetch(_FS_NOTES_URL+encodeURIComponent(key)+'?key='+apiKey,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:{
+      notes:{stringValue:JSON.stringify(_navlogNotes)},
+      updatedAt:{stringValue:new Date().toISOString()}
+    }})
+  }).then(function(r){
+    if(!r.ok) r.text().then(function(t){console.warn('[Notes] save error:',r.status,t);});
+    else console.log('[Notes] save OK');
+  }).catch(function(e){console.warn('[Notes] save catch:',e);});
 }
+
 function _loadNotesCloud(cb){
-  var key=window._navlogNotesKey||window._navlogUid;
-  if(!window._fbDB||!key){if(cb) cb();return;}
-  console.log('[Notes] load → key:',key);
-  if(_notesSyncing){if(cb) cb();return;} /* Don't block caller — call cb so UI doesn't freeze */
+  var key=_notesKey(), apiKey=_fsKey();
+  if(!key||!apiKey){if(cb) cb();return;}
+  console.log('[Notes] load →',key);
+  if(_notesSyncing){_notesSyncing=false;} /* reset lock */
   _notesSyncing=true;
-  window._fbDB.collection('navlogNotes').doc(key).get()
-    .then(function(doc){
-      if(doc.exists&&doc.data().notes&&doc.data().notes.length){
-        var cloud=doc.data().notes;
+  function done(){_notesSyncing=false;if(cb)cb();}
+  fetch(_FS_NOTES_URL+encodeURIComponent(key)+'?key='+apiKey)
+    .then(function(r){return r.json().then(function(d){return {s:r.status,d:d};});})
+    .then(function(res){
+      if(res.s===404||(res.d&&res.d.error)){
+        console.log('[Notes] pas de doc cloud → push local si besoin');
+        if(_navlogNotes.length) _saveNotesCloud();
+        done(); return;
+      }
+      var cloud=[];
+      try{cloud=JSON.parse(res.d.fields.notes.stringValue);}catch(e){console.warn('[Notes] parse cloud:',e);}
+      console.log('[Notes] cloud a',cloud.length,'notes');
+      if(cloud.length){
         var cloudIds={};
         cloud.forEach(function(n){cloudIds[n.id]=true;});
         var localOnly=_navlogNotes.filter(function(n){return !cloudIds[n.id];});
         if(localOnly.length){
-          /* Merge : priorité au cloud + notes locales orphelines */
           _navlogNotes=cloud.concat(localOnly);
           _navlogNotes.sort(function(a,b){return b.id-a.id;});
           _saveNotesCloud();
@@ -5372,12 +5393,11 @@ function _loadNotesCloud(cb){
         }
         _saveNotesLocal();
       } else if(_navlogNotes.length){
-        /* Pas encore de données cloud : on pousse le local */
         _saveNotesCloud();
       }
+      done();
     })
-    .catch(function(e){console.warn('[Notes] cloud load:',e);})
-    .finally(function(){_notesSyncing=false;if(cb) cb();});
+    .catch(function(e){console.warn('[Notes] load catch:',e);done();});
 }
 
 function toggleNoteEditor(){
@@ -5548,10 +5568,8 @@ window._notesSyncManual=function(){
     _notesSetStatus('\u26A0\uFE0F Entrez votre email d\'abord','#f44336',4000);
     return;
   }
-  /* Init Firebase if not yet done */
-  if(!window._fbDB) _initFirebase();
-  if(!window._fbDB){
-    _notesSetStatus('\u274C Firebase non disponible','#f44336',4000);
+  if(!_fsKey()){
+    _notesSetStatus('\u274C API key manquante','#f44336',4000);
     return;
   }
   if(btn){btn.disabled=true;btn.textContent='\u23F3...';}
