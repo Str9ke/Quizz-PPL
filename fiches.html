@@ -66,6 +66,18 @@
 .fcat-time{display:block;font-size:.68em;font-weight:400;opacity:.55;margin-top:2px}
 .fiches-total-time{text-align:center;font-size:.82em;color:var(--text-secondary);margin:-4px 0 12px;opacity:.7}
 .fiches-total-time span{font-weight:700;color:#667eea}
+/* TTS Player */
+.tts-player{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:12px;margin-bottom:14px;flex-wrap:wrap}
+.tts-playbtn{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:1.1em;cursor:pointer;flex-shrink:0;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.tts-stopbtn{width:30px;height:30px;border-radius:8px;border:1px solid rgba(244,67,54,.35);background:rgba(244,67,54,.1);color:#f44336;font-size:.85em;cursor:pointer;flex-shrink:0}
+.tts-progress-wrap{flex:1;min-width:100px;position:relative;height:22px;cursor:pointer}
+.tts-track{position:absolute;top:50%;left:0;right:0;height:4px;background:rgba(255,255,255,.12);border-radius:2px;transform:translateY(-50%);pointer-events:none;overflow:hidden}
+.tts-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;width:0%;transition:width .2s linear}
+.tts-seek{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.tts-time{font-size:.74em;color:var(--text-secondary);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:80px;text-align:center}
+.tts-rate-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tts-rate-lbl{font-size:.75em;color:#667eea;font-weight:700;min-width:28px;text-align:right}
+.tts-rate-slider{width:70px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -99,6 +111,25 @@
 
     <!-- Sub-category pills -->
     <div class="fsub-row" id="fsubRow"></div>
+
+    <!-- TTS Player -->
+    <div class="tts-player" id="tts-fiches" style="display:none">
+      <button class="tts-playbtn" onclick="_ttsToggle('tts-fiches')" title="Lire cette cat&#xe9;gorie">&#x25B6;</button>
+      <button class="tts-stopbtn" onclick="_ttsStop('tts-fiches')" title="Arr&#xea;ter">&#x23F9;</button>
+      <div class="tts-progress-wrap">
+        <div class="tts-track"><div class="tts-fill"></div></div>
+        <input type="range" class="tts-seek" min="0" max="100" step="0.1" value="0"
+          onmousedown="_ttsSeekStart()" ontouchstart="_ttsSeekStart()"
+          oninput="document.querySelector('#tts-fiches .tts-fill').style.width=this.value+'%'"
+          onchange="_ttsSeekEnd('tts-fiches',parseFloat(this.value))">
+      </div>
+      <span class="tts-time">0:00 / 0:00</span>
+      <div class="tts-rate-wrap">
+        <span class="tts-rate-lbl">&times;1.0</span>
+        <input type="range" class="tts-rate-slider" min="10" max="20" step="1" value="10" title="Vitesse de lecture (1.0 &#x2192; 2.0)"
+          oninput="this.previousElementSibling.textContent='\u00d7'+(this.value/10).toFixed(1);_ttsSetRate('tts-fiches',this.value/10)">
+      </div>
+    </div>
 
     <!-- Content area -->
     <div id="ficheContent"></div>
@@ -1480,7 +1511,10 @@ function buildContent() {
   $content.innerHTML = '';
   if (!activeCat) {
     // Show welcome
-    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">Sélectionnez une catégorie ci-dessus</h3><p style="color:var(--text-secondary)">9 catégories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches mémo couvrant ~80% des questions du quiz.<br>Chaque fiche est synthétique et organisée par thème.<br>Utilisez la recherche pour trouver un sujet précis.</p></div>';
+    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">S&#xe9;lectionnez une cat&#xe9;gorie ci-dessus</h3><p style="color:var(--text-secondary)">9 cat&#xe9;gories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches m&#xe9;mo couvrant ~80% des questions du quiz.<br>Chaque fiche est synth&#xe9;tique et organis&#xe9;e par th&#xe8;me.<br>Utilisez la recherche pour trouver un sujet pr&#xe9;cis.</p></div>';
+    /* Hide TTS player when no category selected */
+    var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='none';
+    _ttsStop('tts-fiches');
     return;
   }
   const cat = FICHES.find(c => c.id === activeCat);
@@ -1491,7 +1525,7 @@ function buildContent() {
     sec.className = 'fiche-section';
     const hdr = document.createElement('div');
     hdr.className = 'fiche-section-hdr open';
-    hdr.innerHTML = '<span class="chevron">▶</span> ' + s.t;
+    hdr.innerHTML = '<span class="chevron">&#x25B6;</span> ' + s.t;
     const body = document.createElement('div');
     body.className = 'fiche-section-body show';
     const card = document.createElement('div');
@@ -1503,6 +1537,12 @@ function buildContent() {
     sec.appendChild(body);
     $content.appendChild(sec);
   });
+  /* Update TTS player text for this category/sub */
+  var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='';
+  var _txt=subs.map(function(s){
+    return s.t+'. '+_ttsHtmlToText(s.html);
+  }).join('. ');
+  _ttsSetText('tts-fiches',_txt);
 }
 
 /* Search — multi-word, real-time, result count, clear */
@@ -1569,6 +1609,88 @@ $clear.addEventListener('click', () => { $search.value=''; $clear.style.display=
 buildGrid();
 buildSubs();
 buildContent();
+
+/* ===== TTS PLAYER ENGINE ===== */
+(function(){
+  var _S={text:'',charOffset:0,totalChars:0,playing:false,paused:false,rate:1.0,dur:0,activeId:null};
+  var _CPS=14,_seeking=false;
+  function _fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
+  function _dur(txt,r){return Math.max(1,txt.length/(_CPS*r));}
+  function _setBtn(pid,state){
+    var p=document.getElementById(pid);if(!p)return;
+    var b=p.querySelector('.tts-playbtn');if(!b)return;
+    if(state==='playing'){b.innerHTML='&#x23F8;';b.style.background='linear-gradient(135deg,#ffa726,#f57c00)';}
+    else{b.innerHTML='&#x25B6;';b.style.background='linear-gradient(135deg,#667eea,#764ba2)';}
+  }
+  function _setProg(pid,pct,ela,tot){
+    var p=document.getElementById(pid);if(!p)return;
+    var fill=p.querySelector('.tts-fill');if(fill)fill.style.width=Math.min(100,pct)+'%';
+    var seek=p.querySelector('.tts-seek');if(seek&&!_seeking)seek.value=Math.min(100,pct);
+    var tim=p.querySelector('.tts-time');if(tim)tim.textContent=_fmt(ela)+' / '+_fmt(tot);
+  }
+  function _speak(pid){
+    if(!_S.text)return;
+    var snippet=_S.text.substring(_S.charOffset);
+    if(!snippet.trim()){_S.charOffset=0;snippet=_S.text;}
+    var utt=new SpeechSynthesisUtterance(snippet);
+    utt.lang='fr-FR';utt.rate=_S.rate;
+    _S.playing=true;_S.paused=false;
+    _setBtn(pid,'playing');
+    var t0=Date.now(),sc=_S.charOffset;
+    utt.onboundary=function(e){
+      if(_seeking)return;
+      var abs=sc+(e.charIndex||0);_S.charOffset=abs;
+      var pct=_S.totalChars>0?abs/_S.totalChars*100:0;
+      var ela=sc/(_CPS*_S.rate)+(Date.now()-t0)/1000;
+      _setProg(pid,pct,ela,_S.dur);
+    };
+    utt.onend=function(){_S.playing=false;_S.paused=false;_S.charOffset=0;_setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);};
+    utt.onerror=function(){_S.playing=false;_setBtn(pid,'stopped');};
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+  }
+  window._ttsHtmlToText=function(html){
+    var d=document.createElement('div');d.innerHTML=html;
+    d.querySelectorAll('script,style').forEach(function(e){e.remove();});
+    d.querySelectorAll('h1,h2,h3,h4,h5,li,td,th').forEach(function(e){e.insertAdjacentText('afterend','. ');});
+    return (d.textContent||'').replace(/\.{2,}/g,'.').replace(/\s+/g,' ').trim();
+  };
+  window._ttsSetText=function(pid,txt){
+    window.speechSynthesis.cancel();
+    _S.text=(txt||'').trim();_S.totalChars=_S.text.length;
+    _S.charOffset=0;_S.playing=false;_S.paused=false;_S.activeId=pid;
+    _S.dur=_dur(_S.text,_S.rate);
+    _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);
+    // Restore speed slider label
+    var p=document.getElementById(pid);if(!p)return;
+    var sl=p.querySelector('.tts-rate-slider');if(sl)sl.value=Math.round(_S.rate*10);
+    var lb=p.querySelector('.tts-rate-lbl');if(lb)lb.textContent='\u00d7'+_S.rate.toFixed(1);
+  };
+  window._ttsToggle=function(pid){
+    if(_S.activeId&&_S.activeId!==pid){_setBtn(_S.activeId,'stopped');window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;}
+    _S.activeId=pid;
+    if(_S.playing){window.speechSynthesis.pause();_S.playing=false;_S.paused=true;_setBtn(pid,'stopped');return;}
+    if(_S.paused&&window.speechSynthesis.paused){window.speechSynthesis.resume();_S.playing=true;_S.paused=false;_setBtn(pid,'playing');return;}
+    _speak(pid);
+  };
+  window._ttsStop=function(pid){window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;_S.charOffset=0;_setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);};
+  window._ttsSeekStart=function(){_seeking=true;if(_S.playing)window.speechSynthesis.pause();};
+  window._ttsSeekEnd=function(pid,val){
+    _seeking=false;
+    var was=_S.playing||(_S.paused&&window.speechSynthesis.paused);
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
+    _S.charOffset=Math.round(val/100*_S.totalChars);
+    _setProg(pid,val,val/100*_S.dur,_S.dur);
+    if(was)_speak(pid);
+  };
+  window._ttsSetRate=function(pid,rate){
+    var was=_S.playing||_S.paused;
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
+    _S.rate=rate;_S.dur=_dur(_S.text,rate);
+    _setProg(pid,_S.totalChars>0?_S.charOffset/_S.totalChars*100:0,0,_S.dur);
+    if(was)_speak(pid);
+  };
+})();
 })();
   </script>
 </body>

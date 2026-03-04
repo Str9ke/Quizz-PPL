@@ -447,6 +447,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 /* dossier nav-done */
 .dossier-card.nav-done{border-color:#4caf50!important;background:linear-gradient(135deg,rgba(76,175,80,.07) 0%,transparent 60%)!important}
 .nav-done-badge{display:inline-block;background:#4caf50;color:#fff;padding:2px 9px;border-radius:20px;font-size:.72em;font-weight:700;margin-left:6px;vertical-align:middle}
+/* ===== TTS PLAYER ===== */
+.tts-player{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:12px;margin-bottom:14px;flex-wrap:wrap}
+.tts-playbtn{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:1.1em;cursor:pointer;flex-shrink:0;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.tts-stopbtn{width:30px;height:30px;border-radius:8px;border:1px solid rgba(244,67,54,.35);background:rgba(244,67,54,.1);color:#f44336;font-size:.85em;cursor:pointer;flex-shrink:0}
+.tts-progress-wrap{flex:1;min-width:100px;position:relative;height:22px;cursor:pointer}
+.tts-track{position:absolute;top:50%;left:0;right:0;height:4px;background:rgba(255,255,255,.12);border-radius:2px;transform:translateY(-50%);pointer-events:none;overflow:hidden}
+.tts-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;width:0%;transition:width .2s linear}
+.tts-seek{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.tts-time{font-size:.74em;color:var(--text-secondary);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:80px;text-align:center}
+.tts-rate-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tts-rate-lbl{font-size:.75em;color:#667eea;font-weight:700;min-width:28px;text-align:right}
+.tts-rate-slider{width:70px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -1112,6 +1124,24 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
             <button class="navlog-btn primary" onclick="window.saveCurrentNote()">&#x2713; Enregistrer</button>
             <button class="navlog-btn" onclick="window.toggleNoteEditor()">Annuler</button>
           </div>
+        </div>
+      </div>
+      <!-- TTS Player -->
+      <div class="tts-player" id="tts-notes">
+        <button class="tts-playbtn" onclick="_ttsToggle('tts-notes')" title="Lire les notes">&#x25B6;</button>
+        <button class="tts-stopbtn" onclick="_ttsStop('tts-notes')" title="Arr&#xea;ter">&#x23F9;</button>
+        <div class="tts-progress-wrap">
+          <div class="tts-track"><div class="tts-fill"></div></div>
+          <input type="range" class="tts-seek" min="0" max="100" step="0.1" value="0"
+            onmousedown="_ttsSeekStart()" ontouchstart="_ttsSeekStart()"
+            oninput="document.querySelector('#tts-notes .tts-fill').style.width=this.value+'%'"
+            onchange="_ttsSeekEnd('tts-notes',parseFloat(this.value))">
+        </div>
+        <span class="tts-time">0:00 / 0:00</span>
+        <div class="tts-rate-wrap">
+          <span class="tts-rate-lbl">&times;1.0</span>
+          <input type="range" class="tts-rate-slider" min="10" max="20" step="1" value="10" title="Vitesse de lecture (1.0 &#x2192; 2.0)"
+            oninput="this.previousElementSibling.textContent='\u00d7'+(this.value/10).toFixed(1);_ttsSetRate('tts-notes',this.value/10)">
         </div>
       </div>
       <!-- Notes list -->
@@ -5410,7 +5440,105 @@ function _noteDragSetup(container){
   });
 }
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
-window.deleteNote=deleteNote;window.moveNote=moveNote;window.renderNotes=renderNotes;
+window.deleteNote=deleteNote;window.moveNote=moveNote;
+window.renderNotes=function(){
+  renderNotes();
+  /* Update TTS text after notes change */
+  setTimeout(function(){
+    var texts=[];
+    _navlogNotes.forEach(function(n){texts.push(_ttsHtmlToText(n.html));});
+    _ttsSetText('tts-notes',texts.join('. '));
+  },50);
+};
+
+/* ===== TTS PLAYER ENGINE ===== */
+(function(){
+  var _S={text:'',charOffset:0,totalChars:0,playing:false,paused:false,rate:1.0,dur:0,activeId:null};
+  var _CPS=14; /* chars per second at rate 1.0 (French) */
+  var _seeking=false;
+  function _fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
+  function _dur(txt,r){return Math.max(1,txt.length/(_CPS*r));}
+  function _setBtn(pid,state){
+    var p=document.getElementById(pid);if(!p)return;
+    var b=p.querySelector('.tts-playbtn');if(!b)return;
+    if(state==='playing'){b.innerHTML='&#x23F8;';b.style.background='linear-gradient(135deg,#ffa726,#f57c00)';}
+    else{b.innerHTML='&#x25B6;';b.style.background='linear-gradient(135deg,#667eea,#764ba2)';}
+  }
+  function _setProg(pid,pct,ela,tot){
+    var p=document.getElementById(pid);if(!p)return;
+    var fill=p.querySelector('.tts-fill');if(fill)fill.style.width=Math.min(100,pct)+'%';
+    var seek=p.querySelector('.tts-seek');if(seek&&!_seeking)seek.value=Math.min(100,pct);
+    var tim=p.querySelector('.tts-time');if(tim)tim.textContent=_fmt(ela)+' / '+_fmt(tot);
+  }
+  function _speak(pid){
+    if(!_S.text)return;
+    var snippet=_S.text.substring(_S.charOffset);
+    if(!snippet.trim()){_S.charOffset=0;snippet=_S.text;}
+    var utt=new SpeechSynthesisUtterance(snippet);
+    utt.lang='fr-FR';utt.rate=_S.rate;
+    _S.playing=true;_S.paused=false;
+    _setBtn(pid,'playing');
+    var t0=Date.now(),sc=_S.charOffset;
+    utt.onboundary=function(e){
+      if(_seeking)return;
+      var abs=sc+(e.charIndex||0);_S.charOffset=abs;
+      var pct=_S.totalChars>0?abs/_S.totalChars*100:0;
+      var ela=sc/(_CPS*_S.rate)+(Date.now()-t0)/1000;
+      _setProg(pid,pct,ela,_S.dur);
+    };
+    utt.onend=function(){
+      _S.playing=false;_S.paused=false;_S.charOffset=0;
+      _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);
+    };
+    utt.onerror=function(){_S.playing=false;_setBtn(pid,'stopped');};
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+  }
+  window._ttsHtmlToText=function(html){
+    var d=document.createElement('div');d.innerHTML=html;
+    d.querySelectorAll('script,style').forEach(function(e){e.remove();});
+    d.querySelectorAll('h1,h2,h3,h4,h5,li,td,th').forEach(function(e){e.insertAdjacentText('afterend','. ');});
+    return (d.textContent||'').replace(/\.{2,}/g,'.').replace(/\s+/g,' ').trim();
+  };
+  window._ttsSetText=function(pid,txt){
+    window.speechSynthesis.cancel();
+    _S.text=(txt||'').trim();_S.totalChars=_S.text.length;
+    _S.charOffset=0;_S.playing=false;_S.paused=false;_S.activeId=pid;
+    _S.dur=_dur(_S.text,_S.rate);
+    _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);
+  };
+  window._ttsToggle=function(pid){
+    if(_S.activeId&&_S.activeId!==pid){
+      _setBtn(_S.activeId,'stopped');
+      window.speechSynthesis.cancel();
+      _S.playing=false;_S.paused=false;
+    }
+    _S.activeId=pid;
+    if(_S.playing){window.speechSynthesis.pause();_S.playing=false;_S.paused=true;_setBtn(pid,'stopped');return;}
+    if(_S.paused&&window.speechSynthesis.paused){window.speechSynthesis.resume();_S.playing=true;_S.paused=false;_setBtn(pid,'playing');return;}
+    _speak(pid);
+  };
+  window._ttsStop=function(pid){
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;_S.charOffset=0;
+    _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);
+  };
+  window._ttsSeekStart=function(){_seeking=true;if(_S.playing)window.speechSynthesis.pause();};
+  window._ttsSeekEnd=function(pid,val){
+    _seeking=false;
+    var wasActive=_S.playing||(_S.paused&&window.speechSynthesis.paused);
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
+    _S.charOffset=Math.round(val/100*_S.totalChars);
+    _setProg(pid,val,val/100*_S.dur,_S.dur);
+    if(wasActive)_speak(pid);
+  };
+  window._ttsSetRate=function(pid,rate){
+    var was=_S.playing||_S.paused;
+    window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
+    _S.rate=rate;_S.dur=_dur(_S.text,rate);
+    _setProg(pid,_S.totalChars>0?_S.charOffset/_S.totalChars*100:0,0,_S.dur);
+    if(was)_speak(pid);
+  };
+})();
 
 function editNote(id){
   var note=_navlogNotes.find(function(n){return n.id===id;});if(!note) return;
