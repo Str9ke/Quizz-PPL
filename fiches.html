@@ -1627,7 +1627,7 @@ buildContent();
 
 /* ===== TTS PLAYER ENGINE ===== */
 (function(){
-  var _S={text:'',charOffset:0,totalChars:0,playing:false,paused:false,rate:1.0,vol:1.0,voiceName:'',dur:0,activeId:null};
+  var _S={text:'',charOffset:0,totalChars:0,chunks:[],chunkIdx:0,chunkBase:0,playing:false,paused:false,rate:1.0,vol:1.0,voiceName:'',dur:0,activeId:null};
   var _CPS=14,_seeking=false;
   function _fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
   function _dur(txt,r){return Math.max(1,txt.length/(_CPS*r));}
@@ -1643,27 +1643,53 @@ buildContent();
     var seek=p.querySelector('.tts-seek');if(seek&&!_seeking)seek.value=Math.min(100,pct);
     var tim=p.querySelector('.tts-time');if(tim)tim.textContent=_fmt(ela)+' / '+_fmt(tot);
   }
-  function _speak(pid){
-    if(!_S.text)return;
-    var snippet=_S.text.substring(_S.charOffset);
-    if(!snippet.trim()){_S.charOffset=0;snippet=_S.text;}
-    var utt=new SpeechSynthesisUtterance(snippet);
+  function _splitChunks(txt,maxLen){
+    if(txt.length<=maxLen)return [txt];
+    var chunks=[],pos=0;
+    while(pos<txt.length){
+      var end=Math.min(pos+maxLen,txt.length);
+      if(end<txt.length){
+        var cut=txt.lastIndexOf('. ',end);
+        if(cut>pos+maxLen/2)end=cut+2;
+        else{cut=txt.lastIndexOf(' ',end);if(cut>pos)end=cut+1;}
+      }
+      var c=txt.substring(pos,end).trim();if(c)chunks.push(c);pos=end;
+    }
+    return chunks.length?chunks:[txt];
+  }
+  function _speakChunk(pid){
+    if(!_S.playing||_S.chunkIdx>=_S.chunks.length){
+      _S.playing=false;_S.paused=false;_S.charOffset=0;
+      _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);return;
+    }
+    var chunk=_S.chunks[_S.chunkIdx];
+    var utt=new SpeechSynthesisUtterance(chunk);
     utt.lang='fr-FR';utt.rate=_S.rate;utt.volume=_S.vol;
     if(_S.voiceName){var _vv=window.speechSynthesis.getVoices().find(function(v){return v.name===_S.voiceName;});if(_vv)utt.voice=_vv;}
-    _S.playing=true;_S.paused=false;
-    _setBtn(pid,'playing');
-    var t0=Date.now(),sc=_S.charOffset;
+    var sc=_S.chunkBase;
     utt.onboundary=function(e){
       if(_seeking)return;
       var abs=sc+(e.charIndex||0);_S.charOffset=abs;
       var pct=_S.totalChars>0?abs/_S.totalChars*100:0;
-      var ela=sc/(_CPS*_S.rate)+(Date.now()-t0)/1000;
-      _setProg(pid,pct,ela,_S.dur);
+      _setProg(pid,pct,abs/(_CPS*_S.rate),_S.dur);
     };
-    utt.onend=function(){_S.playing=false;_S.paused=false;_S.charOffset=0;_setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);};
+    utt.onend=function(){
+      if(!_S.playing)return;
+      _S.chunkBase+=chunk.length;_S.charOffset=_S.chunkBase;
+      _S.chunkIdx++;_speakChunk(pid);
+    };
     utt.onerror=function(){_S.playing=false;_setBtn(pid,'stopped');};
-    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utt);
+  }
+  function _speak(pid){
+    if(!_S.text)return;
+    window.speechSynthesis.cancel();
+    var rem=_S.text.substring(_S.charOffset);
+    if(!rem.trim()){_S.charOffset=0;rem=_S.text;}
+    _S.chunks=_splitChunks(rem,1500);_S.chunkIdx=0;_S.chunkBase=_S.charOffset;
+    _S.playing=true;_S.paused=false;
+    _setBtn(pid,'playing');
+    _speakChunk(pid);
   }
   window._ttsHtmlToText=function(html){
     var d=document.createElement('div');d.innerHTML=html;
@@ -1674,10 +1700,10 @@ buildContent();
   window._ttsSetText=function(pid,txt){
     window.speechSynthesis.cancel();
     _S.text=(txt||'').trim();_S.totalChars=_S.text.length;
-    _S.charOffset=0;_S.playing=false;_S.paused=false;_S.activeId=pid;
+    _S.charOffset=0;_S.chunks=[];_S.chunkIdx=0;_S.chunkBase=0;
+    _S.playing=false;_S.paused=false;_S.activeId=pid;
     _S.dur=_dur(_S.text,_S.rate);
     _setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);
-    // Restore speed slider label
     var p=document.getElementById(pid);if(!p)return;
     var sl=p.querySelector('.tts-rate-slider');if(sl)sl.value=Math.round(_S.rate*10);
     var lb=p.querySelector('.tts-rate-lbl');if(lb)lb.textContent='\u00d7'+_S.rate.toFixed(1);
@@ -1686,15 +1712,14 @@ buildContent();
   window._ttsToggle=function(pid){
     if(_S.activeId&&_S.activeId!==pid){_setBtn(_S.activeId,'stopped');window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;}
     _S.activeId=pid;
-    if(_S.playing){window.speechSynthesis.pause();_S.playing=false;_S.paused=true;_setBtn(pid,'stopped');return;}
-    if(_S.paused&&window.speechSynthesis.paused){window.speechSynthesis.resume();_S.playing=true;_S.paused=false;_setBtn(pid,'playing');return;}
+    if(_S.playing){window.speechSynthesis.cancel();_S.playing=false;_S.paused=true;_setBtn(pid,'stopped');return;}
     _speak(pid);
   };
-  window._ttsStop=function(pid){window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;_S.charOffset=0;_setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);};
-  window._ttsSeekStart=function(){_seeking=true;if(_S.playing)window.speechSynthesis.pause();};
+  window._ttsStop=function(pid){window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;_S.charOffset=0;_S.chunks=[];_S.chunkIdx=0;_S.chunkBase=0;_setBtn(pid,'stopped');_setProg(pid,0,0,_S.dur);};
+  window._ttsSeekStart=function(){_seeking=true;if(_S.playing){window.speechSynthesis.cancel();_S.playing=false;_S.paused=true;}};
   window._ttsSeekEnd=function(pid,val){
     _seeking=false;
-    var was=_S.playing||(_S.paused&&window.speechSynthesis.paused);
+    var was=_S.playing||_S.paused;
     window.speechSynthesis.cancel();_S.playing=false;_S.paused=false;
     _S.charOffset=Math.round(val/100*_S.totalChars);
     _setProg(pid,val,val/100*_S.dur,_S.dur);
