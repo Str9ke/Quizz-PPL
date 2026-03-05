@@ -511,19 +511,28 @@
 
     /* Force full sync from Firestore server */
     window.forceSyncFromServer = async function(){
-      var uid = (auth && auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
-      if(!uid){ alert('Non connecté — veuillez vous connecter d\'abord.'); return; }
       var btn = document.getElementById('syncBtn');
-      if(btn){ btn.textContent='⏳ Synchro…'; btn.disabled=true; }
+      if(btn){ btn.textContent='\u23f3 Synchro\u2026'; btn.disabled=true; }
 
-      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw';
       var fsBase = 'https://firestore.googleapis.com/v1/projects/quizaviation-b79ff/databases/(default)/documents/quizProgress/';
-
-      /* Parse Firestore REST integer/double values */
       function _intVal(v){ return parseInt((v&&(v.integerValue||v.doubleValue))||0)||0; }
       function _mapFields(f){ var o={}; if(!f) return o; for(var k in f) o[k]=_intVal(f[k]); return o; }
 
       try{
+        /* Attendre que Firebase Auth soit pr\u00eat (jusqu\u00e0 5s sur mobile) */
+        var user = auth && auth.currentUser;
+        if(!user){
+          user = await new Promise(function(resolve){
+            var unsub = auth.onAuthStateChanged(function(u){ unsub(); resolve(u); });
+            setTimeout(function(){ resolve(null); }, 5000);
+          });
+        }
+        if(!user){ throw new Error('Non connect\u00e9 \u2014 rechargez la page'); }
+        var uid = user.uid;
+        var idToken = await user.getIdToken(false);
+        var H = {'Content-Type':'application/json','Authorization':'Bearer '+idToken};
+        var Hg = {'Authorization':'Bearer '+idToken};
+
         var now = new Date();
         var todayKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
         var todayUtcKey = now.toISOString().slice(0,10);
@@ -532,25 +541,24 @@
           parseInt(localStorage.getItem('dailyAnswered_'+todayUtcKey))||0
         );
 
-        /* 1. PUSH local → Firestore via REST (updateMask = écrit que ce champ, contourne index limit) */
+        /* 1. PUSH local \u2192 Firestore via REST Bearer (updateMask = n'écrit que ce champ) */
         if(localCount > 0){
           var patchBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
           patchBody.fields.dailyHistory.mapValue.fields[todayKey] = {integerValue: String(localCount)};
-          var patchUrl = fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+todayKey)+'&key='+apiKey;
-          var pR = await fetch(patchUrl,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patchBody)});
+          var patchUrl = fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+todayKey);
+          var pR = await fetch(patchUrl,{method:'PATCH',headers:H,body:JSON.stringify(patchBody)});
           console.log('[sync] push today', localCount, pR.ok?'OK':await pR.text());
         }
 
-        /* 2. PULL Firestore → local via REST (bypass total cache SDK) */
-        var getR = await fetch(fsBase+encodeURIComponent(uid)+'?key='+apiKey);
+        /* 2. PULL Firestore \u2192 local via REST (contourne compl\u00e8tement le cache SDK) */
+        var getR = await fetch(fsBase+encodeURIComponent(uid),{headers:Hg});
         var getD = await getR.json();
         if(getD.error) throw new Error(getD.error.message||'REST error');
 
-        var dh = _mapFields(getD.fields && getD.fields.dailyHistory && getD.fields.dailyHistory.mapValue && getD.fields.dailyHistory.mapValue.fields);
-        var dm = _mapFields(getD.fields && getD.fields.dailyMastered && getD.fields.dailyMastered.mapValue && getD.fields.dailyMastered.mapValue.fields);
+        var dh = _mapFields(getD.fields&&getD.fields.dailyHistory&&getD.fields.dailyHistory.mapValue&&getD.fields.dailyHistory.mapValue.fields);
+        var dm = _mapFields(getD.fields&&getD.fields.dailyMastered&&getD.fields.dailyMastered.mapValue&&getD.fields.dailyMastered.mapValue.fields);
         console.log('[sync] dailyHistory REST:', JSON.stringify(dh).slice(0,300));
 
-        /* Merge max(local, server) → localStorage */
         var dhB = JSON.parse(localStorage.getItem('dailyHistoryBackup')||'{}');
         for(var k in dh){ if(dh[k]>(dhB[k]||0)) dhB[k]=dh[k]; }
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhB));
@@ -559,10 +567,9 @@
         for(var k in dm){ if(dm[k]>(dmB[k]||0)) dmB[k]=dm[k]; }
         localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmB));
 
-        /* Ratchet aujourd'hui */
         var serverToday = dh[todayKey]||0;
         var bestToday = Math.max(serverToday, localCount);
-        console.log('[sync] today — serveur:', serverToday, 'local:', localCount, '→', bestToday);
+        console.log('[sync] today \u2014 serveur:', serverToday, 'local:', localCount, '\u2192', bestToday);
         if(bestToday > localCount){
           localStorage.setItem('dailyCountRatchet_'+todayUtcKey, bestToday);
           localStorage.setItem('dailyAnswered_'+todayUtcKey, bestToday);
@@ -573,13 +580,13 @@
         displayHomeProgressBar(currentResponses, dh);
         updateDailyStatsBar();
         if(typeof updateModeCounts === 'function') updateModeCounts();
-        var msg = bestToday > 0 ? ('✅ Syncé ('+bestToday+' auj.)') : '✅ Synchronisé !';
+        var msg = bestToday > 0 ? ('\u2705 Sync\u00e9 ('+bestToday+' auj.)') : '\u2705 Synchronis\u00e9 !';
         if(btn){ btn.textContent=msg; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
-        setTimeout(function(){ if(btn){ btn.textContent='🔄 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 3500);
+        setTimeout(function(){ if(btn){ btn.textContent='\ud83d\udd04 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 3500);
       }catch(e){
         console.error('[forceSyncFromServer] error', e);
-        var errMsg = e && e.message ? e.message.slice(0,50) : 'inconnue';
-        if(btn){ btn.textContent='❌ '+errMsg; btn.disabled=false; setTimeout(function(){ btn.textContent='🔄 Synchroniser'; btn.style.cssText=''; btn.disabled=false; },4000); }
+        var errMsg = e&&e.message ? e.message.slice(0,50) : 'inconnue';
+        if(btn){ btn.textContent='\u274c '+errMsg; btn.disabled=false; setTimeout(function(){ btn.textContent='\ud83d\udd04 Synchroniser'; btn.style.cssText=''; btn.disabled=false; },4000); }
       }
     };
   </script>
