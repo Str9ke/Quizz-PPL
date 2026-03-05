@@ -883,10 +883,13 @@ async function validerReponses() {
             const _utcK = _now2.toISOString().slice(0,10);
             const _cnt = Math.max(parseInt(localStorage.getItem('dailyCountRatchet_'+_utcK))||0, parseInt(localStorage.getItem('dailyAnswered_'+_utcK))||0);
             if(_cnt > 0){
-              const _pBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
-              _pBody.fields.dailyHistory.mapValue.fields[_tk] = {integerValue: String(_cnt)};
-              const _pUrl = _fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+_tk)+'&key='+_apiKey;
-              fetch(_pUrl,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(_pBody)}).catch(()=>{});
+              try {
+                const _idTok = await auth.currentUser.getIdToken();
+                const _pBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
+                _pBody.fields.dailyHistory.mapValue.fields[_tk] = {integerValue: String(_cnt)};
+                const _pUrl = _fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+_tk);
+                fetch(_pUrl,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+_idTok},body:JSON.stringify(_pBody)}).catch(()=>{});
+              } catch(_te){ /* ignore token errors */ }
             }
           } catch(_e){ /* ignore */ }
         }
