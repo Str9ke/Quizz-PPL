@@ -874,6 +874,21 @@ async function validerReponses() {
         // Sauvegarder le compteur quotidien (sauf mode révisions espacées)
         if (modeQuiz !== 'revisions') {
           await saveDailyCountOffline(uid);
+          /* Push silencieux via REST API aussi (contourne bugs SDK mobile) */
+          try {
+            const _apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw';
+            const _fsBase = 'https://firestore.googleapis.com/v1/projects/quizaviation-b79ff/databases/(default)/documents/quizProgress/';
+            const _now2 = new Date();
+            const _tk = _now2.getFullYear()+'-'+String(_now2.getMonth()+1).padStart(2,'0')+'-'+String(_now2.getDate()).padStart(2,'0');
+            const _utcK = _now2.toISOString().slice(0,10);
+            const _cnt = Math.max(parseInt(localStorage.getItem('dailyCountRatchet_'+_utcK))||0, parseInt(localStorage.getItem('dailyAnswered_'+_utcK))||0);
+            if(_cnt > 0){
+              const _pBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
+              _pBody.fields.dailyHistory.mapValue.fields[_tk] = {integerValue: String(_cnt)};
+              const _pUrl = _fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+_tk)+'&key='+_apiKey;
+              fetch(_pUrl,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(_pBody)}).catch(()=>{});
+            }
+          } catch(_e){ /* ignore */ }
         }
         // Sauvegarder le résultat de la session (avec la même date pour déduplication)
         await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory, sessionDate);
