@@ -515,19 +515,33 @@
       if(!uid){ alert('Non connect\u00e9 \u2014 veuillez vous connecter d\'abord.'); return; }
       var btn = document.getElementById('syncBtn');
       if(btn){ btn.textContent='\u23F3 Synchro\u2026'; btn.disabled=true; }
+      console.log('[sync] uid:', uid);
       try{
-        /* 1. D'abord uploader les données locales → Firestore (push bidirectionnel) */
+        /* 1. PUSH local → Firestore (bidirectionnel) */
+        /* 1a. dailyCount (compteur journalier réponses) — manquait avant ! */
+        if (typeof saveDailyCount === 'function') {
+          try { await saveDailyCount(uid); console.log('[sync] dailyCount poussé'); }
+          catch(e){ console.warn('[sync] saveDailyCount upload:', e); }
+        }
+        /* 1b. dailyMastered (questions maîtrisées) */
         if (typeof saveDailyMastered === 'function') {
           try { await saveDailyMastered(uid); } catch(e){ console.warn('[sync] saveDailyMastered upload:', e); }
         }
+        /* 1c. Réponses locales → Firestore merge */
+        if (typeof saveResponsesWithOfflineFallback === 'function' && Object.keys(currentResponses||{}).length > 0) {
+          try { await saveResponsesWithOfflineFallback(uid, currentResponses); } catch(e){ console.warn('[sync] responses upload:', e); }
+        }
+
+        /* 2. PULL Firestore → local */
         /* source:'server' peut échouer avec enableMultiTabIndexedDbPersistence → fallback sans option */
         var docSnap;
         try { docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'server' }); }
         catch(srcErr) { docSnap = await db.collection('quizProgress').doc(uid).get(); }
         var data = docSnap.exists ? docSnap.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
-        /* dailyHistory */
+        /* dailyHistory : merge max(local, server) pour chaque jour */
         var dh = data.dailyHistory || {};
+        console.log('[sync] dailyHistory serveur:', JSON.stringify(dh).slice(0,200));
         var dhB = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
         for(var k in dh){ if(dh[k] > (dhB[k]||0)) dhB[k]=dh[k]; }
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhB));
@@ -536,21 +550,28 @@
         var dmB = JSON.parse(localStorage.getItem('dailyMasteredBackup') || '{}');
         for(var k in dm){ if(dm[k] > (dmB[k]||0)) dmB[k]=dm[k]; }
         localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmB));
-        /* ratchet today */
+        /* ratchet aujourd'hui : prendre le max(local, serveur) */
         var now = new Date();
         var todayKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
         var todayUtcKey = now.toISOString().slice(0,10);
         var serverToday = dh[todayKey]||0;
         var localRatchet = parseInt(localStorage.getItem('dailyCountRatchet_'+todayUtcKey))||0;
-        if(serverToday > localRatchet){
-          localStorage.setItem('dailyCountRatchet_'+todayUtcKey, serverToday);
-          localStorage.setItem('dailyAnswered_'+todayUtcKey, serverToday);
+        var bestToday = Math.max(serverToday, localRatchet);
+        console.log('[sync] aujourd\'hui \u2014 serveur:', serverToday, 'local:', localRatchet, '\u2192 affiché:', bestToday);
+        if(bestToday > localRatchet){
+          localStorage.setItem('dailyCountRatchet_'+todayUtcKey, bestToday);
+          localStorage.setItem('dailyAnswered_'+todayUtcKey, bestToday);
+          /* aussi mettre à jour le backup local pour consistance */
+          var dhB2 = JSON.parse(localStorage.getItem('dailyHistoryBackup'))||{};
+          dhB2[todayKey] = Math.max(dhB2[todayKey]||0, bestToday);
+          localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhB2));
         }
         displayHomeProgressBar(currentResponses, dh);
         updateDailyStatsBar();
         if(typeof updateModeCounts === 'function') updateModeCounts();
-        if(btn){ btn.textContent='\u2705 Synchronis\u00e9 !'; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
-        setTimeout(function(){ if(btn){ btn.textContent='\uD83D\uDD04 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 2800);
+        var msg = bestToday > 0 ? ('\u2705 Sync\u00e9 (' + bestToday + ' auj.)') : '\u2705 Synchronis\u00e9 !';
+        if(btn){ btn.textContent=msg; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+        setTimeout(function(){ if(btn){ btn.textContent='\uD83D\uDD04 Synchroniser'; btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; }}, 3500);
       }catch(e){
         console.error('[forceSyncFromServer] error', e);
         var errMsg = e && e.message ? e.message.slice(0,40) : 'inconnue';
