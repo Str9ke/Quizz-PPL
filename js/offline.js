@@ -43,14 +43,32 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     }
   });
 
-  // Sauvegarder via Firestore (l'écriture est mise en file d'attente si offline)
+  // Sauvegarder via Firestore en utilisant des mises à jour PAR CLÉ INDIVIDUELLE
+  // (responses.question_xxx = valeur) au lieu de remplacer tout le champ responses.
+  // Cela évite d'écraser les données sauvegardées sur un autre appareil depuis le chargement
+  // de la page (ex : téléphone sauvegarde nextReview → PC ne le voit pas encore → PC sauvegarde
+  // et ne doit pas écraser le nextReview du téléphone).
   try {
-    // Note: set() retourne une promesse qui résout une fois l'écriture commise (ou persistée localement)
-    await db.collection('quizProgress').doc(uid).set(
-      { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
-      { merge: true }
-    );
-    
+    const firestoreUpdate = { lastUpdated: firebase.firestore.Timestamp.now() };
+    Object.keys(responsesToSave).forEach(key => {
+      firestoreUpdate['responses.' + key] = merged[key];
+    });
+
+    try {
+      // update() ne fonctionne que si le doc existe — cas normal après la 1ère session
+      await db.collection('quizProgress').doc(uid).update(firestoreUpdate);
+    } catch (e) {
+      if (e.code === 'not-found') {
+        // Premier enregistrement : créer le document avec set()
+        await db.collection('quizProgress').doc(uid).set(
+          { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
+          { merge: true }
+        );
+      } else {
+        throw e;
+      }
+    }
+
     // Mettre à jour l'objet global si présent
     if (typeof currentResponses !== 'undefined') {
       currentResponses = normalizeResponses(merged);
