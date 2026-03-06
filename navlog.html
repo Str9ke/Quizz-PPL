@@ -60,6 +60,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .perf-result-box.orange{background:rgba(255,152,0,.15);color:#ff9800;border:1px solid rgba(255,152,0,.3)}
 .perf-result-box.red{background:rgba(244,67,54,.15);color:#f44336;border:1px solid rgba(244,67,54,.3)}
 
+/* Calculateurs avancés (dérive, PNR, ETP) */
+.adv-calc-block{padding:14px 0 6px}
+.adv-calc-title{margin:0 0 8px;font-size:.97em;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:6px;border-bottom:2px solid rgba(167,139,250,.2);padding-bottom:6px}
+.adv-calc-theory{font-size:.8em;color:var(--text-secondary);background:rgba(167,139,250,.06);border-left:3px solid #a78bfa;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:10px;line-height:1.7}
+.adv-formula-row{padding:2px 0 2px 14px;font-family:monospace;font-size:.9em;color:#e0d7ff}
+.adv-formula-note{color:var(--text-secondary);font-size:.88em;font-family:sans-serif}
+.adv-result-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.adv-kpi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 14px;text-align:center;min-width:80px}
+.adv-kpi-val{font-size:1.3em;font-weight:700;color:#e0d7ff}
+.adv-kpi-lbl{font-size:.7em;color:var(--text-secondary);margin-top:2px}
+.adv-calc-detail{font-size:.81em;color:var(--text-secondary);padding:8px 12px;background:rgba(167,139,250,.05);border-radius:8px;border-left:3px solid #a78bfa;line-height:1.75}
+.adv-calc-divider{height:1px;background:rgba(255,255,255,.07);margin:10px 0 4px}
+
 /* Cards */
 .nl-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .nl-card-title{font-size:1em;font-weight:700;color:var(--text-heading);margin:0 0 10px;display:flex;align-items:center;gap:8px}
@@ -1013,6 +1026,133 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div id="cruiseTable"></div>
       <p style="font-size:.72em;color:var(--text-secondary);margin-top:6px">Notes : Croisi&#xe8;re max normalement limit&#xe9;e &#xe0; 75% puissance. Performances avec car&#xe9;nages de roues. Sans car&#xe9;nages : −3,15 km/h aux vitesses &#xe9;lev&#xe9;es, −1,6 km/h aux faibles.</p>
     </div>
+
+  <!-- ==================== CALCULATEURS AVANCÉS ==================== -->
+  <div class="nl-card" style="margin-top:14px">
+    <div class="nl-card-title"><span class="icon">&#x1F9EE;</span> Calculateurs avancés de navigation</div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║  1. VENT DE TRAVERS & DÉRIVE MAX     ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div class="adv-calc-block">
+      <h4 class="adv-calc-title">&#x1F4A8; Vent de travers &amp; D&#xe9;rive maximale</h4>
+      <div class="adv-calc-theory">
+        <b>Qu'est-ce que la d&#xe9;rive ?</b><br>
+        La <b>d&#xe9;rive</b> (ou <em>angle de d&#xe9;rive</em>) est l'&#xe9;cart entre le <em>cap</em> que l'avion tient et la <em>route</em> qu'il suit r&#xe9;ellement — caus&#xe9; par la composante transversale du vent.<br>
+        Plus le vent est perpendiculaire &#xe0; la route, plus la d&#xe9;rive est grande &#x2794; la d&#xe9;rive est <b>maximale quand le vent est &#xe0; 90°</b> de la route.<br><br>
+        <b>Formules :</b><br>
+        <div class="adv-formula-row">Composante face &nbsp;= Vvent &#xD7; cos(&alpha;) &nbsp;&nbsp; <span class="adv-formula-note">(positive = vent debout)</span></div>
+        <div class="adv-formula-row">Composante travers = Vvent &#xD7; sin(&alpha;) &nbsp;&nbsp; <span class="adv-formula-note">(&alpha; = angle vent / route)</span></div>
+        <div class="adv-formula-row">D&#xe9;rive = arcsin(V<sub>travers</sub> / TAS) &nbsp;&nbsp; <span class="adv-formula-note">(exact)</span></div>
+        <div class="adv-formula-row">D&#xe9;rive &#x2248; (V<sub>travers</sub> / TAS) &#xD7; 57,3° &nbsp;&nbsp; <span class="adv-formula-note">(ou &#xD7; 60 — r&#xe8;gle des 60)</span></div>
+        <div class="adv-formula-row">D&#xe9;rive <b>max</b> = arcsin(Vvent / TAS) &nbsp;&nbsp; <span class="adv-formula-note">(quand le vent est &#xe0; 90°)</span></div>
+      </div>
+      <div class="config-grid" style="margin:10px 0 6px">
+        <div class="config-item">
+          <label for="advWindDir">Direction du vent (°)</label>
+          <input type="number" id="advWindDir" value="270" min="0" max="360" step="1" oninput="window.advDriftCalc()">
+        </div>
+        <div class="config-item">
+          <label for="advWindSpd">Force du vent (kt)</label>
+          <input type="number" id="advWindSpd" value="15" min="0" max="60" step="1" oninput="window.advDriftCalc()">
+        </div>
+        <div class="config-item">
+          <label for="advRoute">Route (°M)</label>
+          <input type="number" id="advRoute" value="360" min="0" max="360" step="1" oninput="window.advDriftCalc()">
+        </div>
+        <div class="config-item">
+          <label for="advTAS">TAS (kt)</label>
+          <input type="number" id="advTAS" value="90" min="40" max="300" step="1" oninput="window.advDriftCalc()">
+        </div>
+      </div>
+      <div id="advDriftResult" style="margin-top:6px"></div>
+    </div>
+
+    <div class="adv-calc-divider"></div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║  2. PNR — POINT OF NO RETURN         ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div class="adv-calc-block">
+      <h4 class="adv-calc-title">&#x26D4; PNR &mdash; Point of No Return (Point de non-retour)</h4>
+      <div class="adv-calc-theory">
+        <b>Qu'est-ce que le PNR ?</b><br>
+        Le <b>PNR</b> est le point le plus &#xe9;loign&#xe9; que vous pouvez atteindre <em>tout en ayant encore assez de carburant pour revenir au point de d&#xe9;part</em> (en utilisant toute l'endurance disponible). Apr&#xe8;s ce point, le retour est impossible — vous <em>devez</em> continuer.<br><br>
+        <b>Formules :</b><br>
+        <div class="adv-formula-row">Endurance (E) = Carburant utilisable / Conso &nbsp;&nbsp; <span class="adv-formula-note">(heures)</span></div>
+        <div class="adv-formula-row">GS aller (Ga) = TAS &#x2212; Vent debout &nbsp;&nbsp; <span class="adv-formula-note">(NM/h)</span></div>
+        <div class="adv-formula-row">GS retour (Gr) = TAS + Vent debout &nbsp;&nbsp; <span class="adv-formula-note">(vent devient favorable)</span></div>
+        <div class="adv-formula-row"><b>Temps PNR = (E &#xD7; Gr) / (Ga + Gr)</b></div>
+        <div class="adv-formula-row"><b>Distance PNR = Temps PNR &#xD7; Ga</b></div>
+      </div>
+      <div class="config-grid" style="margin:10px 0 6px">
+        <div class="config-item">
+          <label for="pnrFuel">Carburant utilisable (L)</label>
+          <input type="number" id="pnrFuel" value="76" min="10" max="500" step="1" oninput="window.advPNRCalc()">
+        </div>
+        <div class="config-item">
+          <label for="pnrBurn">Consommation (L/h)</label>
+          <input type="number" id="pnrBurn" value="20" min="5" max="200" step="0.5" oninput="window.advPNRCalc()">
+        </div>
+        <div class="config-item">
+          <label for="pnrTAS">TAS (kt)</label>
+          <input type="number" id="pnrTAS" value="90" min="40" max="300" step="1" oninput="window.advPNRCalc()">
+        </div>
+        <div class="config-item">
+          <label for="pnrHW">Vent debout aller (kt)</label>
+          <input type="number" id="pnrHW" value="10" min="-50" max="60" step="1" oninput="window.advPNRCalc()">
+          <span style="font-size:.72em;color:var(--text-secondary)">Positif = vent de face, n&#xe9;gatif = vent arri&#xe8;re</span>
+        </div>
+      </div>
+      <div id="advPNRResult" style="margin-top:6px"></div>
+    </div>
+
+    <div class="adv-calc-divider"></div>
+
+    <!-- ╔══════════════════════════════════════╗ -->
+    <!-- ║  3. ETP — EQUAL TIME POINT           ║ -->
+    <!-- ╚══════════════════════════════════════╝ -->
+    <div class="adv-calc-block">
+      <h4 class="adv-calc-title">&#x2696;&#xFE0F; ETP &mdash; Equal Time Point (Point d&#x2019;&#xe9;gal temps)</h4>
+      <div class="adv-calc-theory">
+        <b>Qu'est-ce que l'ETP ?</b><br>
+        L'<b>ETP</b> est le point de la route o&#xf9; le temps pour <em>continuer vers la destination</em> est &#xe9;gal au temps pour <em>revenir au d&#xe9;part</em>. C'est un point <b>purement temporel</b> (pas li&#xe9; au carburant). Il sert &#xe0; d&#xe9;cider, en cas de probl&#xe8;me, vers quel a&#xe9;rodrome se d&#xe9;router.<br>
+        Sans vent, l'ETP est au milieu de la route. Avec du vent debout aller, l'ETP se rapproche du d&#xe9;part (retour plus rapide avec vent dans le dos).<br><br>
+        <b>Formules :</b><br>
+        <div class="adv-formula-row">GS aller (Ga) = TAS &#x2212; Vent debout &nbsp;&nbsp; <span class="adv-formula-note">(NM/h)</span></div>
+        <div class="adv-formula-row">GS retour (Gr) = TAS + Vent debout &nbsp;&nbsp; <span class="adv-formula-note">(vent dans le dos au retour)</span></div>
+        <div class="adv-formula-row"><b>Distance ETP = Distance totale &#xD7; Gr / (Ga + Gr)</b></div>
+        <div class="adv-formula-row">Temps ETP = Distance ETP / Ga &nbsp;&nbsp; <span class="adv-formula-note">(= Dist. restante / Gr — v&#xe9;rification)</span></div>
+      </div>
+      <div class="config-grid" style="margin:10px 0 6px">
+        <div class="config-item">
+          <label for="etpDist">Distance totale (NM)</label>
+          <input type="number" id="etpDist" value="120" min="10" max="3000" step="1" oninput="window.advETPCalc()">
+        </div>
+        <div class="config-item">
+          <label for="etpTAS">TAS (kt)</label>
+          <input type="number" id="etpTAS" value="90" min="40" max="300" step="1" oninput="window.advETPCalc()">
+        </div>
+        <div class="config-item">
+          <label for="etpHW">Vent debout aller (kt)</label>
+          <input type="number" id="etpHW" value="10" min="-60" max="100" step="1" oninput="window.advETPCalc()">
+          <span style="font-size:.72em;color:var(--text-secondary)">Positif = vent de face, n&#xe9;gatif = vent arri&#xe8;re</span>
+        </div>
+      </div>
+      <div id="advETPResult" style="margin-top:6px"></div>
+    </div>
+
+    <!-- Note : autres sujets à envisager -->
+    <div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(102,126,234,.08);font-size:.78em;color:var(--text-secondary);line-height:1.7">
+      <b style="color:#a78bfa">&#x1F4A1; D'autres calculateurs utiles &#xe0; envisager&nbsp;:</b><br>
+      &#x2022; <b>Altitude densit&#xe9;</b> (Density Altitude) &#x2014; corriger les performances pour les hautes temp&#xe9;ratures<br>
+      &#x2022; <b>TAS depuis IAS</b> &#x2014; corriger la compressibilit&#xe9; et la densit&#xe9; de l'air<br>
+      &#x2022; <b>Carburant alterne</b> &#x2014; calcul de la r&#xe9;serve vers un terrain de d&#xe9;gagement<br>
+      &#x2022; <b>Altitude vraie</b> (True Altitude) depuis l'altitude-pression, temp et QNH<br>
+      &#x2022; <b>V&#xe9;rificateur VFR</b> &#x2014; vis, plafond, croisement des minima<br>
+      &#x2022; <b>Masse &amp; centrage</b> &#x2014; int&#xe9;gr&#xe9; au dossier de vol
+    </div>
+  </div>
   </div>
 
   <!-- ==================== TAB 5: FUEL ==================== -->
@@ -1638,6 +1778,10 @@ function switchTab(id){
     window.perfCalc();
     /* Auto-remplir vent/temp si un METAR est déjà disponible */
     setTimeout(function(){ if(typeof perfFromMetar==='function') perfFromMetar(); }, 150);
+    /* Initialiser les calculateurs avancés */
+    if(typeof advDriftCalc==='function') advDriftCalc();
+    if(typeof advPNRCalc==='function')   advPNRCalc();
+    if(typeof advETPCalc==='function')   advETPCalc();
   }
   if(id==='notes'){
     renderNotes(); /* affichage immédiat depuis le cache local */
@@ -7560,6 +7704,171 @@ function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
   return s;
 }
 window.buildCrosswindDiagram = buildCrosswindDiagram;
+
+/* =========================================================
+   CALCULATEURS AVANCÉS — Dérive, PNR, ETP
+   ========================================================= */
+
+/* --- 1. VENT DE TRAVERS & DÉRIVE MAX --- */
+function advDriftCalc(){
+  var windDir = parseFloat(document.getElementById('advWindDir').value) || 0;
+  var windSpd = parseFloat(document.getElementById('advWindSpd').value) || 0;
+  var route   = parseFloat(document.getElementById('advRoute').value)   || 0;
+  var tas     = parseFloat(document.getElementById('advTAS').value)     || 90;
+  var el = document.getElementById('advDriftResult');
+  if(!el) return;
+
+  // Angle vent / route (positif = vent venant de droite)
+  var alpha = ((windDir - route) + 360) % 360;
+  if (alpha > 180) alpha -= 360;   // plage -180..+180
+  var alphaRad = alpha * Math.PI / 180;
+
+  var xw = windSpd * Math.sin(alphaRad);   // travers (>0 = de droite)
+  var hw = windSpd * Math.cos(alphaRad);   // face     (>0 = debout)
+
+  // Dérive exacte (arcsin)
+  var driftRad = (tas > Math.abs(xw)) ? Math.asin(xw / tas) : Math.PI/2 * Math.sign(xw);
+  var driftDeg = driftRad * 180 / Math.PI;
+  // Dérive max (vent à 90°)
+  var driftMaxDeg = (tas >= windSpd) ? Math.asin(windSpd / tas) * 180 / Math.PI : 90;
+
+  // Cap à tenir = Route + correction (si vent de droite, dériver gauche → cap + dérive vers droite)
+  var cap = ((route + driftDeg) + 360) % 360;
+
+  // Direction du vent par rapport à la route
+  var fromSide = (xw > 0.1) ? 'droite &#x2794; l&#x2019;avion d&#xe9;rive &#xe0; gauche' :
+                 (xw < -0.1) ? 'gauche &#x2794; l&#x2019;avion d&#xe9;rive &#xe0; droite' : 'pas de composante travers';
+  var hwLabel  = hw >= 0 ? '&#x2197; vent debout (pénalisant)' : '&#x2198; vent arri&#xe8;re (favorable)';
+  var hwColor  = hw >= 0 ? '#ef5350' : '#4caf50';
+  var xwColor  = Math.abs(xw) <= 10 ? '#4caf50' : Math.abs(xw) <= 20 ? '#ffa726' : '#ef5350';
+  var dmColor  = driftMaxDeg <= 5 ? '#4caf50' : driftMaxDeg <= 12 ? '#ffa726' : '#ef5350';
+
+  var html = '<div style="display:grid;gap:8px">';
+  html += '<div class="adv-result-row">';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + xwColor + '">' + Math.abs(xw).toFixed(1) + ' kt</div><div class="adv-kpi-lbl">Vent travers</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + hwColor + '">' + Math.abs(hw).toFixed(1) + ' kt</div><div class="adv-kpi-lbl">' + (hw>=0?'Face':'Arri&#xe8;re') + '</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + xwColor + '">' + Math.abs(driftDeg).toFixed(1) + '°</div><div class="adv-kpi-lbl">D&#xe9;rive</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + dmColor + '">' + driftMaxDeg.toFixed(1) + '°</div><div class="adv-kpi-lbl">D&#xe9;rive max</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:#00e5ff">' + Math.round(cap) + '°</div><div class="adv-kpi-lbl">Cap &#xe0; tenir</div></div>';
+  html += '</div>';
+
+  html += '<div class="adv-calc-detail">';
+  html += '&#x1F4CF; Angle vent/route &#x3B1; = ' + Math.abs(alpha).toFixed(0) + '° (vent de ' + fromSide + ')<br>';
+  html += '&#x1F4A8; Composante travers = ' + windSpd + ' &#xD7; sin(' + Math.abs(alpha).toFixed(0) + '°) = <b>' + Math.abs(xw).toFixed(1) + ' kt</b><br>';
+  html += '&#x27A1;&#xFE0F; Composante face = ' + windSpd + ' &#xD7; cos(' + Math.abs(alpha).toFixed(0) + '°) = <b>' + Math.abs(hw).toFixed(1) + ' kt</b> ' + hwLabel + '<br>';
+  html += '&#x2696;&#xFE0F; D&#xe9;rive = arcsin(' + Math.abs(xw).toFixed(1) + ' / ' + tas + ') = <b>' + Math.abs(driftDeg).toFixed(1) + '°</b> ' + (driftDeg > 0 ? '(vent de droite &#x2192; cap ' + Math.abs(driftDeg).toFixed(1) + '° vers droite)' : xw < -0.1 ? '(vent de gauche &#x2192; cap ' + Math.abs(driftDeg).toFixed(1) + '° vers gauche)' : '') + '<br>';
+  html += '&#x2605; D&#xe9;rive max (vent &#x22A5;) = arcsin(' + windSpd + ' / ' + tas + ') = <b>' + driftMaxDeg.toFixed(1) + '°</b><br>';
+  html += '&#x1F9ED; Cap &#xe0; tenir = Route (' + route + '°) ' + (driftDeg >= 0 ? '+' : '') + driftDeg.toFixed(1) + '° = <b>' + Math.round(cap) + '°M</b>';
+  html += '</div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+window.advDriftCalc = advDriftCalc;
+
+/* --- 2. PNR — POINT OF NO RETURN --- */
+function advPNRCalc(){
+  var fuel = parseFloat(document.getElementById('pnrFuel').value) || 0;
+  var burn = parseFloat(document.getElementById('pnrBurn').value) || 20;
+  var tas  = parseFloat(document.getElementById('pnrTAS').value)  || 90;
+  var hw   = parseFloat(document.getElementById('pnrHW').value)   || 0;  // positif = vent debout
+  var el = document.getElementById('advPNRResult');
+  if(!el) return;
+
+  var endurance = burn > 0 ? fuel / burn : 0;  // heures
+  var gs_out  = Math.max(1, tas - hw);           // GS aller (NM/h)
+  var gs_back = Math.max(1, tas + hw);           // GS retour (vent dans le dos)
+  var t_pnr   = (endurance * gs_back) / (gs_out + gs_back);  // heures
+  var d_pnr   = t_pnr * gs_out;                  // NM
+  var t_back  = d_pnr / gs_back;                 // heures retour (vérification ~= t_pnr)
+  var fuel_out = t_pnr * burn;                    // L à l'aller
+  var fuel_back= t_back * burn;                   // L au retour
+
+  function hhmm(h){
+    var hh = Math.floor(h); var mm = Math.round((h - hh) * 60);
+    if(mm === 60){ hh++; mm = 0; }
+    return hh + 'h' + String(mm).padStart(2,'0');
+  }
+
+  var color_d  = d_pnr > 0 ? '#00e5ff' : '#aaa';
+  var color_t  = '#a78bfa';
+
+  var html = '<div style="display:grid;gap:8px">';
+  html += '<div class="adv-result-row">';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:#ffa726">' + hhmm(endurance) + '</div><div class="adv-kpi-lbl">Endurance</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val">' + gs_out.toFixed(0) + ' kt</div><div class="adv-kpi-lbl">GS aller</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val">' + gs_back.toFixed(0) + ' kt</div><div class="adv-kpi-lbl">GS retour</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + color_t + '">' + hhmm(t_pnr) + '</div><div class="adv-kpi-lbl">Temps &#x2192; PNR</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:' + color_d + '">' + d_pnr.toFixed(0) + ' NM</div><div class="adv-kpi-lbl">Distance PNR</div></div>';
+  html += '</div>';
+
+  html += '<div class="adv-calc-detail">';
+  html += '&#x26FD;&#xFE0F; Endurance = ' + fuel + ' L / ' + burn + ' L/h = <b>' + endurance.toFixed(2) + ' h (' + hhmm(endurance) + ')</b><br>';
+  html += '&#x2708;&#xFE0F; GS aller = TAS − vent-debout = ' + tas + ' − ' + hw + ' = <b>' + gs_out.toFixed(0) + ' kt</b><br>';
+  html += '&#x21A9;&#xFE0F; GS retour = TAS + vent-debout = ' + tas + ' + ' + hw + ' = <b>' + gs_back.toFixed(0) + ' kt</b><br>';
+  html += '&#x23F1;&#xFE0F; <b>Temps PNR</b> = (E &#xD7; Gr) / (Ga + Gr) = (' + endurance.toFixed(2) + ' &#xD7; ' + gs_back.toFixed(0) + ') / (' + gs_out.toFixed(0) + ' + ' + gs_back.toFixed(0) + ') = <b>' + hhmm(t_pnr) + '</b><br>';
+  html += '&#x1F4CF; <b>Distance PNR</b> = ' + hhmm(t_pnr) + ' &#xD7; ' + gs_out.toFixed(0) + ' = <b>' + d_pnr.toFixed(1) + ' NM</b><br>';
+  html += '&#x2714;&#xFE0F; V&#xe9;rification retour : ' + d_pnr.toFixed(1) + ' NM / ' + gs_back.toFixed(0) + ' = <b>' + hhmm(t_back);
+  html += '</b> (carbu aller ' + fuel_out.toFixed(1) + ' L + retour ' + fuel_back.toFixed(1) + ' L = ' + (fuel_out+fuel_back).toFixed(1) + ' L &#x2248; ' + fuel + ' L &#x2714;)';
+  html += '</div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+window.advPNRCalc = advPNRCalc;
+
+/* --- 3. ETP — EQUAL TIME POINT --- */
+function advETPCalc(){
+  var dist = parseFloat(document.getElementById('etpDist').value) || 120;
+  var tas  = parseFloat(document.getElementById('etpTAS').value)  || 90;
+  var hw   = parseFloat(document.getElementById('etpHW').value)   || 0; // positif = vent debout aller
+  var el = document.getElementById('advETPResult');
+  if(!el) return;
+
+  var gs_out  = Math.max(1, tas - hw);
+  var gs_back = Math.max(1, tas + hw);
+  // d_ETP × GS_out = (dist − d_ETP) × GS_back  →  d_ETP = dist × GS_back / (GS_out + GS_back)
+  var d_etp   = dist * gs_back / (gs_out + gs_back);  // NM depuis départ
+  var d_remain= dist - d_etp;                           // NM vers destination
+  var t_cont  = d_remain / gs_out;                      // h pour continuer
+  var t_ret   = d_etp / gs_back;                        // h pour revenir
+  var pct     = (d_etp / dist * 100).toFixed(0);
+
+  function hhmm(h){
+    var hh = Math.floor(h); var mm = Math.round((h - hh) * 60);
+    if(mm === 60){ hh++; mm = 0; }
+    return hh + 'h' + String(mm).padStart(2,'0');
+  }
+
+  var html = '<div style="display:grid;gap:8px">';
+  html += '<div class="adv-result-row">';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val">' + gs_out.toFixed(0) + ' kt</div><div class="adv-kpi-lbl">GS aller</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val">' + gs_back.toFixed(0) + ' kt</div><div class="adv-kpi-lbl">GS retour</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:#00e5ff">' + d_etp.toFixed(0) + ' NM</div><div class="adv-kpi-lbl">Distance ETP</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:#a78bfa">' + hhmm(t_cont) + '</div><div class="adv-kpi-lbl">Temps &#xe9;gal</div></div>';
+  html += '<div class="adv-kpi"><div class="adv-kpi-val" style="color:#ffa726">' + pct + '%</div><div class="adv-kpi-lbl">% de la route</div></div>';
+  html += '</div>';
+
+  // Barre visuelle de position ETP
+  var barPct = Math.min(100, Math.max(0, parseFloat(pct)));
+  html += '<div style="margin:6px 0 2px">';
+  html += '<div style="position:relative;height:18px;background:rgba(255,255,255,.08);border-radius:9px;overflow:hidden">';
+  html += '<div style="position:absolute;left:0;top:0;height:100%;width:' + barPct + '%;background:linear-gradient(90deg,#4caf50,#00e5ff);border-radius:9px"></div>';
+  html += '<div style="position:absolute;left:' + barPct + '%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;background:#fff;border-radius:50%;box-shadow:0 0 6px #00e5ff"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:.7em;color:var(--text-secondary);margin-top:2px"><span>D&#xe9;part</span><span>ETP ' + d_etp.toFixed(0) + ' NM</span><span>Dest.</span></div>';
+  html += '</div>';
+
+  html += '<div class="adv-calc-detail">';
+  html += '&#x2708;&#xFE0F; GS aller = ' + tas + ' − ' + hw + ' = <b>' + gs_out.toFixed(0) + ' kt</b> | GS retour = ' + tas + ' + ' + hw + ' = <b>' + gs_back.toFixed(0) + ' kt</b><br>';
+  html += '&#x1F4CF; <b>Distance ETP</b> = ' + dist + ' &#xD7; ' + gs_back.toFixed(0) + ' / (' + gs_out.toFixed(0) + ' + ' + gs_back.toFixed(0) + ') = <b>' + d_etp.toFixed(1) + ' NM depuis d&#xe9;part</b>';
+  html += ' (' + d_remain.toFixed(1) + ' NM avant destination)<br>';
+  html += '&#x23F1;&#xFE0F; Temps continuer = ' + d_remain.toFixed(1) + ' / ' + gs_out.toFixed(0) + ' = <b>' + hhmm(t_cont) + '</b><br>';
+  html += '&#x21A9;&#xFE0F; Temps retour = ' + d_etp.toFixed(1) + ' / ' + gs_back.toFixed(0) + ' = <b>' + hhmm(t_ret) + '</b>';
+  html += ' &#x2714;&#xFE0F; &#xe9;gaux';
+  html += '</div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+window.advETPCalc = advETPCalc;
 
 function buildCruiseTable(){
   var acReg=window._perfAircraft||'OO-MQA';
