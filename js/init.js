@@ -116,8 +116,14 @@ async function initIndex() {
   catSelect.value = "TOUTES";
   selectedCategory = "TOUTES";
   
-  // Charger toutes les questions
+  // Charger toutes les questions (dédupliquées sur l'ensemble des catégories)
   await loadAllQuestions();
+  // Mettre à jour totalGlobal avec le vrai total dédupliqué (évite l'écart entre
+  // le dropdown "TOUTES (Nxxx)" et la barre de progression qui utilise questions.length)
+  totalGlobal = questions.length;
+  updateCategorySelect();
+  catSelect.value = "TOUTES";
+
   
   // Load stored responses so marked flags are available
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');

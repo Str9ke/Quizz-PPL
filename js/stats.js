@@ -1261,10 +1261,17 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
 }
 
 /**
- * _resetCategoryStats() – Réinitialise les statistiques d'une seule catégorie
+ * _resetCategoryStats() – Réinitialise les statistiques d'une seule catégorie.
+ * Remet les questions en "non vues" tout en conservant les marquages (📌/⭐) et l'historique détaillé.
  */
 async function _resetCategoryStats(catValue, catLabel) {
-  if (!confirm(`Réinitialiser toutes les statistiques de « ${catLabel} » ?\n\nCela supprimera vos réponses pour cette catégorie.`)) return;
+  if (!confirm(
+    `Réinitialiser les statistiques de « ${catLabel} » ?\n\n` +
+    `• Les questions redeviendront "non vues" (réussies/ratées effacées)\n` +
+    `• Les révisions espacées seront remises à zéro\n` +
+    `• Les marquages 📌 et ⭐ seront conservés\n` +
+    `• L'historique des réponses (statusLog) sera conservé`
+  )) return;
 
   const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
   if (!uid) { alert('Vous devez être connecté.'); return; }
@@ -1276,16 +1283,64 @@ async function _resetCategoryStats(catValue, catLabel) {
 
     if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
 
-    // Construire la mise à jour : supprimer chaque clé dans responses
+    // Lire les réponses actuelles depuis Firestore (serveur si possible) pour préserver les flags
+    let existingResponses = {};
+    try {
+      const docSnap = navigator.onLine
+        ? await Promise.race([
+            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+          ])
+        : await db.collection('quizProgress').doc(uid).get();
+      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
+    } catch (e) {
+      console.warn('[resetCategory] Lecture Firestore échouée, utilisation de currentResponses:', e.message);
+      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    }
+
+    // Construire la mise à jour :
+    // - Effacer : status, failCount, srInterval, nextReview (remise à zéro visible + révisions espacées)
+    // - Conserver : marked, important, statusLog (historique des réponses passées)
     const update = { responses: {} };
-    keys.forEach(k => { update.responses[k] = firebase.firestore.FieldValue.delete(); });
+    keys.forEach(k => {
+      const r = existingResponses[k] || {};
+      const preserved = {};
+      if (r.marked)     preserved.marked = true;
+      if (r.important)  preserved.important = true;
+      // Conserver l'historique détaillé (sans perdre le passé)
+      if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
+
+      if (Object.keys(preserved).length) {
+        // Remplacer l'entrée par les seuls champs préservés (status/failCount/srInterval/nextReview effacés)
+        update.responses[k] = preserved;
+      } else {
+        // Rien à conserver → supprimer complètement l'entrée
+        update.responses[k] = firebase.firestore.FieldValue.delete();
+      }
+    });
 
     await db.collection('quizProgress').doc(uid).set(update, { merge: true });
 
-    // Supprimer aussi du localStorage
+    // Mettre à jour currentResponses en mémoire si disponible (évite un reload complet optionnel)
+    if (typeof currentResponses !== 'undefined' && currentResponses) {
+      keys.forEach(k => {
+        const r = existingResponses[k] || {};
+        const preserved = {};
+        if (r.marked)    preserved.marked = true;
+        if (r.important) preserved.important = true;
+        if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
+        if (Object.keys(preserved).length) {
+          currentResponses[k] = preserved;
+        } else {
+          delete currentResponses[k];
+        }
+      });
+    }
+
+    // Supprimer aussi du localStorage (les clés question_*)
     keys.forEach(k => { localStorage.removeItem(k); });
 
-    alert(`Statistiques de « ${catLabel} » réinitialisées !`);
+    alert(`Statistiques de « ${catLabel} » réinitialisées ! (marquages conservés)`);
     window.location.reload();
   } catch (e) {
     console.error('[resetCategory] Erreur:', e);

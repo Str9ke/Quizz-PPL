@@ -577,6 +577,22 @@
           localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhB));
         }
 
+        /* 3. REFRESH currentResponses depuis le serveur (pour révisions espacées cross-device) */
+        try {
+          var freshDoc = await Promise.race([
+            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+            new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 5000); })
+          ]);
+          if(freshDoc.exists && freshDoc.data().responses){
+            currentResponses = (typeof normalizeResponses === 'function')
+              ? normalizeResponses(freshDoc.data().responses)
+              : freshDoc.data().responses;
+            console.log('[sync] currentResponses rafraîchi depuis le serveur (' + Object.keys(currentResponses).length + ' clés)');
+          }
+        } catch(eResp){
+          console.warn('[sync] Impossible de rafraîchir les responses:', eResp.message);
+        }
+
         displayHomeProgressBar(currentResponses, dh);
         updateDailyStatsBar();
         if(typeof updateModeCounts === 'function') updateModeCounts();
