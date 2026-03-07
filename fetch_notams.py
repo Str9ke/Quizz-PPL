@@ -44,6 +44,11 @@ def main():
     notam_section = soup.find('body')
 
     if notam_section:
+        # Supprimer le texte rouge d'avertissement SKEYES
+        red_font = notam_section.find('font', color='red')
+        if red_font:
+            red_font.decompose()
+
         # Ajouter une barre de recherche
         search_html = BeautifulSoup("""
         <div style='margin: 15px 0; text-align: center;'>
