@@ -47,10 +47,11 @@ def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
 
-    # Step 1: Get the OPMET form page (after login, should show the actual form)
+    # Step 1: Initialize the OPMET form page (sets up server-side session state)
     init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
     resp = session.get(init_url)
     resp.raise_for_status()
+    print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
 
     soup = BeautifulSoup(resp.text, 'html.parser')
 
@@ -59,94 +60,114 @@ def fetch_opmet(session):
         print("OPMET: Session not authenticated - got login form")
         return False
 
-    # Find the OPMET form - look for forms with opmet-related action or many inputs
-    forms = soup.find_all('form')
+    # Step 2: Discover form field names from the init page
+    # Look for the OPMET form (not language-switch or other utility forms)
     opmet_form = None
-    for f in forms:
+    for f in soup.find_all('form'):
         action = f.get('action', '')
         inputs = f.find_all(['input', 'select'])
-        print(f"OPMET: Found form action='{action}' with {len(inputs)} fields")
+        print(f"OPMET: Form action='{action}' fields={len(inputs)}")
         for inp in inputs:
             nm = inp.get('name', '')
             tp = inp.get('type', inp.name)
-            val = inp.get('value', '')[:60]
+            val = str(inp.get('value', ''))[:80]
             chk = ' CHECKED' if inp.get('checked') is not None else ''
-            print(f"  {tp}: name={nm} value={val}{chk}")
-        if 'opmet' in action.lower() or len(inputs) > 3:
+            sel = ''
+            if inp.name == 'select':
+                opts = [o.get('value', '') for o in inp.find_all('option')]
+                sel = f' options={opts}'
+            print(f"  {tp}: name={nm} value={val}{chk}{sel}")
+        # The OPMET form has checkboxes for data types and text input for ICAO
+        if len(inputs) > 3 or 'opmet' in action.lower():
             opmet_form = f
 
-    if not opmet_form:
-        print("OPMET: Could not find the OPMET form")
-        with open("_debug_opmet_page.html", "w", encoding="utf-8") as dbg:
-            dbg.write(resp.text)
-        return False
-
-    # Step 2: Build form data from the parsed form
-    form_action = opmet_form.get('action', '')
+    # Step 3: Build form payload
     payload = {}
-
-    for inp in opmet_form.find_all('input'):
-        name = inp.get('name')
-        if not name:
-            continue
-        inp_type = inp.get('type', 'text').lower()
-        value = inp.get('value', '')
-
-        if inp_type == 'hidden':
-            payload[name] = value
-        elif inp_type == 'text':
-            # ICAO code field
-            payload[name] = 'EBSG'
-        elif inp_type == 'checkbox':
-            # Enable all data type checkboxes (METAR, TAF, SIGMET, GAMET)
-            payload[name] = value or 'on'
-        elif inp_type == 'submit':
-            payload[name] = value
-
-    for sel in opmet_form.find_all('select'):
-        name = sel.get('name')
-        if not name:
-            continue
-        # METAR HISTORY → "no"
-        payload[name] = 'no'
-
-    print(f"OPMET: Submitting payload: {payload}")
-
-    # Build the submit URL
-    if form_action.startswith('http'):
-        submit_url = form_action
-    elif form_action.startswith('/'):
-        submit_url = 'https://ops.skeyes.be' + form_action
+    if opmet_form:
+        print("OPMET: Using dynamically discovered form fields")
+        for inp in opmet_form.find_all('input'):
+            name = inp.get('name')
+            if not name:
+                continue
+            inp_type = inp.get('type', 'text').lower()
+            value = inp.get('value', '')
+            if inp_type == 'hidden':
+                payload[name] = value
+            elif inp_type == 'text':
+                payload[name] = 'EBSG'
+            elif inp_type == 'checkbox':
+                payload[name] = value or 'on'
+            elif inp_type == 'submit':
+                payload[name] = value
+        for sel in opmet_form.find_all('select'):
+            name = sel.get('name')
+            if name:
+                payload[name] = 'no'
     else:
-        submit_url = 'https://ops.skeyes.be/opersite/' + form_action
+        # Fallback: use common Struts form field names
+        print("OPMET: No form found, using fallback field names")
+        # Save the page for debugging
+        with open("_debug_opmet_init.html", "w", encoding="utf-8") as dbg:
+            dbg.write(resp.text)
 
-    # Remove jsessionid from URL if present (session handles cookies)
-    submit_url = re.sub(r';jsessionid=[^?]*', '', submit_url)
+    print(f"OPMET: Payload = {payload}")
 
-    # Submit the form
+    # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
+    submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
     submit_resp = session.post(submit_url, data=payload)
     submit_resp.raise_for_status()
-    print(f"OPMET: Form submitted, status={submit_resp.status_code}, length={len(submit_resp.text)}")
+    print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
 
-    # Step 3: Download the PDF
+    # Check if the response contains actual METAR/TAF data
+    has_metar = 'METAR' in submit_resp.text or 'TAF' in submit_resp.text
+    print(f"OPMET: Response contains METAR/TAF data: {has_metar}")
+
+    if not has_metar:
+        with open("_debug_opmet_submit.html", "w", encoding="utf-8") as dbg:
+            dbg.write(submit_resp.text)
+        print("OPMET: No METAR data in response, debug file saved")
+
+    # Step 5: Try to download the PDF (available after form submission)
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
     pdf_resp = session.get(pdf_url)
     pdf_resp.raise_for_status()
+    print(f"OPMET PDF: status={pdf_resp.status_code}, length={len(pdf_resp.content)}, "
+          f"content-type={pdf_resp.headers.get('Content-Type', 'unknown')}")
 
-    if not pdf_resp.content[:4] == b'%PDF':
-        print("OPMET: Response is not a PDF, saving debug output")
-        with open("_debug_opmet_response.html", "wb") as dbg:
-            dbg.write(pdf_resp.content)
-        return False
+    is_pdf = pdf_resp.content[:4] == b'%PDF'
 
-    with open("opmet.pdf", "wb") as f:
-        f.write(pdf_resp.content)
-    print("OPMET PDF saved to opmet.pdf")
+    if is_pdf:
+        with open("opmet.pdf", "wb") as f:
+            f.write(pdf_resp.content)
+        print("OPMET: PDF saved to opmet.pdf")
+        convert_pdf_to_html("opmet.pdf", "opmet.html", "opmet_page")
+        print("OPMET: PDF converted to images and HTML")
+        return True
 
-    # Convert PDF to HTML with images
-    convert_pdf_to_html("opmet.pdf", "opmet.html", "opmet_page")
-    print("OPMET images and HTML generated.")
-    return True
+    # Step 6: Fallback - if no PDF, save the HTML response from the form submission
+    print("OPMET: PDF not available, saving HTML response directly")
+    if has_metar:
+        # Build a standalone HTML page from the OPMET results
+        result_soup = BeautifulSoup(submit_resp.text, 'html.parser')
+        body = result_soup.find('body')
+        body_html = str(body) if body else submit_resp.text
+
+        html_content = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+            "<style>body{font-family:monospace;font-size:13px;padding:10px;margin:0;"
+            "background:transparent;white-space:pre-wrap;}</style>"
+            "</head>" + body_html + "</html>"
+        )
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print("OPMET: HTML saved to opmet.html")
+        return True
+
+    print("OPMET: Failed to retrieve data")
+    with open("_debug_opmet_pdf.html", "wb") as dbg:
+        dbg.write(pdf_resp.content)
+    return False
 
 
 def main():
