@@ -58,13 +58,15 @@ def fetch_opmet(session):
 
     # Check if we got a login page instead of the form
     if soup.find('form', {'name': 'loginForm'}):
+        import datetime
         print("OPMET: Session not authenticated - got login form")
         error_html = (
             "<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
             "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
             "</head><body><h3>Erreur OPMET Skeyes</h3>"
-            "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login en cours de route.</strong></p>"
+            "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login.</strong></p>"
+            "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
             "<p><strong>Cookies lors de la tentative :</strong> " + str(session.cookies.get_dict()) + "</p>"
             "</body></html>"
         )
@@ -180,12 +182,13 @@ def fetch_opmet(session):
         return True
 
     print("OPMET: Failed to retrieve data - injecting debug info into opmet.html")
-    # Output the failed HTML so it's accessible and visible in the app for debugging
+    import datetime
     error_html = (
         "<!DOCTYPE html><html><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
         "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
         "</head><body><h3>Erreur OPMET Skeyes</h3>"
+        "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
         "<p><strong>Cookies envoyés :</strong> " + str(session.cookies.get_dict()) + "</p>"
         "<p><strong>Payload :</strong> " + str(payload) + "</p>"
         "<p><strong>URL de soumission :</strong> " + submit_url + "</p>"
@@ -210,6 +213,19 @@ def main():
     
     if not username or not password:
         print("Missing credentials")
+        error_html = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
+            "</head><body><h3>Erreur d'authentification Skeyes</h3>"
+            "<p><strong>Identifiants manquants. Veuillez configurer SKEYES_USER et SKEYES_PASS.</strong></p>"
+            "</body></html>"
+        )
+        for filename in ["opmet.html", "notams_belgique.html", "daily_warnings.html"]:
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(error_html)
+        open('opmet.pdf', 'wb').close()
+        open('daily_warnings.pdf', 'wb').close()
         return
 
     # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
@@ -304,12 +320,14 @@ def main():
         fetch_opmet(session)
     except Exception as e:
         import traceback
+        import datetime
         print(f"Error fetching OPMET: {e}")
         error_html = (
             "<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
             "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
             "</head><body><h3>Erreur Execution OPMET (Python Exception)</h3>"
+            "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
             "<p><strong>Exception :</strong> " + str(e) + "</p>"
             "<hr><div style='white-space:pre-wrap;'>" + traceback.format_exc() + "</div></body></html>"
         )
