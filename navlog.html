@@ -632,6 +632,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
   <div id="tab-notam" class="navlog-tab-content">
+      <!-- NOTAM Summary Automatique -->
+      <div class="map-card" style="margin-bottom:14px">
+        <div class="map-card-title">&#x1F916; NOTAM Summary Automatique</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">NOTAMs r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes via GitHub Actions.</p>
+        <div class="iframe-card" style="height:400px; overflow:hidden; display:flex; flex-direction:column;">
+          <iframe id="autoNotamFrame" src="notams_belgique.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('autoNotamFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+          <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
+        </div>
+      </div>
+
       <!-- NOTAM Summary Upload -->
       <div class="map-card">
         <div class="map-card-title">&#x1F4C4; NOTAM Summary &#x2014; Import fichier</div>
