@@ -69,6 +69,36 @@ def write_opmet_debug(title, details, html_extra=""):
         f.write(html)
 
 
+def build_sync_banner(run_timestamp, label):
+    return (
+        "<div style='margin:10px 0 14px;padding:10px 12px;border-radius:10px;"
+        "background:#eef6ff;border:1px solid #b9d7ff;color:#12395b;font-family:system-ui,sans-serif;font-size:13px'>"
+        f"<b>{label}</b> synchronise via GitHub Actions le {run_timestamp}. "
+        "L'heure affichee plus bas dans le document peut etre l'horodatage interne de Skeyes."
+        "</div>"
+    )
+
+
+def prepend_banner_to_generated_html(html_path, run_timestamp, label):
+    if not os.path.exists(html_path):
+        return
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    banner = build_sync_banner(run_timestamp, label)
+    if banner in html:
+        return
+
+    if "<body" in html:
+        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1, flags=re.IGNORECASE)
+    else:
+        html = banner + html
+
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
@@ -244,6 +274,8 @@ def main():
         print("Missing credentials")
         return
 
+    run_timestamp = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC")
+
     # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
     session = cloudscraper.create_scraper(
         browser={
@@ -271,6 +303,9 @@ def main():
     notam_section = soup.find('body')
 
     if notam_section:
+        banner_html = BeautifulSoup(build_sync_banner(run_timestamp, "NOTAM Summary"), 'html.parser')
+        notam_section.insert(0, banner_html)
+
         # Ajouter une barre de recherche
         search_html = BeautifulSoup("""
         <div style='margin: 15px 0; text-align: center;'>
@@ -292,7 +327,7 @@ def main():
             }
         </script>
         """, 'html.parser')
-        
+
         # Insérer juste après le titre h1 s'il existe
         h1_tag = notam_section.find('h1')
         if h1_tag:
@@ -307,13 +342,6 @@ def main():
         
     print("NOTAMs saved to notams_belgique.html")
 
-    # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) RIGHT AFTER NOTAMS TO KEEP SESSION ALIVE ---
-    try:
-        fetch_opmet(session)
-    except Exception as e:
-        print(f"Error fetching OPMET: {e}")
-        write_opmet_debug("Error fetching OPMET", [str(e)])
-
     # --- Extract Daily Warnings ---
     daily_response = session.get(daily_url)
     daily_response.raise_for_status()
@@ -327,8 +355,19 @@ def main():
     # --- Convert PDF to HTML with Images (For strict Mobile/Android compatibility) ---
     try:
         convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
+        prepend_banner_to_generated_html("daily_warnings.html", run_timestamp, "Daily Warnings")
         print("Daily Warnings images and HTML generated.")
     except Exception as e:
         print(f"Error converting Daily Warnings PDF to images: {e}")
+
+    # --- OPMET auto-fetch temporarily isolated so it cannot break NOTAM/Daily updates ---
+    write_opmet_debug(
+        "OPMET automatique indisponible",
+        [
+            f"Derniere synchronisation GitHub: {run_timestamp}",
+            "L'authentification Skeyes bloque encore l'automatisation OPMET cote serveur.",
+            "Utilisez l'import manuel OPMET dans la page en attendant la correction definitive.",
+        ],
+    )
 
 
