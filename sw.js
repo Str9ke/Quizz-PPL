@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v60b';
+const CACHE_NAME = 'quiz-ppl-v60a';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -143,27 +143,6 @@ self.addEventListener('fetch', event => {
 
   // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
   const isJsonFile = url.pathname.endsWith('.json') && !url.pathname.endsWith('manifest.json');
-  const isGeneratedDynamicFile = /\/(notams_belgique\.html|daily_warnings\.html|daily_warnings\.pdf|daily_warnings_page_\d+\.png|opmet\.html|opmet_debug\.json|opmet\.pdf|opmet_page_\d+\.png|temsi_(france|euroc)\.html|temsi_(france|euroc)\.pdf|temsi_(france|euroc)_page_\d+\.png|wintem_(france|euroc)\.html|wintem_(france|euroc)\.pdf|wintem_(france|euroc)_page_\d+\.png)$/.test(url.pathname);
-
-  // === Fichiers générés automatiquement : toujours essayer le réseau d'abord ===
-  if (isGeneratedDynamicFile) {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).then(response => {
-        if (response && response.ok) {
-          const clone = response.clone();
-          const cleanUrl = new URL(event.request.url);
-          cleanUrl.search = '';
-          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
-        }
-        return response;
-      }).catch(() => {
-        return caches.match(event.request, { ignoreSearch: true }).then(cached => {
-          return cached || new Response('Offline', { status: 503, statusText: 'Offline' });
-        });
-      })
-    );
-    return;
-  }
 
   // === Stratégie pour fichiers JSON : Network-First (quand en ligne) ===
   // Garantit que les questions sont toujours à jour entre navigateurs

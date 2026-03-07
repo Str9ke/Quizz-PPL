@@ -5,7 +5,6 @@ import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 import json
 import re
-from datetime import datetime, timezone
 
 
 def convert_pdf_to_html(pdf_path, html_path, img_prefix):
@@ -44,162 +43,79 @@ def convert_pdf_to_html(pdf_path, html_path, img_prefix):
     doc.close()
 
 
-def write_opmet_debug(title, details, html_extra=""):
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    debug_payload = {
-        "timestamp": timestamp,
-        "title": title,
-        "details": details,
-    }
-    with open("opmet_debug.json", "w", encoding="utf-8") as debug_file:
-        json.dump(debug_payload, debug_file, ensure_ascii=False, indent=2)
-
-    details_html = "".join(f"<li>{detail}</li>" for detail in details)
-    html = (
-        "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
-        "<body style='font-family:system-ui,sans-serif;padding:16px'>"
-        f"<h1>{title}</h1>"
-        f"<p><b>Diagnostic :</b> {timestamp}</p>"
-        f"<ul>{details_html}</ul>"
-        f"{html_extra}"
-        "</body></html>"
-    )
-    with open("opmet.html", "w", encoding="utf-8") as f:
-        f.write(html)
-
-
-def build_sync_banner(run_timestamp, label):
-    return (
-        "<div style='margin:10px 0 14px;padding:10px 12px;border-radius:10px;"
-        "background:#eef6ff;border:1px solid #b9d7ff;color:#12395b;font-family:system-ui,sans-serif;font-size:13px'>"
-        f"<b>{label}</b> synchronise via GitHub Actions le {run_timestamp}. "
-        "L'heure affichee plus bas dans le document peut etre l'horodatage interne de Skeyes."
-        "</div>"
-    )
-
-
-def prepend_banner_to_generated_html(html_path, run_timestamp, label):
-    if not os.path.exists(html_path):
-        return
-
-    with open(html_path, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    banner = build_sync_banner(run_timestamp, label)
-    if banner in html:
-        return
-
-    if "<body" in html:
-        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1, flags=re.IGNORECASE)
-    else:
-        html = banner + html
-
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(html)
-
-
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
 
-    browser_headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Upgrade-Insecure-Requests": "1",
-    }
+    # Step 1: Initialize the OPMET form page (sets up server-side session state)
+    init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
+    resp = session.get(init_url)
+    resp.raise_for_status()
+    print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
 
-    # Step 1: Open the meteo portal first, then try the two OPMET init URLs seen around the UI.
-    portal_url = "https://ops.skeyes.be/oper-meteo-info"
-    try:
-        portal_resp = session.get(portal_url, headers=browser_headers)
-        print(f"OPMET portal: status={portal_resp.status_code}, final_url={portal_resp.url}")
-    except Exception as exc:
-        print(f"OPMET portal warm-up failed: {exc}")
+    soup = BeautifulSoup(resp.text, 'html.parser')
 
-    init_attempts = []
-    init_candidates = [
-        "https://ops.skeyes.be/opersite/opmet.do?cmd=init",
-        "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init",
-    ]
-
-    resp = None
-    soup = None
-    for init_url in init_candidates:
-        headers = dict(browser_headers)
-        headers["Referer"] = portal_url
-        current_resp = session.get(init_url, headers=headers)
-        current_resp.raise_for_status()
-        current_soup = BeautifulSoup(current_resp.text, 'html.parser')
-        got_login = current_soup.find('form', {'name': 'loginForm'}) is not None
-        init_attempts.append({
-            "url": init_url,
-            "final_url": current_resp.url,
-            "status": current_resp.status_code,
-            "length": len(current_resp.text),
-            "got_login": got_login,
-        })
-        print(
-            f"OPMET init attempt: url={init_url} status={current_resp.status_code} "
-            f"final_url={current_resp.url} length={len(current_resp.text)} login={got_login}"
-        )
-        if not got_login:
-            resp = current_resp
-            soup = current_soup
-            break
-
-    if resp is None or soup is None:
-        print("OPMET: Session not authenticated - got login form on all init URLs")
-        details = [
-            (
-                f"init={a['url']} | status={a['status']} | final={a['final_url']} | "
-                f"length={a['length']} | login={a['got_login']}"
-            )
-            for a in init_attempts
-        ]
-        write_opmet_debug("Session perdue ou non authentifiee par Skeyes", details)
+    # Check if we got a login page instead of the form
+    if soup.find('form', {'name': 'loginForm'}):
+        print("OPMET: Session not authenticated - got login form")
         return False
 
-    print(f"OPMET init selected: status={resp.status_code}, final_url={resp.url}, length={len(resp.text)}")
+    # Step 2: Discover form field names from the init page
+    # Look for the OPMET form (not language-switch or other utility forms)
+    opmet_form = None
+    for f in soup.find_all('form'):
+        action = f.get('action', '')
+        inputs = f.find_all(['input', 'select'])
+        print(f"OPMET: Form action='{action}' fields={len(inputs)}")
+        for inp in inputs:
+            nm = inp.get('name', '')
+            tp = inp.get('type', inp.name)
+            val = str(inp.get('value', ''))[:80]
+            chk = ' CHECKED' if inp.get('checked') is not None else ''
+            sel = ''
+            if inp.name == 'select':
+                opts = [o.get('value', '') for o in inp.find_all('option')]
+                sel = f' options={opts}'
+            print(f"  {tp}: name={nm} value={val}{chk}{sel}")
+        # The OPMET form has checkboxes for data types and text input for ICAO
+        if len(inputs) > 3 or 'opmet' in action.lower():
+            opmet_form = f
 
-    # Step 2: Build the exact payload that the browser sends
-    payload = {
-        "templateName": "",
-        "newTemplateName": "",
-        "selectCountry": "",
-        "template": "select",
-        "icaocodes": "EBSG",
-        "land1": "on",
-        "metar": "on",
-        "taf": "on",
-        "sigmet": "on",
-        "gametairmet": "on",
-        "metarHistory": "0"
-    }
+    # Step 3: Build form payload
+    payload = {}
+    if opmet_form:
+        print("OPMET: Using dynamically discovered form fields")
+        for inp in opmet_form.find_all('input'):
+            name = inp.get('name')
+            if not name:
+                continue
+            inp_type = inp.get('type', 'text').lower()
+            value = inp.get('value', '')
+            if inp_type == 'hidden':
+                payload[name] = value
+            elif inp_type == 'text':
+                payload[name] = 'EBSG'
+            elif inp_type == 'checkbox':
+                payload[name] = value or 'on'
+            elif inp_type == 'submit':
+                payload[name] = value
+        for sel in opmet_form.find_all('select'):
+            name = sel.get('name')
+            if name:
+                payload[name] = 'no'
+    else:
+        # Fallback: use common Struts form field names
+        print("OPMET: No form found, using fallback field names")
+        # Save the page for debugging
+        with open("_debug_opmet_init.html", "w", encoding="utf-8") as dbg:
+            dbg.write(resp.text)
 
     print(f"OPMET: Payload = {payload}")
 
-    # Step 3: Submit directly to opmetData.do?cmd=retrieveOpmet
+    # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    
-    # Need to specify content-type for form urlencoded
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Origin': 'https://ops.skeyes.be',
-        'Referer': resp.url,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    }
-    submit_resp = session.post(submit_url, data=payload, headers=headers)
-    
-    if not submit_resp.ok:
-        print(f"OPMET Submit failed: {submit_resp.status_code}")
-        write_opmet_debug(
-            f"Erreur HTTP OPMET {submit_resp.status_code}",
-            [f"submit_url={submit_url}", f"referer={headers['Referer']}", f"response_length={len(submit_resp.text)}"],
-            f"<pre>{submit_resp.text[:3000]}</pre>",
-        )
-        submit_resp.raise_for_status()
-        
+    submit_resp = session.post(submit_url, data=payload)
+    submit_resp.raise_for_status()
     print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
 
     # Check if the response contains actual METAR/TAF data
@@ -207,13 +123,9 @@ def fetch_opmet(session):
     print(f"OPMET: Response contains METAR/TAF data: {has_metar}")
 
     if not has_metar:
-        write_opmet_debug(
-            "Reponse OPMET sans METAR/TAF",
-            [f"submit_url={submit_url}", f"referer={headers['Referer']}", f"response_length={len(submit_resp.text)}"],
-            f"<pre>{submit_resp.text[:3000]}</pre>",
-        )
-        print("OPMET: No METAR data in response, saved to opmet.html for debug")
-        return False
+        with open("_debug_opmet_submit.html", "w", encoding="utf-8") as dbg:
+            dbg.write(submit_resp.text)
+        print("OPMET: No METAR data in response, debug file saved")
 
     # Step 5: Try to download the PDF (available after form submission)
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
@@ -253,10 +165,6 @@ def fetch_opmet(session):
         return True
 
     print("OPMET: Failed to retrieve data")
-    write_opmet_debug(
-        "Echec inattendu OPMET",
-        [f"pdf_url={pdf_url}", f"content_type={pdf_resp.headers.get('Content-Type', 'unknown')}", f"pdf_length={len(pdf_resp.content)}"],
-    )
     with open("_debug_opmet_pdf.html", "wb") as dbg:
         dbg.write(pdf_resp.content)
     return False
@@ -273,8 +181,6 @@ def main():
     if not username or not password:
         print("Missing credentials")
         return
-
-    run_timestamp = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC")
 
     # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
     session = cloudscraper.create_scraper(
@@ -303,9 +209,6 @@ def main():
     notam_section = soup.find('body')
 
     if notam_section:
-        banner_html = BeautifulSoup(build_sync_banner(run_timestamp, "NOTAM Summary"), 'html.parser')
-        notam_section.insert(0, banner_html)
-
         # Ajouter une barre de recherche
         search_html = BeautifulSoup("""
         <div style='margin: 15px 0; text-align: center;'>
@@ -327,7 +230,7 @@ def main():
             }
         </script>
         """, 'html.parser')
-
+        
         # Insérer juste après le titre h1 s'il existe
         h1_tag = notam_section.find('h1')
         if h1_tag:
@@ -355,19 +258,15 @@ def main():
     # --- Convert PDF to HTML with Images (For strict Mobile/Android compatibility) ---
     try:
         convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
-        prepend_banner_to_generated_html("daily_warnings.html", run_timestamp, "Daily Warnings")
         print("Daily Warnings images and HTML generated.")
     except Exception as e:
         print(f"Error converting Daily Warnings PDF to images: {e}")
 
-    # --- OPMET auto-fetch temporarily isolated so it cannot break NOTAM/Daily updates ---
-    write_opmet_debug(
-        "OPMET automatique indisponible",
-        [
-            f"Derniere synchronisation GitHub: {run_timestamp}",
-            "L'authentification Skeyes bloque encore l'automatisation OPMET cote serveur.",
-            "Utilisez l'import manuel OPMET dans la page en attendant la correction definitive.",
-        ],
-    )
+    # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) ---
+    try:
+        fetch_opmet(session)
+    except Exception as e:
+        print(f"Error fetching OPMET: {e}")
 
-
+if __name__ == "__main__":
+    main()
