@@ -67,6 +67,11 @@ def main():
         html_images = ""
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
+            bbox = page.get_bbox_of_contents()
+            # On recadre pour enlever les marges blanches (+ petite marge de 10px)
+            rect = fitz.Rect(max(0, bbox.x0 - 10), max(0, bbox.y0 - 10), min(page.rect.x1, bbox.x1 + 10), min(page.rect.y1, bbox.y1 + 10))
+            page.set_cropbox(rect)
+            
             pix = page.get_pixmap(dpi=150) # Bonne résolution
             img_filename = f"daily_warnings_page_{page_num}.png"
             pix.save(img_filename)
