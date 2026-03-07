@@ -48,9 +48,17 @@ def fetch_opmet(session):
     print("\n--- Fetching OPMET data ---")
     print(f"Current session cookies: {session.cookies.get_dict()}")
 
+    # Step 0: Ensure we go back to the home page to reset the Struts Action Flow
+    home_url = "https://ops.skeyes.be/opersite/home.do"
+    try:
+        session.get(home_url)
+    except Exception as e:
+        print(f"Warning: Failed to reach home.do: {e}")
+
     # Step 1: Initialize the OPMET form page (sets up server-side session state)
     init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    resp = session.get(init_url)
+    # Provide a Referer header to simulate normal navigation
+    resp = session.get(init_url, headers={"Referer": home_url})
     resp.raise_for_status()
     print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
 
