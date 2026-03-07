@@ -35,6 +35,6 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add notams_belgique.html
-          git commit -m "Auto-update NOTAMs" || echo "No changes to commit"
+          git add notams_belgique.html daily_warnings.html
+          git commit -m "Auto-update NOTAMs & Daily Warnings" || echo "No changes to commit"
           git push

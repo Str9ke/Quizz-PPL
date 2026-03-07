@@ -7,6 +7,7 @@ import json
 def main():
     login_url = "https://ops.skeyes.be/opersite/login.do"
     data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
+    daily_url = "https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday"
     
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
@@ -42,6 +43,21 @@ def main():
         f.write(html_output)
         
     print("NOTAMs saved to notams_belgique.html")
+
+    # --- Extract Daily Warnings ---
+    daily_response = session.get(daily_url)
+    daily_response.raise_for_status()
+    
+    # Parse Daily Warnings
+    soup_daily = BeautifulSoup(daily_response.text, 'html.parser')
+    daily_section = soup_daily.find('body')
+    
+    html_daily_output = str(daily_section) if daily_section else "<p>No Daily Warnings found / Parsing failed</p>"
+    
+    with open("daily_warnings.html", "w", encoding="utf-8") as f:
+        f.write(html_daily_output)
+        
+    print("Daily Warnings saved to daily_warnings.html")
 
 if __name__ == "__main__":
     main()
