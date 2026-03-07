@@ -765,8 +765,47 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: TEMSI / WINTEM ===== -->
     <div id="msub-charts" class="meteo-sub-content active">
-      <div style="padding:10px 0 6px;font-size:.82em;color:var(--text-secondary);text-align:center">
-        &#x1F4A1; Ouvrez SOFIA Briefing &#x2192; <b>Autres M&#xe9;t&#xe9;o</b> &#x2192; TEMSI ou WINTEM &#x2192; cliquez sur la carte la plus r&#xe9;cente &#x2192; faites une capture (clic droit &#x2192; Copier l&#x2019;image) et collez-la ici (Ctrl+V)
+
+      <!-- Cartes METEO Automatiques via SOFIA -->
+      
+      <!-- TEMSI France Automatique -->
+      <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
+        <div class="map-card-title">&#x1F916; TEMSI France (Automatique)</div>
+        <div class="iframe-card" style="height:500px; overflow:hidden; display:flex; flex-direction:column;">
+          <iframe id="autoTemsiFrFrame" src="temsi_france.html" style="flex:1; width:100%; border:none; background:#eee;" loading="lazy"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('autoTemsiFrFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+          <a href="temsi_france.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
+        </div>
+      </div>
+
+      <!-- TEMSI EUROC Automatique -->
+      <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
+        <div class="map-card-title">&#x1F916; TEMSI EUROC (Automatique)</div>
+        <div class="iframe-card" style="height:500px; overflow:hidden; display:flex; flex-direction:column;">
+          <iframe id="autoTemsiEuFrame" src="temsi_euroc.html" style="flex:1; width:100%; border:none; background:#eee;" loading="lazy"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('autoTemsiEuFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+          <a href="temsi_euroc.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
+        </div>
+      </div>
+
+      <!-- WINTEM EUROC Automatique -->
+      <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
+        <div class="map-card-title">&#x1F916; WINTEM EUROC (Automatique)</div>
+        <div class="iframe-card" style="height:500px; overflow:hidden; display:flex; flex-direction:column;">
+          <iframe id="autoWintemEuFrame" src="wintem_euroc.html" style="flex:1; width:100%; border:none; background:#eee;" loading="lazy"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('autoWintemEuFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+          <a href="wintem_euroc.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
+        </div>
+      </div>
+
+      <div style="padding:10px 0 6px;font-size:.82em;color:var(--text-secondary);text-align:center; border-top:1px solid var(--border-color); margin-top:20px;">
+        &#x1F4A1; Import manuel (Optionnel) : Ouvrez SOFIA Briefing &#x2192; <b>Autres M&#xe9;t&#xe9;o</b> &#x2192; TEMSI ou WINTEM &#x2192; cliquez sur la carte la plus r&#xe9;cente &#x2192; faites une capture (clic droit &#x2192; Copier l&#x2019;image) et collez-la ici (Ctrl+V)
       </div>
       <!-- TEMSI France -->
       <div class="map-card">

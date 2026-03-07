@@ -29,12 +29,14 @@ jobs:
         env:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
-        run: python fetch_notams.py
+        run: |
+          python fetch_notams.py
+          python fetch_meteo.py
 
       - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add notams_belgique.html daily_warnings.pdf daily_warnings.html daily_warnings_page_*.png
-          git commit -m "Auto-update NOTAMs & Daily Warnings" || echo "No changes to commit"
+          git add notams_belgique.html daily_warnings.pdf daily_warnings.html daily_warnings_page_*.png temsi_france.pdf temsi_france.html temsi_france_page_*.png temsi_euroc.pdf temsi_euroc.html temsi_euroc_page_*.png wintem_euroc.pdf wintem_euroc.html wintem_euroc_page_*.png
+          git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps" || echo "No changes to commit"
           git push

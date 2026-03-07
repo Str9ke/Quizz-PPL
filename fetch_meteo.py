@@ -1,12 +1,13 @@
 import os
 import requests
 import cloudscraper
-from bs4 import BeautifulSoup
 import fitz
-from datetime import datetime
+from bs4 import BeautifulSoup
 import json
+import traceback
 
-def download_and_convert_pdf(session, url, prefix):
+def download_and_convert_pdf(session, url, prefix, map_name):
+    print(f"Fetching {map_name}...")
     try:
         resp = session.get(url)
         resp.raise_for_status()
@@ -19,10 +20,8 @@ def download_and_convert_pdf(session, url, prefix):
         html_images = ""
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
-            # Crop margins
-            bbox = page.get_bbox_of_contents()
-            rect = fitz.Rect(max(0, bbox.x0 - 10), max(0, bbox.y0 - 10), min(page.rect.x1, bbox.x1 + 10), min(page.rect.y1, bbox.y1 + 10))
-            page.set_cropbox(rect)
+            
+            # Pas besoin de recadrer les cartes météo, elles sont déjà plein écran.
             
             pix = page.get_pixmap(dpi=150)
             img_filename = f"{prefix}_page_{page_num}.png"
@@ -33,30 +32,62 @@ def download_and_convert_pdf(session, url, prefix):
         
         with open(f"{prefix}.html", "w", encoding="utf-8") as f:
             f.write(html_content)
-        print(f"✅ {prefix} processed.")
+        print(f"✅ {map_name} processed and saved as {prefix}.html")
         
     except Exception as e:
-        print(f"❌ Error processing {prefix} from {url}: {e}")
+        print(f"❌ Error processing {map_name} from {url}: {e}")
+        traceback.print_exc()
+
+def get_sofia_map_url(session, operation, zone, level=None):
+    sofia_api = "https://sofia-briefing.aviation-civile.gouv.fr/sofia"
+    data = {':operation': operation, 'zone': zone}
+    if level:
+        data['level'] = level
+        
+    try:
+        req = session.post(sofia_api, data=data)
+        soup = BeautifulSoup(req.text, 'html.parser')
+        msg_div = soup.find('div', id='Message')
+        if not msg_div:
+            return None
+        js_data = json.loads(msg_div.text)
+        
+        # Le premier élément est généralement le plus proche/récent
+        # Wintem vs Temsi keys:
+        key = 'wintem' if 'postWintem' in operation else 'temsi'
+        
+        # Retourne le lien de la première carte trouvée
+        if 'zones' in js_data and len(js_data['zones']) > 0:
+            zone_data = js_data['zones'][0]
+            if key in zone_data and len(zone_data[key]) > 0:
+                first_map = zone_data[key][0]
+                link = first_map.get('link')
+                if link:
+                    return f"https://aviation.meteo.fr{link}"
+    except Exception as e:
+        print(f"Error fetching metadata for {operation} {zone}: {e}")
+    return None
 
 def main():
-    scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+    # Use standard requests instead of cloudscraper to avoid SSL Handshake issues with SOFIA
+    session = requests.Session()
     
-    # 1. Fetching SOFIA Briefing page to find dynamic links
     print("Scraping SOFIA for Meteo Pdfs...")
     
-    # In a real dynamic scenario, we'd parse the SOFIA page. For now, SOFIA often redirects/uses latest.
-    # The actual URLs are tricky to parse statically without a browser, but let's try direct PDF scraping.
-    m_url = "https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/meteoautre.html"
-    
-    # Since Sofia maps links are generated javascript, fetching the raw pdfs requires full mapping.
-    # Placeholder for the structure for now. If static links are known, replace them below.
-    # Because of effort level 0.25, I will create the structure.
-    
-    # Note: to properly extract SOFIA map URLs you need the current valid time
-    # e.g., Temsi France: 
-    # Temsi Euroc:
-    # Wintem:
-    pass
+    # 1. TEMSI France
+    url_temsi_fr = get_sofia_map_url(session, "postTemsi", "FRANCE")
+    if url_temsi_fr:
+        download_and_convert_pdf(session, url_temsi_fr, "temsi_france", "TEMSI France")
+        
+    # 2. TEMSI EUROC
+    url_temsi_eu = get_sofia_map_url(session, "postTemsi", "EUROC")
+    if url_temsi_eu:
+        download_and_convert_pdf(session, url_temsi_eu, "temsi_euroc", "TEMSI EUROC")
+        
+    # 3. WINTEM EUROC FL050
+    url_wintem_eu = get_sofia_map_url(session, "postWintem", "EUROC", level="050")
+    if url_wintem_eu:
+        download_and_convert_pdf(session, url_wintem_eu, "wintem_euroc", "WINTEM EUROC")
 
 if __name__ == "__main__":
     main()
