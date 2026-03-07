@@ -1,5 +1,6 @@
 import os
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 import json
 
@@ -14,9 +15,8 @@ def main():
         print("Missing credentials")
         return
 
-    session = requests.Session()
-    # Cloudscraper / fake User-Agent could be added here if WAF blocks standard requests
-    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
+    session = cloudscraper.create_scraper()
     
     # Login
     login_payload = {
