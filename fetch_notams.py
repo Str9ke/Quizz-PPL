@@ -1,6 +1,7 @@
 import os
 import requests
 import cloudscraper
+import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 import json
 
@@ -57,8 +58,28 @@ def main():
     # Save the PDF file
     with open("daily_warnings.pdf", "wb") as f:
         f.write(daily_response.content)
-        
+
     print("Daily Warnings PDF saved to daily_warnings.pdf")
+
+    # --- Convert PDF to HTML with Images (For strict Mobile/Android compatibility) ---
+    try:
+        doc = fitz.open("daily_warnings.pdf")
+        html_images = ""
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            pix = page.get_pixmap(dpi=150) # Bonne résolution
+            img_filename = f"daily_warnings_page_{page_num}.png"
+            pix.save(img_filename)
+            html_images += f'<img src="{img_filename}" style="width:100%; max-width:800px; margin-bottom:10px; border:1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /><br/>\n'
+        
+        html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='text-align:center; background:#fff; margin:0; padding:10px;'>\n{html_images}\n</body></html>"
+        
+        with open("daily_warnings.html", "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print("Daily Warnings images and HTML generated.")
+        
+    except Exception as e:
+        print(f"Error converting PDF to images: {e}")
 
 if __name__ == "__main__":
     main()
