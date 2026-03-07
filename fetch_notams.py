@@ -88,9 +88,10 @@ def fetch_opmet(session):
     print(f"OPMET: Response contains METAR/TAF data: {has_metar}")
 
     if not has_metar:
-        with open("_debug_opmet_submit.html", "w", encoding="utf-8") as dbg:
-            dbg.write(submit_resp.text)
-        print("OPMET: No METAR data in response, debug file saved")
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write("<!-- DEBUG OUTPUT -->\n" + submit_resp.text)
+        print("OPMET: No METAR data in response, saved to opmet.html for debug")
+        return False
 
     # Step 5: Try to download the PDF (available after form submission)
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
