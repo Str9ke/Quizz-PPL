@@ -82,14 +82,8 @@ def fetch_opmet(session):
             opmet_form = f
 
     # Step 3: Parse hidden fields and build payload based on user requirements
-    payload = {
-        'briefingType': 'PRO',
-        'stations': 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX',
-        'type': ['METAR', 'TAF'],
-        'locationType': 'STATIONS',
-        'allStations': 'false'
-    }
-
+    payload = []
+    
     if opmet_form:
         print("OPMET: Merging dynamically discovered hidden fields")
         # Extract secret tokens or hidden fields from the form
@@ -99,15 +93,26 @@ def fetch_opmet(session):
                 continue
             inp_type = inp.get('type', 'text').lower()
             if inp_type == 'hidden':
-                # Preserve hidden fields in the payload (like org.apache.struts.taglib.html.TOKEN)
-                payload[name] = inp.get('value', '')
+                payload.append((name, inp.get('value', '')))
+    
+    # Add our required fields
+    payload.append(('briefingType', 'PRO'))
+    payload.append(('type', 'METAR'))
+    payload.append(('type', 'TAF'))
+    payload.append(('locationType', 'STATIONS'))
+    payload.append(('stations', 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX'))
+    payload.append(('allStations', 'false'))
+    payload.append(('submit', 'Submit'))
 
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     print(f"OPMET: Payload = {payload}")
 
-    # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
-    submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    
+    # Step 4: Submit to opmetData.do (extract action directly from form)
+    action_url = opmet_form.get('action', '/opersite/opmetData.do') if opmet_form else '/opersite/opmetData.do'
+    if not action_url.startswith('http'):
+        action_url = "https://ops.skeyes.be" + action_url
+        
+    submit_url = action_url
     # We also add the Referer header correctly
     headers['Referer'] = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
     
