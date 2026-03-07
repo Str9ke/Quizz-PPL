@@ -67,15 +67,18 @@ def main():
         html_images = ""
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
-            # Crop margins if PyMuPDF version doesn't support get_bbox_of_contents, use bbox alternatively
-            try:
-                bbox = page.get_bbox_of_contents()
-            except AttributeError:
-                # Fallback to compute visually if the method is not available in that version of PyMuPDF
-                bbox = page.get_bounding_box(1) if hasattr(page, 'get_bounding_box') else page.rect
-            
-            rect = fitz.Rect(max(0, bbox.x0 - 10), max(0, bbox.y0 - 10), min(page.rect.x1, bbox.x1 + 10), min(page.rect.y1, bbox.y1 + 10))
-            page.set_cropbox(rect)
+            # Crop margins en cherchant les blocs de contenu
+            blocks = page.get_text("blocks")
+            if blocks:
+                x0 = min(b[0] for b in blocks)
+                y0 = min(b[1] for b in blocks)
+                x1 = max(b[2] for b in blocks)
+                y1 = max(b[3] for b in blocks)
+                
+                # Marge de 15px autour du vrai contenu pour aérer
+                margin = 15
+                rect = fitz.Rect(max(0, x0 - margin), max(0, y0 - margin), min(page.rect.x1, x1 + margin), min(page.rect.y1, y1 + margin))
+                page.set_cropbox(rect)
             
             pix = page.get_pixmap(dpi=150) # Bonne résolution
             img_filename = f"daily_warnings_page_{page_num}.png"
