@@ -58,6 +58,8 @@ def fetch_opmet(session):
     # Check if we got a login page instead of the form
     if soup.find('form', {'name': 'loginForm'}):
         print("OPMET: Session not authenticated - got login form")
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write("<!-- DEBUG --><h1>Session perdue ou non authentifiÃ©e par Skeyes</h1>")
         return False
 
     # Step 2: Build the exact payload that the browser sends
@@ -137,6 +139,8 @@ def fetch_opmet(session):
         return True
 
     print("OPMET: Failed to retrieve data")
+    with open("opmet.html", "w", encoding="utf-8") as f:
+        f.write("<!-- DEBUG --><h1>Ã‰chec inattendu : ni rapport mÃ©tÃ©o ni PDF trouvÃ©</h1>")
     with open("_debug_opmet_pdf.html", "wb") as dbg:
         dbg.write(pdf_resp.content)
     return False
