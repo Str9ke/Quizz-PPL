@@ -4808,6 +4808,42 @@ function _toast(msg, type, duration){
 }
 window._toast=_toast;
 
+function _freezeIframes() {
+  var snaps = {};
+  var fids = ['autoTemsiFrFrame','autoTemsiEuFrame','autoWintemFrFrame','autoWintemEuFrame','autoOpmetFrame','autoNotamFrame','autoDailyWarnFrame'];
+  fids.forEach(function(fid){
+    try {
+      var fr = document.getElementById(fid);
+      if(!fr || !fr.contentDocument) return;
+      var doc = fr.contentDocument;
+      var html = doc.documentElement.outerHTML;
+      
+      // Inline images synchronously
+      var imgs = doc.getElementsByTagName('img');
+      for(var i=0; i<imgs.length; i++) {
+        var img = imgs[i];
+        if(img.src && !img.src.startsWith('data:')) {
+          var canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width || 800;
+          canvas.height = img.naturalHeight || img.height || 600;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          try {
+            var b64 = canvas.toDataURL('image/png');
+            var rawSrc = img.getAttribute('src');
+            if(rawSrc) {
+              html = html.split('="'+rawSrc+'"').join('="'+b64+'"');
+              html = html.split("='"+rawSrc+"'").join("='"+b64+"'");
+            }
+          } catch(err) { console.warn("Failed to toDataURL image in " + fid, err); }
+        }
+      }
+      snaps[fid] = html;
+    } catch(e) { console.error("Iframe capture error for " + fid, e); }
+  });
+  return snaps;
+}
+
 function saveDossier(){
   var nameInput=document.getElementById('dossierName');
   var name=nameInput.value.trim();
@@ -4845,7 +4881,7 @@ function saveDossier(){
       opmetPdf:opmetPdfData||null,
       notamSummary:notamSummaryItems?JSON.parse(JSON.stringify(notamSummaryItems)):[],
       cloudFiles:null,
-      screenshots:{}
+      screenshots:{}, iframeSnaps:_freezeIframes()
     };
     dossiers.push(dossier);
     setDossiers(dossiers);
@@ -5407,6 +5443,26 @@ function loadDossier(id, _freshCloudFiles){
     saveNotamSummaryItems();
     renderNotamSummary();
   }
+  
+  /* Restore iframe snapshots if available in the saved dossier */
+  if(d.iframeSnaps) {
+    Object.keys(d.iframeSnaps).forEach(function(fid) {
+      try {
+        var fr = document.getElementById(fid);
+        if(fr && d.iframeSnaps[fid]) {
+          fr.removeAttribute('src'); // stop it from loading live
+          // Inject base href so that external resources (if any) still work correctly 
+          // though our images are base64 inlined:
+          var injected = d.iframeSnaps[fid];
+          if(injected.indexOf('<base ') === -1) {
+            injected = injected.replace('<head>', '<head><base href="https://str9ke.github.io/Quizz-PPL/">');
+          }
+          fr.srcdoc = injected;
+        }
+      } catch(e) { console.error("Restore iframe error:", e); }
+    });
+  }
+
   renderNavlog();
   recalcNavlog();
   renderWxPanels();

@@ -46,6 +46,7 @@ def convert_pdf_to_html(pdf_path, html_path, img_prefix):
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
+    print(f"Current session cookies: {session.cookies.get_dict()}")
 
     # Step 1: Initialize the OPMET form page (sets up server-side session state)
     init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
@@ -166,7 +167,21 @@ def fetch_opmet(session):
         print("OPMET: HTML saved to opmet.html")
         return True
 
-    print("OPMET: Failed to retrieve data")
+    print("OPMET: Failed to retrieve data - injecting debug info into opmet.html")
+    # Output the failed HTML so it's accessible and visible in the app for debugging
+    error_html = (
+        "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+        "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
+        "</head><body><h3>Erreur OPMET Skeyes</h3>"
+        "<p><strong>Cookies envoyés :</strong> " + str(session.cookies.get_dict()) + "</p>"
+        "<p><strong>Payload :</strong> " + str(payload) + "</p>"
+        "<p><strong>URL de soumission :</strong> " + submit_url + "</p>"
+        "<hr><div style='white-space:pre-wrap;'>" + submit_resp.text + "</div></body></html>"
+    )
+    with open("opmet.html", "w", encoding="utf-8") as f:
+        f.write(error_html)
+    
     with open("_debug_opmet_pdf.html", "wb") as dbg:
         dbg.write(pdf_resp.content)
     return False
@@ -194,6 +209,11 @@ def main():
     )
     
     # Login
+    print("--- Login ---")
+    # Step 0: Get login page to retrieve any initial JSESSIONID cookies and hidden fields
+    initial_login = session.get(login_url)
+    print(f"Initial login page status: {initial_login.status_code}")
+    
     login_payload = {
         "j_username": username,
         "j_password": password
@@ -201,6 +221,8 @@ def main():
     
     login_response = session.post(login_url, data=login_payload)
     login_response.raise_for_status()
+    print(f"Login response status: {login_response.status_code}")
+    print(f"Cookies after login: {session.cookies.get_dict()}")
     
     # Extract
     data_response = session.post(data_url)
