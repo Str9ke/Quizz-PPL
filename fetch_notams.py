@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 import json
 import re
+from datetime import datetime, timezone
 
 
 def convert_pdf_to_html(pdf_path, html_path, img_prefix):
@@ -41,6 +42,31 @@ def convert_pdf_to_html(pdf_path, html_path, img_prefix):
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     doc.close()
+
+
+def write_opmet_debug(title, details, html_extra=""):
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    debug_payload = {
+        "timestamp": timestamp,
+        "title": title,
+        "details": details,
+    }
+    with open("opmet_debug.json", "w", encoding="utf-8") as debug_file:
+        json.dump(debug_payload, debug_file, ensure_ascii=False, indent=2)
+
+    details_html = "".join(f"<li>{detail}</li>" for detail in details)
+    html = (
+        "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
+        "<body style='font-family:system-ui,sans-serif;padding:16px'>"
+        f"<h1>{title}</h1>"
+        f"<p><b>Diagnostic :</b> {timestamp}</p>"
+        f"<ul>{details_html}</ul>"
+        f"{html_extra}"
+        "</body></html>"
+    )
+    with open("opmet.html", "w", encoding="utf-8") as f:
+        f.write(html)
 
 
 def fetch_opmet(session):
@@ -94,21 +120,14 @@ def fetch_opmet(session):
 
     if resp is None or soup is None:
         print("OPMET: Session not authenticated - got login form on all init URLs")
-        attempts_html = "".join(
-            f"<li><b>{a['url']}</b><br>status={a['status']} final={a['final_url']} "
-            f"length={a['length']} login={a['got_login']}</li>"
-            for a in init_attempts
-        )
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(
-                "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                "<meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
-                "<body style='font-family:system-ui,sans-serif;padding:16px'>"
-                "<h1>Session perdue ou non authentifiee par Skeyes</h1>"
-                "<p>Le module OPMET refuse encore l'ouverture directe. Details:</p>"
-                f"<ul>{attempts_html}</ul>"
-                "</body></html>"
+        details = [
+            (
+                f"init={a['url']} | status={a['status']} | final={a['final_url']} | "
+                f"length={a['length']} | login={a['got_login']}"
             )
+            for a in init_attempts
+        ]
+        write_opmet_debug("Session perdue ou non authentifiee par Skeyes", details)
         return False
 
     print(f"OPMET init selected: status={resp.status_code}, final_url={resp.url}, length={len(resp.text)}")
@@ -144,8 +163,11 @@ def fetch_opmet(session):
     
     if not submit_resp.ok:
         print(f"OPMET Submit failed: {submit_resp.status_code}")
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(f"<!-- ERROR HTTP {submit_resp.status_code} -->\n{submit_resp.text}")
+        write_opmet_debug(
+            f"Erreur HTTP OPMET {submit_resp.status_code}",
+            [f"submit_url={submit_url}", f"referer={headers['Referer']}", f"response_length={len(submit_resp.text)}"],
+            f"<pre>{submit_resp.text[:3000]}</pre>",
+        )
         submit_resp.raise_for_status()
         
     print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
@@ -155,8 +177,11 @@ def fetch_opmet(session):
     print(f"OPMET: Response contains METAR/TAF data: {has_metar}")
 
     if not has_metar:
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write("<!-- DEBUG OUTPUT -->\n" + submit_resp.text)
+        write_opmet_debug(
+            "Reponse OPMET sans METAR/TAF",
+            [f"submit_url={submit_url}", f"referer={headers['Referer']}", f"response_length={len(submit_resp.text)}"],
+            f"<pre>{submit_resp.text[:3000]}</pre>",
+        )
         print("OPMET: No METAR data in response, saved to opmet.html for debug")
         return False
 
@@ -198,8 +223,10 @@ def fetch_opmet(session):
         return True
 
     print("OPMET: Failed to retrieve data")
-    with open("opmet.html", "w", encoding="utf-8") as f:
-        f.write("<!-- DEBUG --><h1>Ã‰chec inattendu : ni rapport mÃ©tÃ©o ni PDF trouvÃ©</h1>")
+    write_opmet_debug(
+        "Echec inattendu OPMET",
+        [f"pdf_url={pdf_url}", f"content_type={pdf_resp.headers.get('Content-Type', 'unknown')}", f"pdf_length={len(pdf_resp.content)}"],
+    )
     with open("_debug_opmet_pdf.html", "wb") as dbg:
         dbg.write(pdf_resp.content)
     return False
@@ -285,8 +312,7 @@ def main():
         fetch_opmet(session)
     except Exception as e:
         print(f"Error fetching OPMET: {e}")
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
+        write_opmet_debug("Error fetching OPMET", [str(e)])
 
     # --- Extract Daily Warnings ---
     daily_response = session.get(daily_url)
