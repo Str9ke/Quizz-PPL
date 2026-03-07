@@ -47,20 +47,71 @@ def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
 
-    # Step 1: Initialize the OPMET form page (sets up server-side session state)
-    init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    resp = session.get(init_url)
-    resp.raise_for_status()
-    print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
+    browser_headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Upgrade-Insecure-Requests": "1",
+    }
 
-    soup = BeautifulSoup(resp.text, 'html.parser')
+    # Step 1: Open the meteo portal first, then try the two OPMET init URLs seen around the UI.
+    portal_url = "https://ops.skeyes.be/oper-meteo-info"
+    try:
+        portal_resp = session.get(portal_url, headers=browser_headers)
+        print(f"OPMET portal: status={portal_resp.status_code}, final_url={portal_resp.url}")
+    except Exception as exc:
+        print(f"OPMET portal warm-up failed: {exc}")
 
-    # Check if we got a login page instead of the form
-    if soup.find('form', {'name': 'loginForm'}):
-        print("OPMET: Session not authenticated - got login form")
+    init_attempts = []
+    init_candidates = [
+        "https://ops.skeyes.be/opersite/opmet.do?cmd=init",
+        "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init",
+    ]
+
+    resp = None
+    soup = None
+    for init_url in init_candidates:
+        headers = dict(browser_headers)
+        headers["Referer"] = portal_url
+        current_resp = session.get(init_url, headers=headers)
+        current_resp.raise_for_status()
+        current_soup = BeautifulSoup(current_resp.text, 'html.parser')
+        got_login = current_soup.find('form', {'name': 'loginForm'}) is not None
+        init_attempts.append({
+            "url": init_url,
+            "final_url": current_resp.url,
+            "status": current_resp.status_code,
+            "length": len(current_resp.text),
+            "got_login": got_login,
+        })
+        print(
+            f"OPMET init attempt: url={init_url} status={current_resp.status_code} "
+            f"final_url={current_resp.url} length={len(current_resp.text)} login={got_login}"
+        )
+        if not got_login:
+            resp = current_resp
+            soup = current_soup
+            break
+
+    if resp is None or soup is None:
+        print("OPMET: Session not authenticated - got login form on all init URLs")
+        attempts_html = "".join(
+            f"<li><b>{a['url']}</b><br>status={a['status']} final={a['final_url']} "
+            f"length={a['length']} login={a['got_login']}</li>"
+            for a in init_attempts
+        )
         with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write("<!-- DEBUG --><h1>Session perdue ou non authentifiÃ©e par Skeyes</h1>")
+            f.write(
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0'></head>"
+                "<body style='font-family:system-ui,sans-serif;padding:16px'>"
+                "<h1>Session perdue ou non authentifiee par Skeyes</h1>"
+                "<p>Le module OPMET refuse encore l'ouverture directe. Details:</p>"
+                f"<ul>{attempts_html}</ul>"
+                "</body></html>"
+            )
         return False
+
+    print(f"OPMET init selected: status={resp.status_code}, final_url={resp.url}, length={len(resp.text)}")
 
     # Step 2: Build the exact payload that the browser sends
     payload = {
@@ -85,7 +136,9 @@ def fetch_opmet(session):
     # Need to specify content-type for form urlencoded
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Referer': 'https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init'
+        'Origin': 'https://ops.skeyes.be',
+        'Referer': resp.url,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     }
     submit_resp = session.post(submit_url, data=payload, headers=headers)
     
