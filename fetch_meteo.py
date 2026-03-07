@@ -41,7 +41,7 @@ def download_and_convert_pdf(session, url, prefix, map_name):
             pix = page.get_pixmap(dpi=150)
             img_filename = f'{prefix}_page_{page_num}.png'
             pix.save(img_filename)
-            html_images += f'<img src=\"{img_filename}\" style=\"width:100%; display:block; margin:0 auto;\" />\\n'
+            html_images += f'<img src="{img_filename}" style="width:100%; display:block; margin:0 auto;" />\n'
         html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0; padding:0; background:transparent;'>\n{html_images}\n</body></html>"
         
         with open(f"{prefix}.html", "w", encoding="utf-8") as f:
