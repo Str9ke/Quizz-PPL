@@ -21,7 +21,27 @@ def download_and_convert_pdf(session, url, prefix, map_name):
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             
-            # Ne pas recadrer les cartes météo, elles sont à afficher en entier
+            # Recadrer les cartes meteo en incluant le texte ET les images
+            blocks = page.get_text('blocks')
+            imgs = page.get_image_info()
+            if blocks or imgs:
+                x0 = min([b[0] for b in blocks] + [i['bbox'][0] for i in imgs]) if blocks or imgs else 0
+                y0 = min([b[1] for b in blocks] + [i['bbox'][1] for i in imgs]) if blocks or imgs else 0
+                x1 = max([b[2] for b in blocks] + [i['bbox'][2] for i in imgs]) if blocks or imgs else page.mediabox.x1
+                y1 = max([b[3] for b in blocks] + [i['bbox'][3] for i in imgs]) if blocks or imgs else page.mediabox.y1
+                margin = 5
+                r_mediabox = page.mediabox
+                new_x0 = max(r_mediabox.x0, x0 - margin)
+                new_y0 = max(r_mediabox.y0, y0 - margin)
+                new_x1 = min(r_mediabox.x1, x1 + margin)
+                new_y1 = min(r_mediabox.y1, y1 + margin)
+                if new_x0 < new_x1 and new_y0 < new_y1:
+                    rect = fitz.Rect(new_x0, new_y0, new_x1, new_y1)
+                    page.set_cropbox(rect)
+            pix = page.get_pixmap(dpi=150)
+            img_filename = f'{prefix}_page_{page_num}.png'
+            pix.save(img_filename)
+            html_images += f'<img src=\"{img_filename}\" style=\"width:100%; display:block; margin:0 auto;\" />\\n'
         html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0; padding:0; background:transparent;'>\n{html_images}\n</body></html>"
         
         with open(f"{prefix}.html", "w", encoding="utf-8") as f:
@@ -90,3 +110,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
