@@ -80,7 +80,13 @@ def fetch_opmet(session):
     # Step 3: Submit directly to opmetData.do?cmd=retrieveOpmet
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
     submit_resp = session.post(submit_url, data=payload)
-    submit_resp.raise_for_status()
+    
+    if not submit_resp.ok:
+        print(f"OPMET Submit failed: {submit_resp.status_code}")
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(f"<!-- ERROR HTTP {submit_resp.status_code} -->\n{submit_resp.text}")
+        submit_resp.raise_for_status()
+        
     print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
 
     # Check if the response contains actual METAR/TAF data
@@ -233,6 +239,8 @@ def main():
         fetch_opmet(session)
     except Exception as e:
         print(f"Error fetching OPMET: {e}")
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
 
 if __name__ == "__main__":
     main()
