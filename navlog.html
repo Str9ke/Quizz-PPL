@@ -640,17 +640,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <iframe id="autoNotamFrame" src="notams_belgique.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
         </div>
         <div class="map-card-actions">
-          <button onclick="document.getElementById('autoNotamFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
-          <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
-        </div>
-      </div>
-
-      <!-- Daily Warnings Automatique -->
-      <div class="map-card" style="margin-bottom:14px">
-        <div class="map-card-title">&#x1F916; Daily Warnings Automatique</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Daily Warnings r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes.</p>
-        
-        <div class="iframe-card" style="height:1200px; overflow:hidden; display:flex; flex-direction:column;">
+            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
+            <button onclick="document.getElementById('autoNotamFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
           <!-- On charge le fichier .html qui contient les images converties du PDF -->
           <iframe id="autoDailyWarnFrame" src="daily_warnings.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
         </div>
@@ -789,6 +780,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-actions">
           <button onclick="document.getElementById('autoTemsiEuFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
           <a href="temsi_euroc.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
+        </div>
+      </div>
+
+      <!-- WINTEM France Automatique -->
+      <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
+        <div class="map-card-title">&#x1F916; WINTEM France (Automatique)</div>
+        <div class="iframe-card" style="height:1200px; overflow:hidden; display:flex; flex-direction:column;">
+          <iframe id="autoWintemFrFrame" src="wintem_france.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="document.getElementById('autoWintemFrFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+          <a href="wintem_france.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
         </div>
       </div>
 
@@ -7975,6 +7978,39 @@ window.applyPerformance=function(tas, fuel){
      buildCruiseTable();
   }
 };
+
+window.triggerGithubAction = async function() {
+    let token = localStorage.getItem("github_pat");
+    if (!token) {
+        token = prompt("Pour lancer l'actualisation depuis le site, veuillez entrer votre GitHub Personal Access Token (PAT) avec l'autorisation 'repo' :\n\nPour en obtenir un : github.com/settings/tokens");
+        if (!token) return;
+        localStorage.setItem("github_pat", token);
+    }
+    
+    alert("\u23F3 Lancement de l'actualisation des NOTAMs et M\u00E9t\u00E9o sur GitHub Actions.\n\nCela prend g\u00E9n\u00E9ralement 1 \u00E0 2 minutes. Vous pourrez ensuite cliquer sur 'Recharger l'affichage'.");
+    
+    try {
+        let response = await fetch("https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/dispatches", {
+            method: "POST",
+            headers: {
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "ref": "main"
+            })
+        });
+        if(response.ok || response.status === 204) {
+             console.log("Action d\u00E9clench\u00E9e avec succ\u00E8s");
+        } else {
+            alert("\u274C Erreur: " + response.status + " " + response.statusText + "\n V\u00E9rifiez votre token PAT (il doit avoir les droits 'repo').");
+            localStorage.removeItem("github_pat"); // Token invalide
+        }
+    } catch(e) {
+        alert("\u274C Erreur de connexion : " + e);
+    }
+}
 
 document.addEventListener('DOMContentLoaded',init);
 })();
