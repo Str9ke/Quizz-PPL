@@ -17,7 +17,13 @@ def main():
         return
 
     # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
-    session = cloudscraper.create_scraper()
+    session = cloudscraper.create_scraper(
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'desktop': True
+        }
+    )
     
     # Login
     login_payload = {
