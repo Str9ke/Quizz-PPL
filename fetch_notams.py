@@ -48,14 +48,8 @@ def main():
     daily_response = session.get(daily_url)
     daily_response.raise_for_status()
     
-    # Parse Daily Warnings
-    soup_daily = BeautifulSoup(daily_response.text, 'html.parser')
-    daily_section = soup_daily.find('body')
-    
-    html_daily_output = str(daily_section) if daily_section else "<p>No Daily Warnings found / Parsing failed</p>"
-    
     with open("daily_warnings.html", "w", encoding="utf-8") as f:
-        f.write(html_daily_output)
+        f.write(daily_response.text)
         
     print("Daily Warnings saved to daily_warnings.html")
 
