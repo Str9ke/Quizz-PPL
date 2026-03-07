@@ -637,11 +637,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-title">&#x1F916; NOTAM Summary Automatique</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">NOTAMs r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes via GitHub Actions.</p>
         <div class="iframe-card" style="height:400px; overflow:hidden; display:flex; flex-direction:column;">
-          <iframe id="autoNotamFrame" src="notams_belgique.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
+          <iframe id="autoNotamFrame" src="notams_belgique.html?t=boot" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
         </div>
         <div class="map-card-actions">
             <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
-            <button onclick="document.getElementById('autoNotamFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
+            <button onclick="window.refreshGeneratedFrame('autoNotamFrame','notams_belgique.html');">&#x1F504; Recharger l'affichage</button>
             <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
           </div>
         </div>
@@ -652,12 +652,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Daily Warnings r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes.</p>
 
           <div class="iframe-card">
-            <iframe id="autoDailyWarnFrame" src="daily_warnings.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
+            <iframe id="autoDailyWarnFrame" src="daily_warnings.html?t=boot" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
           </div>
 
           <div class="map-card-actions">
             <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
-            <button onclick="document.getElementById('autoDailyWarnFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
+            <button onclick="window.refreshGeneratedFrame('autoDailyWarnFrame','daily_warnings.html');">&#x1F504; Recharger l'affichage</button>
             <a href="daily_warnings.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF original</a>
           </div>
         </div>
@@ -956,11 +956,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">METAR, TAF, SIGMET, GAMET/AIRMET r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes (EBSG, Belgique &amp; Luxembourg).</p>
         <div class="iframe-card">
-          <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
+          <iframe id="autoOpmetFrame" src="opmet.html?t=boot" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
         </div>
         <div class="map-card-actions">
           <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
-          <button onclick="document.getElementById('autoOpmetFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
+          <button onclick="window.refreshGeneratedFrame('autoOpmetFrame','opmet.html');">&#x1F504; Recharger l'affichage</button>
           <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
         </div>
       </div>
@@ -7050,6 +7050,12 @@ window.decodeTaf=decodeTaf;
 window.recalcNavlog=recalcNavlog;
 window.updateWindRose=updateWindRose;
 window.updateRouteMap=updateRouteMap;
+
+window.refreshGeneratedFrame = function(frameId, path){
+  var frame = document.getElementById(frameId);
+  if(!frame) return;
+  frame.src = path + '?t=' + Date.now();
+};
 
 /* ========================================================
    MASS & BALANCE MODULE
