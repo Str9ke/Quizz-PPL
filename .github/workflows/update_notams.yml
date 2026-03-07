@@ -34,8 +34,8 @@ jobs:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
         run: |
-          python fetch_notams.py
-          python fetch_meteo.py
+          python fetch_notams.py || true
+          python fetch_meteo.py || true
 
       - name: Commit and push changes
         run: |
