@@ -54,10 +54,11 @@ def main():
     daily_response = session.get(daily_url)
     daily_response.raise_for_status()
     
-    with open("daily_warnings.html", "w", encoding="utf-8") as f:
-        f.write(daily_response.text)
+    # Save the PDF file
+    with open("daily_warnings.pdf", "wb") as f:
+        f.write(daily_response.content)
         
-    print("Daily Warnings saved to daily_warnings.html")
+    print("Daily Warnings PDF saved to daily_warnings.pdf")
 
 if __name__ == "__main__":
     main()

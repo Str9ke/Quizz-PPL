@@ -649,12 +649,25 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card" style="margin-bottom:14px">
         <div class="map-card-title">&#x1F916; Daily Warnings Automatique</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Daily Warnings r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes.</p>
-        <div class="iframe-card" style="height:400px; overflow:hidden; display:flex; flex-direction:column;">
-          <iframe id="autoDailyWarnFrame" src="daily_warnings.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
+        
+        <!-- Conteneur adaptatif pour PC (iframe) et Mobile (bouton/lecture externe) -->
+        <div class="pdf-container" style="padding: 10px 16px; text-align: center;">
+            <style>
+                .pdf-iframe { width: 100%; height: 500px; border: none; border-radius: 8px; }
+                .mobile-pdf-btn { display: none; padding: 12px 24px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 20px auto; }
+                @media (max-width: 768px) {
+                    .pdf-iframe { display: none; }
+                    .mobile-pdf-btn { display: inline-block; }
+                }
+            </style>
+            
+            <iframe class="pdf-iframe" id="autoDailyWarnFrame" src="daily_warnings.pdf#view=FitH" loading="lazy"></iframe>
+            <a href="daily_warnings.pdf" target="_blank" class="mobile-pdf-btn">&#x1F4C4; Ouvrir le PDF des Daily Warnings</a>
         </div>
+        
         <div class="map-card-actions">
-          <button onclick="document.getElementById('autoDailyWarnFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
-          <a href="daily_warnings.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
+          <button onclick="document.getElementById('autoDailyWarnFrame').src = document.getElementById('autoDailyWarnFrame').src;">&#x1F504; Actualiser</button>
+          <a href="daily_warnings.pdf" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
         </div>
       </div>
 
