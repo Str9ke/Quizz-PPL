@@ -656,7 +656,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           </div>
 
           <div class="map-card-actions">
-            <button onclick="document.getElementById('autoDailyWarnFrame').contentWindow.location.reload();">&#x1F504; Actualiser</button>
+            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
+            <button onclick="document.getElementById('autoDailyWarnFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
             <a href="daily_warnings.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF original</a>
           </div>
         </div>
@@ -950,8 +951,23 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: OPMET ===== -->
     <div id="msub-opmet" class="meteo-sub-content">
+      <!-- OPMET Automatique -->
+      <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
+        <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">METAR, TAF, SIGMET, GAMET/AIRMET r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes (EBSG, Belgique &amp; Luxembourg).</p>
+        <div class="iframe-card">
+          <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
+          <button onclick="document.getElementById('autoOpmetFrame').contentWindow.location.reload();">&#x1F504; Recharger l'affichage</button>
+          <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
+        </div>
+      </div>
+
+      <!-- OPMET Import manuel -->
       <div class="map-card">
-        <div class="map-card-title">&#x1F4C4; OPMET (Skeyes)</div>
+        <div class="map-card-title">&#x1F4C4; OPMET &#x2014; Import fichier</div>
         <div style="padding:16px;text-align:center">
           <p style="font-size:.9em;color:var(--text-secondary);margin-bottom:12px">Importez votre briefing OPMET (PDF) depuis le site de Skeyes pour l'inclure au dossier.</p>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
