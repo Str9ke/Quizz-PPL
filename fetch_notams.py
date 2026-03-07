@@ -67,8 +67,13 @@ def main():
         html_images = ""
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
-            bbox = page.get_bbox_of_contents()
-            # On recadre pour enlever les marges blanches (+ petite marge de 10px)
+            # Crop margins if PyMuPDF version doesn't support get_bbox_of_contents, use bbox alternatively
+            try:
+                bbox = page.get_bbox_of_contents()
+            except AttributeError:
+                # Fallback to compute visually if the method is not available in that version of PyMuPDF
+                bbox = page.get_bounding_box(1) if hasattr(page, 'get_bounding_box') else page.rect
+            
             rect = fitz.Rect(max(0, bbox.x0 - 10), max(0, bbox.y0 - 10), min(page.rect.x1, bbox.x1 + 10), min(page.rect.y1, bbox.y1 + 10))
             page.set_cropbox(rect)
             
