@@ -226,13 +226,15 @@ def main():
         f.write(html_output)
         
     print("NOTAMs saved to notams_belgique.html")
-      # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) RIGHT AFTER NOTAMS TO KEEP SESSION ALIVE ---
-      try:
-          fetch_opmet(session)
-      except Exception as e:
-          print(f"Error fetching OPMET: {e}")
-          with open("opmet.html", "w", encoding="utf-8") as f:
-              f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
+
+    # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) RIGHT AFTER NOTAMS TO KEEP SESSION ALIVE ---
+    try:
+        fetch_opmet(session)
+    except Exception as e:
+        print(f"Error fetching OPMET: {e}")
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
+
     # --- Extract Daily Warnings ---
     daily_response = session.get(daily_url)
     daily_response.raise_for_status()
