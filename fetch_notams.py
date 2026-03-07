@@ -43,27 +43,13 @@ def convert_pdf_to_html(pdf_path, html_path, img_prefix):
     doc.close()
 
 
-def fetch_opmet(username, password):
-    """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes using a completely fresh session."""
+def fetch_opmet(session):
+    """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
-
-    # Creating a brand new session, as downloading the previous PDF might have terminated the Struts session
-    print("OPMET: Initializing fresh session...")
-    import cloudscraper
-    opmet_session = cloudscraper.create_scraper(
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'desktop': True
-        }
-    )
-    
-    login_url = "https://ops.skeyes.be/opersite/login.do"
-    opmet_session.post(login_url, data={"j_username": username, "j_password": password})
 
     # Step 1: Initialize the OPMET form page (sets up server-side session state)
     init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    resp = opmet_session.get(init_url)
+    resp = session.get(init_url)
     resp.raise_for_status()
     print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
 
@@ -95,7 +81,13 @@ def fetch_opmet(username, password):
 
     # Step 3: Submit directly to opmetData.do?cmd=retrieveOpmet
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    submit_resp = opmet_session.post(submit_url, data=payload)
+    
+    # Need to specify content-type for form urlencoded
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init'
+    }
+    submit_resp = session.post(submit_url, data=payload, headers=headers)
     
     if not submit_resp.ok:
         print(f"OPMET Submit failed: {submit_resp.status_code}")
@@ -117,7 +109,7 @@ def fetch_opmet(username, password):
 
     # Step 5: Try to download the PDF (available after form submission)
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
-    pdf_resp = opmet_session.get(pdf_url)
+    pdf_resp = session.get(pdf_url)
     pdf_resp.raise_for_status()
     print(f"OPMET PDF: status={pdf_resp.status_code}, length={len(pdf_resp.content)}, "
           f"content-type={pdf_resp.headers.get('Content-Type', 'unknown')}")
@@ -234,7 +226,13 @@ def main():
         f.write(html_output)
         
     print("NOTAMs saved to notams_belgique.html")
-
+      # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) RIGHT AFTER NOTAMS TO KEEP SESSION ALIVE ---
+      try:
+          fetch_opmet(session)
+      except Exception as e:
+          print(f"Error fetching OPMET: {e}")
+          with open("opmet.html", "w", encoding="utf-8") as f:
+              f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
     # --- Extract Daily Warnings ---
     daily_response = session.get(daily_url)
     daily_response.raise_for_status()
@@ -252,13 +250,4 @@ def main():
     except Exception as e:
         print(f"Error converting Daily Warnings PDF to images: {e}")
 
-    # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) ---
-    try:
-        fetch_opmet(username, password)
-    except Exception as e:
-        print(f"Error fetching OPMET: {e}")
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(f"<!-- ERROR -->\n<h1>Error fetching OPMET</h1><pre>{e}</pre>")
 
-if __name__ == "__main__":
-    main()
