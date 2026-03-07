@@ -70,6 +70,7 @@ def fetch_opmet(session):
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write(error_html)
+        open('opmet.pdf', 'wb').close()
         return False
 
     # Step 2: Discover form field names from the init page
@@ -192,6 +193,7 @@ def fetch_opmet(session):
     )
     with open("opmet.html", "w", encoding="utf-8") as f:
         f.write(error_html)
+        open('opmet.pdf', 'wb').close()
     
     with open("_debug_opmet_pdf.html", "wb") as dbg:
         dbg.write(pdf_resp.content)
@@ -313,6 +315,7 @@ def main():
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write(error_html)
+        open('opmet.pdf', 'wb').close()
 
 if __name__ == "__main__":
     main()
