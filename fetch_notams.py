@@ -81,14 +81,36 @@ def fetch_opmet(session):
         if len(inputs) > 3 or 'opmet' in action.lower():
             opmet_form = f
 
-    # Step 3: Build form payload based on user requirements
-    payload = "briefingType=PRO&stations=EBBR+EBCI+EBSG+EBAW+EBBE+EBBL+EBCV+EBFN+EBFS+EBLG+EBOS+ELLX&type=METAR&type=TAF&locationType=STATIONS&allStations=false"
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    # Step 3: Parse hidden fields and build payload based on user requirements
+    payload = {
+        'briefingType': 'PRO',
+        'stations': 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX',
+        'type': ['METAR', 'TAF'],
+        'locationType': 'STATIONS',
+        'allStations': 'false'
+    }
 
+    if opmet_form:
+        print("OPMET: Merging dynamically discovered hidden fields")
+        # Extract secret tokens or hidden fields from the form
+        for inp in opmet_form.find_all('input'):
+            name = inp.get('name')
+            if not name:
+                continue
+            inp_type = inp.get('type', 'text').lower()
+            if inp_type == 'hidden':
+                # Preserve hidden fields in the payload (like org.apache.struts.taglib.html.TOKEN)
+                payload[name] = inp.get('value', '')
+
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     print(f"OPMET: Payload = {payload}")
 
     # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
+    
+    # We also add the Referer header correctly
+    headers['Referer'] = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
+    
     submit_resp = session.post(submit_url, data=payload, headers=headers)
     submit_resp.raise_for_status()
     print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
