@@ -60,59 +60,24 @@ def fetch_opmet(session):
         print("OPMET: Session not authenticated - got login form")
         return False
 
-    # Step 2: Discover form field names from the init page
-    # Look for the OPMET form (not language-switch or other utility forms)
-    opmet_form = None
-    for f in soup.find_all('form'):
-        action = f.get('action', '')
-        inputs = f.find_all(['input', 'select'])
-        print(f"OPMET: Form action='{action}' fields={len(inputs)}")
-        for inp in inputs:
-            nm = inp.get('name', '')
-            tp = inp.get('type', inp.name)
-            val = str(inp.get('value', ''))[:80]
-            chk = ' CHECKED' if inp.get('checked') is not None else ''
-            sel = ''
-            if inp.name == 'select':
-                opts = [o.get('value', '') for o in inp.find_all('option')]
-                sel = f' options={opts}'
-            print(f"  {tp}: name={nm} value={val}{chk}{sel}")
-        # The OPMET form has checkboxes for data types and text input for ICAO
-        if len(inputs) > 3 or 'opmet' in action.lower():
-            opmet_form = f
-
-    # Step 3: Build form payload
-    payload = {}
-    if opmet_form:
-        print("OPMET: Using dynamically discovered form fields")
-        for inp in opmet_form.find_all('input'):
-            name = inp.get('name')
-            if not name:
-                continue
-            inp_type = inp.get('type', 'text').lower()
-            value = inp.get('value', '')
-            if inp_type == 'hidden':
-                payload[name] = value
-            elif inp_type == 'text':
-                payload[name] = 'EBSG'
-            elif inp_type == 'checkbox':
-                payload[name] = value or 'on'
-            elif inp_type == 'submit':
-                payload[name] = value
-        for sel in opmet_form.find_all('select'):
-            name = sel.get('name')
-            if name:
-                payload[name] = 'no'
-    else:
-        # Fallback: use common Struts form field names
-        print("OPMET: No form found, using fallback field names")
-        # Save the page for debugging
-        with open("_debug_opmet_init.html", "w", encoding="utf-8") as dbg:
-            dbg.write(resp.text)
+    # Step 2: Build the exact payload that the browser sends
+    payload = {
+        "templateName": "",
+        "newTemplateName": "",
+        "selectCountry": "",
+        "template": "select",
+        "icaocodes": "EBSG",
+        "land1": "on",
+        "metar": "on",
+        "taf": "on",
+        "sigmet": "on",
+        "gametairmet": "on",
+        "metarHistory": "0"
+    }
 
     print(f"OPMET: Payload = {payload}")
 
-    # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
+    # Step 3: Submit directly to opmetData.do?cmd=retrieveOpmet
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
     submit_resp = session.post(submit_url, data=payload)
     submit_resp.raise_for_status()
