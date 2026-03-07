@@ -41,9 +41,43 @@ def main():
     
     # Parse
     soup = BeautifulSoup(data_response.text, 'html.parser')
-    # Custom filtering logic goes here based on the target HTML structure
-    notam_section = soup.find('body') # Placeholder: adjust selector based on actual structure
+    notam_section = soup.find('body')
     
+    if notam_section:
+        # Supprimer le texte rouge d'avertissement
+        red_font = notam_section.find('font', color='red')
+        if red_font:
+            red_font.decompose()
+            
+        # Ajouter une barre de recherche
+        search_html = BeautifulSoup("""
+        <div style='margin: 15px 0; text-align: center;'>
+            <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
+        </div>
+        <script>
+            function filterNotams() {
+                var filter = document.getElementById('notamSearch').value.toUpperCase();
+                // Les NOTAMs sont dans des balises <p>, on filtre aussi les en-têtes d'aérodrome (<b>) en option, mais on se base surtout sur <p>.
+                var paragraphs = document.querySelectorAll('p');
+                for (var i = 0; i < paragraphs.length; i++) {
+                    var txt = paragraphs[i].innerText || paragraphs[i].textContent;
+                    if (txt.toUpperCase().indexOf(filter) > -1) {
+                        paragraphs[i].style.display = "";
+                    } else {
+                        paragraphs[i].style.display = "none";
+                    }
+                }
+            }
+        </script>
+        """, 'html.parser')
+        
+        # Insérer juste après le titre h1 s'il existe
+        h1_tag = notam_section.find('h1')
+        if h1_tag:
+            h1_tag.insert_after(search_html)
+        else:
+            notam_section.insert(0, search_html)
+
     html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
     
     with open("notams_belgique.html", "w", encoding="utf-8") as f:
@@ -75,17 +109,27 @@ def main():
                 x1 = max(b[2] for b in blocks)
                 y1 = max(b[3] for b in blocks)
                 
-                # Marge de 15px autour du vrai contenu pour aérer
-                margin = 15
-                rect = fitz.Rect(max(0, x0 - margin), max(0, y0 - margin), min(page.rect.x1, x1 + margin), min(page.rect.y1, y1 + margin))
-                page.set_cropbox(rect)
+                margin = 10
+                
+                # S'assurer que le cropbox calculé est valide par rapport au MediaBox
+                r_mediabox = page.mediabox
+                # Calculer les nouvelles coordonnées avec sécurité
+                new_x0 = max(r_mediabox.x0, x0 - margin)
+                new_y0 = max(r_mediabox.y0, y0 - margin)
+                new_x1 = min(r_mediabox.x1, x1 + margin)
+                new_y1 = min(r_mediabox.y1, y1 + margin)
+                
+                # Vérifier la validité de la boîte (x0 < x1 et y0 < y1)
+                if new_x0 < new_x1 and new_y0 < new_y1:
+                    rect = fitz.Rect(new_x0, new_y0, new_x1, new_y1)
+                    page.set_cropbox(rect)
             
             pix = page.get_pixmap(dpi=150) # Bonne résolution
             img_filename = f"daily_warnings_page_{page_num}.png"
             pix.save(img_filename)
-            html_images += f'<img src="{img_filename}" style="width:100%; max-width:800px; margin-bottom:10px; border:1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /><br/>\n'
+            html_images += f'<img src="{img_filename}" style="width:100%; display:block; margin:0 auto;" />\n'
         
-        html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='text-align:center; background:#fff; margin:0; padding:10px;'>\n{html_images}\n</body></html>"
+        html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0; padding:0; background:transparent;'>\n{html_images}\n</body></html>"
         
         with open("daily_warnings.html", "w", encoding="utf-8") as f:
             f.write(html_content)

@@ -21,14 +21,35 @@ def download_and_convert_pdf(session, url, prefix, map_name):
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             
-            # Pas besoin de recadrer les cartes météo, elles sont déjà plein écran.
+            # Recadrer les cartes météo pour enlever les marges blanches
+            blocks = page.get_text("blocks")
+            if blocks:
+                x0 = min(b[0] for b in blocks)
+                y0 = min(b[1] for b in blocks)
+                x1 = max(b[2] for b in blocks)
+                y1 = max(b[3] for b in blocks)
+                
+                margin = 5
+                
+                # S'assurer que le cropbox calculé est valide par rapport au MediaBox
+                r_mediabox = page.mediabox
+                # Calculer les nouvelles coordonnées avec sécurité
+                new_x0 = max(r_mediabox.x0, x0 - margin)
+                new_y0 = max(r_mediabox.y0, y0 - margin)
+                new_x1 = min(r_mediabox.x1, x1 + margin)
+                new_y1 = min(r_mediabox.y1, y1 + margin)
+                
+                # Vérifier la validité de la boîte (x0 < x1 et y0 < y1)
+                if new_x0 < new_x1 and new_y0 < new_y1:
+                    rect = fitz.Rect(new_x0, new_y0, new_x1, new_y1)
+                    page.set_cropbox(rect)
             
             pix = page.get_pixmap(dpi=150)
             img_filename = f"{prefix}_page_{page_num}.png"
             pix.save(img_filename)
-            html_images += f'<img src="{img_filename}" style="width:100%; max-width:800px; margin-bottom:10px; border:1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /><br/>\n'
+            html_images += f'<img src="{img_filename}" style="width:100%; display:block; margin:0 auto;" />\n'
             
-        html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='text-align:center; background:#fff; margin:0; padding:10px;'>\n{html_images}\n</body></html>"
+        html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0; padding:0; background:transparent;'>\n{html_images}\n</body></html>"
         
         with open(f"{prefix}.html", "w", encoding="utf-8") as f:
             f.write(html_content)

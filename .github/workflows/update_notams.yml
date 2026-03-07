@@ -2,7 +2,7 @@ name: Update NOTAMs
 
 on:
   schedule:
-    - cron: '0 * * * *' # Toutes les heures
+    - cron: '0 5-19 * * 0,3,5,6' # Toutes les heures de 5h à 19h (UTC), uniquement Mer, Ven, Sam, Dim
   workflow_dispatch: # Lancement manuel
 
 jobs:
