@@ -81,40 +81,15 @@ def fetch_opmet(session):
         if len(inputs) > 3 or 'opmet' in action.lower():
             opmet_form = f
 
-    # Step 3: Build form payload
-    payload = {}
-    if opmet_form:
-        print("OPMET: Using dynamically discovered form fields")
-        for inp in opmet_form.find_all('input'):
-            name = inp.get('name')
-            if not name:
-                continue
-            inp_type = inp.get('type', 'text').lower()
-            value = inp.get('value', '')
-            if inp_type == 'hidden':
-                payload[name] = value
-            elif inp_type == 'text':
-                payload[name] = 'EBSG'
-            elif inp_type == 'checkbox':
-                payload[name] = value or 'on'
-            elif inp_type == 'submit':
-                payload[name] = value
-        for sel in opmet_form.find_all('select'):
-            name = sel.get('name')
-            if name:
-                payload[name] = 'no'
-    else:
-        # Fallback: use common Struts form field names
-        print("OPMET: No form found, using fallback field names")
-        # Save the page for debugging
-        with open("_debug_opmet_init.html", "w", encoding="utf-8") as dbg:
-            dbg.write(resp.text)
+    # Step 3: Build form payload based on user requirements
+    payload = "briefingType=PRO&stations=EBBR+EBCI+EBSG+EBAW+EBBE+EBBL+EBCV+EBFN+EBFS+EBLG+EBOS+ELLX&type=METAR&type=TAF&locationType=STATIONS&allStations=false"
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
     print(f"OPMET: Payload = {payload}")
 
     # Step 4: Submit to opmetData.do?cmd=retrieveOpmet (discovered from network console)
     submit_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    submit_resp = session.post(submit_url, data=payload)
+    submit_resp = session.post(submit_url, data=payload, headers=headers)
     submit_resp.raise_for_status()
     print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
 
