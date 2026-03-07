@@ -7018,9 +7018,10 @@ function init(){
   if(dnInput){
     dnInput.addEventListener('input',function(){dnInput._userEdited=true;});
   }
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});
-  }
+  window.disableNavlogCaching();
+  window.refreshGeneratedFrame('autoNotamFrame','notams_belgique.html');
+  window.refreshGeneratedFrame('autoDailyWarnFrame','daily_warnings.html');
+  window.refreshGeneratedFrame('autoOpmetFrame','opmet.html');
   /* Restore aircraft selection across tabs + apply default cruise performance */
   var _savedAc=localStorage.getItem('perfAircraft')||'OO-MQA';
   syncAircraftSelection(_savedAc); /* applies TAS/fuel defaults for the saved aircraft */
@@ -7050,6 +7051,20 @@ window.decodeTaf=decodeTaf;
 window.recalcNavlog=recalcNavlog;
 window.updateWindRose=updateWindRose;
 window.updateRouteMap=updateRouteMap;
+
+window.disableNavlogCaching = function(){
+  if(!('serviceWorker' in navigator) || !window.caches) return;
+  if(sessionStorage.getItem('navlogCacheResetDone') === '1') return;
+  sessionStorage.setItem('navlogCacheResetDone','1');
+  navigator.serviceWorker.getRegistrations().then(function(registrations){
+    return Promise.all(registrations.map(function(reg){ return reg.unregister(); }));
+  }).catch(function(e){ console.log('SW unregister:', e); });
+  caches.keys().then(function(keys){
+    return Promise.all(keys.map(function(key){ return caches.delete(key); }));
+  }).then(function(){
+    setTimeout(function(){ window.location.reload(); }, 150);
+  }).catch(function(e){ console.log('Cache purge:', e); });
+};
 
 window.refreshGeneratedFrame = function(frameId, path){
   var frame = document.getElementById(frameId);
