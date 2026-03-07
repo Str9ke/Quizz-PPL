@@ -59,6 +59,17 @@ def fetch_opmet(session):
     # Check if we got a login page instead of the form
     if soup.find('form', {'name': 'loginForm'}):
         print("OPMET: Session not authenticated - got login form")
+        error_html = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
+            "</head><body><h3>Erreur OPMET Skeyes</h3>"
+            "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login en cours de route.</strong></p>"
+            "<p><strong>Cookies lors de la tentative :</strong> " + str(session.cookies.get_dict()) + "</p>"
+            "</body></html>"
+        )
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(error_html)
         return False
 
     # Step 2: Discover form field names from the init page
@@ -290,7 +301,18 @@ def main():
     try:
         fetch_opmet(session)
     except Exception as e:
+        import traceback
         print(f"Error fetching OPMET: {e}")
+        error_html = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
+            "</head><body><h3>Erreur Execution OPMET (Python Exception)</h3>"
+            "<p><strong>Exception :</strong> " + str(e) + "</p>"
+            "<hr><div style='white-space:pre-wrap;'>" + traceback.format_exc() + "</div></body></html>"
+        )
+        with open("opmet.html", "w", encoding="utf-8") as f:
+            f.write(error_html)
 
 if __name__ == "__main__":
     main()
