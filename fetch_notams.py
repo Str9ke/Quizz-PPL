@@ -673,14 +673,27 @@ def fetch_sfc_analysis(session, manifest):
                             timestamps.append(time_val.replace("Z", ":00Z"))
                             print(f"  SFC {time_val}: saved {fname} ({len(iframe_resp.content)} bytes)")
                             continue
-                        # Look for img tag in iframe content
-                        img_m = re.search(r"<img[^>]+src=['\"]([^'\"]+)['\"]", iframe_html, re.I)
-                        if img_m:
-                            img_src = img_m.group(1)
-                        # Print iframe content for debugging
+                        # Use BS4 to find <img> tags (skips script content)
+                        iframe_soup = BeautifulSoup(iframe_html, "html.parser")
+                        all_imgs = iframe_soup.find_all("img")
+                        print(f"  SFC {time_val}: found {len(all_imgs)} <img> tags")
+                        for idx_img, img_tag in enumerate(all_imgs):
+                            s = img_tag.get("src", "")
+                            print(f"    img[{idx_img}] src={s}")
+                            if s and not img_src:
+                                img_src = s
+                        # Fallback: search for image URLs in raw JS (e.g. var img = "/path/image.gif")
+                        if not img_src:
+                            js_img = re.findall(r'["\']([^"\']*\.(?:gif|jpg|jpeg|png))["\']', iframe_html, re.I)
+                            for ji in js_img:
+                                if '+' not in ji:
+                                    print(f"    JS image ref: {ji}")
+                                    img_src = ji
+                                    break
+                        # Print full iframe content for debugging
                         iframe_vis = re.sub(r'\s+', ' ', iframe_html).strip()
-                        for ci in range(0, min(len(iframe_vis), 2000), 100):
-                            print(f"    iframe[{ci}]: {iframe_vis[ci:ci+100]}")
+                        for ci in range(0, len(iframe_vis), 100):
+                            print(f"    ifr[{ci}]: {iframe_vis[ci:ci+100]}")
                 # Try <img src="..."> in main page
                 if not img_src:
                     m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
