@@ -1,4 +1,42 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0; padding:0; background:transparent;'>
-<img src="temsi_france_page_0.png" style="width:100%; display:block; margin:0 auto;" />
+<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<style>
+body { margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; }
+.nav-container { display:flex; gap:15px; padding:10px; background:rgba(255,255,255,0.9); position:sticky; top:0; z-index:100; border-radius:8px; align-items:center; margin-bottom:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.nav-btn { padding:8px 16px; background:#667eea; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
+.nav-btn:active { background:#5a6ad6; }
+.map-img { width:100%; display:none; margin:0 auto; border:1px solid #ccc; }
+.map-img.active { display:block; }
+</style>
+</head><body>
+<div class="nav-container" id="navContainer">
+    <button class="nav-btn" onclick="changeImage(-1)">&#x25C0; Précédent</button>
+    <span id="counter" style="font-weight:bold; font-size:14px; min-width:40px; text-align:center;"></span>
+    <button class="nav-btn" onclick="changeImage(1)">Suivant &#x25B6;</button>
+</div>
+<div id="imageContainer" style="width:100%;">
+<img class="map-img" src="temsi_france_page_0.png" />
 
+</div>
+<script>
+    var currentImg = 0;
+    var imgs = document.querySelectorAll('.map-img');
+    function init() {
+        if(imgs.length <= 1) { document.getElementById('navContainer').style.display = 'none'; }
+        if(imgs.length > 0) showImage(0);
+    }
+    function showImage(n) {
+        imgs.forEach(function(img) { img.classList.remove('active'); });
+        currentImg = n;
+        if(currentImg >= imgs.length) currentImg = 0;
+        if(currentImg < 0) currentImg = imgs.length - 1;
+        imgs[currentImg].classList.add('active');
+        document.getElementById('counter').innerText = (currentImg + 1) + " / " + imgs.length;
+        setTimeout(function() {
+            try { window.parent.postMessage({type: 'resize', height: document.body.scrollHeight}, '*'); } catch(e){}
+        }, 50);
+    }
+    function changeImage(dir) { showImage(currentImg + dir); }
+    window.onload = init;
+</script>
 </body></html>
