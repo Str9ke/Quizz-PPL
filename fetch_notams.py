@@ -45,7 +45,7 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
 </style>
 </head><body>
 <div class="nav-container" id="navContainer">
-    <button class="nav-btn" onclick="changeImage(-1)">&#x25C0; Précédent</button>
+    <button class="nav-btn" onclick="changeImage(-1)">&#x25C0; Pr&eacute;c&eacute;dent</button>
     <span id="counter" style="font-weight:bold; font-size:14px; min-width:40px; text-align:center;"></span>
     <button class="nav-btn" onclick="changeImage(1)">Suivant &#x25B6;</button>
 </div>
@@ -79,69 +79,122 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
         f.write(html_content)
     doc.close()
 
+def generate_error_html(filename, title, session, exception_str):
+    import datetime
+    error_html = (
+        f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        f"<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+        f"<style>body{{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}}</style>"
+        f"</head><body><h3>Erreur {title} Skeyes</h3>"
+        f"<p><strong>Session perdue ou erreur technique.</strong></p>"
+        f"<p>Exception: {exception_str}</p>"
+        f"<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
+        f"<p><strong>Cookies lors de la tentative :</strong> {session.cookies.get_dict()}</p>"
+        f"</body></html>"
+    )
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(error_html)
+
+
+def fetch_skeyes_animation(session, detail_url, output_html_name, title):
+    print(f"--- Fetching {title} ({output_html_name}) ---")
+    try:
+        resp = session.get(detail_url, headers={"Referer": "https://ops.skeyes.be/opersite/home.do"})
+        resp.raise_for_status()
+
+        matches = re.findall(r"'/remotesensing/([^']+)'", resp.text)
+        matches += re.findall(r'"/remotesensing/([^"]+)"', resp.text)
+        
+        # Filter for known image extensions and deduplicate
+        img_paths = sorted([m for m in list(set(matches)) if m.lower().endswith(('.jpg', '.png', '.gif')) and 'animation_buttons' not in m])
+        
+        if not img_paths:
+            print(f"No images found for {title}")
+            return
+            
+        print(f"Found {len(img_paths)} images for {title}")
+        html_images = ""
+        img_prefix = output_html_name.replace(".html", "")
+        for i, path in enumerate(img_paths):
+            img_url = f"https://ops.skeyes.be/remotesensing/{path}"
+            img_resp = session.get(img_url)
+            if img_resp.status_code == 200:
+                img_ext = path.split('.')[-1]
+                safe_name = f"{img_prefix}_{i}.{img_ext}"
+                with open(safe_name, "wb") as f:
+                    f.write(img_resp.content)
+                html_images += f'<img class="map-img" src="{safe_name}" />\n'
+                
+        html_content = f"""<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<style>
+body {{ margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; }}
+.nav-container {{ display:flex; gap:15px; padding:10px; background:rgba(255,255,255,0.9); position:sticky; top:0; z-index:100; border-radius:8px; align-items:center; margin-bottom:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }}
+.nav-btn {{ padding:8px 16px; background:#667eea; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }}
+.nav-btn:active {{ background:#5a6ad6; }}
+.map-img {{ width:100%; display:none; margin:0 auto; max-width:100%; height:auto; border:1px solid #ccc; }}
+.map-img.active {{ display:block; }}
+</style>
+</head><body>
+<div class="nav-container" id="navContainer">
+    <button class="nav-btn" onclick="changeImage(-1)">&#x25C0; Pr&eacute;c&eacute;dent</button>
+    <span id="counter" style="font-weight:bold; font-size:14px; min-width:40px; text-align:center;"></span>
+    <button class="nav-btn" onclick="changeImage(1)">Suivant &#x25B6;</button>
+</div>
+<div id="imageContainer" style="width:100%; position:relative; overflow:hidden;">
+{html_images}
+</div>
+<script>
+    var currentImg = {len(img_paths)-1}; 
+    var imgs = document.querySelectorAll('.map-img');
+    function init() {{
+        if(imgs.length <= 1) {{ document.getElementById('navContainer').style.display = 'none'; }}
+        if(imgs.length > 0) showImage(currentImg);
+    }}
+    function showImage(n) {{
+        imgs.forEach(function(img) {{ img.classList.remove('active'); }});
+        currentImg = n;
+        if(currentImg >= imgs.length) currentImg = 0;
+        if(currentImg < 0) currentImg = imgs.length - 1;
+        imgs[currentImg].classList.add('active');
+        document.getElementById('counter').innerText = (currentImg + 1) + " / " + imgs.length;
+        setTimeout(function() {{
+            try {{ window.parent.postMessage({{type: 'resize', height: document.body.scrollHeight}}, '*'); }} catch(e){{}}
+        }}, 100);
+    }}
+    function changeImage(dir) {{ showImage(currentImg + dir); }}
+    window.onload = init;
+</script>
+</body></html>"""
+        with open(output_html_name, "w", encoding="utf-8") as f:
+            f.write(html_content)
+            
+    except Exception as e:
+        print(f"Error fetching animation {title}: {e}")
 
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
-    print(f"Current session cookies: {session.cookies.get_dict()}")
+    
+    # In order to respect the precise state machine of Struts, 
+    # we first act like we clicked "Weather > OPMET" from the menu.
+    menu_url = "https://ops.skeyes.be/opersite/oper-meteo-info"
+    session.get(menu_url)
 
-    # Step 0: Ensure we go back to the home page to reset the Struts Action Flow
-    home_url = "https://ops.skeyes.be/opersite/home.do"
-    try:
-        session.get(home_url)
-    except Exception as e:
-        print(f"Warning: Failed to reach home.do: {e}")
-
-    # Step 1: Initialize the OPMET form page (sets up server-side session state)
+    # Step 1: Initialize the OPMET form page
     init_url_1 = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    # Provide a Referer header to simulate normal navigation
-    resp = session.get(init_url_1, headers={"Referer": home_url})
-    resp.raise_for_status()
-    print(f"OPMET init 1: status={resp.status_code}, length={len(resp.text)}")
-
+    resp = session.get(init_url_1, headers={"Referer": menu_url})
+    
     soup = BeautifulSoup(resp.text, 'html.parser')
-
-    # Check if we got a login page instead of the form
-    if soup.find('form', {'name': 'loginForm'}):
-        import datetime
-        print("OPMET: Session not authenticated - got login form")
-        
-        # DEBUG: try to grab menu to see exact URL
-        menu_links_info = ""
-        try:
-            m_resp = session.get("https://ops.skeyes.be/opersite/menu.do")
-            if m_resp.status_code == 200:
-                m_soup = BeautifulSoup(m_resp.text, 'html.parser')
-                menu_links_info = "<h4>Menu links found:</h4><ul>"
-                for a in m_soup.find_all('a'):
-                    menu_links_info += f"<li>{a.get('href')} ({a.text.strip()})</li>"
-                menu_links_info += "</ul>"
-        except Exception as ex:
-            menu_links_info = f"<p>Menu fetch error: {ex}</p>"
-
-        error_html = (
-            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
-            "</head><body><h3>Erreur OPMET Skeyes</h3>"
-            "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login.</strong></p>"
-            "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
-            "<p><strong>Cookies lors de la tentative :</strong> " + str(session.cookies.get_dict()) + "</p>"
-            "<hr/>" + menu_links_info +
-            "</body></html>"
-        )
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(error_html)
-        open('opmet.pdf', 'wb').close()
-        return False
+    if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in resp.text:
+         raise Exception("OPMET init 1 returned login form or session lost error")
 
     # Step 2: Second Init explicitly for opmet.do
     init_url_2 = "https://ops.skeyes.be/opersite/opmet.do?cmd=init"
     resp = session.get(init_url_2, headers={"Referer": init_url_1})
     resp.raise_for_status()
-    print(f"OPMET init 2: status={resp.status_code}, length={len(resp.text)}")
 
-    # Step 3: Parse hidden fields and build payload based on user requirements 
+    # Step 3: Payload
     payload = [
         ('templateName', ''),
         ('newTemplateName', ''),
@@ -160,50 +213,33 @@ def fetch_opmet(session):
         'Referer': init_url_2
     }
     
-    print(f"OPMET: Payload = {payload}")
     post_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    try:
-        submit_resp = session.post(post_url, data=payload, headers=headers)
-        submit_resp.raise_for_status()
-        print(f"OPMET fetch: status={submit_resp.status_code}, length={len(submit_resp.text)}")
+    submit_resp = session.post(post_url, data=payload, headers=headers)
+    submit_resp.raise_for_status()
 
-        soup = BeautifulSoup(submit_resp.text, 'html.parser')
-        
-        # Check if the page is literally an error page or a redirect
-        if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in submit_resp.text:
-            print("OPMET Fetch yielded a session lost error.")
-            # Treat as failure
-            raise Exception("OPMET fetch returned login form or session lost error")
+    soup = BeautifulSoup(submit_resp.text, 'html.parser')
+    if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in submit_resp.text:
+        raise Exception("OPMET fetch returned login form or session lost error")
 
-    except requests.exceptions.HTTPError as e:
-        print(f"OPMET fetch HTTP error: {e}")
-        # Could dump resp.text here for debug if needed
-        return False
-    except Exception as e:
-        print(f"OPMET fetch general error: {e}")
-        return False
+    has_metar = 'METAR' in submit_resp.text or 'TAF' in submit_resp.text
+
+    # Step 5: Try to download the PDF
+    pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
+    pdf_resp = session.get(pdf_url, headers={"Referer": post_url})
     pdf_resp.raise_for_status()
-    print(f"OPMET PDF: status={pdf_resp.status_code}, length={len(pdf_resp.content)}, "
-          f"content-type={pdf_resp.headers.get('Content-Type', 'unknown')}")
 
     is_pdf = pdf_resp.content[:4] == b'%PDF'
-
     if is_pdf:
         with open("opmet.pdf", "wb") as f:
             f.write(pdf_resp.content)
-        print("OPMET: PDF saved to opmet.pdf")
         convert_pdf_to_html("opmet.pdf", "opmet.html", "opmet_page")
         print("OPMET: PDF converted to images and HTML")
         return True
 
-    # Step 6: Fallback - if no PDF, save the HTML response from the form submission
-    print("OPMET: PDF not available, saving HTML response directly")
+    # Fallback to HTML
     if has_metar:
-        # Build a standalone HTML page from the OPMET results
-        result_soup = BeautifulSoup(submit_resp.text, 'html.parser')
-        body = result_soup.find('body')
+        body = soup.find('body')
         body_html = str(body) if body else submit_resp.text
-
         html_content = (
             "<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
@@ -213,162 +249,108 @@ def fetch_opmet(session):
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write(html_content)
-        print("OPMET: HTML saved to opmet.html")
         return True
-
-    print("OPMET: Failed to retrieve data - injecting debug info into opmet.html")
-    import datetime
-    error_html = (
-        "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-        "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
-        "</head><body><h3>Erreur OPMET Skeyes</h3>"
-        "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
-        "<p><strong>Cookies envoyés :</strong> " + str(session.cookies.get_dict()) + "</p>"
-        "<p><strong>Payload :</strong> " + str(payload) + "</p>"
-        "<p><strong>URL de soumission :</strong> " + submit_url + "</p>"
-        "<hr><div style='white-space:pre-wrap;'>" + submit_resp.text + "</div></body></html>"
-    )
-    with open("opmet.html", "w", encoding="utf-8") as f:
-        f.write(error_html)
-        open('opmet.pdf', 'wb').close()
-    
-    with open("_debug_opmet_pdf.html", "wb") as dbg:
-        dbg.write(pdf_resp.content)
-    return False
+    else:
+        raise Exception("OPMET Fetch complete but no METAR data or PDF found.")
 
 
 def main():
-    login_url = "https://ops.skeyes.be/opersite/login.do"
-    data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
-    daily_url = "https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday"
-    
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
     
     if not username or not password:
         print("Missing credentials")
-        error_html = (
-            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
-            "</head><body><h3>Erreur d'authentification Skeyes</h3>"
-            "<p><strong>Identifiants manquants. Veuillez configurer SKEYES_USER et SKEYES_PASS.</strong></p>"
-            "</body></html>"
-        )
-        for filename in ["opmet.html", "notams_belgique.html", "daily_warnings.html"]:
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write(error_html)
         open('opmet.pdf', 'wb').close()
         open('daily_warnings.pdf', 'wb').close()
         return
 
-    # Utilisation de cloudscraper pour contourner la protection WAF Azure (Erreur 403)
     session = cloudscraper.create_scraper(
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'desktop': True
-        }
+        browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
     )
     
-    # Login
     print("--- Login ---")
-    # Step 0: Get login page to retrieve any initial JSESSIONID cookies and hidden fields
-    initial_login = session.get(login_url)
-    print(f"Initial login page status: {initial_login.status_code}")
-    
-    login_payload = {
-        "j_username": username,
-        "j_password": password
-    }
+    login_url = "https://ops.skeyes.be/opersite/login.do"
+    session.get(login_url) 
+    login_payload = {"j_username": username, "j_password": password}
     
     login_response = session.post(login_url, data=login_payload)
     login_response.raise_for_status()
-    print(f"Login response status: {login_response.status_code}")
-    print(f"Cookies after login: {session.cookies.get_dict()}")
     
-    # Extract
-    data_response = session.post(data_url)
-    data_response.raise_for_status()
-    
-    # Parse
-    soup = BeautifulSoup(data_response.text, 'html.parser')
-    notam_section = soup.find('body')
-
-    if notam_section:
-        # Ajouter une barre de recherche
-        search_html = BeautifulSoup("""
-        <div style='margin: 15px 0; text-align: center;'>
-            <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
-        </div>
-        <script>
-            function filterNotams() {
-                var filter = document.getElementById('notamSearch').value.toUpperCase();
-                // Les NOTAMs sont dans des balises <p>, on filtre aussi les en-têtes d'aérodrome (<b>) en option, mais on se base surtout sur <p>.
-                var paragraphs = document.querySelectorAll('p');
-                for (var i = 0; i < paragraphs.length; i++) {
-                    var txt = paragraphs[i].innerText || paragraphs[i].textContent;
-                    if (txt.toUpperCase().indexOf(filter) > -1) {
-                        paragraphs[i].style.display = "";
-                    } else {
-                        paragraphs[i].style.display = "none";
-                    }
-                }
-            }
-        </script>
-        """, 'html.parser')
-        
-        # Insérer juste après le titre h1 s'il existe
-        h1_tag = notam_section.find('h1')
-        if h1_tag:
-            h1_tag.insert_after(search_html)
-        else:
-            notam_section.insert(0, search_html)
-
-    html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
-    
-    with open("notams_belgique.html", "w", encoding="utf-8") as f:
-        f.write(html_output)
-        
-    print("NOTAMs saved to notams_belgique.html")
-
-    # --- Extract Daily Warnings ---
-    daily_response = session.get(daily_url)
-    daily_response.raise_for_status()
-    
-    # Save the PDF file
-    with open("daily_warnings.pdf", "wb") as f:
-        f.write(daily_response.content)
-
-    print("Daily Warnings PDF saved to daily_warnings.pdf")
-
-    # --- Convert PDF to HTML with Images (For strict Mobile/Android compatibility) ---
-    try:
-        convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
-        print("Daily Warnings images and HTML generated.")
-    except Exception as e:
-        print(f"Error converting Daily Warnings PDF to images: {e}")
-
-    # --- Extract OPMET (METAR/TAF/SIGMET/GAMET) ---
+    # Note: reordering requests here to avoid the struts session dropping early. 
+    # Do OPMET immediately after login.
     try:
         fetch_opmet(session)
     except Exception as e:
-        import traceback
-        import datetime
         print(f"Error fetching OPMET: {e}")
-        error_html = (
-            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-            "<style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style>"
-            "</head><body><h3>Erreur Execution OPMET (Python Exception)</h3>"
-            "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
-            "<p><strong>Exception :</strong> " + str(e) + "</p>"
-            "<hr><div style='white-space:pre-wrap;'>" + traceback.format_exc() + "</div></body></html>"
-        )
-        with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(error_html)
-        open('opmet.pdf', 'wb').close()
+        generate_error_html("opmet.html", "OPMET", session, str(e))
+
+    # Next: Remote Sensing (Sats & Radar)
+    skeyes_maps = [
+        ("skeyes_msghrv.html", "Sat HRV", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msghrv&type=msg"),
+        ("skeyes_msgrgb.html", "Sat RGB", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msgrgb&type=msg"),
+        ("skeyes_msgir.html", "Sat IR", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msgir&type=msg"),
+        ("skeyes_radarplip.html", "Radar PLIP", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=radarplip&type=radar")
+    ]
+    for out_file, title, url in skeyes_maps:
+        try:
+            fetch_skeyes_animation(session, url, out_file, title)
+        except Exception as e:
+            print(f"Error fetching map {title}: {e}")
+
+    print("--- Extracting NOTAMs ---")
+    try:
+        data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
+        data_response = session.post(data_url)
+        data_response.raise_for_status()
+        
+        soup = BeautifulSoup(data_response.text, 'html.parser')
+        notam_section = soup.find('body')
+
+        if notam_section:
+            search_html = BeautifulSoup("""
+            <div style='margin: 15px 0; text-align: center;'>
+                <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
+            </div>
+            <script>
+                function filterNotams() {
+                    var filter = document.getElementById('notamSearch').value.toUpperCase();
+                    var paragraphs = document.querySelectorAll('p');
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var txt = paragraphs[i].innerText || paragraphs[i].textContent;
+                        if (txt.toUpperCase().indexOf(filter) > -1) {
+                            paragraphs[i].style.display = "";
+                        } else {
+                            paragraphs[i].style.display = "none";
+                        }
+                    }
+                }
+            </script>
+            """, 'html.parser')
+
+            h1_tag = notam_section.find('h1')
+            if h1_tag:
+                h1_tag.insert_after(search_html)
+            else:
+                notam_section.insert(0, search_html)
+
+        html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
+        with open("notams_belgique.html", "w", encoding="utf-8") as f:
+            f.write(html_output)
+    except Exception as e:
+        print(f"Error extracting NOTAMs: {e}")
+
+    print("--- Extracting Daily Warnings ---")
+    try:
+        daily_url = "https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday"
+        daily_response = session.get(daily_url)
+        daily_response.raise_for_status()
+
+        with open("daily_warnings.pdf", "wb") as f:
+            f.write(daily_response.content)
+            
+        convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
+    except Exception as e:
+        print(f"Error fetching daily warnings: {e}")
 
 if __name__ == "__main__":
     main()

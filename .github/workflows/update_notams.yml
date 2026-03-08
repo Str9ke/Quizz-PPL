@@ -50,6 +50,7 @@ jobs:
           git add opmet.html || true
           git add opmet.pdf || true
           git add opmet_page_*.png || true
+          git add skeyes_* || true
           git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET" || echo "No changes to commit"
           git pull --rebase || true
           git push
