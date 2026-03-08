@@ -329,29 +329,82 @@ def fetch_opmet(session):
             ('AIRMET', '📄', 'AIRMET'),
         ]
 
+        def colorize_metar_taf(text):
+            """Add color spans to METAR/TAF parameters."""
+            # Already HTML-escaped input
+            # Wind: 08003KT, VRB01KT, 08003G15KT, 050V110
+            text = re.sub(r'\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?(KT|MPS)\b',
+                          r'<span class="wx-wind">\1\2\3\4</span>', text)
+            text = re.sub(r'\b(\d{3}V\d{3})\b', r'<span class="wx-wind">\1</span>', text)
+            # Visibility: 4000, 9999, CAVOK
+            text = re.sub(r'\b(CAVOK)\b', r'<span class="wx-vis-good">\1</span>', text)
+            text = re.sub(r'(?<!\d)\b(\d{4})\b(?!\d|Z|/)',
+                          lambda m: f'<span class="wx-vis-{"good" if int(m.group(1))>=5000 else "bad"}">{m.group(1)}</span>', text)
+            # Weather phenomena: BR, FG, RA, SN, TS, etc.
+            text = re.sub(r'\b(\+?-?(?:VC)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?(?:DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)+)\b',
+                          r'<span class="wx-phen">\1</span>', text)
+            # NSW (No Significant Weather)
+            text = re.sub(r'\b(NSW)\b', r'<span class="wx-vis-good">\1</span>', text)
+            # Clouds: FEW, SCT, BKN, OVC, NCD, NSC, VV///
+            text = re.sub(r'\b(FEW|SCT|BKN|OVC|NCD|NSC)(\d{3})(///|CB|TCU)?\b',
+                          r'<span class="wx-cloud">\1\2\3</span>', text)
+            text = re.sub(r'\b(VV\d{3}|VV///)\b', r'<span class="wx-cloud">\1</span>', text)
+            # QNH: Q1024
+            text = re.sub(r'\b(Q\d{4})\b', r'<span class="wx-qnh">\1</span>', text)
+            # Temperature: 09/08, M02/M05
+            text = re.sub(r'\b(M?\d{2}/M?\d{2})\b', r'<span class="wx-temp">\1</span>', text)
+            # Trend keywords: NOSIG, BECMG, TEMPO, PROB30, PROB40
+            text = re.sub(r'\b(NOSIG|BECMG|TEMPO|PROB\d{2}|INTER)\b',
+                          r'<span class="wx-trend">\1</span>', text)
+            # Military color codes: BLU, WHT, GRN, YLO, AMB, RED
+            text = re.sub(r'\b(BLU|WHT|GRN|YLO|AMB|RED)\b',
+                          lambda m: f'<span class="wx-mil-{m.group(1).lower()}">{m.group(1)}</span>', text)
+            return text
+
         # Generate HTML
         html_parts = []
         html_parts.append("""<!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;padding:12px;background:transparent;color:#d4d4d8}
-.section{margin-bottom:16px;border:1px solid #3f3f46;border-radius:10px;overflow:hidden;background:rgba(39,39,42,0.6)}
-.section-header{padding:10px 14px;font-weight:700;font-size:15px;background:rgba(63,63,70,0.5);border-bottom:1px solid #3f3f46;display:flex;align-items:center;gap:8px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;padding:12px;margin:0;
+  background:var(--bg-body,transparent);color:var(--text-primary,#e0e0e8)}
+.section{margin-bottom:16px;border:1px solid var(--border-color,#333350);border-radius:10px;overflow:hidden;background:var(--bg-container,#1e1e2d)}
+.section-header{padding:10px 14px;font-weight:700;font-size:15px;background:rgba(102,126,234,.1);border-bottom:1px solid var(--border-color,#333350);display:flex;align-items:center;gap:8px;color:var(--text-heading,#fff)}
 .section-header .icon{font-size:18px}
-.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.5;border-bottom:1px solid rgba(63,63,70,0.4);white-space:pre-wrap;word-break:break-word}
+.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.6;border-bottom:1px solid var(--border-color,#333350);white-space:pre-wrap;word-break:break-word;color:var(--text-primary,#e0e0e8)}
 .entry:last-child{border-bottom:none}
-.entry-metar{color:#93c5fd}
-.entry-taf{color:#86efac}
-.entry-sigmet{color:#fca5a5}
-.entry-gamet{color:#fde68a}
-.entry-nil{color:#71717a;font-style:italic}
-.entry-notprov{color:#71717a;font-style:italic;font-size:12px}
+.entry-nil{color:var(--text-secondary,#a0a0b8);font-style:italic}
+.entry-notprov{color:var(--text-secondary,#a0a0b8);font-style:italic;font-size:12px}
 .icao{color:#f59e0b;font-weight:700}
 .timestamp{color:#a78bfa}
-.gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#fde68a}
-.updated{text-align:center;padding:8px;font-size:11px;color:#71717a}
-</style></head><body>
+.wx-wind{color:#60a5fa;font-weight:600}
+.wx-vis-good{color:#34d399}
+.wx-vis-bad{color:#fb923c;font-weight:600}
+.wx-phen{color:#f87171;font-weight:700}
+.wx-cloud{color:#c084fc}
+.wx-qnh{color:#2dd4bf;font-weight:600}
+.wx-temp{color:#fbbf24}
+.wx-trend{color:#f472b6;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.wx-mil-blu{color:#3b82f6}.wx-mil-wht{color:#e5e7eb}.wx-mil-grn{color:#22c55e}
+.wx-mil-ylo{color:#eab308}.wx-mil-amb{color:#f97316;font-weight:700}.wx-mil-red{color:#ef4444;font-weight:700}
+.gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:var(--text-primary,#e0e0e8)}
+.updated{text-align:center;padding:8px;font-size:11px;color:var(--text-secondary,#a0a0b8)}
+</style>
+<script>
+// Sync theme with parent page
+try{
+  if(window.parent&&window.parent.document.body.classList.contains('light')){
+    document.documentElement.style.setProperty('--bg-body','transparent');
+    document.documentElement.style.setProperty('--bg-container','#f8fafc');
+    document.documentElement.style.setProperty('--text-primary','#333');
+    document.documentElement.style.setProperty('--text-heading','#212121');
+    document.documentElement.style.setProperty('--text-secondary','#666');
+    document.documentElement.style.setProperty('--border-color','#b0bec5');
+  }
+}catch(e){}
+</script>
+</head><body>
 """)
 
         from datetime import datetime, timezone
@@ -372,14 +425,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
                     entry_esc = entry.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
                     if 'not provided' in entry.lower() or entry.strip().endswith('NIL') or entry.strip().endswith('NIL='):
                         css = 'entry-notprov'
-                    elif section_key == 'METAR':
-                        css = 'entry-metar'
                     else:
-                        css = 'entry-taf'
+                        css = 'entry'
                     # Highlight ICAO code
                     entry_esc = re.sub(r'\b(E[BL][A-Z]{2})\b', r'<span class="icao">\1</span>', entry_esc)
                     # Highlight timestamp
                     entry_esc = re.sub(r'\b(\d{6}Z)\b', r'<span class="timestamp">\1</span>', entry_esc)
+                    # Highlight METAR/TAF parameters
+                    if css == 'entry':
+                        entry_esc = colorize_metar_taf(entry_esc)
                     html_parts.append(f'<div class="entry {css}">{entry_esc}</div>')
             elif section_key in ('SIGMET', 'AIRMET'):
                 content = '\n'.join(lines).strip()
@@ -387,8 +441,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
                     html_parts.append('<div class="entry entry-nil">NIL</div>')
                 else:
                     c = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                    css = 'entry-sigmet' if section_key == 'SIGMET' else 'entry-gamet'
-                    html_parts.append(f'<div class="entry {css}">{c}</div>')
+                    html_parts.append(f'<div class="entry">{c}</div>')
             elif section_key == 'GAMET':
                 content = '\n'.join(lines).strip()
                 if not content or content == 'NIL':
