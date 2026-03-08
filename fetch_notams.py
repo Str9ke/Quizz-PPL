@@ -93,11 +93,11 @@ def fetch_opmet(session):
         print(f"Warning: Failed to reach home.do: {e}")
 
     # Step 1: Initialize the OPMET form page (sets up server-side session state)
-    init_url = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
+    init_url_1 = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
     # Provide a Referer header to simulate normal navigation
-    resp = session.get(init_url, headers={"Referer": home_url})
+    resp = session.get(init_url_1, headers={"Referer": home_url})
     resp.raise_for_status()
-    print(f"OPMET init: status={resp.status_code}, length={len(resp.text)}")
+    print(f"OPMET init 1: status={resp.status_code}, length={len(resp.text)}")
 
     soup = BeautifulSoup(resp.text, 'html.parser')
 
@@ -127,7 +127,7 @@ def fetch_opmet(session):
             "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login.</strong></p>"
             "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
             "<p><strong>Cookies lors de la tentative :</strong> " + str(session.cookies.get_dict()) + "</p>"
-            "<hr/>" + menu_links_info + 
+            "<hr/>" + menu_links_info +
             "</body></html>"
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
@@ -135,78 +135,53 @@ def fetch_opmet(session):
         open('opmet.pdf', 'wb').close()
         return False
 
-    # Step 2: Discover form field names from the init page
-    # Look for the OPMET form (not language-switch or other utility forms)
-    opmet_form = None
-    for f in soup.find_all('form'):
-        action = f.get('action', '')
-        inputs = f.find_all(['input', 'select'])
-        print(f"OPMET: Form action='{action}' fields={len(inputs)}")
-        for inp in inputs:
-            nm = inp.get('name', '')
-            tp = inp.get('type', inp.name)
-            val = str(inp.get('value', ''))[:80]
-            chk = ' CHECKED' if inp.get('checked') is not None else ''
-            sel = ''
-            if inp.name == 'select':
-                opts = [o.get('value', '') for o in inp.find_all('option')]
-                sel = f' options={opts}'
-            print(f"  {tp}: name={nm} value={val}{chk}{sel}")
-        # The OPMET form has checkboxes for data types and text input for ICAO
-        if len(inputs) > 3 or 'opmet' in action.lower():
-            opmet_form = f
+    # Step 2: Second Init explicitly for opmet.do
+    init_url_2 = "https://ops.skeyes.be/opersite/opmet.do?cmd=init"
+    resp = session.get(init_url_2, headers={"Referer": init_url_1})
+    resp.raise_for_status()
+    print(f"OPMET init 2: status={resp.status_code}, length={len(resp.text)}")
 
-    # Step 3: Parse hidden fields and build payload based on user requirements
-    payload = []
-    
-    if opmet_form:
-        print("OPMET: Merging dynamically discovered hidden fields")
-        # Extract secret tokens or hidden fields from the form
-        for inp in opmet_form.find_all('input'):
-            name = inp.get('name')
-            if not name:
-                continue
-            inp_type = inp.get('type', 'text').lower()
-            if inp_type == 'hidden':
-                payload.append((name, inp.get('value', '')))
-    
-    # Add our required fields
-    payload.append(('briefingType', 'PRO'))
-    payload.append(('type', 'METAR'))
-    payload.append(('type', 'TAF'))
-    payload.append(('locationType', 'STATIONS'))
-    payload.append(('stations', 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX'))
-    payload.append(('allStations', 'false'))
-    payload.append(('submit', 'Submit'))
+    # Step 3: Parse hidden fields and build payload based on user requirements 
+    payload = [
+        ('templateName', ''),
+        ('newTemplateName', ''),
+        ('selectCountry', ''),
+        ('template', 'select'),
+        ('icaocodes', 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX'),
+        ('land1', 'on'),
+        ('metar', 'on'),
+        ('taf', 'on'),
+        ('sigmet', 'on'),
+        ('gametairmet', 'on'),
+    ]
 
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': init_url_2
+    }
+    
     print(f"OPMET: Payload = {payload}")
+    post_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
+    try:
+        submit_resp = session.post(post_url, data=payload, headers=headers)
+        submit_resp.raise_for_status()
+        print(f"OPMET fetch: status={submit_resp.status_code}, length={len(submit_resp.text)}")
 
-    # Step 4: Submit to opmetData.do (extract action directly from form)
-    action_url = opmet_form.get('action', '/opersite/opmetData.do') if opmet_form else '/opersite/opmetData.do'
-    if not action_url.startswith('http'):
-        action_url = "https://ops.skeyes.be" + action_url
+        soup = BeautifulSoup(submit_resp.text, 'html.parser')
         
-    submit_url = action_url
-    # We also add the Referer header correctly
-    headers['Referer'] = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    
-    submit_resp = session.post(submit_url, data=payload, headers=headers)
-    submit_resp.raise_for_status()
-    print(f"OPMET: Submit status={submit_resp.status_code}, length={len(submit_resp.text)}")
+        # Check if the page is literally an error page or a redirect
+        if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in submit_resp.text:
+            print("OPMET Fetch yielded a session lost error.")
+            # Treat as failure
+            raise Exception("OPMET fetch returned login form or session lost error")
 
-    # Check if the response contains actual METAR/TAF data
-    has_metar = 'METAR' in submit_resp.text or 'TAF' in submit_resp.text
-    print(f"OPMET: Response contains METAR/TAF data: {has_metar}")
-
-    if not has_metar:
-        with open("_debug_opmet_submit.html", "w", encoding="utf-8") as dbg:
-            dbg.write(submit_resp.text)
-        print("OPMET: No METAR data in response, debug file saved")
-
-    # Step 5: Try to download the PDF (available after form submission)
-    pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
-    pdf_resp = session.get(pdf_url)
+    except requests.exceptions.HTTPError as e:
+        print(f"OPMET fetch HTTP error: {e}")
+        # Could dump resp.text here for debug if needed
+        return False
+    except Exception as e:
+        print(f"OPMET fetch general error: {e}")
+        return False
     pdf_resp.raise_for_status()
     print(f"OPMET PDF: status={pdf_resp.status_code}, length={len(pdf_resp.content)}, "
           f"content-type={pdf_resp.headers.get('Content-Type', 'unknown')}")
