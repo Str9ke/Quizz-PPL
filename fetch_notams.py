@@ -679,7 +679,7 @@ def fetch_sfc_analysis(session, manifest):
                             img_src = img_m.group(1)
                         # Print iframe content for debugging
                         iframe_vis = re.sub(r'\s+', ' ', iframe_html).strip()
-                        for ci in range(0, min(len(iframe_vis), 500), 100):
+                        for ci in range(0, min(len(iframe_vis), 2000), 100):
                             print(f"    iframe[{ci}]: {iframe_vis[ci:ci+100]}")
                 # Try <img src="..."> in main page
                 if not img_src:
@@ -699,6 +699,7 @@ def fetch_sfc_analysis(session, manifest):
                 if img_src:
                     if not img_src.startswith("http"):
                         img_src = f"https://ops.skeyes.be{img_src}" if img_src.startswith("/") else f"{base}/{img_src}"
+                    print(f"  SFC {time_val}: fetching image -> {img_src}")
                     img_resp = session.get(img_src, headers={"Referer": referer})
                     if img_resp.status_code == 200 and len(img_resp.content) > 500:
                         ext = img_src.rsplit(".", 1)[-1].lower()
