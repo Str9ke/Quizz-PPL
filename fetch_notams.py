@@ -649,7 +649,7 @@ def fetch_sfc_analysis(session, manifest):
                 html = resp.text
                 # Log visible content for debugging
                 visible = re.sub(r'\s+', ' ', html).strip()
-                print(f"  SFC {time_val}: HTML response ({len(html)} bytes): {visible[:400]}")
+                print(f"  SFC {time_val}: HTML response ({len(html)} bytes): {visible}")
                 img_src = None
                 # Try <img src="...">
                 m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
