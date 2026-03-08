@@ -645,10 +645,25 @@ def fetch_sfc_analysis(session, manifest):
                 timestamps.append(time_val.replace("Z", ":00Z"))
                 print(f"  SFC {time_val}: saved {fname} ({len(resp.content)} bytes)")
             else:
-                # HTML response with embedded image
-                img_match = re.search(r'<img[^>]+src="([^"]+)"', resp.text)
-                if img_match:
-                    img_src = img_match.group(1)
+                # HTML response - try multiple image patterns
+                html = resp.text
+                print(f"  SFC {time_val}: HTML response ({len(html)} bytes): {html[:300]}")
+                img_src = None
+                # Try <img src="...">
+                m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
+                if m:
+                    img_src = m.group(1)
+                # Try background-image:url(...)
+                if not img_src:
+                    m = re.search(r'url\(["\']?([^"\')\s]+\.(gif|jpg|jpeg|png))["\']?\)', html, re.I)
+                    if m:
+                        img_src = m.group(1)
+                # Try window.location or redirect
+                if not img_src:
+                    m = re.search(r'(?:window\.location|location\.href)\s*=\s*["\']([^"\']+)["\']', html, re.I)
+                    if m:
+                        img_src = m.group(1)
+                if img_src:
                     if not img_src.startswith("http"):
                         img_src = f"https://ops.skeyes.be{img_src}" if img_src.startswith("/") else f"{base}/{img_src}"
                     img_resp = session.get(img_src, headers={"Referer": referer})
@@ -667,9 +682,7 @@ def fetch_sfc_analysis(session, manifest):
                     else:
                         print(f"  SFC {time_val}: image fetch failed ({img_resp.status_code})")
                 else:
-                    print(f"  SFC {time_val}: no image in response (ct={ct}, len={len(resp.text)})")
-                    with open(f"_debug_sfc_{time_val.lower()}.html", "w", encoding="utf-8") as f:
-                        f.write(resp.text)
+                    print(f"  SFC {time_val}: no image URL found in response")
         except Exception as e:
             print(f"  SFC {time_val}: error: {e}")
     if filenames:
