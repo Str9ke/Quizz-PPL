@@ -367,12 +367,12 @@ def fetch_opmet(session):
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;padding:12px;margin:0;
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;padding:12px;margin:0;
   background:var(--bg-body,transparent);color:var(--text-primary,#e0e0e8)}
-.section{margin-bottom:16px;border:1px solid var(--border-color,#333350);border-radius:10px;overflow:hidden;background:var(--bg-container,#1e1e2d)}
-.section-header{padding:10px 14px;font-weight:700;font-size:15px;background:rgba(102,126,234,.1);border-bottom:1px solid var(--border-color,#333350);display:flex;align-items:center;gap:8px;color:var(--text-heading,#fff)}
+.section{margin-bottom:16px;border-radius:10px;overflow:hidden;background:transparent}
+.section-header{padding:10px 14px;font-weight:700;font-size:16px;background:rgba(102,126,234,.12);border-bottom:1px solid var(--border-color,#333350);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px;color:var(--text-heading,#fff)}
 .section-header .icon{font-size:18px}
-.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.6;border-bottom:1px solid var(--border-color,#333350);white-space:pre-wrap;word-break:break-word;color:var(--text-primary,#e0e0e8)}
+.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:13.5px;line-height:1.6;border-bottom:1px solid rgba(255,255,255,.06);white-space:pre-wrap;word-break:break-word;color:var(--text-primary,#e0e0e8)}
 .entry:last-child{border-bottom:none}
 .entry-nil{color:var(--text-secondary,#a0a0b8);font-style:italic}
 .entry-notprov{color:var(--text-secondary,#a0a0b8);font-style:italic;font-size:12px}
@@ -482,7 +482,7 @@ try{
 
 
 def fetch_remote_sensing_images(session):
-    """Fetch all timestamped radar/satellite images from Skeyes remoteSensingDetail pages."""
+    """Fetch all timestamped radar/satellite/numwx images from Skeyes remoteSensingDetail pages."""
     print("\n--- Fetching Remote Sensing Images ---")
     pages = [
         ("radarmax",       "radar", "skeyes_radar_max"),
@@ -494,20 +494,29 @@ def fetch_remote_sensing_images(session):
         ("msghrv_benelux", "msg",   "skeyes_msg_hrv_benelux"),
         ("msgir_benelux",  "msg",   "skeyes_msg_ir_benelux"),
         ("msgrgb_benelux", "msg",   "skeyes_msg_rgb_benelux"),
+        # Numerical Weather Model outputs
+        ("wind10",         "numwx", "skeyes_numwx_wind10"),
+        ("windfl10",       "numwx", "skeyes_numwx_windfl10"),
+        ("windfl20",       "numwx", "skeyes_numwx_windfl20"),
+        ("windfl30",       "numwx", "skeyes_numwx_windfl30"),
+        ("windfl50",       "numwx", "skeyes_numwx_windfl50"),
+        ("windfl100",      "numwx", "skeyes_numwx_windfl100"),
+        ("numprec",        "numwx", "skeyes_numwx_prec"),
     ]
     manifest = {}
     for html_param, type_param, prefix in pages:
         try:
             detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
+            referer = "https://ops.skeyes.be/opersite/meteonumwxStart.do" if type_param == "numwx" else "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
             print(f"Fetching {prefix} from {html_param}...")
-            resp = session.get(detail_url, headers={"Referer": "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"})
+            resp = session.get(detail_url, headers={"Referer": referer})
             if resp.status_code != 200:
                 print(f"  -> HTTP {resp.status_code}")
                 continue
             
             # Extract ALL image URLs from the page (from preloadImages JS and img tags)
             img_paths = []
-            for m in re.finditer(r"['\"](/remotesensing/[^'\"]+\.(gif|jpg|jpeg|png))['\"]", resp.text, re.IGNORECASE):
+            for m in re.finditer(r"['\"](/(?:remotesensing|modeloutput)/[^'\"]+\.(gif|jpg|jpeg|png))['\"]", resp.text, re.IGNORECASE):
                 path = m.group(1)
                 if 'animation_buttons' not in path and 'roads' not in path and path not in img_paths:
                     img_paths.append(path)
