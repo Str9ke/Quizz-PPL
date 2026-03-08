@@ -198,13 +198,13 @@ def fetch_opmet(session):
     resp = session.get(init_url_2, headers={"Referer": init_url_1})
     resp.raise_for_status()
 
-    # Step 3: Payload
+    # Step 3: Payload — ICAO codes must be separated by semicolons
     payload = [
         ('templateName', ''),
         ('newTemplateName', ''),
         ('selectCountry', ''),
         ('template', 'select'),
-        ('icaocodes', 'EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX'),
+        ('icaocodes', 'EBBR;EBCI;EBSG;EBAW;EBBE;EBBL;EBCV;EBFN;EBFS;EBLG;EBOS;ELLX'),
         ('land1', 'on'),
         ('metar', 'on'),
         ('taf', 'on'),
@@ -225,23 +225,48 @@ def fetch_opmet(session):
     if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in submit_resp.text:
         raise Exception("OPMET fetch returned login form or session lost error")
 
-    has_metar = 'METAR' in submit_resp.text or 'TAF' in submit_resp.text
-    print(f"OPMET POST response: has_metar={has_metar}, length={len(submit_resp.text)}")
+    # Check for actual METAR data lines (e.g. "METAR EBBR" or "TAF EBBR")
+    has_metar = bool(re.search(r'METAR\s+EB|TAF\s+EB|SIGMET|GAMET', submit_resp.text))
+    has_error = 'Invalid characters' in submit_resp.text or 'Errors' in submit_resp.text
+    print(f"OPMET POST response: has_metar={has_metar}, has_error={has_error}, length={len(submit_resp.text)}")
 
-    # Primary: extract METAR/TAF data from HTML response
+    if has_error:
+        print("OPMET: Form returned errors")
+        with open("_debug_opmet_response.html", "w", encoding="utf-8") as dbg:
+            dbg.write(submit_resp.text)
+
+    # Extract METAR/TAF data from HTML response
     if has_metar:
-        body = soup.find('body')
-        body_html = str(body) if body else submit_resp.text
+        # Extract just the data content, strip Skeyes page chrome
+        # Look for the actual METAR/TAF text blocks
+        text_blocks = []
+        for pre in soup.find_all(['pre', 'td']):
+            text = pre.get_text()
+            if re.search(r'METAR\s+EB|TAF\s+EB|SIGMET|GAMET', text):
+                text_blocks.append(text.strip())
+        
+        if text_blocks:
+            data_text = '\n\n'.join(text_blocks)
+        else:
+            # Fallback: get the body, remove forms/scripts/styles
+            body = soup.find('body')
+            if body:
+                for tag in body.find_all(['form', 'script', 'style', 'link']):
+                    tag.decompose()
+                data_text = body.get_text('\n', strip=True)
+            else:
+                data_text = submit_resp.text
+
         html_content = (
             "<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
             "<style>body{font-family:monospace;font-size:13px;padding:10px;margin:0;"
-            "background:transparent;white-space:pre-wrap;}</style>"
-            "</head>" + body_html + "</html>"
+            "background:transparent;white-space:pre-wrap;color:#e0e0e0;}</style>"
+            "</head><body>" + data_text.replace('<', '&lt;').replace('>', '&gt;') + "</body></html>"
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write(html_content)
-        print("OPMET: saved HTML with METAR/TAF data")
+        print("OPMET: saved clean METAR/TAF data HTML")
 
     # Secondary: also try PDF download
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
