@@ -647,7 +647,9 @@ def fetch_sfc_analysis(session, manifest):
             else:
                 # HTML response - try multiple image patterns
                 html = resp.text
-                print(f"  SFC {time_val}: HTML response ({len(html)} bytes): {html[:300]}")
+                # Log visible content for debugging
+                visible = re.sub(r'\s+', ' ', html).strip()
+                print(f"  SFC {time_val}: HTML response ({len(html)} bytes): {visible[:400]}")
                 img_src = None
                 # Try <img src="...">
                 m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
