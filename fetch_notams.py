@@ -308,91 +308,64 @@ def do_login(session, username, password):
     """Authenticate to the Skeyes opersite. Returns True if login succeeded."""
     print("--- Login ---")
     base = "https://ops.skeyes.be"
-    protected_url = f"{base}/opersite/home.do"
     
-    # Step 1: Access a protected resource to trigger J2EE auth challenge
-    login_page = session.get(protected_url)
-    print(f"GET home.do: status={login_page.status_code}, url={login_page.url}")
+    # Step 1: GET login.do to obtain JSESSIONID and the login form
+    login_resp = session.get(f"{base}/opersite/login.do")
+    print(f"GET login.do: status={login_resp.status_code}, url={login_resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
     
-    # Step 2: Parse the login form and resolve action URL properly
-    login_soup = BeautifulSoup(login_page.text, 'html.parser')
-    login_form = login_soup.find('form')
+    # Step 2: Parse the login form
+    soup = BeautifulSoup(login_resp.text, 'html.parser')
+    form = soup.find('form')
     
-    login_data = {}
-    if login_form:
-        raw_action = login_form.get('action', '')
-        # urljoin resolves relative to the actual response URL (e.g. /opersite/jsp/login.jsp)
-        form_action = urljoin(login_page.url, raw_action) if raw_action else login_page.url
-        print(f"Form action: '{raw_action}' -> {form_action}")
-        # Collect all form fields (hidden fields, etc.)
-        for inp in login_form.find_all('input'):
+    data = {}
+    form_action_raw = 'login.do'
+    if form:
+        form_action_raw = form.get('action', 'login.do')
+        print(f"Form tag: {str(form)[:300]}")
+        for inp in form.find_all('input'):
             name = inp.get('name')
             if name:
-                login_data[name] = inp.get('value', '')
-                print(f"  Field: {name}={inp.get('type','')}")
+                data[name] = inp.get('value', '')
+                print(f"  Field: {name} type={inp.get('type', '')}")
     else:
-        form_action = f"{base}/opersite/j_security_check"
-        print(f"No form found, defaulting to {form_action}")
+        print(f"No form found! Page snippet: {login_resp.text[:500]}")
     
-    # Override credentials
-    login_data['j_username'] = username
-    login_data['j_password'] = password
+    data['j_username'] = username
+    data['j_password'] = password
     
-    # Step 3: POST credentials
-    print(f"POST -> {form_action}")
-    login_resp = session.post(form_action, data=login_data, allow_redirects=True)
-    print(f"Login POST: status={login_resp.status_code}, url={login_resp.url}")
-    print(f"Cookies: {session.cookies.get_dict()}")
+    # Step 3: Try POSTing to multiple candidate URLs
+    # The login form is served from /opersite/jsp/login.jsp with action="login.do"
+    # Browser resolves this to /opersite/jsp/login.do (urljoin)
+    # But the Struts action might be mapped at /opersite/login.do
+    resolved_url = urljoin(login_resp.url, form_action_raw)
+    explicit_url = f"{base}/opersite/{form_action_raw.lstrip('/')}"
     
-    # Step 4: Verify
-    home_resp = session.get(protected_url)
-    home_soup = BeautifulSoup(home_resp.text, 'html.parser')
-    if not home_soup.find('form', {'name': 'loginForm'}):
-        print("Login successful!")
-        return True
+    urls_to_try = [resolved_url]
+    if explicit_url != resolved_url:
+        urls_to_try.append(explicit_url)
     
-    # Step 5: Fallback — try j_security_check at context root
-    print("Login failed, trying j_security_check fallback...")
-    for path in [f"{base}/opersite/j_security_check", f"{base}/j_security_check"]:
-        if path == form_action:
-            continue  # already tried
-        try:
-            print(f"  Trying {path}")
-            resp = session.post(path, data={'j_username': username, 'j_password': password}, allow_redirects=True)
-            print(f"  -> status={resp.status_code}, url={resp.url}")
-            home_resp = session.get(protected_url)
-            if 'loginForm' not in home_resp.text:
-                print("  -> Fallback login succeeded!")
-                return True
-        except Exception as e:
-            print(f"  -> {e}")
-    
-    # Step 6: Try login.do POST directly
-    print("Trying login.do POST...")
-    login_do_page = session.get(f"{base}/opersite/login.do")
-    login_do_soup = BeautifulSoup(login_do_page.text, 'html.parser')
-    login_do_form = login_do_soup.find('form')
-    if login_do_form:
-        do_action = login_do_form.get('action', 'login.do')
-        do_url = urljoin(login_do_page.url, do_action)
-        do_data = {}
-        for inp in login_do_form.find_all('input'):
-            name = inp.get('name')
-            if name:
-                do_data[name] = inp.get('value', '')
-        do_data['j_username'] = username
-        do_data['j_password'] = password
-        print(f"  POST -> {do_url}")
-        resp = session.post(do_url, data=do_data, allow_redirects=True)
-        print(f"  -> status={resp.status_code}, url={resp.url}")
-        home_resp = session.get(protected_url)
-        if 'loginForm' not in home_resp.text:
-            print("  -> login.do POST succeeded!")
+    for post_url in urls_to_try:
+        print(f"\nPOST -> {post_url}")
+        resp = session.post(post_url, data=data, allow_redirects=True)
+        print(f"Response: status={resp.status_code}, url={resp.url}")
+        print(f"Cookies: {session.cookies.get_dict()}")
+        
+        # Verify: try accessing a protected resource
+        verify = session.get(f"{base}/opersite/opmeteoindex.do?cmd=init",
+                             headers={"Referer": f"{base}/opersite/opmeteoindex.do"})
+        is_login_page = 'login.jsp' in verify.url or verify.url.endswith('login.do')
+        print(f"Auth verify: status={verify.status_code}, url={verify.url}, is_login={is_login_page}")
+        
+        if not is_login_page:
+            print("Login successful!")
             return True
     
-    print("WARNING: All login attempts failed")
-    print(f"Debug - last home.do snippet: {home_resp.text[:500]}")
+    # Save debug info for analysis
+    print("WARNING: Login failed with all URL strategies")
+    print(f"Login page response snippet: {login_resp.text[:500]}")
+    with open("_debug_login_page.html", "w", encoding="utf-8") as f:
+        f.write(login_resp.text)
     return False
 
 
@@ -411,14 +384,11 @@ def main():
     logged_in = do_login(session, username, password)
     
     # OPMET (requires auth)
-    if logged_in:
-        try:
-            fetch_opmet(session)
-        except Exception as e:
-            print(f"Error fetching OPMET: {e}")
-            generate_error_html("opmet.html", "OPMET", session, str(e))
-    else:
-        generate_error_html("opmet.html", "OPMET", session, "Login failed - all strategies exhausted")
+    try:
+        fetch_opmet(session)
+    except Exception as e:
+        print(f"Error fetching OPMET: {e}")
+        generate_error_html("opmet.html", "OPMET", session, str(e))
     
     # Remote sensing images (fetch via detail pages)
     fetch_remote_sensing_images(session)
