@@ -925,25 +925,37 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <div class="skeyes-nav"></div>
         </div>
       </div>
-      <div class="map-card">
-        <div class="map-card-title">&#x1F300; Carte de Fronts &#x2014; Europe</div>
-        <div class="iframe-card">
-          <iframe id="frontsFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" style="height:calc(100vh - 160px);min-height:600px" loading="lazy"></iframe>
+      <div class="map-card" id="card-fronts-video">
+        <div class="map-card-title">&#x1F300; Carte de Fronts &#x2014; Europe (meteo.be)</div>
+        <video id="frontsVideo" style="width:100%;border-radius:8px;background:#000;display:block"
+               preload="metadata" playsinline>
+          <source src="https://www.meteo.be/resources/forecasts/fronts/FR/Web2016Fronten.mp4" type="video/mp4">
+        </video>
+        <div id="frontsControls" style="display:flex;align-items:center;gap:8px;padding:8px 4px;flex-wrap:wrap">
+          <button id="frontsPrev" title="Image pr&#xe9;c&#xe9;dente" style="font-size:1.2em;padding:4px 10px;cursor:pointer">&#x23EE;</button>
+          <button id="frontsPlay" title="Lecture / Pause" style="font-size:1.2em;padding:4px 10px;cursor:pointer">&#x25B6;&#xFE0F;</button>
+          <button id="frontsNext" title="Image suivante" style="font-size:1.2em;padding:4px 10px;cursor:pointer">&#x23ED;</button>
+          <input id="frontsSeek" type="range" min="0" max="1000" value="0" style="flex:1;min-width:100px;cursor:pointer" title="Position">
+          <span id="frontsTime" style="font-size:.85em;white-space:nowrap;color:var(--text-secondary)">0:00 / 0:00</span>
+          <button id="frontsNow" title="Aller au temps actuel (heure belge)" style="font-size:.85em;padding:4px 8px;cursor:pointer">&#x1F551; Maintenant</button>
         </div>
-        <div class="iframe-blocked-msg">Si la carte ne s&#x2019;affiche pas : <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank">Ouvrir meteo.be Fronts &#x2197;&#xFE0F;</a></div>
-        <div class="map-card-title" style="margin-top:16px">&#x1F4F7; Capture manuelle de la carte de Fronts</div>
+        <div class="map-card-actions">
+          <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank" rel="noopener">&#x1F517; meteo.be Fronts</a>
+          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; A&#xe9;roWeb Fronts</button>
+          <button id="frontsRefresh" title="Recharger la vid&#xe9;o">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
+      <div class="map-card">
+        <div class="map-card-title" style="margin-top:0">&#x1F4F7; Capture manuelle de la carte de Fronts</div>
         <div id="mapFronts" class="map-paste-zone" data-key="fronts" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.88em;border:2px dashed var(--border-color);margin:8px 16px;border-radius:10px;flex-direction:column;gap:8px;cursor:pointer" onclick="window.uploadMap('fronts')">
           <span style="font-size:2em">&#x1F300;</span>
           <span>Collez (Ctrl+V) ou cliquez pour importer la carte de Fronts</span>
         </div>
         <div class="map-card-actions">
-          <a href="https://www.meteo.be/fr/meteo/previsions/cartes-de-fronts" target="_blank" rel="noopener">&#x1F517; meteo.be Fronts</a>
-          <button onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; A&#xe9;roWeb Fronts</button>
           <button onclick="window.uploadMap('fronts')">&#x1F4F7; Importer</button>
           <button onclick="window.pasteMapImage('fronts')">&#x1F4CB; Coller</button>
           <button class="map-del-btn" id="delFronts" onclick="window.deleteMapImage('fronts')" style="display:none">&#x1F5D1;&#xFE0F; Supprimer</button>
           <input type="file" id="fileFronts" accept="image/*" style="display:none" onchange="window.handleMapUpload('fronts',this)">
-          <button onclick="var f=document.getElementById('frontsFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir iframe</button>
         </div>
       </div>
     </div>
@@ -2457,12 +2469,89 @@ function switchMeteoSub(id){
       }
     }
     if(id==='windy') initWindy();
+    if(id==='fronts' && window._initFrontsVideo) window._initFrontsVideo();
   }
   /* Auto-scroll to sub-tabs bar */
   var subtabsBar=document.querySelector('.meteo-subtabs');
   if(subtabsBar) setTimeout(function(){subtabsBar.scrollIntoView({behavior:'smooth',block:'start'});},120);
 }
 window.switchMeteoSub=switchMeteoSub;
+
+/* ===== FRONTS VIDEO PLAYER ===== */
+(function(){
+  var vid, seekBar, timeLabel, playBtn, inited=false;
+  var STEP = 1.5; // seconds per step (≈1 forecast frame)
+  var FORECAST_HOURS = 120; // video covers ~5 days
+
+  function fmt(s){
+    var m=Math.floor(s/60), sec=Math.floor(s%60);
+    return m+':'+(sec<10?'0':'')+sec;
+  }
+
+  function seekToNow(){
+    if(!vid||!vid.duration) return;
+    // Estimate analysis time: most recent 00Z or 12Z
+    var now = new Date();
+    var utcH = now.getUTCHours();
+    var analysis = new Date(now);
+    analysis.setUTCMinutes(0); analysis.setUTCSeconds(0); analysis.setUTCMilliseconds(0);
+    if(utcH < 12) analysis.setUTCHours(0);
+    else analysis.setUTCHours(12);
+    // If analysis is in the future (shouldn't happen), go back 12h
+    if(analysis.getTime() > now.getTime()) analysis.setTime(analysis.getTime() - 12*3600000);
+    var elapsed = (now.getTime() - analysis.getTime()) / 3600000; // hours since analysis
+    var ratio = Math.max(0, Math.min(1, elapsed / FORECAST_HOURS));
+    vid.currentTime = ratio * vid.duration;
+    vid.pause();
+    updateUI();
+  }
+
+  function updateUI(){
+    if(!vid) return;
+    var dur = vid.duration || 0;
+    seekBar.value = dur ? (vid.currentTime / dur * 1000) : 0;
+    timeLabel.textContent = fmt(vid.currentTime) + ' / ' + fmt(dur);
+    playBtn.textContent = vid.paused ? '\u25B6\uFE0F' : '\u23F8\uFE0F';
+  }
+
+  function initFrontsVideo(){
+    if(inited) return;
+    inited = true;
+    vid = document.getElementById('frontsVideo');
+    seekBar = document.getElementById('frontsSeek');
+    timeLabel = document.getElementById('frontsTime');
+    playBtn = document.getElementById('frontsPlay');
+    if(!vid) return;
+
+    vid.addEventListener('loadedmetadata', function(){ seekToNow(); });
+    vid.addEventListener('timeupdate', updateUI);
+    vid.addEventListener('ended', function(){ vid.currentTime=0; vid.pause(); updateUI(); });
+
+    playBtn.addEventListener('click', function(){
+      if(vid.paused) vid.play(); else vid.pause();
+      updateUI();
+    });
+    document.getElementById('frontsPrev').addEventListener('click', function(){
+      vid.currentTime = Math.max(0, vid.currentTime - STEP); vid.pause(); updateUI();
+    });
+    document.getElementById('frontsNext').addEventListener('click', function(){
+      vid.currentTime = Math.min(vid.duration||0, vid.currentTime + STEP); vid.pause(); updateUI();
+    });
+    seekBar.addEventListener('input', function(){
+      vid.currentTime = (this.value / 1000) * (vid.duration || 0); updateUI();
+    });
+    document.getElementById('frontsNow').addEventListener('click', seekToNow);
+    document.getElementById('frontsRefresh').addEventListener('click', function(){
+      var src = vid.querySelector('source').src.replace(/\?.*$/,'');
+      vid.querySelector('source').src = src + '?t=' + Date.now();
+      vid.load();
+      inited = false; initFrontsVideo();
+    });
+
+    vid.load();
+  }
+  window._initFrontsVideo = initFrontsVideo;
+})();
 
 /* ===== SKEYES IMAGE CAROUSELS ===== */
 (function(){
