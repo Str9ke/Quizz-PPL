@@ -1939,6 +1939,13 @@ function renderFuelLog(){
       html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small></span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
+      
+      if(wp.isEtape) {
+        html+='<div style="padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,183,77,0.1);display:flex;justify-content:space-between;align-items:center;color:#ffb74d;font-size:0.88em;font-style:italic;">';
+        html+='<span>\uD83D\uDFE0 (Cumul jusqu\'à l\'étape '+escHTML(wp.name||'WP'+i)+')</span>';
+        html+='<span>('+formatTime(tripTimeMin/60)+' \u2014 '+tripFuel.toFixed(1)+' L)</span>';
+        html+='</div>';
+      }
     }
   }
 
@@ -3906,6 +3913,7 @@ function recalcNavlog(){
     wp._eta=cumulativeMin;
     totalDist+=wp.dist;
     totalTime+=leg.ete;
+    wp._cumEteH=totalTime;
     totalFuel+=leg.fuel;
     wp._cumFuel=Math.round(totalFuel*10)/10;
   }
@@ -4112,6 +4120,7 @@ function updateLegStrips(){
           '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.1)">'+
              '<span class="leg-val">\u26FD '+leg.fuel+' L <small>(\u03A3 '+(wp._cumFuel||0)+' L)</small></span>'+
           '</div>'+
+          (wp.isEtape ? '<div style="margin-top:4px;color:#ffb74d;font-size:0.85em;font-weight:600;font-style:italic;">(\uD83D\uDFE0 Cumul à l\'étape: '+formatTime(wp._cumEteH||0)+' \u2014 '+(wp._cumFuel||0)+' L)</div>' : '') +
           '<div class="leg-wind-row">'+
           '<span class="leg-val" title="Dérive">\u{1F9ED} WCA: <b>'+driftSign+Math.round(driftDeg)+'\u00b0</b></span>'+
           '<button class="leg-wind-btn'+legWindCls+'" onclick="window.openLegWind('+i+')" title="Vent pour ce leg">\u{1F4A8} '+legWindTxt+'</button>'+

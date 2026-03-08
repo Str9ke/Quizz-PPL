@@ -105,6 +105,20 @@ def fetch_opmet(session):
     if soup.find('form', {'name': 'loginForm'}):
         import datetime
         print("OPMET: Session not authenticated - got login form")
+        
+        # DEBUG: try to grab menu to see exact URL
+        menu_links_info = ""
+        try:
+            m_resp = session.get("https://ops.skeyes.be/opersite/menu.do")
+            if m_resp.status_code == 200:
+                m_soup = BeautifulSoup(m_resp.text, 'html.parser')
+                menu_links_info = "<h4>Menu links found:</h4><ul>"
+                for a in m_soup.find_all('a'):
+                    menu_links_info += f"<li>{a.get('href')} ({a.text.strip()})</li>"
+                menu_links_info += "</ul>"
+        except Exception as ex:
+            menu_links_info = f"<p>Menu fetch error: {ex}</p>"
+
         error_html = (
             "<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
@@ -113,6 +127,7 @@ def fetch_opmet(session):
             "<p><strong>Session perdue ou non authentifi&eacute;e par Skeyes. Redirection vers login.</strong></p>"
             "<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
             "<p><strong>Cookies lors de la tentative :</strong> " + str(session.cookies.get_dict()) + "</p>"
+            "<hr/>" + menu_links_info + 
             "</body></html>"
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
