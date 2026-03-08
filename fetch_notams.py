@@ -284,18 +284,31 @@ def main():
         print(f"Error fetching OPMET: {e}")
         generate_error_html("opmet.html", "OPMET", session, str(e))
 
-    # Next: Remote Sensing (Sats & Radar)
-    skeyes_maps = [
-        ("skeyes_msghrv.html", "Sat HRV", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msghrv&type=msg"),
-        ("skeyes_msgrgb.html", "Sat RGB", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msgrgb&type=msg"),
-        ("skeyes_msgir.html", "Sat IR", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=msgir&type=msg"),
-        ("skeyes_radarplip.html", "Radar PLIP", "https://ops.skeyes.be/opersite/remoteSensingDetail.do?html=radarplip&type=radar")
+    
+    # Next: Remote Sensing (Sats & Radar) Static Images
+    skeyes_static_images = [
+        ("skeyes_radar_max.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_max.gif"),
+        ("skeyes_radar_ppi.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_ppi.gif"),
+        ("skeyes_radar_plip.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_plip.gif"),
+        ("skeyes_msg_ir_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_ir_benelux.jpg"),
+        ("skeyes_msg_rgb_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_rgb_benelux.jpg"),
+        ("skeyes_msg_hrv_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_hrv_benelux.jpg"),
+        ("skeyes_msg_hrv.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_hrv.jpg"),
+        ("skeyes_msg_ir.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_ir.jpg"),
+        ("skeyes_msg_rgb.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_rgb.jpg")
     ]
-    for out_file, title, url in skeyes_maps:
+
+    for filename, url in skeyes_static_images:
         try:
-            fetch_skeyes_animation(session, url, out_file, title)
+            print(f"Fetching static image {filename}...")
+            resp = session.get(url, headers={"Referer": "https://ops.skeyes.be/opersite/oper-meteo-info"})
+            if resp.status_code == 200:
+                with open(filename, 'wb') as f:
+                    f.write(resp.content)
+            else:
+                print(f"Failed to fetch {filename} ({resp.status_code})")
         except Exception as e:
-            print(f"Error fetching map {title}: {e}")
+            print(f"Error fetching {filename}: {e}")
 
     print("--- Extracting NOTAMs ---")
     try:
