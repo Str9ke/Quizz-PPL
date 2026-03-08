@@ -237,35 +237,173 @@ def fetch_opmet(session):
 
     # Extract METAR/TAF data from HTML response
     if has_metar:
-        # Extract just the data content, strip Skeyes page chrome
-        # Look for the actual METAR/TAF text blocks
-        text_blocks = []
-        for pre in soup.find_all(['pre', 'td']):
-            text = pre.get_text()
-            if re.search(r'METAR\s+EB|TAF\s+EB|SIGMET|GAMET', text):
-                text_blocks.append(text.strip())
-        
-        if text_blocks:
-            data_text = '\n\n'.join(text_blocks)
+        # Get raw text from the body, stripping Skeyes page chrome
+        body = soup.find('body')
+        if body:
+            for tag in body.find_all(['form', 'script', 'style', 'link', 'nav', 'header']):
+                tag.decompose()
+            raw_text = body.get_text('\n')
         else:
-            # Fallback: get the body, remove forms/scripts/styles
-            body = soup.find('body')
-            if body:
-                for tag in body.find_all(['form', 'script', 'style', 'link']):
-                    tag.decompose()
-                data_text = body.get_text('\n', strip=True)
-            else:
-                data_text = submit_resp.text
+            raw_text = soup.get_text('\n')
 
-        html_content = (
-            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-            "<style>body{font-family:monospace;font-size:13px;padding:10px;margin:0;"
-            "background:transparent;white-space:pre-wrap;color:#e0e0e0;}</style>"
-            "</head><body>" + data_text.replace('<', '&lt;').replace('>', '&gt;') + "</body></html>"
-        )
+        # Clean up: collapse excessive blank lines, fix broken words from table layout
+        lines = raw_text.split('\n')
+        cleaned = []
+        for line in lines:
+            stripped = line.rstrip()
+            if stripped:
+                cleaned.append(stripped)
+            elif cleaned and cleaned[-1] != '':
+                cleaned.append('')
+        raw_text = '\n'.join(cleaned).strip()
+        # Remove leading/trailing blank lines between sections
+        raw_text = re.sub(r'\n{3,}', '\n\n', raw_text)
+
+        # Parse into sections
+        sections = {}
+        current_section = 'header'
+        sections[current_section] = []
+
+        for line in raw_text.split('\n'):
+            # Detect section headers
+            line_upper = line.strip().upper()
+            if line_upper == 'METAR':
+                current_section = 'METAR'
+                sections[current_section] = []
+                continue
+            elif line_upper == 'TAF FC':
+                current_section = 'TAF FC'
+                sections[current_section] = []
+                continue
+            elif line_upper == 'TAF FT':
+                current_section = 'TAF FT'
+                sections[current_section] = []
+                continue
+            elif line_upper == 'SIGMET':
+                current_section = 'SIGMET'
+                sections[current_section] = []
+                continue
+            elif line_upper == 'GAMET':
+                current_section = 'GAMET'
+                sections[current_section] = []
+                continue
+            elif line_upper == 'AIRMET':
+                current_section = 'AIRMET'
+                sections[current_section] = []
+                continue
+
+            if current_section not in sections:
+                sections[current_section] = []
+            sections[current_section].append(line)
+
+        # Build entries per section: join continuation lines for METAR/TAF
+        def format_entries(lines):
+            """Group related lines into individual reports."""
+            entries = []
+            current = []
+            for line in lines:
+                stripped = line.strip()
+                if not stripped:
+                    if current:
+                        entries.append(' '.join(current))
+                        current = []
+                    continue
+                # New METAR/SPECI/TAF entry or "not provided" line
+                if re.match(r'^(METAR|SPECI|TAF)\s+E[BL]', stripped) or re.match(r'^E[BL]\w+\s+(not provided|NIL)', stripped):
+                    if current:
+                        entries.append(' '.join(current))
+                    current = [stripped]
+                else:
+                    current.append(stripped)
+            if current:
+                entries.append(' '.join(current))
+            return entries
+
+        # Section labels and icons
+        section_config = [
+            ('METAR', '🌤️', 'METAR'),
+            ('TAF FC', '📋', 'TAF Court Terme'),
+            ('TAF FT', '📋', 'TAF Long Terme'),
+            ('SIGMET', '⚠️', 'SIGMET'),
+            ('GAMET', '📄', 'GAMET'),
+            ('AIRMET', '📄', 'AIRMET'),
+        ]
+
+        # Generate HTML
+        html_parts = []
+        html_parts.append("""<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;padding:12px;background:transparent;color:#d4d4d8}
+.section{margin-bottom:16px;border:1px solid #3f3f46;border-radius:10px;overflow:hidden;background:rgba(39,39,42,0.6)}
+.section-header{padding:10px 14px;font-weight:700;font-size:15px;background:rgba(63,63,70,0.5);border-bottom:1px solid #3f3f46;display:flex;align-items:center;gap:8px}
+.section-header .icon{font-size:18px}
+.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.5;border-bottom:1px solid rgba(63,63,70,0.4);white-space:pre-wrap;word-break:break-word}
+.entry:last-child{border-bottom:none}
+.entry-metar{color:#93c5fd}
+.entry-taf{color:#86efac}
+.entry-sigmet{color:#fca5a5}
+.entry-gamet{color:#fde68a}
+.entry-nil{color:#71717a;font-style:italic}
+.entry-notprov{color:#71717a;font-style:italic;font-size:12px}
+.icao{color:#f59e0b;font-weight:700}
+.timestamp{color:#a78bfa}
+.gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#fde68a}
+.updated{text-align:center;padding:8px;font-size:11px;color:#71717a}
+</style></head><body>
+""")
+
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%MZ')
+
+        for section_key, icon, label in section_config:
+            if section_key not in sections:
+                continue
+            lines = sections[section_key]
+
+            html_parts.append(f'<div class="section"><div class="section-header"><span class="icon">{icon}</span>{label}</div>')
+
+            if section_key in ('METAR', 'TAF FC', 'TAF FT'):
+                entries = format_entries(lines)
+                if not entries:
+                    html_parts.append('<div class="entry entry-nil">Aucune donnée</div>')
+                for entry in entries:
+                    entry_esc = entry.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    if 'not provided' in entry.lower() or entry.strip().endswith('NIL') or entry.strip().endswith('NIL='):
+                        css = 'entry-notprov'
+                    elif section_key == 'METAR':
+                        css = 'entry-metar'
+                    else:
+                        css = 'entry-taf'
+                    # Highlight ICAO code
+                    entry_esc = re.sub(r'\b(E[BL][A-Z]{2})\b', r'<span class="icao">\1</span>', entry_esc)
+                    # Highlight timestamp
+                    entry_esc = re.sub(r'\b(\d{6}Z)\b', r'<span class="timestamp">\1</span>', entry_esc)
+                    html_parts.append(f'<div class="entry {css}">{entry_esc}</div>')
+            elif section_key in ('SIGMET', 'AIRMET'):
+                content = '\n'.join(lines).strip()
+                if not content or content == 'NIL':
+                    html_parts.append('<div class="entry entry-nil">NIL</div>')
+                else:
+                    c = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    css = 'entry-sigmet' if section_key == 'SIGMET' else 'entry-gamet'
+                    html_parts.append(f'<div class="entry {css}">{c}</div>')
+            elif section_key == 'GAMET':
+                content = '\n'.join(lines).strip()
+                if not content or content == 'NIL':
+                    html_parts.append('<div class="entry entry-nil">NIL</div>')
+                else:
+                    c = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    html_parts.append(f'<div class="gamet-block">{c}</div>')
+
+            html_parts.append('</div>')
+
+        html_parts.append(f'<div class="updated">Mis à jour: {now_utc}</div>')
+        html_parts.append('</body></html>')
+
         with open("opmet.html", "w", encoding="utf-8") as f:
-            f.write(html_content)
+            f.write('\n'.join(html_parts))
         print("OPMET: saved clean METAR/TAF data HTML")
 
     # Secondary: also try PDF download
