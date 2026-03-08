@@ -24,6 +24,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .wx-trend{color:#f472b6;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .wx-mil-blu{color:#3b82f6}.wx-mil-wht{color:#e5e7eb}.wx-mil-grn{color:#22c55e}
 .wx-mil-ylo{color:#eab308}.wx-mil-amb{color:#f97316;font-weight:700}.wx-mil-red{color:#ef4444;font-weight:700}
+.gamet-label{color:#a78bfa;font-weight:700}
+.wx-alt{color:#38bdf8}
 .gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#e0e0e8}
 .updated{text-align:center;padding:8px;font-size:11px;color:#a0a0b8}
 body.light{color:#333;color-scheme:light}
@@ -35,9 +37,11 @@ body.light .updated{color:#666}
 </style>
 <script>
 try{
-  if(window.parent&&window.parent.document.body.classList.contains('light')){
-    document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light');});
+  function _syncTheme(){
+    try{if(window.parent&&window.parent.document.body.classList.contains('light'))document.body.classList.add('light');else document.body.classList.remove('light');}catch(e){}
   }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_syncTheme);
+  else _syncTheme();
 }catch(e){}
 </script>
 </head><body>
@@ -88,40 +92,40 @@ try{
 </div>
 <div class="section"><div class="section-header"><span class="icon">📄</span>GAMET</div>
 <div class="gamet-block">EBBU GAMET VALID 081800/090000 EBBR-
-EBBU BRUSSELS FIR BLW FL100
+EBBU BRUSSELS FIR BLW <span class="wx-alt">FL100</span>
 SECN I
-SFC VIS (below 5KM):     NW OF LINE EBUL-EBKT 0500-2500M FG BR
-                         21/24 W AND NW OF SCHELDE 0800-3500M FG BR
-SIG CLD:                 NW OF LIN EBUL-EBKT BKN 100/1500FT AGL
-                         21/24 W AND NW OF SCHELDE BKN 300/1500FT AGL
+<span class="gamet-label">SFC VIS (below <span class="wx-vis-good">5KM</span>):</span>     NW OF LINE EBUL-EBKT <span class="wx-vis-bad">0500-2500M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
+                         21/24 W AND NW OF SCHELDE <span class="wx-vis-bad">0800-3500M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
+<span class="gamet-label">SIG CLD:</span>                 NW OF LIN EBUL-EBKT <span class="wx-cloud">BKN</span> 100/<span class="wx-alt">1500FT AGL</span>
+                         21/24 W AND NW OF SCHELDE <span class="wx-cloud">BKN</span> 300/<span class="wx-alt">1500FT AGL</span>
 
 SECN II
-PSYS:                    18. H 1035HPA NEAR ACORES WITH RIDGE OVER
-                         EBBU TOWARDS ANOTHER H 1034HPA OVER E
+<span class="gamet-label">PSYS:</span>                    18. H <span class="wx-qnh">1035HPA</span> NEAR ACORES WITH RIDGE OVER
+                         EBBU TOWARDS ANOTHER H <span class="wx-qnh">1034HPA</span> OVER E
                          EUROPE. LOW LEVEL INVERSION WITH HUMIDITY
                          CAUGHT UNDERNEATH, ESPECIALLY OVER THE W.
-SFC WIND (30KT or less): 180-210/05KT TO VRB/03-05KT
-                         NW OF LINE EBUL-EBKT 330-060/05KT
-                         OFFSHORE 090/04-08KT
-WIND/T:                  1000FT 160/05KT PS13
-                                S OF SAMBRE-MEUSE 220/10KT PS11
-                         2000FT 180/10KT PS11
-                                S OF SAMBRE-MEUSE 220/10KT PS09
-                         5000FT 220/10KT PS05
-                         10000FT 170/10KT MS04
-SFC VIS (5KM or more):   10KM
-CLD:                     NIL
-FZLVL:                   7500FT AMSL
-MNM QNH:                 1021HPA
-OTLK:                    FM 00 TL 06 Z
+<span class="gamet-label">SFC WIND (30KT or less):</span> <span class="wx-wind">180-210/05KT</span> TO <span class="wx-wind">VRB/03-05KT</span>
+                         NW OF LINE EBUL-EBKT <span class="wx-wind">330-060/05KT</span>
+                         OFFSHORE <span class="wx-wind">090/04-08KT</span>
+<span class="gamet-label">WIND/T:</span>                  <span class="wx-alt">1000FT</span> <span class="wx-wind">160/05KT</span> <span class="wx-temp">PS13</span>
+                                S OF SAMBRE-MEUSE <span class="wx-wind">220/10KT</span> <span class="wx-temp">PS11</span>
+                         <span class="wx-alt">2000FT</span> <span class="wx-wind">180/10KT</span> <span class="wx-temp">PS11</span>
+                                S OF SAMBRE-MEUSE <span class="wx-wind">220/10KT</span> <span class="wx-temp">PS09</span>
+                         <span class="wx-alt">5000FT</span> <span class="wx-wind">220/10KT</span> <span class="wx-temp">PS05</span>
+                         <span class="wx-alt">10000FT</span> <span class="wx-wind">170/10KT</span> <span class="wx-temp">MS04</span>
+<span class="gamet-label">SFC VIS (<span class="wx-vis-good">5KM</span> or more):</span>   <span class="wx-vis-good">10KM</span>
+<span class="gamet-label">CLD:</span>                     NIL
+<span class="gamet-label">FZLVL:</span>                   <span class="wx-alt">7500FT AMSL</span>
+<span class="gamet-label">MNM QNH:</span>                 <span class="wx-qnh">1021HPA</span>
+<span class="gamet-label">OTLK:</span>                    FM 00 TL 06 Z
                          SFC VIS: 00/03 WEST- AND OOST-VLAANDEREN
-                                        0800-3500M FG BR
+                                        <span class="wx-vis-bad">0800-3500M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
                                   03/06 NW OF LINE TURNHOUT-EBBR-EBCV
-                                        0800-3500M BR FG
+                                        <span class="wx-vis-bad">0800-3500M</span> <span class="wx-phen">BR</span> <span class="wx-phen">FG</span>
                          SIG CLD: 00/03 WEST- AND OOST-VLAANDEREN
-                                        BKN 200/1500FT AGL
+                                        <span class="wx-cloud">BKN</span> 200/<span class="wx-alt">1500FT AGL</span>
                                   03/06 NW OF LINE TURNHOUT-EBBR-EBCV
-                                        BKN 200/1500FT AGL=</div>
+                                        <span class="wx-cloud">BKN</span> 200/<span class="wx-alt">1500FT AGL</span>=</div>
 </div>
 <div class="section"><div class="section-header"><span class="icon">📄</span>AIRMET</div>
 <div class="entry entry-nil">NIL</div>

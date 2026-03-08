@@ -361,6 +361,48 @@ def fetch_opmet(session):
                           lambda m: f'<span class="wx-mil-{m.group(1).lower()}">{m.group(1)}</span>', text)
             return text
 
+        def colorize_gamet(text):
+            """Add color spans to GAMET wind/temperature/visibility parameters."""
+            # Already HTML-escaped input
+            # Section labels: WIND/T:, SFC WIND..., PSYS:, etc.
+            text = re.sub(r'^((?:WIND/T|SFC WIND[^:]*|SFC VIS[^:]*|PSYS|SIG CLD|CLD|FZLVL|MNM QNH|OTLK|SECN\s+[IV]+):)',
+                          r'<span class="gamet-label">\1</span>', text, flags=re.MULTILINE)
+            # Wind direction/speed: 140/05KT, 160-190/05KT, 030-090/04-08KT
+            text = re.sub(r'\b(\d{3}(?:-\d{3})?/\d{2,3}(?:-\d{2,3})?KT)\b',
+                          r'<span class="wx-wind">\1</span>', text)
+            # Variable wind: VRB/03-05KT
+            text = re.sub(r'\b(VRB/\d{2,3}(?:-\d{2,3})?KT)\b',
+                          r'<span class="wx-wind">\1</span>', text)
+            # Variable wind: VRB 03KT
+            text = re.sub(r'\b(VRB\s+\d{2,3}KT)\b',
+                          r'<span class="wx-wind">\1</span>', text)
+            # METAR-style wind in case: 02004KT
+            text = re.sub(r'\b((?:\d{3}|VRB)\d{2,3}(?:G\d{2,3})?KT)\b',
+                          r'<span class="wx-wind">\1</span>', text)
+            # Temperatures: PS13, MS04
+            text = re.sub(r'\b([PM]S\d{1,2})\b',
+                          r'<span class="wx-temp">\1</span>', text)
+            # Altitudes & Flight Levels: 1000FT, FL100, 7500FT AMSL
+            text = re.sub(r'\b(\d{3,5}FT(?:\s+(?:AMSL|AGL))?)\b',
+                          r'<span class="wx-alt">\1</span>', text)
+            text = re.sub(r'\b(FL\d{2,3})\b',
+                          r'<span class="wx-alt">\1</span>', text)
+            # Visibility: 0500-2500M, 3500M
+            text = re.sub(r'\b(\d{3,4}(?:-\d{3,4})?M)\b',
+                          r'<span class="wx-vis-bad">\1</span>', text)
+            text = re.sub(r'\b(\d{1,2}KM)\b',
+                          r'<span class="wx-vis-good">\1</span>', text)
+            # Clouds: BKN, SCT, FEW, OVC
+            text = re.sub(r'\b(FEW|SCT|BKN|OVC|NCD|NSC)\b',
+                          r'<span class="wx-cloud">\1</span>', text)
+            # Weather phenomena: FG, BR, RA, SN, TS, etc.
+            text = re.sub(r'\b(FG|BR|RA|SN|TS|DZ|SH|GR|IC|SG)\b',
+                          r'<span class="wx-phen">\1</span>', text)
+            # Pressure: 1035HPA
+            text = re.sub(r'\b(\d{3,4}HPA)\b',
+                          r'<span class="wx-qnh">\1</span>', text)
+            return text
+
         # Generate HTML
         html_parts = []
         html_parts.append("""<!DOCTYPE html><html><head><meta charset='utf-8'>
@@ -390,6 +432,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .wx-mil-blu{color:#3b82f6}.wx-mil-wht{color:#e5e7eb}.wx-mil-grn{color:#22c55e}
 .wx-mil-ylo{color:#eab308}.wx-mil-amb{color:#f97316;font-weight:700}.wx-mil-red{color:#ef4444;font-weight:700}
 .gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#e0e0e8}
+.gamet-label{color:#a78bfa;font-weight:700}
+.wx-alt{color:#38bdf8}
 .updated{text-align:center;padding:8px;font-size:11px;color:#a0a0b8}
 body.light{color:#333;color-scheme:light}
 body.light .section-header{color:#212121;border-color:#b0bec5}
@@ -400,9 +444,11 @@ body.light .updated{color:#666}
 </style>
 <script>
 try{
-  if(window.parent&&window.parent.document.body.classList.contains('light')){
-    document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('light');});
+  function _syncTheme(){
+    try{if(window.parent&&window.parent.document.body.classList.contains('light'))document.body.classList.add('light');else document.body.classList.remove('light');}catch(e){}
   }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_syncTheme);
+  else _syncTheme();
 }catch(e){}
 </script>
 </head><body>
@@ -449,6 +495,7 @@ try{
                     html_parts.append('<div class="entry entry-nil">NIL</div>')
                 else:
                     c = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    c = colorize_gamet(c)
                     html_parts.append(f'<div class="gamet-block">{c}</div>')
 
             html_parts.append('</div>')
