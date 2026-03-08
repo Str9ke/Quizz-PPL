@@ -309,24 +309,33 @@ def do_login(session, username, password):
     print("--- Login ---")
     base = "https://ops.skeyes.be"
     
-    # Step 1: GET login.do to obtain JSESSIONID and the login form
-    login_resp = session.get(f"{base}/opersite/login.do")
-    print(f"GET login.do: status={login_resp.status_code}, url={login_resp.url}")
+    # Step 1: GET login.do to obtain JSESSIONID
+    init_resp = session.get(f"{base}/opersite/login.do")
+    print(f"GET login.do: status={init_resp.status_code}, url={init_resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
+    
+    # Step 2: Follow the actual login form link: login.forward.do?cmd=init
+    login_resp = session.get(f"{base}/opersite/login.forward.do?cmd=init",
+                             headers={"Referer": init_resp.url})
+    print(f"GET login.forward.do: status={login_resp.status_code}, url={login_resp.url}")
     page_html = login_resp.text
     
-    # DEBUG: print full page to understand form structure
-    print(f"=== LOGIN PAGE HTML (first 2000 chars) ===")
-    print(page_html[:2000])
-    print(f"=== END LOGIN PAGE HTML ===")
+    # DEBUG: print page to understand form structure
+    print(f"=== LOGIN FORM HTML (first 3000 chars) ===")
+    print(page_html[:3000])
+    print(f"=== END LOGIN FORM HTML ===")
     
-    # Step 2: Parse the login form - use regex as primary method (BS4 fails on malformed HTML)
+    # Step 3: Parse the login form
     # Find form action
-    action_match = re.search(r'<form[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
-    form_action_raw = action_match.group(1).replace('&amp;', '&') if action_match else 'login.do'
+    action_match = re.search(r'<form[^>]*name="loginForm"[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
+    if not action_match:
+        action_match = re.search(r'<form[^>]*action="([^"]*)"[^>]*name="loginForm"', page_html, re.IGNORECASE)
+    if not action_match:
+        action_match = re.search(r'<form[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
+    form_action_raw = action_match.group(1).replace('&amp;', '&') if action_match else 'login.do?cmd=authenticate&eaip=no'
     print(f"Form action: {form_action_raw}")
     
-    # Find ALL input fields using regex - handle both <input ...> and <input ... />
+    # Find ALL input fields using regex
     data = {}
     for m in re.finditer(r'<input\b([^>]*)/?>', page_html, re.IGNORECASE):
         attrs = m.group(1)
@@ -340,26 +349,30 @@ def do_login(session, username, password):
             data[field_name] = field_value
             print(f"  Field: {field_name} type={field_type} value={field_value[:30]}")
     
-    # Set credentials - try both common naming patterns
-    # Struts uses property names from the form bean
+    # Set credentials based on discovered fields
     if 'j_username' in data or 'j_password' in data:
         data['j_username'] = username
         data['j_password'] = password
     else:
-        # Set all plausible credential field names
+        # Auto-detect credential fields by name
+        found_user = found_pass = False
         for name in list(data.keys()):
             lower = name.lower()
-            if 'user' in lower or 'login' in lower or 'name' in lower:
+            if 'user' in lower or 'login' in lower or lower == 'name':
                 data[name] = username
+                found_user = True
                 print(f"  -> Setting {name} = <username>")
             elif 'pass' in lower or 'pwd' in lower:
                 data[name] = password
+                found_pass = True
                 print(f"  -> Setting {name} = <password>")
-        # Always add j_username/j_password as well
-        data['j_username'] = username
-        data['j_password'] = password
+        if not found_user or not found_pass:
+            # Fallback: use j_username/j_password
+            data['j_username'] = username
+            data['j_password'] = password
+            print("  -> Fallback: using j_username/j_password")
     
-    # Step 3: Build the POST URL
+    # Step 4: Build the POST URL
     if form_action_raw.startswith('/'):
         post_url = base + form_action_raw
     elif form_action_raw.startswith('http'):
@@ -389,14 +402,9 @@ def do_login(session, username, password):
     
     # Login failed - dump debug info
     print("WARNING: Login failed")
-    # Print the login response to see if there's an error message
     error_match = re.search(r'class="[^"]*error[^"]*"[^>]*>([^<]+)', resp.text, re.IGNORECASE)
     if error_match:
         print(f"Error message on page: {error_match.group(1).strip()}")
-    print(f"Login page form HTML (first 1500 chars):")
-    form_match = re.search(r'(<form.*?</form>)', page_html, re.IGNORECASE | re.DOTALL)
-    if form_match:
-        print(form_match.group(1)[:1500])
     with open("_debug_login_page.html", "w", encoding="utf-8") as f:
         f.write(page_html)
     with open("_debug_login_response.html", "w", encoding="utf-8") as f:
