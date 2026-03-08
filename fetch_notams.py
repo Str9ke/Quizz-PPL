@@ -594,6 +594,17 @@ def fetch_sfc_analysis(session, manifest):
     print("\n--- Fetching SFC Analysis ---")
     base = "https://ops.skeyes.be/opersite"
     referer = f"{base}/opmeteoindex.do?cmd=init"
+
+    # First, GET the Flight Briefing Charts page to obtain current form defaults
+    init_resp = session.get(f"{base}/opmeteoindex.do?cmd=init", headers={"Referer": referer})
+    # Extract dynamic default values for SIGWX/UWC/LLSWC time selects
+    charttime1 = re.search(r"name=['\"]charttime1['\"][^>]*>.*?<option[^>]*value=['\"]([^'\"]+)['\"]", init_resp.text, re.S)
+    charttime2 = re.search(r"name=['\"]charttime2['\"][^>]*>.*?<option[^>]*value=['\"]([^'\"]+)['\"]", init_resp.text, re.S)
+    charttime3 = re.search(r"name=['\"]charttime3['\"][^>]*>.*?<option[^>]*value=['\"]([^'\"]+)['\"]", init_resp.text, re.S)
+    ct1 = charttime1.group(1) if charttime1 else ""
+    ct2 = charttime2.group(1) if charttime2 else ""
+    ct3 = charttime3.group(1) if charttime3 else ""
+
     filenames = []
     timestamps = []
     for time_val in ("06Z", "12Z"):
@@ -604,6 +615,16 @@ def fetch_sfc_analysis(session, manifest):
                 "seluwc": "",
                 "browser": "moz",
                 "charttimesfc": time_val,
+                "chartarea1": "Europe",
+                "charttime1": ct1,
+                "charttypeswc": "pdf",
+                "chartarea2": "Europe",
+                "charttime2": ct2,
+                "chartfl": "FL050",
+                "charttypeuwc": "pdf",
+                "chartarea3": "Belgium",
+                "charttime3": ct3,
+                "charttypellswc": "pdf",
             }
             resp = session.post(
                 f"{base}/metflightbriefing.do?cmd=retrieveBriefing",
