@@ -645,11 +645,9 @@ def fetch_sfc_analysis(session, manifest):
                 timestamps.append(time_val.replace("Z", ":00Z"))
                 print(f"  SFC {time_val}: saved {fname} ({len(resp.content)} bytes)")
             else:
-                # HTML response - try multiple image patterns
+                # HTML response – look for image inside iframe
                 html = resp.text
-                # Log visible content for debugging
-                visible = re.sub(r'\s+', ' ', html).strip()
-                print(f"  SFC {time_val}: wrapper HTML ({len(html)} bytes)")
+                print(f"  SFC {time_val}: HTML response ({len(html)} bytes)")
                 img_src = None
                 # Check for iframe with chart content
                 iframe_match = re.search(r"<iframe[^>]+src=['\"]([^'\"]+)['\"]", html, re.I)
@@ -657,14 +655,11 @@ def fetch_sfc_analysis(session, manifest):
                     iframe_url = iframe_match.group(1)
                     if not iframe_url.startswith("http"):
                         iframe_url = f"https://ops.skeyes.be/opersite/{iframe_url}" if not iframe_url.startswith("/") else f"https://ops.skeyes.be{iframe_url}"
-                    print(f"  SFC {time_val}: following iframe -> {iframe_url}")
                     iframe_resp = session.get(iframe_url, headers={"Referer": referer})
                     if iframe_resp.status_code == 200:
                         iframe_html = iframe_resp.text
                         iframe_ct = iframe_resp.headers.get("Content-Type", "")
-                        print(f"  SFC {time_val}: iframe response ({len(iframe_html)} bytes, {iframe_ct})")
                         if "image" in iframe_ct:
-                            # Direct image
                             ext = "gif" if "gif" in iframe_ct else "png" if "png" in iframe_ct else "jpg"
                             fname = f"skeyes_sfc_{time_val.lower()}.{ext}"
                             with open(fname, "wb") as out:
@@ -675,44 +670,25 @@ def fetch_sfc_analysis(session, manifest):
                             continue
                         # Use BS4 to find <img> tags (skips script content)
                         iframe_soup = BeautifulSoup(iframe_html, "html.parser")
-                        all_imgs = iframe_soup.find_all("img")
-                        print(f"  SFC {time_val}: found {len(all_imgs)} <img> tags")
-                        for idx_img, img_tag in enumerate(all_imgs):
+                        for img_tag in iframe_soup.find_all("img"):
                             s = img_tag.get("src", "")
-                            print(f"    img[{idx_img}] src={s}")
-                            if s and not img_src:
+                            if s:
                                 img_src = s
-                        # Fallback: search for image URLs in raw JS (e.g. var img = "/path/image.gif")
+                                break
+                        # Fallback: search for image URLs in raw JS
                         if not img_src:
-                            js_img = re.findall(r'["\']([^"\']*\.(?:gif|jpg|jpeg|png))["\']', iframe_html, re.I)
-                            for ji in js_img:
+                            for ji in re.findall(r'["\']([^"\']*\.(?:gif|jpg|jpeg|png))["\']', iframe_html, re.I):
                                 if '+' not in ji:
-                                    print(f"    JS image ref: {ji}")
                                     img_src = ji
                                     break
-                        # Print full iframe content for debugging
-                        iframe_vis = re.sub(r'\s+', ' ', iframe_html).strip()
-                        for ci in range(0, len(iframe_vis), 100):
-                            print(f"    ifr[{ci}]: {iframe_vis[ci:ci+100]}")
-                # Try <img src="..."> in main page
+                # Try <img src="..."> in main page as fallback
                 if not img_src:
                     m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
-                    if m:
-                        img_src = m.group(1)
-                # Try background-image:url(...)
-                if not img_src:
-                    m = re.search(r'url\(["\']?([^"\')\s]+\.(gif|jpg|jpeg|png))["\']?\)', html, re.I)
-                    if m:
-                        img_src = m.group(1)
-                # Try window.location or redirect
-                if not img_src:
-                    m = re.search(r'(?:window\.location|location\.href)\s*=\s*["\']([^"\']+)["\']', html, re.I)
                     if m:
                         img_src = m.group(1)
                 if img_src:
                     if not img_src.startswith("http"):
                         img_src = f"https://ops.skeyes.be{img_src}" if img_src.startswith("/") else f"{base}/{img_src}"
-                    print(f"  SFC {time_val}: fetching image -> {img_src}")
                     img_resp = session.get(img_src, headers={"Referer": referer})
                     if img_resp.status_code == 200 and len(img_resp.content) > 500:
                         ext = img_src.rsplit(".", 1)[-1].lower()
