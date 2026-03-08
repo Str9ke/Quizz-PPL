@@ -3,6 +3,7 @@ import requests
 import cloudscraper
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 import json
 import re
 
@@ -258,110 +259,169 @@ def fetch_opmet(session):
         raise Exception("OPMET Fetch complete but no METAR data or PDF found.")
 
 
+def fetch_remote_sensing_images(session):
+    """Fetch latest radar/satellite images by parsing remoteSensingDetail.do pages."""
+    print("\n--- Fetching Remote Sensing Images ---")
+    pages = [
+        ("radarmax",       "radar", "skeyes_radar_max.gif"),
+        ("radarppi",       "radar", "skeyes_radar_ppi.gif"),
+        ("radarplip",      "radar", "skeyes_radar_plip.gif"),
+        ("msghrv",         "msg",   "skeyes_msg_hrv.jpg"),
+        ("msgir",          "msg",   "skeyes_msg_ir.jpg"),
+        ("msgrgb",         "msg",   "skeyes_msg_rgb.jpg"),
+        ("msghrv_benelux", "msg",   "skeyes_msg_hrv_benelux.jpg"),
+        ("msgir_benelux",  "msg",   "skeyes_msg_ir_benelux.jpg"),
+        ("msgrgb_benelux", "msg",   "skeyes_msg_rgb_benelux.jpg"),
+    ]
+    for html_param, type_param, output_filename in pages:
+        try:
+            detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
+            print(f"Fetching {output_filename} from {html_param}...")
+            resp = session.get(detail_url, headers={"Referer": "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"})
+            if resp.status_code != 200:
+                print(f"  -> HTTP {resp.status_code}")
+                continue
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            # Find the main displayed image <img name='map' src='...'>
+            map_img = soup.find('img', {'name': 'map'})
+            if map_img and map_img.get('src'):
+                img_src = map_img['src']
+                img_url = urljoin("https://ops.skeyes.be", img_src)
+                print(f"  -> Found image: {img_url}")
+                img_resp = session.get(img_url, headers={"Referer": detail_url})
+                if img_resp.status_code == 200 and len(img_resp.content) > 1000:
+                    with open(output_filename, 'wb') as f:
+                        f.write(img_resp.content)
+                    print(f"  -> Saved {output_filename} ({len(img_resp.content)} bytes)")
+                else:
+                    print(f"  -> Image download failed: status={img_resp.status_code}, size={len(img_resp.content)}")
+            else:
+                print(f"  -> No <img name='map'> found in page")
+                # Debug: save the page for inspection
+                with open(f"_debug_{html_param}.html", "w", encoding="utf-8") as dbg:
+                    dbg.write(resp.text[:2000])
+        except Exception as e:
+            print(f"  -> Error: {e}")
+
+
+def do_login(session, username, password):
+    """Authenticate to the Skeyes opersite. Returns True if login succeeded."""
+    print("--- Login ---")
+    base = "https://ops.skeyes.be"
+    protected_url = f"{base}/opersite/home.do"
+    
+    # Step 1: Access a protected resource to trigger J2EE auth challenge
+    login_page = session.get(protected_url)
+    print(f"GET home.do: status={login_page.status_code}, url={login_page.url}")
+    print(f"Cookies: {session.cookies.get_dict()}")
+    
+    # Step 2: Parse the login form and resolve action URL properly
+    login_soup = BeautifulSoup(login_page.text, 'html.parser')
+    login_form = login_soup.find('form')
+    
+    login_data = {}
+    if login_form:
+        raw_action = login_form.get('action', '')
+        # urljoin resolves relative to the actual response URL (e.g. /opersite/jsp/login.jsp)
+        form_action = urljoin(login_page.url, raw_action) if raw_action else login_page.url
+        print(f"Form action: '{raw_action}' -> {form_action}")
+        # Collect all form fields (hidden fields, etc.)
+        for inp in login_form.find_all('input'):
+            name = inp.get('name')
+            if name:
+                login_data[name] = inp.get('value', '')
+                print(f"  Field: {name}={inp.get('type','')}")
+    else:
+        form_action = f"{base}/opersite/j_security_check"
+        print(f"No form found, defaulting to {form_action}")
+    
+    # Override credentials
+    login_data['j_username'] = username
+    login_data['j_password'] = password
+    
+    # Step 3: POST credentials
+    print(f"POST -> {form_action}")
+    login_resp = session.post(form_action, data=login_data, allow_redirects=True)
+    print(f"Login POST: status={login_resp.status_code}, url={login_resp.url}")
+    print(f"Cookies: {session.cookies.get_dict()}")
+    
+    # Step 4: Verify
+    home_resp = session.get(protected_url)
+    home_soup = BeautifulSoup(home_resp.text, 'html.parser')
+    if not home_soup.find('form', {'name': 'loginForm'}):
+        print("Login successful!")
+        return True
+    
+    # Step 5: Fallback — try j_security_check at context root
+    print("Login failed, trying j_security_check fallback...")
+    for path in [f"{base}/opersite/j_security_check", f"{base}/j_security_check"]:
+        if path == form_action:
+            continue  # already tried
+        try:
+            print(f"  Trying {path}")
+            resp = session.post(path, data={'j_username': username, 'j_password': password}, allow_redirects=True)
+            print(f"  -> status={resp.status_code}, url={resp.url}")
+            home_resp = session.get(protected_url)
+            if 'loginForm' not in home_resp.text:
+                print("  -> Fallback login succeeded!")
+                return True
+        except Exception as e:
+            print(f"  -> {e}")
+    
+    # Step 6: Try login.do POST directly
+    print("Trying login.do POST...")
+    login_do_page = session.get(f"{base}/opersite/login.do")
+    login_do_soup = BeautifulSoup(login_do_page.text, 'html.parser')
+    login_do_form = login_do_soup.find('form')
+    if login_do_form:
+        do_action = login_do_form.get('action', 'login.do')
+        do_url = urljoin(login_do_page.url, do_action)
+        do_data = {}
+        for inp in login_do_form.find_all('input'):
+            name = inp.get('name')
+            if name:
+                do_data[name] = inp.get('value', '')
+        do_data['j_username'] = username
+        do_data['j_password'] = password
+        print(f"  POST -> {do_url}")
+        resp = session.post(do_url, data=do_data, allow_redirects=True)
+        print(f"  -> status={resp.status_code}, url={resp.url}")
+        home_resp = session.get(protected_url)
+        if 'loginForm' not in home_resp.text:
+            print("  -> login.do POST succeeded!")
+            return True
+    
+    print("WARNING: All login attempts failed")
+    print(f"Debug - last home.do snippet: {home_resp.text[:500]}")
+    return False
+
+
 def main():
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
     
     if not username or not password:
         print("Missing credentials")
-        open('opmet.pdf', 'wb').close()
-        open('daily_warnings.pdf', 'wb').close()
         return
 
     session = cloudscraper.create_scraper(
         browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
     )
     
-    # ========== LOGIN ==========
-    print("--- Login ---")
-    login_url = "https://ops.skeyes.be/opersite/login.do"
+    logged_in = do_login(session, username, password)
     
-    # Step A: GET login page to obtain JSESSIONID and discover form action
-    login_page = session.get(login_url)
-    print(f"Login page GET: status={login_page.status_code}, url={login_page.url}")
-    print(f"Cookies after GET login: {session.cookies.get_dict()}")
-    
-    # Parse the login form to find the real action URL and field names
-    login_soup = BeautifulSoup(login_page.text, 'html.parser')
-    login_form = login_soup.find('form')
-    form_action = login_url  # default
-    if login_form:
-        raw_action = login_form.get('action', '')
-        form_method = login_form.get('method', 'POST').upper()
-        print(f"Login form action='{raw_action}', method='{form_method}'")
-        if raw_action:
-            if raw_action.startswith('http'):
-                form_action = raw_action
-            elif raw_action.startswith('/'):
-                form_action = "https://ops.skeyes.be" + raw_action
-            else:
-                form_action = "https://ops.skeyes.be/opersite/" + raw_action
-        # Log all input fields in the form
-        for inp in login_form.find_all('input'):
-            print(f"  Login form field: name={inp.get('name')}, type={inp.get('type')}, value={str(inp.get('value',''))[:50]}")
-    
-    login_payload = {"j_username": username, "j_password": password}
-    
-    # Also add any hidden fields from the form
-    if login_form:
-        for inp in login_form.find_all('input', {'type': 'hidden'}):
-            name = inp.get('name')
-            if name and name not in login_payload:
-                login_payload[name] = inp.get('value', '')
-    
-    print(f"POSTing to: {form_action}")
-    login_response = session.post(form_action, data=login_payload, allow_redirects=True)
-    print(f"Login POST: status={login_response.status_code}, final_url={login_response.url}")
-    print(f"Cookies after POST login: {session.cookies.get_dict()}")
-    
-    # Check if login succeeded by visiting home.do
-    home_resp = session.get("https://ops.skeyes.be/opersite/home.do")
-    home_soup = BeautifulSoup(home_resp.text, 'html.parser')
-    has_login_form = home_soup.find('form', {'name': 'loginForm'}) is not None
-    print(f"Home.do check: status={home_resp.status_code}, has_login_form={has_login_form}")
-    if has_login_form:
-        print("WARNING: Login appears to have FAILED - home.do shows login form")
-        print(f"Home.do response snippet: {home_resp.text[:500]}")
-    else:
-        print("Login appears successful - home.do does not show login form")
-    login_response.raise_for_status()
-    
-    # Note: reordering requests here to avoid the struts session dropping early. 
-    # Do OPMET immediately after login.
-    try:
-        fetch_opmet(session)
-    except Exception as e:
-        print(f"Error fetching OPMET: {e}")
-        generate_error_html("opmet.html", "OPMET", session, str(e))
-
-    
-    # Next: Remote Sensing (Sats & Radar) Static Images
-    skeyes_static_images = [
-        ("skeyes_radar_max.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_max.gif"),
-        ("skeyes_radar_ppi.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_ppi.gif"),
-        ("skeyes_radar_plip.gif", "https://ops.skeyes.be/opersite/resources/images/services/meteo/radar_plip.gif"),
-        ("skeyes_msg_ir_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_ir_benelux.jpg"),
-        ("skeyes_msg_rgb_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_rgb_benelux.jpg"),
-        ("skeyes_msg_hrv_benelux.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_hrv_benelux.jpg"),
-        ("skeyes_msg_hrv.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_hrv.jpg"),
-        ("skeyes_msg_ir.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_ir.jpg"),
-        ("skeyes_msg_rgb.jpg", "https://ops.skeyes.be/opersite/resources/images/services/meteo/msg_rgb.jpg")
-    ]
-
-    for filename, url in skeyes_static_images:
+    # OPMET (requires auth)
+    if logged_in:
         try:
-            print(f"Fetching static image {filename}...")
-            resp = session.get(url, headers={"Referer": "https://ops.skeyes.be/opersite/home.do"})
-            content_type = resp.headers.get('Content-Type', 'unknown')
-            print(f"  -> status={resp.status_code}, content-type={content_type}, length={len(resp.content)}")
-            if resp.status_code == 200 and ('image' in content_type or len(resp.content) > 1000):
-                with open(filename, 'wb') as f:
-                    f.write(resp.content)
-                print(f"  -> Saved {filename} ({len(resp.content)} bytes)")
-            else:
-                print(f"  -> FAILED: not an image or too small (first 200 chars: {resp.text[:200]})")
+            fetch_opmet(session)
         except Exception as e:
-            print(f"Error fetching {filename}: {e}")
+            print(f"Error fetching OPMET: {e}")
+            generate_error_html("opmet.html", "OPMET", session, str(e))
+    else:
+        generate_error_html("opmet.html", "OPMET", session, "Login failed - all strategies exhausted")
+    
+    # Remote sensing images (fetch via detail pages)
+    fetch_remote_sensing_images(session)
 
     print("--- Extracting NOTAMs ---")
     try:
