@@ -649,15 +649,43 @@ def fetch_sfc_analysis(session, manifest):
                 html = resp.text
                 # Log visible content for debugging
                 visible = re.sub(r'\s+', ' ', html).strip()
-                print(f"  SFC {time_val}: HTML ({len(html)} bytes)")
-                # Print in 100-char chunks to avoid CI log truncation
-                for ci in range(0, len(visible), 100):
-                    print(f"    [{ci}]: {visible[ci:ci+100]}")
+                print(f"  SFC {time_val}: wrapper HTML ({len(html)} bytes)")
                 img_src = None
-                # Try <img src="...">
-                m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
-                if m:
-                    img_src = m.group(1)
+                # Check for iframe with chart content
+                iframe_match = re.search(r"<iframe[^>]+src=['\"]([^'\"]+)['\"]", html, re.I)
+                if iframe_match:
+                    iframe_url = iframe_match.group(1)
+                    if not iframe_url.startswith("http"):
+                        iframe_url = f"https://ops.skeyes.be/opersite/{iframe_url}" if not iframe_url.startswith("/") else f"https://ops.skeyes.be{iframe_url}"
+                    print(f"  SFC {time_val}: following iframe -> {iframe_url}")
+                    iframe_resp = session.get(iframe_url, headers={"Referer": referer})
+                    if iframe_resp.status_code == 200:
+                        iframe_html = iframe_resp.text
+                        iframe_ct = iframe_resp.headers.get("Content-Type", "")
+                        print(f"  SFC {time_val}: iframe response ({len(iframe_html)} bytes, {iframe_ct})")
+                        if "image" in iframe_ct:
+                            # Direct image
+                            ext = "gif" if "gif" in iframe_ct else "png" if "png" in iframe_ct else "jpg"
+                            fname = f"skeyes_sfc_{time_val.lower()}.{ext}"
+                            with open(fname, "wb") as out:
+                                out.write(iframe_resp.content)
+                            filenames.append(fname)
+                            timestamps.append(time_val.replace("Z", ":00Z"))
+                            print(f"  SFC {time_val}: saved {fname} ({len(iframe_resp.content)} bytes)")
+                            continue
+                        # Look for img tag in iframe content
+                        img_m = re.search(r"<img[^>]+src=['\"]([^'\"]+)['\"]", iframe_html, re.I)
+                        if img_m:
+                            img_src = img_m.group(1)
+                        # Print iframe content for debugging
+                        iframe_vis = re.sub(r'\s+', ' ', iframe_html).strip()
+                        for ci in range(0, min(len(iframe_vis), 500), 100):
+                            print(f"    iframe[{ci}]: {iframe_vis[ci:ci+100]}")
+                # Try <img src="..."> in main page
+                if not img_src:
+                    m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.I)
+                    if m:
+                        img_src = m.group(1)
                 # Try background-image:url(...)
                 if not img_src:
                     m = re.search(r'url\(["\']?([^"\')\s]+\.(gif|jpg|jpeg|png))["\']?\)', html, re.I)
