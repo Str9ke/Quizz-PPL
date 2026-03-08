@@ -273,6 +273,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-card-actions a,.map-card-actions button{padding:5px 14px;font-size:.78em;border-radius:12px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);text-decoration:none;transition:all .2s}
 .map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
 .map-del-btn{border-color:#f44336!important;color:#f44336!important}
+.skeyes-carousel{position:relative}
+.skeyes-nav{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;background:var(--bg-container);flex-wrap:wrap}
+.skeyes-nav button{padding:4px 10px;font-size:.75em;border-radius:8px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;min-width:28px}
+.skeyes-nav button:hover{border-color:#667eea;color:#667eea}
+.skeyes-nav button.active{background:#667eea;color:#fff;border-color:#667eea}
+.skeyes-nav .skeyes-counter{font-size:.78em;font-weight:600;color:var(--text-heading);min-width:60px;text-align:center}
 .map-del-btn:hover{background:#f44336!important;color:#fff!important}
 .aeroweb-nav-btn{padding:6px 14px;font-size:.78em;font-weight:600;border-radius:14px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
 .aeroweb-nav-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
@@ -751,17 +757,26 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: Radar ===== -->
     <div id="msub-radar" class="meteo-sub-content">
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_radar_max">
           <div class="map-card-title">&#x1F4E1; Radar Max (Précipitations)</div>
-          <img src="skeyes_radar_max.gif" style="width:100%; height:auto; border-radius:8px;" alt="Radar Max" />
+          <div class="skeyes-carousel" data-key="skeyes_radar_max">
+            <img class="skeyes-carousel-img" src="skeyes_radar_max_00.gif" alt="Radar Max" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_radar_ppi">
           <div class="map-card-title">&#x1F4E1; Radar PPI</div>
-          <img src="skeyes_radar_ppi.gif" style="width:100%; height:auto; border-radius:8px;" alt="Radar PPI" />
+          <div class="skeyes-carousel" data-key="skeyes_radar_ppi">
+            <img class="skeyes-carousel-img" src="skeyes_radar_ppi_00.gif" alt="Radar PPI" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_radar_plip">
           <div class="map-card-title">&#x1F4E1; Radar PLIP</div>
-          <img src="skeyes_radar_plip.gif" style="width:100%; height:auto; border-radius:8px;" alt="Radar PLIP" />
+          <div class="skeyes-carousel" data-key="skeyes_radar_plip">
+            <img class="skeyes-carousel-img" src="skeyes_radar_plip_00.gif" alt="Radar PLIP" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
 
         
@@ -919,30 +934,48 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: Satellite ===== -->
     <div id="msub-satellite" class="meteo-sub-content">
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_hrv">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG HRV (Europe)</div>
-          <img src="skeyes_msg_hrv.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite HRV Europe" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_hrv">
+            <img class="skeyes-carousel-img" src="skeyes_msg_hrv_00.jpg" alt="Satellite HRV Europe" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_ir">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG IR (Europe)</div>
-          <img src="skeyes_msg_ir.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite IR Europe" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_ir">
+            <img class="skeyes-carousel-img" src="skeyes_msg_ir_00.jpg" alt="Satellite IR Europe" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_rgb">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG RGB (Europe)</div>
-          <img src="skeyes_msg_rgb.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite RGB Europe" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_rgb">
+            <img class="skeyes-carousel-img" src="skeyes_msg_rgb_00.jpg" alt="Satellite RGB Europe" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
         
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_hrv_benelux">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG HRV (Benelux)</div>
-          <img src="skeyes_msg_hrv_benelux.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite HRV Benelux" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_hrv_benelux">
+            <img class="skeyes-carousel-img" src="skeyes_msg_hrv_benelux_00.jpg" alt="Satellite HRV Benelux" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_ir_benelux">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG IR (Benelux)</div>
-          <img src="skeyes_msg_ir_benelux.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite IR Benelux" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_ir_benelux">
+            <img class="skeyes-carousel-img" src="skeyes_msg_ir_benelux_00.jpg" alt="Satellite IR Benelux" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
-        <div class="map-card">
+        <div class="map-card" id="card-skeyes_msg_rgb_benelux">
           <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite MSG RGB (Benelux)</div>
-          <img src="skeyes_msg_rgb_benelux.jpg" style="width:100%; height:auto; border-radius:8px;" alt="Satellite RGB Benelux" />
+          <div class="skeyes-carousel" data-key="skeyes_msg_rgb_benelux">
+            <img class="skeyes-carousel-img" src="skeyes_msg_rgb_benelux_00.jpg" alt="Satellite RGB Benelux" style="width:100%; height:auto; border-radius:8px;" />
+            <div class="skeyes-nav"></div>
+          </div>
         </div>
 
         
@@ -2362,6 +2395,71 @@ function switchMeteoSub(id){
   if(target) setTimeout(function(){target.scrollIntoView({behavior:'smooth',block:'start'});},120);
 }
 window.switchMeteoSub=switchMeteoSub;
+
+/* ===== SKEYES IMAGE CAROUSELS ===== */
+(function(){
+  var _carousels = {};
+
+  function initCarousels(){
+    fetch('skeyes_images.json?t='+Date.now()).then(function(r){return r.json()}).then(function(manifest){
+      var els = document.querySelectorAll('.skeyes-carousel');
+      for(var i=0;i<els.length;i++){
+        var el = els[i];
+        var key = el.getAttribute('data-key');
+        var files = manifest[key];
+        if(!files || !files.length) continue;
+        var img = el.querySelector('.skeyes-carousel-img');
+        // Show the last (most recent) image by default
+        img.src = files[files.length-1] + '?t='+Date.now();
+        _carousels[key] = {el:el, img:img, files:files, idx:files.length-1, playing:false, timer:null, speed:500};
+        buildNav(key);
+      }
+    }).catch(function(e){console.log('No skeyes_images.json:',e)});
+  }
+
+  function buildNav(key){
+    var c = _carousels[key];
+    if(c.files.length <= 1) return;
+    var nav = c.el.querySelector('.skeyes-nav');
+    nav.innerHTML =
+      '<button onclick="skeyesCarousel.first(\''+key+'\')" title="Premi\u00e8re">&#x23EE;</button>'+
+      '<button onclick="skeyesCarousel.prev(\''+key+'\')" title="Pr\u00e9c\u00e9dente">&#x25C0;</button>'+
+      '<button onclick="skeyesCarousel.next(\''+key+'\')" title="Suivante">&#x25B6;</button>'+
+      '<button onclick="skeyesCarousel.last(\''+key+'\')" title="Derni\u00e8re">&#x23ED;</button>'+
+      '<span class="skeyes-counter" id="cnt-'+key+'">'+(c.idx+1)+' / '+c.files.length+'</span>'+
+      '<button onclick="skeyesCarousel.play(\''+key+'\')" id="play-'+key+'" title="Lecture">&#x25B6;&#xFE0F;</button>'+
+      '<button onclick="skeyesCarousel.stop(\''+key+'\')" title="Pause">&#x23F8;</button>'+
+      '<button onclick="skeyesCarousel.slower(\''+key+'\')" title="Plus lent">&#x1F422;</button>'+
+      '<button onclick="skeyesCarousel.faster(\''+key+'\')" title="Plus rapide">&#x1F407;</button>';
+  }
+
+  function showImg(key){
+    var c = _carousels[key]; if(!c) return;
+    c.img.src = c.files[c.idx] + '?t='+Date.now();
+    var cnt = document.getElementById('cnt-'+key);
+    if(cnt) cnt.textContent = (c.idx+1)+' / '+c.files.length;
+  }
+
+  window.skeyesCarousel = {
+    first: function(k){ var c=_carousels[k]; if(!c) return; c.idx=0; showImg(k); },
+    last: function(k){ var c=_carousels[k]; if(!c) return; c.idx=c.files.length-1; showImg(k); },
+    prev: function(k){ var c=_carousels[k]; if(!c) return; c.idx = c.idx>0 ? c.idx-1 : c.files.length-1; showImg(k); },
+    next: function(k){ var c=_carousels[k]; if(!c) return; c.idx = c.idx<c.files.length-1 ? c.idx+1 : 0; showImg(k); },
+    play: function(k){
+      var c=_carousels[k]; if(!c) return;
+      c.playing=true;
+      var btn=document.getElementById('play-'+k); if(btn) btn.classList.add('active');
+      function step(){ if(!c.playing) return; c.idx = c.idx<c.files.length-1 ? c.idx+1 : 0; showImg(k); c.timer=setTimeout(step,c.speed); }
+      c.timer=setTimeout(step,c.speed);
+    },
+    stop: function(k){ var c=_carousels[k]; if(!c) return; c.playing=false; clearTimeout(c.timer); var btn=document.getElementById('play-'+k); if(btn) btn.classList.remove('active'); },
+    faster: function(k){ var c=_carousels[k]; if(!c) return; c.speed=Math.max(50,c.speed-100); },
+    slower: function(k){ var c=_carousels[k]; if(!c) return; c.speed=c.speed+100; }
+  };
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCarousels);
+  else initCarousels();
+})();
 
 /* ===== NOTAM SUMMARY UPLOAD ===== */
 /* ===== NOTAM SUMMARY PERSISTENCE ===== */

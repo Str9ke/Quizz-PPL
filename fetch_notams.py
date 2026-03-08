@@ -189,7 +189,6 @@ def fetch_opmet(session):
     print(f"OPMET init 1: has_login_form={has_login}, has_session_lost={has_session_lost}")
     
     if has_login or has_session_lost:
-        # Save debug file
         with open("_debug_opmet_init1.html", "w", encoding="utf-8") as dbg:
             dbg.write(resp.text)
         raise Exception(f"OPMET init 1 failed: login_form={has_login}, session_lost={has_session_lost}, url={resp.url}")
@@ -227,21 +226,9 @@ def fetch_opmet(session):
         raise Exception("OPMET fetch returned login form or session lost error")
 
     has_metar = 'METAR' in submit_resp.text or 'TAF' in submit_resp.text
+    print(f"OPMET POST response: has_metar={has_metar}, length={len(submit_resp.text)}")
 
-    # Step 5: Try to download the PDF
-    pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
-    pdf_resp = session.get(pdf_url, headers={"Referer": post_url})
-    pdf_resp.raise_for_status()
-
-    is_pdf = pdf_resp.content[:4] == b'%PDF'
-    if is_pdf:
-        with open("opmet.pdf", "wb") as f:
-            f.write(pdf_resp.content)
-        convert_pdf_to_html("opmet.pdf", "opmet.html", "opmet_page")
-        print("OPMET: PDF converted to images and HTML")
-        return True
-
-    # Fallback to HTML
+    # Primary: extract METAR/TAF data from HTML response
     if has_metar:
         body = soup.find('body')
         body_html = str(body) if body else submit_resp.text
@@ -254,54 +241,90 @@ def fetch_opmet(session):
         )
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write(html_content)
-        return True
-    else:
-        raise Exception("OPMET Fetch complete but no METAR data or PDF found.")
+        print("OPMET: saved HTML with METAR/TAF data")
+
+    # Secondary: also try PDF download
+    pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
+    pdf_resp = session.get(pdf_url, headers={"Referer": post_url})
+    pdf_resp.raise_for_status()
+
+    is_pdf = pdf_resp.content[:4] == b'%PDF'
+    pdf_size = len(pdf_resp.content)
+    print(f"OPMET PDF: is_pdf={is_pdf}, size={pdf_size}")
+
+    if is_pdf and pdf_size > 2000:
+        with open("opmet.pdf", "wb") as f:
+            f.write(pdf_resp.content)
+        # Only overwrite HTML if we didn't already have good HTML data
+        if not has_metar:
+            convert_pdf_to_html("opmet.pdf", "opmet.html", "opmet_page")
+        print("OPMET: PDF saved")
+    elif not has_metar:
+        raise Exception(f"OPMET: no METAR data in HTML and PDF too small ({pdf_size} bytes)")
+
+    return True
 
 
 def fetch_remote_sensing_images(session):
-    """Fetch latest radar/satellite images by parsing remoteSensingDetail.do pages."""
+    """Fetch all timestamped radar/satellite images from Skeyes remoteSensingDetail pages."""
     print("\n--- Fetching Remote Sensing Images ---")
     pages = [
-        ("radarmax",       "radar", "skeyes_radar_max.gif"),
-        ("radarppi",       "radar", "skeyes_radar_ppi.gif"),
-        ("radarplip",      "radar", "skeyes_radar_plip.gif"),
-        ("msghrv",         "msg",   "skeyes_msg_hrv.jpg"),
-        ("msgir",          "msg",   "skeyes_msg_ir.jpg"),
-        ("msgrgb",         "msg",   "skeyes_msg_rgb.jpg"),
-        ("msghrv_benelux", "msg",   "skeyes_msg_hrv_benelux.jpg"),
-        ("msgir_benelux",  "msg",   "skeyes_msg_ir_benelux.jpg"),
-        ("msgrgb_benelux", "msg",   "skeyes_msg_rgb_benelux.jpg"),
+        ("radarmax",       "radar", "skeyes_radar_max"),
+        ("radarppi",       "radar", "skeyes_radar_ppi"),
+        ("radarplip",      "radar", "skeyes_radar_plip"),
+        ("msghrv",         "msg",   "skeyes_msg_hrv"),
+        ("msgir",          "msg",   "skeyes_msg_ir"),
+        ("msgrgb",         "msg",   "skeyes_msg_rgb"),
+        ("msghrv_benelux", "msg",   "skeyes_msg_hrv_benelux"),
+        ("msgir_benelux",  "msg",   "skeyes_msg_ir_benelux"),
+        ("msgrgb_benelux", "msg",   "skeyes_msg_rgb_benelux"),
     ]
-    for html_param, type_param, output_filename in pages:
+    manifest = {}
+    for html_param, type_param, prefix in pages:
         try:
             detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
-            print(f"Fetching {output_filename} from {html_param}...")
+            print(f"Fetching {prefix} from {html_param}...")
             resp = session.get(detail_url, headers={"Referer": "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"})
             if resp.status_code != 200:
                 print(f"  -> HTTP {resp.status_code}")
                 continue
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            # Find the main displayed image <img name='map' src='...'>
-            map_img = soup.find('img', {'name': 'map'})
-            if map_img and map_img.get('src'):
-                img_src = map_img['src']
-                img_url = urljoin("https://ops.skeyes.be", img_src)
-                print(f"  -> Found image: {img_url}")
+            
+            # Extract ALL image URLs from the page (from preloadImages JS and img tags)
+            img_paths = []
+            for m in re.finditer(r"['\"](/remotesensing/[^'\"]+\.(gif|jpg|jpeg|png))['\"]", resp.text, re.IGNORECASE):
+                path = m.group(1)
+                if 'animation_buttons' not in path and 'roads' not in path and path not in img_paths:
+                    img_paths.append(path)
+            
+            if not img_paths:
+                print(f"  -> No images found")
+                continue
+            
+            print(f"  -> Found {len(img_paths)} images")
+            filenames = []
+            for i, path in enumerate(img_paths):
+                img_url = f"https://ops.skeyes.be{path}"
+                ext = path.rsplit('.', 1)[-1].lower()
+                if ext == 'jpeg':
+                    ext = 'jpg'
+                filename = f"{prefix}_{i:02d}.{ext}"
                 img_resp = session.get(img_url, headers={"Referer": detail_url})
-                if img_resp.status_code == 200 and len(img_resp.content) > 1000:
-                    with open(output_filename, 'wb') as f:
+                if img_resp.status_code == 200 and len(img_resp.content) > 500:
+                    with open(filename, 'wb') as f:
                         f.write(img_resp.content)
-                    print(f"  -> Saved {output_filename} ({len(img_resp.content)} bytes)")
+                    filenames.append(filename)
                 else:
-                    print(f"  -> Image download failed: status={img_resp.status_code}, size={len(img_resp.content)}")
-            else:
-                print(f"  -> No <img name='map'> found in page")
-                # Debug: save the page for inspection
-                with open(f"_debug_{html_param}.html", "w", encoding="utf-8") as dbg:
-                    dbg.write(resp.text[:2000])
+                    print(f"  -> Failed {filename}: status={img_resp.status_code}, size={len(img_resp.content)}")
+            
+            if filenames:
+                manifest[prefix] = filenames
+                print(f"  -> Saved {len(filenames)} images for {prefix}")
         except Exception as e:
             print(f"  -> Error: {e}")
+    
+    # Write manifest JSON
+    with open("skeyes_images.json", "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
 
 
 def do_login(session, username, password):
