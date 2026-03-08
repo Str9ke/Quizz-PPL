@@ -320,11 +320,6 @@ def do_login(session, username, password):
     print(f"GET login.forward.do: status={login_resp.status_code}, url={login_resp.url}")
     page_html = login_resp.text
     
-    # DEBUG: print page to understand form structure
-    print(f"=== LOGIN FORM HTML (first 3000 chars) ===")
-    print(page_html[:3000])
-    print(f"=== END LOGIN FORM HTML ===")
-    
     # Step 3: Parse the login form
     # Find form action
     action_match = re.search(r'<form[^>]*name="loginForm"[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
