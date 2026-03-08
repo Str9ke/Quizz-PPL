@@ -313,59 +313,89 @@ def do_login(session, username, password):
     login_resp = session.get(f"{base}/opersite/login.do")
     print(f"GET login.do: status={login_resp.status_code}, url={login_resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
+    page_html = login_resp.text
     
-    # Step 2: Parse the login form
-    soup = BeautifulSoup(login_resp.text, 'html.parser')
-    form = soup.find('form')
+    # Step 2: Parse the login form - use regex as primary method (BS4 fails on malformed HTML)
+    # Find form action
+    action_match = re.search(r'<form[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
+    form_action_raw = action_match.group(1).replace('&amp;', '&') if action_match else 'login.do'
+    print(f"Form action: {form_action_raw}")
     
+    # Find ALL input fields using regex (BS4 misses them in malformed Struts HTML)
     data = {}
-    form_action_raw = 'login.do'
-    if form:
-        form_action_raw = form.get('action', 'login.do')
-        print(f"Form tag: {str(form)[:300]}")
-        for inp in form.find_all('input'):
-            name = inp.get('name')
-            if name:
-                data[name] = inp.get('value', '')
-                print(f"  Field: {name} type={inp.get('type', '')}")
+    for m in re.finditer(r'<input\s+([^>]*)>', page_html, re.IGNORECASE):
+        attrs = m.group(1)
+        name_m = re.search(r'name="([^"]*)"', attrs)
+        value_m = re.search(r'value="([^"]*)"', attrs)
+        type_m = re.search(r'type="([^"]*)"', attrs)
+        if name_m:
+            field_name = name_m.group(1)
+            field_value = value_m.group(1) if value_m else ''
+            field_type = type_m.group(1) if type_m else ''
+            data[field_name] = field_value
+            print(f"  Field: {field_name} type={field_type} value={field_value[:30]}")
+    
+    # Set credentials - try both common naming patterns
+    # Struts uses property names from the form bean
+    if 'j_username' in data or 'j_password' in data:
+        data['j_username'] = username
+        data['j_password'] = password
     else:
-        print(f"No form found! Page snippet: {login_resp.text[:500]}")
+        # Set all plausible credential field names
+        for name in list(data.keys()):
+            lower = name.lower()
+            if 'user' in lower or 'login' in lower or 'name' in lower:
+                data[name] = username
+                print(f"  -> Setting {name} = <username>")
+            elif 'pass' in lower or 'pwd' in lower:
+                data[name] = password
+                print(f"  -> Setting {name} = <password>")
+        # Always add j_username/j_password as well
+        data['j_username'] = username
+        data['j_password'] = password
     
-    data['j_username'] = username
-    data['j_password'] = password
+    # Step 3: Build the POST URL
+    if form_action_raw.startswith('/'):
+        post_url = base + form_action_raw
+    elif form_action_raw.startswith('http'):
+        post_url = form_action_raw
+    else:
+        post_url = urljoin(login_resp.url, form_action_raw)
     
-    # Step 3: Try POSTing to multiple candidate URLs
-    # The login form is served from /opersite/jsp/login.jsp with action="login.do"
-    # Browser resolves this to /opersite/jsp/login.do (urljoin)
-    # But the Struts action might be mapped at /opersite/login.do
-    resolved_url = urljoin(login_resp.url, form_action_raw)
-    explicit_url = f"{base}/opersite/{form_action_raw.lstrip('/')}"
+    print(f"\nPOST -> {post_url}")
+    print(f"POST data keys: {list(data.keys())}")
+    resp = session.post(post_url, data=data, allow_redirects=True)
+    print(f"Response: status={resp.status_code}, url={resp.url}")
+    print(f"Cookies: {session.cookies.get_dict()}")
     
-    urls_to_try = [resolved_url]
-    if explicit_url != resolved_url:
-        urls_to_try.append(explicit_url)
+    # Check if we got redirected to a non-login page (success)
+    if 'login' not in resp.url.lower().split('/')[-1]:
+        print("Login redirect indicates success")
     
-    for post_url in urls_to_try:
-        print(f"\nPOST -> {post_url}")
-        resp = session.post(post_url, data=data, allow_redirects=True)
-        print(f"Response: status={resp.status_code}, url={resp.url}")
-        print(f"Cookies: {session.cookies.get_dict()}")
-        
-        # Verify: try accessing a protected resource
-        verify = session.get(f"{base}/opersite/opmeteoindex.do?cmd=init",
-                             headers={"Referer": f"{base}/opersite/opmeteoindex.do"})
-        is_login_page = 'login.jsp' in verify.url or verify.url.endswith('login.do')
-        print(f"Auth verify: status={verify.status_code}, url={verify.url}, is_login={is_login_page}")
-        
-        if not is_login_page:
-            print("Login successful!")
-            return True
+    # Verify: try accessing a protected resource
+    verify = session.get(f"{base}/opersite/opmeteoindex.do?cmd=init",
+                         headers={"Referer": f"{base}/opersite/opmeteoindex.do"})
+    is_login_page = 'login.jsp' in verify.url or 'login.do' in verify.url
+    print(f"Auth verify: status={verify.status_code}, url={verify.url}, is_login={is_login_page}")
     
-    # Save debug info for analysis
-    print("WARNING: Login failed with all URL strategies")
-    print(f"Login page response snippet: {login_resp.text[:500]}")
+    if not is_login_page:
+        print("Login successful!")
+        return True
+    
+    # Login failed - dump debug info
+    print("WARNING: Login failed")
+    # Print the login response to see if there's an error message
+    error_match = re.search(r'class="[^"]*error[^"]*"[^>]*>([^<]+)', resp.text, re.IGNORECASE)
+    if error_match:
+        print(f"Error message on page: {error_match.group(1).strip()}")
+    print(f"Login page form HTML (first 1500 chars):")
+    form_match = re.search(r'(<form.*?</form>)', page_html, re.IGNORECASE | re.DOTALL)
+    if form_match:
+        print(form_match.group(1)[:1500])
     with open("_debug_login_page.html", "w", encoding="utf-8") as f:
-        f.write(login_resp.text)
+        f.write(page_html)
+    with open("_debug_login_response.html", "w", encoding="utf-8") as f:
+        f.write(resp.text)
     return False
 
 
