@@ -588,7 +588,11 @@ async function initStats() {
       groupsData.push({ name: group.name, categories: catStats });
     }
 
-    afficherStats(groupsData);
+    // Compute global stats from deduplicated question set (same as home page)
+    await loadAllQuestions();
+    const globalStats = computeStatsForFirestore(questions, data.responses);
+
+    afficherStats(groupsData, globalStats);
 
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
     const dailyHistory = data.dailyHistory || {};
@@ -795,7 +799,7 @@ function _cleanLocalSessionBackup(firestoreSessions) {
 }
 
 /** afficherStats — Affiche les statistiques par groupe */
-function afficherStats(groupsData) {
+function afficherStats(groupsData, globalStats) {
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
@@ -811,16 +815,12 @@ function afficherStats(groupsData) {
     return '#f44336';
   }
 
-  // Totaux globaux (utiliser globalContrib pour éviter le double-comptage des refs épreuve)
-  let gRe = 0, gRa = 0, gNv = 0, gMa = 0, gIm = 0;
-  groupsData.forEach(g => g.categories.forEach(c => {
-    const s = c.globalContrib || c.stats;
-    gRe += s.reussie;
-    gRa += s.ratee;
-    gNv += s.nonvue;
-    gMa += s.marquee;
-    gIm += s.importante || 0;
-  }));
+  // Totaux globaux from deduplicated question set
+  const gRe = globalStats.reussie;
+  const gRa = globalStats.ratee;
+  const gNv = globalStats.nonvue;
+  const gMa = globalStats.marquee;
+  const gIm = globalStats.importante || 0;
   const gTotal = gRe + gRa + gNv;
   const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
 

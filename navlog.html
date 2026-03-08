@@ -2458,8 +2458,9 @@ function switchMeteoSub(id){
     }
     if(id==='windy') initWindy();
   }
-  /* Auto-scroll to content */
-  if(target) setTimeout(function(){target.scrollIntoView({behavior:'smooth',block:'start'});},120);
+  /* Auto-scroll to sub-tabs bar */
+  var subtabsBar=document.querySelector('.meteo-subtabs');
+  if(subtabsBar) setTimeout(function(){subtabsBar.scrollIntoView({behavior:'smooth',block:'start'});},120);
 }
 window.switchMeteoSub=switchMeteoSub;
 
