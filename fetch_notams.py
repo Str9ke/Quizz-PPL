@@ -175,19 +175,23 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
+    print(f"Cookies before OPMET: {session.cookies.get_dict()}")
     
-    # In order to respect the precise state machine of Struts, 
-    # we first act like we clicked "Weather > OPMET" from the menu.
-    menu_url = "https://ops.skeyes.be/opersite/oper-meteo-info"
-    session.get(menu_url)
-
     # Step 1: Initialize the OPMET form page
     init_url_1 = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    resp = session.get(init_url_1, headers={"Referer": menu_url})
+    resp = session.get(init_url_1, headers={"Referer": "https://ops.skeyes.be/opersite/home.do"})
+    print(f"OPMET init 1: status={resp.status_code}, url={resp.url}, length={len(resp.text)}")
     
     soup = BeautifulSoup(resp.text, 'html.parser')
-    if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in resp.text:
-         raise Exception("OPMET init 1 returned login form or session lost error")
+    has_login = soup.find('form', {'name': 'loginForm'}) is not None
+    has_session_lost = "Session perdue" in resp.text
+    print(f"OPMET init 1: has_login_form={has_login}, has_session_lost={has_session_lost}")
+    
+    if has_login or has_session_lost:
+        # Save debug file
+        with open("_debug_opmet_init1.html", "w", encoding="utf-8") as dbg:
+            dbg.write(resp.text)
+        raise Exception(f"OPMET init 1 failed: login_form={has_login}, session_lost={has_session_lost}, url={resp.url}")
 
     # Step 2: Second Init explicitly for opmet.do
     init_url_2 = "https://ops.skeyes.be/opersite/opmet.do?cmd=init"
@@ -268,12 +272,58 @@ def main():
         browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
     )
     
+    # ========== LOGIN ==========
     print("--- Login ---")
     login_url = "https://ops.skeyes.be/opersite/login.do"
-    session.get(login_url) 
+    
+    # Step A: GET login page to obtain JSESSIONID and discover form action
+    login_page = session.get(login_url)
+    print(f"Login page GET: status={login_page.status_code}, url={login_page.url}")
+    print(f"Cookies after GET login: {session.cookies.get_dict()}")
+    
+    # Parse the login form to find the real action URL and field names
+    login_soup = BeautifulSoup(login_page.text, 'html.parser')
+    login_form = login_soup.find('form')
+    form_action = login_url  # default
+    if login_form:
+        raw_action = login_form.get('action', '')
+        form_method = login_form.get('method', 'POST').upper()
+        print(f"Login form action='{raw_action}', method='{form_method}'")
+        if raw_action:
+            if raw_action.startswith('http'):
+                form_action = raw_action
+            elif raw_action.startswith('/'):
+                form_action = "https://ops.skeyes.be" + raw_action
+            else:
+                form_action = "https://ops.skeyes.be/opersite/" + raw_action
+        # Log all input fields in the form
+        for inp in login_form.find_all('input'):
+            print(f"  Login form field: name={inp.get('name')}, type={inp.get('type')}, value={str(inp.get('value',''))[:50]}")
+    
     login_payload = {"j_username": username, "j_password": password}
     
-    login_response = session.post(login_url, data=login_payload)
+    # Also add any hidden fields from the form
+    if login_form:
+        for inp in login_form.find_all('input', {'type': 'hidden'}):
+            name = inp.get('name')
+            if name and name not in login_payload:
+                login_payload[name] = inp.get('value', '')
+    
+    print(f"POSTing to: {form_action}")
+    login_response = session.post(form_action, data=login_payload, allow_redirects=True)
+    print(f"Login POST: status={login_response.status_code}, final_url={login_response.url}")
+    print(f"Cookies after POST login: {session.cookies.get_dict()}")
+    
+    # Check if login succeeded by visiting home.do
+    home_resp = session.get("https://ops.skeyes.be/opersite/home.do")
+    home_soup = BeautifulSoup(home_resp.text, 'html.parser')
+    has_login_form = home_soup.find('form', {'name': 'loginForm'}) is not None
+    print(f"Home.do check: status={home_resp.status_code}, has_login_form={has_login_form}")
+    if has_login_form:
+        print("WARNING: Login appears to have FAILED - home.do shows login form")
+        print(f"Home.do response snippet: {home_resp.text[:500]}")
+    else:
+        print("Login appears successful - home.do does not show login form")
     login_response.raise_for_status()
     
     # Note: reordering requests here to avoid the struts session dropping early. 
@@ -301,12 +351,15 @@ def main():
     for filename, url in skeyes_static_images:
         try:
             print(f"Fetching static image {filename}...")
-            resp = session.get(url, headers={"Referer": "https://ops.skeyes.be/opersite/oper-meteo-info"})
-            if resp.status_code == 200:
+            resp = session.get(url, headers={"Referer": "https://ops.skeyes.be/opersite/home.do"})
+            content_type = resp.headers.get('Content-Type', 'unknown')
+            print(f"  -> status={resp.status_code}, content-type={content_type}, length={len(resp.content)}")
+            if resp.status_code == 200 and ('image' in content_type or len(resp.content) > 1000):
                 with open(filename, 'wb') as f:
                     f.write(resp.content)
+                print(f"  -> Saved {filename} ({len(resp.content)} bytes)")
             else:
-                print(f"Failed to fetch {filename} ({resp.status_code})")
+                print(f"  -> FAILED: not an image or too small (first 200 chars: {resp.text[:200]})")
         except Exception as e:
             print(f"Error fetching {filename}: {e}")
 
