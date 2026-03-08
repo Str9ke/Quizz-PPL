@@ -315,15 +315,20 @@ def do_login(session, username, password):
     print(f"Cookies: {session.cookies.get_dict()}")
     page_html = login_resp.text
     
+    # DEBUG: print full page to understand form structure
+    print(f"=== LOGIN PAGE HTML (first 2000 chars) ===")
+    print(page_html[:2000])
+    print(f"=== END LOGIN PAGE HTML ===")
+    
     # Step 2: Parse the login form - use regex as primary method (BS4 fails on malformed HTML)
     # Find form action
     action_match = re.search(r'<form[^>]*action="([^"]*)"', page_html, re.IGNORECASE)
     form_action_raw = action_match.group(1).replace('&amp;', '&') if action_match else 'login.do'
     print(f"Form action: {form_action_raw}")
     
-    # Find ALL input fields using regex (BS4 misses them in malformed Struts HTML)
+    # Find ALL input fields using regex - handle both <input ...> and <input ... />
     data = {}
-    for m in re.finditer(r'<input\s+([^>]*)>', page_html, re.IGNORECASE):
+    for m in re.finditer(r'<input\b([^>]*)/?>', page_html, re.IGNORECASE):
         attrs = m.group(1)
         name_m = re.search(r'name="([^"]*)"', attrs)
         value_m = re.search(r'value="([^"]*)"', attrs)
