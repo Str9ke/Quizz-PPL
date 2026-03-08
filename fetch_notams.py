@@ -481,6 +481,39 @@ try{
     return True
 
 
+def _extract_utc_timestamp(original_path):
+    """Extract UTC timestamp string from a Skeyes image path. Returns ISO-like 'YYYY-MM-DDTHH:MMZ' or None."""
+    basename = original_path.rsplit('/', 1)[-1]
+    # MSG satellite: 202603080530_MSG3_Europe_IR108_WEB.jpeg
+    m = re.match(r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})_MSG', basename)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}T{m.group(4)}:{m.group(5)}Z"
+    # Radar PLIP: METSRV202603080740.PLIP.jpg
+    m = re.match(r'METSRV(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})', basename)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}T{m.group(4)}:{m.group(5)}Z"
+    # Radar MAX/PPI: RADSRV260308075505.MAX3061.gif (YYMMDDHHmmSS)
+    m = re.match(r'RADSRV(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\d{2}', basename)
+    if m:
+        return f"20{m.group(1)}-{m.group(2)}-{m.group(3)}T{m.group(4)}:{m.group(5)}Z"
+    # Numwx prec: europpn_2026030800Z_006.jpg
+    m = re.match(r'europpn_(\d{4})(\d{2})(\d{2})(\d{2})Z_(\d{3})', basename)
+    if m:
+        from datetime import datetime as _dt, timedelta as _td
+        base = _dt(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)))
+        valid = base + _td(hours=int(m.group(5)))
+        return valid.strftime("%Y-%m-%dT%H:%MZ")
+    # Numwx wind: nmesowdt06.gif, nmewdfl1006.gif – offset from today's 00Z
+    m = re.search(r'(\d{2,3})\.gif$', basename)
+    if m and '/modeloutput/' in original_path:
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        offset_h = int(m.group(1))
+        base = _dt.now(_tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        valid = base + _td(hours=offset_h)
+        return valid.strftime("%Y-%m-%dT%H:%MZ")
+    return None
+
+
 def fetch_remote_sensing_images(session):
     """Fetch all timestamped radar/satellite/numwx images from Skeyes remoteSensingDetail pages."""
     print("\n--- Fetching Remote Sensing Images ---")
@@ -527,6 +560,7 @@ def fetch_remote_sensing_images(session):
             
             print(f"  -> Found {len(img_paths)} images")
             filenames = []
+            timestamps = []
             for i, path in enumerate(img_paths):
                 img_url = f"https://ops.skeyes.be{path}"
                 ext = path.rsplit('.', 1)[-1].lower()
@@ -538,11 +572,13 @@ def fetch_remote_sensing_images(session):
                     with open(filename, 'wb') as f:
                         f.write(img_resp.content)
                     filenames.append(filename)
+                    ts = _extract_utc_timestamp(path)
+                    timestamps.append(ts)
                 else:
                     print(f"  -> Failed {filename}: status={img_resp.status_code}, size={len(img_resp.content)}")
             
             if filenames:
-                manifest[prefix] = filenames
+                manifest[prefix] = {"files": filenames, "times": timestamps}
                 print(f"  -> Saved {len(filenames)} images for {prefix}")
         except Exception as e:
             print(f"  -> Error: {e}")
@@ -550,6 +586,79 @@ def fetch_remote_sensing_images(session):
     # Write manifest JSON
     with open("skeyes_images.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f)
+    return manifest
+
+
+def fetch_sfc_analysis(session, manifest):
+    """Fetch SFC Analysis Europe charts (06Z/12Z) from Skeyes Flight Briefing Charts."""
+    print("\n--- Fetching SFC Analysis ---")
+    base = "https://ops.skeyes.be/opersite"
+    referer = f"{base}/opmeteoindex.do?cmd=init"
+    filenames = []
+    timestamps = []
+    for time_val in ("06Z", "12Z"):
+        try:
+            data = {
+                "fileType": "SFC",
+                "selswc": "",
+                "seluwc": "",
+                "browser": "moz",
+                "charttimesfc": time_val,
+            }
+            resp = session.post(
+                f"{base}/metflightbriefing.do?cmd=retrieveBriefing",
+                data=data,
+                headers={"Referer": referer},
+            )
+            if resp.status_code != 200:
+                print(f"  SFC {time_val}: HTTP {resp.status_code}")
+                continue
+            ct = resp.headers.get("Content-Type", "")
+            if "image" in ct:
+                # Direct image response
+                ext = "gif" if "gif" in ct else "png" if "png" in ct else "jpg"
+                fname = f"skeyes_sfc_{time_val.lower()}.{ext}"
+                with open(fname, "wb") as f:
+                    f.write(resp.content)
+                filenames.append(fname)
+                timestamps.append(time_val.replace("Z", ":00Z"))
+                print(f"  SFC {time_val}: saved {fname} ({len(resp.content)} bytes)")
+            else:
+                # HTML response with embedded image
+                img_match = re.search(r'<img[^>]+src="([^"]+)"', resp.text)
+                if img_match:
+                    img_src = img_match.group(1)
+                    if not img_src.startswith("http"):
+                        img_src = f"https://ops.skeyes.be{img_src}" if img_src.startswith("/") else f"{base}/{img_src}"
+                    img_resp = session.get(img_src, headers={"Referer": referer})
+                    if img_resp.status_code == 200 and len(img_resp.content) > 500:
+                        ext = img_src.rsplit(".", 1)[-1].lower()
+                        if ext not in ("gif", "jpg", "jpeg", "png"):
+                            ext = "gif"
+                        if ext == "jpeg":
+                            ext = "jpg"
+                        fname = f"skeyes_sfc_{time_val.lower()}.{ext}"
+                        with open(fname, "wb") as f:
+                            f.write(img_resp.content)
+                        filenames.append(fname)
+                        timestamps.append(time_val.replace("Z", ":00Z"))
+                        print(f"  SFC {time_val}: saved {fname} ({len(img_resp.content)} bytes)")
+                    else:
+                        print(f"  SFC {time_val}: image fetch failed ({img_resp.status_code})")
+                else:
+                    print(f"  SFC {time_val}: no image in response (ct={ct}, len={len(resp.text)})")
+                    with open(f"_debug_sfc_{time_val.lower()}.html", "w", encoding="utf-8") as f:
+                        f.write(resp.text)
+        except Exception as e:
+            print(f"  SFC {time_val}: error: {e}")
+    if filenames:
+        manifest["skeyes_sfc_analysis"] = {"files": filenames, "times": timestamps}
+        # Re-write manifest with SFC data
+        with open("skeyes_images.json", "w", encoding="utf-8") as f:
+            json.dump(manifest, f)
+        print(f"  -> Saved {len(filenames)} SFC Analysis images")
+    else:
+        print("  -> No SFC Analysis images obtained")
 
 
 def do_login(session, username, password):
@@ -677,7 +786,10 @@ def main():
         generate_error_html("opmet.html", "OPMET", session, str(e))
     
     # Remote sensing images (fetch via detail pages)
-    fetch_remote_sensing_images(session)
+    manifest = fetch_remote_sensing_images(session)
+
+    # SFC Analysis charts
+    fetch_sfc_analysis(session, manifest)
 
     print("--- Extracting NOTAMs ---")
     try:

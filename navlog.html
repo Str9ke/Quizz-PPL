@@ -274,11 +274,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
 .map-del-btn{border-color:#f44336!important;color:#f44336!important}
 .skeyes-carousel{position:relative}
-.skeyes-nav{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;background:var(--bg-container);flex-wrap:wrap}
-.skeyes-nav button{padding:4px 10px;font-size:.75em;border-radius:8px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;min-width:28px}
+.skeyes-nav{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;background:var(--bg-container);flex-wrap:nowrap;overflow-x:auto}
+.skeyes-nav button{padding:4px 10px;font-size:.75em;border-radius:8px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;min-width:28px;flex-shrink:0}
 .skeyes-nav button:hover{border-color:#667eea;color:#667eea}
 .skeyes-nav button.active{background:#667eea;color:#fff;border-color:#667eea}
-.skeyes-nav .skeyes-counter{font-size:.78em;font-weight:600;color:var(--text-heading);min-width:60px;text-align:center}
+.skeyes-nav .skeyes-counter{font-size:.78em;font-weight:600;color:var(--text-heading);min-width:60px;text-align:center;flex-shrink:0}
+/* Reduce carousel images 20% on desktop */
+@media(min-width:768px){.skeyes-carousel-img{max-width:80%!important;display:block;margin:0 auto}}
 .map-del-btn:hover{background:#f44336!important;color:#fff!important}
 .aeroweb-nav-btn{padding:6px 14px;font-size:.78em;font-weight:600;border-radius:14px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
 .aeroweb-nav-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
@@ -751,7 +753,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
-      <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Mod&#xe8;le Num.</button>
+      <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
     </div>
@@ -916,6 +918,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: Fronts ===== -->
     <div id="msub-fronts" class="meteo-sub-content">
+      <div class="map-card" id="card-skeyes_sfc_analysis">
+        <div class="map-card-title">&#x1F30D; SFC Analysis &#x2014; Europe (Skeyes)</div>
+        <div class="skeyes-carousel" data-key="skeyes_sfc_analysis">
+          <img class="skeyes-carousel-img" src="skeyes_sfc_06z.gif" alt="SFC Analysis Europe" style="width:100%; height:auto; border-radius:8px;" />
+          <div class="skeyes-nav"></div>
+        </div>
+      </div>
       <div class="map-card">
         <div class="map-card-title">&#x1F300; Carte de Fronts &#x2014; Europe</div>
         <div class="iframe-card">
@@ -2459,6 +2468,30 @@ window.switchMeteoSub=switchMeteoSub;
   var _carousels = {};
   var _frozenMode = false; // When true, carousels show dossier images instead of live
 
+  function findClosestIdx(times){
+    if(!times || !times.length) return -1;
+    var now = Date.now();
+    var best = -1, bestDiff = Infinity;
+    for(var i=0;i<times.length;i++){
+      if(!times[i]) continue;
+      // times[i] is like "2026-03-08T07:55Z" or "06:00Z" (hour-only for SFC)
+      var t = times[i];
+      var d;
+      if(t.length <= 6){
+        // hour-only: "06:00Z" → use today's date
+        var hm = t.replace('Z','').split(':');
+        d = new Date();
+        d.setUTCHours(parseInt(hm[0],10), parseInt(hm[1]||'0',10), 0, 0);
+      } else {
+        d = new Date(t);
+      }
+      if(isNaN(d.getTime())) continue;
+      var diff = Math.abs(d.getTime() - now);
+      if(diff < bestDiff){ bestDiff = diff; best = i; }
+    }
+    return best;
+  }
+
   function initCarousels(){
     _frozenMode = false;
     fetch('skeyes_images.json?t='+Date.now()).then(function(r){return r.json()}).then(function(manifest){
@@ -2466,12 +2499,18 @@ window.switchMeteoSub=switchMeteoSub;
       for(var i=0;i<els.length;i++){
         var el = els[i];
         var key = el.getAttribute('data-key');
-        var files = manifest[key];
+        var entry = manifest[key];
+        if(!entry) continue;
+        // Support both old format (array) and new format ({files,times})
+        var files = Array.isArray(entry) ? entry : entry.files;
+        var times = Array.isArray(entry) ? null : entry.times;
         if(!files || !files.length) continue;
         var img = el.querySelector('.skeyes-carousel-img');
-        // Show the last (most recent) image by default
-        img.src = files[files.length-1] + '?t='+Date.now();
-        _carousels[key] = {el:el, img:img, files:files, idx:files.length-1, playing:false, timer:null, speed:500};
+        // Select closest-to-now or last
+        var startIdx = findClosestIdx(times);
+        if(startIdx < 0) startIdx = files.length - 1;
+        img.src = files[startIdx] + '?t='+Date.now();
+        _carousels[key] = {el:el, img:img, files:files, idx:startIdx, playing:false, timer:null, speed:500};
         buildNav(key);
       }
     }).catch(function(e){console.log('No skeyes_images.json:',e)});
@@ -2517,7 +2556,7 @@ window.switchMeteoSub=switchMeteoSub;
     slower: function(k){ var c=_carousels[k]; if(!c) return; c.speed=c.speed+100; }
   };
 
-  /* Refresh all Skeyes images: re-fetch manifest, show latest */
+  /* Refresh all Skeyes images: re-fetch manifest, show closest-to-now */
   window.refreshAllSkeyesImages = function(){
     _frozenMode = false;
     fetch('skeyes_images.json?t='+Date.now()).then(function(r){return r.json()}).then(function(manifest){
@@ -2525,14 +2564,19 @@ window.switchMeteoSub=switchMeteoSub;
       for(var i=0;i<els.length;i++){
         var el = els[i];
         var key = el.getAttribute('data-key');
-        var files = manifest[key];
+        var entry = manifest[key];
+        if(!entry) continue;
+        var files = Array.isArray(entry) ? entry : entry.files;
+        var times = Array.isArray(entry) ? null : entry.times;
         if(!files || !files.length) continue;
         var img = el.querySelector('.skeyes-carousel-img');
         if(_carousels[key] && _carousels[key].playing) {
           _carousels[key].playing=false; clearTimeout(_carousels[key].timer);
         }
-        _carousels[key] = {el:el, img:img, files:files, idx:files.length-1, playing:false, timer:null, speed:500};
-        img.src = files[files.length-1] + '?t='+Date.now();
+        var startIdx = findClosestIdx(times);
+        if(startIdx < 0) startIdx = files.length - 1;
+        _carousels[key] = {el:el, img:img, files:files, idx:startIdx, playing:false, timer:null, speed:500};
+        img.src = files[startIdx] + '?t='+Date.now();
         buildNav(key);
       }
       // Refresh OPMET iframe too
