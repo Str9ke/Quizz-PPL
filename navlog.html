@@ -767,8 +767,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- ===== SUB: TEMSI / WINTEM ===== -->
     <div id="msub-charts" class="meteo-sub-content active">
 
+      <!-- Bouton d'actualisation globale -->
+      <div style="text-align: center; margin-bottom: 15px;">
+        <button onclick="['autoTemsiFrFrame','autoTemsiEuFrame','autoWintemFrFrame','autoWintemEuFrame'].forEach(function(i){var f=document.getElementById(i);if(f)f.src=f.src.split('?')[0]+'?t='+new Date().getTime();})" style="padding: 10px 16px; font-weight: bold; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+          <span>&#x1F504;</span> Actualiser Toutes Les Cartes WINTEM & TEMSI
+        </button>
+      </div>
+
       <!-- Cartes METEO Automatiques via SOFIA -->
-      
+
       <!-- TEMSI France Automatique -->
       <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
         <div class="map-card-title">&#x1F916; TEMSI France (Automatique)</div>
@@ -2050,8 +2057,8 @@ function renderFPL(){
   var tas = Math.round(parseFloat((document.getElementById('cfgTAS')||{value:90}).value)||90);
   var speedStr = 'N'+String(tas).padStart(4,'0');
 
-  /* Altitude: first non-departure waypoint altitude, default 2000ft → A020 */
-  var altFt = 2000;
+  /* Altitude: first non-departure waypoint altitude, default cfgAlt -> A... */
+  var altFt = parseInt(document.getElementById('cfgAlt').value)||2300;
   for(var ai=1;ai<waypoints.length;ai++){ if(waypoints[ai].altitude){ altFt=waypoints[ai].altitude; break; } }
   var levelStr = 'A'+String(Math.round(altFt/100)).padStart(3,'0');
 
@@ -6105,7 +6112,7 @@ function renderAltProfile(){
     if(i===0) wpAlts.push(depElev);
     else if(i===waypoints.length-1) wpAlts.push(arrElev);
     else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i,cumDistWp));
-    else wpAlts.push(waypoints[i].altitude||2000);
+    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
   }
 
   var maxAlt=0;for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
@@ -6153,21 +6160,18 @@ function renderAltProfile(){
   xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
   yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
 
-  /* Poignées de drag au MILIEU plat de chaque leg (triangle ≡ + zone invisible large) */
+  /* Poignées de drag au MILIEU plat de chaque leg (invisible sur toute la longueur) */
   var legHits='',cumD3=0;
   for(var i=1;i<waypoints.length-1;i++){
     var ld3=waypoints[i].dist||0;
     /* isEtape = posé au sol, altitude verrouillée → pas de poignée de drag */
     if(!waypoints[i].isEtape){
-      var midX=xS(cumD3+ld3/2);
-      var midY=yS(wpAlts[i]);
-      legHits+='<rect x="'+(midX-22)+'" y="'+(midY-16)+'" width="44" height="32" fill="transparent" cursor="ns-resize" class="alt-leg-hit" data-wpidx="'+i+'" rx="4"/>';
-      legHits+='<g style="pointer-events:none">';
-      legHits+='<rect x="'+(midX-11)+'" y="'+(midY-4)+'" width="22" height="10" rx="5" fill="rgba(102,126,234,.18)" stroke="rgba(167,139,250,.45)" stroke-width="1"/>';
-      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY-1)+'" x2="'+(midX+7)+'" y2="'+(midY-1)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+2)+'" x2="'+(midX+7)+'" y2="'+(midY+2)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-      legHits+='<line x1="'+(midX-7)+'" y1="'+(midY+5)+'" x2="'+(midX+7)+'" y2="'+(midY+5)+'" stroke="rgba(167,139,250,.7)" stroke-width="1.2"/>';
-      legHits+='</g>';
+      var x1 = xS(cumD3);
+      var x2 = xS(cumD3+ld3);
+      var midY = yS(wpAlts[i]);
+      var segW = Math.max(10, x2 - x1);
+      // On rend la ligne entière "draggable" sans afficher de "boule aplatie"
+      legHits+='<rect x="'+x1+'" y="'+(midY-16)+'" width="'+segW+'" height="32" fill="transparent" cursor="ns-resize" class="alt-leg-hit" data-wpidx="'+i+'"/>';
     }
     cumD3+=ld3; /* toujours incrémenter, même si poignée masquée */
   }
@@ -6341,7 +6345,8 @@ function _altDragStart(e,wpIdx){
   /* Pointer capture : garantit que move+up arrivent ici même hors du SVG */
   if(e.target&&e.target.setPointerCapture&&e.pointerId!=null)
     try{e.target.setPointerCapture(e.pointerId);}catch(x){}
-  _altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||2000,moved:false};
+  var _defAlt = parseInt(document.getElementById('cfgAlt').value) || 2300;
+  _altDragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
   document.addEventListener('mousemove',_altDragMove,{capture:true,passive:true});
   document.addEventListener('mouseup',_altDragEnd,{capture:true});
 }
@@ -6349,7 +6354,8 @@ function _altDragStartTouch(e,wpIdx){
   if(!e.touches) return;
   e.preventDefault();
   var t=e.touches[0];
-  _altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||2000,moved:false};
+  var _defAlt = parseInt(document.getElementById('cfgAlt').value) || 2300;
+  _altDragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
   document.addEventListener('touchmove',_altDragMoveT,{passive:false,capture:true});
   document.addEventListener('touchend',_altDragEnd,{capture:true});
 }
@@ -6357,7 +6363,8 @@ function _altDragMove(e){
   if(!_altDragState) return;
   var dy=_altDragState.startY-e.clientY;
   var na=Math.round(Math.max(100,Math.min(18000,_altDragState.startAlt+dy*20))/100)*100;
-  if(na!==(waypoints[_altDragState.wpIdx].altitude||2000)){
+  var _defAlt = parseInt(document.getElementById('cfgAlt').value) || 2300;
+  if(na!==(waypoints[_altDragState.wpIdx].altitude||_defAlt)){
     waypoints[_altDragState.wpIdx].altitude=na;
     _altDragState.moved=true;
     /* Mise à jour légère : juste le texte du champ, sans recréer le SVG */
@@ -7197,8 +7204,8 @@ function syncAircraftSelection(reg, keepCruise){
   // Auto-apply default cruise performance unless caller wants to keep existing values
   if(!keepCruise){
     var _is172=reg==='OO-FCE';
-    var _defTas=_is172?114:91;      // F172M: 114 kt | C150: 91 kt
-    var _defFuel=_is172?32.0:19.3; // matching L/h
+    var _defTas=_is172?100:91;      // F172M: 100 kt (2200 RPM) | C150: 91 kt
+    var _defFuel=_is172?26.0:19.3; // matching L/h
     var _tasFld=document.getElementById('cfgTAS');if(_tasFld) _tasFld.value=_defTas;
     var _fuFld=document.getElementById('cfgFuel');if(_fuFld) _fuFld.value=_defFuel;
     var _fbFld=document.getElementById('fuelBurn');if(_fbFld) _fbFld.value=_defFuel;
@@ -8092,6 +8099,18 @@ window.triggerGithubAction = async function() {
         alert("\u274C Erreur de connexion : " + e);
     }
 }
+
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'resize') {
+    var iframes = document.querySelectorAll('iframe');
+    for (var i = 0; i < iframes.length; i++) {
+      if (iframes[i].contentWindow === e.source) {
+        iframes[i].style.height = e.data.height + 'px';
+        break;
+      }
+    }
+  }
+});
 
 document.addEventListener('DOMContentLoaded',init);
 })();
