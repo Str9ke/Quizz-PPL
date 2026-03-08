@@ -1,43 +1,134 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<style>
-body { margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; }
-.nav-container { display:flex; gap:15px; padding:10px; background:rgba(255,255,255,0.9); position:sticky; top:0; z-index:100; border-radius:8px; align-items:center; margin-bottom:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-.nav-btn { padding:8px 16px; background:#667eea; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
-.nav-btn:active { background:#5a6ad6; }
-.map-img { width:100%; display:none; margin:0 auto; border:1px solid #ccc; }
-.map-img.active { display:block; }
-</style>
-</head><body>
-<div class="nav-container" id="navContainer">
-    <button class="nav-btn" onclick="changeImage(-1)">&#x25C0; Pr&eacute;c&eacute;dent</button>
-    <span id="counter" style="font-weight:bold; font-size:14px; min-width:40px; text-align:center;"></span>
-    <button class="nav-btn" onclick="changeImage(1)">Suivant &#x25B6;</button>
+<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><style>body{font-family:monospace;font-size:13px;padding:10px;margin:0;background:transparent;white-space:pre-wrap;}</style></head><body class="iframeBody">
+<div id="wait" style="position: absolute; left:30%; top:20%; background-color: transparent; z-index:5; visibility:hidden; ">
+<table bgcolor="white" border="2" bordercolor="#e5edf4" width="250">
+<tr>
+<td style="text-align: center">
+<br/>
+<h1>Please Wait</h1>
+			Retrieving your data...
+		<br/>
+<img border="0" height="32" src="resources/images/wait_animated.gif" width="32"/>
+</td>
+</tr>
+</table>
 </div>
-<div id="imageContainer" style="width:100%;">
-<img class="map-img" src="opmet_page_0.png" />
-
-</div>
-<script>
-    var currentImg = 0;
-    var imgs = document.querySelectorAll('.map-img');
-    function init() {
-        if(imgs.length <= 1) { document.getElementById('navContainer').style.display = 'none'; }
-        if(imgs.length > 0) showImage(0);
-    }
-    function showImage(n) {
-        imgs.forEach(function(img) { img.classList.remove('active'); });
-        currentImg = n;
-        if(currentImg >= imgs.length) currentImg = 0;
-        if(currentImg < 0) currentImg = imgs.length - 1;
-        imgs[currentImg].classList.add('active');
-        document.getElementById('counter').innerText = (currentImg + 1) + " / " + imgs.length;
-        // Tell parent iframe to resize to fit just the active image!
-        setTimeout(function() {
-            try { window.parent.postMessage({type: 'resize', height: document.body.scrollHeight}, '*'); } catch(e){}
-        }, 50);
-    }
-    function changeImage(dir) { showImage(currentImg + dir); }
-    window.onload = init;
-</script>
+<table width="640">
+<tr>
+<td>
+<p class="attention"><br/>
+			If no data is found for a given location and type of message this
+			does not necessarily imply that no such message has been generated,
+			but only that no valid message has been received or stored by our EUR
+			OPMET Database. The user assumes the entire risk related to his use
+			of data.</p>
+</td>
+</tr>
+<tr>
+<td><form action="/opersite/opmetData.do?cmd=retrieveOpmet" method="post" name="opmetForm" target="_self">
+<table width="100%">
+<tr>
+<th>Errors</th>
+</tr>
+<tr>
+<td><ul><strong><font color="red"><li>ICAO: Invalid characters / ICAO-codes must be separated by ";"</li></font></strong></ul></td>
+</tr>
+</table>
+<input name="templateName" type="hidden" value=""/>
+<input name="newTemplateName" type="hidden" value=""/>
+<input name="selectCountry" type="hidden" value=""/>
+<table style="background-color: #EFEFEF; border: 1px solid #CCCCCC;">
+<tr>
+<td width="80"> <b>Templates</b></td>
+<td style="padding-left: 10; padding-right: 10;" valign="top" width="200"><select class="dropDownMeteo" name="template" onchange="chgformcontent()" size="1"><option value="select">select template</option></select></td>
+<td align="right" width="100%"><input name="saveTemplate" onclick="saveTpl('opmetForm');" type="button" value="Save As"/>
+						 <input name="updTemplate" onclick="updateTpl('opmetForm');" type="button" value="Update"/>  <input name="delTemplate" onclick="deleteTpl('opmetForm');" type="button" value="Delete"/>  <input name="renTemplate" onclick="renameTpl('opmetForm');" type="button" value="Rename"/></td>
+</tr>
+</table>
+<br/>
+<fieldset style="width: 640;"><legend><b>Select
+				ICAO-codes</b></legend>
+<ul>
+<li>ICAO code
+						<table border="0">
+<tbody>
+<tr>
+<td><input id="icaolist" maxlength="600" name="icaocodes" onchange="uppercase('opmetForm');" size="70" type="text" value="EBBR EBCI EBSG EBAW EBBE EBBL EBCV EBFN EBFS EBLG EBOS ELLX"/>
+</td>
+<td><a href="javascript:starthelp('opmetForm');" id="icaomapicon"><img alt="selection with map" border="0" src="resources/images/services/meteo/opmet/map_selection_icon.png" title="selection with map"/></a></td>
+</tr>
+<tr>
+<td>
+<font color="red">*</font>
+<em>You can look for several ICAO codes, but they must be separated by ";"</em>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<ul>
+<li>Country
+							<table border="0">
+<tbody>
+<tr>
+<td width="10"><input checked="checked" name="land1" type="checkbox" value="on"/></td>
+<td align="left" width="168">Belgium &amp; Luxembourg</td>
+<td width="10"><input name="land2" type="checkbox" value="on"/></td>
+<td width="113">The Netherlands</td>
+<td width="10"><input name="land3" type="checkbox" value="on"/></td>
+<td width="115">France</td>
+</tr>
+<tr>
+<td width="10"><input name="land4" type="checkbox" value="on"/></td>
+<td align="left" width="168">Germany</td>
+<td width="10"><input name="land5" type="checkbox" value="on"/></td>
+<td width="113">England</td>
+<td width="10"><input name="land6" type="checkbox" value="on"/></td>
+<td width="115">Switzerland</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+</fieldset>
+<fieldset style="width: 640;"><legend><b>Select the OPMET data type</b></legend>
+<table>
+<tr>
+<td style="text-align: right;">METAR</td>
+<td><input checked="checked" name="metar" type="checkbox" value="on"/></td>
+</tr>
+<tr>
+<td style="text-align: right;">TAF</td>
+<td><input checked="checked" name="taf" type="checkbox" value="on"/></td>
+</tr>
+<tr>
+<td style="text-align: right;">SIGMET</td>
+<td><input checked="checked" name="sigmet" type="checkbox" value="on"/></td>
+</tr>
+<tr>
+<td style="text-align: right;">GAMET / AIRMET</td>
+<td><input checked="checked" name="gametairmet" type="checkbox" value="on"/></td>
+</tr>
+<tr>
+<td style="text-align: right;">METAR HISTORY </td>
+<td><select class="dropDownMeteo" name="metarHistory" style="margin-left:4px"><option selected="selected" value="0">no</option>
+<option value="3">last 3 hours</option>
+<option value="6">last 6 hours</option>
+<option value="12">last 12 hours</option>
+<option value="24">last 24 hours</option></select></td>
+</tr>
+</table>
+</fieldset>
+<table width="600">
+<tr>
+<td rowspan="2" valign="top" width="100"><input onclick="showdiv('wait');" type="submit" value="Retrieve OPMET"/></td>
+<td valign="top"><input name="resetForm" onclick="resetFrm('opmetForm');" type="reset" value="Reset"/></td>
+</tr>
+<tr>
+<td> </td>
+</tr>
+</table>
+</form></td>
+</tr>
+</table>
 </body></html>
