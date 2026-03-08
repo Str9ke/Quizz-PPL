@@ -2,12 +2,12 @@
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;padding:12px;margin:0;
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;padding:12px;margin:0;
   background:var(--bg-body,transparent);color:var(--text-primary,#e0e0e8)}
-.section{margin-bottom:16px;border:1px solid var(--border-color,#333350);border-radius:10px;overflow:hidden;background:var(--bg-container,#1e1e2d)}
-.section-header{padding:10px 14px;font-weight:700;font-size:15px;background:rgba(102,126,234,.1);border-bottom:1px solid var(--border-color,#333350);display:flex;align-items:center;gap:8px;color:var(--text-heading,#fff)}
+.section{margin-bottom:16px;border-radius:10px;overflow:hidden;background:transparent}
+.section-header{padding:10px 14px;font-weight:700;font-size:16px;background:rgba(102,126,234,.12);border-bottom:1px solid var(--border-color,#333350);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px;color:var(--text-heading,#fff)}
 .section-header .icon{font-size:18px}
-.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.6;border-bottom:1px solid var(--border-color,#333350);white-space:pre-wrap;word-break:break-word;color:var(--text-primary,#e0e0e8)}
+.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:13.5px;line-height:1.6;border-bottom:1px solid rgba(255,255,255,.06);white-space:pre-wrap;word-break:break-word;color:var(--text-primary,#e0e0e8)}
 .entry:last-child{border-bottom:none}
 .entry-nil{color:var(--text-secondary,#a0a0b8);font-style:italic}
 .entry-notprov{color:var(--text-secondary,#a0a0b8);font-style:italic;font-size:12px}
@@ -42,17 +42,17 @@ try{
 </head><body>
 
 <div class="section"><div class="section-header"><span class="icon">🌤️</span>METAR</div>
-<div class="entry entry">METAR COR <span class="icao">EBBR</span> <span class="timestamp">081150Z</span> <span class="wx-wind">11003KT</span> <span class="wx-wind">070V130</span> <span class="wx-vis-good">8000</span> <span class="wx-cloud">FEW006</span> <span class="wx-temp">10/10</span> <span class="wx-qnh">Q1024</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBBR</span> <span class="timestamp">081220Z</span> <span class="wx-wind">06003KT</span> <span class="wx-wind">350V100</span> <span class="wx-vis-good">CAVOK</span> <span class="wx-temp">11/11</span> <span class="wx-qnh">Q1023</span> <span class="wx-trend">NOSIG</span>=</div>
 <div class="entry entry">METAR <span class="icao">EBCI</span> <span class="timestamp">081220Z</span> <span class="wx-wind">05003KT</span> <span class="wx-wind">350V090</span> <span class="wx-vis-good">CAVOK</span> <span class="wx-temp">16/07</span> <span class="wx-qnh">Q1023</span> <span class="wx-trend">NOSIG</span>=</div>
 <div class="entry entry-notprov"><span class="icao">EBSG</span> not provided</div>
 <div class="entry entry">METAR <span class="icao">EBAW</span> <span class="timestamp">081220Z</span> <span class="wx-wind">10003KT</span> <span class="wx-wind">060V140</span> <span class="wx-vis-good">5000</span> <span class="wx-phen">BR</span> <span class="wx-cloud">SCT006</span> <span class="wx-temp">09/07</span> <span class="wx-qnh">Q1024</span> <span class="wx-trend">BECMG</span> <span class="wx-vis-good">7000</span> <span class="wx-vis-good">NSW</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBBE</span> <span class="timestamp">081155Z</span> AUTO <span class="wx-wind">VRB02KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">10/08</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-blu">BLU</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBBL</span> <span class="timestamp">081155Z</span> AUTO <span class="wx-wind">VRB02KT</span> <span class="wx-vis-good">9000</span> NCD <span class="wx-temp">11/08</span> <span class="wx-qnh">Q1024</span> <span class="wx-mil-blu">BLU</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBCV</span> <span class="timestamp">081155Z</span> AUTO <span class="wx-wind">VRB01KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">11/08</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-blu">BLU</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBFN</span> <span class="timestamp">081155Z</span> AUTO <span class="wx-wind">11003KT</span> <span class="wx-vis-good">5000</span> <span class="wx-phen">BR</span> <span class="wx-cloud">OVC005</span>/// <span class="wx-temp">08/08</span> <span class="wx-qnh">Q1024</span> <span class="wx-mil-ylo">YLO</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBFS</span> <span class="timestamp">081155Z</span> AUTO <span class="wx-wind">16003KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW140</span>/// <span class="wx-cloud">BKN160</span>/// <span class="wx-temp">16/04</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBBE</span> <span class="timestamp">081225Z</span> AUTO <span class="wx-wind">06003KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">12/09</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBBL</span> <span class="timestamp">081225Z</span> AUTO <span class="wx-wind">05003KT</span> <span class="wx-vis-good">9000</span> NCD <span class="wx-temp">13/08</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBCV</span> <span class="timestamp">081225Z</span> AUTO <span class="wx-wind">VRB02KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">12/08</span> <span class="wx-qnh">Q1023</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBFN</span> <span class="timestamp">081225Z</span> AUTO <span class="wx-wind">14003KT</span> <span class="wx-vis-good">5000</span> <span class="wx-cloud">OVC005</span>/// <span class="wx-temp">08/07</span> <span class="wx-qnh">Q1023</span> <span class="wx-mil-ylo">YLO</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBFS</span> <span class="timestamp">081225Z</span> AUTO <span class="wx-wind">14004KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW070</span>/// <span class="wx-cloud">BKN160</span>/// <span class="wx-cloud">BKN220</span>/// <span class="wx-temp">16/03</span> <span class="wx-qnh">Q1022</span> <span class="wx-mil-blu">BLU</span>=</div>
 <div class="entry entry">METAR <span class="icao">EBLG</span> <span class="timestamp">081220Z</span> <span class="wx-wind">36005KT</span> <span class="wx-vis-good">CAVOK</span> <span class="wx-temp">16/09</span> <span class="wx-qnh">Q1023</span> <span class="wx-trend">NOSIG</span>=</div>
-<div class="entry entry">METAR <span class="icao">EBOS</span> <span class="timestamp">081150Z</span> <span class="wx-wind">VRB01KT</span> <span class="wx-vis-bad">2500</span> <span class="wx-phen">BR</span> <span class="wx-cloud">OVC004</span> <span class="wx-temp">08/08</span> <span class="wx-qnh">Q1024</span> <span class="wx-trend">TEMPO</span> <span class="wx-vis-bad">0500</span> <span class="wx-phen">FG</span> <span class="wx-cloud">OVC001</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBOS</span> <span class="timestamp">081220Z</span> <span class="wx-wind">10003KT</span> <span class="wx-wind">050V140</span> <span class="wx-vis-bad">3000</span> <span class="wx-phen">BR</span> <span class="wx-cloud">BKN005</span> <span class="wx-temp">09/09</span> <span class="wx-qnh">Q1024</span> <span class="wx-trend">TEMPO</span> <span class="wx-vis-bad">0500</span> <span class="wx-phen">FG</span> <span class="wx-cloud">OVC002</span>=</div>
 <div class="entry entry">METAR <span class="icao">ELLX</span> <span class="timestamp">081220Z</span> <span class="wx-wind">14004KT</span> <span class="wx-wind">100V240</span> <span class="wx-vis-good">CAVOK</span> <span class="wx-temp">15/04</span> <span class="wx-qnh">Q1023</span> <span class="wx-trend">NOSIG</span>=</div>
 <div class="entry entry">METAR <span class="icao">EBSP</span> <span class="timestamp">081220Z</span> AUTO <span class="wx-wind">14005KT</span> <span class="wx-wind">080V180</span> <span class="wx-vis-good">9999</span> // VV/// <span class="wx-temp">17/02</span> <span class="wx-qnh">Q1023</span>=</div>
 <div class="entry entry">METAR <span class="icao">EBSH</span> <span class="timestamp">081220Z</span> AUTO <span class="wx-wind">15006KT</span> <span class="wx-wind">110V200</span> <span class="wx-vis-good">9999</span> // VV/// <span class="wx-temp">15/01</span> <span class="wx-qnh">Q1023</span>=</div>
@@ -126,5 +126,5 @@ OTLK:                    FM 18 TL 24 Z
 <div class="section"><div class="section-header"><span class="icon">📄</span>AIRMET</div>
 <div class="entry entry-nil">NIL</div>
 </div>
-<div class="updated">Mis à jour: 08/03/2026 12:22Z</div>
+<div class="updated">Mis à jour: 08/03/2026 12:46Z</div>
 </body></html>
