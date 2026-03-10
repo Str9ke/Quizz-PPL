@@ -41,7 +41,8 @@ def download_and_convert_pdf(session, url, prefix, map_name):
             pix = page.get_pixmap(dpi=150)
             img_filename = f'{prefix}_page_{page_num}.png'
             pix.save(img_filename)
-            html_images += f'<img class="map-img" src="{img_filename}" />\n'
+            cls = "map-img active" if page_num == 0 else "map-img"
+            html_images += f'<img class="{cls}" src="{img_filename}" />\n'
             
         html_content = f"""<!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
