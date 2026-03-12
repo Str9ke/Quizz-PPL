@@ -430,19 +430,20 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
 
 /** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
 function computeStatsForFirestore(categoryQuestions, responses) {
-  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0;
+  let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0, marqueeVue = 0, importanteVue = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
     const r = responses[key] || {};
+    const seen = r.status === 'réussie' || r.status === 'ratée';
     // compter toujours réussite/échec/non-vu
     if (r.status === 'réussie')      reussie++;
     else if (r.status === 'ratée')    ratee++;
     else                               nonvue++;
     // marquée / importante en supplément
-    if (r.marked)                     marquee++;
-    if (r.important)                  importante++;
+    if (r.marked)    { marquee++;    if (seen) marqueeVue++; }
+    if (r.important) { importante++; if (seen) importanteVue++; }
   });
-  return { reussie, ratee, nonvue, marquee, importante };
+  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue };
 }
 
 /**
@@ -581,7 +582,7 @@ async function initStats() {
           catStats.push({ label: cat.label, value: cat.value, stats: fullStats, globalContrib });
         } catch (err) {
           console.error("Stat error for", cat.value, err);
-          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0 };
+          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0, marqueeVue: 0, importanteVue: 0 };
           catStats.push({ label: cat.label, value: cat.value, stats: emptyStats, globalContrib: emptyStats });
         }
       }
@@ -860,9 +861,10 @@ function afficherStats(groupsData, globalStats) {
   }
 
   // Carte globale
-  const gVues = gRe + gRa;
-  const gMaPerc = gTotal ? (gMa * 100 / gTotal).toFixed(1) : '0.0';
-  const gImPerc = gTotal ? (gIm * 100 / gTotal).toFixed(1) : '0.0';
+  const gMaV = globalStats.marqueeVue || 0;
+  const gImV = globalStats.importanteVue || 0;
+  const gMaPerc = gMa ? (gMaV * 100 / gMa).toFixed(1) : '0.0';
+  const gImPerc = gIm ? (gImV * 100 / gIm).toFixed(1) : '0.0';
   let html = `
     <div class="stats-global-card">
       <div class="stats-global-row">
@@ -884,12 +886,12 @@ function afficherStats(groupsData, globalStats) {
         <div style="display:flex;align-items:center;gap:6px;font-size:0.82em;margin-bottom:3px">
           <span>📌 Marquées</span>
           <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gMaPerc}%;background:#667eea"></div></div>
-          <span style="min-width:60px;text-align:right">${gMa}/${gTotal} (${gMaPerc}%)</span>
+          <span style="min-width:60px;text-align:right">${gMaV}/${gMa} (${gMaPerc}%)</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:0.82em">
           <span>⭐ Importantes</span>
           <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gImPerc}%;background:#f59e0b"></div></div>
-          <span style="min-width:60px;text-align:right">${gIm}/${gTotal} (${gImPerc}%)</span>
+          <span style="min-width:60px;text-align:right">${gImV}/${gIm} (${gImPerc}%)</span>
         </div>
       </div>
       ${gDaysHtml}
@@ -901,7 +903,7 @@ function afficherStats(groupsData, globalStats) {
 
   // Chaque groupe
   groupsData.forEach(group => {
-    let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0;
+    let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0, grMaV = 0, grImV = 0;
     group.categories.forEach(c => {
       const s = c.globalContrib || c.stats;
       grRe += s.reussie;
@@ -909,11 +911,13 @@ function afficherStats(groupsData, globalStats) {
       grNv += s.nonvue;
       grMa += s.marquee;
       grIm += s.importante || 0;
+      grMaV += s.marqueeVue || 0;
+      grImV += s.importanteVue || 0;
     });
     const grTotal = grRe + grRa + grNv;
     const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;
-    const grMaPerc = grTotal ? (grMa * 100 / grTotal).toFixed(1) : '0.0';
-    const grImPerc = grTotal ? (grIm * 100 / grTotal).toFixed(1) : '0.0';
+    const grMaPerc = grMa ? (grMaV * 100 / grMa).toFixed(1) : '0.0';
+    const grImPerc = grIm ? (grImV * 100 / grIm).toFixed(1) : '0.0';
     const grName = (group.name || '').replace(/'/g, "\\'");
 
     html += `<div class="stats-group">`;
@@ -926,12 +930,12 @@ function afficherStats(groupsData, globalStats) {
     </div>`;
     html += `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:0.78em;margin-bottom:6px;align-items:center">
       <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:180px">
-        <span>📌 ${grMa}</span>
+        <span>📌 ${grMaV}/${grMa}</span>
         <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grMaPerc}%;background:#667eea"></div></div>
         <span>${grMaPerc}%</span>
       </div>
       <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:180px">
-        <span>⭐ ${grIm}</span>
+        <span>⭐ ${grImV}/${grIm}</span>
         <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grImPerc}%;background:#f59e0b"></div></div>
         <span>${grImPerc}%</span>
       </div>
