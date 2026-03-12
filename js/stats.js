@@ -860,6 +860,9 @@ function afficherStats(groupsData, globalStats) {
   }
 
   // Carte globale
+  const gVues = gRe + gRa;
+  const gMaPerc = gTotal ? (gMa * 100 / gTotal).toFixed(1) : '0.0';
+  const gImPerc = gTotal ? (gIm * 100 / gTotal).toFixed(1) : '0.0';
   let html = `
     <div class="stats-global-card">
       <div class="stats-global-row">
@@ -876,6 +879,18 @@ function afficherStats(groupsData, globalStats) {
         <span>👀 ${gNv}</span>
         <span>📌 ${gMa}</span>
         <span>⭐ ${gIm}</span>
+      </div>
+      <div style="margin-top:8px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.82em;margin-bottom:3px">
+          <span>📌 Marquées</span>
+          <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gMaPerc}%;background:#667eea"></div></div>
+          <span style="min-width:60px;text-align:right">${gMa}/${gTotal} (${gMaPerc}%)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.82em">
+          <span>⭐ Importantes</span>
+          <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gImPerc}%;background:#f59e0b"></div></div>
+          <span style="min-width:60px;text-align:right">${gIm}/${gTotal} (${gImPerc}%)</span>
+        </div>
       </div>
       ${gDaysHtml}
     </div>
@@ -897,6 +912,9 @@ function afficherStats(groupsData, globalStats) {
     });
     const grTotal = grRe + grRa + grNv;
     const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;
+    const grMaPerc = grTotal ? (grMa * 100 / grTotal).toFixed(1) : '0.0';
+    const grImPerc = grTotal ? (grIm * 100 / grTotal).toFixed(1) : '0.0';
+    const grName = (group.name || '').replace(/'/g, "\\'");
 
     html += `<div class="stats-group">`;
     html += `<div class="stats-group-header">
@@ -905,6 +923,19 @@ function afficherStats(groupsData, globalStats) {
     </div>`;
     html += `<div class="progressbar" style="height:8px;margin:4px 0 8px">
       <div class="progress" style="height:8px;width:${grPerc}%;background:${percColor(grPerc)}"></div>
+    </div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:0.78em;margin-bottom:6px;align-items:center">
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:180px">
+        <span>📌 ${grMa}</span>
+        <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grMaPerc}%;background:#667eea"></div></div>
+        <span>${grMaPerc}%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:180px">
+        <span>⭐ ${grIm}</span>
+        <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grImPerc}%;background:#f59e0b"></div></div>
+        <span>${grImPerc}%</span>
+      </div>
+      <button class="stats-cat-reset-btn" onclick="_resetGroupStats('${grName}')" title="Réinitialiser la progression ${group.name}" style="font-size:0.95em">🔄 Reset</button>
     </div>`;
 
     // Lignes par catégorie
@@ -1575,6 +1606,208 @@ async function resetStats() {
     console.error("Erreur lors de la réinitialisation des statistiques :", error);
     alert("Erreur lors de la réinitialisation des statistiques : " + error.message);
   }
+}
+
+/** _getGroupCategories() – Retourne les catégories d'un groupe par nom */
+function _getGroupCategories(groupName) {
+  const map = {
+    'CLASSIQUES': [
+      'PROCÉDURE RADIO','PROCÉDURES OPÉRATIONNELLES','RÉGLEMENTATION',
+      "CONNAISSANCE DE L'AVION",'INSTRUMENTATION','MASSE ET CENTRAGE',
+      'MOTORISATION','AERODYNAMIQUE PRINCIPES DU VOL'
+    ],
+    'EASA': [
+      'EASA PROCEDURES','EASA AERODYNAMIQUE','EASA NAVIGATION',
+      "EASA CONNAISSANCE DE L'AVION",'EASA METEOROLOGIE',
+      'EASA PERFORMANCE ET PLANIFICATION','EASA REGLEMENTATION',
+      'EASA PERFORMANCES HUMAINES'
+    ],
+    'GLIGLI HARD': [
+      'GLIGLI COMMUNICATIONS HARD','GLIGLI CONNAISSANCES GENERALES AERONEF HARD',
+      'GLIGLI EPREUVE COMMUNE HARD','GLIGLI EPREUVE SPECIFIQUE HARD',
+      'GLIGLI METEOROLOGIE HARD','GLIGLI NAVIGATION HARD',
+      'GLIGLI PERFORMANCE HUMAINE HARD','GLIGLI PERFORMANCES PREPARATION VOL HARD',
+      'GLIGLI PRINCIPES DU VOL HARD','GLIGLI PROCEDURES OPERATIONNELLES HARD',
+      'GLIGLI REGLEMENTATION HARD'
+    ],
+    'GLIGLI EASY': [
+      'GLIGLI COMMUNICATIONS EASY','GLIGLI CONNAISSANCES GENERALES AERONEF EASY',
+      'GLIGLI EPREUVE COMMUNE EASY','GLIGLI EPREUVE SPECIFIQUE EASY',
+      'GLIGLI METEOROLOGIE EASY','GLIGLI NAVIGATION EASY',
+      'GLIGLI PERFORMANCE HUMAINE EASY','GLIGLI PERFORMANCES PREPARATION VOL EASY',
+      'GLIGLI PRINCIPES DU VOL EASY','GLIGLI PROCEDURES OPERATIONNELLES EASY',
+      'GLIGLI REGLEMENTATION EASY'
+    ]
+  };
+  return map[groupName] || [];
+}
+
+/**
+ * _resetGroupStats() – Réinitialise la progression d'un groupe entier.
+ * Conserve les marquages 📌 et ⭐, efface le statut vu/réussi/raté.
+ */
+async function _resetGroupStats(groupName) {
+  if (!confirm(
+    `Réinitialiser la progression de « ${groupName} » ?\n\n` +
+    `• Toutes les questions redeviendront "non vues"\n` +
+    `• Les marquages 📌 et ⭐ seront conservés`
+  )) return;
+
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  const catValues = _getGroupCategories(groupName);
+  if (!catValues.length) { alert('Groupe introuvable.'); return; }
+
+  try {
+    // Collecter toutes les clés de questions pour ce groupe
+    let allKeys = [];
+    for (const catVal of catValues) {
+      await chargerQuestions(catVal);
+      allKeys = allKeys.concat(questions.map(q => getKeyFor(q)));
+    }
+    if (!allKeys.length) { alert('Aucune question trouvée.'); return; }
+
+    let existingResponses = {};
+    try {
+      const docSnap = navigator.onLine
+        ? await Promise.race([
+            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+          ])
+        : await db.collection('quizProgress').doc(uid).get();
+      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
+    } catch (e) {
+      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    }
+
+    const update = { responses: {} };
+    allKeys.forEach(k => {
+      const r = existingResponses[k] || {};
+      const preserved = {};
+      if (r.marked)    preserved.marked = true;
+      if (r.important) preserved.important = true;
+      if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
+      update.responses[k] = Object.keys(preserved).length ? preserved : firebase.firestore.FieldValue.delete();
+    });
+
+    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+    allKeys.forEach(k => localStorage.removeItem(k));
+    alert(`Progression de « ${groupName} » réinitialisée ! (marquages conservés)`);
+    window.location.reload();
+  } catch (e) {
+    console.error('[resetGroup] Erreur:', e);
+    alert('Erreur : ' + e.message);
+  }
+}
+
+/**
+ * _exportProgress() – Exporte toute la progression Firestore en fichier JSON
+ */
+async function _exportProgress() {
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  try {
+    let doc;
+    if (navigator.onLine) {
+      try {
+        doc = await Promise.race([
+          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+        ]);
+      } catch (e) {
+        doc = await db.collection('quizProgress').doc(uid).get();
+      }
+    } else {
+      doc = await db.collection('quizProgress').doc(uid).get();
+    }
+
+    const data = doc.exists ? doc.data() : {};
+    // Include localStorage session data as well
+    const backup = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      uid: uid,
+      responses: data.responses || {},
+      dailyHistory: data.dailyHistory || {},
+      sessionHistory: JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]'),
+      symbolesResponses: JSON.parse(localStorage.getItem('symbolesResponses') || '{}'),
+      symbolesSessionHistory: JSON.parse(localStorage.getItem('symbolesSessionHistory') || '[]')
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quizz_ppl_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('[exportProgress]', e);
+    alert('Erreur export : ' + e.message);
+  }
+}
+
+/**
+ * _importProgress() – Importe la progression depuis un fichier JSON
+ */
+function _importProgress() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async function() {
+    const file = input.files[0];
+    if (!file) return;
+
+    const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+    if (!uid) { alert('Vous devez être connecté.'); return; }
+
+    try {
+      const text = await file.text();
+      let backup;
+      try { backup = JSON.parse(text); } catch (e) { alert('Fichier JSON invalide.'); return; }
+
+      if (!backup.responses || typeof backup.responses !== 'object') {
+        alert('Fichier de sauvegarde invalide (pas de réponses trouvées).');
+        return;
+      }
+
+      if (!confirm(
+        `Importer la sauvegarde du ${backup.exportDate ? new Date(backup.exportDate).toLocaleDateString('fr-FR') : '?'} ?\n\n` +
+        `• ${Object.keys(backup.responses).length} réponses seront restaurées\n` +
+        `• Cela écrasera votre progression actuelle`
+      )) return;
+
+      // Write responses to Firestore
+      const update = {
+        responses: backup.responses,
+        lastUpdated: firebase.firestore.Timestamp.now()
+      };
+      if (backup.dailyHistory) update.dailyHistory = backup.dailyHistory;
+      await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+
+      // Restore localStorage data
+      if (backup.sessionHistory) {
+        localStorage.setItem('offlineSessionBackup', JSON.stringify(backup.sessionHistory));
+      }
+      if (backup.symbolesResponses) {
+        localStorage.setItem('symbolesResponses', JSON.stringify(backup.symbolesResponses));
+      }
+      if (backup.symbolesSessionHistory) {
+        localStorage.setItem('symbolesSessionHistory', JSON.stringify(backup.symbolesSessionHistory));
+      }
+
+      alert('Progression importée avec succès !');
+      window.location.reload();
+    } catch (e) {
+      console.error('[importProgress]', e);
+      alert('Erreur import : ' + e.message);
+    }
+  };
+  input.click();
 }
 
 
