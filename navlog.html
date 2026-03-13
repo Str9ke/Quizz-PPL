@@ -282,6 +282,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .skeyes-nav .skeyes-slider{width:100%;margin:2px 0 0;cursor:pointer;accent-color:#667eea;height:6px;flex-basis:100%;order:99}
 /* Reduce carousel images 20% on desktop */
 @media(min-width:768px){.skeyes-carousel-img{max-width:80%!important;display:block;margin:0 auto}}
+/* Model carousel (GFS/AROME) */
+.model-carousel{position:relative}
+.model-carousel-img{width:100%;display:block;border-radius:8px}
+@media(min-width:768px){.model-carousel-img{max-width:80%!important;margin:0 auto}}
+.model-time-label{text-align:center;font-size:.82em;color:var(--text-secondary);padding:4px 0}
+.model-nav{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;background:var(--bg-container);flex-wrap:wrap;overflow-x:auto}
+.model-nav button{padding:4px 10px;font-size:.75em;border-radius:8px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;min-width:28px;flex-shrink:0}
+.model-nav button:hover{border-color:#667eea;color:#667eea}
+.model-nav button.active{background:#667eea;color:#fff;border-color:#667eea}
+.model-nav .model-counter{font-size:.78em;font-weight:600;color:var(--text-heading);min-width:60px;text-align:center;flex-shrink:0}
+.model-nav .model-slider{width:100%;margin:2px 0 0;cursor:pointer;accent-color:#667eea;height:6px;flex-basis:100%;order:99}
+.model-preload-bar{height:3px;background:var(--border-color);border-radius:2px;margin:4px 12px 0;overflow:hidden}
+.model-preload-bar .fill{height:100%;background:#667eea;transition:width .3s;width:0%}
 .map-del-btn:hover{background:#f44336!important;color:#fff!important}
 .aeroweb-nav-btn{padding:6px 14px;font-size:.78em;font-weight:600;border-radius:14px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
 .aeroweb-nav-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.08)}
@@ -757,6 +770,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
       <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
+      <button class="meteo-subtab" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
     </div>
 
@@ -1116,6 +1130,147 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div id="extraDropZone" style="border:2px dashed var(--border-color);border-radius:10px;padding:18px 12px;text-align:center;font-size:.82em;color:var(--text-secondary);cursor:pointer;transition:border-color .2s;margin-bottom:8px" onclick="document.getElementById('fileExtraImages').click()" ondragover="event.preventDefault();this.style.borderColor='#667eea'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';window.handleExtraDropEvent(event)">&#x1F4C2; Glissez-d&#xe9;posez vos fichiers ici ou <u>cliquez pour parcourir</u><br><small style="opacity:.6">Images, PDF, tout type de fichier accept&#xe9;</small></div>
         <input type="file" id="fileExtraImages" accept="*" multiple style="display:none" onchange="window.handleExtraImages(this)">
         <div class="extra-images-grid" id="extraImagesGrid"></div>
+      </div>
+    </div>
+
+    <!-- ===== SUB: Modèles GFS / AROME ===== -->
+    <div id="msub-models" class="meteo-sub-content">
+      <!-- Refresh & run info -->
+      <div style="display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 0 12px;flex-wrap:wrap">
+        <button onclick="window.initModelCarousels(true)" style="padding:8px 18px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">&#x1F504; Actualiser les Mod&#xe8;les</button>
+        <span id="modelRunInfo" style="font-size:.82em;color:var(--text-secondary)"></span>
+      </div>
+
+      <!-- SAT24 France -->
+      <div class="map-card">
+        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite Visible &#x2014; France / Europe (sat24)</div>
+        <div class="iframe-card"><iframe id="sat24FrFrame" src="about:blank" data-src="https://www.sat24.com/fr-fr" style="height:550px;width:100%;border:none" loading="lazy"></iframe></div>
+        <div class="map-card-actions">
+          <button onclick="var f=document.getElementById('sat24FrFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+          <a href="https://www.sat24.com/fr-fr" target="_blank" rel="noopener">&#x1F517; Ouvrir sat24</a>
+        </div>
+      </div>
+
+      <!-- SAT24 Belgium -->
+      <div class="map-card">
+        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite Visible &#x2014; Belgique (sat24)</div>
+        <div class="iframe-card"><iframe id="sat24BeFrame" src="about:blank" data-src="https://www.sat24.com/fr-fr/country/be" style="height:550px;width:100%;border:none" loading="lazy"></iframe></div>
+        <div class="map-card-actions">
+          <button onclick="var f=document.getElementById('sat24BeFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+          <a href="https://www.sat24.com/fr-fr/country/be" target="_blank" rel="noopener">&#x1F517; Ouvrir sat24 Belgique</a>
+        </div>
+      </div>
+
+      <!-- AROME HD -->
+      <div class="map-card" id="card-model-arome">
+        <div class="map-card-title">&#x1F32A;&#xFE0F; AROME HD &#x2014; Pr&#xe9;cipitations France (M&#xe9;t&#xe9;o-France)</div>
+        <div class="model-carousel" data-model="arome" data-key="model_arome">
+          <img class="model-carousel-img" alt="AROME HD" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/arome.php" target="_blank" rel="noopener">&#x1F517; Meteociel AROME</a>
+        </div>
+      </div>
+
+      <!-- GFS: Résumé -->
+      <div class="map-card" id="card-model-resume">
+        <div class="map-card-title">&#x1F4CA; GFS R&#xe9;sum&#xe9; &#x2014; RR / Pression / N&#xe9;bulosit&#xe9;</div>
+        <div class="model-carousel" data-model="gfs" data-code="102" data-key="model_resume">
+          <img class="model-carousel-img" alt="GFS R&#xe9;sum&#xe9;" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/resume/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel GFS R&#xe9;sum&#xe9;</a>
+        </div>
+      </div>
+
+      <!-- GFS: Précipitations HD -->
+      <div class="map-card" id="card-model-precipitations">
+        <div class="map-card-title">&#x1F327;&#xFE0F; GFS Pr&#xe9;cipitations HD</div>
+        <div class="model-carousel" data-model="gfs" data-code="779" data-key="model_precip">
+          <img class="model-carousel-img" alt="GFS Pr&#xe9;cipitations HD" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/precipitations-hd/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
+      </div>
+
+      <!-- GFS: Pression -->
+      <div class="map-card" id="card-model-pression">
+        <div class="map-card-title">&#x1F300; GFS Pression</div>
+        <div class="model-carousel" data-model="gfs" data-code="515" data-key="model_pression">
+          <img class="model-carousel-img" alt="GFS Pression" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/pression/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
+      </div>
+
+      <!-- GFS: Vent Moyen -->
+      <div class="map-card" id="card-model-vent">
+        <div class="map-card-title">&#x1F4A8; GFS Vent Moyen</div>
+        <div class="model-carousel" data-model="gfs" data-code="602" data-key="model_vent">
+          <img class="model-carousel-img" alt="GFS Vent Moyen" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/vent-moyen/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
+      </div>
+
+      <!-- GFS: Température du Sol -->
+      <div class="map-card" id="card-model-temp">
+        <div class="map-card-title">&#x1F321;&#xFE0F; GFS Temp&#xe9;rature du Sol</div>
+        <div class="model-carousel" data-model="gfs" data-code="543" data-key="model_temp">
+          <img class="model-carousel-img" alt="GFS Temp&#xe9;rature du Sol" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/temperature-du-sol/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
+      </div>
+
+      <!-- GFS: CAPE et Lifted Index -->
+      <div class="map-card" id="card-model-cape">
+        <div class="map-card-title">&#x26A1; GFS CAPE et Lifted Index</div>
+        <div class="model-carousel" data-model="gfs" data-code="505" data-key="model_cape">
+          <img class="model-carousel-img" alt="GFS CAPE et LI" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/cape-et-lifted-index/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
+      </div>
+
+      <!-- GFS: Storm Motion -->
+      <div class="map-card" id="card-model-storm">
+        <div class="map-card-title">&#x1F32A;&#xFE0F; GFS Storm Motion</div>
+        <div class="model-carousel" data-model="gfs" data-code="110" data-key="model_storm">
+          <img class="model-carousel-img" alt="GFS Storm Motion" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
+        </div>
+        <div class="map-card-actions">
+          <a href="https://www.meteociel.fr/modeles/gfs/storm-motion/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
+        </div>
       </div>
     </div>
 
@@ -2472,6 +2627,7 @@ function switchMeteoSub(id){
     }
     if(id==='windy') initWindy();
     if(id==='fronts' && window._initFrontsVideo) window._initFrontsVideo();
+    if(id==='models' && window.initModelCarousels) window.initModelCarousels(false);
   }
   /* Auto-scroll to sub-tabs bar */
   var subtabsBar=document.querySelector('.meteo-subtabs');
@@ -2713,6 +2869,164 @@ window.switchMeteoSub=switchMeteoSub;
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCarousels);
   else initCarousels();
+})();
+
+/* ===== MODEL CAROUSELS (GFS / AROME) ===== */
+(function(){
+  var _mc = {}; // key -> {el, img, urls, hours, idx, playing, timer, speed, runMs}
+  var _gfsHours = [3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63,66,69,72,75,78,81,84,90,96,102,108,114,120,126,132,138,144,150,156,162,168,174,180,186,192,198,204,210,216,222,228,234,240];
+  var _aromeHours = [];
+  (function(){ for(var h=1;h<=51;h++) _aromeHours.push(h); })();
+
+  function getLatestGfsRun(){
+    var now = new Date();
+    var utcH = now.getUTCHours();
+    var runs = [18,12,6,0];
+    var runH = 0;
+    var dt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    for(var i=0;i<runs.length;i++){
+      if(utcH >= runs[i]+5){ runH=runs[i]; break; }
+    }
+    if(utcH < 5){ dt = new Date(dt.getTime()-86400000); runH=18; }
+    var y=dt.getUTCFullYear(), m=('0'+(dt.getUTCMonth()+1)).slice(-2), d=('0'+dt.getUTCDate()).slice(-2), rh=('0'+runH).slice(-2);
+    return {code:''+y+m+d+rh, ms: dt.getTime()+runH*3600000, hour:runH, day:dt.getUTCDate()};
+  }
+
+  function buildGfsUrl(run,hour,code){
+    return 'https://modeles2.meteociel.fr/modeles_gfs/runs/'+run.code+'/'+hour+'-'+code+'.GIF?'+run.day+'-'+run.hour;
+  }
+
+  function buildAromeUrl(hour){
+    var now=new Date();
+    return 'https://modeles7.meteociel.fr/modeles/arome/aromehd-1-'+hour+'-0.png?'+now.getUTCDate()+'-'+now.getUTCHours();
+  }
+
+  function findClosestIdx(runMs, hours){
+    var now=Date.now(), bestI=0, bestD=Infinity;
+    for(var i=0;i<hours.length;i++){
+      var valid=runMs+hours[i]*3600000;
+      var diff=Math.abs(now-valid);
+      if(diff<bestD){bestD=diff;bestI=i;}
+    }
+    return bestI;
+  }
+
+  function formatValidTime(runMs, hour){
+    var d=new Date(runMs+hour*3600000);
+    try{
+      var be=d.toLocaleString('fr-BE',{timeZone:'Europe/Brussels',weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      var utc=('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2)+' UTC';
+      return be+' ('+utc+') \u2014 +'+hour+'h';
+    }catch(e){return '+'+hour+'h';}
+  }
+
+  function buildModelNav(key){
+    var c=_mc[key]; if(!c||c.urls.length<=1) return;
+    var nav=c.el.querySelector('.model-nav');
+    nav.innerHTML=
+      '<button onclick="modelCarousel.first(\''+key+'\')" title="Premi\u00e8re">\u23EE</button>'+
+      '<button onclick="modelCarousel.prev(\''+key+'\')" title="Pr\u00e9c\u00e9dente">\u25C0</button>'+
+      '<button onclick="modelCarousel.next(\''+key+'\')" title="Suivante">\u25B6</button>'+
+      '<button onclick="modelCarousel.last(\''+key+'\')" title="Derni\u00e8re">\u23ED</button>'+
+      '<span class="model-counter" id="mcnt-'+key+'">'+(c.idx+1)+'/'+c.urls.length+'</span>'+
+      '<button onclick="modelCarousel.play(\''+key+'\')" id="mplay-'+key+'" title="Lecture">\u25B6\uFE0F</button>'+
+      '<button onclick="modelCarousel.stop(\''+key+'\')" title="Pause">\u23F8</button>'+
+      '<button onclick="modelCarousel.slower(\''+key+'\')" title="Plus lent">\uD83D\uDC22</button>'+
+      '<button onclick="modelCarousel.faster(\''+key+'\')" title="Plus rapide">\uD83D\uDC07</button>'+
+      '<input type="range" class="model-slider" id="mslider-'+key+'" min="0" max="'+(c.urls.length-1)+'" value="'+c.idx+'" oninput="modelCarousel.seek(\''+key+'\',+this.value)">';
+  }
+
+  function showModelImg(key){
+    var c=_mc[key]; if(!c) return;
+    c.img.src=c.urls[c.idx];
+    var cnt=document.getElementById('mcnt-'+key);
+    if(cnt) cnt.textContent=(c.idx+1)+'/'+c.urls.length;
+    var sl=document.getElementById('mslider-'+key);
+    if(sl) sl.value=c.idx;
+    var lbl=c.el.querySelector('.model-time-label');
+    if(lbl) lbl.textContent=formatValidTime(c.runMs,c.hours[c.idx]);
+  }
+
+  function preloadModel(key){
+    var c=_mc[key]; if(!c) return;
+    var total=c.urls.length, loaded=0;
+    var bar=c.el.querySelector('.model-preload-bar .fill');
+    for(var i=0;i<total;i++){
+      var img=new Image();
+      img.onload=img.onerror=function(){
+        loaded++;
+        if(bar) bar.style.width=Math.round(loaded*100/total)+'%';
+      };
+      img.src=c.urls[i];
+    }
+  }
+
+  window.modelCarousel={
+    first:function(k){var c=_mc[k];if(!c)return;c.idx=0;showModelImg(k);},
+    last:function(k){var c=_mc[k];if(!c)return;c.idx=c.urls.length-1;showModelImg(k);},
+    prev:function(k){var c=_mc[k];if(!c)return;c.idx=c.idx>0?c.idx-1:c.urls.length-1;showModelImg(k);},
+    next:function(k){var c=_mc[k];if(!c)return;c.idx=c.idx<c.urls.length-1?c.idx+1:0;showModelImg(k);},
+    seek:function(k,i){var c=_mc[k];if(!c)return;c.idx=+i;showModelImg(k);},
+    play:function(k){
+      var c=_mc[k];if(!c)return;c.playing=true;
+      var btn=document.getElementById('mplay-'+k);if(btn)btn.classList.add('active');
+      function step(){if(!c.playing)return;c.idx=c.idx<c.urls.length-1?c.idx+1:0;showModelImg(k);c.timer=setTimeout(step,c.speed);}
+      c.timer=setTimeout(step,c.speed);
+    },
+    stop:function(k){var c=_mc[k];if(!c)return;c.playing=false;clearTimeout(c.timer);var btn=document.getElementById('mplay-'+k);if(btn)btn.classList.remove('active');},
+    faster:function(k){var c=_mc[k];if(!c)return;c.speed=Math.max(50,c.speed-100);},
+    slower:function(k){var c=_mc[k];if(!c)return;c.speed=c.speed+100;}
+  };
+
+  window.initModelCarousels=function(force){
+    // Stop any playing
+    for(var k in _mc){if(_mc[k].playing){_mc[k].playing=false;clearTimeout(_mc[k].timer);}}
+    _mc={};
+
+    var run=getLatestGfsRun();
+    var info=document.getElementById('modelRunInfo');
+    if(info){
+      var rd=new Date(run.ms);
+      try{info.textContent='Run GFS : '+rd.toLocaleString('fr-BE',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' UTC';}
+      catch(e){info.textContent='Run GFS : '+run.code;}
+    }
+
+    var els=document.querySelectorAll('.model-carousel');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      var key=el.getAttribute('data-key');
+      var model=el.getAttribute('data-model');
+      var img=el.querySelector('.model-carousel-img');
+      var urls=[], hours=[], runMs=0;
+
+      if(model==='gfs'){
+        var code=el.getAttribute('data-code');
+        hours=_gfsHours;
+        runMs=run.ms;
+        for(var j=0;j<hours.length;j++) urls.push(buildGfsUrl(run,hours[j],code));
+      } else if(model==='arome'){
+        hours=_aromeHours;
+        // AROME: estimate run time as latest 3h cycle available ~3h before now
+        var now=new Date();
+        var ah=now.getUTCHours();
+        var arCycles=[21,18,15,12,9,6,3,0];
+        var arH=0;
+        for(var a=0;a<arCycles.length;a++){if(ah>=arCycles[a]+3){arH=arCycles[a];break;}}
+        if(ah<3){arH=21; now=new Date(now.getTime()-86400000);}
+        runMs=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),arH);
+        for(var j=0;j<hours.length;j++) urls.push(buildAromeUrl(hours[j]));
+      }
+
+      var startIdx=findClosestIdx(runMs,hours);
+      img.src=urls[startIdx];
+      _mc[key]={el:el,img:img,urls:urls,hours:hours,idx:startIdx,playing:false,timer:null,speed:500,runMs:runMs};
+      buildModelNav(key);
+      showModelImg(key);
+      preloadModel(key);
+    }
+
+    if(force) _toast('\u2705 Mod\u00e8les actualis\u00e9s','success',2500);
+  };
 })();
 
 /* ===== NOTAM SUMMARY UPLOAD ===== */
