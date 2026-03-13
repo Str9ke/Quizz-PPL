@@ -825,7 +825,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
       <!-- Bouton d'actualisation globale -->
       <div style="text-align: center; margin-bottom: 15px;">
-        <button onclick="['autoTemsiFrFrame','autoTemsiEuFrame','autoWintemFrFrame','autoWintemEuFrame'].forEach(function(i){var f=document.getElementById(i);if(f)f.src=f.src.split('?')[0]+'?t='+new Date().getTime();})" style="padding: 10px 16px; font-weight: bold; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+        <button onclick="initTemsiCarousels(true)" style="padding: 10px 16px; font-weight: bold; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
           <span>&#x1F504;</span> Actualiser Toutes Les Cartes WINTEM & TEMSI
         </button>
       </div>
@@ -835,11 +835,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- TEMSI France Automatique -->
       <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
         <div class="map-card-title">&#x1F916; TEMSI France (Automatique)</div>
-        <div class="iframe-card">
-          <iframe id="autoTemsiFrFrame" src="temsi_france.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="var el=this;setTimeout(function(){try{el.style.height=el.contentDocument.body.scrollHeight+'px'}catch(e){}},200)"></iframe>
+        <div class="model-carousel" data-model="temsi" data-manifest="temsi_france_manifest.json" data-key="temsi_france">
+          <img class="model-carousel-img" alt="TEMSI France" style="background:#fff" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
         <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('autoTemsiFrFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Actualiser</button>
           <a href="temsi_france.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
         </div>
       </div>
@@ -847,11 +849,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- TEMSI EUROC Automatique -->
       <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
         <div class="map-card-title">&#x1F916; TEMSI EUROC (Automatique)</div>
-        <div class="iframe-card">
-          <iframe id="autoTemsiEuFrame" src="temsi_euroc.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="var el=this;setTimeout(function(){try{el.style.height=el.contentDocument.body.scrollHeight+'px'}catch(e){}},200)"></iframe>
+        <div class="model-carousel" data-model="temsi" data-manifest="temsi_euroc_manifest.json" data-key="temsi_euroc">
+          <img class="model-carousel-img" alt="TEMSI EUROC" style="background:#fff" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
         <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('autoTemsiEuFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Actualiser</button>
           <a href="temsi_euroc.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
         </div>
       </div>
@@ -859,11 +863,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- WINTEM France Automatique -->
       <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
         <div class="map-card-title">&#x1F916; WINTEM France (Automatique)</div>
-        <div class="iframe-card">
-          <iframe id="autoWintemFrFrame" src="wintem_france.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="var el=this;setTimeout(function(){try{el.style.height=el.contentDocument.body.scrollHeight+'px'}catch(e){}},200)"></iframe>
+        <div class="model-carousel" data-model="temsi" data-manifest="wintem_france_manifest.json" data-key="wintem_france">
+          <img class="model-carousel-img" alt="WINTEM France" style="background:#fff" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
         <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('autoWintemFrFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Actualiser</button>
           <a href="wintem_france.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
         </div>
       </div>
@@ -871,11 +877,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- WINTEM EUROC Automatique -->
       <div class="map-card" style="margin-bottom:14px; border:2px solid #667eea;">
         <div class="map-card-title">&#x1F916; WINTEM EUROC (Automatique)</div>
-        <div class="iframe-card">
-          <iframe id="autoWintemEuFrame" src="wintem_euroc.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="var el=this;setTimeout(function(){try{el.style.height=el.contentDocument.body.scrollHeight+'px'}catch(e){}},200)"></iframe>
+        <div class="model-carousel" data-model="temsi" data-manifest="wintem_euroc_manifest.json" data-key="wintem_euroc">
+          <img class="model-carousel-img" alt="WINTEM EUROC" style="background:#fff" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
         <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('autoWintemEuFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Actualiser</button>
           <a href="wintem_euroc.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger PDF original</a>
         </div>
       </div>
@@ -2655,6 +2663,7 @@ function switchMeteoSub(id){
     if(id==='windy') initWindy();
     if(id==='fronts' && window._initFrontsVideo) window._initFrontsVideo();
     if(id==='models' && window.initModelCarousels) window.initModelCarousels(false);
+    if(id==='charts' && window.initTemsiCarousels) window.initTemsiCarousels(false);
   }
   /* Auto-scroll to sub-tabs bar */
   var subtabsBar=document.querySelector('.meteo-subtabs');
@@ -2673,6 +2682,8 @@ window.refreshAllMeteo=function(){
   },200);
   /* Re-init model carousels */
   if(window.initModelCarousels) window.initModelCarousels(true);
+  /* Re-init TEMSI/WINTEM carousels */
+  if(window.initTemsiCarousels) window.initTemsiCarousels(false);
   /* Re-init fronts video */
   if(window._initFrontsVideo) window._initFrontsVideo();
   /* Re-init Skeyes carousels */
@@ -3001,7 +3012,8 @@ window.refreshAllMeteo=function(){
     if(sl) sl.value=c.idx;
     var lbl=c.el.querySelector('.model-time-label');
     if(lbl){
-      if(c.validTimes) lbl.textContent=formatSat24Time(c.validTimes[c.idx]);
+      if(c.temsiLabels) lbl.textContent=c.temsiLabels[c.idx];
+      else if(c.validTimes) lbl.textContent=formatSat24Time(c.validTimes[c.idx]);
       else lbl.textContent=formatValidTime(c.runMs,c.hours[c.idx]);
     }
   }
@@ -3112,7 +3124,7 @@ window.refreshAllMeteo=function(){
     var snap={};
     for(var k in _mc){
       var c=_mc[k];
-      snap[k]={urls:c.urls.slice(),hours:c.hours.slice(),idx:c.idx,runMs:c.runMs,validTimes:c.validTimes?c.validTimes.slice():null,speed:c.speed};
+      snap[k]={urls:c.urls.slice(),hours:c.hours.slice(),idx:c.idx,runMs:c.runMs,validTimes:c.validTimes?c.validTimes.slice():null,speed:c.speed,temsiLabels:c.temsiLabels?c.temsiLabels.slice():null};
     }
     return snap;
   };
@@ -3128,11 +3140,85 @@ window.refreshAllMeteo=function(){
       var el=document.querySelector('.model-carousel[data-key="'+k+'"]');
       if(!el) continue;
       var img=el.querySelector('.model-carousel-img');
-      _mc[k]={el:el,img:img,urls:s.urls,hours:s.hours,idx:s.idx,playing:false,timer:null,speed:s.speed||500,runMs:s.runMs,validTimes:s.validTimes};
+      _mc[k]={el:el,img:img,urls:s.urls,hours:s.hours,idx:s.idx,playing:false,timer:null,speed:s.speed||500,runMs:s.runMs,validTimes:s.validTimes,temsiLabels:s.temsiLabels||null};
       buildModelNav(k);
       showModelImg(k);
       preloadModel(k);
     }
+  };
+
+  /* ===== TEMSI / WINTEM Carousels from manifest ===== */
+  var _temsiLoaded = false;
+  window.initTemsiCarousels = function(force) {
+    var carousels = document.querySelectorAll('.model-carousel[data-model="temsi"]');
+    if (!carousels.length) return;
+    var pending = carousels.length;
+
+    for (var i = 0; i < carousels.length; i++) {
+      (function(el) {
+        var key = el.getAttribute('data-key');
+        var manifest = el.getAttribute('data-manifest');
+        var img = el.querySelector('.model-carousel-img');
+
+        // Stop existing carousel if re-loading
+        if (_mc[key] && _mc[key].playing) { _mc[key].playing = false; clearTimeout(_mc[key].timer); }
+
+        fetch(manifest + '?t=' + Date.now())
+          .then(function(r) { return r.json(); })
+          .then(function(entries) {
+            var urls = [];
+            var labels = [];
+            for (var e = 0; e < entries.length; e++) {
+              var entry = entries[e];
+              for (var p = 0; p < entry.images.length; p++) {
+                urls.push(entry.images[p] + '?t=' + Date.now());
+                labels.push(entry.date + ' (' + entry.deadline + ') — ' + entry.level);
+              }
+            }
+            if (urls.length === 0) {
+              // Fallback: use the static page_0 image
+              var prefix = key.replace(/_/g, '_');
+              urls.push(prefix + '_page_0.png?t=' + Date.now());
+              labels.push('Carte actuelle');
+            }
+
+            // Find closest entry to current UTC time
+            var now = new Date();
+            var nowMs = now.getTime();
+            var bestIdx = 0;
+            var bestDiff = Infinity;
+            for (var e = 0; e < entries.length; e++) {
+              // Parse "13 03 2026 18:00" format
+              var parts = entries[e].date.split(' ');
+              if (parts.length >= 4) {
+                var timeParts = parts[3].split(':');
+                var entryMs = Date.UTC(+parts[2], (+parts[1]) - 1, +parts[0], +timeParts[0], +timeParts[1]);
+                var diff = Math.abs(nowMs - entryMs);
+                if (diff < bestDiff) { bestDiff = diff; bestIdx = e; }
+              }
+            }
+
+            img.src = urls[bestIdx];
+            _mc[key] = {
+              el: el, img: img, urls: urls, hours: [],
+              idx: bestIdx, playing: false, timer: null, speed: 500,
+              runMs: 0, validTimes: null, temsiLabels: labels
+            };
+            buildModelNav(key);
+            showModelImg(key);
+            preloadModel(key);
+          })
+          .catch(function(err) {
+            console.warn('Failed to load manifest ' + manifest + ':', err);
+            // Fallback: show single static image
+            var prefix = key;
+            img.src = prefix + '_page_0.png?t=' + Date.now();
+          });
+      })(carousels[i]);
+    }
+
+    _temsiLoaded = true;
+    if (force) _toast('\u2705 Cartes TEMSI/WINTEM actualis\u00e9es', 'success', 2500);
   };
 })();
 
@@ -5646,7 +5732,7 @@ window._toast=_toast;
 
 function _freezeIframes() {
   var snaps = {};
-  var fids = ['autoTemsiFrFrame','autoTemsiEuFrame','autoWintemFrFrame','autoWintemEuFrame','autoOpmetFrame','autoNotamFrame','autoDailyWarnFrame'];
+  var fids = ['autoOpmetFrame','autoNotamFrame','autoDailyWarnFrame'];
   fids.forEach(function(fid){
     try {
       var fr = document.getElementById(fid);

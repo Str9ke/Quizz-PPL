@@ -45,8 +45,8 @@ jobs:
           git add daily_warnings.pdf || true
           git add daily_warnings.html || true
           git add daily_warnings_page_*.png || true
-          git add temsi_*.pdf temsi_*.html temsi_*.png || true
-          git add wintem_*.pdf wintem_*.html wintem_*.png || true
+          git add temsi_*.pdf temsi_*.html temsi_*.png temsi_*_manifest.json || true
+          git add wintem_*.pdf wintem_*.html wintem_*.png wintem_*_manifest.json || true
           git add opmet.html || true
           git add opmet.pdf || true
           git add opmet_page_*.png || true

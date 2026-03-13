@@ -5,6 +5,7 @@ import fitz
 from bs4 import BeautifulSoup
 import json
 import traceback
+import glob
 
 def download_and_convert_pdf(session, url, prefix, map_name):
     print(f"Fetching {map_name}...")
@@ -17,7 +18,7 @@ def download_and_convert_pdf(session, url, prefix, map_name):
             f.write(resp.content)
             
         doc = fitz.open(pdf_name)
-        html_images = ""
+        images = []
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             
@@ -41,10 +42,101 @@ def download_and_convert_pdf(session, url, prefix, map_name):
             pix = page.get_pixmap(dpi=150)
             img_filename = f'{prefix}_page_{page_num}.png'
             pix.save(img_filename)
-            cls = "map-img active" if page_num == 0 else "map-img"
-            html_images += f'<img class="{cls}" src="{img_filename}" />\n'
+            images.append(img_filename)
             
-        html_content = f"""<!DOCTYPE html><html><head><meta charset='utf-8'>
+        print(f"✅ {map_name} -> {len(images)} page(s)")
+        return images
+        
+    except Exception as e:
+        print(f"❌ Error processing {map_name} from {url}: {e}")
+        traceback.print_exc()
+        return []
+
+def get_all_sofia_maps(session, operation, zone, level=None, level_filter=None):
+    """Return list of {date, deadline, level, link} for all available maps."""
+    sofia_api = "https://sofia-briefing.aviation-civile.gouv.fr/sofia"
+    data = {':operation': operation, 'zone': zone}
+    if level:
+        data['level'] = level
+        
+    try:
+        req = session.post(sofia_api, data=data)
+        soup = BeautifulSoup(req.text, 'html.parser')
+        msg_div = soup.find('div', id='Message')
+        if not msg_div:
+            return []
+        js_data = json.loads(msg_div.text)
+        
+        key = 'wintem' if 'postWintem' in operation else 'temsi'
+        
+        results = []
+        if 'zones' in js_data and len(js_data['zones']) > 0:
+            zone_data = js_data['zones'][0]
+            for entry in zone_data.get(key, []):
+                # Filter by level if specified (e.g. only FL20-100 for WINTEM France)
+                if level_filter and entry.get('level') != level_filter:
+                    continue
+                link = entry.get('link')
+                if link:
+                    results.append({
+                        'date': entry.get('date', ''),
+                        'deadline': entry.get('deadline', ''),
+                        'level': entry.get('level', ''),
+                        'url': f"https://aviation.meteo.fr{link}"
+                    })
+        return results
+    except Exception as e:
+        print(f"Error fetching metadata for {operation} {zone}: {e}")
+        return []
+
+def fetch_all_charts(session, operation, zone, prefix, map_name, level=None, level_filter=None):
+    """Fetch all available time entries for a chart type, generate PNGs and manifest."""
+    entries = get_all_sofia_maps(session, operation, zone, level=level, level_filter=level_filter)
+    if not entries:
+        print(f"⚠️ No entries found for {map_name}")
+        return
+    
+    print(f"📊 {map_name}: {len(entries)} time entries found")
+    
+    # Clean up old files for this prefix
+    for old_file in glob.glob(f"{prefix}_*.png"):
+        os.remove(old_file)
+    for old_file in glob.glob(f"{prefix}.pdf"):
+        pass  # Keep overwriting
+    
+    manifest = []
+    
+    for idx, entry in enumerate(entries):
+        entry_prefix = f"{prefix}_{idx}"
+        images = download_and_convert_pdf(session, entry['url'], entry_prefix, f"{map_name} [{entry['deadline']}]")
+        
+        manifest.append({
+            'date': entry['date'],
+            'deadline': entry['deadline'],
+            'level': entry['level'],
+            'images': images
+        })
+    
+    # Also keep backward-compatible single file (first entry = current)
+    if entries:
+        images = download_and_convert_pdf(session, entries[0]['url'], prefix, f"{map_name} (current)")
+    
+    # Write manifest
+    manifest_file = f"{prefix}_manifest.json"
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+    print(f"✅ Manifest written: {manifest_file} ({len(manifest)} entries)")
+    
+    # Build HTML page with all entries (backward-compatible)
+    html_images = ""
+    for midx, m in enumerate(manifest):
+        for img in m['images']:
+            cls = "map-img active" if midx == 0 else "map-img"
+            html_images += f'<img class="{cls}" src="{img}" data-label="{m["deadline"]}" />\n'
+            if midx == 0:
+                cls = "map-img"  # Only first image is active
+    
+    html_content = f"""<!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <style>
 body {{ margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; overflow:hidden; }}
@@ -86,69 +178,27 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
 </script>
 </body></html>"""
 
-        with open(f"{prefix}.html", "w", encoding="utf-8") as f:
-            f.write(html_content)
-        print(f"✅ {map_name} processed and saved as {prefix}.html")
-        
-    except Exception as e:
-        print(f"❌ Error processing {map_name} from {url}: {e}")
-        traceback.print_exc()
-
-def get_sofia_map_url(session, operation, zone, level=None):
-    sofia_api = "https://sofia-briefing.aviation-civile.gouv.fr/sofia"
-    data = {':operation': operation, 'zone': zone}
-    if level:
-        data['level'] = level
-        
-    try:
-        req = session.post(sofia_api, data=data)
-        soup = BeautifulSoup(req.text, 'html.parser')
-        msg_div = soup.find('div', id='Message')
-        if not msg_div:
-            return None
-        js_data = json.loads(msg_div.text)
-        
-        # Le premier élément est généralement le plus proche/récent
-        # Wintem vs Temsi keys:
-        key = 'wintem' if 'postWintem' in operation else 'temsi'
-        
-        # Retourne le lien de la première carte trouvée
-        if 'zones' in js_data and len(js_data['zones']) > 0:
-            zone_data = js_data['zones'][0]
-            if key in zone_data and len(zone_data[key]) > 0:
-                first_map = zone_data[key][0]
-                link = first_map.get('link')
-                if link:
-                    return f"https://aviation.meteo.fr{link}"
-    except Exception as e:
-        print(f"Error fetching metadata for {operation} {zone}: {e}")
-    return None
+    with open(f"{prefix}.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
 
 def main():
-    # Use standard requests instead of cloudscraper to avoid SSL Handshake issues with SOFIA
     session = requests.Session()
     
     print("Scraping SOFIA for Meteo Pdfs...")
     
-    # 1. TEMSI France
-    url_temsi_fr = get_sofia_map_url(session, "postTemsi", "FRANCE")
-    if url_temsi_fr:
-        download_and_convert_pdf(session, url_temsi_fr, "temsi_france", "TEMSI France")
+    # 1. TEMSI France - all time entries
+    fetch_all_charts(session, "postTemsi", "FRANCE", "temsi_france", "TEMSI France")
         
-    # 2. TEMSI EUROC
-    url_temsi_eu = get_sofia_map_url(session, "postTemsi", "EUROC")
-    if url_temsi_eu:
-        download_and_convert_pdf(session, url_temsi_eu, "temsi_euroc", "TEMSI EUROC")
+    # 2. TEMSI EUROC - all time entries
+    fetch_all_charts(session, "postTemsi", "EUROC", "temsi_euroc", "TEMSI EUROC")
         
-    # 3. WINTEM France FL050
-    url_wintem_fr = get_sofia_map_url(session, "postWintem", "FRANCE", level="050")
-    if url_wintem_fr:
-        download_and_convert_pdf(session, url_wintem_fr, "wintem_france", "WINTEM France")
+    # 3. WINTEM France FL050 - filter to low level only
+    fetch_all_charts(session, "postWintem", "FRANCE", "wintem_france", "WINTEM France",
+                     level="050", level_filter="FL20-100")
 
-    # 4. WINTEM EUROC FL050
-    url_wintem_eu = get_sofia_map_url(session, "postWintem", "EUROC", level="050")
-    if url_wintem_eu:
-        download_and_convert_pdf(session, url_wintem_eu, "wintem_euroc", "WINTEM EUROC")
+    # 4. WINTEM EUROC FL050 - filter to low level only
+    fetch_all_charts(session, "postWintem", "EUROC", "wintem_euroc", "WINTEM EUROC",
+                     level="050", level_filter="FL50-100")
 
 if __name__ == "__main__":
     main()
