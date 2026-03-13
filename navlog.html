@@ -3107,6 +3107,33 @@ window.refreshAllMeteo=function(){
 
     if(force) _toast('\u2705 Mod\u00e8les actualis\u00e9s','success',2500);
   };
+
+  window.getModelSnapshot=function(){
+    var snap={};
+    for(var k in _mc){
+      var c=_mc[k];
+      snap[k]={urls:c.urls.slice(),hours:c.hours.slice(),idx:c.idx,runMs:c.runMs,validTimes:c.validTimes?c.validTimes.slice():null,speed:c.speed};
+    }
+    return snap;
+  };
+
+  window.restoreModelSnapshot=function(snap){
+    if(!snap||Object.keys(snap).length===0) return;
+    for(var k in _mc){if(_mc[k].playing){_mc[k].playing=false;clearTimeout(_mc[k].timer);}}
+    _mc={};
+    var info=document.getElementById('modelRunInfo');
+    if(info) info.textContent='\ud83d\udcc1 Images du dossier';
+    for(var k in snap){
+      var s=snap[k];
+      var el=document.querySelector('.model-carousel[data-key="'+k+'"]');
+      if(!el) continue;
+      var img=el.querySelector('.model-carousel-img');
+      _mc[k]={el:el,img:img,urls:s.urls,hours:s.hours,idx:s.idx,playing:false,timer:null,speed:s.speed||500,runMs:s.runMs,validTimes:s.validTimes};
+      buildModelNav(k);
+      showModelImg(k);
+      preloadModel(k);
+    }
+  };
 })();
 
 /* ===== NOTAM SUMMARY UPLOAD ===== */
@@ -5690,6 +5717,7 @@ function saveDossier(){
       opmetPdf:opmetPdfData||null,
       notamSummary:notamSummaryItems?JSON.parse(JSON.stringify(notamSummaryItems)):[],
       skeyesSnapshot:typeof getSkeyesSnapshot==='function'?getSkeyesSnapshot():null,
+      modelSnapshot:typeof getModelSnapshot==='function'?getModelSnapshot():null,
       cloudFiles:null,
       screenshots:{}, iframeSnaps:_freezeIframes()
     };
@@ -6240,6 +6268,10 @@ function loadDossier(id, _freshCloudFiles){
   /* Restore Skeyes images from dossier snapshot */
   if(d.skeyesSnapshot && typeof restoreSkeyesSnapshot==='function'){
     restoreSkeyesSnapshot(d.skeyesSnapshot);
+  }
+  /* Restore Model carousels (GFS/AROME/SAT24) from dossier snapshot */
+  if(d.modelSnapshot && typeof restoreModelSnapshot==='function'){
+    restoreModelSnapshot(d.modelSnapshot);
   }
   /* Restore notam summary — merge cloud URLs; fallback cloud-only if local stripped */
   if(d.notamSummary&&d.notamSummary.length){
