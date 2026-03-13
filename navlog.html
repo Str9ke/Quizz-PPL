@@ -1169,8 +1169,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- IRM Radar + Foudre -->
       <div class="map-card" id="card-irm-foudre">
         <div class="map-card-title">&#x26A1; IRM Belgique &#x2014; Pr&#xe9;cipitations &amp; foudre</div>
-        <div style="overflow:hidden;border-radius:12px;max-width:780px;margin:0 auto">
-          <iframe id="foudreIrmFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/observations/precipitations-radar/foudre" style="width:calc(100% + 600px);height:1600px;border:none;margin-top:-380px;margin-left:-280px" loading="lazy"></iframe>
+        <div style="overflow:hidden;border-radius:12px;max-width:800px;height:680px;margin:0 auto;position:relative">
+          <iframe id="foudreIrmFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/observations/precipitations-radar/foudre" style="width:1600px;height:2000px;border:none;position:absolute;top:-640px;left:-340px" loading="lazy"></iframe>
         </div>
         <div class="map-card-actions">
           <button onclick="var f=document.getElementById('foudreIrmFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
@@ -1181,7 +1181,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- Blitzortung Lightning -->
       <div class="map-card" id="card-blitzortung">
         <div class="map-card-title">&#x26A1; Blitzortung &#x2014; Foudre temps r&#xe9;el Europe</div>
-        <div class="iframe-card"><iframe id="foudreBlitzFrame" src="about:blank" data-src="https://map.blitzortung.org/#autorefresh" style="height:560px;width:100%;border:none" loading="lazy"></iframe></div>
+        <div class="iframe-card"><iframe id="foudreBlitzFrame" src="about:blank" data-src="https://map.blitzortung.org/?interactive=0#7/50.5/4.4" style="height:560px;width:100%;border:none" loading="lazy"></iframe></div>
         <div class="map-card-actions">
           <button onclick="var f=document.getElementById('foudreBlitzFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
           <a href="https://www.lightningmaps.org/#m=ses;t=3;s=0;o=0;b=;ts=0;y=50.5;x=4.4;z=7;d=2;dl=2;dc=0;" target="_blank" rel="noopener">&#x1F517; LightningMaps.org</a>
