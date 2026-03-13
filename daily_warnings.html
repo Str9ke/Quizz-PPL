@@ -1,11 +1,11 @@
 <!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <style>
-body { margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; overflow:hidden; }
+body { margin:0; padding:0; background:transparent; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; }
 .nav-container { display:flex; gap:15px; padding:10px; background:rgba(255,255,255,0.9); position:sticky; top:0; z-index:100; border-radius:8px; align-items:center; margin-bottom:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 .nav-btn { padding:8px 16px; background:#667eea; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
 .nav-btn:active { background:#5a6ad6; }
-.map-img { width:100%; display:none; margin:0 auto; border:none; }
+.map-img { width:100%; display:none; margin:0 auto; border:1px solid #ccc; }
 .map-img.active { display:block; }
 </style>
 </head><body>
@@ -16,6 +16,7 @@ body { margin:0; padding:0; background:transparent; display:flex; flex-direction
 </div>
 <div id="imageContainer" style="width:100%;">
 <img class="map-img" src="daily_warnings_page_0.png" />
+<img class="map-img" src="daily_warnings_page_1.png" />
 
 </div>
 <script>
