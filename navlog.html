@@ -1141,24 +1141,28 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span id="modelRunInfo" style="font-size:.82em;color:var(--text-secondary)"></span>
       </div>
 
-      <!-- Satellite Europe (Windy) -->
-      <div class="map-card">
-        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite &#x2014; France / Europe</div>
-        <div class="iframe-card"><iframe id="satModelFrFrame" src="about:blank" data-src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=5&overlay=satellite&product=satellite&level=surface&lat=46.5&lon=3.0&message=true&calendar=now" style="height:520px;width:100%;border:none" loading="lazy"></iframe></div>
-        <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('satModelFrFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-          <a href="https://www.sat24.com/fr-fr" target="_blank" rel="noopener">&#x1F517; sat24 France</a>
+      <!-- SAT24 Satellite Europe -->
+      <div class="map-card" id="card-sat24-eu">
+        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite &#x2014; France / Europe (sat24)</div>
+        <div class="model-carousel" data-model="sat24" data-bounds="4/3/6/8/11" data-key="sat24_eu">
+          <img class="model-carousel-img" alt="Satellite Europe" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
+        <div class="map-card-actions"><a href="https://www.sat24.com/fr-fr" target="_blank" rel="noopener">&#x1F517; sat24.com France</a></div>
       </div>
 
-      <!-- Satellite Belgique (Windy zoom) -->
-      <div class="map-card">
-        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite &#x2014; Belgique</div>
-        <div class="iframe-card"><iframe id="satModelBeFrame" src="about:blank" data-src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=kt&zoom=8&overlay=satellite&product=satellite&level=surface&lat=50.5&lon=4.4&message=true&calendar=now" style="height:520px;width:100%;border:none" loading="lazy"></iframe></div>
-        <div class="map-card-actions">
-          <button onclick="var f=document.getElementById('satModelBeFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
-          <a href="https://www.sat24.com/fr-fr/country/be" target="_blank" rel="noopener">&#x1F517; sat24 Belgique</a>
+      <!-- SAT24 Satellite Belgique -->
+      <div class="map-card" id="card-sat24-be">
+        <div class="map-card-title">&#x1F6F0;&#xFE0F; Satellite &#x2014; Belgique (sat24)</div>
+        <div class="model-carousel" data-model="sat24" data-bounds="7/41/63/45/68" data-key="sat24_be">
+          <img class="model-carousel-img" alt="Satellite Belgique" />
+          <div class="model-time-label"></div>
+          <div class="model-preload-bar"><div class="fill"></div></div>
+          <div class="model-nav"></div>
         </div>
+        <div class="map-card-actions"><a href="https://www.sat24.com/fr-fr/country/be" target="_blank" rel="noopener">&#x1F517; sat24.com Belgique</a></div>
       </div>
 
       <!-- AROME HD -->
@@ -2920,6 +2924,15 @@ window.switchMeteoSub=switchMeteoSub;
     }catch(e){return '+'+hour+'h';}
   }
 
+  function formatSat24Time(epochMs){
+    var d=new Date(epochMs);
+    try{
+      var be=d.toLocaleString('fr-BE',{timeZone:'Europe/Brussels',weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      var utc=('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2)+' UTC';
+      return be+' ('+utc+')';
+    }catch(e){return d.toISOString().slice(0,16).replace('T',' ')+' UTC';}
+  }
+
   function buildModelNav(key){
     var c=_mc[key]; if(!c||c.urls.length<=1) return;
     var nav=c.el.querySelector('.model-nav');
@@ -2944,7 +2957,10 @@ window.switchMeteoSub=switchMeteoSub;
     var sl=document.getElementById('mslider-'+key);
     if(sl) sl.value=c.idx;
     var lbl=c.el.querySelector('.model-time-label');
-    if(lbl) lbl.textContent=formatValidTime(c.runMs,c.hours[c.idx]);
+    if(lbl){
+      if(c.validTimes) lbl.textContent=formatSat24Time(c.validTimes[c.idx]);
+      else lbl.textContent=formatValidTime(c.runMs,c.hours[c.idx]);
+    }
   }
 
   function preloadModel(key){
@@ -3015,6 +3031,27 @@ window.switchMeteoSub=switchMeteoSub;
         if(ah<3){arH=21; now=new Date(now.getTime()-86400000);}
         runMs=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),arH);
         for(var j=0;j<hours.length;j++) urls.push(buildAromeUrl(hours[j]));
+      } else if(model==='sat24'){
+        var bounds=el.getAttribute('data-bounds');
+        var sNow=new Date();
+        var roundMin=Math.floor(sNow.getUTCMinutes()/5)*5;
+        var latest=Date.UTC(sNow.getUTCFullYear(),sNow.getUTCMonth(),sNow.getUTCDate(),sNow.getUTCHours(),roundMin);
+        latest-=15*60000; // 15 min delay for availability
+        var satCount=37; // ~3h of 5-min steps
+        var validTimes=[];
+        for(var s=satCount-1;s>=0;s--){
+          var ts=latest-s*5*60000;
+          validTimes.push(ts);
+          var sd=new Date(ts);
+          var tsStr=''+sd.getUTCFullYear()+('0'+(sd.getUTCMonth()+1)).slice(-2)+('0'+sd.getUTCDate()).slice(-2)+('0'+sd.getUTCHours()).slice(-2)+('0'+sd.getUTCMinutes()).slice(-2);
+          urls.push('https://imn-rust-lb.infoplaza.io/v4/nowcast/tiles/satellite-europe/'+tsStr+'/'+bounds+'?outputtype=jpeg');
+        }
+        hours=[]; runMs=0;
+        var startIdx=satCount-1;
+        img.src=urls[startIdx];
+        _mc[key]={el:el,img:img,urls:urls,hours:hours,idx:startIdx,playing:false,timer:null,speed:300,runMs:runMs,validTimes:validTimes};
+        buildModelNav(key); showModelImg(key); preloadModel(key);
+        continue;
       }
 
       var startIdx=findClosestIdx(runMs,hours);
