@@ -1165,6 +1165,26 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card-actions"><a href="https://www.sat24.com/fr-fr/country/be" target="_blank" rel="noopener">&#x1F517; sat24.com Belgique</a></div>
       </div>
 
+      <!-- FOUDRE / LIGHTNING -->
+      <div class="map-card" id="card-foudre">
+        <div class="map-card-title">&#x26A1; Foudre &#x2014; Radar pr&#xe9;cipitations &amp; &#xe9;clairs</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <div style="flex:1;min-width:320px">
+            <div style="font-weight:600;font-size:.82em;margin-bottom:4px;color:var(--text-secondary)">IRM Belgique &#x2014; Pr&#xe9;cipitations &amp; foudre</div>
+            <div class="iframe-card"><iframe id="foudreIrmFrame" src="about:blank" data-src="https://www.meteo.be/fr/meteo/observations/precipitations-radar/foudre" style="height:560px;width:100%;border:none" loading="lazy"></iframe></div>
+          </div>
+          <div style="flex:1;min-width:320px">
+            <div style="font-weight:600;font-size:.82em;margin-bottom:4px;color:var(--text-secondary)">Blitzortung &#x2014; Foudre temps r&#xe9;el Europe</div>
+            <div class="iframe-card"><iframe id="foudreBlitzFrame" src="about:blank" data-src="https://map.blitzortung.org/#autorefresh" style="height:560px;width:100%;border:none" loading="lazy"></iframe></div>
+          </div>
+        </div>
+        <div class="map-card-actions">
+          <button onclick="var a=document.getElementById('foudreIrmFrame'),b=document.getElementById('foudreBlitzFrame');a.src='about:blank';b.src='about:blank';setTimeout(function(){a.src=a.dataset.src;b.src=b.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+          <a href="https://www.meteo.be/fr/meteo/observations/precipitations-radar/foudre" target="_blank" rel="noopener">&#x1F517; IRM meteo.be</a>
+          <a href="https://www.lightningmaps.org/#m=ses;t=3;s=0;o=0;b=;ts=0;y=50.5;x=4.4;z=7;d=2;dl=2;dc=0;" target="_blank" rel="noopener">&#x1F517; LightningMaps.org</a>
+        </div>
+      </div>
+
       <!-- AROME HD -->
       <div class="map-card" id="card-model-arome">
         <div class="map-card-title">&#x1F32A;&#xFE0F; AROME HD &#x2014; Pr&#xe9;cipitations France (M&#xe9;t&#xe9;o-France)</div>
