@@ -1,1 +1,135 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><style>body{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}</style></head><body><h3>Erreur OPMET Skeyes</h3><p><strong>Session perdue ou erreur technique.</strong></p><p>Exception: 403 Client Error: Forbidden for url: https://ops.skeyes.be/opersite/opmet.do?cmd=init</p><p>Date/Heure: 2026-03-14 17:09:35</p><p><strong>Cookies lors de la tentative :</strong> {}</p></body></html>
+<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:dark}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;padding:12px;margin:0;
+  background:transparent;color:#e0e0e8}
+.section{margin-bottom:16px;border-radius:10px;overflow:hidden;background:transparent}
+.section-header{padding:10px 14px;font-weight:700;font-size:16px;background:rgba(102,126,234,.12);border-bottom:1px solid #333350;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px;color:#fff}
+.section-header .icon{font-size:18px}
+.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:13.5px;line-height:1.6;border-bottom:1px solid rgba(255,255,255,.06);white-space:pre-wrap;word-break:break-word;color:#e0e0e8}
+.entry:last-child{border-bottom:none}
+.entry-nil{color:#a0a0b8;font-style:italic}
+.entry-notprov{color:#a0a0b8;font-style:italic;font-size:12px}
+.icao{color:#f59e0b;font-weight:700}
+.timestamp{color:#a78bfa}
+.wx-wind{color:#60a5fa;font-weight:600}
+.wx-vis-good{color:#34d399}
+.wx-vis-bad{color:#fb923c;font-weight:600}
+.wx-phen{color:#f87171;font-weight:700}
+.wx-cloud{color:#c084fc}
+.wx-qnh{color:#2dd4bf;font-weight:600}
+.wx-temp{color:#fbbf24}
+.wx-trend{color:#f472b6;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.wx-mil-blu{color:#3b82f6}.wx-mil-wht{color:#e5e7eb}.wx-mil-grn{color:#22c55e}
+.wx-mil-ylo{color:#eab308}.wx-mil-amb{color:#f97316;font-weight:700}.wx-mil-red{color:#ef4444;font-weight:700}
+.gamet-block{padding:10px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#e0e0e8}
+.gamet-label{color:#a78bfa;font-weight:700}
+.wx-alt{color:#38bdf8}
+.updated{text-align:center;padding:8px;font-size:11px;color:#a0a0b8}
+body.light{color:#333;color-scheme:light}
+body.light .section-header{color:#212121;border-color:#b0bec5}
+body.light .entry{color:#333;border-color:rgba(0,0,0,.08)}
+body.light .entry-nil,body.light .entry-notprov{color:#666}
+body.light .gamet-block{color:#333}
+body.light .updated{color:#666}
+</style>
+<script>
+try{
+  function _syncTheme(){
+    try{if(window.parent&&window.parent.document.body.classList.contains('light'))document.body.classList.add('light');else document.body.classList.remove('light');}catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_syncTheme);
+  else _syncTheme();
+}catch(e){}
+</script>
+</head><body>
+
+<div class="section"><div class="section-header"><span class="icon">🌤️</span>METAR</div>
+<div class="entry entry">METAR <span class="icao">EBBR</span> <span class="timestamp">141750Z</span> <span class="wx-wind">32007KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW027</span> <span class="wx-temp">06/02</span> <span class="wx-qnh">Q1006</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry">METAR COR <span class="icao">EBCI</span> <span class="timestamp">141750Z</span> <span class="wx-wind">VRB02KT</span> <span class="wx-vis-good">9999</span> -<span class="wx-phen">SHRA</span> <span class="wx-cloud">FEW020TCU</span> <span class="wx-cloud">BKN035</span> <span class="wx-temp">05/02</span> <span class="wx-qnh">Q1006</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry-notprov"><span class="icao">EBSG</span> not provided</div>
+<div class="entry entry">METAR <span class="icao">EBAW</span> <span class="timestamp">141750Z</span> <span class="wx-wind">32010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW025</span> <span class="wx-temp">07/02</span> <span class="wx-qnh">Q1007</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBBE</span> <span class="timestamp">141755Z</span> AUTO <span class="wx-wind">35007KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW026</span>/// <span class="wx-cloud">SCT047</span>/// <span class="wx-cloud">BKN070</span>/// <span class="wx-temp">05/02</span> <span class="wx-qnh">Q1006</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">SPECI <span class="icao">EBBL</span> <span class="timestamp">141806Z</span> AUTO <span class="wx-wind">VRB02KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">OVC014</span>/// <span class="wx-temp">04/03</span> <span class="wx-qnh">Q1006</span> <span class="wx-mil-grn">GRN</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBCV</span> <span class="timestamp">141755Z</span> AUTO <span class="wx-wind">31005KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">05/02</span> <span class="wx-qnh">Q1007</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBFN</span> <span class="timestamp">141755Z</span> AUTO <span class="wx-wind">29008KT</span> <span class="wx-vis-good">9999</span> NCD <span class="wx-temp">07/02</span> <span class="wx-qnh">Q1007</span> <span class="wx-mil-blu">BLU</span>=</div>
+<div class="entry entry">SPECI <span class="icao">EBFS</span> <span class="timestamp">141806Z</span> <span class="wx-wind">30009KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT040</span> <span class="wx-temp">04/02</span> <span class="wx-qnh">Q1006</span> <span class="wx-mil-blu">BLU</span> <span class="wx-mil-blu">BLU</span> <span class="wx-trend">TEMPO</span> <span class="wx-mil-wht">WHT</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBLG</span> <span class="timestamp">141750Z</span> <span class="wx-wind">25005KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW008</span> <span class="wx-cloud">FEW014CB</span> <span class="wx-cloud">BKN038</span> <span class="wx-temp">04/02</span> <span class="wx-qnh">Q1006</span> <span class="wx-trend">TEMPO</span> <span class="wx-vis-bad">3500</span> <span class="wx-phen">SHRA</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBOS</span> <span class="timestamp">141750Z</span> <span class="wx-wind">30008KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW024</span> <span class="wx-cloud">SCT035</span> <span class="wx-temp">07/03</span> <span class="wx-qnh">Q1007</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry">METAR <span class="icao">ELLX</span> <span class="timestamp">141750Z</span> <span class="wx-wind">29005KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW040</span> <span class="wx-temp">02/01</span> <span class="wx-qnh">Q1005</span> <span class="wx-trend">NOSIG</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBSP</span> <span class="timestamp">141750Z</span> AUTO <span class="wx-wind">23004KT</span> <span class="wx-vis-good">9999</span> // <span class="wx-cloud">SCT014</span>/// <span class="wx-cloud">BKN016</span>/// <span class="wx-cloud">OVC023</span>/// <span class="wx-temp">01/M00</span> <span class="wx-qnh">Q1005</span>=</div>
+<div class="entry entry">METAR <span class="icao">EBSH</span> <span class="timestamp">141750Z</span> AUTO <span class="wx-wind">32005KT</span> <span class="wx-vis-good">9999</span> -<span class="wx-phen">RA</span> <span class="wx-cloud">SCT003</span>/// <span class="wx-cloud">SCT012</span>/// <span class="wx-cloud">OVC040</span>/// <span class="wx-temp">01/M00</span> <span class="wx-qnh">Q1005</span>=</div>
+<div class="entry entry-notprov"><span class="icao">EBKT</span> not provided</div>
+</div>
+<div class="section"><div class="section-header"><span class="icon">📋</span>TAF Court Terme</div>
+<div class="entry entry-notprov"><span class="icao">EBCI</span> NIL</div>
+<div class="entry entry-notprov"><span class="icao">EBSG</span> not provided</div>
+<div class="entry entry">TAF <span class="icao">EBAW</span> <span class="timestamp">141708Z</span> 1418/<span class="wx-vis-bad">1503</span> <span class="wx-wind">30010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW020TCU</span> <span class="wx-cloud">SCT030</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1418/<span class="wx-vis-bad">1420</span> <span class="wx-vis-bad">4500</span> <span class="wx-phen">SHRA</span> <span class="wx-trend">BECMG</span> 1421/<span class="wx-vis-bad">1500</span> <span class="wx-wind">24004KT</span>=</div>
+<div class="entry entry-notprov">TAF <span class="icao">EBBE</span> <span class="timestamp">141500Z</span> NIL=</div>
+<div class="entry entry-notprov">TAF <span class="icao">EBBL</span> <span class="timestamp">141500Z</span> NIL=</div>
+<div class="entry entry">TAF <span class="icao">EBCV</span> <span class="timestamp">141541Z</span> 1419/<span class="wx-vis-bad">1507</span> <span class="wx-wind">29005KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT035</span> <span class="wx-trend">BECMG</span> 1419/<span class="wx-vis-bad">1421</span> <span class="wx-wind">VRB03KT</span> <span class="wx-cloud">FEW035</span> <span class="wx-trend">BECMG</span> 1502/<span class="wx-vis-bad">1504</span> <span class="wx-vis-bad">4000</span> <span class="wx-phen">BR</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1504/<span class="wx-vis-bad">1507</span> <span class="wx-vis-bad">0500</span> <span class="wx-phen">FG</span> <span class="wx-phen">FZFG</span> BY <span class="icao">EBWM</span>=</div>
+<div class="entry entry">TAF <span class="icao">EBFN</span> <span class="timestamp">141541Z</span> 1419/<span class="wx-vis-bad">1507</span> <span class="wx-wind">31007KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW035</span> <span class="wx-trend">BECMG</span> 1502/<span class="wx-vis-bad">1504</span> <span class="wx-wind">26004KT</span> <span class="wx-trend">PROB40</span> <span class="wx-trend">TEMPO</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">3000</span> <span class="wx-phen">BR</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1505/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">0750</span> <span class="wx-phen">FG</span> BY <span class="icao">EBWM</span>=</div>
+<div class="entry entry">TAF <span class="icao">EBFS</span> <span class="timestamp">141541Z</span> 1419/<span class="wx-vis-bad">1507</span> <span class="wx-wind">30005KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT030</span> <span class="wx-trend">TEMPO</span> 1419/<span class="wx-vis-bad">1421</span> <span class="wx-wind">30010G20KT</span> <span class="wx-vis-good">5000</span> -<span class="wx-phen">SHRA</span> -<span class="wx-phen">SHRASN</span> <span class="wx-cloud">SCT020TCU</span> <span class="wx-cloud">BKN030</span> <span class="wx-trend">TEMPO</span> 1423/<span class="wx-vis-bad">1507</span> <span class="wx-vis-bad">4000</span> <span class="wx-phen">BR</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1501/<span class="wx-vis-bad">1507</span> <span class="wx-vis-bad">0500</span> <span class="wx-phen">FG</span> <span class="wx-phen">FZFG</span>=</div>
+<div class="entry entry-notprov"><span class="icao">EBSP</span> not provided</div>
+<div class="entry entry-notprov"><span class="icao">EBSH</span> not provided</div>
+<div class="entry entry-notprov"><span class="icao">EBKT</span> not provided</div>
+</div>
+<div class="section"><div class="section-header"><span class="icon">📋</span>TAF Long Terme</div>
+<div class="entry entry">TAF <span class="icao">EBBR</span> <span class="timestamp">141709Z</span> 1418/<span class="wx-vis-bad">1524</span> <span class="wx-wind">30010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT020</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1418/<span class="wx-vis-bad">1420</span> <span class="wx-phen">SHRA</span> <span class="wx-cloud">FEW025CB</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1504/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">4000</span> <span class="wx-phen">BR</span> <span class="wx-trend">BECMG</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-wind">24004KT</span> <span class="wx-trend">BECMG</span> 1519/<span class="wx-vis-bad">1522</span> <span class="wx-wind">22015G25KT</span>=</div>
+<div class="entry entry">TAF <span class="icao">EBCI</span> <span class="timestamp">141709Z</span> 1418/<span class="wx-vis-bad">1524</span> <span class="wx-wind">30010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT020</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1418/<span class="wx-vis-bad">1420</span> <span class="wx-phen">SHRA</span> <span class="wx-cloud">FEW020CB</span> <span class="wx-trend">PROB40</span> <span class="wx-trend">TEMPO</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">4000</span> <span class="wx-phen">BR</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1504/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">1200</span> <span class="wx-phen">BCFG</span> <span class="wx-trend">BECMG</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-wind">24004KT</span> <span class="wx-trend">BECMG</span> 1519/<span class="wx-vis-bad">1522</span> <span class="wx-wind">22015G25KT</span>=</div>
+<div class="entry entry-notprov"><span class="icao">EBSG</span> not provided</div>
+<div class="entry entry">TAF <span class="icao">EBLG</span> <span class="timestamp">141709Z</span> 1418/<span class="wx-vis-bad">1524</span> <span class="wx-wind">30010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT015</span> <span class="wx-cloud">SCT025</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1418/<span class="wx-vis-bad">1421</span> <span class="wx-vis-bad">4500</span> <span class="wx-phen">SHRA</span> <span class="wx-cloud">FEW020CB</span> <span class="wx-trend">PROB30</span> <span class="wx-trend">TEMPO</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-vis-bad">4000</span> <span class="wx-phen">BR</span> <span class="wx-trend">BECMG</span> 1503/<span class="wx-vis-bad">1506</span> <span class="wx-wind">24004KT</span> <span class="wx-trend">BECMG</span> 1520/<span class="wx-vis-bad">1523</span> <span class="wx-wind">22015G25KT</span>=</div>
+<div class="entry entry">TAF <span class="icao">EBOS</span> <span class="timestamp">141709Z</span> 1418/<span class="wx-vis-bad">1524</span> <span class="wx-wind">30010KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">FEW020</span> <span class="wx-trend">BECMG</span> 1500/<span class="wx-vis-bad">1503</span> <span class="wx-wind">19005KT</span> <span class="wx-trend">BECMG</span> 1511/<span class="wx-vis-bad">1514</span> <span class="wx-wind">21015G25KT</span> <span class="wx-trend">TEMPO</span> 1520/<span class="wx-vis-bad">1524</span> <span class="wx-vis-bad">4800</span> <span class="wx-phen">RA</span> <span class="wx-cloud">BKN014</span> <span class="wx-trend">BECMG</span> 1522/<span class="wx-vis-bad">1524</span> <span class="wx-wind">27015G25KT</span>=</div>
+<div class="entry entry">TAF <span class="icao">ELLX</span> <span class="timestamp">141700Z</span> 1418/<span class="wx-vis-bad">1524</span> <span class="wx-wind">34005KT</span> <span class="wx-vis-good">9999</span> <span class="wx-cloud">SCT025</span> <span class="wx-trend">TEMPO</span> 1418/<span class="wx-vis-bad">1419</span> <span class="wx-vis-bad">3000</span> <span class="wx-phen">SHSNRA</span> <span class="wx-cloud">BKN009TCU</span> <span class="wx-trend">TEMPO</span> 1500/<span class="wx-vis-bad">1509</span> <span class="wx-vis-good">5000</span> <span class="wx-phen">BR</span> <span class="wx-cloud">BKN005</span> <span class="wx-trend">BECMG</span> 1516/<span class="wx-vis-bad">1518</span> <span class="wx-wind">20004KT</span>=</div>
+<div class="entry entry-notprov"><span class="icao">EBSP</span> not provided</div>
+<div class="entry entry-notprov"><span class="icao">EBSH</span> not provided</div>
+<div class="entry entry-notprov"><span class="icao">EBKT</span> not provided</div>
+</div>
+<div class="section"><div class="section-header"><span class="icon">⚠️</span>SIGMET</div>
+<div class="entry entry-nil">NIL</div>
+</div>
+<div class="section"><div class="section-header"><span class="icon">📄</span>GAMET</div>
+<div class="gamet-block">EBBU GAMET VALID 141800/150000 EBBR-
+EBBU BRUSSELS FIR BLW <span class="wx-alt">FL100</span>
+SECN I
+<span class="gamet-label">SIG CLD:</span>                 18/21 E OF E00430
+                                ISOL CB 1500/ABV10000FT AGL
+                         18/21 W OF E00430
+                                ISOL TCU 2000/ABV10000FT AGL
+                         THE ARDENNES <span class="wx-cloud">BKN</span> 500/<span class="wx-alt">4000FT AGL</span>
+ICE:                     THE ARDENNES MOD <span class="wx-alt">FL020</span>/040
+SECN II
+<span class="gamet-label">PSYS:</span>                    18. UNSTABLE MARITIME AIR FROM POLAR ORIGIN
+                         MOVING IN FROM OVER THE NORTH SEA.
+                         A BUILDING RIDGE WILL START TO STABILIZE
+                         THE AIR MASS.
+<span class="gamet-label">SFC WIND (30KT or less):</span> <span class="wx-wind">280-310/04-08KT</span>
+                         21/24 W OF LINE N50 E00445 - N5040 E00615
+                                <span class="wx-wind">250-280/02-06KT</span>
+                         OFFSHORE <span class="wx-wind">300-330/08-13KT</span>
+<span class="gamet-label">WIND/T:</span>                  <span class="wx-alt">1000FT</span> <span class="wx-wind">310/15KT</span> <span class="wx-temp">PS03</span>
+                         <span class="wx-alt">2000FT</span> <span class="wx-wind">320/15KT</span> <span class="wx-temp">PS00</span>
+                         <span class="wx-alt">5000FT</span> <span class="wx-wind">320/15KT</span> <span class="wx-temp">MS06</span>
+                         <span class="wx-alt">10000FT</span> <span class="wx-wind">330/12KT</span> <span class="wx-temp">MS15</span>
+<span class="gamet-label">SFC VIS (<span class="wx-vis-good">5KM</span> or more):</span>   +<span class="wx-vis-good">10KM</span>
+<span class="gamet-label">CLD:</span>                     <span class="wx-cloud">SCT</span> TO <span class="wx-cloud">BKN</span> SC 5000/<span class="wx-alt">7000FT AGL</span>
+                         <span class="wx-cloud">FEW</span> TO <span class="wx-cloud">SCT</span> CU 2000/<span class="wx-alt">6000FT AGL</span>
+<span class="gamet-label">FZLVL:</span>                   <span class="wx-alt">2500FT AMSL</span>
+<span class="gamet-label">MNM QNH:</span>                 <span class="wx-qnh">1002HPA</span>
+<span class="gamet-label">OTLK:</span>                    FM 00 TL 06 Z
+                SFC VIS: THE ARDENNES <span class="wx-vis-bad">0200-2000M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
+                         02/06 SE OF LINE N5010 E004 - N5050 E006
+                                <span class="wx-vis-bad">0500-2500M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
+                         03/06 <span class="wx-vis-bad">2500-4500M</span> <span class="wx-phen">BR</span>
+                         03/06 N OF LINE N5120 E004 - N5050 E006
+                                <span class="wx-vis-bad">0500-2500M</span> <span class="wx-phen">FG</span> <span class="wx-phen">BR</span>
+                SIG CLD: THE ARDENNES <span class="wx-cloud">BKN</span> 200/<span class="wx-alt">4000FT AGL</span>
+                    ICE: THE ARDENNES MOD <span class="wx-alt">FL020</span>/040=</div>
+</div>
+<div class="section"><div class="section-header"><span class="icon">📄</span>AIRMET</div>
+<div class="entry entry-nil">NIL</div>
+</div>
+<div class="updated">Mis à jour: 14/03/2026 18:11Z</div>
+</body></html>
