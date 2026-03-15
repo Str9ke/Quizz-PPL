@@ -274,13 +274,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
 .map-del-btn{border-color:#f44336!important;color:#f44336!important}
 .skeyes-carousel{position:relative}
-.skeyes-carousel .zoom-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;border-radius:8px;overscroll-behavior:contain}
-.skeyes-carousel .zoom-wrap.dragging{cursor:grabbing}
-.skeyes-carousel .zoom-wrap .skeyes-carousel-img{transform-origin:0 0;transition:none;will-change:transform;user-select:none;-webkit-user-drag:none}
-.skeyes-carousel .zoom-badge{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px;align-items:center}
-.skeyes-carousel .zoom-badge button{padding:3px 8px;font-size:.72em;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(4px);transition:all .2s}
-.skeyes-carousel .zoom-badge button:hover{background:rgba(0,0,0,.8);border-color:#667eea}
-.skeyes-carousel .zoom-badge .zoom-level{font-size:.72em;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:6px;backdrop-filter:blur(4px);min-width:40px;text-align:center}
+.skeyes-carousel .zoom-wrap,.model-carousel .zoom-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;border-radius:8px;overscroll-behavior:contain}
+.skeyes-carousel .zoom-wrap.dragging,.model-carousel .zoom-wrap.dragging{cursor:grabbing}
+.zoom-wrap .skeyes-carousel-img,.zoom-wrap .model-carousel-img{transform-origin:0 0;transition:none;will-change:transform;user-select:none;-webkit-user-drag:none}
+.skeyes-carousel .zoom-badge,.model-carousel .zoom-badge{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px;align-items:center}
+.skeyes-carousel .zoom-badge button,.model-carousel .zoom-badge button{padding:3px 8px;font-size:.72em;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(4px);transition:all .2s}
+.skeyes-carousel .zoom-badge button:hover,.model-carousel .zoom-badge button:hover{background:rgba(0,0,0,.8);border-color:#667eea}
+.skeyes-carousel .zoom-badge .zoom-level,.model-carousel .zoom-badge .zoom-level{font-size:.72em;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:6px;backdrop-filter:blur(4px);min-width:40px;text-align:center}
 .skeyes-nav{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;background:var(--bg-container);flex-wrap:wrap;overflow-x:auto}
 .skeyes-nav button{padding:4px 10px;font-size:.75em;border-radius:8px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;min-width:28px;flex-shrink:0}
 .skeyes-nav button:hover{border-color:#667eea;color:#667eea}
@@ -3089,13 +3089,15 @@ window.refreshAllMeteo=function(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCarousels);
   else initCarousels();
 
-  /* ===== ZOOM on skeyes-carousel images ===== */
+  /* ===== ZOOM on carousel images (skeyes + model) ===== */
   function initZoom(){
-    var carousels=document.querySelectorAll('.skeyes-carousel');
+    var carousels=document.querySelectorAll('.skeyes-carousel, .model-carousel');
     for(var i=0;i<carousels.length;i++) addZoom(carousels[i]);
   }
   function addZoom(container){
-    var img=container.querySelector('.skeyes-carousel-img');
+    if(container._zoomInited) return;
+    container._zoomInited=true;
+    var img=container.querySelector('.skeyes-carousel-img') || container.querySelector('.model-carousel-img');
     if(!img) return;
     /* Wrap image in a zoom container */
     var wrap=document.createElement('div');
@@ -3217,6 +3219,7 @@ window.refreshAllMeteo=function(){
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initZoom);
   else setTimeout(initZoom,500);
+  window._initZoom=initZoom;
 })();
 
 /* ===== MODEL CAROUSELS (GFS / AROME) ===== */
@@ -3408,6 +3411,8 @@ window.refreshAllMeteo=function(){
     }
 
     if(force) _toast('\u2705 Mod\u00e8les actualis\u00e9s','success',2500);
+    /* Apply zoom to model carousels */
+    if(window._initZoom) setTimeout(window._initZoom,200);
   };
 
   window.getModelSnapshot=function(){
@@ -3509,6 +3514,8 @@ window.refreshAllMeteo=function(){
 
     _temsiLoaded = true;
     if (force) _toast('\u2705 Cartes TEMSI/WINTEM actualis\u00e9es', 'success', 2500);
+    /* Apply zoom to TEMSI/WINTEM carousels */
+    if(window._initZoom) setTimeout(window._initZoom,200);
   };
 })();
 
