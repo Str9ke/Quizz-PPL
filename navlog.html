@@ -1097,6 +1097,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button onclick="var f=document.getElementById('satFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
         </div>
       </div>
+
+      <div class="map-card">
+        <div class="map-card-title">&#x26C5; Sommets des nuages (Cloud Top Height)</div>
+        <div class="iframe-card">
+          <iframe id="cloudTopFrame" src="about:blank" data-src="https://embed.windy.com/embed2.html?lat=49.5&lon=4.0&detailLat=49.5&detailLon=4.0&width=800&height=500&zoom=6&level=surface&overlay=cloudtop&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&metricWind=kt&metricTemp=%C2%B0C" style="height:520px" loading="lazy"></iframe>
+        </div>
+        <p style="padding:4px 16px;font-size:.78em;color:var(--text-secondary);margin:0">&#x1F4D0; Carte relief des sommets nuageux &#x2014; les couleurs indiquent l&#x27;altitude du sommet des nuages (CB, TCU, couches). Bleu/vert = bas, jaune/orange = moyen, rouge/violet = &#xe9;lev&#xe9;.</p>
+        <div class="map-card-actions">
+          <a href="https://www.windy.com/-Cloud-top-cloudtop?cloudtop,49.5,4.0,6" target="_blank" rel="noopener">&#x26C5; Windy Cloud Top</a>
+          <a href="https://www.eumetsat.int/imagery/latest-imagery" target="_blank" rel="noopener">&#x1F30D; Eumetsat Cloud Top</a>
+          <a href="https://www.meteociel.fr/observations-meteo/satellite-ir.php" target="_blank" rel="noopener">&#x1F6F0;&#xFE0F; IR &#xe9;quivalent temp&#xe9;rature</a>
+          <button onclick="var f=document.getElementById('cloudTopFrame');f.src='about:blank';setTimeout(function(){f.src=f.dataset.src},100)">&#x1F504; Rafra&#xee;chir</button>
+        </div>
+      </div>
     </div>
 
     <!-- ===== SUB: NOTAMs ===== -->
@@ -3121,13 +3135,9 @@ window.refreshAllMeteo=function(){
       clampPan(); applyTransform();
     }
     function reset(){scale=1;tx=0;ty=0;applyTransform();}
-    /* Wheel zoom */
-    wrap.addEventListener('wheel',function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      var f=e.deltaY<0?1.15:1/1.15;
-      zoomAt(e.clientX,e.clientY,f);
-    },{passive:false});
+    /* Expose zoom functions on the element for document-level handler */
+    wrap._zoomAt=zoomAt;
+    wrap._reset=reset;
     /* Mouse drag */
     var drag=false, sx=0, sy=0, stx=0, sty=0;
     wrap.addEventListener('mousedown',function(e){
@@ -3193,6 +3203,18 @@ window.refreshAllMeteo=function(){
     observer.observe(img,{attributes:true,attributeFilter:['src']});
     applyTransform();
   }
+  /* Document-level wheel handler: intercepts scroll on zoom-wrap elements
+     at the highest level so Chrome's compositor cannot bypass it. */
+  document.addEventListener('wheel',function(e){
+    var el=e.target;
+    var wrap=el.closest?el.closest('.zoom-wrap'):null;
+    if(!wrap || !wrap._zoomAt) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var f=e.deltaY<0?1.15:1/1.15;
+    wrap._zoomAt(e.clientX,e.clientY,f);
+  },{passive:false});
+
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initZoom);
   else setTimeout(initZoom,500);
 })();
