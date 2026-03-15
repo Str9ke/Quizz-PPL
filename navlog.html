@@ -438,6 +438,44 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .navlog-board{overflow-x:hidden}
   #frontsVideo{width:100%!important}
 }
+
+/* Subtab scroll indicators */
+.meteo-subtabs{position:relative}
+.meteo-subtabs::before,.meteo-subtabs::after{content:'';position:absolute;top:0;bottom:0;width:28px;pointer-events:none;z-index:2;opacity:0;transition:opacity .3s}
+.meteo-subtabs::before{left:0;background:linear-gradient(to right,var(--bg-container),transparent)}
+.meteo-subtabs::after{right:0;background:linear-gradient(to left,var(--bg-container),transparent)}
+.meteo-subtabs.scroll-left::before{opacity:1}
+.meteo-subtabs.scroll-right::after{opacity:1}
+
+/* Loading spinner on refresh buttons */
+@keyframes btn-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.btn-loading{pointer-events:none;opacity:.7}
+.btn-loading .btn-spin-icon{display:inline-block;animation:btn-spin .8s linear infinite}
+
+/* Iframe offline fallback */
+.iframe-offline{display:flex;align-items:center;justify-content:center;min-height:200px;background:rgba(244,67,54,.06);border:2px dashed rgba(244,67,54,.25);border-radius:12px;color:var(--text-secondary);font-size:.88em;text-align:center;padding:20px;flex-direction:column;gap:8px}
+.iframe-offline .offline-icon{font-size:2em}
+
+/* Print stylesheet */
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .theme-toggle,.top-nav-bar,.navlog-tabs,.meteo-subtabs,.map-card-actions,.navlog-btn,.clear-ws-btn,
+  .model-nav,.model-preload-bar,.config-grid,.map-paste-zone,button,select,
+  #calOverlay,#calToggleBtn,.extra-images-area{display:none!important}
+  .navlog-tab-content{display:block!important;page-break-inside:avoid}
+  .navlog-board,.nl-card,.map-card{border:1px solid #ccc!important;box-shadow:none!important;background:#fff!important;color:#000!important;page-break-inside:avoid}
+  .nl-card-title,.map-card-title{color:#000!important;border-bottom:1px solid #ccc!important}
+  .mb-table,.perf-table{border-collapse:collapse;width:100%}
+  .mb-table td,.mb-table th,.perf-table td,.perf-table th{border:1px solid #999;padding:4px 6px;color:#000!important}
+  .leg-strip{border:1px solid #ccc!important}
+  canvas{max-width:100%!important}
+  img{max-width:100%!important}
+}
+
+/* Accessibility: non-color status indicators */
+.perf-result-box.green::before{content:'\u2705 '}
+.perf-result-box.orange::before{content:'\u26A0\uFE0F '}
+.perf-result-box.red::before{content:'\u274C '}
 /* Wind Triangle Styles */
 .leg-container { display: flex; align-items: center; gap: 12px; }
 .leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
@@ -504,7 +542,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </style>
 </head>
 <body>
-  <button class="theme-toggle" onclick="window.toggleTheme()" title="Changer le th&#xe8;me">&#x1F319;</button>
+  <button class="theme-toggle" onclick="window.toggleTheme()" title="Changer le th&#xe8;me" aria-label="Changer le th&#xe8;me clair/sombre">&#x1F319;</button>
 
   <div class="top-nav-bar">
     <a href="index.html?accueil=1" class="top-nav-link">&#x1F3E0; Accueil</a>
@@ -555,6 +593,16 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
       <div class="wx-airport-btns" id="wxAirportBtns"></div>
       <div id="wxPanels"></div>
+    </div>
+
+    <!-- SIGMET / AIRMET panel -->
+    <div class="nl-card">
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">&#x26A0;&#xFE0F;</span> SIGMET / AIRMET Europe</span>
+        <button onclick="window.fetchSigmetAirmet()" class="navlog-btn" style="font-size:.78em;padding:5px 12px">&#x1F504; Actualiser</button>
+      </div>
+      <p style="font-size:.76em;color:var(--text-secondary);margin:0 0 6px">Avertissements m&#xe9;t&#xe9;o significatifs en vol (source : aviationweather.gov)</p>
+      <div id="sigmetPanel" style="font-size:.88em"><em>Cliquez sur Actualiser pour charger les SIGMET/AIRMET.</em></div>
     </div>
 
     <!-- Config panel -->
@@ -1597,15 +1645,34 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div id="advETPResult" style="margin-top:6px"></div>
     </div>
 
+    <!-- IAS → TAS Calculator -->
+    <div class="nl-card" style="margin-top:16px">
+      <div class="nl-card-title"><span class="icon">&#x1F4CF;</span> IAS &#x2192; TAS &mdash; Vitesse vraie</div>
+      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px">Corrige la vitesse indiqu&#xe9;e pour la densit&#xe9; de l&#x2019;air (altitude + temp&#xe9;rature).</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="font-size:.78em;color:var(--text-secondary)">IAS (kt)</label><br>
+          <input type="number" id="iasTasIAS" value="100" min="40" max="300" step="1" onchange="window.calcIasTas()" style="width:70px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+        </div>
+        <div>
+          <label style="font-size:.78em;color:var(--text-secondary)">Alt. pression (ft)</label><br>
+          <input type="number" id="iasTasAlt" value="3000" min="0" max="25000" step="100" onchange="window.calcIasTas()" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+        </div>
+        <div>
+          <label style="font-size:.78em;color:var(--text-secondary)">OAT (&#xb0;C)</label><br>
+          <input type="number" id="iasTasOAT" value="10" min="-40" max="50" step="1" onchange="window.calcIasTas()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+        </div>
+        <button onclick="window.calcIasTas()" class="navlog-btn" style="padding:6px 14px;font-size:.82em">Calculer</button>
+      </div>
+      <div id="iasTasResult" style="margin-top:8px;font-size:.88em"></div>
+    </div>
+
     <!-- Note : autres sujets à envisager -->
     <div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(102,126,234,.08);font-size:.78em;color:var(--text-secondary);line-height:1.7">
       <b style="color:#a78bfa">&#x1F4A1; D'autres calculateurs utiles &#xe0; envisager&nbsp;:</b><br>
-      &#x2022; <b>Altitude densit&#xe9;</b> (Density Altitude) &#x2014; corriger les performances pour les hautes temp&#xe9;ratures<br>
-      &#x2022; <b>TAS depuis IAS</b> &#x2014; corriger la compressibilit&#xe9; et la densit&#xe9; de l'air<br>
       &#x2022; <b>Carburant alterne</b> &#x2014; calcul de la r&#xe9;serve vers un terrain de d&#xe9;gagement<br>
       &#x2022; <b>Altitude vraie</b> (True Altitude) depuis l'altitude-pression, temp et QNH<br>
-      &#x2022; <b>V&#xe9;rificateur VFR</b> &#x2014; vis, plafond, croisement des minima<br>
-      &#x2022; <b>Masse &amp; centrage</b> &#x2014; int&#xe9;gr&#xe9; au dossier de vol
+      &#x2022; <b>V&#xe9;rificateur VFR</b> &#x2014; vis, plafond, croisement des minima
     </div>
   </div>
   </div>
@@ -1974,7 +2041,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="map-modal-content">
       <div class="map-modal-header">
         <span>S&#xe9;lectionner un point</span>
-        <button onclick="window.closeMapModal()">&times;</button>
+        <button onclick="window.closeMapModal()" aria-label="Fermer">&times;</button>
       </div>
       <div id="mapContainer" style="height:400px;width:100%"></div>
       <div class="map-modal-footer">
@@ -1989,7 +2056,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="map-modal-content" style="max-width:380px">
       <div class="map-modal-header">
         <span>&#x1F4A8; Vent pour <span id="legWindTitle">LEG</span></span>
-        <button onclick="window.closeLegWind()">&times;</button>
+        <button onclick="window.closeLegWind()" aria-label="Fermer">&times;</button>
       </div>
       <div style="padding:16px;text-align:center">
         <div id="legWindRose" style="display:flex;justify-content:center;margin-bottom:12px;cursor:crosshair"></div>
@@ -2049,7 +2116,32 @@ var AIRPORT_COORDS = {
   'LFQO':{lat:50.489,lon:2.796},
   'EBAW':{lat:51.189,lon:4.460},
   'EBOS':{lat:51.199,lon:2.862},
-  'EBKT':{lat:50.817,lon:3.205}
+  'EBKT':{lat:50.817,lon:3.205},
+  /* Netherlands */
+  'EHAM':{lat:52.3086,lon:4.7639},
+  'EHRD':{lat:51.9569,lon:4.4372},
+  'EHEH':{lat:51.4501,lon:5.3744},
+  'EHLE':{lat:52.4603,lon:5.5272},
+  'EHBK':{lat:50.9116,lon:5.7706},
+  /* Germany */
+  'EDDK':{lat:50.8659,lon:7.1427},
+  'EDDL':{lat:51.2895,lon:6.7668},
+  'EDLN':{lat:51.2303,lon:6.5044},
+  'EDLV':{lat:51.6024,lon:6.1422},
+  'EDKA':{lat:50.8231,lon:6.1864},
+  /* Luxembourg */
+  'ELLX':{lat:49.6233,lon:6.2044},
+  /* France (nearby) */
+  'LFAT':{lat:50.5147,lon:1.6278},
+  'LFAC':{lat:50.9622,lon:1.9547},
+  'LFQB':{lat:49.9717,lon:3.2936},
+  'LFSG':{lat:48.3253,lon:6.0697},
+  'LFOB':{lat:49.4544,lon:2.1128},
+  'LFSB':{lat:47.5896,lon:7.5299},
+  /* United Kingdom (SE) */
+  'EGLC':{lat:51.5053,lon:0.0553},
+  'EGKK':{lat:51.1481,lon:-0.1903},
+  'EGJJ':{lat:49.2078,lon:-2.1955}
 };
 
 var AIRPORT_NAMES = {
@@ -2058,14 +2150,24 @@ var AIRPORT_NAMES = {
   'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge',
   'EBTY':'Tournai','EBBE':'Beauvechain','EBGB':'Grimbergen',
   'EBMO':'Moorsele/Wevelgem','LFAV':'Valenciennes','LFQO':'Lens-B\u00e9nifontaine',
-  'EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem'
+  'EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem',
+  'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen',
+  'EDDK':'K\u00f6ln/Bonn','EDDL':'D\u00fcsseldorf','EDLN':'M\u00f6nchengladbach','EDLV':'Niederrhein','EDKA':'Aachen-Merzbr\u00fcck',
+  'ELLX':'Luxembourg-Findel',
+  'LFAT':'Le Touquet','LFAC':'Calais-Dunkerque','LFQB':'Laon-Chambry','LFSG':'\'Epinal-Mirecourt','LFOB':'Beauvais-Till\u00e9','LFSB':'B\u00e2le-Mulhouse',
+  'EGLC':'London City','EGKK':'London Gatwick','EGJJ':'Jersey'
 };
 
 var AIRPORT_ELEV = {
   'EBSG':75,'EBCV':194,'EBCI':614,'EBNM':594,'EBBR':184,
   'LFQJ':447,'LFQQ':157,'EBCF':955,'EBSP':1542,'EBFS':928,'EBLG':659,
   'EBTY':171,'EBBE':370,'EBGB':66,'EBMO':64,'LFAV':177,'LFQO':167,
-  'EBAW':39,'EBOS':13,'EBKT':64
+  'EBAW':39,'EBOS':13,'EBKT':64,
+  'EHAM':-11,'EHRD':-15,'EHEH':74,'EHLE':-13,'EHBK':375,
+  'EDDK':302,'EDDL':147,'EDLN':125,'EDLV':106,'EDKA':623,
+  'ELLX':1234,
+  'LFAT':36,'LFAC':12,'LFQB':256,'LFSG':1084,'LFOB':359,'LFSB':885,
+  'EGLC':19,'EGKK':202,'EGJJ':277
 };
 
 var RUNWAY_DB = {
@@ -2079,10 +2181,36 @@ var RUNWAY_DB = {
   'EBCF':[{rwy:'12L/30R',hdg:120,len:800,sfc:'grass'},{rwy:'12R/30L',hdg:120,len:675,sfc:'grass'}],
   'EBSP':[{rwy:'05/23',hdg:47,len:799,sfc:'asphalt'}],
   'EBFS':[{rwy:'08L/26R',hdg:78,len:3385,sfc:'asphalt'},{rwy:'08R/26L',hdg:78,len:2249,sfc:'asphalt'}],
-  'EBLG':[{rwy:'04R/22L',hdg:43,len:3690,sfc:'asphalt'},{rwy:'04L/22R',hdg:43,len:2340,sfc:'asphalt'}]
+  'EBLG':[{rwy:'04R/22L',hdg:43,len:3690,sfc:'asphalt'},{rwy:'04L/22R',hdg:43,len:2340,sfc:'asphalt'}],
+  /* Netherlands */
+  'EHAM':[{rwy:'06/24',hdg:58,len:3453,sfc:'asphalt'},{rwy:'09/27',hdg:87,len:3453,sfc:'asphalt'},{rwy:'18R/36L',hdg:183,len:3400,sfc:'asphalt'}],
+  'EHRD':[{rwy:'06/24',hdg:58,len:2200,sfc:'asphalt'}],
+  'EHEH':[{rwy:'04/22',hdg:39,len:3000,sfc:'asphalt'},{rwy:'21/03',hdg:213,len:2400,sfc:'asphalt'}],
+  'EHLE':[{rwy:'05/23',hdg:50,len:1800,sfc:'asphalt'}],
+  'EHBK':[{rwy:'03/21',hdg:35,len:2500,sfc:'asphalt'}],
+  /* Germany */
+  'EDDK':[{rwy:'06/24',hdg:59,len:3815,sfc:'asphalt'},{rwy:'14R/32L',hdg:138,len:1863,sfc:'asphalt'},{rwy:'14L/32R',hdg:138,len:3960,sfc:'asphalt'}],
+  'EDDL':[{rwy:'05R/23L',hdg:47,len:3000,sfc:'asphalt'},{rwy:'05L/23R',hdg:47,len:2700,sfc:'asphalt'}],
+  'EDLN':[{rwy:'13/31',hdg:130,len:1200,sfc:'asphalt'}],
+  'EDLV':[{rwy:'09/27',hdg:93,len:2430,sfc:'asphalt'}],
+  'EDKA':[{rwy:'07/25',hdg:72,len:520,sfc:'asphalt'}],
+  /* Luxembourg */
+  'ELLX':[{rwy:'06/24',hdg:60,len:4000,sfc:'asphalt'}],
+  /* France */
+  'LFAT':[{rwy:'13/31',hdg:127,len:1600,sfc:'asphalt'}],
+  'LFAC':[{rwy:'06/24',hdg:57,len:1825,sfc:'asphalt'}],
+  'LFQB':[{rwy:'02/20',hdg:18,len:1825,sfc:'asphalt'}],
+  'LFSG':[{rwy:'18/36',hdg:180,len:2280,sfc:'asphalt'}],
+  'LFOB':[{rwy:'12/30',hdg:124,len:2430,sfc:'asphalt'}],
+  'LFSB':[{rwy:'15/33',hdg:148,len:3900,sfc:'asphalt'},{rwy:'08/26',hdg:78,len:1620,sfc:'asphalt'}],
+  /* UK */
+  'EGLC':[{rwy:'09/27',hdg:92,len:1508,sfc:'asphalt'}],
+  'EGKK':[{rwy:'08R/26L',hdg:82,len:3316,sfc:'asphalt'},{rwy:'08L/26R',hdg:82,len:2565,sfc:'asphalt'}],
+  'EGJJ':[{rwy:'09/27',hdg:86,len:1706,sfc:'asphalt'}]
 };
 
-var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG','EBTY','EBBE','EBGB','EBMO','LFAV','LFQO','EBAW','EBOS','EBKT'];
+var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG','EBTY','EBBE','EBGB','EBMO','LFAV','LFQO','EBAW','EBOS','EBKT',
+  'EHAM','EHRD','EHEH','EHLE','EHBK','EDDK','EDDL','EDLN','EDLV','EDKA','ELLX','LFAT','LFAC','LFQB','LFSG','LFOB','LFSB','EGLC','EGKK','EGJJ'];
 
 /* Nearby airport fallback map for METAR */
 var METAR_FALLBACK = {
@@ -2091,7 +2219,10 @@ var METAR_FALLBACK = {
   'LFQJ':['EBCV','LFQQ'],
   'EBCF':['EBFS','EBCI'],
   'EBSP':['EBLG','EBCI'],
-  'EBFS':['EBCI','EBNM']
+  'EBFS':['EBCI','EBNM'],
+  'EDKA':['EDDK','EDLN'],
+  'EDLV':['EDDL','EDLN'],
+  'EHLE':['EHAM','EHRD']
 };
 
 var WX_FR = {
@@ -3593,16 +3724,26 @@ function estimateIcing(raw){
       if(m) break;
     }
   }
-  if(!m) return {level:'nil',label:'NIL'};
+  if(!m) return {level:'nil',label:'NIL',freezingLevel:null,carbIce:false};
   var tStr=raw.match(/(M?\d{2})\/(M?\d{2})/);
-  if(!tStr) return {level:'nil',label:'NIL'};
+  if(!tStr) return {level:'nil',label:'NIL',freezingLevel:null,carbIce:false};
   var T=parseInt(tStr[1].replace('M','-'));
   var Td=parseInt(tStr[2].replace('M','-'));
   var rh=100*Math.exp(17.625*Td/(243.04+Td))/Math.exp(17.625*T/(243.04+T));
-  if(rh>80 && T<=2 && T>=-20) return {level:'severe',label:'S\u00c9V\u00c8RE (RH='+Math.round(rh)+'%)'};
-  if(rh>70 && T<=2 && T>=-20) return {level:'moderate',label:'MOD\u00c9R\u00c9 (RH='+Math.round(rh)+'%)'};
-  if(rh>50 && T<=2 && T>=-20) return {level:'light',label:'L\u00c9GER (RH='+Math.round(rh)+'%)'};
-  return {level:'nil',label:'NIL (RH='+Math.round(rh)+'%)'};
+  var spread=T-Td;
+  /* Freezing level estimation: 0°C altitude = elev + T/0.00198 ft (from ground T) */
+  var freezingLevel=T>0?Math.round(T/0.00198):0;
+  /* Carb icing: risk when OAT between -7°C and +21°C and humidity is high (spread < 5°C) */
+  var carbIce=(T>=-7 && T<=21 && spread<5);
+  var result;
+  if(rh>80 && T<=2 && T>=-20) result={level:'severe',label:'S\u00c9V\u00c8RE (RH='+Math.round(rh)+'%)'};
+  else if(rh>70 && T<=2 && T>=-20) result={level:'moderate',label:'MOD\u00c9R\u00c9 (RH='+Math.round(rh)+'%)'};
+  else if(rh>50 && T<=2 && T>=-20) result={level:'light',label:'L\u00c9GER (RH='+Math.round(rh)+'%)'};
+  else result={level:'nil',label:'NIL (RH='+Math.round(rh)+'%)'};
+  result.freezingLevel=freezingLevel;
+  result.carbIce=carbIce;
+  result.spread=spread;
+  return result;
 }
 
 function windArrowSVG(dir,spd){
@@ -4211,6 +4352,8 @@ function renderWeatherBlock(icao){
     html+=' <span class="vfr-badge '+cat+'">'+getVFRLabel(cat)+'</span>';
     var icing=estimateIcing(metar);
     html+=' <span class="icing-badge '+icing.level+'">Givrage: '+icing.label+'</span>';
+    if(icing.carbIce) html+=' <span class="icing-badge moderate" title="Risque de givrage carburateur (OAT favorable + humidit\u00e9 \u00e9lev\u00e9e)">\u2744\uFE0F Carb Ice</span>';
+    if(icing.freezingLevel!==null && icing.freezingLevel>0) html+=' <span style="font-size:.72em;color:#00bcd4;font-weight:600">\u2744 0\u00b0C \u2248 '+icing.freezingLevel+' ft AGL</span>';
   }
   html+='</div>';
   /* Wind indicator line — larger, clickable */
@@ -4369,6 +4512,45 @@ function refreshAllMetars(){
   });
 }
 window.refreshAllMetars=refreshAllMetars;
+
+/* ===== SIGMET / AIRMET fetch ===== */
+window.fetchSigmetAirmet=function(){
+  var panel=document.getElementById('sigmetPanel');
+  panel.innerHTML='<em>Chargement...</em>';
+  var sigUrl='https://aviationweather.gov/api/data/isigmet?format=raw&loc=eur';
+  var airUrl='https://aviationweather.gov/api/data/airsigmet?format=raw&type=airmet&loc=eur';
+  var results={sigmet:null,airmet:null};
+  var done=0;
+  function render(){
+    if(++done<2) return;
+    var html='';
+    if(results.sigmet && results.sigmet.trim()){
+      var items=results.sigmet.trim().split(/\n\n+/);
+      html+='<div style="margin-bottom:10px"><b style="color:#f44336">\u26A0\uFE0F SIGMETs actifs ('+items.length+')</b></div>';
+      items.forEach(function(s){
+        html+='<div style="padding:6px 10px;margin:4px 0;border-radius:6px;background:rgba(244,67,54,.08);border-left:3px solid #f44336;font-family:monospace;font-size:.85em;white-space:pre-wrap;line-height:1.5">'+s.replace(/</g,'&lt;')+'</div>';
+      });
+    } else {
+      html+='<div style="padding:8px 12px;border-radius:6px;background:rgba(76,175,80,.08);color:#4caf50;font-weight:600">\u2705 Aucun SIGMET actif pour l\u2019Europe</div>';
+    }
+    if(results.airmet && results.airmet.trim()){
+      var aitems=results.airmet.trim().split(/\n\n+/);
+      html+='<div style="margin:10px 0 6px"><b style="color:#ffa726">\u26A0\uFE0F AIRMETs actifs ('+aitems.length+')</b></div>';
+      aitems.forEach(function(s){
+        html+='<div style="padding:6px 10px;margin:4px 0;border-radius:6px;background:rgba(255,167,38,.08);border-left:3px solid #ffa726;font-family:monospace;font-size:.85em;white-space:pre-wrap;line-height:1.5">'+s.replace(/</g,'&lt;')+'</div>';
+      });
+    }
+    html+='<div style="font-size:.72em;color:var(--text-secondary);margin-top:8px">Source : aviationweather.gov \u2014 \u00e0 titre informatif uniquement. V\u00e9rifiez les sources officielles avant le vol.</div>';
+    panel.innerHTML=html;
+  }
+  fetch(sigUrl).then(function(r){return r.text();}).then(function(t){results.sigmet=t;render();}).catch(function(){
+    fetchViaProxy(sigUrl).then(function(t){results.sigmet=t;render();}).catch(function(){results.sigmet='';render();});
+  });
+  fetch(airUrl).then(function(r){return r.text();}).then(function(t){results.airmet=t;render();}).catch(function(){
+    fetchViaProxy(airUrl).then(function(t){results.airmet=t;render();}).catch(function(){results.airmet='';render();});
+  });
+};
+
 /* Extended fetch: tries hours=24, then hours=48, then nearest airport METARs */
 function fetchWeatherExtended(icao,cb){
   var result={metar:null,taf:null,notams:null,metarSource:null};
@@ -4671,9 +4853,26 @@ window.closeLegWind=closeLegWind;
 
 function initWxButtons(){
   var el=document.getElementById('wxAirportBtns');
-  var html='';
+  var groups={'\ud83c\udde7\ud83c\uddea BE':[],'🇫🇷 FR':[],'🇳🇱 NL':[],'🇩🇪 DE':[],'🇱🇺 LU':[],'🇬🇧 UK':[]};
   for(var i=0;i<WX_AIRPORTS.length;i++){
-    html+='<button class="wx-airport-btn" data-icao="'+WX_AIRPORTS[i]+'" onclick="window.toggleWxAirport(\''+WX_AIRPORTS[i]+'\')">'+WX_AIRPORTS[i]+'</button>';
+    var ic=WX_AIRPORTS[i];
+    if(ic.indexOf('EB')===0) groups['\ud83c\udde7\ud83c\uddea BE'].push(ic);
+    else if(ic.indexOf('LF')===0) groups['🇫🇷 FR'].push(ic);
+    else if(ic.indexOf('EH')===0) groups['🇳🇱 NL'].push(ic);
+    else if(ic.indexOf('ED')===0) groups['🇩🇪 DE'].push(ic);
+    else if(ic.indexOf('EL')===0) groups['🇱🇺 LU'].push(ic);
+    else if(ic.indexOf('EG')===0) groups['🇬🇧 UK'].push(ic);
+  }
+  var html='';
+  var keys=Object.keys(groups);
+  for(var g=0;g<keys.length;g++){
+    var arr=groups[keys[g]];
+    if(!arr.length) continue;
+    html+='<div style="margin-bottom:6px"><span style="font-size:.75em;font-weight:700;color:var(--text-secondary);margin-right:6px">'+keys[g]+'</span>';
+    for(var j=0;j<arr.length;j++){
+      html+='<button class="wx-airport-btn" data-icao="'+arr[j]+'" onclick="window.toggleWxAirport(\''+arr[j]+'\')">'+arr[j]+'</button>';
+    }
+    html+='</div>';
   }
   el.innerHTML=html;
   loadWeather('EBCV');
@@ -8022,6 +8221,38 @@ function init(){
     var _tabs=document.getElementById('navlogTabs');
     if(_tabs) _tabs.scrollIntoView({behavior:'smooth',block:'start'});
   },120);
+
+  /* ===== Scroll indicators on meteo subtabs ===== */
+  (function(){
+    var bar=document.querySelector('.meteo-subtabs');
+    if(!bar) return;
+    function updateScroll(){
+      bar.classList.toggle('scroll-left',bar.scrollLeft>10);
+      bar.classList.toggle('scroll-right',bar.scrollLeft<bar.scrollWidth-bar.clientWidth-10);
+    }
+    bar.addEventListener('scroll',updateScroll);
+    window.addEventListener('resize',updateScroll);
+    setTimeout(updateScroll,500);
+  })();
+
+  /* ===== Offline fallback for iframes ===== */
+  (function(){
+    var iframes=document.querySelectorAll('iframe[data-src]');
+    for(var i=0;i<iframes.length;i++){
+      (function(ifr){
+        ifr.addEventListener('error',function(){
+          var wrap=ifr.parentElement;
+          if(wrap && !wrap.querySelector('.iframe-offline')){
+            var div=document.createElement('div');
+            div.className='iframe-offline';
+            div.innerHTML='\u{1F4F6} Contenu non disponible hors-ligne';
+            wrap.appendChild(div);
+            ifr.style.display='none';
+          }
+        });
+      })(iframes[i]);
+    }
+  })();
 }
 
 window.haversine=haversine;
@@ -8509,6 +8740,11 @@ function perfCalc(){
   html+='\uD83D\uDCCF <b>Altitude pression</b> = '+elev+' + ((1013 \u2212 '+qnh+') \u00D7 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
   html+='\uD83C\uDF21\uFE0F <b>ISA \u00E0 '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'\u00B0C \u2192 \u00E9cart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'\u00B0C</b>';
   if(isaDev>0) html+=' (correction +'+((isaDev/15)*10).toFixed(0)+'% distances)';
+  // Density altitude
+  var densAlt=pressAlt+(120*(temp-isaTemp));
+  html+='<br>\uD83C\uDFD4\uFE0F <b>Altitude densit\u00E9</b> = <b>'+densAlt.toFixed(0)+' ft</b>';
+  if(densAlt>4000) html+=' <span style="color:#f44336;font-weight:700">\u26A0\uFE0F Performances d\u00E9grad\u00E9es !</span>';
+  else if(densAlt>3000) html+=' <span style="color:#fb8c00;font-weight:700">\u26A0\uFE0F Attention performances</span>';
   html+='</div>';
   // Results boxes
   html+='<div style="margin:10px 0">';
@@ -8549,6 +8785,27 @@ function perfCalc(){
   buildCruiseTable();
 }
 window.perfCalc=perfCalc;
+
+/* ===== IAS → TAS Calculator ===== */
+window.calcIasTas=function(){
+  var ias=parseFloat(document.getElementById('iasTasIAS').value)||100;
+  var alt=parseFloat(document.getElementById('iasTasAlt').value)||0;
+  var oat=parseFloat(document.getElementById('iasTasOAT').value)||15;
+  // Standard atmosphere pressure ratio
+  var theta=(oat+273.15)/288.15;
+  var delta=Math.pow(1-0.0000068756*alt,5.2561);
+  var sigma=delta/theta; // density ratio ρ/ρ₀
+  var tas=ias/Math.sqrt(sigma);
+  var isaTemp=15-alt*0.00198;
+  var densAlt=alt+120*(oat-isaTemp);
+  var diff=tas-ias;
+  var html='<div style="padding:8px 12px;border-radius:8px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.15)">';
+  html+='✈️ <b>TAS = '+tas.toFixed(1)+' kt</b> (IAS '+ias+' kt + '+diff.toFixed(1)+' kt)';
+  html+=' &nbsp;|&nbsp; 🏔️ Alt. densité = <b>'+densAlt.toFixed(0)+' ft</b>';
+  html+='<br><span style="font-size:.78em;color:var(--text-secondary)">σ = '+sigma.toFixed(4)+' | ISA '+isaTemp.toFixed(0)+'°C → écart '+(oat-isaTemp>=0?'+':'')+(oat-isaTemp).toFixed(0)+'°C</span>';
+  html+='</div>';
+  document.getElementById('iasTasResult').innerHTML=html;
+};
 
 function interpPerf(data,alt){
   if(alt<=data[0].alt) return {roll:data[0].roll,over15:data[0].over15};
