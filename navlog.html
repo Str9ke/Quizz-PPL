@@ -274,9 +274,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-card-actions a:hover,.map-card-actions button:hover{border-color:#667eea;color:#667eea}
 .map-del-btn{border-color:#f44336!important;color:#f44336!important}
 .skeyes-carousel{position:relative}
-.skeyes-carousel .zoom-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;border-radius:8px}
+.skeyes-carousel .zoom-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;border-radius:8px;overscroll-behavior:contain}
 .skeyes-carousel .zoom-wrap.dragging{cursor:grabbing}
-.skeyes-carousel .zoom-wrap .skeyes-carousel-img{transform-origin:0 0;transition:none;will-change:transform;pointer-events:none}
+.skeyes-carousel .zoom-wrap .skeyes-carousel-img{transform-origin:0 0;transition:none;will-change:transform;user-select:none;-webkit-user-drag:none}
 .skeyes-carousel .zoom-badge{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px;align-items:center}
 .skeyes-carousel .zoom-badge button{padding:3px 8px;font-size:.72em;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(4px);transition:all .2s}
 .skeyes-carousel .zoom-badge button:hover{background:rgba(0,0,0,.8);border-color:#667eea}
@@ -3124,13 +3124,14 @@ window.refreshAllMeteo=function(){
     /* Wheel zoom */
     wrap.addEventListener('wheel',function(e){
       e.preventDefault();
+      e.stopPropagation();
       var f=e.deltaY<0?1.15:1/1.15;
       zoomAt(e.clientX,e.clientY,f);
     },{passive:false});
     /* Mouse drag */
     var drag=false, sx=0, sy=0, stx=0, sty=0;
     wrap.addEventListener('mousedown',function(e){
-      if(scale<=1) return; e.preventDefault();
+      if(scale<=1) return; e.preventDefault(); e.stopPropagation();
       drag=true; sx=e.clientX; sy=e.clientY; stx=tx; sty=ty; wrap.classList.add('dragging');
     });
     window.addEventListener('mousemove',function(e){
@@ -4649,6 +4650,57 @@ function refreshAllMetars(){
 window.refreshAllMetars=refreshAllMetars;
 
 /* ===== SIGMET / AIRMET fetch ===== */
+var NEARBY_FIRS=['EBBU','EHAA','EDGG','EDWW','EDMM','LFFF','LFEE','LFMM','ELLX','EGTT','EGPX',
+  'EHAM','EHRD','EDDK','EDDL','EBBR','EBLG','EBCI','EBCV','EBSG'];
+function isNearbySigmet(txt){
+  var up=txt.toUpperCase();
+  for(var i=0;i<NEARBY_FIRS.length;i++){
+    if(up.indexOf(NEARBY_FIRS[i])>=0) return true;
+  }
+  /* Also check country prefixes EB (Belgium), EH (Netherlands), ED (Germany W.), EL (Luxembourg), LF (France N.) */
+  if(up.match(/\b(EB[A-Z]{2}|EH[A-Z]{2}|EDGG|EDWW|ELLX|LFFF|LFEE)\b/)) return true;
+  return false;
+}
+function renderSigmetItems(items,color,type){
+  var nearby=[], others=[];
+  items.forEach(function(s){
+    if(isNearbySigmet(s)) nearby.push(s); else others.push(s);
+  });
+  var html='';
+  if(nearby.length){
+    html+='<div style="margin:8px 0 6px"><b style="color:'+color+'">\u2757 '+type+' proches (Belgique / voisins) \u2014 '+nearby.length+'</b></div>';
+    nearby.forEach(function(s){
+      html+='<div style="padding:8px 12px;margin:4px 0;border-radius:8px;background:rgba('+
+        (color==='#f44336'?'244,67,54':'255,167,38')+',.15);border-left:4px solid '+color+
+        ';border:2px solid '+color+';font-family:monospace;font-size:.85em;white-space:pre-wrap;line-height:1.5;box-shadow:0 0 8px '+color+'40">'+
+        highlightSigmet(s)+'</div>';
+    });
+  }
+  if(others.length){
+    html+='<details style="margin:8px 0"><summary style="cursor:pointer;font-size:.85em;color:var(--text-secondary)">\u{1F30D} Autres '+type+' (hors zone) \u2014 '+others.length+'</summary>';
+    others.forEach(function(s){
+      html+='<div style="padding:6px 10px;margin:4px 0;border-radius:6px;background:rgba('+
+        (color==='#f44336'?'244,67,54':'255,167,38')+',.05);border-left:3px solid '+color+
+        '44;font-family:monospace;font-size:.82em;white-space:pre-wrap;line-height:1.4;opacity:.7">'+s.replace(/</g,'&lt;')+'</div>';
+    });
+    html+='</details>';
+  }
+  return html;
+}
+function highlightSigmet(raw){
+  var s=raw.replace(/</g,'&lt;');
+  /* Highlight hazard type */
+  s=s.replace(/\b(SEV TURB|MOD TURB|SEV ICE|MOD ICE|SEV MTW|TS|TURB|ICE|VA|CB|TCU|SFC WIND|LLWS)\b/g,
+    '<b style="color:#ff5252;background:rgba(255,82,82,.15);padding:1px 4px;border-radius:3px">$1</b>');
+  /* Highlight FIR names we care about */
+  s=s.replace(/\b(EBBU|EHAA|EDGG|EDWW|LFFF|LFEE|ELLX|EGTT)\b/g,
+    '<b style="color:#ffd740;background:rgba(255,215,64,.15);padding:1px 4px;border-radius:3px">$1</b>');
+  /* Highlight flight levels */
+  s=s.replace(/\b(FL\d{2,3})\b/g,'<span style="color:#90caf9;font-weight:600">$1</span>');
+  /* Highlight VALID period */
+  s=s.replace(/(VALID\s+\d{6}\/\d{6})/g,'<span style="color:#ce93d8">$1</span>');
+  return s;
+}
 window.fetchSigmetAirmet=function(){
   var panel=document.getElementById('sigmetPanel');
   panel.innerHTML='<em>Chargement...</em>';
@@ -4659,23 +4711,21 @@ window.fetchSigmetAirmet=function(){
   function render(){
     if(++done<2) return;
     var html='';
+    /* SIGMET */
     if(results.sigmet && results.sigmet.trim()){
       var items=results.sigmet.trim().split(/\n\n+/);
-      html+='<div style="margin-bottom:10px"><b style="color:#f44336">\u26A0\uFE0F SIGMETs actifs ('+items.length+')</b></div>';
-      items.forEach(function(s){
-        html+='<div style="padding:6px 10px;margin:4px 0;border-radius:6px;background:rgba(244,67,54,.08);border-left:3px solid #f44336;font-family:monospace;font-size:.85em;white-space:pre-wrap;line-height:1.5">'+s.replace(/</g,'&lt;')+'</div>';
-      });
+      html+='<div style="margin-bottom:6px"><b style="color:#f44336">\u26A0\uFE0F SIGMETs actifs \u2014 '+items.length+' au total</b></div>';
+      html+=renderSigmetItems(items,'#f44336','SIGMETs');
     } else {
       html+='<div style="padding:8px 12px;border-radius:6px;background:rgba(76,175,80,.08);color:#4caf50;font-weight:600">\u2705 Aucun SIGMET actif pour l\u2019Europe</div>';
     }
+    /* AIRMET */
     if(results.airmet && results.airmet.trim()){
       var aitems=results.airmet.trim().split(/\n\n+/);
-      html+='<div style="margin:10px 0 6px"><b style="color:#ffa726">\u26A0\uFE0F AIRMETs actifs ('+aitems.length+')</b></div>';
-      aitems.forEach(function(s){
-        html+='<div style="padding:6px 10px;margin:4px 0;border-radius:6px;background:rgba(255,167,38,.08);border-left:3px solid #ffa726;font-family:monospace;font-size:.85em;white-space:pre-wrap;line-height:1.5">'+s.replace(/</g,'&lt;')+'</div>';
-      });
+      html+='<div style="margin:12px 0 6px"><b style="color:#ffa726">\u26A0\uFE0F AIRMETs actifs \u2014 '+aitems.length+' au total</b></div>';
+      html+=renderSigmetItems(aitems,'#ffa726','AIRMETs');
     }
-    html+='<div style="font-size:.72em;color:var(--text-secondary);margin-top:8px">Source : aviationweather.gov \u2014 \u00e0 titre informatif uniquement. V\u00e9rifiez les sources officielles avant le vol.</div>';
+    html+='<div style="font-size:.72em;color:var(--text-secondary);margin-top:10px">\u{1F4CD} Zone de proximit\u00e9 : FIRs EBBU (Belgique), EHAA (Pays-Bas), EDGG/EDWW (Allemagne), LFFF/LFEE (France Nord), ELLX (Luxembourg), EGTT (UK).<br>Source : aviationweather.gov \u2014 \u00e0 titre informatif uniquement. V\u00e9rifiez les sources officielles avant le vol.</div>';
     panel.innerHTML=html;
   }
   fetch(sigUrl).then(function(r){return r.text();}).then(function(t){results.sigmet=t;render();}).catch(function(){
