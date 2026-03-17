@@ -36,10 +36,10 @@ async function getDocWithTimeout(docRef, timeoutMs = 2000) {
       return { exists: false, data: () => ({}) };
     }
   }
-  // En ligne → essayer réseau, avec timeout court
+  // En ligne → forcer lecture SERVEUR pour données cross-device fraîches
   try {
     return await Promise.race([
-      docRef.get(),
+      docRef.get({ source: 'server' }),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs)
       )
