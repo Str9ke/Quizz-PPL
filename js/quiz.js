@@ -478,6 +478,27 @@ async function initQuiz() {
     const data = doc.exists ? doc.data() : {};
     currentResponses = normalizeResponses(data.responses || {});
     _currentSessionCount = data.quizSessionCount || 0;
+    // Sync daily stats from Firestore (cross-device)
+    const _dailyHist = data.dailyHistory || {};
+    if (Object.keys(_dailyHist).length) {
+      try {
+        const _n = new Date();
+        const _tk = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
+        const _utk = _n.toISOString().slice(0,10);
+        const _sv = _dailyHist[_tk] || 0;
+        const _lr = parseInt(localStorage.getItem('dailyCountRatchet_'+_utk)) || 0;
+        if (_sv > _lr) {
+          localStorage.setItem('dailyCountRatchet_'+_utk, _sv);
+          localStorage.setItem('dailyAnswered_'+_utk, _sv);
+        }
+        // Sync backup history
+        const _dhb = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        let _dhc = false;
+        for (const [k,v] of Object.entries(_dailyHist)) { if (v > (_dhb[k]||0)) { _dhb[k]=v; _dhc=true; } }
+        if (_dhc) localStorage.setItem('dailyHistoryBackup', JSON.stringify(_dhb));
+        updateDailyStatsBar(Math.max(_sv, _lr), _dailyHist);
+      } catch(e) { /* ignore */ }
+    }
     // Précharger les notes personnelles pour correction immédiate
     _notesCache = data.notes || {};
     try {
@@ -861,7 +882,10 @@ async function validerReponses() {
           if (_mUid && typeof saveDailyMastered === 'function') saveDailyMastered(_mUid).catch(() => {});
         }
         // Mise à jour visuelle DIRECTE de la barre (streak, objectif, progression)
-        updateDailyStatsBar(display);
+        // Inclure le dailyHistoryBackup pour un streak cross-device correct
+        const _dhForStreak = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        _dhForStreak[localDateKey] = Math.max(_dhForStreak[localDateKey] || 0, display);
+        updateDailyStatsBar(display, _dhForStreak);
       } catch (e) { /* localStorage plein — rare */ }
     }
 

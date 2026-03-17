@@ -184,6 +184,9 @@ async function initIndex() {
         localStorage.setItem('dailyCountRatchet_' + todayUtcKey, serverToday);
         localStorage.setItem('dailyAnswered_' + todayUtcKey, serverToday);
       }
+      // Re-render daily stats bar with Firestore data (fixes cross-device sync)
+      const displayToday = Math.max(serverToday, localRatchet);
+      updateDailyStatsBar(displayToday, _dailyHist);
     } catch (e) { /* ignore */ }
   } catch (e) {
     console.warn('[offline] Impossible de charger les réponses Firestore, utilisation du cache local');
