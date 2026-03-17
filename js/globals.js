@@ -97,6 +97,7 @@ function showBuildTag(targetId = 'buildInfo') {
 let selectedCategory = "PROCÉDURE RADIO";
 let modeQuiz = "toutes";
 let nbQuestions = 10;
+let _currentSessionCount = 0; // compteur de sessions quiz (sync Firestore)
 
 let countRadio = 0;
 let countOp = 0;

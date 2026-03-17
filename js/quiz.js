@@ -477,6 +477,7 @@ async function initQuiz() {
   getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(async (doc) => {
     const data = doc.exists ? doc.data() : {};
     currentResponses = normalizeResponses(data.responses || {});
+    _currentSessionCount = data.quizSessionCount || 0;
     // Précharger les notes personnelles pour correction immédiate
     _notesCache = data.notes || {};
     try {
@@ -800,6 +801,10 @@ async function validerReponses() {
         if (status === 'ratée' && !isImmediate) {
           _queueForReask(q);
         }
+        // Mode marquées : planifier la ré-interrogation à session+3
+        if (status === 'ratée' && wasMarked) {
+          entry.retryAfterSession = (_currentSessionCount || 0) + 3;
+        }
     });
 
     // Compter les questions nouvellement maîtrisées
@@ -868,8 +873,25 @@ async function validerReponses() {
     }
 
     try {
+        // Incrémenter le compteur de sessions (pour marquées +3 session retry)
+        _currentSessionCount++;
+
         // Sauvegarde avec fallback offline
         currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);
+
+        // Sauvegarder le compteur de sessions dans Firestore
+        try {
+          await db.collection('quizProgress').doc(uid).update({
+            quizSessionCount: _currentSessionCount
+          });
+        } catch (e) {
+          if (e.code === 'not-found') {
+            await db.collection('quizProgress').doc(uid).set(
+              { quizSessionCount: _currentSessionCount },
+              { merge: true }
+            );
+          }
+        }
 
         // Sauvegarder le compteur quotidien (sauf mode révisions espacées)
         if (modeQuiz !== 'revisions') {

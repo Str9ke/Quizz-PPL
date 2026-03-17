@@ -719,7 +719,9 @@ async function filtrerQuestions(mode, nb) {
   let responses = {};
   if (uid) {
     const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    responses = normalizeResponses(doc.exists ? doc.data().responses : {});
+    const data = doc.exists ? doc.data() : {};
+    responses = normalizeResponses(data.responses || {});
+    _currentSessionCount = data.quizSessionCount || _currentSessionCount || 0;
   }
 
   const shuffled = [...questions].sort(() => 0.5 - Math.random());
@@ -778,7 +780,17 @@ async function filtrerQuestions(mode, nb) {
   }
   else if (mode === "marquees") {
     const allMarquees = shuffled.filter(q => responses[getKeyFor(q)]?.marked);
-    currentQuestions = _excludeRecentlyAnswered(allMarquees, nb);
+    // Priorité aux questions ratées dont le retryAfterSession est atteint
+    const dueRetry = allMarquees.filter(q => {
+      const r = responses[getKeyFor(q)];
+      return r && r.retryAfterSession && r.retryAfterSession <= _currentSessionCount && r.status === 'ratée';
+    });
+    const rest = allMarquees.filter(q => {
+      const r = responses[getKeyFor(q)];
+      return !(r && r.retryAfterSession && r.retryAfterSession <= _currentSessionCount && r.status === 'ratée');
+    });
+    const ordered = [...dueRetry, ...rest];
+    currentQuestions = _excludeRecentlyAnswered(ordered, nb);
   }
   else if (mode === "avecnotes") {
     // Charger les notes depuis Firestore
@@ -805,13 +817,18 @@ async function filtrerQuestions(mode, nb) {
 
   // INJECTION : questions de la file de ré-interrogation (countdown === 0)
   // Ces questions ratées 2 quiz avant sont injectées dans le quiz actuel
+  // SAUF celles déjà réussies entre-temps
   try {
     const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
     const ready = queue.filter(item => item.countdown <= 0);
     const remaining = queue.filter(item => item.countdown > 0);
     if (ready.length > 0) {
-      // Injecter les questions prêtes (ne pas dépasser +5 pour ne pas surcharger)
-      const toInject = ready.slice(0, 5);
+      // Filtrer : ne pas injecter si la question est maintenant réussie
+      const stillFailed = ready.filter(item => {
+        const r = responses[item.key];
+        return !r || r.status !== 'réussie';
+      });
+      const toInject = stillFailed.slice(0, 5);
       const currentKeys = new Set(currentQuestions.map(q => getKeyFor(q)));
       toInject.forEach(item => {
         if (!currentKeys.has(item.key) && item.question) {
@@ -819,8 +836,8 @@ async function filtrerQuestions(mode, nb) {
           currentKeys.add(item.key);
         }
       });
-      // Retirer les questions injectées de la queue, garder les overflo
-      const leftover = ready.slice(5); // celles qu'on n'a pas pu injecter restent
+      // Retirer les questions réussies et injectées de la queue
+      const leftover = stillFailed.slice(5);
       localStorage.setItem('reaskQueue', JSON.stringify([...remaining, ...leftover]));
     }
   } catch (e) { /* ignore */ }
