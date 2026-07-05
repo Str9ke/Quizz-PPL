@@ -292,9 +292,21 @@ async function saveDailyCount(uid) {
         console.warn('[saveDailyCount] transaction échouée, fallback direct:', txErr.message);
       }
     }
-    // Fallback (offline ou transaction échouée) : écrire la valeur locale directement
+    // Fallback (offline ou transaction échouée) : lire le serveur et écrire max(local, serveur)
+    let fallbackVal = absoluteCount;
+    try {
+      const currentDoc = await docRef.get();
+      if (currentDoc.exists) {
+        const currentServerVal = (currentDoc.data().dailyHistory || {})[dateKey] || 0;
+        fallbackVal = Math.max(absoluteCount, currentServerVal);
+        if (currentServerVal > absoluteCount) {
+          localStorage.setItem('dailyCountRatchet_' + utcKey, currentServerVal);
+          localStorage.setItem('dailyAnswered_' + utcKey, currentServerVal);
+        }
+      }
+    } catch (readErr) { /* use absoluteCount as-is */ }
     const update = {};
-    update['dailyHistory.' + dateKey] = absoluteCount;
+    update['dailyHistory.' + dateKey] = fallbackVal;
     await docRef.set(update, { merge: true });
   } catch (e) {
     console.error('[saveDailyCount] error:', e);

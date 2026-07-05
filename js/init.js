@@ -8,9 +8,9 @@ async function initIndex() {
     updateDailyStatsBar(); // streak, objectif, compteur, barre de progression — tout depuis localStorage
   } catch (e) { /* ignore */ }
 
-  // Lancer displayDailyStats en parallèle (met à jour la barre dès que Firestore répond,
-  // sans attendre le chargement des 30+ fichiers JSON)
-  const dailyStatsPromise = displayDailyStats().catch(e => console.warn('[initIndex] displayDailyStats error:', e));
+  // Lancer displayDailyStats APRÈS avoir récupéré les données Firestore et mis à jour localStorage,
+  // pour éviter qu'elle n'écrase les données correctes avec un cache vide (race condition).
+  // On la lance juste avant le await final.
   
   // Pré-charger tous les fichiers JSON en parallèle (depuis le cache SW = quasi-instantané)
   await prefetchAllJsonFiles();
@@ -216,8 +216,9 @@ async function initIndex() {
   // Afficher la barre de progression globale sur l'accueil
   displayHomeProgressBar(currentResponses, _dailyHist);
 
-  // Attendre la fin de displayDailyStats (lancée en parallèle au début)
-  await dailyStatsPromise;
+  // Lancer displayDailyStats APRÈS les données Firestore/localStorage à jour
+  // (élimine la race condition où displayDailyStats écrasait les données correctes)
+  await displayDailyStats().catch(e => console.warn('[initIndex] displayDailyStats error:', e));
 }
 
 // Sécurise l'init sur la page quiz en évitant les doublons et les problèmes de timing Auth

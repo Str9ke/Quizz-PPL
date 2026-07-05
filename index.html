@@ -541,16 +541,7 @@
           parseInt(localStorage.getItem('dailyAnswered_'+todayUtcKey))||0
         );
 
-        /* 1. PUSH local \u2192 Firestore via REST Bearer (updateMask = n'écrit que ce champ) */
-        if(localCount > 0){
-          var patchBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
-          patchBody.fields.dailyHistory.mapValue.fields[todayKey] = {integerValue: String(localCount)};
-          var patchUrl = fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+todayKey);
-          var pR = await fetch(patchUrl,{method:'PATCH',headers:H,body:JSON.stringify(patchBody)});
-          console.log('[sync] push today', localCount, pR.ok?'OK':await pR.text());
-        }
-
-        /* 2. PULL Firestore \u2192 local via REST (contourne compl\u00e8tement le cache SDK) */
+        /* 1. PULL Firestore \u2192 local via REST FIRST (to get server values before pushing) */
         var getR = await fetch(fsBase+encodeURIComponent(uid),{headers:Hg});
         var getD = await getR.json();
         if(getD.error) throw new Error(getD.error.message||'REST error');
@@ -558,6 +549,19 @@
         var dh = _mapFields(getD.fields&&getD.fields.dailyHistory&&getD.fields.dailyHistory.mapValue&&getD.fields.dailyHistory.mapValue.fields);
         var dm = _mapFields(getD.fields&&getD.fields.dailyMastered&&getD.fields.dailyMastered.mapValue&&getD.fields.dailyMastered.mapValue.fields);
         console.log('[sync] dailyHistory REST:', JSON.stringify(dh).slice(0,300));
+
+        /* 2. PUSH max(local, server) \u2192 Firestore (never overwrite a higher server value) */
+        var serverToday = dh[todayKey]||0;
+        var bestToday = Math.max(serverToday, localCount);
+        console.log('[sync] today \u2014 serveur:', serverToday, 'local:', localCount, '\u2192', bestToday);
+        if(bestToday > serverToday && bestToday > 0){
+          var patchBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
+          patchBody.fields.dailyHistory.mapValue.fields[todayKey] = {integerValue: String(bestToday)};
+          var patchUrl = fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+todayKey);
+          var pR = await fetch(patchUrl,{method:'PATCH',headers:H,body:JSON.stringify(patchBody)});
+          console.log('[sync] push today', bestToday, pR.ok?'OK':await pR.text());
+          dh[todayKey] = bestToday;
+        }
 
         var dhB = JSON.parse(localStorage.getItem('dailyHistoryBackup')||'{}');
         for(var k in dh){ if(dh[k]>(dhB[k]||0)) dhB[k]=dh[k]; }
@@ -567,9 +571,6 @@
         for(var k in dm){ if(dm[k]>(dmB[k]||0)) dmB[k]=dm[k]; }
         localStorage.setItem('dailyMasteredBackup', JSON.stringify(dmB));
 
-        var serverToday = dh[todayKey]||0;
-        var bestToday = Math.max(serverToday, localCount);
-        console.log('[sync] today \u2014 serveur:', serverToday, 'local:', localCount, '\u2192', bestToday);
         if(bestToday > localCount){
           localStorage.setItem('dailyCountRatchet_'+todayUtcKey, bestToday);
           localStorage.setItem('dailyAnswered_'+todayUtcKey, bestToday);
@@ -594,7 +595,7 @@
         }
 
         displayHomeProgressBar(currentResponses, dh);
-        updateDailyStatsBar();
+        updateDailyStatsBar(bestToday, dh);
         if(typeof updateModeCounts === 'function') updateModeCounts();
         var msg = bestToday > 0 ? ('\u2705 Sync\u00e9 ('+bestToday+' auj.)') : '\u2705 Synchronis\u00e9 !';
         if(btn){ btn.textContent=msg; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }

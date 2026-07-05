@@ -36,6 +36,7 @@ jobs:
           window.FIREBASE_CONFIG = {
             apiKey: "${{ secrets.FIREBASE_API_KEY }}"
           };
+          window.OPENAIP_API_KEY = "${{ secrets.OPENAIP_API_KEY }}";
           EOF
 
       - name: Upload artifact for GitHub Pages
