@@ -214,7 +214,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-remove-btn:hover{color:#f44336;opacity:1}
 .wp-map-btn{background:none;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:1.1em;padding:2px 6px;transition:all .2s;flex-shrink:0}
 .wp-map-btn:hover{border-color:#667eea;background:rgba(102,126,234,.08)}
-.wp-drag-handle{cursor:grab;font-size:1.1em;color:var(--text-secondary);opacity:.4;transition:opacity .2s;flex-shrink:0;padding:4px 2px;user-select:none;-webkit-user-select:none}
+.wp-drag-handle{cursor:grab;font-size:1.1em;color:var(--text-secondary);opacity:.4;transition:opacity .2s;flex-shrink:0;padding:4px 2px;user-select:none;-webkit-user-select:none;touch-action:none}
 .wp-drag-handle:hover{opacity:.8}
 .wp-card.dragging{opacity:.4;border-style:dashed}
 .wp-card.drag-over{border-top:3px solid #667eea}
@@ -5467,7 +5467,7 @@ function renderNavlog(){
       html+='<div class="leg-strip" id="leg-wrap-'+i+'" style="display:none"><div class="leg-strip-content" id="leg-strip-'+i+'"></div></div>';
       html+='<button class="insert-wp-btn" onclick="window.insertWaypoint('+i+')" title="Ins\u00e9rer un waypoint">+</button>';
     }
-    html+='<div class="wp-card'+(wp.isEtape?' etape-card':'')+'" data-idx="'+i+'" draggable="true">';
+    html+='<div class="wp-card'+(wp.isEtape?' etape-card':'')+'" data-idx="'+i+'">';
     html+='<div class="wp-card-header">';
     html+='<span class="wp-drag-handle" title="Glisser pour r\u00e9ordonner">\u2630</span>';
     html+='<div class="wp-num-badge">'+(i+1)+'</div>';
@@ -5659,87 +5659,69 @@ function removeWaypoint(i){
 }
 window.removeWaypoint=removeWaypoint;
 
-/* ===== DRAG & DROP REORDER ===== */
-var dragSrcIdx=null;
-
+/* ===== DRAG & DROP REORDER (unified Pointer Events — mouse/touch/pen) ===== */
 function initDragDrop(board){
   var cards=board.querySelectorAll('.wp-card');
-  for(var c=0;c<cards.length;c++){
-    (function(card){
-      var handle=card.querySelector('.wp-drag-handle');
-      /* Only drag when starting from handle */
-      card.addEventListener('dragstart',function(e){
-        var isFromHandle=handle&&handle.contains(e.target);
-        if(!isFromHandle){e.preventDefault();return;}
-        dragSrcIdx=parseInt(card.getAttribute('data-idx'));
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed='move';
-        e.dataTransfer.setData('text/plain',dragSrcIdx);
-      });
-      card.addEventListener('dragover',function(e){
-        e.preventDefault();
-        e.dataTransfer.dropEffect='move';
-        card.classList.add('drag-over');
-      });
-      card.addEventListener('dragleave',function(){
-        card.classList.remove('drag-over');
-      });
-      card.addEventListener('drop',function(e){
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        var destIdx=parseInt(card.getAttribute('data-idx'));
-        if(dragSrcIdx!==null && dragSrcIdx!==destIdx){
-          var moved=waypoints.splice(dragSrcIdx,1)[0];
-          waypoints.splice(destIdx,0,moved);
-          renderNavlog();
-          recalcNavlog();
-        }
-        dragSrcIdx=null;
-      });
-      card.addEventListener('dragend',function(){
-        card.classList.remove('dragging');
-        dragSrcIdx=null;
-        var overs=board.querySelectorAll('.drag-over');
-        for(var o=0;o<overs.length;o++) overs[o].classList.remove('drag-over');
-      });
-    })(cards[c]);
+  var srcIdx=null, activePointerId=null, activeHandle=null;
+
+  function clearDragState(){
+    var marked=board.querySelectorAll('.dragging,.drag-over');
+    for(var m=0;m<marked.length;m++) marked[m].classList.remove('dragging','drag-over');
+    srcIdx=null; activePointerId=null; activeHandle=null;
   }
-  /* Touch drag support for mobile */
-  var touchSrc=null,touchClone=null,touchStartY=0;
-  for(var tc=0;tc<cards.length;tc++){
-    (function(card){
-      var handle=card.querySelector('.wp-drag-handle');
-      if(!handle) return;
-      handle.addEventListener('touchstart',function(e){
-        touchSrc=parseInt(card.getAttribute('data-idx'));
-        touchStartY=e.touches[0].clientY;
-        card.classList.add('dragging');
-        e.preventDefault();
-      },{passive:false});
-    })(cards[tc]);
-  }
-  document.addEventListener('touchmove',function(e){
-    if(touchSrc===null) return;
+
+  function onPointerMove(e){
+    if(srcIdx===null || e.pointerId!==activePointerId) return;
     e.preventDefault();
-  },{passive:false});
-  document.addEventListener('touchend',function(e){
-    if(touchSrc===null) return;
-    var touchEndY=e.changedTouches[0].clientY;
-    var destCard=document.elementFromPoint(e.changedTouches[0].clientX,touchEndY);
-    while(destCard && !destCard.classList.contains('wp-card')) destCard=destCard.parentElement;
-    if(destCard){
-      var destIdx=parseInt(destCard.getAttribute('data-idx'));
-      if(touchSrc!==destIdx){
-        var moved=waypoints.splice(touchSrc,1)[0];
+    var overs=board.querySelectorAll('.drag-over');
+    for(var o=0;o<overs.length;o++) overs[o].classList.remove('drag-over');
+    var el=document.elementFromPoint(e.clientX,e.clientY);
+    while(el && !el.classList.contains('wp-card')) el=el.parentElement;
+    if(el && el.closest('.navlog-board')===board){
+      el.classList.add('drag-over');
+    }
+  }
+
+  function onPointerUp(e){
+    if(srcIdx===null || e.pointerId!==activePointerId) return;
+    if(activeHandle && activeHandle.releasePointerCapture){
+      try{ activeHandle.releasePointerCapture(e.pointerId); }catch(err){}
+    }
+    var el=document.elementFromPoint(e.clientX,e.clientY);
+    while(el && !el.classList.contains('wp-card')) el=el.parentElement;
+    if(el && el.closest('.navlog-board')===board){
+      var destIdx=parseInt(el.getAttribute('data-idx'));
+      if(!isNaN(destIdx) && destIdx!==srcIdx){
+        var moved=waypoints.splice(srcIdx,1)[0];
         waypoints.splice(destIdx,0,moved);
         renderNavlog();
         recalcNavlog();
       }
     }
-    var dragging=document.querySelectorAll('.dragging');
-    for(var d=0;d<dragging.length;d++) dragging[d].classList.remove('dragging');
-    touchSrc=null;
-  });
+    clearDragState();
+    document.removeEventListener('pointermove',onPointerMove);
+    document.removeEventListener('pointerup',onPointerUp);
+    document.removeEventListener('pointercancel',onPointerUp);
+  }
+
+  for(var c=0;c<cards.length;c++){
+    (function(card){
+      var handle=card.querySelector('.wp-drag-handle');
+      if(!handle) return;
+      handle.addEventListener('pointerdown',function(e){
+        if(e.button!==undefined && e.button!==0 && e.pointerType==='mouse') return;
+        srcIdx=parseInt(card.getAttribute('data-idx'));
+        activePointerId=e.pointerId;
+        activeHandle=handle;
+        card.classList.add('dragging');
+        try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+        e.preventDefault();
+        document.addEventListener('pointermove',onPointerMove,{passive:false});
+        document.addEventListener('pointerup',onPointerUp);
+        document.addEventListener('pointercancel',onPointerUp);
+      });
+    })(cards[c]);
+  }
 }
 
 /* ===== CLEAR WORKSPACE ===== */
