@@ -8,6 +8,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -165,7 +166,7 @@
   <div class="home-card" id="radialMapCard">
     <div class="home-card-header"><span class="home-card-icon">🗺️</span><span class="home-card-title">Carte</span></div>
     <div id="radialMapContainer"></div>
-    <div class="radial-map-info" id="radialMapInfo">Choisissez des points pour les voir sur la carte.</div>
+    <div class="radial-map-info" id="radialMapInfo">Cliquez sur la carte pour placer un point, glissez un marqueur pour le déplacer, cliquez dessus pour le supprimer.</div>
   </div>
 
   <!-- Mes points -->
@@ -446,26 +447,59 @@
   var radialMap = null;
   var radialMapLayers = [];
   var pickingTarget = null;
+  var _radialSkipNextFit = false;
+  var _radialMapLastSig = null;
 
   function initRadialMap(){
     var el = document.getElementById('radialMapContainer');
     if(!el || radialMap) return;
     radialMap = L.map('radialMapContainer',{zoomControl:true,attributionControl:false}).setView([50.4589,3.8181],8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(radialMap);
-    radialMap.on('click', function(e){
-      if(!pickingTarget) return;
-      var lat = Math.round(e.latlng.lat*10000)/10000;
-      var lon = Math.round(e.latlng.lng*10000)/10000;
-      document.getElementById(pickingTarget+'Lat').value = lat;
-      document.getElementById(pickingTarget+'Lon').value = lon;
-      document.getElementById(pickingTarget+'Select').value = '__custom__';
-      document.getElementById(pickingTarget+'CustomFields').style.display = 'flex';
-      var t = pickingTarget;
-      togglePicking(t, true);
-      compute();
+
+    var osmLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18});
+    var topoLayer=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenTopoMap',maxZoom:17});
+    var openaipKey = window.OPENAIP_API_KEY || '';
+    var icaoLayer=L.tileLayer('https://{s}.api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey='+openaipKey,{attribution:'OpenAIP',maxZoom:14,subdomains:["a","b","c"]});
+    var googleLayer=L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'Google Maps',maxZoom:20,subdomains:["mt0","mt1","mt2","mt3"]});
+
+    osmLayer.addTo(radialMap);
+    L.control.layers({'OSM':osmLayer,'Google Maps':googleLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{},{position:'topright',collapsed:true}).addTo(radialMap);
+
+    /* Les tuiles OpenAIP sont transparentes (espaces aériens seulement) : garder OSM en dessous
+       quand ICAO est choisi, comme sur la page Briefing. */
+    radialMap.on('baselayerchange', function(ev){
+      if(ev.layer === icaoLayer){
+        if(!radialMap.hasLayer(osmLayer)){
+          radialMap.removeLayer(icaoLayer);
+          osmLayer.addTo(radialMap);
+          icaoLayer.addTo(radialMap);
+        }
+      } else if(radialMap.hasLayer(osmLayer) && ev.layer !== osmLayer){
+        radialMap.removeLayer(osmLayer);
+      }
     });
+
+    radialMap.on('click', function(e){
+      if(pickingTarget){
+        setPointFromMap(pickingTarget, e.latlng.lat, e.latlng.lng);
+        togglePicking(pickingTarget, true);
+        return;
+      }
+      /* Clic direct sans mode armé : remplit intelligemment station puis point B */
+      var target = !resolvePoint('station') ? 'station' : (!resolvePoint('pointB') ? 'pointB' : null);
+      if(!target) return; /* les deux points existent déjà : glisser un marqueur ou le supprimer */
+      setPointFromMap(target, e.latlng.lat, e.latlng.lng);
+    });
+
     setTimeout(function(){ radialMap.invalidateSize(); }, 150);
     window.addEventListener('resize', function(){ if(radialMap) radialMap.invalidateSize(); });
+  }
+
+  function setPointFromMap(prefix, lat, lon){
+    document.getElementById(prefix+'Lat').value = Math.round(lat*10000)/10000;
+    document.getElementById(prefix+'Lon').value = Math.round(lon*10000)/10000;
+    document.getElementById(prefix+'Select').value = '__custom__';
+    document.getElementById(prefix+'CustomFields').style.display = 'flex';
+    compute();
   }
 
   function togglePicking(target, forceOff){
@@ -485,27 +519,70 @@
     }
   }
 
+  window.clearPoint = function(prefix){
+    document.getElementById(prefix+'Select').value = '';
+    document.getElementById(prefix+'CustomFields').style.display = 'none';
+    document.getElementById(prefix+'Lat').value = '';
+    document.getElementById(prefix+'Lon').value = '';
+    if(radialMap) radialMap.closePopup();
+    compute();
+  };
+
+  function markerPopupHtml(prefix, label){
+    return '<div style="text-align:center;min-width:120px">'
+      + '<b>'+esc(label)+'</b><br>'
+      + '<span style="font-size:.75em;opacity:.7">Glisser pour déplacer</span><br>'
+      + '<button onclick="clearPoint(\''+prefix+'\')" style="margin-top:6px;background:#e53e3e;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.85em">🗑️ Supprimer</button>'
+      + '</div>';
+  }
+
   function updateMap(station, pointB){
     if(!radialMap) return;
     routeLayersClear();
     var info = document.getElementById('radialMapInfo');
     if(pickingTarget) return;
-    if(!station && !pointB){ info.textContent='Choisissez des points pour les voir sur la carte.'; return; }
+    if(!station && !pointB){
+      info.textContent='Cliquez sur la carte pour placer un point (station puis point B), glissez un marqueur pour le déplacer, ou cliquez dessus pour le supprimer.';
+      _radialMapLastSig = null;
+      return;
+    }
     var pts=[];
     if(station){
-      var m1=L.marker([station.lat,station.lon]).addTo(radialMap).bindTooltip(station.label,{permanent:false});
+      var m1=L.marker([station.lat,station.lon],{draggable:true}).addTo(radialMap)
+        .bindTooltip(station.label,{permanent:false})
+        .bindPopup(markerPopupHtml('station', station.label));
+      m1.on('dragend', function(e){
+        var ll=e.target.getLatLng();
+        _radialSkipNextFit = true;
+        setPointFromMap('station', ll.lat, ll.lng);
+      });
       radialMapLayers.push(m1); pts.push([station.lat,station.lon]);
     }
     if(pointB){
-      var m2=L.marker([pointB.lat,pointB.lon]).addTo(radialMap).bindTooltip(pointB.label,{permanent:false});
+      var m2=L.marker([pointB.lat,pointB.lon],{draggable:true}).addTo(radialMap)
+        .bindTooltip(pointB.label,{permanent:false})
+        .bindPopup(markerPopupHtml('pointB', pointB.label));
+      m2.on('dragend', function(e){
+        var ll=e.target.getLatLng();
+        _radialSkipNextFit = true;
+        setPointFromMap('pointB', ll.lat, ll.lng);
+      });
       radialMapLayers.push(m2); pts.push([pointB.lat,pointB.lon]);
     }
     if(station && pointB){
       var line=L.polyline(pts,{color:'#22c55e',weight:3,opacity:.85,dashArray:'6,4'}).addTo(radialMap);
       radialMapLayers.push(line);
     }
-    if(pts.length===1){ radialMap.setView(pts[0],9,{animate:false}); }
-    else if(pts.length===2){ radialMap.fitBounds(L.latLngBounds(pts),{padding:[40,40],maxZoom:11,animate:false}); }
+    var sig = JSON.stringify(pts);
+    var skip = _radialSkipNextFit;
+    _radialSkipNextFit = false;
+    if(sig !== _radialMapLastSig){
+      _radialMapLastSig = sig;
+      if(!skip){
+        if(pts.length===1){ radialMap.setView(pts[0],9,{animate:false}); }
+        else if(pts.length===2){ radialMap.fitBounds(L.latLngBounds(pts),{padding:[40,40],maxZoom:11,animate:false}); }
+      }
+    }
     info.textContent = (station?station.label:'?') + '  →  ' + (pointB?pointB.label:'?');
   }
   function routeLayersClear(){
