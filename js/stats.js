@@ -978,6 +978,7 @@ function afficherStats(groupsData, globalStats) {
           <button class="stats-cat-reset-btn" onclick="event.stopPropagation();_toggleCatResetMenu('${menuId}')" title="Réinitialiser ${cat.label}">🔄</button>
           <div class="stats-cat-reset-menu" id="${menuId}" style="display:none;" onclick="event.stopPropagation()">
             <button onclick="_resetCategoryStats('${catVal}','${catLabelEsc}')">👀 Vues</button>
+            <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','reussie')">✅ Réussies</button>
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','ratee')">❌ Ratées</button>
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','marquee')">📌 Marquées</button>
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','importante')">⭐ Importantes</button>
@@ -1420,7 +1421,7 @@ document.addEventListener('click', function() {
 });
 
 /**
- * _resetCategoryField() – Réinitialise UNE SEULE caractéristique (marquée / importante / ratée)
+ * _resetCategoryField() – Réinitialise UNE SEULE caractéristique (marquée / importante / réussie / ratée)
  * d'une catégorie, sans toucher aux autres. Contrairement à _resetCategoryStats(), qui remet
  * toute la progression "vue" à zéro, cette fonction ne touche que le champ demandé.
  */
@@ -1428,6 +1429,7 @@ async function _resetCategoryField(catValue, catLabel, field) {
   const cfg = {
     marquee:    { label: 'Marquées 📌',    msg: 'Le marquage 📌 sera retiré (le reste ne change pas).' },
     importante: { label: 'Importantes ⭐', msg: 'Le marquage ⭐ sera retiré (le reste ne change pas).' },
+    reussie:    { label: 'Réussies ✅',    msg: 'Les questions réussies redeviendront "non vues" (les ratées, les marquages 📌⭐ et l\'historique sont conservés).' },
     ratee:      { label: 'Ratées ❌',      msg: 'Les questions ratées redeviendront "non vues" (les réussies, les marquages 📌⭐ et l\'historique sont conservés).' }
   }[field];
   if (!cfg) return;
@@ -1469,6 +1471,12 @@ async function _resetCategoryField(catValue, catLabel, field) {
         touched = true;
       } else if (field === 'importante' && r.important) {
         delete next.important;
+        touched = true;
+      } else if (field === 'reussie' && r.status === 'réussie') {
+        delete next.status;
+        delete next.failCount;
+        delete next.srInterval;
+        delete next.nextReview;
         touched = true;
       } else if (field === 'ratee' && r.status === 'ratée') {
         delete next.status;
