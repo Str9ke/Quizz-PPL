@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Radial VOR - Quiz Aviation PPL</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .radial-points-grid{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+    .radial-point-field{flex:1 1 220px;min-width:220px;display:flex;flex-direction:column;gap:4px}
+    .radial-point-field label{font-size:.8em;font-weight:700;color:var(--text-secondary)}
+    .radial-point-field select{width:100%;box-sizing:border-box}
+    .radial-swap-btn{flex:0 0 auto;width:42px;height:42px;border-radius:50%;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-primary);font-size:1.1em;cursor:pointer;transition:transform .2s,background .2s;margin-bottom:2px}
+    .radial-swap-btn:hover{background:#667eea;color:#fff;transform:rotate(180deg)}
+    .radial-custom-fields{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center}
+    .radial-custom-fields input[type="number"]{width:90px;margin-right:0}
+    .radial-pick-btn{font-size:.78em;padding:4px 8px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-primary);cursor:pointer}
+    .radial-pick-btn.active{background:#667eea;color:#fff;border-color:#667eea;animation:radialPulse 1.2s infinite}
+    @keyframes radialPulse{0%,100%{box-shadow:0 0 0 0 rgba(102,126,234,.5)}50%{box-shadow:0 0 0 6px rgba(102,126,234,0)}}
+
+    .radial-options-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+    .radial-options-field{display:flex;flex-direction:column;gap:4px}
+    .radial-options-field label{font-size:.78em;font-weight:700;color:var(--text-secondary)}
+    .radial-options-field input{width:80px;margin-right:0}
+    .radial-options-hint{font-size:.72em;color:var(--text-secondary);margin-top:2px}
+
+    .radial-mode-toggle{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--input-border)}
+    .radial-mode-btn{flex:1;padding:9px 10px;border:none;background:var(--input-bg);color:var(--text-primary);font-weight:700;font-size:.82em;cursor:pointer;transition:background .2s,color .2s}
+    .radial-mode-btn.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+
+    .radial-placeholder{color:var(--text-secondary);text-align:center;padding:1rem 0;font-size:.9em}
+
+    .radial-result-main{text-align:center;margin-bottom:6px}
+    .radial-result-value{font-size:3rem;font-weight:800;line-height:1;background:linear-gradient(135deg,#22c55e,#667eea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .radial-result-label{font-size:.85em;font-weight:700;color:var(--text-secondary);margin-top:2px}
+    .radial-result-secondary{text-align:center;font-size:.82em;color:var(--text-secondary);margin-bottom:14px}
+    .radial-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;border-top:1px solid var(--border-color);padding-top:10px}
+    .radial-result-num{display:block;font-size:1.15em;font-weight:800;color:var(--text-heading)}
+    .radial-result-unit{display:block;font-size:.7em;color:var(--text-secondary)}
+    .radial-result-sub{font-size:.68em;color:var(--text-secondary)}
+
+    .radial-compass-wrap{display:flex;justify-content:center;margin:14px 0 4px}
+    .radial-compass-wrap svg{color:var(--text-primary);max-width:220px;width:100%;height:auto}
+
+    .radial-copy-btn{display:block;margin:10px auto 0;background:#667eea;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.82em}
+    .radial-copy-btn:hover{background:#5563d1}
+
+    #radialMapContainer{height:280px;border-radius:10px;overflow:hidden;background:#1a1a2e}
+    .radial-map-info{font-size:.8em;color:var(--text-secondary);margin-top:6px;text-align:center}
+
+    .radial-add-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}
+    .radial-add-form label{font-size:.72em;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:2px}
+    .radial-add-form input,.radial-add-form select{width:100%;box-sizing:border-box;margin-right:0}
+    .radial-add-btn{background:#4caf50;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:700;white-space:nowrap}
+    .radial-add-btn:hover{background:#3d8b40}
+    @media (max-width:640px){ .radial-add-form{grid-template-columns:1fr 1fr} }
+
+    .radial-point-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--border-color);font-size:.85em}
+    .radial-point-row:last-child{border-bottom:none}
+    .radial-point-badge{font-size:1.1em}
+    .radial-point-name{flex:1;font-weight:600}
+    .radial-point-name small{color:var(--text-secondary);font-weight:400}
+    .radial-point-coords{font-size:.78em;color:var(--text-secondary);white-space:nowrap}
+    .radial-point-del{background:none;border:none;cursor:pointer;font-size:1em;opacity:.6}
+    .radial-point-del:hover{opacity:1}
+
+    .radial-info-box{font-size:.8em;color:var(--text-secondary);background:rgba(102,126,234,.07);border-left:3px solid #667eea;padding:8px 12px;border-radius:6px;margin-top:10px;line-height:1.5}
+    .radial-info-box b{color:var(--text-primary)}
+  </style>
+</head>
+<body>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
+
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
+    <a href="radial.html" class="top-nav-link top-nav-current">📡 Radial</a>
+    <a href="fiches.html" class="top-nav-link">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
+  </div>
+
+  <div class="home-hero">
+    <div class="home-hero-icon">📡</div>
+    <h1 class="home-hero-title">Radial VOR</h1>
+    <div class="home-hero-subtitle">Cap, radial et distance entre deux points</div>
+  </div>
+
+  <!-- Choix des points -->
+  <div class="home-card">
+    <div class="home-card-header"><span class="home-card-icon">🎯</span><span class="home-card-title">Station &amp; point B</span></div>
+    <div class="radial-points-grid">
+      <div class="radial-point-field">
+        <label>Station (VOR / point A)</label>
+        <select id="stationSelect" onchange="onSelectChange('station')"></select>
+        <div class="radial-custom-fields" id="stationCustomFields" style="display:none">
+          <input type="number" step="0.0001" id="stationLat" placeholder="Lat" oninput="compute()">
+          <input type="number" step="0.0001" id="stationLon" placeholder="Lon" oninput="compute()">
+          <button type="button" class="radial-pick-btn" id="stationPickBtn" onclick="togglePicking('station')">🗺️ Choisir sur la carte</button>
+        </div>
+      </div>
+      <button class="radial-swap-btn" onclick="swapPoints()" title="Inverser station / point B">⇅</button>
+      <div class="radial-point-field">
+        <label>Point B</label>
+        <select id="pointBSelect" onchange="onSelectChange('pointB')"></select>
+        <div class="radial-custom-fields" id="pointBCustomFields" style="display:none">
+          <input type="number" step="0.0001" id="pointBLat" placeholder="Lat" oninput="compute()">
+          <input type="number" step="0.0001" id="pointBLon" placeholder="Lon" oninput="compute()">
+          <button type="button" class="radial-pick-btn" id="pointBPickBtn" onclick="togglePicking('pointB')">🗺️ Choisir sur la carte</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="radial-options-row" style="margin-top:16px">
+      <div class="radial-options-field">
+        <label>Variation magn. (+E / -W)</label>
+        <input type="number" id="variationInput" value="0" step="0.5" oninput="compute()">
+      </div>
+      <div class="radial-options-field">
+        <label>GS (kt) — pour l'ETE</label>
+        <input type="number" id="gsInput" value="90" step="1" oninput="compute()">
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div class="radial-mode-toggle">
+          <button type="button" class="radial-mode-btn active" id="modeFromBtn" onclick="setMode('from')">👉 FROM (radial)</button>
+          <button type="button" class="radial-mode-btn" id="modeToBtn" onclick="setMode('to')">👈 TO (cap station)</button>
+        </div>
+        <div class="radial-options-hint">FROM = radial sur lequel vous êtes (station → point B). TO = cap magnétique à suivre pour rejoindre la station.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Résultat -->
+  <div class="home-card">
+    <div class="home-card-header"><span class="home-card-icon">🧭</span><span class="home-card-title">Résultat</span></div>
+    <div id="resultBody"><p class="radial-placeholder">Choisissez une station et un point B pour calculer.</p></div>
+    <div class="radial-compass-wrap"><svg id="compassSvg" viewBox="0 0 200 200"></svg></div>
+    <span id="resultCopyText" style="display:none"></span>
+    <button class="radial-copy-btn" id="copyBtn" onclick="copyResult()">📋 Copier le résultat</button>
+    <div class="radial-info-box">
+      ℹ️ <b>Rappel :</b> un <b>radial</b> se compte toujours depuis la station vers l'extérieur. Si vous êtes sur le radial 090 <b>FROM</b> un VOR, le cap <b>TO</b> cette même station (sans vent) est le réciproque, soit 270. Les valeurs ci-dessus sont données en <b>magnétique</b> (après application de votre variation) — la valeur <b>vraie</b> est rappelée dans la grille du milieu.
+    </div>
+  </div>
+
+  <!-- Carte -->
+  <div class="home-card" id="radialMapCard">
+    <div class="home-card-header"><span class="home-card-icon">🗺️</span><span class="home-card-title">Carte</span></div>
+    <div id="radialMapContainer"></div>
+    <div class="radial-map-info" id="radialMapInfo">Choisissez des points pour les voir sur la carte.</div>
+  </div>
+
+  <!-- Mes points -->
+  <div class="home-card">
+    <div class="home-card-header"><span class="home-card-icon">📚</span><span class="home-card-title">Mes points (VOR, NDB, repères...)</span></div>
+    <div class="radial-add-form">
+      <div><label>Nom / ident</label><input type="text" id="newPointName" placeholder="ex: KOK"></div>
+      <div><label>Lat</label><input type="number" step="0.0001" id="newPointLat" placeholder="50.1234"></div>
+      <div><label>Lon</label><input type="number" step="0.0001" id="newPointLon" placeholder="3.1234"></div>
+      <div><label>Fréq.</label><input type="text" id="newPointFreq" placeholder="114.50"></div>
+      <div><label>Type</label>
+        <select id="newPointType">
+          <option value="VOR">📡 VOR</option>
+          <option value="NDB">🔵 NDB</option>
+          <option value="Point">📍 Point</option>
+        </select>
+      </div>
+      <button class="radial-add-btn" onclick="addPoint()">➕ Ajouter</button>
+    </div>
+    <div style="margin-top:10px" id="pointsListEl"></div>
+    <div class="radial-info-box">
+      💡 Ces points sont enregistrés uniquement sur cet appareil (aucune donnée aéronautique n'est préchargée : entrez les VOR de votre propre carte VFR pour être sûr des fréquences/coordonnées à jour).
+    </div>
+  </div>
+
+  <script>
+  /* ===== Données aérodromes (reprises de la page Briefing) ===== */
+  var AIRPORT_COORDS = {
+    'EBSG':{lat:50.4580,lon:3.8210},'EBCV':{lat:50.5758,lon:3.8311},'EBCI':{lat:50.4592,lon:4.4538},
+    'EBNM':{lat:50.4878,lon:4.7689},'EBBR':{lat:50.9014,lon:4.4844},'LFQJ':{lat:50.3306,lon:4.0331},
+    'LFQQ':{lat:50.5617,lon:3.0897},'EBCF':{lat:50.1610,lon:4.3960},'EBSP':{lat:50.4825,lon:5.9103},
+    'EBFS':{lat:50.2433,lon:4.6458},'EBLG':{lat:50.6374,lon:5.4432},'EBTY':{lat:50.565,lon:3.342},
+    'EBBE':{lat:50.759,lon:4.769},'EBGB':{lat:50.949,lon:4.394},'EBMO':{lat:50.849,lon:3.139},
+    'LFAV':{lat:50.326,lon:3.462},'LFQO':{lat:50.489,lon:2.796},'EBAW':{lat:51.189,lon:4.460},
+    'EBOS':{lat:51.199,lon:2.862},'EBKT':{lat:50.817,lon:3.205},
+    'EHAM':{lat:52.3086,lon:4.7639},'EHRD':{lat:51.9569,lon:4.4372},'EHEH':{lat:51.4501,lon:5.3744},
+    'EHLE':{lat:52.4603,lon:5.5272},'EHBK':{lat:50.9116,lon:5.7706},
+    'EDDK':{lat:50.8659,lon:7.1427},'EDDL':{lat:51.2895,lon:6.7668},'EDLN':{lat:51.2303,lon:6.5044},
+    'EDLV':{lat:51.6024,lon:6.1422},'EDKA':{lat:50.8231,lon:6.1864},
+    'ELLX':{lat:49.6233,lon:6.2044},
+    'LFAT':{lat:50.5147,lon:1.6278},'LFAC':{lat:50.9622,lon:1.9547},'LFQB':{lat:49.9717,lon:3.2936},
+    'LFSG':{lat:48.3253,lon:6.0697},'LFOB':{lat:49.4544,lon:2.1128},'LFSB':{lat:47.5896,lon:7.5299},
+    'EGLC':{lat:51.5053,lon:0.0553},'EGKK':{lat:51.1481,lon:-0.1903},'EGJJ':{lat:49.2078,lon:-2.1955}
+  };
+  var AIRPORT_NAMES = {
+    'EBSG':'Saint-Ghislain','EBCV':'Chièvres','EBCI':'Charleroi','EBNM':'Namur','EBBR':'Bruxelles',
+    'LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin','EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes',
+    'EBLG':'Liège','EBTY':'Tournai','EBBE':'Beauvechain','EBGB':'Grimbergen','EBMO':'Moorsele/Wevelgem',
+    'LFAV':'Valenciennes','LFQO':'Lens-Bénifontaine','EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem',
+    'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen',
+    'EDDK':'Köln/Bonn','EDDL':'Düsseldorf','EDLN':'Mönchengladbach','EDLV':'Niederrhein','EDKA':'Aachen-Merzbrück',
+    'ELLX':'Luxembourg-Findel',
+    'LFAT':'Le Touquet','LFAC':'Calais-Dunkerque','LFQB':'Laon-Chambry','LFSG':'Épinal-Mirecourt','LFOB':'Beauvais-Tillé','LFSB':'Bâle-Mulhouse',
+    'EGLC':'London City','EGKK':'London Gatwick','EGJJ':'Jersey'
+  };
+
+  /* ===== Helpers géo (mêmes formules que la page Briefing) ===== */
+  function deg2rad(d){return d*Math.PI/180;}
+  function rad2deg(r){return r*180/Math.PI;}
+  function haversineNM(lat1,lon1,lat2,lon2){
+    var R=3440.065;
+    var dLat=deg2rad(lat2-lat1),dLon=deg2rad(lon2-lon1);
+    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function trueBearing(lat1,lon1,lat2,lon2){
+    var dLon=deg2rad(lon2-lon1);
+    var y=Math.sin(dLon)*Math.cos(deg2rad(lat2));
+    var x=Math.cos(deg2rad(lat1))*Math.sin(deg2rad(lat2))-Math.sin(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.cos(dLon);
+    return (rad2deg(Math.atan2(y,x))+360)%360;
+  }
+  function fmtDeg(x){ return String(((Math.round(x)%360)+360)%360).padStart(3,'0'); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  /* ===== Points personnalisés (localStorage) ===== */
+  function loadCustomPoints(){
+    try { return JSON.parse(localStorage.getItem('radialCustomPoints')||'[]'); } catch(e){ return []; }
+  }
+  function saveCustomPoints(){ localStorage.setItem('radialCustomPoints', JSON.stringify(customPoints)); }
+  var customPoints = loadCustomPoints();
+
+  function populateSelect(sel){
+    var current = sel.value;
+    var html = '<option value="">-- choisir --</option>';
+    if(customPoints.length){
+      html += '<optgroup label="Mes points">';
+      customPoints.forEach(function(p,i){
+        html += '<option value="custom:'+i+'">'+(p.type==='VOR'?'📡':p.type==='NDB'?'🔵':'📍')+' '+esc(p.name)+(p.freq?' ('+esc(p.freq)+')':'')+'</option>';
+      });
+      html += '</optgroup>';
+    }
+    html += '<optgroup label="Aérodromes">';
+    Object.keys(AIRPORT_COORDS).sort().forEach(function(code){
+      html += '<option value="apt:'+code+'">🏛️ '+code+' - '+esc(AIRPORT_NAMES[code]||'')+'</option>';
+    });
+    html += '</optgroup>';
+    html += '<option value="__custom__">✏️ Coordonnées personnalisées...</option>';
+    sel.innerHTML = html;
+    if(current) sel.value = current;
+  }
+  function refreshSelects(){
+    populateSelect(document.getElementById('stationSelect'));
+    populateSelect(document.getElementById('pointBSelect'));
+  }
+
+  function resolvePoint(prefix){
+    var sel = document.getElementById(prefix+'Select');
+    var val = sel.value;
+    if(!val) return null;
+    if(val === '__custom__'){
+      var lat = parseFloat(document.getElementById(prefix+'Lat').value);
+      var lon = parseFloat(document.getElementById(prefix+'Lon').value);
+      if(isNaN(lat)||isNaN(lon)) return null;
+      return {lat:lat, lon:lon, label:'Point personnalisé'};
+    }
+    if(val.indexOf('apt:')===0){
+      var code = val.slice(4);
+      var c = AIRPORT_COORDS[code];
+      if(!c) return null;
+      return {lat:c.lat, lon:c.lon, label: code+' ('+(AIRPORT_NAMES[code]||'')+')'};
+    }
+    if(val.indexOf('custom:')===0){
+      var idx = parseInt(val.slice(7),10);
+      var p = customPoints[idx];
+      if(!p) return null;
+      return {lat:p.lat, lon:p.lon, label: p.name};
+    }
+    return null;
+  }
+
+  function onSelectChange(prefix){
+    var sel = document.getElementById(prefix+'Select');
+    var fields = document.getElementById(prefix+'CustomFields');
+    fields.style.display = (sel.value === '__custom__') ? 'flex' : 'none';
+    compute();
+  }
+
+  /* ===== Mode TO / FROM ===== */
+  var currentMode = 'from';
+  function setMode(m){
+    currentMode = m;
+    document.getElementById('modeFromBtn').classList.toggle('active', m==='from');
+    document.getElementById('modeToBtn').classList.toggle('active', m==='to');
+    compute();
+  }
+
+  /* ===== Inverser station / point B ===== */
+  function swapPoints(){
+    var sSel=document.getElementById('stationSelect'), bSel=document.getElementById('pointBSelect');
+    var sVal=sSel.value, bVal=bSel.value;
+    sSel.value=bVal; bSel.value=sVal;
+    var sLat=document.getElementById('stationLat'), sLon=document.getElementById('stationLon');
+    var bLat=document.getElementById('pointBLat'), bLon=document.getElementById('pointBLon');
+    var tmpLat=sLat.value, tmpLon=sLon.value;
+    sLat.value=bLat.value; sLon.value=bLon.value;
+    bLat.value=tmpLat; bLon.value=tmpLon;
+    onSelectChange('station'); onSelectChange('pointB');
+  }
+
+  /* ===== Calcul + rendu ===== */
+  function compute(){
+    var station = resolvePoint('station');
+    var pointB = resolvePoint('pointB');
+    if(!station || !pointB){
+      document.getElementById('resultBody').innerHTML = '<p class="radial-placeholder">Choisissez une station et un point B pour calculer.</p>';
+      renderCompass(null);
+      updateMap(station, pointB);
+      return;
+    }
+    var dist = haversineNM(station.lat,station.lon,pointB.lat,pointB.lon);
+    var trueFrom = trueBearing(station.lat,station.lon,pointB.lat,pointB.lon);
+    var trueTo = (trueFrom+180)%360;
+    var variation = parseFloat(document.getElementById('variationInput').value)||0;
+    var magFrom = (trueFrom - variation + 360) % 360;
+    var magTo = (trueTo - variation + 360) % 360;
+    var gs = parseFloat(document.getElementById('gsInput').value) || 0;
+    var eteMin = gs>0 ? (dist/gs*60) : null;
+
+    renderResult({station:station, pointB:pointB, dist:dist, trueFrom:trueFrom, trueTo:trueTo, magFrom:magFrom, magTo:magTo, eteMin:eteMin});
+    renderCompass(magFrom, currentMode);
+    updateMap(station, pointB);
+  }
+
+  function renderResult(r){
+    var primaryDeg, primaryLabel, secondaryDeg, secondaryLabel;
+    if(currentMode==='from'){
+      primaryDeg=r.magFrom; primaryLabel='Radial FROM '+r.station.label;
+      secondaryDeg=r.magTo; secondaryLabel='Cap TO '+r.station.label+' (réciproque)';
+    } else {
+      primaryDeg=r.magTo; primaryLabel='Cap TO '+r.station.label;
+      secondaryDeg=r.magFrom; secondaryLabel='Radial FROM '+r.station.label+' (réciproque)';
+    }
+    var eteTxt = r.eteMin!==null ? Math.round(r.eteMin)+' min' : '—';
+    var html = ''
+      + '<div class="radial-result-main">'
+      +   '<div class="radial-result-value">'+fmtDeg(primaryDeg)+'&deg;</div>'
+      +   '<div class="radial-result-label">'+esc(primaryLabel)+'</div>'
+      + '</div>'
+      + '<div class="radial-result-secondary">'+fmtDeg(secondaryDeg)+'&deg; &mdash; '+esc(secondaryLabel)+'</div>'
+      + '<div class="radial-result-grid">'
+      +   '<div><span class="radial-result-num">'+r.dist.toFixed(1)+'</span><span class="radial-result-unit">NM</span><div class="radial-result-sub">'+(r.dist*1.852).toFixed(0)+' km</div></div>'
+      +   '<div><span class="radial-result-num">'+fmtDeg(r.trueFrom)+'&deg;</span><span class="radial-result-unit">vrai (FROM)</span><div class="radial-result-sub">'+fmtDeg(r.trueTo)+'&deg; vrai (TO)</div></div>'
+      +   '<div><span class="radial-result-num">'+eteTxt+'</span><span class="radial-result-unit">ETE'+(r.eteMin!==null?'':' (GS?)')+'</span></div>'
+      + '</div>';
+    document.getElementById('resultBody').innerHTML = html;
+
+    var copyTxt = r.station.label+' → '+r.pointB.label+'\n'
+      + 'Radial FROM '+r.station.label+' : '+fmtDeg(r.magFrom)+'° (mag) / '+fmtDeg(r.trueFrom)+'° (vrai)\n'
+      + 'Cap TO '+r.station.label+' : '+fmtDeg(r.magTo)+'° (mag) / '+fmtDeg(r.trueTo)+'° (vrai)\n'
+      + 'Distance : '+r.dist.toFixed(1)+' NM ('+(r.dist*1.852).toFixed(0)+' km)'
+      + (r.eteMin!==null ? '\nETE : '+Math.round(r.eteMin)+' min (GS '+document.getElementById('gsInput').value+' kt)' : '');
+    document.getElementById('resultCopyText').textContent = copyTxt;
+  }
+
+  function copyResult(){
+    var txt = document.getElementById('resultCopyText').textContent;
+    if(!txt){ alert('Rien à copier pour le moment.'); return; }
+    var btn = document.getElementById('copyBtn');
+    var orig = btn.textContent;
+    var done = function(){ btn.textContent='✅ Copié !'; setTimeout(function(){ btn.textContent=orig; },1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(function(){ alert(txt); });
+    } else { alert(txt); }
+  }
+
+  /* ===== Rose des vents SVG (radial + flèche TO/FROM) ===== */
+  function arrowHeadSVG(tipX,tipY,angleRad,size,color){
+    var bx = tipX - Math.sin(angleRad)*size;
+    var by = tipY + Math.cos(angleRad)*size;
+    var perp = angleRad + Math.PI/2;
+    var x1 = bx + Math.sin(perp)*size*0.55, y1 = by - Math.cos(perp)*size*0.55;
+    var x2 = bx - Math.sin(perp)*size*0.55, y2 = by + Math.cos(perp)*size*0.55;
+    return '<polygon points="'+tipX+','+tipY+' '+x1+','+y1+' '+x2+','+y2+'" fill="'+color+'"/>';
+  }
+  function renderCompass(magFromDeg, mode){
+    var svg = document.getElementById('compassSvg');
+    var cx=100, cy=100, R=85;
+    var parts = '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>';
+    for(var d=0; d<360; d+=10){
+      var major = d%30===0;
+      var len = major?12:6;
+      var a = deg2rad(d);
+      var x1=cx+Math.sin(a)*R, y1=cy-Math.cos(a)*R;
+      var x2=cx+Math.sin(a)*(R-len), y2=cy-Math.cos(a)*(R-len);
+      parts += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="currentColor" stroke-width="'+(major?2:1)+'" opacity="'+(major?0.85:0.4)+'"/>';
+    }
+    [['N',0],['E',90],['S',180],['W',270]].forEach(function(l){
+      var a=deg2rad(l[1]);
+      var lx=cx+Math.sin(a)*(R-24), ly=cy-Math.cos(a)*(R-24);
+      parts += '<text x="'+lx+'" y="'+(ly+5)+'" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor">'+l[0]+'</text>';
+    });
+    if(magFromDeg!==null && magFromDeg!==undefined){
+      var color = mode==='to' ? '#667eea' : '#22c55e';
+      var outerA = deg2rad(magFromDeg);
+      var ox=cx+Math.sin(outerA)*(R-16), oy=cy-Math.cos(outerA)*(R-16);
+      parts += '<line x1="'+cx+'" y1="'+cy+'" x2="'+ox+'" y2="'+oy+'" stroke="'+color+'" stroke-width="4" stroke-linecap="round"/>';
+      if(mode==='to'){
+        parts += arrowHeadSVG(cx,cy, outerA+Math.PI, 9, color);
+      } else {
+        parts += arrowHeadSVG(ox,oy, outerA, 9, color);
+      }
+      parts += '<circle cx="'+ox+'" cy="'+oy+'" r="4" fill="'+color+'" opacity="0.7"/>';
+    }
+    parts += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="currentColor"/>';
+    svg.innerHTML = parts;
+  }
+
+  /* ===== Carte Leaflet ===== */
+  var radialMap = null;
+  var radialMapLayers = [];
+  var pickingTarget = null;
+
+  function initRadialMap(){
+    var el = document.getElementById('radialMapContainer');
+    if(!el || radialMap) return;
+    radialMap = L.map('radialMapContainer',{zoomControl:true,attributionControl:false}).setView([50.4589,3.8181],8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(radialMap);
+    radialMap.on('click', function(e){
+      if(!pickingTarget) return;
+      var lat = Math.round(e.latlng.lat*10000)/10000;
+      var lon = Math.round(e.latlng.lng*10000)/10000;
+      document.getElementById(pickingTarget+'Lat').value = lat;
+      document.getElementById(pickingTarget+'Lon').value = lon;
+      document.getElementById(pickingTarget+'Select').value = '__custom__';
+      document.getElementById(pickingTarget+'CustomFields').style.display = 'flex';
+      var t = pickingTarget;
+      togglePicking(t, true);
+      compute();
+    });
+    setTimeout(function(){ radialMap.invalidateSize(); }, 150);
+    window.addEventListener('resize', function(){ if(radialMap) radialMap.invalidateSize(); });
+  }
+
+  function togglePicking(target, forceOff){
+    if(forceOff || pickingTarget === target){
+      pickingTarget = null;
+    } else {
+      pickingTarget = target;
+    }
+    document.getElementById('stationPickBtn').classList.toggle('active', pickingTarget==='station');
+    document.getElementById('pointBPickBtn').classList.toggle('active', pickingTarget==='pointB');
+    var info = document.getElementById('radialMapInfo');
+    if(pickingTarget){
+      info.textContent = 'Cliquez sur la carte pour définir ' + (pickingTarget==='station' ? 'la station' : 'le point B') + '...';
+      document.getElementById('radialMapCard').scrollIntoView({behavior:'smooth', block:'center'});
+    } else {
+      updateMap(resolvePoint('station'), resolvePoint('pointB'));
+    }
+  }
+
+  function updateMap(station, pointB){
+    if(!radialMap) return;
+    routeLayersClear();
+    var info = document.getElementById('radialMapInfo');
+    if(pickingTarget) return;
+    if(!station && !pointB){ info.textContent='Choisissez des points pour les voir sur la carte.'; return; }
+    var pts=[];
+    if(station){
+      var m1=L.marker([station.lat,station.lon]).addTo(radialMap).bindTooltip(station.label,{permanent:false});
+      radialMapLayers.push(m1); pts.push([station.lat,station.lon]);
+    }
+    if(pointB){
+      var m2=L.marker([pointB.lat,pointB.lon]).addTo(radialMap).bindTooltip(pointB.label,{permanent:false});
+      radialMapLayers.push(m2); pts.push([pointB.lat,pointB.lon]);
+    }
+    if(station && pointB){
+      var line=L.polyline(pts,{color:'#22c55e',weight:3,opacity:.85,dashArray:'6,4'}).addTo(radialMap);
+      radialMapLayers.push(line);
+    }
+    if(pts.length===1){ radialMap.setView(pts[0],9,{animate:false}); }
+    else if(pts.length===2){ radialMap.fitBounds(L.latLngBounds(pts),{padding:[40,40],maxZoom:11,animate:false}); }
+    info.textContent = (station?station.label:'?') + '  →  ' + (pointB?pointB.label:'?');
+  }
+  function routeLayersClear(){
+    radialMapLayers.forEach(function(l){ radialMap.removeLayer(l); });
+    radialMapLayers = [];
+  }
+
+  /* ===== Mes points ===== */
+  function renderPointsList(){
+    var el = document.getElementById('pointsListEl');
+    if(!customPoints.length){ el.innerHTML='<p class="radial-placeholder">Aucun point enregistré pour l\'instant.</p>'; return; }
+    var html='';
+    customPoints.forEach(function(p,i){
+      html += '<div class="radial-point-row">'
+        + '<span class="radial-point-badge">'+(p.type==='VOR'?'📡':p.type==='NDB'?'🔵':'📍')+'</span>'
+        + '<span class="radial-point-name">'+esc(p.name)+(p.freq?' <small>('+esc(p.freq)+')</small>':'')+'</span>'
+        + '<span class="radial-point-coords">'+p.lat.toFixed(4)+', '+p.lon.toFixed(4)+'</span>'
+        + '<button class="radial-point-del" onclick="deletePoint('+i+')" title="Supprimer">🗑️</button>'
+        + '</div>';
+    });
+    el.innerHTML = html;
+  }
+  function addPoint(){
+    var name = document.getElementById('newPointName').value.trim();
+    var lat = parseFloat(document.getElementById('newPointLat').value);
+    var lon = parseFloat(document.getElementById('newPointLon').value);
+    var freq = document.getElementById('newPointFreq').value.trim();
+    var type = document.getElementById('newPointType').value;
+    if(!name || isNaN(lat) || isNaN(lon)){ alert('Nom, latitude et longitude sont requis.'); return; }
+    if(lat<-90||lat>90||lon<-180||lon>180){ alert('Coordonnées invalides.'); return; }
+    customPoints.push({name:name,lat:lat,lon:lon,freq:freq,type:type});
+    saveCustomPoints();
+    document.getElementById('newPointName').value='';
+    document.getElementById('newPointLat').value='';
+    document.getElementById('newPointLon').value='';
+    document.getElementById('newPointFreq').value='';
+    renderPointsList();
+    refreshSelects();
+  }
+  window.deletePoint = function(i){
+    if(!confirm('Supprimer ce point ?')) return;
+    customPoints.splice(i,1);
+    saveCustomPoints();
+    renderPointsList();
+    refreshSelects();
+    compute();
+  };
+  window.addPoint = addPoint;
+  window.swapPoints = swapPoints;
+  window.setMode = setMode;
+  window.onSelectChange = onSelectChange;
+  window.togglePicking = togglePicking;
+  window.copyResult = copyResult;
+  window.compute = compute;
+
+  /* ===== Init ===== */
+  refreshSelects();
+  renderPointsList();
+  renderCompass(null);
+  document.addEventListener('DOMContentLoaded', function(){ initRadialMap(); });
+  if(document.readyState !== 'loading') initRadialMap();
+  </script>
+</body>
+</html>
