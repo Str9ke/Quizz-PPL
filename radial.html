@@ -186,8 +186,10 @@
       <button class="radial-add-btn" onclick="addPoint()">➕ Ajouter</button>
     </div>
     <div style="margin-top:10px" id="pointsListEl"></div>
+    <button type="button" class="radial-pick-btn" style="margin-top:10px" onclick="seedUnverifiedVors()">⚠️ Pré-remplir 2 VOR belges usuels (non vérifiés)</button>
     <div class="radial-info-box">
-      💡 Ces points sont enregistrés uniquement sur cet appareil (aucune donnée aéronautique n'est préchargée : entrez les VOR de votre propre carte VFR pour être sûr des fréquences/coordonnées à jour).
+      💡 Ces points sont enregistrés uniquement sur cet appareil (aucune donnée aéronautique n'est préchargée par défaut : entrez les VOR de votre propre carte VFR pour être sûr des fréquences/coordonnées à jour).
+      Le bouton ⚠️ ci-dessus ajoute KOK (Koksijde, 114.50) et BUB (proche Bruxelles, 113.60) à partir de ma mémoire d'entraînement — <b>je n'ai pas pu les revérifier en direct sur skeyes.be dans cet environnement</b>. Vérifie-les sur ton AIP/carte VFR à jour avant de t'y fier, et corrige-les si besoin (bouton 🗑️ puis ré-ajoute).
     </div>
   </div>
 
@@ -201,8 +203,12 @@
     'EBBE':{lat:50.759,lon:4.769},'EBGB':{lat:50.949,lon:4.394},'EBMO':{lat:50.849,lon:3.139},
     'LFAV':{lat:50.326,lon:3.462},'LFQO':{lat:50.489,lon:2.796},'EBAW':{lat:51.189,lon:4.460},
     'EBOS':{lat:51.199,lon:2.862},'EBKT':{lat:50.817,lon:3.205},
+    /* Ajouts (positions approximatives, non re-vérifiées en direct - à confirmer sur carte VFR à jour) */
+    'EBMB':{lat:50.9167,lon:4.4833},'EBST':{lat:50.8167,lon:5.2000},'EBDT':{lat:50.9833,lon:5.1000},
+    'EBUL':{lat:51.1667,lon:3.4667},'EBWE':{lat:51.4167,lon:5.0000},'EBZR':{lat:51.2833,lon:4.7167},
+    'EBFN':{lat:51.0900,lon:2.6525},'LFAY':{lat:49.8686,lon:2.3872},'LFQT':{lat:50.6206,lon:2.6425},
     'EHAM':{lat:52.3086,lon:4.7639},'EHRD':{lat:51.9569,lon:4.4372},'EHEH':{lat:51.4501,lon:5.3744},
-    'EHLE':{lat:52.4603,lon:5.5272},'EHBK':{lat:50.9116,lon:5.7706},
+    'EHLE':{lat:52.4603,lon:5.5272},'EHBK':{lat:50.9116,lon:5.7706},'EHMZ':{lat:51.5050,lon:3.7290},
     'EDDK':{lat:50.8659,lon:7.1427},'EDDL':{lat:51.2895,lon:6.7668},'EDLN':{lat:51.2303,lon:6.5044},
     'EDLV':{lat:51.6024,lon:6.1422},'EDKA':{lat:50.8231,lon:6.1864},
     'ELLX':{lat:49.6233,lon:6.2044},
@@ -215,7 +221,10 @@
     'LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin','EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes',
     'EBLG':'Liège','EBTY':'Tournai','EBBE':'Beauvechain','EBGB':'Grimbergen','EBMO':'Moorsele/Wevelgem',
     'LFAV':'Valenciennes','LFQO':'Lens-Bénifontaine','EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem',
-    'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen',
+    'EBMB':'Melsbroek','EBST':'Sint-Truiden','EBDT':'Schaffen/Diest','EBUL':'Ursel',
+    'EBWE':'Weelde','EBZR':'Oostmalle/Zoersel','EBFN':'Koksijde',
+    'LFAY':'Amiens-Glisy','LFQT':'Merville-Calonne',
+    'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen','EHMZ':'Midden-Zeeland',
     'EDDK':'Köln/Bonn','EDDL':'Düsseldorf','EDLN':'Mönchengladbach','EDLV':'Niederrhein','EDKA':'Aachen-Merzbrück',
     'ELLX':'Luxembourg-Findel',
     'LFAT':'Le Touquet','LFAC':'Calais-Dunkerque','LFQB':'Laon-Chambry','LFSG':'Épinal-Mirecourt','LFOB':'Beauvais-Tillé','LFSB':'Bâle-Mulhouse',
@@ -543,6 +552,28 @@
     renderPointsList();
     refreshSelects();
     compute();
+  };
+  /* VOR pré-remplis à partir de la mémoire d'entraînement, NON revérifiés en direct sur skeyes.be
+     (accès internet bloqué dans cet environnement) : à confirmer par l'utilisateur avant usage. */
+  var UNVERIFIED_VORS = [
+    {name:'⚠️ KOK (Koksijde) - à vérifier', lat:51.0900, lon:2.6525, freq:'114.50', type:'VOR'},
+    {name:'⚠️ BUB (proche Bruxelles) - à vérifier', lat:50.9014, lon:4.4844, freq:'113.60', type:'VOR'}
+  ];
+  window.seedUnverifiedVors = function(){
+    if(!confirm(
+      'Ajouter KOK et BUB à "Mes points" ?\n\n' +
+      'Ces coordonnées/fréquences viennent de ma mémoire d\'entraînement, PAS d\'une vérification en direct sur skeyes.be (accès internet bloqué ici).\n\n' +
+      'Vérifie-les sur ton AIP/carte VFR à jour avant de t\'y fier.'
+    )) return;
+    var added = 0;
+    UNVERIFIED_VORS.forEach(function(v){
+      var exists = customPoints.some(function(p){ return p.name === v.name; });
+      if(!exists){ customPoints.push(Object.assign({}, v)); added++; }
+    });
+    saveCustomPoints();
+    renderPointsList();
+    refreshSelects();
+    alert(added ? (added+' VOR ajouté(s) — pense à les vérifier !') : 'Déjà présents dans ta liste.');
   };
   window.addPoint = addPoint;
   window.swapPoints = swapPoints;
