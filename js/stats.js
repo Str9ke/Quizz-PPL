@@ -965,6 +965,8 @@ function afficherStats(groupsData, globalStats) {
       const markersStr = markers.length ? ` <span class="stats-cat-marks">${markers.join(' ')}</span>` : '';
       const chartId = 'catChart_' + catChartIdx;
       const catVal = (cat.value || '').replace(/'/g, "\\'");
+      const catLabelEsc = (cat.label || '').replace(/'/g, "\\'");
+      const menuId = 'catResetMenu_' + catChartIdx;
       catChartIdx++;
 
       html += `<div class="stats-cat-row" data-cat-value="${cat.value || ''}" data-chart-id="${chartId}" onclick="_toggleCatChart(this)" style="cursor:pointer;" title="Cliquer pour voir les sessions">
@@ -972,7 +974,15 @@ function afficherStats(groupsData, globalStats) {
         <span class="stats-cat-bar"><div class="progressbar-mini"><div class="progress-mini" style="width:${perc}%;background:${percColor(perc)}"></div></div></span>
         <span class="stats-cat-perc" style="color:${percColor(perc)}">${perc}%</span>
         <span class="stats-cat-nums">✅${s.reussie} ❌${s.ratee} 👀${s.nonvue}${markersStr}</span>
-        <button class="stats-cat-reset-btn" onclick="event.stopPropagation();_resetCategoryStats('${catVal}','${cat.label}')" title="Réinitialiser ${cat.label}">🔄</button>
+        <span class="stats-cat-reset-wrap">
+          <button class="stats-cat-reset-btn" onclick="event.stopPropagation();_toggleCatResetMenu('${menuId}')" title="Réinitialiser ${cat.label}">🔄</button>
+          <div class="stats-cat-reset-menu" id="${menuId}" style="display:none;" onclick="event.stopPropagation()">
+            <button onclick="_resetCategoryStats('${catVal}','${catLabelEsc}')">👀 Vues</button>
+            <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','ratee')">❌ Ratées</button>
+            <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','marquee')">📌 Marquées</button>
+            <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','importante')">⭐ Importantes</button>
+          </div>
+        </span>
       </div>`;
       html += `<div class="stats-cat-chart-container" id="${chartId}" style="display:none;"></div>`;
     });
@@ -1391,6 +1401,109 @@ async function _resetCategoryStats(catValue, catLabel) {
     window.location.reload();
   } catch (e) {
     console.error('[resetCategory] Erreur:', e);
+    alert('Erreur lors de la réinitialisation : ' + e.message);
+  }
+}
+
+/**
+ * _toggleCatResetMenu() – Ouvre/ferme le menu de réinitialisation par caractéristique d'une catégorie.
+ */
+function _toggleCatResetMenu(menuId) {
+  const menu = document.getElementById(menuId);
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  document.querySelectorAll('.stats-cat-reset-menu').forEach(m => { m.style.display = 'none'; });
+  if (!isOpen) menu.style.display = 'flex';
+}
+document.addEventListener('click', function() {
+  document.querySelectorAll('.stats-cat-reset-menu').forEach(m => { m.style.display = 'none'; });
+});
+
+/**
+ * _resetCategoryField() – Réinitialise UNE SEULE caractéristique (marquée / importante / ratée)
+ * d'une catégorie, sans toucher aux autres. Contrairement à _resetCategoryStats(), qui remet
+ * toute la progression "vue" à zéro, cette fonction ne touche que le champ demandé.
+ */
+async function _resetCategoryField(catValue, catLabel, field) {
+  const cfg = {
+    marquee:    { label: 'Marquées 📌',    msg: 'Le marquage 📌 sera retiré (le reste ne change pas).' },
+    importante: { label: 'Importantes ⭐', msg: 'Le marquage ⭐ sera retiré (le reste ne change pas).' },
+    ratee:      { label: 'Ratées ❌',      msg: 'Les questions ratées redeviendront "non vues" (les réussies, les marquages 📌⭐ et l\'historique sont conservés).' }
+  }[field];
+  if (!cfg) return;
+
+  if (!confirm(`Réinitialiser « ${cfg.label} » pour « ${catLabel} » ?\n\n${cfg.msg}`)) return;
+
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  try {
+    await chargerQuestions(catValue);
+    const keys = questions.map(q => getKeyFor(q));
+    if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
+
+    let existingResponses = {};
+    try {
+      const docSnap = navigator.onLine
+        ? await Promise.race([
+            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+          ])
+        : await db.collection('quizProgress').doc(uid).get();
+      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
+    } catch (e) {
+      console.warn('[resetCategoryField] Lecture Firestore échouée, utilisation de currentResponses:', e.message);
+      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    }
+
+    // localUpdates[key] = nouvel objet, ou null pour supprimer entièrement l'entrée
+    const localUpdates = {};
+    keys.forEach(k => {
+      const r = existingResponses[k];
+      if (!r) return;
+      const next = Object.assign({}, r);
+      let touched = false;
+
+      if (field === 'marquee' && r.marked) {
+        delete next.marked;
+        touched = true;
+      } else if (field === 'importante' && r.important) {
+        delete next.important;
+        touched = true;
+      } else if (field === 'ratee' && r.status === 'ratée') {
+        delete next.status;
+        delete next.failCount;
+        delete next.srInterval;
+        delete next.nextReview;
+        touched = true;
+      }
+
+      if (touched) localUpdates[k] = Object.keys(next).length ? next : null;
+    });
+
+    const changedKeys = Object.keys(localUpdates);
+    if (!changedKeys.length) { alert(`Aucune question « ${cfg.label} » trouvée dans cette catégorie.`); return; }
+
+    const update = { responses: {} };
+    changedKeys.forEach(k => {
+      update.responses[k] = localUpdates[k] === null ? firebase.firestore.FieldValue.delete() : localUpdates[k];
+    });
+
+    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+
+    if (typeof currentResponses !== 'undefined' && currentResponses) {
+      changedKeys.forEach(k => {
+        if (localUpdates[k] === null) delete currentResponses[k];
+        else currentResponses[k] = localUpdates[k];
+      });
+    }
+
+    keys.forEach(k => { localStorage.removeItem(k); });
+
+    alert(`« ${cfg.label} » réinitialisé pour « ${catLabel} » ! (${changedKeys.length} question${changedKeys.length > 1 ? 's' : ''})`);
+    window.location.reload();
+  } catch (e) {
+    console.error('[resetCategoryField] Erreur:', e);
     alert('Erreur lors de la réinitialisation : ' + e.message);
   }
 }
