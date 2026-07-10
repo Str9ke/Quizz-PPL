@@ -1372,56 +1372,49 @@ async function _resetCategoryStats(catValue, catLabel) {
 
     if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
 
-    // Lire les réponses actuelles depuis Firestore (serveur, sinon cache local) pour préserver les flags
+    // Lire les réponses actuelles depuis Firestore (serveur, sinon cache local) pour savoir quelles clés toucher
     const existingResponses = await _fetchQuizProgressResponses(uid);
     if (existingResponses === null) {
       alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
       return;
     }
 
-    // Construire la mise à jour :
-    // - Effacer : status, failCount, srInterval, nextReview (remise à zéro visible + révisions espacées)
-    // - Conserver : marked, important, statusLog (historique des réponses passées)
-    const update = { responses: {} };
+    // IMPORTANT : on utilise update() avec des chemins en notation pointée (ex: "responses.question_x.status")
+    // pour supprimer PRÉCISÉMENT ces champs, sans toucher aux autres (marked/important/statusLog).
+    // Un set(..., {merge:true}) avec un objet imbriqué ne supprime JAMAIS les champs absents de l'objet
+    // fourni (il fusionne en profondeur) — c'est pour ça que status/failCount ne s'effaçaient jamais.
+    const update = {};
+    let changedCount = 0;
     keys.forEach(k => {
-      const r = existingResponses[k] || {};
-      const preserved = {};
-      if (r.marked)     preserved.marked = true;
-      if (r.important)  preserved.important = true;
-      // Conserver l'historique détaillé (sans perdre le passé)
-      if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
-
-      if (Object.keys(preserved).length) {
-        // Remplacer l'entrée par les seuls champs préservés (status/failCount/srInterval/nextReview effacés)
-        update.responses[k] = preserved;
-      } else {
-        // Rien à conserver → supprimer complètement l'entrée
-        update.responses[k] = firebase.firestore.FieldValue.delete();
-      }
+      const r = existingResponses[k];
+      if (!r || r.status === undefined) return; // déjà "non vue", rien à faire
+      update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
+      changedCount++;
     });
 
-    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+    if (!changedCount) { alert(`Toutes les questions de « ${catLabel} » sont déjà "non vues".`); return; }
+
+    await db.collection('quizProgress').doc(uid).update(update);
 
     // Mettre à jour currentResponses en mémoire si disponible (évite un reload complet optionnel)
     if (typeof currentResponses !== 'undefined' && currentResponses) {
       keys.forEach(k => {
-        const r = existingResponses[k] || {};
-        const preserved = {};
-        if (r.marked)    preserved.marked = true;
-        if (r.important) preserved.important = true;
-        if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
-        if (Object.keys(preserved).length) {
-          currentResponses[k] = preserved;
-        } else {
-          delete currentResponses[k];
-        }
+        const r = currentResponses[k];
+        if (!r) return;
+        delete r.status;
+        delete r.failCount;
+        delete r.srInterval;
+        delete r.nextReview;
       });
     }
 
     // Supprimer aussi du localStorage (les clés question_*)
     keys.forEach(k => { localStorage.removeItem(k); });
 
-    alert(`Statistiques de « ${catLabel} » réinitialisées ! (marquages conservés)`);
+    alert(`Statistiques de « ${catLabel} » réinitialisées ! (${changedCount} question${changedCount > 1 ? 's' : ''}, marquages conservés)`);
     window.location.reload();
   } catch (e) {
     console.error('[resetCategory] Erreur:', e);
@@ -1473,51 +1466,50 @@ async function _resetCategoryField(catValue, catLabel, field) {
       return;
     }
 
-    // localUpdates[key] = nouvel objet, ou null pour supprimer entièrement l'entrée
-    const localUpdates = {};
+    // update['responses.<key>.<champ>'] = FieldValue.delete() : supprime PRÉCISÉMENT ce champ
+    // via update() (notation pointée), sans toucher aux autres champs de l'entrée (contrairement
+    // à un set(..., {merge:true}) avec un objet imbriqué, qui ne supprime jamais les champs absents).
+    const update = {};
+    const changedKeys = [];
     keys.forEach(k => {
       const r = existingResponses[k];
       if (!r) return;
-      const next = Object.assign({}, r);
       let touched = false;
 
       if (field === 'marquee' && r.marked) {
-        delete next.marked;
+        update['responses.' + k + '.marked'] = firebase.firestore.FieldValue.delete();
         touched = true;
       } else if (field === 'importante' && r.important) {
-        delete next.important;
+        update['responses.' + k + '.important'] = firebase.firestore.FieldValue.delete();
         touched = true;
       } else if (field === 'reussie' && r.status === 'réussie') {
-        delete next.status;
-        delete next.failCount;
-        delete next.srInterval;
-        delete next.nextReview;
+        update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
         touched = true;
       } else if (field === 'ratee' && r.status === 'ratée') {
-        delete next.status;
-        delete next.failCount;
-        delete next.srInterval;
-        delete next.nextReview;
+        update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+        update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
         touched = true;
       }
 
-      if (touched) localUpdates[k] = Object.keys(next).length ? next : null;
+      if (touched) changedKeys.push(k);
     });
 
-    const changedKeys = Object.keys(localUpdates);
     if (!changedKeys.length) { alert(`Aucune question « ${cfg.label} » trouvée dans cette catégorie.`); return; }
 
-    const update = { responses: {} };
-    changedKeys.forEach(k => {
-      update.responses[k] = localUpdates[k] === null ? firebase.firestore.FieldValue.delete() : localUpdates[k];
-    });
-
-    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+    await db.collection('quizProgress').doc(uid).update(update);
 
     if (typeof currentResponses !== 'undefined' && currentResponses) {
       changedKeys.forEach(k => {
-        if (localUpdates[k] === null) delete currentResponses[k];
-        else currentResponses[k] = localUpdates[k];
+        const r = currentResponses[k];
+        if (!r) return;
+        if (field === 'marquee') delete r.marked;
+        else if (field === 'importante') delete r.important;
+        else { delete r.status; delete r.failCount; delete r.srInterval; delete r.nextReview; }
       });
     }
 
@@ -1749,9 +1741,19 @@ async function resetStats() {
   });
 
   try {
-    // Remplacer le delete() par un set() à responses: {}
-    await db.collection('quizProgress').doc(uid)
-      .set({ responses: {}, lastUpdated: firebase.firestore.Timestamp.now() }, { merge: true });
+    // update() + FieldValue.delete() supprime réellement le champ "responses" en entier.
+    // ATTENTION : set({responses: {}}, {merge:true}) ne fonctionne PAS pour ça — merge:true fusionne
+    // en profondeur, donc fournir un objet vide ne supprime aucune des clés déjà présentes côté serveur.
+    try {
+      await db.collection('quizProgress').doc(uid)
+        .update({ responses: firebase.firestore.FieldValue.delete(), lastUpdated: firebase.firestore.Timestamp.now() });
+    } catch (e) {
+      if (e.code === 'not-found') {
+        // Pas encore de document (nouvel utilisateur) : rien à effacer côté serveur
+      } else {
+        throw e;
+      }
+    }
     alert("Les statistiques ont été réinitialisées !");
     window.location.reload();
   } catch (error) {
@@ -1826,19 +1828,23 @@ async function _resetGroupStats(groupName) {
       return;
     }
 
-    const update = { responses: {} };
+    const update = {};
+    let changedCount = 0;
     allKeys.forEach(k => {
-      const r = existingResponses[k] || {};
-      const preserved = {};
-      if (r.marked)    preserved.marked = true;
-      if (r.important) preserved.important = true;
-      if (r.statusLog && r.statusLog.length) preserved.statusLog = r.statusLog;
-      update.responses[k] = Object.keys(preserved).length ? preserved : firebase.firestore.FieldValue.delete();
+      const r = existingResponses[k];
+      if (!r || r.status === undefined) return; // déjà "non vue"
+      update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
+      changedCount++;
     });
 
-    await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+    if (!changedCount) { alert(`Toutes les questions de « ${groupName} » sont déjà "non vues".`); return; }
+
+    await db.collection('quizProgress').doc(uid).update(update);
     allKeys.forEach(k => localStorage.removeItem(k));
-    alert(`Progression de « ${groupName} » réinitialisée ! (marquages conservés)`);
+    alert(`Progression de « ${groupName} » réinitialisée ! (${changedCount} questions, marquages conservés)`);
     window.location.reload();
   } catch (e) {
     console.error('[resetGroup] Erreur:', e);
