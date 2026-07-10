@@ -8095,6 +8095,21 @@ function initRouteMap(){
   osmLayer.addTo(routeMap); /* OSM is safer default */
   L.control.layers({'OSM':osmLayer,'Google Maps':googleLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{},{position:'topright',collapsed:true}).addTo(routeMap);
 
+  /* Les tuiles OpenAIP ne contiennent QUE les espaces aériens (fond transparent) :
+     contrairement à openaip.net qui les superpose à un fond Mapbox, il faut donc
+     garder un fond de carte (OSM) sous la couche ICAO, sinon la carte paraît vide. */
+  routeMap.on('baselayerchange', function(ev){
+    if(ev.layer === icaoLayer){
+      if(!routeMap.hasLayer(osmLayer)){
+        routeMap.removeLayer(icaoLayer);
+        osmLayer.addTo(routeMap);
+        icaoLayer.addTo(routeMap);
+      }
+    } else if(routeMap.hasLayer(osmLayer) && ev.layer !== osmLayer){
+      routeMap.removeLayer(osmLayer);
+    }
+  });
+
   /* Force Leaflet to recalculate container size (fixes mobile rendering in partial viewport) */
   setTimeout(function(){ routeMap.invalidateSize(); }, 150);
   /* Also invalidate on window resize */
