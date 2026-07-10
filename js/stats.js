@@ -1319,6 +1319,37 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
 }
 
 /**
+ * _fetchQuizProgressResponses() – Charge le champ `responses` de quizProgress/{uid} de façon fiable.
+ * 1) Serveur (données les plus fraîches, cross-device) si en ligne, avec timeout généreux.
+ * 2) Cache Firestore persistant local (fiable : déjà synchronisé lors d'une utilisation normale de l'app).
+ * 3) En dernier recours seulement : `currentResponses` en mémoire (peut être incomplet/vide sur cette page).
+ * Retourne null si aucune source n'a pu être lue, pour éviter un reset partiel silencieux sur des données vides.
+ */
+async function _fetchQuizProgressResponses(uid) {
+  if (navigator.onLine) {
+    try {
+      const docSnap = await Promise.race([
+        db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
+      ]);
+      return docSnap.exists ? (docSnap.data().responses || {}) : {};
+    } catch (e) {
+      console.warn('[resetHelpers] Lecture serveur échouée, fallback cache Firestore:', e.message);
+    }
+  }
+  try {
+    const docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'cache' });
+    return docSnap.exists ? (docSnap.data().responses || {}) : {};
+  } catch (e) {
+    console.warn('[resetHelpers] Lecture cache Firestore échouée:', e.message);
+  }
+  if (typeof currentResponses !== 'undefined' && currentResponses && Object.keys(currentResponses).length) {
+    return currentResponses;
+  }
+  return null;
+}
+
+/**
  * _resetCategoryStats() – Réinitialise les statistiques d'une seule catégorie.
  * Remet les questions en "non vues" tout en conservant les marquages (📌/⭐) et l'historique détaillé.
  */
@@ -1341,19 +1372,11 @@ async function _resetCategoryStats(catValue, catLabel) {
 
     if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
 
-    // Lire les réponses actuelles depuis Firestore (serveur si possible) pour préserver les flags
-    let existingResponses = {};
-    try {
-      const docSnap = navigator.onLine
-        ? await Promise.race([
-            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
-          ])
-        : await db.collection('quizProgress').doc(uid).get();
-      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
-    } catch (e) {
-      console.warn('[resetCategory] Lecture Firestore échouée, utilisation de currentResponses:', e.message);
-      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    // Lire les réponses actuelles depuis Firestore (serveur, sinon cache local) pour préserver les flags
+    const existingResponses = await _fetchQuizProgressResponses(uid);
+    if (existingResponses === null) {
+      alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
+      return;
     }
 
     // Construire la mise à jour :
@@ -1444,18 +1467,10 @@ async function _resetCategoryField(catValue, catLabel, field) {
     const keys = questions.map(q => getKeyFor(q));
     if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
 
-    let existingResponses = {};
-    try {
-      const docSnap = navigator.onLine
-        ? await Promise.race([
-            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
-          ])
-        : await db.collection('quizProgress').doc(uid).get();
-      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
-    } catch (e) {
-      console.warn('[resetCategoryField] Lecture Firestore échouée, utilisation de currentResponses:', e.message);
-      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    const existingResponses = await _fetchQuizProgressResponses(uid);
+    if (existingResponses === null) {
+      alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
+      return;
     }
 
     // localUpdates[key] = nouvel objet, ou null pour supprimer entièrement l'entrée
@@ -1805,17 +1820,10 @@ async function _resetGroupStats(groupName) {
     }
     if (!allKeys.length) { alert('Aucune question trouvée.'); return; }
 
-    let existingResponses = {};
-    try {
-      const docSnap = navigator.onLine
-        ? await Promise.race([
-            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
-          ])
-        : await db.collection('quizProgress').doc(uid).get();
-      if (docSnap.exists) existingResponses = docSnap.data().responses || {};
-    } catch (e) {
-      if (typeof currentResponses !== 'undefined' && currentResponses) existingResponses = currentResponses;
+    const existingResponses = await _fetchQuizProgressResponses(uid);
+    if (existingResponses === null) {
+      alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
+      return;
     }
 
     const update = { responses: {} };
