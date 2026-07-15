@@ -194,14 +194,15 @@
         <span class="home-card-title">Objectif du jour</span>
       </div>
       <div id="objectifSummary" style="font-size:.85em;color:var(--text-secondary);margin-bottom:10px;">Chargement...</div>
+      <div class="home-form-group" style="margin-bottom:12px">
+        <label class="home-label" for="objectifCategorie">Catégorie</label>
+        <select id="objectifCategorie" class="home-select" onchange="syncCategorieFromObjectif()"></select>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <label class="home-label" style="margin:0" for="dailyNewTarget">Nouvelles questions/jour&nbsp;:</label>
         <input type="number" id="dailyNewTarget" class="home-input" style="width:70px" min="0" value="15" onchange="_saveDailyNewTarget()">
       </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
-      <div style="font-size:.72em;color:var(--text-secondary);margin-top:8px;text-align:center">
-        💡 Par défaut sur toutes les catégories — change la "Catégorie" ci-dessous pour cibler une seule matière.
-      </div>
     </div>
     <script>
       (function() {
@@ -303,8 +304,8 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260224h"></script>
-  <script src="js/helpers.js?v=20260224h"></script>
-  <script src="js/categories.js?v=20260224h"></script>
+  <script src="js/helpers.js?v=20260224i"></script>
+  <script src="js/categories.js?v=20260224i"></script>
   <script src="js/stats.js?v=20260224h"></script>
   <script src="js/quiz.js?v=20260224h"></script>
   <script src="js/init.js?v=20260224h"></script>

@@ -638,6 +638,7 @@ async function loadAllQuestions() {
 
 function updateCategorySelect() {
   const catSelect = document.getElementById("categorie");
+  const prevValue = catSelect.value;
   catSelect.innerHTML = "";
 
   const optionToutes = document.createElement("option");
@@ -698,6 +699,16 @@ function updateCategorySelect() {
     opt.textContent = `${cat.display} (${cat.count})`;
     catSelect.appendChild(opt);
   });
+
+  // Restaurer la sélection précédente (le rebuild ci-dessus vide le select)
+  if (prevValue) catSelect.value = prevValue;
+
+  // Miroir dans le menu "Catégorie" de la carte "Objectif du jour"
+  const objSelect = document.getElementById("objectifCategorie");
+  if (objSelect) {
+    objSelect.innerHTML = catSelect.innerHTML;
+    objSelect.value = catSelect.value;
+  }
 }
 
 /**
