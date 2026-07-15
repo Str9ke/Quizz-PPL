@@ -642,11 +642,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label for="cfgTaxi">Roulage/d&#xe9;col. (min)</label>
-          <input type="number" id="cfgTaxi" value="10" min="0" max="60" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgTaxi" value="10" min="0" max="60" onchange="window.syncTaxiTimes('cfg')">
         </div>
         <div class="config-item">
           <label for="cfgLanding">Atterrissage (min)</label>
-          <input type="number" id="cfgLanding" value="10" min="0" max="60" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgLanding" value="5" min="0" max="60" onchange="window.syncTaxiTimes('cfg')">
         </div>
         <div class="config-item" style="grid-column:span 2">
           <label for="cfgAlt">&#x1F6EB; Altitude de vol par d&#xe9;faut (ft)</label>
@@ -1730,11 +1730,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Taxi d&#xe9;part (min)</label>
-          <input type="number" id="fuelTaxiD" value="10" min="0" max="60" onchange="window.renderFuelLog()">
+          <input type="number" id="fuelTaxiD" value="10" min="0" max="60" onchange="window.syncTaxiTimes('fb')">
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Taxi arriv&#xe9;e (min)</label>
-          <input type="number" id="fuelTaxiA" value="5" min="0" max="60" onchange="window.renderFuelLog()">
+          <input type="number" id="fuelTaxiA" value="5" min="0" max="60" onchange="window.syncTaxiTimes('fb')">
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">R&#xe9;serve finale (min)</label>
@@ -5168,6 +5168,21 @@ function syncFuelBurn(source){
 }
 window.syncFuelBurn=syncFuelBurn;
 
+/* Temps de roulage changé dans un onglet -> répercuter sur l'autre
+   (Roulage/décol. ↔ Taxi départ, Atterrissage ↔ Taxi arrivée) */
+function syncTaxiTimes(source){
+  var cfgD=document.getElementById('cfgTaxi');
+  var cfgL=document.getElementById('cfgLanding');
+  var fbD=document.getElementById('fuelTaxiD');
+  var fbA=document.getElementById('fuelTaxiA');
+  if(!cfgD||!cfgL||!fbD||!fbA) return;
+  if(source==='cfg'){ fbD.value=cfgD.value; fbA.value=cfgL.value; }
+  else { cfgD.value=fbD.value; cfgL.value=fbA.value; }
+  recalcNavlog();
+  if(typeof renderFuelLog==='function') renderFuelLog();
+}
+window.syncTaxiTimes=syncTaxiTimes;
+
 /* Calcule la distance vers l'aérodrome de dégagement (champ "Dégagement 1" du FPL)
    si ses coordonnées sont connues, pour estimer le carburant de déroutement. */
 function autoCalcAltnDist(){
@@ -5885,7 +5900,7 @@ function clearWorkspace(){
   document.getElementById('cfgDev').value=-1;
   document.getElementById('cfgDepTime').value='09:00';
   document.getElementById('cfgTaxi').value=10;
-  document.getElementById('cfgLanding').value=10;
+  document.getElementById('cfgLanding').value=5;
   document.getElementById('cfgWindDirSlider').value=0;
   document.getElementById('cfgWindSpdSlider').value=0;
   /* Onglet Carbu : garder coh\u00E9rent avec le reset ci-dessus */
