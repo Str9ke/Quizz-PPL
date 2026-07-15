@@ -1723,7 +1723,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <div id="tab-altitudes" class="navlog-tab-content">
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x1F3D4;&#xFE0F;</span> Espaces a&#xe9;riens sur la route</div>
-      <p style="padding:0 4px;font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Calcule les volumes d'espace a&#xe9;rien (CTR/TMA/zones r&#xe9;glement&#xe9;es...) crois&#xe9;s horizontalement par ta route, via les donn&#xe9;es OpenAIP, et les affiche sur un profil vertical avec ta trajectoire pr&#xe9;vue.</p>
+      <p style="padding:0 4px;font-size:.82em;color:var(--text-secondary);margin:0 0 6px">Calcule les volumes d'espace a&#xe9;rien (CTR/TMA/zones r&#xe9;glement&#xe9;es...) crois&#xe9;s horizontalement par ta route, via les donn&#xe9;es OpenAIP, et les affiche sur un profil vertical avec ta trajectoire pr&#xe9;vue.</p>
+      <p style="padding:0 4px;font-size:.78em;color:#a78bfa;margin:0 0 10px">&#x1F4A1; Fais glisser un point violet (ou la ligne juste au-dessus) pour changer l'altitude de croisi&#xe8;re de ce tron&#xe7;on &#x2014; &#xe7;a se r&#xe9;percute automatiquement sur l'onglet Navlog.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <button onclick="window.loadRouteAirspaces()" class="navlog-btn" style="background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700">&#x1F310; Charger les espaces a&#xe9;riens (OpenAIP)</button>
       </div>
@@ -5750,7 +5751,6 @@ function updateLegStrips(){
         // sync slider display value
         var sliderEl=document.getElementById('leg-alt-slider-'+idx);
         if(sliderEl) sliderEl.value=waypoints[idx].altitude;
-        saveNavlog();
     };
   }
   if(!window.applyDefaultAlt){
@@ -7899,6 +7899,19 @@ async function loadRouteAirspaces(){
 
   if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
 
+  /* Petites erreurs serveur transitoires (surcharge côté OpenAIP) : on retente
+     2 fois avec un délai croissant avant d'abandonner et d'afficher l'erreur. */
+  function _sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  async function _fetchWithRetry(url,opts){
+    var delays=[0,800,1800];
+    for(var i=0;i<delays.length;i++){
+      if(delays[i]) await _sleep(delays[i]);
+      var resp=await fetch(url,opts);
+      if(resp.ok || ![502,503,504].includes(resp.status) || i===delays.length-1) return resp;
+      console.warn('[Altitudes] OpenAIP HTTP '+resp.status+' — nouvel essai '+(i+1)+'/'+(delays.length-1)+'…');
+    }
+  }
+
   try{
     /* OpenAIP paginé — on suit totalPages au cas où la bbox contient plus
        d'items que la limite d'une seule page (les CTR/TMZ/zones autour de
@@ -7906,12 +7919,12 @@ async function loadRouteAirspaces(){
     var items=[], page=1, totalPages=1, limitPerPage=1000;
     do{
       var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
-      var resp=await fetch(url,{headers:{'x-openaip-api-key':key}});
+      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
       if(!resp.ok){
         var bodyTxt='';
         try{ bodyTxt=await resp.text(); }catch(e2){}
         console.error('[Altitudes] OpenAIP HTTP '+resp.status, bodyTxt);
-        if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' — détail dans la console (F12). Envoie-le-moi si besoin d’ajuster.';
+        if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' après plusieurs tentatives — probablement une surcharge temporaire côté OpenAIP, réessaie dans une minute. Détail dans la console (F12).';
         return;
       }
       var data=await resp.json();
@@ -8078,23 +8091,142 @@ function renderAltitudesProfile(){
     });
   });
 
+  /* Poignées de drag (mêmes règles que le profil du Navlog : seuls les
+     waypoints intermédiaires "de croisière" sont modifiables — départ,
+     arrivée et étapes posées au sol gardent une altitude terrain fixe). */
+  var legHits='', cumD3=0;
+  for(var i=1;i<waypoints.length-1;i++){
+    var ld3=waypoints[i].dist||0;
+    if(!waypoints[i].isEtape){
+      var lx1=xS(cumD3), lx2=xS(cumD3+ld3), midY=yS(wpAlts[i]);
+      legHits+='<rect x="'+lx1+'" y="'+(midY-16)+'" width="'+Math.max(10,lx2-lx1)+'" height="32" fill="transparent" cursor="ns-resize" class="alt2-hit" data-wpidx="'+i+'"/>';
+    }
+    cumD3+=ld3;
+  }
+
   var wpMk='', cumD2=0;
   for(var i=0;i<waypoints.length;i++){
     if(i>0) cumD2+=(waypoints[i].dist||0);
     var wx=xS(cumD2), wy=yS(wpAlts[i]);
-    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4" fill="#ff5252" stroke="#fff" stroke-width="1.3"/>';
-    wpMk+='<text x="'+wx+'" y="'+(mt+ch+29)+'" text-anchor="middle" font-size="9" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
+    var isDraggable=i>0 && i<waypoints.length-1 && !waypoints[i].isEtape;
+    if(isDraggable) wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="12" fill="transparent" cursor="ns-resize" class="alt2-hit" data-wpidx="'+i+'"/>';
+    wpMk+='<circle id="alt2Dot'+i+'" cx="'+wx+'" cy="'+wy+'" r="4" fill="'+(isDraggable?'#a78bfa':'#ff5252')+'" stroke="#fff" stroke-width="1.3" style="pointer-events:none"/>';
+    if(isDraggable) wpMk+='<text id="alt2Lbl'+i+'" x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wpAlts[i]+'ft</text>';
+    wpMk+='<text x="'+wx+'" y="'+(mt+ch+29)+'" text-anchor="middle" font-size="9" fill="#a78bfa" style="pointer-events:none">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
   }
 
-  container.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block">'
+  /* Géométrie mise en cache pour les handlers de drag (évite de tout
+     recalculer à chaque pixel de déplacement de la souris). */
+  _altitudes2Geom={ml:ml,mr:mr,mt:mt,mb:mb,W:W,H:H,cw:cw,ch:ch,maxAlt:maxAlt,totalDist:totalDist};
+
+  container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'
     + '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.22)" rx="3"/>'
     + yGrid + xGrid + bandsHtml
-    + '<path d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5"/>'
+    + legHits
+    + '<path id="alt2TrajPath" d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5"/>'
     + wpMk
     + '<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>'
     + '</svg>';
+
+  var svg2=document.getElementById('alt2Svg');
+  if(svg2){
+    svg2.querySelectorAll('.alt2-hit').forEach(function(el){
+      var idx=parseInt(el.dataset.wpidx);
+      el.addEventListener('mousedown',function(e){ _altitudes2DragStart(e,idx); });
+      el.addEventListener('touchstart',function(e){ _altitudes2DragStartTouch(e,idx); },{passive:false});
+    });
+  }
 }
 window.renderAltitudesProfile=renderAltitudesProfile;
+
+/* ===== Drag d'altitude directement sur le graphique "Espaces aériens sur la route" =====
+   Même principe que _altDragStart/_altDragMove (profil du Navlog) : on modifie
+   waypoints[i].altitude, qui est la SEULE source de vérité pour l'altitude de
+   croisière — donc le Navlog (onglet Navlog, feuille de route, carburant, etc.)
+   se met à jour automatiquement via recalcNavlog(), sans duplication d'état. */
+var _altitudes2DragState=null;
+var _altitudes2Geom=null;
+
+function _altitudes2DragStart(e,wpIdx){
+  e.preventDefault(); e.stopPropagation();
+  if(e.target&&e.target.setPointerCapture&&e.pointerId!=null) try{e.target.setPointerCapture(e.pointerId);}catch(x){}
+  var _defAlt=parseInt(document.getElementById('cfgAlt').value)||2300;
+  _altitudes2DragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
+  document.addEventListener('mousemove',_altitudes2DragMove,{capture:true,passive:true});
+  document.addEventListener('mouseup',_altitudes2DragEnd,{capture:true});
+}
+function _altitudes2DragStartTouch(e,wpIdx){
+  if(!e.touches) return;
+  e.preventDefault();
+  var t=e.touches[0];
+  var _defAlt=parseInt(document.getElementById('cfgAlt').value)||2300;
+  _altitudes2DragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
+  document.addEventListener('touchmove',_altitudes2DragMoveT,{passive:false,capture:true});
+  document.addEventListener('touchend',_altitudes2DragEnd,{capture:true});
+}
+function _altitudes2DragMove(e){
+  if(!_altitudes2DragState) return;
+  var dy=_altitudes2DragState.startY-e.clientY;
+  var na=Math.round(Math.max(100,Math.min(18000,_altitudes2DragState.startAlt+dy*20))/100)*100;
+  var _defAlt=parseInt(document.getElementById('cfgAlt').value)||2300;
+  if(na!==(waypoints[_altitudes2DragState.wpIdx].altitude||_defAlt)){
+    waypoints[_altitudes2DragState.wpIdx].altitude=na;
+    _altitudes2DragState.moved=true;
+    _altitudes2UpdateTrajectory();
+  }
+}
+function _altitudes2DragMoveT(e){
+  e.preventDefault();
+  if(!_altitudes2DragState||!e.touches) return;
+  _altitudes2DragMove({clientY:e.touches[0].clientY});
+}
+function _altitudes2DragEnd(){
+  var wasMoved=_altitudes2DragState&&_altitudes2DragState.moved;
+  _altitudes2DragState=null;
+  document.removeEventListener('mousemove',_altitudes2DragMove,{capture:true});
+  document.removeEventListener('mouseup',_altitudes2DragEnd,{capture:true});
+  document.removeEventListener('touchmove',_altitudes2DragMoveT,{capture:true});
+  document.removeEventListener('touchend',_altitudes2DragEnd,{capture:true});
+  if(wasMoved){
+    recalcNavlog(); /* met à jour la feuille de route, carburant, temps... */
+    renderAltitudesProfile(); /* rebuild complet — réajuste aussi l'échelle si besoin */
+  }
+}
+/* Pendant le drag : déplace juste le point/texte concernés et redessine la
+   trajectoire, sans reconstruire tout le SVG (garde le geste fluide). */
+function _altitudes2UpdateTrajectory(){
+  if(!_altitudes2Geom) return;
+  var g=_altitudes2Geom;
+  function _wpElev(wpIdx){
+    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
+    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
+  }
+  var depElev=_wpElev(0), arrElev=_wpElev(waypoints.length-1);
+  var wpAlts=[];
+  for(var i=0;i<waypoints.length;i++){
+    if(i===0) wpAlts.push(depElev);
+    else if(i===waypoints.length-1) wpAlts.push(arrElev);
+    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
+    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
+  }
+  function xS(d){return g.ml+(Math.min(d,g.totalDist)/g.totalDist)*g.cw;}
+  function yS(a){return g.mt+g.ch-((Math.min(a,g.maxAlt)/g.maxAlt)*g.ch);}
+  var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
+  for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
+  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
+  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+  var pathEl=document.getElementById('alt2TrajPath');
+  if(pathEl) pathEl.setAttribute('d',pD);
+  var cumD2=0;
+  for(var i=0;i<waypoints.length;i++){
+    if(i>0) cumD2+=(waypoints[i].dist||0);
+    var wx=xS(cumD2), wy=yS(wpAlts[i]);
+    var dot=document.getElementById('alt2Dot'+i);
+    if(dot) dot.setAttribute('cy',wy);
+    var lbl=document.getElementById('alt2Lbl'+i);
+    if(lbl){ lbl.setAttribute('y',wy-9); lbl.textContent=wpAlts[i]+'ft'; }
+  }
+}
 
 /* ===== ALTITUDE PROFILE CHART ===== */
 var _altDragState=null;
@@ -8418,7 +8550,6 @@ function _altDragEnd(e){
   document.removeEventListener('touchend',_altDragEnd,{capture:true});
   if(wasMoved){
     recalcNavlog(); /* recalcule caps/temps/carbu */
-    saveNavlog();
     /* renderAltProfile() est appelé par recalcNavlog via setTimeout */
   }
 }
