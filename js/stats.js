@@ -1357,9 +1357,11 @@ async function _resetCategoryStats(catValue, catLabel) {
   if (!confirm(
     `Réinitialiser les statistiques de « ${catLabel} » ?\n\n` +
     `• Les questions redeviendront "non vues" (réussies/ratées effacées)\n` +
-    `• Les révisions espacées seront remises à zéro\n` +
+    `• Les révisions espacées (date de prochaine révision) seront remises à zéro\n` +
     `• Les marquages 📌 et ⭐ seront conservés\n` +
-    `• L'historique des réponses (statusLog) sera conservé`
+    `• L'historique des réponses (statusLog) sera conservé\n` +
+    `• Le compteur d'échecs (mémoire de difficulté) sera aussi conservé, pour que ces questions ` +
+    `reviennent plus vite si elles étaient déjà difficiles pour vous`
   )) return;
 
   const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
@@ -1383,13 +1385,17 @@ async function _resetCategoryStats(catValue, catLabel) {
     // pour supprimer PRÉCISÉMENT ces champs, sans toucher aux autres (marked/important/statusLog).
     // Un set(..., {merge:true}) avec un objet imbriqué ne supprime JAMAIS les champs absents de l'objet
     // fourni (il fusionne en profondeur) — c'est pour ça que status/failCount ne s'effaçaient jamais.
+    //
+    // failCount N'EST PAS effacé ici : c'est la mémoire de difficulté d'une question (voir le calcul
+    // d'intervalle dans quiz.js, qui ralentit la croissance pour les questions historiquement ratées).
+    // Un reset "remet les compteurs de planification à zéro" (status/srInterval/nextReview) mais ne doit
+    // pas faire perdre le fait qu'une question vous a déjà donné du fil à retordre.
     const update = {};
     let changedCount = 0;
     keys.forEach(k => {
       const r = existingResponses[k];
       if (!r || r.status === undefined) return; // déjà "non vue", rien à faire
       update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
-      update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
       update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
       update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
       changedCount++;
@@ -1405,7 +1411,6 @@ async function _resetCategoryStats(catValue, catLabel) {
         const r = currentResponses[k];
         if (!r) return;
         delete r.status;
-        delete r.failCount;
         delete r.srInterval;
         delete r.nextReview;
       });
@@ -1414,7 +1419,7 @@ async function _resetCategoryStats(catValue, catLabel) {
     // Supprimer aussi du localStorage (les clés question_*)
     keys.forEach(k => { localStorage.removeItem(k); });
 
-    alert(`Statistiques de « ${catLabel} » réinitialisées ! (${changedCount} question${changedCount > 1 ? 's' : ''}, marquages conservés)`);
+    alert(`Statistiques de « ${catLabel} » réinitialisées ! (${changedCount} question${changedCount > 1 ? 's' : ''}, marquages et difficulté conservés)`);
     window.location.reload();
   } catch (e) {
     console.error('[resetCategory] Erreur:', e);
@@ -1445,8 +1450,8 @@ async function _resetCategoryField(catValue, catLabel, field) {
   const cfg = {
     marquee:    { label: 'Marquées 📌',    msg: 'Le marquage 📌 sera retiré (le reste ne change pas).' },
     importante: { label: 'Importantes ⭐', msg: 'Le marquage ⭐ sera retiré (le reste ne change pas).' },
-    reussie:    { label: 'Réussies ✅',    msg: 'Les questions réussies redeviendront "non vues" (les ratées, les marquages 📌⭐ et l\'historique sont conservés).' },
-    ratee:      { label: 'Ratées ❌',      msg: 'Les questions ratées redeviendront "non vues" (les réussies, les marquages 📌⭐ et l\'historique sont conservés).' }
+    reussie:    { label: 'Réussies ✅',    msg: 'Les questions réussies redeviendront "non vues" (les ratées, les marquages 📌⭐, l\'historique et la mémoire de difficulté sont conservés).' },
+    ratee:      { label: 'Ratées ❌',      msg: 'Les questions ratées redeviendront "non vues" (les réussies, les marquages 📌⭐, l\'historique et la mémoire de difficulté sont conservés).' }
   }[field];
   if (!cfg) return;
 
@@ -1483,14 +1488,13 @@ async function _resetCategoryField(catValue, catLabel, field) {
         update['responses.' + k + '.important'] = firebase.firestore.FieldValue.delete();
         touched = true;
       } else if (field === 'reussie' && r.status === 'réussie') {
+        // failCount (mémoire de difficulté) volontairement conservé, voir _resetCategoryStats()
         update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
-        update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
         update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
         update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
         touched = true;
       } else if (field === 'ratee' && r.status === 'ratée') {
         update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
-        update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
         update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
         update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
         touched = true;
@@ -1509,7 +1513,7 @@ async function _resetCategoryField(catValue, catLabel, field) {
         if (!r) return;
         if (field === 'marquee') delete r.marked;
         else if (field === 'importante') delete r.important;
-        else { delete r.status; delete r.failCount; delete r.srInterval; delete r.nextReview; }
+        else { delete r.status; delete r.srInterval; delete r.nextReview; }
       });
     }
 
@@ -1804,7 +1808,7 @@ async function _resetGroupStats(groupName) {
   if (!confirm(
     `Réinitialiser la progression de « ${groupName} » ?\n\n` +
     `• Toutes les questions redeviendront "non vues"\n` +
-    `• Les marquages 📌 et ⭐ seront conservés`
+    `• Les marquages 📌 et ⭐ ainsi que la mémoire de difficulté seront conservés`
   )) return;
 
   const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
@@ -1833,8 +1837,8 @@ async function _resetGroupStats(groupName) {
     allKeys.forEach(k => {
       const r = existingResponses[k];
       if (!r || r.status === undefined) return; // déjà "non vue"
+      // failCount (mémoire de difficulté) volontairement conservé, voir _resetCategoryStats()
       update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
-      update['responses.' + k + '.failCount'] = firebase.firestore.FieldValue.delete();
       update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
       update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
       changedCount++;

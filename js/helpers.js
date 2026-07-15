@@ -356,6 +356,23 @@ function _isDueForReview(r, now) {
 }
 
 /**
+ * _updateRevisionsBadge() – Affiche/masque le badge "Révisions du jour" sur l'accueil.
+ * Rend visible le nombre de questions dues pour répétition espacée (nbRevisionsToday, calculé
+ * par updateModeCounts()), pour que le système de révision espacée ne passe plus inaperçu.
+ */
+function _updateRevisionsBadge() {
+  const badge = document.getElementById('revisionsBadge');
+  if (!badge) return;
+  const n = (typeof nbRevisionsToday === 'number') ? nbRevisionsToday : 0;
+  if (n > 0) {
+    badge.textContent = `📅 ${n} révision${n > 1 ? 's' : ''} due${n > 1 ? 's' : ''} aujourd'hui — incluses dans le mode "Mixte"`;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+/**
  * voirStats() – Redirige vers la page des statistiques
  */
 function voirStats() {
