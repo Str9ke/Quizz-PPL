@@ -388,29 +388,40 @@ function _saveDailyNewTarget() {
 /**
  * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
  * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
+ * Reflète la catégorie actuellement sélectionnée dans le menu "Catégorie".
  */
 function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
   const el = document.getElementById('objectifSummary');
   if (!el) return;
   const SEC_PER_REVIEW = 22, SEC_PER_NEW = 35;
   const estMin = Math.round((nbRevisions * SEC_PER_REVIEW + dailyNewTarget * SEC_PER_NEW) / 60);
-  el.innerHTML = `📅 <b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`
+  const catSelect = document.getElementById('categorie');
+  const catLabel = (catSelect && catSelect.selectedOptions && catSelect.selectedOptions[0])
+    ? catSelect.selectedOptions[0].textContent
+    : 'TOUTES';
+  el.innerHTML = `📚 <b>${catLabel}</b><br>`
+    + `📅 <b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`
     + ` + <b>${dailyNewTarget}</b> nouvelle${dailyNewTarget > 1 ? 's' : ''} = <b>${total}</b> question${total > 1 ? 's' : ''}`
     + ` &nbsp;(~${estMin} min estimées)`;
 }
 
 /**
  * _startObjectifDuJour() – Lance directement une session "Objectif du jour" (toutes les
- * révisions dues + l'objectif de nouvelles questions), sans passer par la config manuelle.
+ * révisions dues + l'objectif de nouvelles questions) pour la catégorie actuellement
+ * sélectionnée dans le menu "Catégorie" (TOUTES par défaut), sans passer par la config manuelle.
  */
 async function _startObjectifDuJour() {
   const btn = document.getElementById('objectifStartBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
-    selectedCategory = 'TOUTES';
     const catSelect = document.getElementById('categorie');
-    if (catSelect) catSelect.value = 'TOUTES';
-    if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+    const cat = catSelect ? catSelect.value : 'TOUTES';
+    selectedCategory = cat;
+    if (cat === 'TOUTES') {
+      if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+    } else if (typeof chargerQuestions === 'function') {
+      await chargerQuestions(cat);
+    }
     if (typeof updateModeCounts === 'function') await updateModeCounts();
 
     const dailyNewTarget = parseInt(localStorage.getItem('dailyNewTarget')) || 15;
