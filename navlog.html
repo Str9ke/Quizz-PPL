@@ -1732,7 +1732,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div id="altitudesProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonn&#xe9;es, puis clique sur "Charger les espaces a&#xe9;riens".</p></div>
       <div id="altitudesCrossingsList" style="margin-top:14px"></div>
       <div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,.08);font-size:.76em;color:var(--text-secondary);line-height:1.6">
-        <b style="color:#f59e0b">&#x26A0;&#xFE0F; Premi&#xe8;re version</b> &#x2014; le croisement horizontal (la route passe-t-elle dans la zone ?) est calcul&#xe9; automatiquement, mais compare toujours la bande affich&#xe9;e (plancher/plafond) &#xe0; ta trajectoire trac&#xe9;e sur le m&#xeame graphique pour juger si &#xe7;a te concerne vraiment en altitude. Ne remplace pas la carte VFR/AIP officielle pour la pr&#xe9;paration r&#xe9;glementaire du vol.
+        <b style="color:#f59e0b">&#x26A0;&#xFE0F; Premi&#xe8;re version</b> &#x2014; le croisement horizontal (la route passe-t-elle dans la zone ?) ET le croisement vertical (ton altitude planifi&#xe9;e est-elle dans le plancher/plafond &#xe0; cet endroit ?) sont maintenant filtr&#xe9;s automatiquement dans la liste ci-dessus. Le graphique, lui, continue d'afficher toutes les zones crois&#xe9;es horizontalement (m&#xeame hors altitude) pour garder le contexte visuel. Approximation par &#xe9;chantillonnage le long de la route, pas une donn&#xe9;e certifi&#xe9;e : ne remplace pas la carte VFR/AIP officielle pour la pr&#xe9;paration r&#xe9;glementaire du vol.
       </div>
     </div>
   </div>
@@ -2440,6 +2440,9 @@ function switchTab(id){
   if(id==='masse') window.mbInit();
   if(id==='altitudes'){
     if(typeof renderAltitudesProfile==='function') renderAltitudesProfile();
+    /* La liste dépend de l'altitude planifiée : la rafraîchir à chaque ouverture
+       d'onglet couvre le cas où l'altitude a été changée depuis l'onglet Navlog */
+    if(typeof renderAltitudesCrossingsList==='function') renderAltitudesCrossingsList();
     /* Chargement automatique des espaces aériens à la première ouverture de l'onglet
        (évite d'avoir à cliquer manuellement — voir loadRouteAirspaces) */
     if(typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
@@ -7985,6 +7988,39 @@ async function loadRouteAirspaces(){
 }
 window.loadRouteAirspaces=loadRouteAirspaces;
 
+/* Altitude planifiée de l'avion en fonction de la distance parcourue (interpolation
+   linéaire entre waypoints — même logique que le tracé rouge du graphique).
+   Centralisé ici pour que la liste des zones ET le graphique restent cohérents. */
+function _altitudesTrajectory(){
+  function _wpElev(wpIdx){
+    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
+    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
+  }
+  var depElev=_wpElev(0), arrElev=_wpElev(waypoints.length-1);
+  var wpAlts=[], cumDists=[0];
+  for(var i=0;i<waypoints.length;i++){
+    if(i===0) wpAlts.push(depElev);
+    else if(i===waypoints.length-1) wpAlts.push(arrElev);
+    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
+    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
+    if(i>0) cumDists.push(cumDists[i-1]+(waypoints[i].dist||0));
+  }
+  var totalDist=cumDists[cumDists.length-1]||0;
+  function altAtDist(d){
+    if(!wpAlts.length) return 0;
+    if(d<=0) return wpAlts[0];
+    if(d>=totalDist) return wpAlts[wpAlts.length-1];
+    for(var i=1;i<cumDists.length;i++){
+      if(d<=cumDists[i]){
+        var d0=cumDists[i-1], d1=cumDists[i], f=d1>d0?(d-d0)/(d1-d0):0;
+        return wpAlts[i-1]+(wpAlts[i]-wpAlts[i-1])*f;
+      }
+    }
+    return wpAlts[wpAlts.length-1];
+  }
+  return {wpAlts:wpAlts, cumDists:cumDists, totalDist:totalDist, altAtDist:altAtDist};
+}
+
 function renderAltitudesCrossingsList(){
   var el=document.getElementById('altitudesCrossingsList');
   if(!el) return;
@@ -7994,13 +8030,37 @@ function renderAltitudesCrossingsList(){
       : '';
     return;
   }
+
+  /* Ne garder que les croisements où l'altitude planifiée de l'avion se trouve
+     réellement dans la bande plancher/plafond de la zone à ce moment de la route
+     (croisement 3D réel, pas juste horizontal) */
+  var traj=_altitudesTrajectory();
+  var relevant=[];
+  _routeAirspaces.forEach(function(a){
+    var relevantCrossings=a.crossings.filter(function(c){
+      var samples=16, hit=false;
+      for(var s=0;s<=samples && !hit;s++){
+        var d=c.entryDist+(c.exitDist-c.entryDist)*(s/samples);
+        var alt=traj.altAtDist(d);
+        if(alt>=(a.lowerFt||0) && alt<=(a.upperFt||999999)) hit=true;
+      }
+      return hit;
+    });
+    if(relevantCrossings.length) relevant.push({name:a.name,classLabel:a.classLabel,lowerFt:a.lowerFt,upperFt:a.upperFt,crossings:relevantCrossings});
+  });
+
+  if(!relevant.length){
+    el.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:8px 0">'+_routeAirspaces.length+' zone(s) croisée(s) horizontalement, mais aucune à l\'altitude actuellement planifiée. <span style="color:#a78bfa">Fais glisser un point du graphique</span> pour tester d\'autres altitudes.</p>';
+    return;
+  }
+
   /* Trier dans l'ordre de rencontre le long de la route (plus intuitif que
      l'ordre brut renvoyé par l'API) */
-  var sorted=_routeAirspaces.slice().sort(function(a,b){
+  var sorted=relevant.slice().sort(function(a,b){
     return a.crossings[0].entryDist-b.crossings[0].entryDist;
   });
   var UNLIMITED_FT=60000;
-  var html='<div style="font-weight:700;font-size:.88em;margin-bottom:6px">Zones traversées (horizontalement), dans l\'ordre de la route :</div>';
+  var html='<div style="font-weight:700;font-size:.88em;margin-bottom:6px">Zones réellement concernées (croisement horizontal + vertical à l\'altitude planifiée), dans l\'ordre de la route :</div>';
   sorted.forEach(function(a){
     var col=_airspaceBandColor(a.classLabel);
     var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(a.classLabel);
@@ -8015,6 +8075,9 @@ function renderAltitudesCrossingsList(){
     html+='<div style="color:var(--text-secondary);font-size:.92em;margin-top:2px">'+(a.lowerFt||0)+'–'+upperLabel+' &middot; '+distLabel+'</div>';
     html+='</div>';
   });
+  if(relevant.length<_routeAirspaces.length){
+    html+='<div style="font-size:.76em;color:var(--text-secondary);margin-top:4px">('+(_routeAirspaces.length-relevant.length)+' autre(s) zone(s) croisée(s) horizontalement mais hors de l\'altitude planifiée — visibles sur le graphique ci-dessus.)</div>';
+  }
   el.innerHTML=html;
 }
 
@@ -8190,6 +8253,7 @@ function _altitudes2DragEnd(){
   if(wasMoved){
     recalcNavlog(); /* met à jour la feuille de route, carburant, temps... */
     renderAltitudesProfile(); /* rebuild complet — réajuste aussi l'échelle si besoin */
+    renderAltitudesCrossingsList(); /* la liste dépend de l'altitude, donc du même coup */
   }
 }
 /* Pendant le drag : déplace juste le point/texte concernés et redessine la
