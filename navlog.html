@@ -588,6 +588,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <!-- ==================== TAB 1: NAVIGATION ==================== -->
   <div id="tab-nav" class="navlog-tab-content active">
 
+    <!-- Vent en altitude (GAMET) -->
+    <div class="nl-card" id="gametWindCard" style="display:none">
+      <div class="nl-card-title"><span class="icon">&#x1F4A8;</span> Vent en altitude (GAMET) <span id="gametValidLabel" style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:6px"></span></div>
+      <div id="gametWindRow" style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 4px"></div>
+    </div>
+
+    <!-- Alerte péremption d'un dossier chargé -->
+    <div id="dossierFreshnessBanner" style="display:none"></div>
+
     <!-- Flight type selector -->
     <div style="text-align:center;margin-bottom:14px">
       <div class="flight-type-row">
@@ -711,10 +720,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <iframe id="autoNotamFrame" src="notams_belgique.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
         </div>
         <div class="map-card-actions">
+            <button onclick="window.highlightRouteNotams()" style="background:linear-gradient(135deg,#fbc02d,#f9a825);color:#000;border:none;font-weight:bold;">&#x1F3AF; Surligner les NOTAM de ma route</button>
             <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
             <button onclick="var f=document.getElementById('autoNotamFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
             <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
           </div>
+          <div id="routeNotamStatus" style="font-size:.78em;color:var(--text-secondary);padding:0 16px 10px"></div>
         </div>
 
         <!-- Daily Warnings Automatique -->
@@ -3840,6 +3851,18 @@ function getVFRLabel(cat){
   return m[cat]||'VFR';
 }
 
+/* Vérification indicative des minimums VFR (repère simplifié SERA.5001, hors espace
+   contrôlé, de jour, en dessous de 3000ft AMSL/1000ft AGL : vis ≥ 5km, plafond ≥ 1500ft).
+   Ne remplace PAS les minimums réels de la classe d'espace effectivement traversée
+   (CTR/TMA/classe D ont des exigences différentes) — juste une alerte rapide. */
+function checkVFRMinimums(raw){
+  var ceil=parseCeiling(raw);
+  var vis=parseVisibility(raw);
+  var visOk=(vis===null)||vis>=5000;
+  var ceilOk=(ceil===null)||ceil>=1500;
+  return { ok: visOk && ceilOk, vis: vis, ceil: ceil };
+}
+
 function colorizeMetar(raw){
   if(!raw) return '';
   var tokens=raw.split(/\s+/);
@@ -4543,6 +4566,8 @@ function renderWeatherBlock(icao){
   if(metar){
     var cat=getVFRCategory(metar);
     html+=' <span class="vfr-badge '+cat+'">'+getVFRLabel(cat)+'</span>';
+    var vfrMin=checkVFRMinimums(metar);
+    html+=' <span class="vfr-badge '+(vfrMin.ok?'vfr':'lifr')+'" title="Repère indicatif hors espace contrôlé, jour, &lt;3000ft AMSL/1000ft AGL (SERA.5001) : vis ≥ 5km et plafond ≥ 1500ft. Les minimums réels dépendent de la classe d’espace traversée — vérifie toujours la carte.">'+(vfrMin.ok?'✅ Mini VFR OK':'⚠️ Sous mini VFR (repère)')+'</span>';
     var icing=estimateIcing(metar);
     html+=' <span class="icing-badge '+icing.level+'">Givrage: '+icing.label+'</span>';
     if(icing.carbIce) html+=' <span class="icing-badge moderate" title="Risque de givrage carburateur (OAT favorable + humidit\u00e9 \u00e9lev\u00e9e)">\u2744\uFE0F Carb Ice</span>';
@@ -5122,6 +5147,49 @@ function initWxButtons(){
   loadWeather('LFQQ');
 }
 window.toggleWxAirport=toggleWxAirport;
+
+/* ===== VENT EN ALTITUDE (GAMET) ===== */
+/* Va chercher le bloc GAMET déjà mis en forme dans opmet.html (même origine, régénéré
+   toutes les 3h par le workflow update_notams.yml) et affiche un résumé compact du
+   vent/température par niveau standard (1000/2000/5000/10000ft) en haut du Navlog. */
+function loadGametWindWidget(){
+  fetch('opmet.html').then(function(r){ return r.ok ? r.text() : null; }).then(function(html){
+    if(!html) return;
+    var blockMatch = html.match(/<div class="gamet-block">([\s\S]*?)<\/div>/);
+    if(!blockMatch) return;
+    var block = blockMatch[1];
+
+    var validMatch = block.match(/GAMET VALID (\d{2})(\d{2})(\d{2})\/(\d{2})(\d{2})(\d{2})/);
+    var validLabel = '';
+    if(validMatch){
+      validLabel = 'valide '+validMatch[2]+':'+validMatch[3]+' → '+validMatch[5]+':'+validMatch[6]+' UTC (J'+validMatch[1]+')';
+    }
+
+    var levelRe = /<span class="wx-alt">(\d+)\s*FT<\/span>\s*<span class="wx-wind">(\d{3})\/(\d{2,3})KT<\/span>\s*<span class="wx-temp">([A-Z]{2})(\d{2})<\/span>/g;
+    var levels = [];
+    var m;
+    while((m = levelRe.exec(block)) !== null){
+      var tempSign = (m[4] === 'MS') ? '−' : '+';
+      levels.push({ alt: parseInt(m[1],10), dir: m[2], spd: m[3], temp: tempSign+m[5]+'°C' });
+    }
+    if(!levels.length) return;
+
+    var row = document.getElementById('gametWindRow');
+    var card = document.getElementById('gametWindCard');
+    var label = document.getElementById('gametValidLabel');
+    if(!row || !card) return;
+    row.innerHTML = levels.map(function(l){
+      return '<div style="background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px;padding:8px 12px;text-align:center;min-width:88px">'
+        + '<div style="font-weight:700;font-size:.85em;color:#4fc3f7">'+l.alt+' ft</div>'
+        + '<div style="font-size:.82em;margin-top:2px">'+l.dir+'°/'+l.spd+'kt</div>'
+        + '<div style="font-size:.78em;color:var(--text-secondary)">'+l.temp+'</div>'
+        + '</div>';
+    }).join('');
+    if(label) label.textContent = validLabel;
+    card.style.display = '';
+  }).catch(function(){ /* opmet.html indisponible (offline) : widget reste masqué */ });
+}
+window.loadGametWindWidget=loadGametWindWidget;
 
 /* ===== RESERVE TOGGLE ===== */
 function toggleReserve(){
@@ -6751,6 +6819,34 @@ function getMapImages(){
   return maps;
 }
 
+/* Alerte de péremption : la météo/NOTAM d'un dossier sont figés au moment de la sauvegarde
+   (screenshots, résumé NOTAM importé...) — prévenir clairement quand ils datent, pour ne pas
+   laisser croire à tort que c'est à jour. */
+function _checkDossierFreshness(d){
+  var banner = document.getElementById('dossierFreshnessBanner');
+  if(!banner) return;
+  if(!d || !d.date){ banner.style.display='none'; return; }
+  var savedMs = new Date(d.date).getTime();
+  if(isNaN(savedMs)){ banner.style.display='none'; return; }
+  var ageH = (Date.now() - savedMs) / 3600000;
+
+  var msg, color, bg;
+  if(ageH < 3){
+    banner.style.display='none';
+    return;
+  } else if(ageH < 12){
+    color='#f59e0b'; bg='rgba(245,158,11,.12)';
+    msg='⚠️ Ce dossier a été sauvegardé il y a '+Math.round(ageH)+'h — pense à vérifier que la météo et les NOTAM sont toujours à jour avant le vol.';
+  } else {
+    var ageStr = ageH < 48 ? Math.round(ageH)+'h' : Math.round(ageH/24)+' jours';
+    color='#ef4444'; bg='rgba(239,68,68,.12)';
+    msg='🔴 Ce dossier a été sauvegardé il y a '+ageStr+' — la météo, les NOTAM et les cartes affichés sont probablement périmés. Rafraîchis-les avant de t’en servir pour un vol.';
+  }
+  banner.style.cssText='display:block;max-width:900px;margin:0 auto 14px;padding:10px 16px;border-radius:12px;font-size:.88em;font-weight:600;border:1px solid '+color+';background:'+bg+';color:'+color;
+  banner.textContent = msg;
+}
+window._checkDossierFreshness=_checkDossierFreshness;
+
 function loadDossier(id, _freshCloudFiles){
   var dossiers=getDossiers();
   var d=null;
@@ -6779,6 +6875,8 @@ function loadDossier(id, _freshCloudFiles){
       }
     }
   }
+
+  _checkDossierFreshness(d);
 
   document.getElementById('cfgTAS').value=d.config.tas;
   document.getElementById('cfgFuel').value=d.config.fuel;
@@ -8522,6 +8620,7 @@ function initWindy(){
 function init(){
   initTheme();
   initWxButtons();
+  loadGametWindWidget();
   /* Default: vol local */
   waypoints=[
     {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
@@ -9637,6 +9736,59 @@ window.triggerGithubAction = async function() {
         alert("\u274C Erreur de connexion : " + e);
     }
 }
+
+/* Surligne (sans les masquer) les NOTAM concernant les a\u00E9rodromes de la route actuelle
+   (waypoints + d\u00E9gagement 1/2), en s'appuyant sur highlightNotamTerms() g\u00E9n\u00E9r\u00E9 par
+   fetch_notams.py dans notams_belgique.html (iframe same-origin). */
+window.highlightRouteNotams = function() {
+  var codes = [];
+  if (typeof waypoints !== 'undefined' && waypoints) {
+    waypoints.forEach(function(wp) {
+      if (wp && wp.name) {
+        var c = wp.name.trim().toUpperCase();
+        if (/^[A-Z]{4}$/.test(c)) codes.push(c);
+      }
+    });
+  }
+  ['fpl_altn1', 'fpl_altn2'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.value) {
+      var c = el.value.trim().toUpperCase();
+      if (/^[A-Z]{4}$/.test(c)) codes.push(c);
+    }
+  });
+  codes = codes.filter(function(c, i) { return codes.indexOf(c) === i; });
+
+  var status = document.getElementById('routeNotamStatus');
+  if (!codes.length) {
+    if (status) status.textContent = '\u26A0\uFE0F Aucun code OACI valide trouv\u00E9 sur ta route (waypoints ou d\u00E9gagement) \u2014 remplis d\u2019abord le Navlog.';
+    return;
+  }
+
+  var frame = document.getElementById('autoNotamFrame');
+  if (!frame) return;
+
+  function tryHighlight() {
+    try {
+      var win = frame.contentWindow;
+      if (win && typeof win.highlightNotamTerms === 'function') {
+        var found = win.highlightNotamTerms(codes.join(' '));
+        if (status) status.textContent = (found ? '\u2705 NOTAM surlign\u00E9s pour : ' : '\u2139\uFE0F Aucun NOTAM trouv\u00E9 pour : ') + codes.join(', ');
+      } else {
+        if (status) status.textContent = '\u23F3 Cette fonctionnalit\u00E9 arrive au prochain rafra\u00EEchissement automatique des NOTAM (toutes les 3h) \u2014 clique sur \u00AB Actualiser Imm\u00E9diatement \u00BB ci-dessus si tu ne veux pas attendre.';
+      }
+    } catch (e) {
+      if (status) status.textContent = '\u274C Impossible d\u2019acc\u00E9der au contenu NOTAM (' + e.message + ').';
+    }
+  }
+
+  if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
+    tryHighlight();
+  } else {
+    frame.addEventListener('load', tryHighlight, { once: true });
+    if (status) status.textContent = '\u23F3 Chargement\u2026';
+  }
+};
 
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'resize') {

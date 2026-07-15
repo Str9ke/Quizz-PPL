@@ -923,6 +923,24 @@ def main():
                         }
                     }
                 }
+                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                function highlightNotamTerms(termsStr) {
+                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                    var paragraphs = document.querySelectorAll('p');
+                    var firstMatch = null;
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                        paragraphs[i].style.background = matched ? '#fff59d' : '';
+                        paragraphs[i].style.color = matched ? '#000' : '';
+                        paragraphs[i].style.display = '';
+                        if (matched && !firstMatch) firstMatch = paragraphs[i];
+                    }
+                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return !!firstMatch;
+                }
             </script>
             """, 'html.parser')
 
