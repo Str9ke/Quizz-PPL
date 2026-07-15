@@ -18,6 +18,8 @@ function resetQuiz() {
   } catch (e) { /* ignore */ }
 
   localStorage.removeItem('currentQuestions');
+  localStorage.removeItem('currentQuizAnswers');
+  localStorage.removeItem('currentQuizBatchPos');
 
   // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
   try {
