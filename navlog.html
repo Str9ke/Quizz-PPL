@@ -2437,7 +2437,15 @@ function switchTab(id){
     }
   }
   if(id==='masse') window.mbInit();
-  if(id==='altitudes' && typeof renderAltitudesProfile==='function') renderAltitudesProfile();
+  if(id==='altitudes'){
+    if(typeof renderAltitudesProfile==='function') renderAltitudesProfile();
+    /* Chargement automatique des espaces aériens à la première ouverture de l'onglet
+       (évite d'avoir à cliquer manuellement — voir loadRouteAirspaces) */
+    if(typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+      var _altWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){return w.lat!==null&&w.lon!==null;});
+      if(_altWps.length>=2) loadRouteAirspaces();
+    }
+  }
   /* Refresh route map size whenever nav tab is shown (Leaflet needs this after hidden/resize) */
   if(id==='nav' && typeof routeMap!=='undefined' && routeMap){
     setTimeout(function(){ routeMap.invalidateSize(); }, 80);
@@ -7047,6 +7055,12 @@ function loadDossier(id, _freshCloudFiles){
 
   _checkDossierFreshness(d);
 
+  /* Nouveau dossier chargé → les espaces aériens précédemment calculés ne
+     correspondent plus à cette route, on force un nouveau chargement à la
+     prochaine ouverture de l'onglet Altitudes */
+  _routeAirspaces=[];
+  _altitudesAutoLoadDone=false;
+
   document.getElementById('cfgTAS').value=d.config.tas;
   document.getElementById('cfgFuel').value=d.config.fuel;
   document.getElementById('cfgWindDir').value=d.config.windDir;
@@ -7802,6 +7816,7 @@ window._noteHL=_noteHL;
    route (point-in-polygon tous les ~0.5 NM), pas d'intersection géométrique exacte —
    suffisant pour un repère visuel, pas pour une donnée réglementaire certifiée. */
 var _routeAirspaces = [];
+var _altitudesAutoLoadDone = false; /* évite de re-fetcher OpenAIP à chaque simple retour sur l'onglet */
 
 function _routeSamplePoints(){
   var pts=[]; var cum=0;
@@ -7874,27 +7889,39 @@ async function loadRouteAirspaces(){
     return;
   }
 
+  _altitudesAutoLoadDone=true;
+
   var lats=validWps.map(function(w){return w.lat;});
   var lons=validWps.map(function(w){return w.lon;});
-  var pad=0.15;
+  var pad=0.2;
   var south=Math.min.apply(null,lats)-pad, north=Math.max.apply(null,lats)+pad;
   var west=Math.min.apply(null,lons)-pad, east=Math.max.apply(null,lons)+pad;
 
   if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
-  var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit=1000';
 
   try{
-    var resp=await fetch(url,{headers:{'x-openaip-api-key':key}});
-    if(!resp.ok){
-      var bodyTxt='';
-      try{ bodyTxt=await resp.text(); }catch(e2){}
-      console.error('[Altitudes] OpenAIP HTTP '+resp.status, bodyTxt);
-      if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' — détail dans la console (F12). Envoie-le-moi si besoin d’ajuster.';
-      return;
-    }
-    var data=await resp.json();
-    console.log('[Altitudes] Réponse OpenAIP brute :', data);
-    var items=data.items||data.data||(Array.isArray(data)?data:[]);
+    /* OpenAIP paginé — on suit totalPages au cas où la bbox contient plus
+       d'items que la limite d'une seule page (les CTR/TMZ/zones autour de
+       Bruxelles/Anvers sont nombreuses) */
+    var items=[], page=1, totalPages=1, limitPerPage=1000;
+    do{
+      var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
+      var resp=await fetch(url,{headers:{'x-openaip-api-key':key}});
+      if(!resp.ok){
+        var bodyTxt='';
+        try{ bodyTxt=await resp.text(); }catch(e2){}
+        console.error('[Altitudes] OpenAIP HTTP '+resp.status, bodyTxt);
+        if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' — détail dans la console (F12). Envoie-le-moi si besoin d’ajuster.';
+        return;
+      }
+      var data=await resp.json();
+      console.log('[Altitudes] Réponse OpenAIP brute (page '+page+') :', data);
+      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
+      items=items.concat(pageItems);
+      totalPages=data.totalPages||1;
+      page++;
+    }while(page<=totalPages && page<=10);
+
     if(!items.length){
       _routeAirspaces=[];
       if(status) status.textContent='ℹ️ OpenAIP n’a renvoyé aucun espace aérien pour cette zone.';
@@ -7905,13 +7932,14 @@ async function loadRouteAirspaces(){
 
     var samples=_routeSamplePoints();
     var results=[];
+    var skippedNoGeom=0, skippedGeomTypes={};
     items.forEach(function(it){
       var geom=it.geometry||it.geojson;
-      if(!geom||!geom.coordinates) return;
+      if(!geom||!geom.coordinates){ skippedNoGeom++; return; }
       var polys=[];
       if(geom.type==='Polygon') polys=[geom.coordinates[0]];
       else if(geom.type==='MultiPolygon') polys=geom.coordinates.map(function(p){return p[0];});
-      if(!polys.length) return;
+      if(!polys.length){ skippedGeomTypes[geom.type]=(skippedGeomTypes[geom.type]||0)+1; return; }
 
       var name=it.name||it.designator||'Zone sans nom';
       var classLabel=_openaipClassLabel(it);
@@ -7930,9 +7958,11 @@ async function loadRouteAirspaces(){
     });
 
     _routeAirspaces=results;
+    console.log('[Altitudes] '+items.length+' zone(s) reçue(s), '+skippedNoGeom+' sans géométrie, '+
+      JSON.stringify(skippedGeomTypes)+' ignorée(s) (type non géré), '+results.length+' croisée(s) par la route.');
     if(status) status.textContent=results.length
       ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
-      : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour).';
+      : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
     renderAltitudesProfile();
     renderAltitudesCrossingsList();
   }catch(e){
@@ -7945,7 +7975,12 @@ window.loadRouteAirspaces=loadRouteAirspaces;
 function renderAltitudesCrossingsList(){
   var el=document.getElementById('altitudesCrossingsList');
   if(!el) return;
-  if(!_routeAirspaces.length){ el.innerHTML=''; return; }
+  if(!_routeAirspaces.length){
+    el.innerHTML=_altitudesAutoLoadDone
+      ? '<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:8px 0">Aucun croisement d’espace aérien détecté sur ce tracé (voir le statut ci-dessus, et la console F12 pour le détail).</p>'
+      : '';
+    return;
+  }
   var html='<div style="font-weight:700;font-size:.88em;margin-bottom:6px">Zones traversées (horizontalement) :</div>';
   _routeAirspaces.forEach(function(a){
     var col=_airspaceBandColor(a.classLabel);
