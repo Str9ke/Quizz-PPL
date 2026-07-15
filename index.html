@@ -187,6 +187,29 @@
     <!-- Daily stats bar -->
     <div id="dailyStatsBar" style="display:none;"></div>
 
+    <!-- Objectif du jour : lancer une session en un clic (révisions dues + objectif de nouvelles) -->
+    <div class="home-card" style="border-color:rgba(245,158,11,.35)">
+      <div class="home-card-header">
+        <span class="home-card-icon">🚀</span>
+        <span class="home-card-title">Objectif du jour</span>
+      </div>
+      <div id="objectifSummary" style="font-size:.85em;color:var(--text-secondary);margin-bottom:10px;">Chargement...</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <label class="home-label" style="margin:0" for="dailyNewTarget">Nouvelles questions/jour&nbsp;:</label>
+        <input type="number" id="dailyNewTarget" class="home-input" style="width:70px" min="0" value="15" onchange="_saveDailyNewTarget()">
+      </div>
+      <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
+    </div>
+    <script>
+      (function() {
+        var saved = localStorage.getItem('dailyNewTarget');
+        if (saved !== null) {
+          var el = document.getElementById('dailyNewTarget');
+          if (el) el.value = saved;
+        }
+      })();
+    </script>
+
     <!-- Progression card -->
     <div class="home-card home-card-progress">
       <div id="progressionContainer" style="margin: 0;"></div>

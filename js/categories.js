@@ -279,7 +279,7 @@ async function updateModeCounts() {
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
 
-    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0, nbAvecNotes=0;
+    let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0, nbAvecNotes=0, nbSuspendues=0;
     // Compter les questions uniques (propres à l'épreuve, pas des références thématiques)
     const nbUniques = isEpreuve ? questions.filter(q => q.categorie === normalizedSel).length : 0;
     const now = Date.now();
@@ -287,8 +287,11 @@ async function updateModeCounts() {
     list.forEach(q => {
       const key = getKeyFor(q);
       const r = currentResponses[key];
-      total++;
       if (notesMap[key]) nbAvecNotes++;
+      // Une question suspendue ("je ne veux plus la revoir") sort du décompte actif :
+      // elle n'est plus comptée en nonvue/réussie/ratée/révision, seulement dans son propre total.
+      if (r && r.suspended) { nbSuspendues++; return; }
+      total++;
       if (!r) {
         nbNonvues++;
       } else {
@@ -302,12 +305,17 @@ async function updateModeCounts() {
       }
     });
 
-    // Exposer le compteur de révisions dues globalement (mode par défaut, badge accueil)
+    // Exposer les compteurs globalement (mode par défaut, badge accueil, bouton "Objectif du jour")
     nbRevisionsToday = nbRevisions;
+    nbSuspenduesTotal = nbSuspendues;
+
+    const dailyNewTarget = parseInt(localStorage.getItem('dailyNewTarget')) || 15;
+    const objectifTotal = nbRevisions + dailyNewTarget;
 
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
       modeSelect.innerHTML = `
+        <option value="objectif">🚀 Objectif du jour (${nbRevisions} dues + ${dailyNewTarget} nouvelles)</option>
         <option value="mixte">🔀 Mixte : nouvelles + révisions dues (${Math.min(total, nbNonvues + nbRevisions)})</option>
         <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
         <option value="toutes">Toutes (${total})</option>
@@ -320,8 +328,10 @@ async function updateModeCounts() {
         <option value="marquees">Marquées (${nbMarquees})</option>
         <option value="importantes">Importantes (${nbImportantes})</option>
         <option value="avecnotes">📝 Avec notes (${nbAvecNotes})</option>
+        <option value="suspendues">🚫 Ne plus revoir (${nbSuspendues})</option>
       `;
     }
+    if (typeof _updateObjectifSummary === 'function') _updateObjectifSummary(nbRevisions, dailyNewTarget, objectifTotal);
 }
 
 async function chargerQuestions(cat) {
@@ -746,7 +756,14 @@ async function filtrerQuestions(mode, nb) {
     _currentSessionCount = data.quizSessionCount || _currentSessionCount || 0;
   }
 
-  const shuffled = [...questions].sort(() => 0.5 - Math.random());
+  const shuffledAll = [...questions].sort(() => 0.5 - Math.random());
+  // "suspendues" (ne plus revoir) est le seul mode qui doit VOIR les questions suspendues —
+  // partout ailleurs, elles sont exclues de la sélection automatique.
+  if (mode === "suspendues") {
+    currentQuestions = shuffledAll.filter(q => responses[getKeyFor(q)]?.suspended).slice(0, nb);
+    return;
+  }
+  const shuffled = shuffledAll.filter(q => !responses[getKeyFor(q)]?.suspended);
   if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   }
@@ -787,6 +804,17 @@ async function filtrerQuestions(mode, nb) {
       mix = [...mix, ...extra];
     }
     // Mélanger l'ordre final pour ne pas grouper toutes les révisions en premier
+    currentQuestions = mix.sort(() => 0.5 - Math.random());
+  }
+  else if (mode === "objectif") {
+    // Session "Objectif du jour" (bouton un-clic) : TOUTES les révisions dues sont incluses
+    // sans plafond (elles sont prioritaires, non négociables), complétées par un nombre fixe
+    // de nouvelles questions. Contrairement à "mixte", on ne réserve pas un quota de nouvelles
+    // au détriment des révisions : nb est calculé par l'appelant = dues + objectif de nouvelles.
+    const dueSorted = _dueQuestionsSorted(shuffled, responses);
+    const newPool = shuffled.filter(q => !responses[getKeyFor(q)]);
+    const newTarget = Math.max(0, nb - dueSorted.length);
+    const mix = [...dueSorted, ...newPool.slice(0, newTarget)];
     currentQuestions = mix.sort(() => 0.5 - Math.random());
   }
   else if (mode === "difficiles") {
@@ -854,10 +882,10 @@ async function filtrerQuestions(mode, nb) {
       const ready = queue.filter(item => item.countdown <= 0);
       const remaining = queue.filter(item => item.countdown > 0);
       if (ready.length > 0) {
-        // Filtrer : ne pas injecter si la question est maintenant réussie
+        // Filtrer : ne pas injecter si la question est maintenant réussie, ou suspendue
         const stillFailed = ready.filter(item => {
           const r = responses[item.key];
-          return !r || r.status !== 'réussie';
+          return (!r || r.status !== 'réussie') && !(r && r.suspended);
         });
         const toInject = stillFailed.slice(0, 5);
         const currentKeys = new Set(currentQuestions.map(q => getKeyFor(q)));

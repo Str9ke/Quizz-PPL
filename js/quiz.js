@@ -342,6 +342,56 @@ function toggleImportantQuestion(questionIdx, button) {
 }
 
 /**
+ * toggleSuspendQuestion() – Marque une question "à ne plus revoir" : elle sort de tous les
+ * modes de sélection automatique (mixte, révisions, objectif, non vues, ratées, etc.),
+ * sauf du mode dédié "🚫 Ne plus revoir" qui permet de la retrouver et de la réactiver.
+ */
+function toggleSuspendQuestion(questionIdx, button) {
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) {
+    alert("Vous devez être connecté pour ne plus revoir une question.");
+    return;
+  }
+
+  const question = currentQuestions[questionIdx];
+  if (!question) {
+    console.error("Question introuvable dans la catégorie sélectionnée.");
+    return;
+  }
+
+  const key = getKeyFor(question);
+  const prev = currentResponses[key] || {};
+  const newSuspended = !prev.suspended;
+  const payload = {
+    responses: {
+      [key]: {
+        status: prev.status || 'ratée',
+        marked: prev.marked === true,
+        important: prev.important === true,
+        suspended: newSuspended
+      }
+    }
+  };
+
+  db.collection('quizProgress').doc(uid)
+    .set(payload, { merge: true })
+    .then(() => {
+      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
+      button.textContent = newSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
+      button.className   = newSuspended ? "unimportant-button" : "delete-button";
+      updateModeCounts();
+    })
+    .catch(async (err) => {
+      console.warn('[offline] toggleSuspend fallback');
+      await saveToggleWithOfflineFallback(uid, key, payload);
+      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
+      button.textContent = newSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
+      button.className   = newSuspended ? "unimportant-button" : "delete-button";
+      updateModeCounts();
+    });
+}
+
+/**
  * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
 function afficherBoutonsMarquer() {
@@ -355,6 +405,7 @@ function afficherBoutonsMarquer() {
     const key = getKeyFor(q);
     const isMarked = (currentResponses[key] && currentResponses[key].marked === true);
     const isImportant = (currentResponses[key] && currentResponses[key].important === true);
+    const isSuspended = (currentResponses[key] && currentResponses[key].suspended === true);
 
     // Conteneur flex pour tous les boutons d'action
     const row = document.createElement('div');
@@ -378,6 +429,14 @@ function afficherBoutonsMarquer() {
     btnNote.textContent = '📝 Ma note';
     btnNote.onclick = () => _toggleNoteEditor(key, btnNote);
     row.appendChild(btnNote);
+
+    // Bouton "Ne plus revoir" (suspend) : sort la question de toute sélection automatique
+    const btnSuspend = document.createElement('button');
+    btnSuspend.textContent = isSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
+    btnSuspend.className   = isSuspended ? "unimportant-button" : "delete-button";
+    btnSuspend.title = "Cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
+    btnSuspend.onclick = () => toggleSuspendQuestion(idx, btnSuspend);
+    row.appendChild(btnSuspend);
 
     block.appendChild(row);
   });

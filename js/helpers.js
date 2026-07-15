@@ -365,10 +365,65 @@ function _updateRevisionsBadge() {
   if (!badge) return;
   const n = (typeof nbRevisionsToday === 'number') ? nbRevisionsToday : 0;
   if (n > 0) {
-    badge.textContent = `📅 ${n} révision${n > 1 ? 's' : ''} due${n > 1 ? 's' : ''} aujourd'hui — incluses dans le mode "Mixte"`;
+    badge.textContent = `📅 ${n} révision${n > 1 ? 's' : ''} due${n > 1 ? 's' : ''} aujourd'hui — incluses dans "Objectif du jour"`;
     badge.style.display = 'block';
   } else {
     badge.style.display = 'none';
+  }
+}
+
+/**
+ * _saveDailyNewTarget() – Sauvegarde l'objectif de nouvelles questions/jour (localStorage)
+ * et rafraîchit le résumé + le compteur du mode "objectif".
+ */
+function _saveDailyNewTarget() {
+  const input = document.getElementById('dailyNewTarget');
+  if (!input) return;
+  const v = Math.max(0, parseInt(input.value) || 0);
+  input.value = v;
+  localStorage.setItem('dailyNewTarget', v);
+  if (typeof updateModeCounts === 'function') updateModeCounts();
+}
+
+/**
+ * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
+ * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
+ */
+function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
+  const el = document.getElementById('objectifSummary');
+  if (!el) return;
+  const SEC_PER_REVIEW = 22, SEC_PER_NEW = 35;
+  const estMin = Math.round((nbRevisions * SEC_PER_REVIEW + dailyNewTarget * SEC_PER_NEW) / 60);
+  el.innerHTML = `📅 <b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`
+    + ` + <b>${dailyNewTarget}</b> nouvelle${dailyNewTarget > 1 ? 's' : ''} = <b>${total}</b> question${total > 1 ? 's' : ''}`
+    + ` &nbsp;(~${estMin} min estimées)`;
+}
+
+/**
+ * _startObjectifDuJour() – Lance directement une session "Objectif du jour" (toutes les
+ * révisions dues + l'objectif de nouvelles questions), sans passer par la config manuelle.
+ */
+async function _startObjectifDuJour() {
+  const btn = document.getElementById('objectifStartBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
+  try {
+    selectedCategory = 'TOUTES';
+    const catSelect = document.getElementById('categorie');
+    if (catSelect) catSelect.value = 'TOUTES';
+    if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+    if (typeof updateModeCounts === 'function') await updateModeCounts();
+
+    const dailyNewTarget = parseInt(localStorage.getItem('dailyNewTarget')) || 15;
+    const nb = nbRevisionsToday + dailyNewTarget;
+
+    const modeSelect = document.getElementById('mode');
+    if (modeSelect) modeSelect.value = 'objectif';
+    const nbInput = document.getElementById('nbQuestions');
+    if (nbInput) nbInput.value = nb;
+
+    if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Lancer ma session du jour'; }
   }
 }
 
