@@ -8796,23 +8796,20 @@ function initRouteMap(){
   var icaoLayer=L.tileLayer('https://{s}.api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey='+openaipKey,{attribution:'OpenAIP',maxZoom:14,subdomains:["a","b","c"]});
   var googleLayer=L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'Google Maps',maxZoom:20,subdomains:["mt0","mt1","mt2","mt3"]});
 
-  osmLayer.addTo(routeMap); /* OSM is safer default */
-  L.control.layers({'OSM':osmLayer,'Google Maps':googleLayer,'Topo (VFR)':topoLayer,'ICAO (OpenAIP)':icaoLayer},{},{position:'topright',collapsed:true}).addTo(routeMap);
-
   /* Les tuiles OpenAIP ne contiennent QUE les espaces aériens (fond transparent) :
-     contrairement à openaip.net qui les superpose à un fond Mapbox, il faut donc
-     garder un fond de carte (OSM) sous la couche ICAO, sinon la carte paraît vide. */
-  routeMap.on('baselayerchange', function(ev){
-    if(ev.layer === icaoLayer){
-      if(!routeMap.hasLayer(osmLayer)){
-        routeMap.removeLayer(icaoLayer);
-        osmLayer.addTo(routeMap);
-        icaoLayer.addTo(routeMap);
-      }
-    } else if(routeMap.hasLayer(osmLayer) && ev.layer !== osmLayer){
-      routeMap.removeLayer(osmLayer);
-    }
-  });
+     ce n'est donc pas un fond de carte alternatif mais une SUPERPOSITION à afficher
+     par-dessus n'importe quel fond. L'ancienne version la traitait comme un "fond de
+     carte" radio au même titre qu'OSM/Google/Topo (mutuellement exclusif avec eux),
+     avec un correctif fragile pour la garder collée à OSM — d'où les fois où elle
+     "disparaissait" en fonction de l'ordre des événements Leaflet. Elle est maintenant
+     une vraie case à cocher indépendante, active par défaut. */
+  osmLayer.addTo(routeMap); /* OSM est le fond par défaut */
+  icaoLayer.addTo(routeMap); /* espaces aériens affichés d'office par-dessus */
+  L.control.layers(
+    {'OSM':osmLayer,'Google Maps':googleLayer,'Topo (VFR)':topoLayer},
+    {'Espaces aériens (OpenAIP)':icaoLayer},
+    {position:'topright',collapsed:true}
+  ).addTo(routeMap);
 
   /* Force Leaflet to recalculate container size (fixes mobile rendering in partial viewport) */
   setTimeout(function(){ routeMap.invalidateSize(); }, 150);

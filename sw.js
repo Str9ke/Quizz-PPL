@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v60y';
+const CACHE_NAME = 'quiz-ppl-v60z';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -144,10 +144,15 @@ self.addEventListener('fetch', event => {
 
   // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
   const isJsonFile = url.pathname.endsWith('.json') && !url.pathname.endsWith('manifest.json');
+  // config.js contient les clés Firebase/OpenAIP injectées à chaque déploiement :
+  // s'il reste coincé en cache-first, une clé mise à jour côté secrets GitHub peut
+  // rester invisible indéfiniment (carte OpenAIP qui ne s'affiche plus, etc.) — donc
+  // même traitement network-first que les JSON de questions.
+  const isConfigJs = url.pathname.endsWith('config.js');
 
-  // === Stratégie pour fichiers JSON : Network-First (quand en ligne) ===
-  // Garantit que les questions sont toujours à jour entre navigateurs
-  if (isJsonFile && navigator.onLine) {
+  // === Stratégie pour fichiers JSON / config.js : Network-First (quand en ligne) ===
+  // Garantit que les questions et la config sont toujours à jour entre navigateurs
+  if ((isJsonFile || isConfigJs) && navigator.onLine) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.ok) {
@@ -160,7 +165,10 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         // Réseau échoué → fallback sur le cache
         return caches.match(event.request, { ignoreSearch: true }).then(cached => {
-          return cached || new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+          if (cached) return cached;
+          return isConfigJs
+            ? new Response('', { status: 200, headers: { 'Content-Type': 'application/javascript' } })
+            : new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
         });
       })
     );
