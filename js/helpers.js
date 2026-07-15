@@ -386,6 +386,18 @@ function _saveDailyNewTarget() {
 }
 
 /**
+ * _saveQuizBatchSize() – Sauvegarde le nombre de questions affichées à la fois pendant
+ * le quiz (page par page, avec bouton "Suivant"). Réglable depuis l'écran d'accueil.
+ */
+function _saveQuizBatchSize() {
+  const input = document.getElementById('quizBatchSize');
+  if (!input) return;
+  const v = Math.max(1, parseInt(input.value) || 5);
+  input.value = v;
+  localStorage.setItem('quizBatchSize', v);
+}
+
+/**
  * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
  * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
  * Reflète la catégorie actuellement sélectionnée dans le menu "Catégorie".
