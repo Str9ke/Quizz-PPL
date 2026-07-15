@@ -53,5 +53,5 @@ jobs:
           git add skeyes_* || true
           git add skeyes_images.json || true
           git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET" || echo "No changes to commit"
-          git pull --rebase || true
+          git pull --rebase
           git push

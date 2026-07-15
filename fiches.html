@@ -28,12 +28,15 @@
 .fiche-card ul{margin:4px 0 10px 16px;padding:0}
 .fiche-card li{margin-bottom:4px;color:var(--text-primary)}
 .fiche-card li strong,.fiche-card li b{color:#ffd54f}
+body.light .fiche-card li strong,body.light .fiche-card li b{color:#8a5a00}
 .fiche-card table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.92em}
 .fiche-card th{text-align:left;padding:5px 8px;background:rgba(102,126,234,.12);color:#667eea;font-weight:700;border-bottom:2px solid rgba(102,126,234,.3);font-size:.88em}
 .fiche-card td{padding:4px 8px;border-bottom:1px solid var(--border-color)}
 .fiche-card td:first-child{font-weight:600;color:var(--text-heading);white-space:nowrap}
 .fiche-card code{background:rgba(102,126,234,.12);padding:1px 5px;border-radius:4px;font-size:.9em;color:#bb86fc}
+body.light .fiche-card code{color:#5c3d99}
 .fiche-card .formula{display:block;background:rgba(102,126,234,.08);border-left:3px solid #667eea;padding:6px 12px;margin:6px 0;border-radius:0 8px 8px 0;font-family:monospace;font-size:.92em;color:#e0e0e8}
+body.light .fiche-card .formula{color:#2a2a35}
 .fiche-card .warn{color:#ff9800;font-weight:600}
 .fiche-card .danger{color:#f44336;font-weight:600}
 .fiche-card .ok{color:#4caf50;font-weight:600}
@@ -52,7 +55,7 @@
 .fiche-search button{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.85em}
 /* Print */
 @media print{
-  .top-nav-bar,.fcat-grid,.fsub-row,.fiche-search,#themeToggleBtn,footer{display:none!important}
+  .top-nav-bar,.fcat-grid,.fsub-row,.fiche-search,#themeToggle,footer{display:none!important}
   .fiche-section-body{display:block!important}
   .fiche-card{break-inside:avoid;border:1px solid #ccc}
   body{background:#fff;color:#000}
@@ -86,6 +89,16 @@
   </style>
 </head>
 <body>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
   <!-- Top navigation -->
   <div class="top-nav-bar">
     <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>

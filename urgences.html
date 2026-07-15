@@ -65,22 +65,31 @@ body.light .urg-hero-title{background:linear-gradient(135deg,#c0392b,#e74c3c,#d3
 
 /* Print */
 @media print{
-  .top-nav-bar,.urg-cats,.urg-hero,#themeToggleBtn{display:none!important}
+  .top-nav-bar,.urg-cats,.urg-hero,#themeToggle{display:none!important}
   .urg-card-body{display:block!important}
   body{background:#fff;color:#000}
 }
   </style>
 </head>
 <body>
-  <button class="theme-toggle" onclick="document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark')" title="Changer le thème">🌙</button>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
 
   <div class="top-nav-bar">
     <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
     <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
-    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
     <a href="stats.html" class="top-nav-link">📊 Stats</a>
     <a href="rates.html" class="top-nav-link">📖 Révision</a>
     <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
     <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
     <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
     <a href="radial.html" class="top-nav-link">📡 Radial</a>
@@ -337,11 +346,6 @@ function buildContent() {
     $content.appendChild(card);
   });
 }
-
-/* Theme */
-(function(){
-  if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
-})();
 
 buildCats();
 buildContent();
