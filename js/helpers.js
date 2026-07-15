@@ -403,6 +403,26 @@ function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
     + `📅 <b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`
     + ` + <b>${dailyNewTarget}</b> nouvelle${dailyNewTarget > 1 ? 's' : ''} = <b>${total}</b> question${total > 1 ? 's' : ''}`
     + ` &nbsp;(~${estMin} min estimées)`;
+
+  // Garder le menu "Catégorie" de la carte Objectif synchronisé avec le menu principal
+  // (utile si la catégorie a été changée depuis la carte "Configuration du Quiz")
+  const objSelect = document.getElementById('objectifCategorie');
+  if (objSelect && catSelect && objSelect.value !== catSelect.value) {
+    objSelect.value = catSelect.value;
+  }
+}
+
+/**
+ * syncCategorieFromObjectif() – Le menu "Catégorie" de la carte "Objectif du jour" vient de
+ * changer : répercute la sélection sur le menu principal (carte Configuration) et recharge
+ * les questions/compteurs pour cette catégorie.
+ */
+function syncCategorieFromObjectif() {
+  const objSelect = document.getElementById('objectifCategorie');
+  const catSelect = document.getElementById('categorie');
+  if (!objSelect || !catSelect) return;
+  catSelect.value = objSelect.value;
+  if (typeof categoryChanged === 'function') categoryChanged();
 }
 
 /**
