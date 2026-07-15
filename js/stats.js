@@ -1712,7 +1712,7 @@ async function synchroniserStatistiques() {
       // Synchroniser les réponses dans localStorage
       if (data.responses) {
         Object.keys(data.responses).forEach(key => {
-          localStorage.setItem(key, data.responses[key]);
+          localStorage.setItem(key, JSON.stringify(data.responses[key]));
         });
       }
     }
