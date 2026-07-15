@@ -7978,15 +7978,33 @@ async function loadRouteAirspaces(){
   if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
 
   /* Petites erreurs serveur transitoires (surcharge côté OpenAIP) : on retente
-     2 fois avec un délai croissant avant d'abandonner et d'afficher l'erreur. */
+     2 fois avec un délai croissant avant d'abandonner et d'afficher l'erreur.
+     fetch() n'a AUCUN délai limite par défaut dans les navigateurs — si
+     OpenAIP (ou un proxy entre nous) ne répond juste pas du tout (au lieu de
+     renvoyer une erreur HTTP), la requête reste bloquée indéfiniment et rien
+     ne s'affiche jamais ("Chargement…" qui ne se termine jamais). On force
+     donc un timeout de 12s par tentative via AbortController. */
   function _sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  function _fetchWithTimeout(url,opts,timeoutMs){
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ ctrl.abort(); },timeoutMs);
+    var mergedOpts=Object.assign({},opts,{signal:ctrl.signal});
+    return fetch(url,mergedOpts).finally(function(){ clearTimeout(timer); });
+  }
   async function _fetchWithRetry(url,opts){
     var delays=[0,800,1800];
     for(var i=0;i<delays.length;i++){
       if(delays[i]) await _sleep(delays[i]);
-      var resp=await fetch(url,opts);
+      var resp;
+      try{
+        resp=await _fetchWithTimeout(url,opts,12000);
+      }catch(fetchErr){
+        if(i===delays.length-1) throw fetchErr; /* dernier essai : on laisse remonter au catch principal */
+        console.warn('[Altitudes] Échec réseau ('+fetchErr.message+') — nouvel essai '+(i+2)+'/'+delays.length+'…');
+        continue;
+      }
       if(resp.ok || ![502,503,504].includes(resp.status) || i===delays.length-1) return resp;
-      console.warn('[Altitudes] OpenAIP HTTP '+resp.status+' — nouvel essai '+(i+1)+'/'+(delays.length-1)+'…');
+      console.warn('[Altitudes] OpenAIP HTTP '+resp.status+' — nouvel essai '+(i+2)+'/'+delays.length+'…');
     }
   }
 
@@ -8033,7 +8051,10 @@ async function loadRouteAirspaces(){
     renderAltitudesCrossingsList();
   }catch(e){
     console.error('[Altitudes] Erreur chargement OpenAIP', e);
-    if(status) status.textContent='❌ Erreur réseau/format lors du chargement OpenAIP : '+e.message+' (détail en console F12 — envoie-le-moi si ça persiste).';
+    var isTimeout=(e&&(e.name==='AbortError'||/abort/i.test(e.message||'')));
+    if(status) status.textContent=isTimeout
+      ? '❌ OpenAIP ne répond pas (délai dépassé après plusieurs tentatives) — réessaie dans une minute, ou vérifie ta connexion.'
+      : '❌ Erreur réseau/format lors du chargement OpenAIP : '+e.message+' (détail en console F12 — envoie-le-moi si ça persiste).';
   }
 }
 window.loadRouteAirspaces=loadRouteAirspaces;
