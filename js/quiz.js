@@ -784,10 +784,16 @@ async function validerReponses() {
         const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
         let newInterval;
         if (status === 'réussie') {
-          // Bonne réponse : augmenter l'intervalle (1→3→7→15→30→60 jours)
+          // Bonne réponse : augmenter l'intervalle (1→3→...→60 jours max)
+          // Le multiplicateur de croissance est réduit pour les questions historiquement
+          // difficiles (failCount élevé) : elles reviennent plus vite même après un succès,
+          // au lieu de progresser à la même vitesse qu'une question jamais ratée.
           if (prevInterval <= 0) newInterval = 1;
           else if (prevInterval === 1) newInterval = 3;
-          else newInterval = Math.min(Math.round(prevInterval * 2.5), 60);
+          else {
+            const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
+            newInterval = Math.min(Math.round(prevInterval * growthFactor), 60);
+          }
         } else {
           // Mauvaise réponse : retour à 1 jour
           newInterval = 1;

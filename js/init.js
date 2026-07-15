@@ -200,9 +200,13 @@ async function initIndex() {
   
   await updateModeCounts();
 
-  // Sélectionner le mode "ratées+non vues" par défaut
+  // Mode par défaut : "Mixte" (nouvelles + révisions dues), pour que la répétition espacée
+  // soit réellement utilisée sans que l'utilisateur ait à y penser à chaque session.
   const modeSelect = document.getElementById('mode');
-  if (modeSelect) modeSelect.value = 'ratees_nonvues';
+  if (modeSelect) modeSelect.value = 'mixte';
+
+  // Badge "Révisions du jour" sur la carte de configuration du quiz
+  _updateRevisionsBadge();
 
   document.getElementById('btnStart').disabled = false;
   

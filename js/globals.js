@@ -98,6 +98,7 @@ let selectedCategory = "PROCÉDURE RADIO";
 let modeQuiz = "toutes";
 let nbQuestions = 10;
 let _currentSessionCount = 0; // compteur de sessions quiz (sync Firestore)
+let nbRevisionsToday = 0; // nombre de questions dues pour révision espacée (recalculé par updateModeCounts)
 
 let countRadio = 0;
 let countOp = 0;

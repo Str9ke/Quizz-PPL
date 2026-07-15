@@ -302,9 +302,13 @@ async function updateModeCounts() {
       }
     });
 
+    // Exposer le compteur de révisions dues globalement (mode par défaut, badge accueil)
+    nbRevisionsToday = nbRevisions;
+
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
       modeSelect.innerHTML = `
+        <option value="mixte">🔀 Mixte : nouvelles + révisions dues (${Math.min(total, nbNonvues + nbRevisions)})</option>
         <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
         <option value="toutes">Toutes (${total})</option>
         ${isEpreuve ? `<option value="uniques">🔹 Uniques épreuve (${nbUniques})</option>` : ''}
@@ -693,7 +697,7 @@ async function categoryChanged() {
   const selected = document.getElementById("categorie").value;
   // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
   const modeSelect = document.getElementById('mode');
-  const previousMode = modeSelect ? modeSelect.value : 'ratees_nonvues';
+  const previousMode = modeSelect ? modeSelect.value : 'mixte';
 
   if (selected === "TOUTES") {
     await loadAllQuestions();
@@ -704,8 +708,26 @@ async function categoryChanged() {
 
   // Restaurer le mode précédent (updateModeCounts recrée les options)
   if (modeSelect) modeSelect.value = previousMode;
+  if (typeof _updateRevisionsBadge === 'function') _updateRevisionsBadge();
 }
 
+/**
+ * _dueQuestionsSorted() – Questions éligibles à la répétition espacée ET dues maintenant,
+ * triées des plus en retard (nextReview le plus ancien) aux moins urgentes.
+ */
+function _dueQuestionsSorted(pool, responses) {
+  const now = Date.now();
+  const due = pool.filter(q => {
+    const r = responses[getKeyFor(q)];
+    return r && _isEligibleForSR(r) && _isDueForReview(r, now);
+  });
+  due.sort((a, b) => {
+    const nrA = responses[getKeyFor(a)].nextReview || 0;
+    const nrB = responses[getKeyFor(b)].nextReview || 0;
+    return nrA - nrB; // plus petit nextReview = plus en retard
+  });
+  return due;
+}
 
 async function filtrerQuestions(mode, nb) {
   if (!questions.length) {
@@ -747,22 +769,25 @@ async function filtrerQuestions(mode, nb) {
       .slice(0, nb);
   }
   else if (mode === "revisions") {
-    const now = Date.now();
-    // Sélectionner les questions éligibles SR et dues pour révision
-    const dueQuestions = shuffled.filter(q => {
-      const r = responses[getKeyFor(q)];
-      if (!r) return false;
-      return _isEligibleForSR(r) && _isDueForReview(r, now);
-    });
-    // Trier par les plus en retard d'abord (les plus urgentes)
-    dueQuestions.sort((a, b) => {
-      const ra = responses[getKeyFor(a)];
-      const rb = responses[getKeyFor(b)];
-      const nrA = ra.nextReview || 0;
-      const nrB = rb.nextReview || 0;
-      return nrA - nrB; // plus petit nextReview = plus en retard
-    });
-    currentQuestions = dueQuestions.slice(0, nb);
+    currentQuestions = _dueQuestionsSorted(shuffled, responses).slice(0, nb);
+  }
+  else if (mode === "mixte") {
+    // Mélange nouvelles questions + révisions dues, façon Anki : les révisions dues sont
+    // prioritaires (planification SR), mais on réserve toujours une part aux nouvelles questions
+    // pour ne pas bloquer la progression si le retard de révisions est important.
+    const dueSorted = _dueQuestionsSorted(shuffled, responses);
+    const newPool = shuffled.filter(q => !responses[getKeyFor(q)]);
+    const minNewSlots = Math.min(newPool.length, Math.max(1, Math.round(nb * 0.3)));
+    const dueSlots = Math.max(0, Math.min(dueSorted.length, nb - minNewSlots));
+    let mix = [...dueSorted.slice(0, dueSlots), ...newPool.slice(0, nb - dueSlots)];
+    // Si pas assez de nouvelles pour compléter, puiser dans le reste des révisions dues
+    if (mix.length < nb) {
+      const usedKeys = new Set(mix.map(q => getKeyFor(q)));
+      const extra = dueSorted.filter(q => !usedKeys.has(getKeyFor(q))).slice(0, nb - mix.length);
+      mix = [...mix, ...extra];
+    }
+    // Mélanger l'ordre final pour ne pas grouper toutes les révisions en premier
+    currentQuestions = mix.sort(() => 0.5 - Math.random());
   }
   else if (mode === "difficiles") {
     currentQuestions = shuffled
@@ -817,28 +842,35 @@ async function filtrerQuestions(mode, nb) {
 
   // INJECTION : questions de la file de ré-interrogation (countdown === 0)
   // Ces questions ratées 2 quiz avant sont injectées dans le quiz actuel
-  // SAUF celles déjà réussies entre-temps
+  // SAUF celles déjà réussies entre-temps.
+  // Ce mécanisme est un renforcement à COURT TERME (à l'échelle de quelques quiz), complémentaire
+  // du planning par répétition espacée nextReview/srInterval qui opère à LONG TERME (jours/semaines) —
+  // comparable aux "learning steps" d'Anki avant qu'une carte n'entre dans le planning espacé.
+  // On ne l'injecte pas en mode "revisions" pour garder une session de révision pure, focalisée
+  // uniquement sur les questions réellement dues ce jour-là.
   try {
-    const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
-    const ready = queue.filter(item => item.countdown <= 0);
-    const remaining = queue.filter(item => item.countdown > 0);
-    if (ready.length > 0) {
-      // Filtrer : ne pas injecter si la question est maintenant réussie
-      const stillFailed = ready.filter(item => {
-        const r = responses[item.key];
-        return !r || r.status !== 'réussie';
-      });
-      const toInject = stillFailed.slice(0, 5);
-      const currentKeys = new Set(currentQuestions.map(q => getKeyFor(q)));
-      toInject.forEach(item => {
-        if (!currentKeys.has(item.key) && item.question) {
-          currentQuestions.push(item.question);
-          currentKeys.add(item.key);
-        }
-      });
-      // Retirer les questions réussies et injectées de la queue
-      const leftover = stillFailed.slice(5);
-      localStorage.setItem('reaskQueue', JSON.stringify([...remaining, ...leftover]));
+    if (mode !== 'revisions') {
+      const queue = JSON.parse(localStorage.getItem('reaskQueue') || '[]');
+      const ready = queue.filter(item => item.countdown <= 0);
+      const remaining = queue.filter(item => item.countdown > 0);
+      if (ready.length > 0) {
+        // Filtrer : ne pas injecter si la question est maintenant réussie
+        const stillFailed = ready.filter(item => {
+          const r = responses[item.key];
+          return !r || r.status !== 'réussie';
+        });
+        const toInject = stillFailed.slice(0, 5);
+        const currentKeys = new Set(currentQuestions.map(q => getKeyFor(q)));
+        toInject.forEach(item => {
+          if (!currentKeys.has(item.key) && item.question) {
+            currentQuestions.push(item.question);
+            currentKeys.add(item.key);
+          }
+        });
+        // Retirer les questions réussies et injectées de la queue
+        const leftover = stillFailed.slice(5);
+        localStorage.setItem('reaskQueue', JSON.stringify([...remaining, ...leftover]));
+      }
     }
   } catch (e) { /* ignore */ }
 }
