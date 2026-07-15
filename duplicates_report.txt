@@ -1,119 +1,14 @@
-AUTRES: 1480 questions (8 fichiers)
+AUTRES: 1441 questions (8 fichiers)
 EASA: 814 questions (8 fichiers)
-GLIGLI: 3003 questions (22 fichiers)
+GLIGLI: 2991 questions (22 fichiers)
 
 ======================================================================
 1. DOUBLONS INTERNES (même groupe)
 ======================================================================
 
 --- AUTRES ---
-  VRAIS doublons internes (question + réponse + choix + image identiques): 34 copies en trop
+  VRAIS doublons internes (question + réponse + choix + image identiques): 0 copies en trop
   FAUX doublons (même question, réponses différentes): 28 cas
-
-  VRAIS doublons internes AUTRES (23 groupes, 34 copies en trop):
-    4x [Série 7 – Lubrification : Une caractéristique importante de l’hélice à calage fixe est :]
-       Réponse: son régime de rotation constant
-       -> [questions_motorisation.json Q67]
-       -> [questions_motorisation.json Q82]
-       -> [questions_motorisation.json Q97]
-       -> [questions_motorisation.json Q112]
-    3x [Série 7 – Lubrification : Un moteur possède une puissance maximum de 260 CV. Si l’on souha]
-       Réponse: 145 CV
-       -> [questions_motorisation.json Q68]
-       -> [questions_motorisation.json Q83]
-       -> [questions_motorisation.json Q98]
-    3x [Série 7 – Lubrification : À 82% de sa puissance, un moteur développe 295 CV. Quelle est sa]
-       Réponse: 360 CV
-       -> [questions_motorisation.json Q69]
-       -> [questions_motorisation.json Q84]
-       -> [questions_motorisation.json Q99]
-    3x [Série 7 – Lubrification : Peut-on dire pour un avion équipé d’une hélice à pas fixe que le]
-       Réponse: Non
-       -> [questions_motorisation.json Q72]
-       -> [questions_motorisation.json Q87]
-       -> [questions_motorisation.json Q102]
-    3x [Série 7 – Lubrification : Vous désirez gagner de l’altitude avec un avion équipé d’une hél]
-       Réponse: d’abord augmenter la MAP puis le RPM
-       -> [questions_motorisation.json Q73]
-       -> [questions_motorisation.json Q88]
-       -> [questions_motorisation.json Q103]
-    3x [Série 7 – Lubrification : Sur un avion équipé d’une hélice à calage fixe, on utilisera de ]
-       Réponse: favoriser les performances au décollage et en croisière
-       -> [questions_motorisation.json Q74]
-       -> [questions_motorisation.json Q89]
-       -> [questions_motorisation.json Q104]
-    3x [Série 7 – Lubrification : La manette de pas d’hélice permet d’afficher :]
-       Réponse: un nombre de tours
-       -> [questions_motorisation.json Q75]
-       -> [questions_motorisation.json Q90]
-       -> [questions_motorisation.json Q105]
-    3x [Série 7 – Lubrification : Une diminution de la puissance appliquée engendre :]
-       Réponse: un couple piqueur
-       -> [questions_motorisation.json Q77]
-       -> [questions_motorisation.json Q92]
-       -> [questions_motorisation.json Q107]
-    3x [Série 7 – Lubrification : Quel est le procédé généralement utilisé pour minimiser les effe]
-       Réponse: Une limitation de la puissance.
-       -> [questions_motorisation.json Q80]
-       -> [questions_motorisation.json Q95]
-       -> [questions_motorisation.json Q110]
-    3x [Série 7 – Lubrification : Une augmentation de la puissance appliquée entraîne :]
-       Réponse: un couple cabreur
-       -> [questions_motorisation.json Q81]
-       -> [questions_motorisation.json Q96]
-       -> [questions_motorisation.json Q111]
-    2x [Quand un pilote est-il autorisé à utiliser son indicatif abrégé ?]
-       Réponse: Après que le contrôleur l’a utilisé.
-       -> [questions_procedure_radio.json Q11]
-       -> [questions_procedure_radio.json Q55]
-    2x [La bande de fréquences entre 118.000 et 136.975 MHz est :]
-       Réponse: La bande VHF.
-       -> [questions_procedure_radio.json Q30]
-       -> [questions_procedure_radio.json Q53]
-    2x [L’autorisation « Clear for immediate take off runway 03 » est :]
-       Réponse: Un message de sécurité des vols.
-       -> [questions_procedure_radio.json Q33]
-       -> [questions_procedure_radio.json Q52]
-    2x [Un message concernant des pièces d’avion et du matériel urgent est :]
-       Réponse: Un message de régularité.
-       -> [questions_procedure_radio.json Q51]
-       -> [questions_procedure_radio.json Q158]
-    2x [Les messages du contrôle du trafic aérien appartiennent à la catégorie :]
-       Réponse: Messages de sécurité des vols.
-       -> [questions_procedure_radio.json Q57]
-       -> [questions_procedure_radio.json Q149]
-    2x [L’ordre correct de priorité des messages suivants est :]
-       Réponse: Détresse, urgence, homing.
-       -> [questions_procedure_radio.json Q174]
-       -> [questions_procedure_radio.json Q180]
-    2x [Que signifie l’abréviation AIS ?]
-       Réponse: Aeronautical Information Service.
-       -> [questions_procedure_radio.json Q201]
-       -> [questions_reglementation.json Q568]
-    2x [Peut-on descendre en dessous des minima opérationnels d’un aérodrome ?]
-       Réponse: Oui, en cas d’urgence.
-       -> [questions_procedure_operationnelles.json Q61]
-       -> [questions_reglementation.json Q307]
-    2x [Votre route traverse une CTR militaire, est-ce autorisé ?]
-       Réponse: Oui, avec contact radio et autorisation.
-       -> [questions_reglementation.json Q109]
-       -> [questions_reglementation.json Q123]
-    2x [Un organisme AFIS assure les services :]
-       Réponse: D’information de vol et d’alerte seulement.
-       -> [questions_reglementation.json Q130]
-       -> [questions_reglementation.json Q207]
-    2x [Quand deux avions approchent un aérodrome non contrôlé pour y atterrir :]
-       Réponse: L’avion qui se trouvera le plus haut donnera priorité à l’autre.
-       -> [questions_reglementation.json Q350]
-       -> [questions_reglementation.json Q350]
-    2x [Dans une zone de contrôle, les vols VFR ne faisant pas partie de la circulation d’aérodrom]
-       Réponse: 5 km de visibilité et à une distance des nuages égale ou supérieure à 1.000 ft v
-       -> [questions_reglementation.json Q520]
-       -> [questions_reglementation.json Q521]
-    2x [Série 7 – Lubrification : Après la mise en route du moteur en été, la pression d’huile doi]
-       Réponse: 30 secondes
-       -> [questions_motorisation.json Q61]
-       -> [questions_motorisation.json Q113]
 
   FAUX doublons internes AUTRES (même question, contenu différent):
     Question: De quelle manière l’avion OO-ABC devrait appeler la tour de Liège ?
@@ -166,62 +61,8 @@ GLIGLI: 3003 questions (22 fichiers)
        [section_easa_procedures_new.json Q34] → Rép: À un poids élevé de l’avion.
 
 --- GLIGLI ---
-  VRAIS doublons internes (question + réponse + choix + image identiques): 12 copies en trop
+  VRAIS doublons internes (question + réponse + choix + image identiques): 0 copies en trop
   FAUX doublons (même question, réponses différentes): 33 cas
-
-  VRAIS doublons internes GLIGLI (12 groupes, 12 copies en trop):
-    2x [Le code transpondeur à afficher pour indiquer une situation de détresse est :]
-       Réponse: 7700
-       -> [gligli_communications_hard.json Q15]
-       -> [gligli_reglementation_hard.json Q63]
-    2x [Le facteur de charge subi par un aéronef en virage s'exprime par le rapport :]
-       Réponse: portance en virage / portance en vol rectiligne.
-       -> [gligli_connaissances_generales_aeronef_easy.json Q109]
-       -> [gligli_principes_du_vol_easy.json Q114]
-    2x [Sur un aérodrome d'altitude 420 ft, où vous ne disposez pas des paramètres, vous voulez év]
-       Réponse: 1023 hPa.
-       -> [gligli_connaissances_generales_aeronef_easy.json Q280]
-       -> [gligli_navigation_hard.json Q191]
-    2x [Un transpondeur mode C a la particularité de transmettre au contrôleur radar :]
-       Réponse: l'altitude-pression de l'avion.
-       -> [gligli_navigation_hard.json Q154]
-       -> [gligli_reglementation_hard.json Q96]
-    2x [Pour indiquer une panne radio, vous affichez sur le transpondeur le code :]
-       Réponse: 7600.
-       -> [gligli_navigation_hard.json Q185]
-       -> [gligli_reglementation_hard.json Q169]
-    2x [(Pour cette question, utilisez l'annexe 061-3584).
-Le relèvement vrai de l'aérodrome de l']
-       Réponse: 287°/89 NM.
-       Image: IMAGES_GLIGLI_NAVIGATION_HARD/061-3584.jpg
-       -> [gligli_navigation_hard.json Q196]
-       -> [gligli_performances_preparation_vol_hard.json Q39]
-    2x [Si vous ajoutez une charge dans votre aéronef (passagers, bagages, essence), la vitesse de]
-       Réponse: augmente.
-       -> [gligli_performances_preparation_vol_easy.json Q109]
-       -> [gligli_principes_du_vol_easy.json Q89]
-    2x [Au retour d'un vol, pour signaler un équipement défectueux, la réglementation exige :]
-       Réponse: de l'inscrire sur le carnet de route.
-       -> [gligli_procedures_operationnelles_easy.json Q49]
-       -> [gligli_reglementation_hard.json Q37]
-    2x [(Pour cette question, utilisez l'annexe 010-1755).
-Ce signal disposé sur l'aire à signaux ]
-       Réponse: le circuit d'aérodrome s'effectue par la droite par rapport à l'axe de la piste 
-       Image: IMAGES_GLIGLI_REGLEMENTATION_EASY/010-1755.jpg
-       -> [gligli_reglementation_easy.json Q1]
-       -> [gligli_reglementation_easy.json Q151]
-    2x [Une zone P est un espace aérien :]
-       Réponse: dont l'accès est interdit.
-       -> [gligli_reglementation_easy.json Q10]
-       -> [gligli_reglementation_hard.json Q56]
-    2x [Le document qui sert à identifier un aéronef et son propriétaire est :]
-       Réponse: le certificat d'immatriculation.
-       -> [gligli_reglementation_easy.json Q70]
-       -> [gligli_reglementation_easy.json Q301]
-    2x [Vous devez remplir le carnet de route :]
-       Réponse: à chaque changement de commandant de bord ou à la fin de la journée s'il n'y a e
-       -> [gligli_reglementation_easy.json Q192]
-       -> [gligli_reglementation_easy.json Q296]
 
   FAUX doublons internes GLIGLI (même question, contenu différent):
     Question: Sur un aérodrome non contrôlé, en l'absence de fréquence spécifiée, les procédures radio s
@@ -279,28 +120,8 @@ Ce signal disposé sur l'aire à signaux ]
       EASA   rép: L’altitude au-dessus du niveau de pression de référence 1013.25 hPa.
 
 --- AUTRES → GLIGLI ---
-  VRAIS doublons: 6
+  VRAIS doublons: 0
   FAUX doublons (même question, contenu différent): 26
-
-  Liste des VRAIS doublons AUTRES → GLIGLI:
-    [questions_procedure_radio.json Q82] = [gligli_communications_easy.json Q74]
-      Q: Dans l’échelle de lisibilité radiotéléphonique : « 4 » signifie :
-      R: Lisible.
-    [questions_reglementation.json Q130] = [gligli_reglementation_hard.json Q136]
-      Q: Un organisme AFIS assure les services :
-      R: D’information de vol et d’alerte seulement.
-    [questions_reglementation.json Q178] = [gligli_navigation_hard.json Q185]
-      Q: Pour indiquer une panne radio, vous affichez sur le transpondeur le code :
-      R: 7600.
-    [questions_reglementation.json Q207] = [gligli_reglementation_hard.json Q136]
-      Q: Un organisme AFIS assure les services :
-      R: D’information de vol et d’alerte seulement.
-    [questions_reglementation.json Q297] = [gligli_reglementation_hard.json Q125]
-      Q: Au sens de la réglementation, une activité particulière désigne :
-      R: Une activité soumise au dépôt auprès des autorités d’un manuel spécifique à la pratique de cette act
-    [questions_reglementation.json Q504] = [gligli_reglementation_easy.json Q13]
-      Q: Un feu blanc discontinu adressé par la tour à un aéronef au sol signifie :
-      R: Retournez à votre point de départ sur l’aérodrome.
 
   FAUX doublons AUTRES → GLIGLI (même question, contenu différent):
     [questions_procedure_radio.json Q42]: Le bouton « squelch » de votre radio sert à :
@@ -389,9 +210,9 @@ Ce signal disposé sur l'aire à signaux ]
 ======================================================================
 3. RÉSUMÉ FINAL - VRAIS DOUBLONS À SUPPRIMER
 ======================================================================
-AUTRES doublons internes vrais: 34 copies en trop
+AUTRES doublons internes vrais: 0 copies en trop
 EASA doublons internes vrais: 0 copies en trop
-GLIGLI doublons internes vrais: 12 copies en trop
+GLIGLI doublons internes vrais: 0 copies en trop
 AUTRES → EASA vrais doublons: 0
-AUTRES → GLIGLI vrais doublons: 6
+AUTRES → GLIGLI vrais doublons: 0
 EASA → GLIGLI vrais doublons: 0
