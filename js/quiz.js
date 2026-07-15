@@ -221,6 +221,9 @@ async function demarrerQuiz() {
   localStorage.setItem('quizMode', modeQuiz);
   localStorage.setItem('quizNbQuestions', nbQuestions);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+  // Nouveau quiz : effacer les réponses/position en cours d'une session précédente
+  localStorage.removeItem('currentQuizAnswers');
+  localStorage.removeItem('currentQuizBatchPos');
 
   // Nettoyer les recently answered quand on démarre un nouveau quiz depuis l'accueil
   localStorage.removeItem('recentlyAnsweredKeys');
@@ -622,7 +625,16 @@ function afficherQuiz() {
   const batchSize = Math.max(1, parseInt(localStorage.getItem('quizBatchSize')) || 5);
   const totalBatches = Math.ceil(currentQuestions.length / batchSize);
   window._quizBatchSize = batchSize;
-  window._quizCurrentBatch = 0;
+
+  // Restaurer les réponses déjà cochées et le lot où l'utilisateur s'était arrêté, pour
+  // qu'un changement de page / rechargement pendant une session ne fasse pas tout perdre.
+  // Les réponses sont mémorisées par TEXTE du choix (pas par index) car l'ordre des choix
+  // est re-mélangé à chaque appel de afficherQuiz() — un index brut ne serait plus valide.
+  let savedAnswers = {};
+  try { savedAnswers = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}'); } catch (e) { savedAnswers = {}; }
+  let savedBatch = parseInt(localStorage.getItem('currentQuizBatchPos'));
+  if (isNaN(savedBatch) || savedBatch < 0 || savedBatch >= totalBatches) savedBatch = 0;
+  window._quizCurrentBatch = savedBatch;
 
   // Construire TOUT le HTML en une seule chaîne puis injecter une seule fois
   // (évite innerHTML += en boucle qui détruit/recrée le DOM à chaque itération,
@@ -631,7 +643,7 @@ function afficherQuiz() {
   currentQuestions.forEach((q, idx) => {
     if (idx % batchSize === 0) {
       const batchIdx = Math.floor(idx / batchSize);
-      quizHtml += `<div class="quiz-batch" data-batch="${batchIdx}" style="display:${batchIdx === 0 ? 'block' : 'none'}">`;
+      quizHtml += `<div class="quiz-batch" data-batch="${batchIdx}" style="display:${batchIdx === savedBatch ? 'block' : 'none'}">`;
     }
     // Mélanger les choix pour ne pas toujours avoir les réponses au même endroit
     // Créer un tableau d'indices [0, 1, 2, 3], le mélanger (Fisher-Yates)
@@ -646,6 +658,9 @@ function afficherQuiz() {
     q.choix = indices.map(i => originalChoix[i]);
     q.bonne_reponse = indices.indexOf(originalBonne);
 
+    const savedText = savedAnswers[idx];
+    const savedIdx = (savedText !== undefined) ? q.choix.indexOf(savedText) : -1;
+
     quizHtml += `
       <div class="question-block">
         <div class="question-title">${idx+1}. ${q.question}</div>
@@ -658,7 +673,7 @@ function afficherQuiz() {
         <div class="answer-list">
           ${q.choix.map((c, i) =>
             `<label style="display:block;margin-bottom:4px;">
-               <input type="radio" name="qidx${idx}" value="${i}"> <span>${c}</span>
+               <input type="radio" name="qidx${idx}" value="${i}"${i === savedIdx ? ' checked' : ''}> <span>${c}</span>
              </label>`
           ).join('')}
         </div>
@@ -679,6 +694,26 @@ function afficherQuiz() {
   afficherBoutonsMarquer();
   updateMarkedCount();
 
+  // Sauvegarder chaque réponse au fil de l'eau (survit à une navigation vers une autre
+  // page puis un retour, ou un rechargement) — écouteur délégué posé une seule fois.
+  if (!cont._answerSaveListenerAttached) {
+    cont._answerSaveListenerAttached = true;
+    cont.addEventListener('change', (e) => {
+      const radio = e.target;
+      if (!radio.matches || !radio.matches('input[type="radio"]')) return;
+      const m = radio.name.match(/^qidx(\d+)$/);
+      if (!m) return;
+      const qIdx = parseInt(m[1]);
+      const q2 = currentQuestions[qIdx];
+      if (!q2) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}');
+        saved[qIdx] = q2.choix[parseInt(radio.value)];
+        localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
+      } catch (e2) { /* localStorage plein, tant pis */ }
+    });
+  }
+
   // Mode correction immédiate : attacher les listeners
   const isImmediate = localStorage.getItem('correctionImmediate') === '1';
   if (isImmediate) {
@@ -695,6 +730,10 @@ function afficherQuiz() {
       radios.forEach(radio => {
         radio.addEventListener('change', () => handleImmediateAnswer(q, radio, idx));
       });
+      // Ré-appliquer score/désactivation/coloration/explication pour les questions déjà
+      // répondues avant une navigation ailleurs puis un retour sur le quiz.
+      const checkedRadio = document.querySelector(`input[name="qidx${idx}"]:checked`);
+      if (checkedRadio) handleImmediateAnswer(q, checkedRadio, idx, true);
     });
   }
 
@@ -740,6 +779,7 @@ function _goToQuizBatch(newBatch) {
   const nextEl = document.querySelector(`.quiz-batch[data-batch="${newBatch}"]`);
   if (nextEl) nextEl.style.display = 'block';
   window._quizCurrentBatch = newBatch;
+  try { localStorage.setItem('currentQuizBatchPos', newBatch); } catch (e) { /* ignore */ }
   _updateQuizBatchLabel(totalBatches);
   _updateQuizValidateVisibility(newBatch === totalBatches - 1);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -770,8 +810,12 @@ function _updateQuizValidateVisibility(show) {
 
 /**
  * handleImmediateAnswer() – Gère la correction immédiate d'une question
+ * @param {boolean} isRestore - true quand on ré-affiche une réponse déjà donnée avant une
+ *   navigation/rechargement (pas une vraie nouvelle réponse) : dans ce cas on ne relit pas
+ *   la bonne réponse à voix haute, on ne la remet pas dans la file de ré-interrogation, et
+ *   on ne déclenche pas la validation automatique de fin de quiz.
  */
-function handleImmediateAnswer(q, selectedRadio, idx) {
+function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   const selectedVal = parseInt(selectedRadio.value);
   const isCorrect = selectedVal === q.bonne_reponse;
 
@@ -808,8 +852,8 @@ function handleImmediateAnswer(q, selectedRadio, idx) {
     }
   });
 
-  // TTS : lire la bonne réponse à voix haute si mauvaise réponse
-  if (!isCorrect) {
+  // TTS : lire la bonne réponse à voix haute si mauvaise réponse (pas lors d'une restauration)
+  if (!isCorrect && !isRestore) {
     const correctText = _resolveTtsText(q);
     _speakCorrectAnswer(correctText);
     // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
@@ -872,8 +916,9 @@ function handleImmediateAnswer(q, selectedRadio, idx) {
     }
   }
 
-  // Si toutes les questions sont répondues, afficher un résumé
-  if (window._immediateScore.answered === window._immediateScore.total) {
+  // Si toutes les questions sont répondues, afficher un résumé (pas lors d'une restauration :
+  // si le quiz était déjà complet avant de partir, il a déjà été validé et sauvegardé)
+  if (!isRestore && window._immediateScore.answered === window._immediateScore.total) {
     const pct = Math.round(100 * window._immediateScore.correct / window._immediateScore.total);
     const rc = document.getElementById('resultContainer');
     if (rc) {
@@ -895,6 +940,9 @@ async function validerReponses() {
       return;
     }
     window._quizValidated = true;
+    // Quiz soumis : effacer les réponses/position en cours de session mémorisées
+    localStorage.removeItem('currentQuizAnswers');
+    localStorage.removeItem('currentQuizBatchPos');
 
     let correctCount = 0;
     const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
