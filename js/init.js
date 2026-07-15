@@ -115,7 +115,7 @@ async function initIndex() {
   const catSelect = document.getElementById("categorie");
   catSelect.value = "TOUTES";
   selectedCategory = "TOUTES";
-  
+
   // Charger toutes les questions (dédupliquées sur l'ensemble des catégories)
   await loadAllQuestions();
   // Mettre à jour totalGlobal avec le vrai total dédupliqué (évite l'écart entre
@@ -124,7 +124,19 @@ async function initIndex() {
   updateCategorySelect();
   catSelect.value = "TOUTES";
 
-  
+  // Restaurer la dernière catégorie utilisée (mémorisée au dernier lancement de quiz),
+  // pour ne pas repartir sur "TOUTES" à chaque visite de l'accueil.
+  const savedCategory = localStorage.getItem('quizCategory');
+  const isValidSavedCategory = savedCategory && Array.from(catSelect.options).some(o => o.value === savedCategory);
+  if (isValidSavedCategory && savedCategory !== 'TOUTES') {
+    await chargerQuestions(savedCategory);
+    selectedCategory = savedCategory;
+  }
+  catSelect.value = selectedCategory;
+  const objectifCatSelect = document.getElementById('objectifCategorie');
+  if (objectifCatSelect) objectifCatSelect.value = selectedCategory;
+
+
   // Load stored responses so marked flags are available
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
