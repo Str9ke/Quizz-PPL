@@ -784,19 +784,25 @@ async function validerReponses() {
         const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
         let newInterval;
         if (status === 'réussie') {
-          // Bonne réponse : augmenter l'intervalle (1→3→...→60 jours max)
-          // Le multiplicateur de croissance est réduit pour les questions historiquement
-          // difficiles (failCount élevé) : elles reviennent plus vite même après un succès,
-          // au lieu de progresser à la même vitesse qu'une question jamais ratée.
+          // Bonne réponse : augmenter l'intervalle. Le plafond dépend de la fiabilité de la
+          // question : une question jamais ratée peut monter jusqu'à 365j (on arrête de vous
+          // la ressasher une fois qu'elle est clairement acquise), une question ratée 1-2 fois
+          // plafonne à 120j, au-delà elle reste plus surveillée (60j). Le multiplicateur de
+          // croissance est aussi réduit pour les questions historiquement difficiles.
           if (prevInterval <= 0) newInterval = 1;
           else if (prevInterval === 1) newInterval = 3;
           else {
             const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
-            newInterval = Math.min(Math.round(prevInterval * growthFactor), 60);
+            const cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
+            newInterval = Math.min(Math.round(prevInterval * growthFactor), cap);
           }
         } else {
-          // Mauvaise réponse : retour à 1 jour
-          newInterval = 1;
+          // Mauvaise réponse : "lapse doux" pour les questions qui avaient déjà un peu de vécu
+          // (intervalle >= 3j) — on retombe à 30% de l'intervalle précédent plutôt qu'un reset
+          // brutal à 1 jour, pour éviter qu'une question presque maîtrisée qui trébuche une fois
+          // ne revienne aussi souvent qu'une question jamais vue. Une question tout juste
+          // découverte (intervalle 0 ou 1) repart bien à 1 jour.
+          newInterval = (prevInterval >= 3) ? Math.max(1, Math.round(prevInterval * 0.3)) : 1;
         }
         const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
 
