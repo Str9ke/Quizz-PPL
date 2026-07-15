@@ -243,6 +243,10 @@
           <label for="mode" class="home-label">Mode</label>
           <select id="mode" class="home-select"></select>
         </div>
+        <div class="home-form-group">
+          <label for="quizBatchSize" class="home-label">Affichage par page</label>
+          <input type="number" id="quizBatchSize" class="home-input" value="5" min="1" max="50" onchange="_saveQuizBatchSize()">
+        </div>
       </div>
       <div class="home-options">
         <label class="home-checkbox-label">
@@ -258,6 +262,15 @@
         🎯 Démarrer le Quiz
       </button>
     </div>
+    <script>
+      (function() {
+        var saved = localStorage.getItem('quizBatchSize');
+        if (saved !== null) {
+          var el = document.getElementById('quizBatchSize');
+          if (el) el.value = saved;
+        }
+      })();
+    </script>
 
     <!-- Quick navigation cards -->
     <div class="home-nav-grid">
@@ -307,7 +320,7 @@
   <script src="js/helpers.js?v=20260224i"></script>
   <script src="js/categories.js?v=20260224i"></script>
   <script src="js/stats.js?v=20260224h"></script>
-  <script src="js/quiz.js?v=20260224h"></script>
+  <script src="js/quiz.js?v=20260224i"></script>
   <script src="js/init.js?v=20260224h"></script>
   <script src="js/offline.js?v=20260224h"></script>
 
