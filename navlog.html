@@ -7065,10 +7065,13 @@ function loadDossier(id, _freshCloudFiles){
 
   _checkDossierFreshness(d);
 
-  /* Nouveau dossier chargé → les espaces aériens précédemment calculés ne
-     correspondent plus à cette route, on force un nouveau chargement à la
+  /* Nouveau dossier chargé → les espaces aériens précédemment calculés (et
+     les données brutes OpenAIP en cache) ne correspondent plus à cette
+     route ni à cette zone géographique, on force un nouveau chargement à la
      prochaine ouverture de l'onglet Altitudes */
   _routeAirspaces=[];
+  _lastOpenaipItems=null;
+  _altitudesRouteSig=null;
   _altitudesAutoLoadDone=false;
 
   document.getElementById('cfgTAS').value=d.config.tas;
@@ -7887,6 +7890,70 @@ function _airspaceBandColor(label){
   return m[label]||'#7f8c8d';
 }
 
+/* Cache des zones brutes renvoyées par OpenAIP (indépendant de la route),
+   + signature de la route utilisée pour le dernier calcul de croisements.
+   Sans ça, modifier la route après le premier chargement (ex: en insérant
+   un waypoint via le glisser sur la carte) laissait la liste "Zones
+   traversées" figée sur l'ANCIEN tracé — un vrai risque en vol puisqu'elle
+   pouvait afficher une zone qu'on ne traverse plus, ou l'inverse. */
+var _lastOpenaipItems=null;
+var _altitudesRouteSig=null;
+
+function _currentRouteSig(){
+  return JSON.stringify(waypoints.map(function(w){
+    return [w.lat,w.lon,w.dist,w.altitude||null,w.isEtape?1:0];
+  }));
+}
+
+function _computeAirspaceCrossings(items){
+  var samples=_routeSamplePoints();
+  var results=[];
+  var skippedNoGeom=0, skippedGeomTypes={};
+  items.forEach(function(it){
+    var geom=it.geometry||it.geojson;
+    if(!geom||!geom.coordinates){ skippedNoGeom++; return; }
+    var polys=[];
+    if(geom.type==='Polygon') polys=[geom.coordinates[0]];
+    else if(geom.type==='MultiPolygon') polys=geom.coordinates.map(function(p){return p[0];});
+    if(!polys.length){ skippedGeomTypes[geom.type]=(skippedGeomTypes[geom.type]||0)+1; return; }
+
+    var name=it.name||it.designator||'Zone sans nom';
+    var classLabel=_openaipClassLabel(it);
+    var lowerFt=_openaipLimitToFt(it.lowerLimit||it.lower_limit);
+    var upperFt=_openaipLimitToFt(it.upperLimit||it.upper_limit);
+
+    var inside=false, entryDist=null, runs=[];
+    samples.forEach(function(pt){
+      var isIn=polys.some(function(poly){ return _pointInPolygonLL(pt.lat,pt.lon,poly); });
+      if(isIn && !inside){ inside=true; entryDist=pt.dist; }
+      if(!isIn && inside){ inside=false; runs.push({entryDist:entryDist, exitDist:pt.dist}); }
+    });
+    if(inside && samples.length) runs.push({entryDist:entryDist, exitDist:samples[samples.length-1].dist});
+
+    if(runs.length) results.push({name:name, classLabel:classLabel, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
+  });
+  console.log('[Altitudes] '+items.length+' zone(s), '+skippedNoGeom+' sans géométrie, '+
+    JSON.stringify(skippedGeomTypes)+' ignorée(s) (type non géré), '+results.length+' croisée(s) par la route actuelle.');
+  return results;
+}
+
+/* Recalcule localement (sans requête réseau) les croisements horizontaux
+   si la route a changé depuis le dernier calcul — appelé à chaque rendu du
+   graphique/de la liste, coût négligeable si rien n'a changé (comparaison
+   de signature). */
+function _recomputeAirspacesIfStale(){
+  if(!_lastOpenaipItems) return false;
+  var sig=_currentRouteSig();
+  if(sig===_altitudesRouteSig) return false;
+  _altitudesRouteSig=sig;
+  _routeAirspaces=_computeAirspaceCrossings(_lastOpenaipItems);
+  var status=document.getElementById('altitudesStatus');
+  if(status) status.textContent=_routeAirspaces.length
+    ? '✅ '+_routeAirspaces.length+' espace(s) aérien(s) croisé(s) par la route ('+_lastOpenaipItems.length+' zone(s) analysée(s) — recalculé pour la route actuelle).'
+    : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route actuelle ('+_lastOpenaipItems.length+' zone(s) analysée(s) autour).';
+  return true;
+}
+
 async function loadRouteAirspaces(){
   var status=document.getElementById('altitudesStatus');
   var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
@@ -7954,36 +8021,11 @@ async function loadRouteAirspaces(){
       return;
     }
 
-    var samples=_routeSamplePoints();
-    var results=[];
-    var skippedNoGeom=0, skippedGeomTypes={};
-    items.forEach(function(it){
-      var geom=it.geometry||it.geojson;
-      if(!geom||!geom.coordinates){ skippedNoGeom++; return; }
-      var polys=[];
-      if(geom.type==='Polygon') polys=[geom.coordinates[0]];
-      else if(geom.type==='MultiPolygon') polys=geom.coordinates.map(function(p){return p[0];});
-      if(!polys.length){ skippedGeomTypes[geom.type]=(skippedGeomTypes[geom.type]||0)+1; return; }
-
-      var name=it.name||it.designator||'Zone sans nom';
-      var classLabel=_openaipClassLabel(it);
-      var lowerFt=_openaipLimitToFt(it.lowerLimit||it.lower_limit);
-      var upperFt=_openaipLimitToFt(it.upperLimit||it.upper_limit);
-
-      var inside=false, entryDist=null, runs=[];
-      samples.forEach(function(pt){
-        var isIn=polys.some(function(poly){ return _pointInPolygonLL(pt.lat,pt.lon,poly); });
-        if(isIn && !inside){ inside=true; entryDist=pt.dist; }
-        if(!isIn && inside){ inside=false; runs.push({entryDist:entryDist, exitDist:pt.dist}); }
-      });
-      if(inside && samples.length) runs.push({entryDist:entryDist, exitDist:samples[samples.length-1].dist});
-
-      if(runs.length) results.push({name:name, classLabel:classLabel, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
-    });
+    _lastOpenaipItems=items;
+    var results=_computeAirspaceCrossings(items);
+    _altitudesRouteSig=_currentRouteSig();
 
     _routeAirspaces=results;
-    console.log('[Altitudes] '+items.length+' zone(s) reçue(s), '+skippedNoGeom+' sans géométrie, '+
-      JSON.stringify(skippedGeomTypes)+' ignorée(s) (type non géré), '+results.length+' croisée(s) par la route.');
     if(status) status.textContent=results.length
       ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
       : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
@@ -8054,6 +8096,7 @@ function _altitudesTrajectory(){
 function renderAltitudesCrossingsList(){
   var el=document.getElementById('altitudesCrossingsList');
   if(!el) return;
+  _recomputeAirspacesIfStale();
   if(!_routeAirspaces.length){
     el.innerHTML=_altitudesAutoLoadDone
       ? '<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:8px 0">Aucun croisement d’espace aérien détecté sur ce tracé (voir le statut ci-dessus, et la console F12 pour le détail).</p>'
@@ -8117,6 +8160,7 @@ function renderAltitudesProfile(){
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonnées.</p>';return;}
 
+  _recomputeAirspacesIfStale();
   var traj=_altitudesTrajectory();
   var totalDist=traj.totalDist, wpAlts=traj.wpAlts, cumDists=traj.cumDists;
   if(totalDist<=0){ container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Route incomplète.</p>'; return; }
@@ -8221,8 +8265,8 @@ function renderAltitudesProfile(){
   if(svg2){
     svg2.querySelectorAll('.alt2-hit').forEach(function(el){
       var idx=parseInt(el.dataset.wpidx);
-      el.addEventListener('mousedown',function(e){ _altitudes2DragStart(e,idx); });
-      el.addEventListener('touchstart',function(e){ _altitudes2DragStartTouch(e,idx); },{passive:false});
+      el.addEventListener('mousedown',function(e){ e.preventDefault(); _altitudes2DragStart(e,idx); });
+      el.addEventListener('touchstart',function(e){ e.preventDefault(); _altitudes2DragStartTouch(e,idx); },{passive:false});
     });
     var hitPathEl=document.getElementById('alt2HitPath');
     if(hitPathEl){
@@ -8234,11 +8278,18 @@ function renderAltitudesProfile(){
         var d=Math.max(0,Math.min(totalDist,(svgX-ml)/cw*totalDist));
         return _altitudes2OwnerForDist(d,cumDists);
       };
+      /* preventDefault inconditionnel dès le mousedown/touchstart — sinon, si
+         aucun waypoint modifiable n'est trouvé sous le doigt/curseur, le
+         navigateur peut démarrer une sélection de texte native le long du
+         geste et auto-scroller la page en suivant le curseur, donnant
+         l'impression que "la page saute" ailleurs sur le site. */
       hitPathEl.addEventListener('mousedown',function(e){
+        e.preventDefault();
         var idx=_ownerFromClientX(e.clientX);
         if(idx>=0) _altitudes2DragStart(e,idx);
       });
       hitPathEl.addEventListener('touchstart',function(e){
+        e.preventDefault();
         if(!e.touches||!e.touches.length) return;
         var idx=_ownerFromClientX(e.touches[0].clientX);
         if(idx>=0) _altitudes2DragStartTouch(e,idx);
@@ -8288,6 +8339,10 @@ var _altitudes2Geom=null;
 function _altitudes2DragStart(e,wpIdx){
   e.preventDefault(); e.stopPropagation();
   if(e.target&&e.target.setPointerCapture&&e.pointerId!=null) try{e.target.setPointerCapture(e.pointerId);}catch(x){}
+  /* Bloque la sélection de texte native pendant le geste — sans ça, sur
+     certains navigateurs, un mousedown+déplacement peut démarrer une
+     sélection de texte qui auto-scrolle la page en suivant le curseur. */
+  document.body.style.userSelect='none';
   var _defAlt=parseInt(document.getElementById('cfgAlt').value)||2300;
   _altitudes2DragState={wpIdx:wpIdx,startY:e.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
   document.addEventListener('mousemove',_altitudes2DragMove,{capture:true,passive:true});
@@ -8296,6 +8351,7 @@ function _altitudes2DragStart(e,wpIdx){
 function _altitudes2DragStartTouch(e,wpIdx){
   if(!e.touches) return;
   e.preventDefault();
+  document.body.style.userSelect='none';
   var t=e.touches[0];
   var _defAlt=parseInt(document.getElementById('cfgAlt').value)||2300;
   _altitudes2DragState={wpIdx:wpIdx,startY:t.clientY,startAlt:waypoints[wpIdx].altitude||_defAlt,moved:false};
@@ -8321,6 +8377,7 @@ function _altitudes2DragMoveT(e){
 function _altitudes2DragEnd(){
   var wasMoved=_altitudes2DragState&&_altitudes2DragState.moved;
   _altitudes2DragState=null;
+  document.body.style.userSelect='';
   document.removeEventListener('mousemove',_altitudes2DragMove,{capture:true});
   document.removeEventListener('mouseup',_altitudes2DragEnd,{capture:true});
   document.removeEventListener('touchmove',_altitudes2DragMoveT,{capture:true});
