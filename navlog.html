@@ -578,6 +578,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; M&amp;CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
+    <button class="navlog-tab" onclick="window.switchTab('altitudes')">&#x1F3D4;&#xFE0F; Altitudes</button>
     <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
     <button class="navlog-tab" onclick="window.switchTab('notes')">&#x1F4DD; Notes</button>
@@ -1718,6 +1719,23 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </div>
   </div>
 
+  <!-- ==================== TAB ALTITUDES : ESPACES AÉRIENS ==================== -->
+  <div id="tab-altitudes" class="navlog-tab-content">
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x1F3D4;&#xFE0F;</span> Espaces a&#xe9;riens sur la route</div>
+      <p style="padding:0 4px;font-size:.82em;color:var(--text-secondary);margin:0 0 10px">Calcule les volumes d'espace a&#xe9;rien (CTR/TMA/zones r&#xe9;glement&#xe9;es...) crois&#xe9;s horizontalement par ta route, via les donn&#xe9;es OpenAIP, et les affiche sur un profil vertical avec ta trajectoire pr&#xe9;vue.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <button onclick="window.loadRouteAirspaces()" class="navlog-btn" style="background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700">&#x1F310; Charger les espaces a&#xe9;riens (OpenAIP)</button>
+      </div>
+      <div id="altitudesStatus" style="font-size:.82em;color:var(--text-secondary);margin:4px 0 10px"></div>
+      <div id="altitudesProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonn&#xe9;es, puis clique sur "Charger les espaces a&#xe9;riens".</p></div>
+      <div id="altitudesCrossingsList" style="margin-top:14px"></div>
+      <div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,.08);font-size:.76em;color:var(--text-secondary);line-height:1.6">
+        <b style="color:#f59e0b">&#x26A0;&#xFE0F; Premi&#xe8;re version</b> &#x2014; le croisement horizontal (la route passe-t-elle dans la zone ?) est calcul&#xe9; automatiquement, mais compare toujours la bande affich&#xe9;e (plancher/plafond) &#xe0; ta trajectoire trac&#xe9;e sur le m&#xeame graphique pour juger si &#xe7;a te concerne vraiment en altitude. Ne remplace pas la carte VFR/AIP officielle pour la pr&#xe9;paration r&#xe9;glementaire du vol.
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== TAB 5: FUEL ==================== -->
   <div id="tab-fuel" class="navlog-tab-content">
     <div class="nl-card">
@@ -2041,6 +2059,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="dossier-save-btn" id="dossierSaveBtn" onclick="window.saveDossier()">&#x1F4BE; Sauvegarder</button>
       </div>
       <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">&#x2139;&#xFE0F; Un fichier <strong>.json</strong> est automatiquement t&eacute;l&eacute;charg&eacute; &agrave; chaque sauvegarde &mdash; il contient tout votre dossier avec toutes les images et peut &ecirc;tre ouvert sur n'importe quel appareil.</p>
+      <button onclick="window.printConsolidatedDossier()" class="navlog-btn" style="margin-top:10px;background:rgba(76,175,80,.15);border-color:#4caf50;color:#4caf50;font-weight:700">&#x1F4C4; Export PDF consolid&eacute; (Navlog + Carbu + M&amp;C + M&eacute;t&eacute;o + Checklist)</button>
     </div>
     <div class="nl-card">
       <div class="nl-card-title"><span class="icon">&#x2601;&#xFE0F;</span> Synchronisation cloud</div>
@@ -2418,6 +2437,7 @@ function switchTab(id){
     }
   }
   if(id==='masse') window.mbInit();
+  if(id==='altitudes' && typeof renderAltitudesProfile==='function') renderAltitudesProfile();
   /* Refresh route map size whenever nav tab is shown (Leaflet needs this after hidden/resize) */
   if(id==='nav' && typeof routeMap!=='undefined' && routeMap){
     setTimeout(function(){ routeMap.invalidateSize(); }, 80);
@@ -2729,6 +2749,152 @@ function printFPL(){
   win.print();
 }
 window.printFPL=printFPL;
+
+/* ===== EXPORT PDF CONSOLIDÉ ===== */
+/* Assemble navlog + carburant + M&C + météo + espaces aériens + checklist en une seule
+   page imprimable (même mécanisme que printFPL : fenêtre + window.print(), qui propose
+   nativement "Enregistrer en PDF" sur tous les navigateurs — pas de dépendance ajoutée). */
+function printConsolidatedDossier(){
+  recalcNavlog();
+  var win=window.open('','_blank','width=850,height=900');
+  if(!win){ alert('Le navigateur a bloqué l’ouverture de la fenêtre d’impression — autorise les pop-ups pour ce site.'); return; }
+
+  var esc=function(s){ return (s===undefined||s===null)?'':String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  var cfg=getConfig();
+  var dName=(document.getElementById('dossierName')||{}).value || 'Dossier de vol';
+  var dep=(waypoints[0]&&waypoints[0].name)||'';
+  var arr=(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name)||'';
+
+  var html='<html><head><title>Dossier de vol — '+esc(dName)+'</title><style>'
+    +'body{font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111;font-size:12px}'
+    +'h1{font-size:18pt;margin:0 0 4px;border-bottom:3px solid #333;padding-bottom:6px}'
+    +'h2{font-size:13pt;margin:18px 0 6px;color:#333;border-bottom:1px solid #999;padding-bottom:3px}'
+    +'.sub{color:#555;margin-bottom:14px;font-size:11pt}'
+    +'table{border-collapse:collapse;width:100%;margin-bottom:6px;font-size:10.5pt}'
+    +'td,th{border:1px solid #999;padding:4px 7px;text-align:left}'
+    +'th{background:#eee;font-weight:700}'
+    +'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}'
+    +'.warn{color:#b45309;font-weight:700}'
+    +'.danger{color:#b91c1c;font-weight:700}'
+    +'.ok{color:#15803d;font-weight:700}'
+    +'.small{font-size:9.5pt;color:#555}'
+    +'.ckcat{font-weight:700;margin-top:8px}'
+    +'.cknote{color:#666}'
+    +'@media print{ body{margin:10mm} }'
+    +'</style></head><body>';
+
+  html+='<h1>✈️ '+esc(dName)+'</h1>';
+  html+='<div class="sub">'+esc(dep)+' → '+esc(arr)+' &nbsp;|&nbsp; Généré le '+new Date().toLocaleString('fr-BE')+' &nbsp;|&nbsp; TAS '+cfg.tas+'kt, Alt '+cfg.alt+'ft, Vent '+cfg.windDir+'°/'+cfg.windSpd+'kt</div>';
+
+  /* --- Nav log --- */
+  html+='<h2>🧭 Nav Log</h2><table><tr><th>Point</th><th>Dist (NM)</th><th>Route</th><th>Cap Mag</th><th>ETE</th><th>Vitesse sol</th><th>Alt (ft)</th><th>Carburant cumulé</th></tr>';
+  var cumFuel=0;
+  for(var i=0;i<waypoints.length;i++){
+    var wp=waypoints[i], leg=wp._leg||{};
+    if(i>0) cumFuel+=(leg.fuel||0);
+    html+='<tr><td>'+esc(wp.name||('WP'+i))+(wp.isEtape?' <span class="small">(escale)</span>':'')+'</td>'
+      +'<td>'+(i>0?(wp.dist||0):'-')+'</td>'
+      +'<td>'+(i>0?Math.round(wp.route||0)+'°':'-')+'</td>'
+      +'<td>'+(i>0&&leg.hdgMag!==undefined?Math.round(leg.hdgMag)+'°':'-')+'</td>'
+      +'<td>'+(i>0&&leg.ete!==undefined?formatTime(leg.ete):'-')+'</td>'
+      +'<td>'+(i>0&&leg.gs!==undefined?leg.gs+'kt':'-')+'</td>'
+      +'<td>'+(wp.altitude||(i===0||i===waypoints.length-1?'sol':'-'))+'</td>'
+      +'<td>'+(i>0?Math.round(cumFuel*10)/10+' L':'-')+'</td></tr>';
+  }
+  html+='</table>';
+
+  /* --- Carburant --- */
+  var totalTripFuel=0; for(var i=1;i<waypoints.length;i++) totalTripFuel+=(waypoints[i]._leg&&waypoints[i]._leg.fuel)||0;
+  var bf=computeFullFuelBreakdown(totalTripFuel);
+  html+='<h2>⛽ Carburant</h2><table><tr><th>Poste</th><th>Litres</th></tr>'
+    +'<tr><td>Délestage (trajet)</td><td>'+bf.tripFuel.toFixed(1)+' L</td></tr>'
+    +'<tr><td>Roulage (taxi)</td><td>'+bf.taxiFuel.toFixed(1)+' L</td></tr>'
+    +'<tr><td>Marge ('+bf.contPct+'%)</td><td>'+bf.contFuel.toFixed(1)+' L</td></tr>'
+    +'<tr><td>Réserve finale ('+bf.resMin+' min)</td><td>'+bf.resFuel.toFixed(1)+' L</td></tr>'
+    +(bf.altnFuel>0?'<tr><td>Dégagement ('+bf.altnDist+' NM)</td><td>'+bf.altnFuel.toFixed(1)+' L</td></tr>':'')
+    +'<tr><td>Supplémentaire</td><td>'+bf.extraFuel.toFixed(1)+' L</td></tr>'
+    +'<tr><th>TOTAL (Block Fuel)</th><th>'+bf.total.toFixed(1)+' L</th></tr>'
+    +'</table>';
+
+  /* --- Masse & Centrage --- */
+  var mbMass=(document.getElementById('mbTotalMass')||{}).textContent;
+  var mbMom=(document.getElementById('mbTotalMom')||{}).textContent;
+  var mbStatusEl=document.getElementById('mbStatus');
+  var mbStatusTxt=mbStatusEl?mbStatusEl.textContent.trim():'';
+  var mbAircraft=(document.getElementById('mbAircraft')||{}).value||'';
+  if(mbMass){
+    html+='<h2>⚖️ Masse &amp; Centrage</h2>';
+    html+='<div class="grid2"><div>Aéronef : <b>'+esc(mbAircraft)+'</b><br>Masse totale : <b>'+esc(mbMass)+' kg</b><br>Moment total : <b>'+esc(mbMom)+'</b></div>';
+    html+='<div class="'+(/hors|dépass|non conforme/i.test(mbStatusTxt)?'danger':'ok')+'">'+esc(mbStatusTxt)+'</div></div>';
+  }
+
+  /* --- Espaces aériens --- */
+  if(typeof _routeAirspaces!=='undefined' && _routeAirspaces.length){
+    html+='<h2>🏔️ Espaces aériens traversés</h2><table><tr><th>Classe/Type</th><th>Nom</th><th>Plancher – Plafond</th></tr>';
+    _routeAirspaces.forEach(function(a){
+      var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(a.classLabel);
+      html+='<tr><td class="'+(isDanger?'danger':'')+'">'+esc(a.classLabel)+(isDanger?' ⚠️':'')+'</td><td>'+esc(a.name)+'</td><td>'+(a.lowerFt||0)+' – '+(a.upperFt||'?')+' ft</td></tr>';
+    });
+    html+='</table>';
+  }
+
+  /* --- Météo --- */
+  var wxIcaos=[]; waypoints.forEach(function(wp){ if(wp.name){ var c=wp.name.trim().toUpperCase(); if(/^[A-Z]{4}$/.test(c)&&wxIcaos.indexOf(c)<0) wxIcaos.push(c); } });
+  var hasWx=wxIcaos.some(function(c){ return wxCache && wxCache[c] && wxCache[c].metar; });
+  if(hasWx){
+    html+='<h2>🌧️ Météo</h2>';
+    wxIcaos.forEach(function(c){
+      var d=wxCache&&wxCache[c];
+      if(!d||!d.metar) return;
+      html+='<div style="margin-bottom:6px"><b>'+esc(c)+'</b><br><span class="small">METAR : '+esc(d.metar)+'</span>';
+      if(d.taf) html+='<br><span class="small">TAF : '+esc((d.taf||'').slice(0,300))+'</span>';
+      html+='</div>';
+    });
+  }
+
+  /* --- Vent en altitude (GAMET) --- */
+  if(_lastGametLevels && _lastGametLevels.length){
+    html+='<h2>💨 Vent en altitude (GAMET)</h2>';
+    if(_lastGametValid) html+='<div class="small" style="margin-bottom:4px">'+esc(_lastGametValid)+'</div>';
+    html+='<table><tr><th>Altitude</th><th>Vent</th><th>Température</th></tr>';
+    _lastGametLevels.forEach(function(l){
+      html+='<tr><td>'+l.alt+' ft</td><td>'+l.dir+'°/'+l.spd+'kt</td><td>'+l.temp+'</td></tr>';
+    });
+    html+='</table>';
+  }
+
+  /* --- NOTAM importés --- */
+  if(typeof notamSummaryItems!=='undefined' && notamSummaryItems.length){
+    html+='<h2>⚠️ NOTAM Summary importé</h2><div class="small">'+notamSummaryItems.length+' fichier(s)/entrée(s) importé(s) dans le dossier — voir l’onglet NOTAM pour le détail complet (non reproduit ici).</div>';
+  }
+
+  /* --- Checklist --- */
+  if(typeof CHECKLIST_ITEMS!=='undefined'){
+    html+='<h2>✅ Checklist prévol</h2>';
+    CHECKLIST_ITEMS.forEach(function(cat){
+      html+='<div class="ckcat">'+esc(cat.cat)+'</div><table>';
+      cat.items.forEach(function(item){
+        var label=typeof item==='object'?item.label:item;
+        var key=cat.cat+'::'+label;
+        var checked=_checklistState[key]?true:false;
+        html+='<tr><td style="width:24px;text-align:center">'+(checked?'☑':'☐')+'</td><td>'+esc(label)+'</td></tr>';
+        var sub=(typeof item==='object'&&item.sub)?item.sub:[];
+        sub.forEach(function(si){
+          var subKey=cat.cat+'::'+label+'::'+si;
+          var subChecked=_checklistState[subKey]?true:false;
+          html+='<tr><td style="width:24px;text-align:center">'+(subChecked?'☑':'☐')+'</td><td class="cknote">↳ '+esc(si)+'</td></tr>';
+        });
+      });
+      html+='</table>';
+    });
+  }
+
+  html+='</body></html>';
+  win.document.write(html);
+  win.document.close();
+  win.print();
+}
+window.printConsolidatedDossier=printConsolidatedDossier;
 
 /* ===== CHECKLIST BRIEFING ===== */
 var CHECKLIST_ITEMS = [
@@ -5152,6 +5318,7 @@ window.toggleWxAirport=toggleWxAirport;
 /* Va chercher le bloc GAMET déjà mis en forme dans opmet.html (même origine, régénéré
    toutes les 3h par le workflow update_notams.yml) et affiche un résumé compact du
    vent/température par niveau standard (1000/2000/5000/10000ft) en haut du Navlog. */
+var _lastGametLevels=null, _lastGametValid='';
 function loadGametWindWidget(){
   fetch('opmet.html').then(function(r){ return r.ok ? r.text() : null; }).then(function(html){
     if(!html) return;
@@ -5173,6 +5340,8 @@ function loadGametWindWidget(){
       levels.push({ alt: parseInt(m[1],10), dir: m[2], spd: m[3], temp: tempSign+m[5]+'°C' });
     }
     if(!levels.length) return;
+    _lastGametLevels = levels;
+    _lastGametValid = validLabel;
 
     var row = document.getElementById('gametWindRow');
     var card = document.getElementById('gametWindCard');
@@ -7625,6 +7794,249 @@ function _noteHL(color){
   }
 }
 window._noteHL=_noteHL;
+
+/* ===== ESPACES AÉRIENS SUR LA ROUTE (OpenAIP) ===== */
+/* Utilise la même clé OpenAIP que la couche carte (window.OPENAIP_API_KEY), mais sur
+   l'API de données structurées (api.core.openaip.net) plutôt que les tuiles raster.
+   Première version : croisement horizontal calculé par échantillonnage le long de la
+   route (point-in-polygon tous les ~0.5 NM), pas d'intersection géométrique exacte —
+   suffisant pour un repère visuel, pas pour une donnée réglementaire certifiée. */
+var _routeAirspaces = [];
+
+function _routeSamplePoints(){
+  var pts=[]; var cum=0;
+  if(!waypoints.length) return pts;
+  pts.push({dist:0, lat:waypoints[0].lat, lon:waypoints[0].lon});
+  for(var i=1;i<waypoints.length;i++){
+    var wp=waypoints[i], prev=waypoints[i-1];
+    var legDist=wp.dist||0;
+    if(prev.lat===null||prev.lon===null||wp.lat===null||wp.lon===null){ cum+=legDist; continue; }
+    var steps=Math.max(1,Math.min(300,Math.ceil(legDist/0.5)));
+    for(var s=1;s<=steps;s++){
+      var f=s/steps;
+      pts.push({
+        dist: cum + legDist*f,
+        lat: prev.lat + (wp.lat-prev.lat)*f,
+        lon: prev.lon + (wp.lon-prev.lon)*f
+      });
+    }
+    cum+=legDist;
+  }
+  return pts;
+}
+
+function _pointInPolygonLL(lat,lon,coords){
+  /* coords : anneau GeoJSON, paires [lon,lat] */
+  var inside=false;
+  for(var i=0,j=coords.length-1;i<coords.length;j=i++){
+    var xi=coords[i][0], yi=coords[i][1], xj=coords[j][0], yj=coords[j][1];
+    if(((yi>lat)!==(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+
+function _openaipLimitToFt(lim){
+  if(lim===undefined||lim===null) return 0;
+  if(typeof lim==='number') return lim;
+  var val=parseFloat(lim.value!==undefined?lim.value:lim)||0;
+  var unit=(lim.unit!==undefined?lim.unit:'').toString().toUpperCase();
+  if(unit==='FL'||unit==='6') return val*100;
+  if(unit==='M'||unit==='2') return Math.round(val*3.28084);
+  return val; /* FT par défaut (unit 1) */
+}
+
+function _openaipClassLabel(item){
+  var classMap={0:'A',1:'B',2:'C',3:'D',4:'E',5:'F',6:'G'};
+  var typeMap={1:'CTR',4:'TMA',5:'TMZ',6:'RMZ',7:'RESTRICTED',8:'DANGER',9:'PROHIBITED',14:'ATZ'};
+  if(item.icaoClass!==undefined && classMap[item.icaoClass]!==undefined) return classMap[item.icaoClass];
+  if(typeof item.icaoClass==='string' && item.icaoClass) return item.icaoClass;
+  if(item.type!==undefined && typeMap[item.type]!==undefined) return typeMap[item.type];
+  return (item.type!==undefined?('type '+item.type):'zone');
+}
+
+function _airspaceBandColor(label){
+  var m={A:'#e74c3c',B:'#e67e22',C:'#f1c40f',D:'#3498db',E:'#2ecc71',F:'#1abc9c',G:'#95a5a6',
+    CTR:'#3498db',TMA:'#9b59b6',TMZ:'#8e44ad',RMZ:'#8e44ad',ATZ:'#2980b9',
+    RESTRICTED:'#e74c3c',DANGER:'#e74c3c',PROHIBITED:'#c0392b'};
+  return m[label]||'#7f8c8d';
+}
+
+async function loadRouteAirspaces(){
+  var status=document.getElementById('altitudesStatus');
+  var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
+  if(validWps.length<2){
+    if(status) status.textContent='⚠️ Configure au moins 2 waypoints avec coordonnées avant de charger les espaces aériens.';
+    return;
+  }
+  var key=window.OPENAIP_API_KEY||'';
+  if(!key){
+    if(status) status.textContent='❌ Clé OpenAIP indisponible (window.OPENAIP_API_KEY vide) — vérifie la configuration de déploiement.';
+    return;
+  }
+
+  var lats=validWps.map(function(w){return w.lat;});
+  var lons=validWps.map(function(w){return w.lon;});
+  var pad=0.15;
+  var south=Math.min.apply(null,lats)-pad, north=Math.max.apply(null,lats)+pad;
+  var west=Math.min.apply(null,lons)-pad, east=Math.max.apply(null,lons)+pad;
+
+  if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
+  var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit=1000';
+
+  try{
+    var resp=await fetch(url,{headers:{'x-openaip-api-key':key}});
+    if(!resp.ok){
+      var bodyTxt='';
+      try{ bodyTxt=await resp.text(); }catch(e2){}
+      console.error('[Altitudes] OpenAIP HTTP '+resp.status, bodyTxt);
+      if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' — détail dans la console (F12). Envoie-le-moi si besoin d’ajuster.';
+      return;
+    }
+    var data=await resp.json();
+    console.log('[Altitudes] Réponse OpenAIP brute :', data);
+    var items=data.items||data.data||(Array.isArray(data)?data:[]);
+    if(!items.length){
+      _routeAirspaces=[];
+      if(status) status.textContent='ℹ️ OpenAIP n’a renvoyé aucun espace aérien pour cette zone.';
+      renderAltitudesProfile();
+      renderAltitudesCrossingsList();
+      return;
+    }
+
+    var samples=_routeSamplePoints();
+    var results=[];
+    items.forEach(function(it){
+      var geom=it.geometry||it.geojson;
+      if(!geom||!geom.coordinates) return;
+      var polys=[];
+      if(geom.type==='Polygon') polys=[geom.coordinates[0]];
+      else if(geom.type==='MultiPolygon') polys=geom.coordinates.map(function(p){return p[0];});
+      if(!polys.length) return;
+
+      var name=it.name||it.designator||'Zone sans nom';
+      var classLabel=_openaipClassLabel(it);
+      var lowerFt=_openaipLimitToFt(it.lowerLimit||it.lower_limit);
+      var upperFt=_openaipLimitToFt(it.upperLimit||it.upper_limit);
+
+      var inside=false, entryDist=null, runs=[];
+      samples.forEach(function(pt){
+        var isIn=polys.some(function(poly){ return _pointInPolygonLL(pt.lat,pt.lon,poly); });
+        if(isIn && !inside){ inside=true; entryDist=pt.dist; }
+        if(!isIn && inside){ inside=false; runs.push({entryDist:entryDist, exitDist:pt.dist}); }
+      });
+      if(inside && samples.length) runs.push({entryDist:entryDist, exitDist:samples[samples.length-1].dist});
+
+      if(runs.length) results.push({name:name, classLabel:classLabel, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
+    });
+
+    _routeAirspaces=results;
+    if(status) status.textContent=results.length
+      ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
+      : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour).';
+    renderAltitudesProfile();
+    renderAltitudesCrossingsList();
+  }catch(e){
+    console.error('[Altitudes] Erreur chargement OpenAIP', e);
+    if(status) status.textContent='❌ Erreur réseau/format lors du chargement OpenAIP : '+e.message+' (détail en console F12 — envoie-le-moi si ça persiste).';
+  }
+}
+window.loadRouteAirspaces=loadRouteAirspaces;
+
+function renderAltitudesCrossingsList(){
+  var el=document.getElementById('altitudesCrossingsList');
+  if(!el) return;
+  if(!_routeAirspaces.length){ el.innerHTML=''; return; }
+  var html='<div style="font-weight:700;font-size:.88em;margin-bottom:6px">Zones traversées (horizontalement) :</div>';
+  _routeAirspaces.forEach(function(a){
+    var col=_airspaceBandColor(a.classLabel);
+    var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(a.classLabel);
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-left:3px solid '+col+';background:'+(isDanger?'rgba(231,76,60,.08)':'var(--bg-container)')+';border-radius:0 8px 8px 0;font-size:.86em">';
+    html+='<span style="font-weight:700;color:'+col+'">'+escHTML(a.classLabel)+'</span>';
+    html+='<span>'+escHTML(a.name)+'</span>';
+    html+='<span style="color:var(--text-secondary);margin-left:auto">'+(a.lowerFt||0)+'–'+(a.upperFt||'?')+' ft</span>';
+    if(isDanger) html+='<span style="color:#e74c3c;font-weight:700">⚠️</span>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderAltitudesProfile(){
+  var container=document.getElementById('altitudesProfileContainer');
+  if(!container) return;
+  var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
+  if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonnées.</p>';return;}
+
+  var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
+  if(totalDist<=0){ container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Route incomplète.</p>'; return; }
+
+  function _wpElev(wpIdx){
+    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
+    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
+  }
+  var depElev=_wpElev(0), arrElev=_wpElev(waypoints.length-1);
+  var wpAlts=[];
+  for(var i=0;i<waypoints.length;i++){
+    if(i===0) wpAlts.push(depElev);
+    else if(i===waypoints.length-1) wpAlts.push(arrElev);
+    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
+    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
+  }
+
+  var maxAlt=0; for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
+  _routeAirspaces.forEach(function(a){ if(a.upperFt<99999) maxAlt=Math.max(maxAlt,a.upperFt); });
+  maxAlt=Math.ceil((maxAlt+1000)/500)*500; if(maxAlt<3000) maxAlt=3000;
+
+  var W=680,H=280,ml=54,mr=14,mt=20,mb=32;
+  var cw=W-ml-mr,ch=H-mt-mb;
+  function xS(d){return ml+(Math.min(d,totalDist)/totalDist)*cw;}
+  function yS(a){return mt+ch-((Math.min(a,maxAlt)/maxAlt)*ch);}
+
+  var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
+  for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
+  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
+  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+
+  var yStep=maxAlt>8000?2000:1000, yGrid='';
+  for(var alt=0;alt<=maxAlt;alt+=yStep){
+    var yy=yS(alt);
+    yGrid+='<line x1="'+ml+'" y1="'+yy+'" x2="'+(W-mr)+'" y2="'+yy+'" stroke="rgba(160,160,200,.12)" stroke-width="1"/>';
+    yGrid+='<text x="'+(ml-5)+'" y="'+(yy+4)+'" text-anchor="end" font-size="9" fill="rgba(160,160,200,.65)">'+alt+'</text>';
+  }
+  var xStep=totalDist>80?20:(totalDist>40?10:(totalDist>15?5:2)), xGrid='';
+  for(var d2=0;d2<=totalDist+0.01;d2+=xStep){
+    var xx=xS(d2);
+    xGrid+='<line x1="'+xx+'" y1="'+mt+'" x2="'+xx+'" y2="'+(mt+ch)+'" stroke="rgba(160,160,200,.1)" stroke-width="1"/>';
+    xGrid+='<text x="'+xx+'" y="'+(mt+ch+14)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.6)">'+Math.round(d2)+'</text>';
+  }
+
+  var bandsHtml='';
+  _routeAirspaces.forEach(function(a){
+    var col=_airspaceBandColor(a.classLabel);
+    a.crossings.forEach(function(c){
+      var x1=xS(c.entryDist), x2=xS(c.exitDist);
+      var yTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)), yBot=yS(Math.max(a.lowerFt||0,0));
+      bandsHtml+='<rect x="'+x1+'" y="'+yTop+'" width="'+Math.max(1,x2-x1)+'" height="'+Math.max(1,yBot-yTop)+'" fill="'+col+'" fill-opacity="0.25" stroke="'+col+'" stroke-width="1"/>';
+      if((x2-x1)>28) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+    });
+  });
+
+  var wpMk='', cumD2=0;
+  for(var i=0;i<waypoints.length;i++){
+    if(i>0) cumD2+=(waypoints[i].dist||0);
+    var wx=xS(cumD2), wy=yS(wpAlts[i]);
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4" fill="#ff5252" stroke="#fff" stroke-width="1.3"/>';
+    wpMk+='<text x="'+wx+'" y="'+(mt+ch+27)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
+  }
+
+  container.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block">'
+    + '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.22)" rx="3"/>'
+    + yGrid + xGrid + bandsHtml
+    + '<path d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5"/>'
+    + wpMk
+    + '<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>'
+    + '</svg>';
+}
+window.renderAltitudesProfile=renderAltitudesProfile;
 
 /* ===== ALTITUDE PROFILE CHART ===== */
 var _altDragState=null;
