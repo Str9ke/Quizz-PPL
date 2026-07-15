@@ -8014,19 +8014,41 @@ function _altitudesTrajectory(){
     if(i>0) cumDists.push(cumDists[i-1]+(waypoints[i].dist||0));
   }
   var totalDist=cumDists[cumDists.length-1]||0;
+
+  /* Profil réaliste : montée/descente rapide (CPR ft/NM) puis palier à
+     l'altitude de croisière — pas une rampe linéaire sur toute la longueur
+     du tronçon. On ne monte pas pendant 30NM pour gagner 2000ft : on grimpe
+     vite après le décollage puis on reste en palier jusqu'au point suivant
+     (même logique que le profil déjà existant sur l'onglet Navlog). */
+  var CPR=300; /* ft/NM, taux de montée/descente approximatif */
+  var pts=[{x:0,y:wpAlts[0]}];
+  var cumDist=0;
+  for(var i=1;i<waypoints.length;i++){
+    var ld=waypoints[i].dist||0;
+    var la=wpAlts[i];
+    var pa=pts[pts.length-1].y, ad=la-pa;
+    if(ld>0 && Math.abs(ad)>50){
+      var td=Math.min(Math.abs(ad)/CPR, ld*0.65);
+      if(ad>0) pts.push({x:cumDist+td,y:la});
+      else pts.push({x:cumDist+ld-td,y:pa});
+    }
+    pts.push({x:cumDist+ld,y:la});
+    cumDist+=ld;
+  }
+
   function altAtDist(d){
-    if(!wpAlts.length) return 0;
-    if(d<=0) return wpAlts[0];
-    if(d>=totalDist) return wpAlts[wpAlts.length-1];
-    for(var i=1;i<cumDists.length;i++){
-      if(d<=cumDists[i]){
-        var d0=cumDists[i-1], d1=cumDists[i], f=d1>d0?(d-d0)/(d1-d0):0;
-        return wpAlts[i-1]+(wpAlts[i]-wpAlts[i-1])*f;
+    if(!pts.length) return 0;
+    if(d<=pts[0].x) return pts[0].y;
+    if(d>=pts[pts.length-1].x) return pts[pts.length-1].y;
+    for(var i=1;i<pts.length;i++){
+      if(d<=pts[i].x){
+        var d0=pts[i-1].x, d1=pts[i].x, f=d1>d0?(d-d0)/(d1-d0):0;
+        return pts[i-1].y+(pts[i].y-pts[i-1].y)*f;
       }
     }
-    return wpAlts[wpAlts.length-1];
+    return pts[pts.length-1].y;
   }
-  return {wpAlts:wpAlts, cumDists:cumDists, totalDist:totalDist, altAtDist:altAtDist};
+  return {wpAlts:wpAlts, cumDists:cumDists, totalDist:totalDist, pts:pts, altAtDist:altAtDist};
 }
 
 function renderAltitudesCrossingsList(){
@@ -8095,21 +8117,9 @@ function renderAltitudesProfile(){
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonnées.</p>';return;}
 
-  var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
+  var traj=_altitudesTrajectory();
+  var totalDist=traj.totalDist, wpAlts=traj.wpAlts, cumDists=traj.cumDists;
   if(totalDist<=0){ container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Route incomplète.</p>'; return; }
-
-  function _wpElev(wpIdx){
-    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
-    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
-  }
-  var depElev=_wpElev(0), arrElev=_wpElev(waypoints.length-1);
-  var wpAlts=[];
-  for(var i=0;i<waypoints.length;i++){
-    if(i===0) wpAlts.push(depElev);
-    else if(i===waypoints.length-1) wpAlts.push(arrElev);
-    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
-    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
-  }
 
   /* Échelle verticale configurable par l'utilisateur (persistée) — voir
      _getAltitudesYRange(). Par défaut 0–5000 ft. Comme la plage est fixe et
@@ -8127,10 +8137,8 @@ function renderAltitudesProfile(){
   function xS(d){return ml+(Math.min(d,totalDist)/totalDist)*cw;}
   function yS(a){return mt+ch-((Math.min(Math.max(a,minAlt),maxAlt)-minAlt)/altSpan)*ch;}
 
-  var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
-  for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
-  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
-  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+  var pD='M'+xS(traj.pts[0].x)+','+yS(traj.pts[0].y);
+  for(var j=1;j<traj.pts.length;j++) pD+=' L'+xS(traj.pts[j].x)+','+yS(traj.pts[j].y);
 
   /* Couche terrain — réutilise le même cache/fetch que le profil du Navlog
      (mêmes waypoints, donc mêmes points d'échantillonnage : pas besoin de
@@ -8175,18 +8183,13 @@ function renderAltitudesProfile(){
     });
   });
 
-  /* Poignées de drag (mêmes règles que le profil du Navlog : seuls les
-     waypoints intermédiaires "de croisière" sont modifiables — départ,
-     arrivée et étapes posées au sol gardent une altitude terrain fixe). */
-  var legHits='', cumD3=0;
-  for(var i=1;i<waypoints.length-1;i++){
-    var ld3=waypoints[i].dist||0;
-    if(!waypoints[i].isEtape){
-      var lx1=xS(cumD3), lx2=xS(cumD3+ld3), midY=yS(wpAlts[i]);
-      legHits+='<rect x="'+lx1+'" y="'+(midY-16)+'" width="'+Math.max(10,lx2-lx1)+'" height="32" fill="transparent" cursor="ns-resize" class="alt2-hit" data-wpidx="'+i+'"/>';
-    }
-    cumD3+=ld3;
-  }
+  /* Chemin invisible et épais superposé à toute la trajectoire : permet de
+     saisir la ligne n'importe où (pas seulement sur un waypoint précis) pour
+     changer l'altitude de croisière du tronçon le plus proche du point
+     saisi (voir _altitudes2OwnerForDist). Mêmes règles que le profil du
+     Navlog : seuls les waypoints intermédiaires "de croisière" sont
+     modifiables — départ, arrivée et étapes posées au sol restent fixes. */
+  var hitPathHtml='<path id="alt2HitPath" d="'+pD+'" fill="none" stroke="transparent" stroke-width="26" style="cursor:ns-resize;pointer-events:stroke"/>';
 
   var wpMk='', cumD2=0;
   for(var i=0;i<waypoints.length;i++){
@@ -8208,8 +8211,8 @@ function renderAltitudesProfile(){
     + yGrid + xGrid + bandsHtml
     + (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')
     + '<g id="alt2TerrainLoading"></g>'
-    + legHits
-    + '<path id="alt2TrajPath" d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5"/>'
+    + '<path id="alt2TrajPath" d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5" style="pointer-events:none"/>'
+    + hitPathHtml
     + wpMk
     + '<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>'
     + '</svg>';
@@ -8221,6 +8224,26 @@ function renderAltitudesProfile(){
       el.addEventListener('mousedown',function(e){ _altitudes2DragStart(e,idx); });
       el.addEventListener('touchstart',function(e){ _altitudes2DragStartTouch(e,idx); },{passive:false});
     });
+    var hitPathEl=document.getElementById('alt2HitPath');
+    if(hitPathEl){
+      var _ownerFromClientX=function(clientX){
+        var rect=svg2.getBoundingClientRect();
+        if(!rect.width) return -1;
+        var scaleX=W/rect.width;
+        var svgX=(clientX-rect.left)*scaleX;
+        var d=Math.max(0,Math.min(totalDist,(svgX-ml)/cw*totalDist));
+        return _altitudes2OwnerForDist(d,cumDists);
+      };
+      hitPathEl.addEventListener('mousedown',function(e){
+        var idx=_ownerFromClientX(e.clientX);
+        if(idx>=0) _altitudes2DragStart(e,idx);
+      });
+      hitPathEl.addEventListener('touchstart',function(e){
+        if(!e.touches||!e.touches.length) return;
+        var idx=_ownerFromClientX(e.touches[0].clientX);
+        if(idx>=0) _altitudes2DragStartTouch(e,idx);
+      },{passive:false});
+    }
   }
 
   /* Déclenche le chargement terrain s'il n'est pas déjà en cache (partagé
@@ -8310,30 +8333,32 @@ function _altitudes2DragEnd(){
 }
 /* Pendant le drag : déplace juste le point/texte concernés et redessine la
    trajectoire, sans reconstruire tout le SVG (garde le geste fluide). */
+function _altitudes2OwnerForDist(d,cumDists){
+  var candidates=[];
+  for(var i=1;i<waypoints.length-1;i++){ if(!waypoints[i].isEtape) candidates.push(i); }
+  if(!candidates.length) return -1;
+  var best=candidates[0], bestDist=Math.abs(d-cumDists[best]);
+  for(var k=1;k<candidates.length;k++){
+    var dd=Math.abs(d-cumDists[candidates[k]]);
+    if(dd<bestDist){ bestDist=dd; best=candidates[k]; }
+  }
+  return best;
+}
+
 function _altitudes2UpdateTrajectory(){
   if(!_altitudes2Geom) return;
   var g=_altitudes2Geom;
-  function _wpElev(wpIdx){
-    var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
-    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
-  }
-  var depElev=_wpElev(0), arrElev=_wpElev(waypoints.length-1);
-  var wpAlts=[];
-  for(var i=0;i<waypoints.length;i++){
-    if(i===0) wpAlts.push(depElev);
-    else if(i===waypoints.length-1) wpAlts.push(arrElev);
-    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
-    else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
-  }
+  var traj=_altitudesTrajectory();
+  var wpAlts=traj.wpAlts;
   var gAltSpan=Math.max(1,g.maxAlt-g.minAlt);
   function xS(d){return g.ml+(Math.min(d,g.totalDist)/g.totalDist)*g.cw;}
   function yS(a){return g.mt+g.ch-((Math.min(Math.max(a,g.minAlt),g.maxAlt)-g.minAlt)/gAltSpan)*g.ch;}
-  var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
-  for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
-  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
-  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+  var pD='M'+xS(traj.pts[0].x)+','+yS(traj.pts[0].y);
+  for(var j=1;j<traj.pts.length;j++) pD+=' L'+xS(traj.pts[j].x)+','+yS(traj.pts[j].y);
   var pathEl=document.getElementById('alt2TrajPath');
   if(pathEl) pathEl.setAttribute('d',pD);
+  var hitPathEl=document.getElementById('alt2HitPath');
+  if(hitPathEl) hitPathEl.setAttribute('d',pD);
   var cumD2=0;
   for(var i=0;i<waypoints.length;i++){
     if(i>0) cumD2+=(waypoints[i].dist||0);
@@ -9161,6 +9186,88 @@ function returnToStart(){
 }
 window.returnToStart = returnToStart;
 
+/* ===== Insertion de waypoint en saisissant la ligne de route sur la carte =====
+   L'utilisateur touche/clique n'importe où sur le tracé rose et glisse : un
+   nouveau waypoint est créé au point saisi puis suit le doigt/curseur jusqu'au
+   relâchement, sans poignée dédiée à repérer au préalable. */
+function _mapNearestLegInsertIdx(lat,lon,ptsArr){
+  var best=0,bestDist=Infinity;
+  for(var i=0;i<ptsArr.length-1;i++){
+    var a=ptsArr[i],b=ptsArr[i+1];
+    var dx=b.lon-a.lon,dy=b.lat-a.lat;
+    var lenSq=dx*dx+dy*dy;
+    var t=lenSq>0?((lon-a.lon)*dx+(lat-a.lat)*dy)/lenSq:0;
+    t=Math.max(0,Math.min(1,t));
+    var cx=a.lon+t*dx,cy=a.lat+t*dy;
+    var d=Math.hypot(lon-cx,lat-cy);
+    if(d<bestDist){ bestDist=d; best=i; }
+  }
+  return ptsArr[best].idx;
+}
+function _mapLineGrabCore(lat,lon){
+  var freshPts=[];
+  for(var w=0;w<waypoints.length;w++){
+    if(waypoints[w].lat!==null&&waypoints[w].lon!==null) freshPts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon});
+  }
+  if(freshPts.length<2) return -1;
+  var insertAfterIdx=_mapNearestLegInsertIdx(lat,lon,freshPts);
+  var newWp={name:'',lat:lat,lon:lon,icon:'',dist:0,route:0};
+  var newIdx=insertAfterIdx+1;
+  waypoints.splice(newIdx,0,newWp);
+  renderNavlog();
+  recalcNavlog();
+  return newIdx;
+}
+function _mapLineGrabStartMouse(e){
+  L.DomEvent.stopPropagation(e);
+  var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng);
+  if(newIdx<0) return;
+  routeMap.dragging.disable();
+  function onMove(ev){
+    waypoints[newIdx].lat=ev.latlng.lat;
+    waypoints[newIdx].lon=ev.latlng.lng;
+    updateRouteMap();
+  }
+  function onUp(){
+    routeMap.off('mousemove',onMove);
+    routeMap.off('mouseup',onUp);
+    routeMap.dragging.enable();
+    renderNavlog();
+    recalcNavlog();
+  }
+  routeMap.on('mousemove',onMove);
+  routeMap.on('mouseup',onUp);
+}
+function _mapLineGrabStartTouch(ev){
+  if(!ev.touches||!ev.touches.length) return;
+  ev.preventDefault();
+  var t=ev.touches[0];
+  var cp=routeMap.mouseEventToContainerPoint(t);
+  var latlng=routeMap.containerPointToLatLng(cp);
+  var newIdx=_mapLineGrabCore(latlng.lat,latlng.lng);
+  if(newIdx<0) return;
+  routeMap.dragging.disable();
+  function onMove(ev2){
+    if(!ev2.touches||!ev2.touches.length) return;
+    ev2.preventDefault();
+    var t2=ev2.touches[0];
+    var cp2=routeMap.mouseEventToContainerPoint(t2);
+    var ll2=routeMap.containerPointToLatLng(cp2);
+    waypoints[newIdx].lat=ll2.lat;
+    waypoints[newIdx].lon=ll2.lng;
+    updateRouteMap();
+  }
+  function onUp(){
+    document.removeEventListener('touchmove',onMove,{passive:false});
+    document.removeEventListener('touchend',onUp);
+    routeMap.dragging.enable();
+    renderNavlog();
+    recalcNavlog();
+  }
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onUp);
+}
+
 function updateRouteMap(){
   if(!routeMap) return;
   /* Clear old layers */
@@ -9231,35 +9338,12 @@ function updateRouteMap(){
 
     routeMapLayers.push(marker);
   }
-  /* Poignées "+" au milieu de chaque tronçon : les glisser insère un nouveau
-     waypoint exactement là où on les relâche (comme un point de cheminement
-     inséré sur une ligne dans SkyDemon/Leaflet Routing Machine). */
-  for(var g=0;g<pts.length-1;g++){
-    var ga=pts[g],gb=pts[g+1];
-    var gMidLat=(ga.lat+gb.lat)/2,gMidLon=(ga.lon+gb.lon)/2;
-    var ghostIcon=L.divIcon({
-      className:'',
-      html:'<div style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.92);border:2px solid #ff1493;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1;color:#ff1493;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.4)">+</div>',
-      iconSize:[16,16],
-      iconAnchor:[8,8]
-    });
-    var ghostMarker=L.marker([gMidLat,gMidLon],{
-      icon:ghostIcon,
-      draggable:true,
-      opacity:.85,
-      title:'Glissez pour insérer un nouveau point ici'
-    }).addTo(routeMap);
-    (function(insertAfterIdx){
-      ghostMarker.on('dragend',function(e){
-        var coord=e.target.getLatLng();
-        var newWp={name:'',lat:coord.lat,lon:coord.lng,icon:'',dist:0,route:0};
-        waypoints.splice(insertAfterIdx+1,0,newWp);
-        renderNavlog();
-        recalcNavlog();
-      });
-    })(ga.idx);
-    routeMapLayers.push(ghostMarker);
-  }
+  /* Saisir la ligne de route n'importe où (pas une poignée dédiée à repérer)
+     insère un nouveau waypoint à l'endroit touché et continue le geste pour
+     le positionner immédiatement — voir _mapLineGrabStartMouse/Touch. */
+  polyline.on('mousedown',_mapLineGrabStartMouse);
+  var _polyEl=polyline.getElement&&polyline.getElement();
+  if(_polyEl) _polyEl.addEventListener('touchstart',_mapLineGrabStartTouch,{passive:false});
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
