@@ -1728,6 +1728,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <button onclick="window.loadRouteAirspaces()" class="navlog-btn" style="background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700">&#x1F310; Charger les espaces a&#xe9;riens (OpenAIP)</button>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;font-size:.8em;color:var(--text-secondary)">
+        <span>&#x1F4CF; &#xc9;chelle du graphique :</span>
+        <input type="number" id="altYMin" step="100" style="width:72px" onchange="window.setAltitudesYRange()" title="Altitude basse affich&#xe9;e (ft)">
+        <span>&#x2013;</span>
+        <input type="number" id="altYMax" step="100" style="width:72px" onchange="window.setAltitudesYRange()" title="Altitude haute affich&#xe9;e (ft)">
+        <span>ft</span>
+      </div>
       <div id="altitudesStatus" style="font-size:.82em;color:var(--text-secondary);margin:4px 0 10px"></div>
       <div id="altitudesProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonn&#xe9;es, puis clique sur "Charger les espaces a&#xe9;riens".</p></div>
       <div id="altitudesCrossingsList" style="margin-top:14px"></div>
@@ -7100,6 +7107,7 @@ function loadDossier(id, _freshCloudFiles){
   }
   window._mapFittedOnce=false;  /* force re-fit on new route */
   _altTerrainCache=null;        /* terrain doit être rechargé pour cette route */
+  _altTerrainFetching=false;
   waypoints=d.waypoints;
   wxCache=d.wxCache||{};
   /* Restore map captures — prefer cloud URLs, fall back to local base64 */
@@ -8103,27 +8111,40 @@ function renderAltitudesProfile(){
     else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
   }
 
-  /* Les plafonds "illimités" (ex: FL999 mal encodé côté OpenAIP) doivent être
-     exclus du calcul de l'échelle, sinon un seul espace sans plafond réaliste
-     écrase tout le graphique (tout le reste devient un pixel en bas). Aucun
-     espace VFR pertinent en Belgique/France ne publie de plafond > FL600. */
-  var UNLIMITED_FT=60000;
-  var maxAlt=0; for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
-  _routeAirspaces.forEach(function(a){ if(a.upperFt<UNLIMITED_FT) maxAlt=Math.max(maxAlt,a.upperFt); });
-  maxAlt=Math.ceil((maxAlt+1000)/500)*500; if(maxAlt<3000) maxAlt=3000;
+  /* Échelle verticale configurable par l'utilisateur (persistée) — voir
+     _getAltitudesYRange(). Par défaut 0–5000 ft. Comme la plage est fixe et
+     choisie par l'utilisateur, plus besoin de calcul auto ni de filtrage
+     spécial des plafonds "illimités" (ils sont simplement coupés en haut). */
+  var yRange=_getAltitudesYRange();
+  var minAlt=yRange.min, maxAlt=yRange.max;
+  var minInp=document.getElementById('altYMin'), maxInp=document.getElementById('altYMax');
+  if(minInp && document.activeElement!==minInp) minInp.value=minAlt;
+  if(maxInp && document.activeElement!==maxInp) maxInp.value=maxAlt;
 
   var W=680,H=360,ml=56,mr=14,mt=20,mb=36;
   var cw=W-ml-mr,ch=H-mt-mb;
+  var altSpan=Math.max(1,maxAlt-minAlt);
   function xS(d){return ml+(Math.min(d,totalDist)/totalDist)*cw;}
-  function yS(a){return mt+ch-((Math.min(a,maxAlt)/maxAlt)*ch);}
+  function yS(a){return mt+ch-((Math.min(Math.max(a,minAlt),maxAlt)-minAlt)/altSpan)*ch;}
 
   var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
   for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
   var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
   for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
 
-  var yStep=maxAlt>12000?4000:(maxAlt>6000?2000:1000), yGrid='';
-  for(var alt=0;alt<=maxAlt;alt+=yStep){
+  /* Couche terrain — réutilise le même cache/fetch que le profil du Navlog
+     (mêmes waypoints, donc mêmes points d'échantillonnage : pas besoin de
+     refaire un appel réseau séparé). */
+  var terrainPath='';
+  if(_altTerrainCache && _altTerrainCache.length){
+    var ntn=_altTerrainCache.length-1;
+    terrainPath='M'+xS(0)+','+yS(_altTerrainCache[0]);
+    for(var kt=1;kt<=ntn;kt++) terrainPath+=' L'+xS(totalDist*(kt/ntn))+','+yS(_altTerrainCache[kt]);
+    terrainPath+=' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
+  }
+
+  var yStep=altSpan>12000?4000:(altSpan>6000?2000:(altSpan>2000?1000:500)), yGrid='';
+  for(var alt=Math.ceil(minAlt/yStep)*yStep; alt<=maxAlt; alt+=yStep){
     var yy=yS(alt);
     yGrid+='<line x1="'+ml+'" y1="'+yy+'" x2="'+(W-mr)+'" y2="'+yy+'" stroke="rgba(160,160,200,.12)" stroke-width="1"/>';
     yGrid+='<text x="'+(ml-5)+'" y="'+(yy+4)+'" text-anchor="end" font-size="10" fill="rgba(160,160,200,.7)">'+alt+'</text>';
@@ -8180,11 +8201,13 @@ function renderAltitudesProfile(){
 
   /* Géométrie mise en cache pour les handlers de drag (évite de tout
      recalculer à chaque pixel de déplacement de la souris). */
-  _altitudes2Geom={ml:ml,mr:mr,mt:mt,mb:mb,W:W,H:H,cw:cw,ch:ch,maxAlt:maxAlt,totalDist:totalDist};
+  _altitudes2Geom={ml:ml,mr:mr,mt:mt,mb:mb,W:W,H:H,cw:cw,ch:ch,minAlt:minAlt,maxAlt:maxAlt,totalDist:totalDist};
 
   container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'
     + '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.22)" rx="3"/>'
     + yGrid + xGrid + bandsHtml
+    + (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')
+    + '<g id="alt2TerrainLoading"></g>'
     + legHits
     + '<path id="alt2TrajPath" d="'+pD+'" fill="none" stroke="#ff5252" stroke-width="2.5"/>'
     + wpMk
@@ -8199,8 +8222,37 @@ function renderAltitudesProfile(){
       el.addEventListener('touchstart',function(e){ _altitudes2DragStartTouch(e,idx); },{passive:false});
     });
   }
+
+  /* Déclenche le chargement terrain s'il n'est pas déjà en cache (partagé
+     avec le profil du Navlog — voir _fetchAltTerrain) */
+  if(!_altTerrainCache){
+    var loadingG=document.getElementById('alt2TerrainLoading');
+    if(loadingG) loadingG.innerHTML='<text x="'+(ml+cw/2)+'" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(150,100,40,.6)">Chargement terrain…</text>';
+    _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb);
+  }
 }
 window.renderAltitudesProfile=renderAltitudesProfile;
+
+/* Plage d'altitude (ft) affichée sur le graphique Altitudes — persistée,
+   par défaut 0–5000 ft (voir demande utilisateur). */
+function _getAltitudesYRange(){
+  var min=parseInt(localStorage.getItem('altitudesYMin'));
+  var max=parseInt(localStorage.getItem('altitudesYMax'));
+  if(isNaN(min)) min=0;
+  if(isNaN(max)) max=5000;
+  if(max<=min) max=min+500;
+  return {min:min,max:max};
+}
+function setAltitudesYRange(){
+  var minInp=document.getElementById('altYMin'), maxInp=document.getElementById('altYMax');
+  var min=parseInt(minInp&&minInp.value)||0;
+  var max=parseInt(maxInp&&maxInp.value)||5000;
+  if(max<=min){ max=min+500; if(maxInp) maxInp.value=max; }
+  localStorage.setItem('altitudesYMin',min);
+  localStorage.setItem('altitudesYMax',max);
+  renderAltitudesProfile();
+}
+window.setAltitudesYRange=setAltitudesYRange;
 
 /* ===== Drag d'altitude directement sur le graphique "Espaces aériens sur la route" =====
    Même principe que _altDragStart/_altDragMove (profil du Navlog) : on modifie
@@ -8273,8 +8325,9 @@ function _altitudes2UpdateTrajectory(){
     else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
     else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
   }
+  var gAltSpan=Math.max(1,g.maxAlt-g.minAlt);
   function xS(d){return g.ml+(Math.min(d,g.totalDist)/g.totalDist)*g.cw;}
-  function yS(a){return g.mt+g.ch-((Math.min(a,g.maxAlt)/g.maxAlt)*g.ch);}
+  function yS(a){return g.mt+g.ch-((Math.min(Math.max(a,g.minAlt),g.maxAlt)-g.minAlt)/gAltSpan)*g.ch;}
   var pts=[{x:0,y:wpAlts[0]}]; var cumDist=0;
   for(var i=1;i<waypoints.length;i++){ cumDist+=(waypoints[i].dist||0); pts.push({x:cumDist,y:wpAlts[i]}); }
   var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
@@ -8503,14 +8556,17 @@ function renderAltProfile(){
 }
 
 var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
+var _altTerrainFetching=false; /* évite un double appel réseau si les deux graphiques (Navlog + Altitudes) le déclenchent au même moment */
 
 function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
+  if(_altTerrainFetching) return;
+  _altTerrainFetching=true;
   var segs=[];
   for(var i=1;i<waypoints.length;i++){
     if(waypoints[i-1].lat!==null&&waypoints[i-1].lon!==null&&waypoints[i].lat!==null&&waypoints[i].lon!==null)
       segs.push({lat1:waypoints[i-1].lat,lon1:waypoints[i-1].lon,lat2:waypoints[i].lat,lon2:waypoints[i].lon,dist:waypoints[i].dist||0});
   }
-  if(!segs.length) return;
+  if(!segs.length){ _altTerrainFetching=false; return; }
   var n=24,locs=[],xs=[];
   for(var s=0;s<=n;s++){
     var td=totalDist*(s/n),cd=0;
@@ -8531,8 +8587,12 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
 
   /* Essai 1 : open-elevation.com (POST JSON) */
   var _applyTerrain=function(elevs){
+    _altTerrainFetching=false;
     _altTerrainCache=elevs;
     renderAltProfile();
+    /* Le graphique de l'onglet Altitudes réutilise le même cache terrain —
+       le rafraîchir aussi s'il existe (tab ouverte ou pas, ça ne coûte rien) */
+    if(typeof renderAltitudesProfile==='function') renderAltitudesProfile();
   };
   var _tryOpenElevation=function(){
     fetch('https://api.open-elevation.com/api/v1/lookup',{
@@ -8555,8 +8615,11 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
           _applyTerrain(data.results.map(function(r){return Math.max(0,(r&&r.elevation)||0);}));
         })
         .catch(function(){
+          _altTerrainFetching=false;
           var layer2=document.getElementById('terrainLayer');
           if(layer2) layer2.innerHTML='';
+          var layer3=document.getElementById('alt2TerrainLoading');
+          if(layer3) layer3.innerHTML='';
           _toast('Terrain non disponible (API hors ligne)','',3000);
         });
     });
@@ -9167,6 +9230,35 @@ function updateRouteMap(){
     })(p.idx);
 
     routeMapLayers.push(marker);
+  }
+  /* Poignées "+" au milieu de chaque tronçon : les glisser insère un nouveau
+     waypoint exactement là où on les relâche (comme un point de cheminement
+     inséré sur une ligne dans SkyDemon/Leaflet Routing Machine). */
+  for(var g=0;g<pts.length-1;g++){
+    var ga=pts[g],gb=pts[g+1];
+    var gMidLat=(ga.lat+gb.lat)/2,gMidLon=(ga.lon+gb.lon)/2;
+    var ghostIcon=L.divIcon({
+      className:'',
+      html:'<div style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.92);border:2px solid #ff1493;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1;color:#ff1493;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.4)">+</div>',
+      iconSize:[16,16],
+      iconAnchor:[8,8]
+    });
+    var ghostMarker=L.marker([gMidLat,gMidLon],{
+      icon:ghostIcon,
+      draggable:true,
+      opacity:.85,
+      title:'Glissez pour insérer un nouveau point ici'
+    }).addTo(routeMap);
+    (function(insertAfterIdx){
+      ghostMarker.on('dragend',function(e){
+        var coord=e.target.getLatLng();
+        var newWp={name:'',lat:coord.lat,lon:coord.lng,icon:'',dist:0,route:0};
+        waypoints.splice(insertAfterIdx+1,0,newWp);
+        renderNavlog();
+        recalcNavlog();
+      });
+    })(ga.idx);
+    routeMapLayers.push(ghostMarker);
   }
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
   for(var k=0;k<pts.length-1;k++){
