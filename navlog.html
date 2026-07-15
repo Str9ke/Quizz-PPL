@@ -613,7 +613,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label for="cfgFuel">Conso (L/h)</label>
-          <input type="number" id="cfgFuel" value="20" min="5" max="100" step="0.5" onchange="window.recalcNavlog()">
+          <input type="number" id="cfgFuel" value="20" min="5" max="100" step="0.5" onchange="window.syncFuelBurn('cfg')">
         </div>
         <div class="config-item config-wind-group" style="grid-column:span 2">
           <label>&#x1F4A8; Vent global</label>
@@ -685,7 +685,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="summary-item"><div class="s-label">Temps sol</div><div class="s-value" id="sumGround">20 min</div></div>
       <div class="summary-item"><div class="s-label">Carburant trajet</div><div class="s-value" id="sumTripFuel">0 L</div></div>
       <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div><div class="s-sub" id="sumReserveMode">&#x2600;&#xFE0F; Jour 30 min</div></div>
-      <div class="summary-item"><div class="s-label">Carburant total</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
+      <div class="summary-item" id="sumAltnItem" style="display:none"><div class="s-label">D&#xe9;gagement</div><div class="s-value" id="sumAltnFuel">0 L</div></div>
+      <div class="summary-item"><div class="s-label">Carburant total (block fuel)</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
     </div>
 
     <!-- Route map -->
@@ -1725,7 +1726,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="config-grid" style="margin-bottom:14px">
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Conso moyenne (L/h)</label>
-          <input type="number" id="fuelBurn" value="20" min="10" max="100" step="0.5" onchange="window.renderFuelLog()">
+          <input type="number" id="fuelBurn" value="20" min="10" max="100" step="0.5" onchange="window.syncFuelBurn('fb')">
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Taxi d&#xe9;part (min)</label>
@@ -1737,7 +1738,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">R&#xe9;serve finale (min)</label>
-          <select id="fuelResType" onchange="window.renderFuelLog()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em">
+          <select id="fuelResType" onchange="window.syncReserveFromFuelTab()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em">
             <option value="30">30 min (Jour)</option>
             <option value="45">45 min (Nuit)</option>
           </select>
@@ -1749,6 +1750,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
          <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Carburant suppl. (L)</label>
           <input type="number" id="fuelExtra" value="0" min="0" max="100" onchange="window.renderFuelLog()">
+        </div>
+        <div class="config-item">
+          <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">D&#xe9;gagement (NM)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="fuelAltnDist" value="0" min="0" max="500" step="1" onchange="window.renderFuelLog()" style="width:72px">
+            <button type="button" onclick="window.autoCalcAltnDist()" class="navlog-btn" style="font-size:.72em;padding:4px 8px;white-space:nowrap" title="Calcule la distance depuis la destination jusqu'à l'aérodrome saisi en « Dégagement 1 » (plan de vol), si ses coordonnées sont connues">&#x1F4CD; Auto</button>
+          </div>
         </div>
       </div>
 
@@ -2437,7 +2445,6 @@ function renderFuelLog(){
   var resMin = parseFloat(resMinVal)||30; 
   
   var contPct = parseFloat(document.getElementById('fuelContingency').value)||5;
-  var extra = parseFloat(document.getElementById('fuelExtra').value)||0;
 
   var html='<div style="background:rgba(102,126,234,.1);padding:10px;font-weight:700;display:flex;justify-content:space-between"><span>D\u00e9tail par \u00e9tape</span><span>Litres</span></div>';
   
@@ -2492,8 +2499,7 @@ function renderFuelLog(){
   /* Calculations */
   if(isNaN(tripFuel)) tripFuel=0;
   
-  var taxiFuel = ((taxiD+taxiA)/60) * fuelBurn;
-  /* Étapes intermédiaires: taxi supplémentaire par escale */
+  /* Étapes intermédiaires: taxi supplémentaire par escale (spécifique au détail par étape) */
   var etapeFuel=0; var etapeCount=0; var etapeTimeMin=0;
   for(var ei=1;ei<waypoints.length-1;ei++){
     if(waypoints[ei]&&waypoints[ei].isEtape){
@@ -2502,25 +2508,30 @@ function renderFuelLog(){
       etapeCount++;
     }
   }
-  var contFuel = tripFuel * (contPct/100);
-  if(isNaN(contFuel)) contFuel=0;
-  
-  var resFuel = (resMin/60) * fuelBurn; /* 30 or 45 min reserve at cruise consumption */
-  var extraFuel = extra;
 
-  var totalBlockFuel = tripFuel + taxiFuel + etapeFuel + contFuel + resFuel + extraFuel;
+  /* Source unique : garantit la cohérence avec le Sommaire et le Plan de Vol OACI */
+  var bf = computeFullFuelBreakdown(tripFuel);
+  var taxiFuel = bf.taxiFuel;
+  var contFuel = bf.contFuel;
+  var resFuel = bf.resFuel;
+  var altnFuel = bf.altnFuel;
+  var altnDist = bf.altnDist;
+  var extraFuel = bf.extraFuel;
+
+  var totalBlockFuel = bf.total + etapeFuel;
   var enduranceMin = (fuelBurn > 0) ? (totalBlockFuel / fuelBurn) * 60 : 0;
-  
+
   /* Left Column: Fuel Breakdown */
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">ESTIMATION (Litres)</div>';
   if(tripFuel>0) col1+=row('D\u00e9lestage (Trip)', tripFuel);
   else col1+=row('D\u00e9lestage (Trip)', 0, 'var(--text-secondary)');
-  
+
   col1+=row('Roulage (Taxi)', taxiFuel);
   if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
   col1+=row('Marge ('+contPct+'%)', contFuel);
   col1+=row('R\u00e9serve ('+resMin+' min)', resFuel);
+  if(altnFuel>0) col1+=row('D\u00e9gagement ('+altnDist+' NM)', altnFuel, '#f87171');
   col1+=row('Suppl\u00e9mentaire', extraFuel);
   col1+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">';
   col1+='<div><span style="font-weight:700;font-size:1em">BLOCK FUEL</span><div style="font-size:.78em;color:#4caf50;margin-top:2px">\u2261 '+formatTime(enduranceMin/60)+' d\u2019autonomie</div></div>';
@@ -2609,14 +2620,12 @@ function renderFPL(){
   }
   var eetStr = String(Math.floor(totalMin/60)).padStart(2,'0')+String(Math.round(totalMin%60)).padStart(2,'0');
 
-  /* Endurance: block fuel / consumption * 60 min */
-  var fuelBurnVal = parseFloat((document.getElementById('fuelBurn')||document.getElementById('cfgFuel')||{value:20}).value)||20;
-  var taxiDMin = parseFloat((document.getElementById('fuelTaxiD')||{value:10}).value)||10;
-  var taxiAMin = parseFloat((document.getElementById('fuelTaxiA')||{value:5}).value)||5;
-  var resFuelMin = 30;
+  /* Endurance: block fuel / consumption * 60 min (source unique, alignée avec Sommaire et Carbu) */
   var tripFuelL = 0;
   for(var fi=1;fi<waypoints.length;fi++){ if(waypoints[fi]._leg && waypoints[fi]._leg.fuel) tripFuelL+=waypoints[fi]._leg.fuel; }
-  var blockFuel = tripFuelL + ((taxiDMin+taxiAMin)/60*fuelBurnVal) + (tripFuelL*(5/100)) + (resFuelMin/60*fuelBurnVal);
+  var fplBf = computeFullFuelBreakdown(tripFuelL);
+  var fuelBurnVal = fplBf.fuelBurn;
+  var blockFuel = fplBf.total;
   if(blockFuel<1) blockFuel=36; /* fallback: Cessna 150 usable fuel */
   var endMin = Math.round((blockFuel/fuelBurnVal)*60);
   var endStr = String(Math.floor(endMin/60)).padStart(2,'0')+String(endMin%60).padStart(2,'0');
@@ -5125,9 +5134,60 @@ function toggleReserve(){
     btn.textContent='\u{1F319} Nuit 45min';
     btn.className='reserve-toggle night';
   }
+  var frt=document.getElementById('fuelResType');
+  if(frt) frt.value=(reserveMode==='day'?'30':'45');
   recalcNavlog();
+  if(typeof renderFuelLog==='function') renderFuelLog();
 }
 window.toggleReserve=toggleReserve;
+
+/* R\u00E9serve chang\u00E9e depuis l'onglet Carbu -> r\u00E9percuter sur le bouton Sommaire */
+function syncReserveFromFuelTab(){
+  var frt=document.getElementById('fuelResType');
+  if(!frt) return;
+  reserveMode=(frt.value==='45')?'night':'day';
+  var btn=document.getElementById('reserveBtn');
+  if(btn){
+    if(reserveMode==='day'){ btn.textContent='\u2600\uFE0F Jour 30min'; btn.className='reserve-toggle day'; }
+    else { btn.textContent='\u{1F319} Nuit 45min'; btn.className='reserve-toggle night'; }
+  }
+  recalcNavlog();
+  if(typeof renderFuelLog==='function') renderFuelLog();
+}
+window.syncReserveFromFuelTab=syncReserveFromFuelTab;
+
+/* Consommation (L/h) chang\u00E9e dans un onglet -> r\u00E9percuter sur l'autre */
+function syncFuelBurn(source){
+  var cfgEl=document.getElementById('cfgFuel');
+  var fbEl=document.getElementById('fuelBurn');
+  if(!cfgEl||!fbEl) return;
+  if(source==='cfg') fbEl.value=cfgEl.value;
+  else cfgEl.value=fbEl.value;
+  recalcNavlog();
+  if(typeof renderFuelLog==='function') renderFuelLog();
+}
+window.syncFuelBurn=syncFuelBurn;
+
+/* Calcule la distance vers l'aérodrome de dégagement (champ "Dégagement 1" du FPL)
+   si ses coordonnées sont connues, pour estimer le carburant de déroutement. */
+function autoCalcAltnDist(){
+  var altnEl=document.getElementById('fpl_altn1');
+  var icao=altnEl?altnEl.value.trim().toUpperCase():'';
+  if(!icao || !AIRPORT_COORDS[icao]){
+    alert('Aérodrome de dégagement inconnu ou non renseigné (champ "Dégagement 1" du plan de vol). Saisis la distance manuellement.');
+    return;
+  }
+  var dest = (waypoints && waypoints.length) ? waypoints[waypoints.length-1] : null;
+  if(!dest || dest.lat===null || dest.lon===null || dest.lat===undefined || dest.lon===undefined){
+    alert('Coordonnées de l’aérodrome de destination inconnues — impossible de calculer la distance.');
+    return;
+  }
+  var dist = haversine(dest.lat, dest.lon, AIRPORT_COORDS[icao].lat, AIRPORT_COORDS[icao].lon);
+  var fld=document.getElementById('fuelAltnDist');
+  if(fld) fld.value = Math.round(dist*10)/10;
+  if(typeof renderFuelLog==='function') renderFuelLog();
+}
+window.autoCalcAltnDist=autoCalcAltnDist;
 
 /* ===== NAVLOG CALCULATION ===== */
 function _v(id,def){
@@ -5152,9 +5212,36 @@ function getConfig(){
     fuelResType:_v('fuelResType')||'30',
     fuelContingency:parseFloat(_v('fuelContingency'))||5,
     fuelExtra:parseFloat(_v('fuelExtra'))||0,
+    fuelAltnDist:parseFloat(_v('fuelAltnDist'))||0,
     perfAircraft:window._perfAircraft||'OO-MQA'
   };
 }
+
+/* ===== SOURCE UNIQUE DU CALCUL DE CARBURANT ===== */
+/* Utilisée par le Sommaire, l'onglet Carbu et le Plan de Vol OACI pour garantir
+   que les 3 endroits affichent toujours le même total (trip + taxi + marge +
+   réserve finale + dégagement + supplémentaire). */
+function computeFullFuelBreakdown(tripFuelL){
+  var fuelBurnVal = parseFloat(_v('fuelBurn'))||parseFloat(_v('cfgFuel'))||20;
+  var taxiD = parseFloat(_v('fuelTaxiD'))||0;
+  var taxiA = parseFloat(_v('fuelTaxiA'))||0;
+  var taxiFuel = ((taxiD+taxiA)/60)*fuelBurnVal;
+  var contPct = parseFloat(_v('fuelContingency'))||0;
+  var contFuel = (tripFuelL||0)*(contPct/100);
+  var resMin = parseFloat(_v('fuelResType'))||30;
+  var resFuel = (resMin/60)*fuelBurnVal;
+  var altnDist = parseFloat(_v('fuelAltnDist'))||0;
+  var tas = parseFloat(_v('cfgTAS'))||90;
+  var altnFuel = (altnDist>0 && tas>0) ? (altnDist/tas)*fuelBurnVal : 0;
+  var extraFuel = parseFloat(_v('fuelExtra'))||0;
+  var total = (tripFuelL||0)+taxiFuel+contFuel+resFuel+altnFuel+extraFuel;
+  return {
+    tripFuel:tripFuelL||0, taxiFuel:taxiFuel, contFuel:contFuel, contPct:contPct,
+    resFuel:resFuel, resMin:resMin, altnFuel:altnFuel, altnDist:altnDist,
+    extraFuel:extraFuel, total:total, fuelBurn:fuelBurnVal
+  };
+}
+window.computeFullFuelBreakdown=computeFullFuelBreakdown;
 
 function getFuelBurnForLeg(alt, tas, defaultBurn){
   if(!alt || alt < 2500) return defaultBurn;
@@ -5256,7 +5343,7 @@ function recalcNavlog(){
     totalFuel+=leg.fuel;
     wp._cumFuel=Math.round(totalFuel*10)/10;
   }
-  var reserveFuel=cfg.fuel*(cfg.reserveMin/60);
+  var bf=computeFullFuelBreakdown(totalFuel);
   var groundTimeMin=cfg.taxiMin+cfg.landingMin;
   var totalTimeWithGround=totalTime+groundTimeMin/60;
   document.getElementById('sumDist').textContent=Math.round(totalDist*10)/10+' NM';
@@ -5264,9 +5351,18 @@ function recalcNavlog(){
   document.getElementById('sumTime').textContent=formatTime(totalTimeWithGround);
   document.getElementById('sumGround').textContent=Math.round(groundTimeMin)+' min';
   document.getElementById('sumTripFuel').textContent=Math.round(totalFuel*10)/10+' L';
-  document.getElementById('sumReserve').textContent=Math.round(reserveFuel*10)/10+' L';
-  document.getElementById('sumReserveMode').textContent=reserveMode==='day'?'\u2600\uFE0F Jour 30 min':'\uD83C\uDF19 Nuit 45 min';
-  document.getElementById('sumTotalFuel').textContent=Math.round((totalFuel+reserveFuel)*10)/10+' L';
+  document.getElementById('sumReserve').textContent=Math.round(bf.resFuel*10)/10+' L';
+  document.getElementById('sumReserveMode').textContent=(bf.resMin>=45)?'\u{1F319} Nuit '+bf.resMin+' min':'\u2600\uFE0F Jour '+bf.resMin+' min';
+  var _altnEl=document.getElementById('sumAltnItem');
+  if(_altnEl){
+    if(bf.altnFuel>0){
+      _altnEl.style.display='';
+      document.getElementById('sumAltnFuel').textContent=Math.round(bf.altnFuel*10)/10+' L';
+    } else {
+      _altnEl.style.display='none';
+    }
+  }
+  document.getElementById('sumTotalFuel').textContent=Math.round(bf.total*10)/10+' L';
   updateLegStrips();
   suggestDossierName();
   updateRouteMap();
@@ -5792,6 +5888,14 @@ function clearWorkspace(){
   document.getElementById('cfgLanding').value=10;
   document.getElementById('cfgWindDirSlider').value=0;
   document.getElementById('cfgWindSpdSlider').value=0;
+  /* Onglet Carbu : garder coh\u00E9rent avec le reset ci-dessus */
+  var _fbReset=document.getElementById('fuelBurn');if(_fbReset)_fbReset.value=25;
+  var _ftdReset=document.getElementById('fuelTaxiD');if(_ftdReset)_ftdReset.value=10;
+  var _ftaReset=document.getElementById('fuelTaxiA');if(_ftaReset)_ftaReset.value=5;
+  var _fcoReset=document.getElementById('fuelContingency');if(_fcoReset)_fcoReset.value=5;
+  var _fexReset=document.getElementById('fuelExtra');if(_fexReset)_fexReset.value=0;
+  var _fadReset=document.getElementById('fuelAltnDist');if(_fadReset)_fadReset.value=0;
+  var _frtReset=document.getElementById('fuelResType');if(_frtReset)_frtReset.value='30';
   reserveMode='day';
   var rBtn=document.getElementById('reserveBtn');
   rBtn.textContent='\u2600\uFE0F Jour 30min';
@@ -6676,6 +6780,7 @@ function loadDossier(id, _freshCloudFiles){
   if(d.config.fuelResType){var _frt=document.getElementById('fuelResType');if(_frt)_frt.value=d.config.fuelResType;}
   if(d.config.fuelContingency!==undefined){var _fco=document.getElementById('fuelContingency');if(_fco)_fco.value=d.config.fuelContingency;}
   if(d.config.fuelExtra!==undefined){var _fex=document.getElementById('fuelExtra');if(_fex)_fex.value=d.config.fuelExtra;}
+  if(d.config.fuelAltnDist!==undefined){var _fad=document.getElementById('fuelAltnDist');if(_fad)_fad.value=d.config.fuelAltnDist;}
   // syncAircraftSelection with keepCruise=true : syncs selectors/labels only, preserves saved TAS/fuel
   if(d.config.perfAircraft) syncAircraftSelection(d.config.perfAircraft, true);
   // Re-apply saved cruise values AFTER sync (syncAircraftSelection may recalc but won't overwrite now)
