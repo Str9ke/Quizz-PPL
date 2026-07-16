@@ -681,12 +681,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
     </div>
 
-    <!-- Altitude profile -->
-    <div class="nl-card" id="altProfileCard" style="padding-bottom:8px">
-      <div class="nl-card-title"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span></div>
-      <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
-    </div>
-
     <!-- Summary panel -->
     <div class="summary-panel" id="summaryPanel">
       <div class="summary-item"><div class="s-label">Distance totale</div><div class="s-value" id="sumDist">0 NM</div></div>
@@ -708,6 +702,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="navlog-btn primary" onclick="window.fitRouteMap()" title="Recentrer la carte sur la route">&#x2316; Recentrer</button>
         <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
       </div>
+      <div class="nl-card-title" style="margin-top:10px"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span> <span style="font-size:.7em;font-weight:400;color:var(--text-secondary)">— glisse (souris ou doigt) pour te situer sur la carte</span></div>
+      <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
     </div>
   </div>
 
@@ -840,6 +836,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div style="display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 0 12px;flex-wrap:wrap">
       <button onclick="window.refreshAllSkeyesImages()" style="padding:8px 18px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s" title="Recharger toutes les images radar/satellite depuis le serveur">&#x1F504; Actualiser toutes les images Skeyes</button>
       <button onclick="window.triggerGithubAction()" style="padding:8px 18px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff">&#x26A1; Relancer GitHub Action</button>
+      <span id="ghaStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
     </div>
 
     <!-- ===== SUB: Radar ===== -->
@@ -8020,53 +8017,72 @@ async function loadRouteAirspaces(){
     }
   }
 
-  try{
-    /* OpenAIP paginé — on suit totalPages au cas où la bbox contient plus
-       d'items que la limite d'une seule page (les CTR/TMZ/zones autour de
-       Bruxelles/Anvers sont nombreuses) */
-    var items=[], page=1, totalPages=1, limitPerPage=1000;
-    do{
-      var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
-      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
-      if(!resp.ok){
-        var bodyTxt='';
-        try{ bodyTxt=await resp.text(); }catch(e2){}
-        console.error('[Altitudes] OpenAIP HTTP '+resp.status, bodyTxt);
-        if(status) status.textContent='❌ OpenAIP a répondu '+resp.status+' après plusieurs tentatives — probablement une surcharge temporaire côté OpenAIP, réessaie dans une minute. Détail dans la console (F12).';
+  /* OpenAIP répond parfois 503/lentement plusieurs fois de suite (surcharge
+     ponctuelle) — _fetchWithRetry() gère déjà 3 tentatives rapprochées, mais
+     avant, épuiser ces 3 tentatives obligeait à recliquer manuellement sur
+     "Charger les espaces aériens". On enchaîne maintenant plusieurs ROUNDS
+     complets automatiquement (délai croissant entre rounds) tant que ça
+     échoue, sans action de l'utilisateur — seul un échec après TOUS les
+     rounds affiche enfin une erreur avec bouton pour relancer manuellement. */
+  var ROUND_DELAYS=[0,4000,8000,15000,25000,30000];
+  for(var round=0; round<ROUND_DELAYS.length; round++){
+    if(round>0){
+      if(status) status.textContent='⏳ OpenAIP ne répond pas encore — nouvelle tentative automatique '+(round+1)+'/'+ROUND_DELAYS.length+' dans '+Math.round(ROUND_DELAYS[round]/1000)+'s…';
+      await _sleep(ROUND_DELAYS[round]);
+      if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP… (tentative '+(round+1)+'/'+ROUND_DELAYS.length+')';
+    }
+    var roundOk=false, roundIsTimeout=false;
+    try{
+      /* OpenAIP paginé — on suit totalPages au cas où la bbox contient plus
+         d'items que la limite d'une seule page (les CTR/TMZ/zones autour de
+         Bruxelles/Anvers sont nombreuses) */
+      var items=[], page=1, totalPages=1, limitPerPage=1000;
+      do{
+        var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
+        var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
+        if(!resp.ok){
+          var bodyTxt='';
+          try{ bodyTxt=await resp.text(); }catch(e2){}
+          console.error('[Altitudes] OpenAIP HTTP '+resp.status+' (round '+(round+1)+')', bodyTxt);
+          throw new Error('HTTP '+resp.status);
+        }
+        var data=await resp.json();
+        console.log('[Altitudes] Réponse OpenAIP brute (page '+page+', round '+(round+1)+') :', data);
+        var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
+        items=items.concat(pageItems);
+        totalPages=data.totalPages||1;
+        page++;
+      }while(page<=totalPages && page<=10);
+
+      if(!items.length){
+        _routeAirspaces=[];
+        if(status) status.textContent='ℹ️ OpenAIP n’a renvoyé aucun espace aérien pour cette zone.';
+        renderAltitudesProfile();
+        renderAltitudesCrossingsList();
         return;
       }
-      var data=await resp.json();
-      console.log('[Altitudes] Réponse OpenAIP brute (page '+page+') :', data);
-      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
-      items=items.concat(pageItems);
-      totalPages=data.totalPages||1;
-      page++;
-    }while(page<=totalPages && page<=10);
 
-    if(!items.length){
-      _routeAirspaces=[];
-      if(status) status.textContent='ℹ️ OpenAIP n’a renvoyé aucun espace aérien pour cette zone.';
+      _lastOpenaipItems=items;
+      var results=_computeAirspaceCrossings(items);
+      _altitudesRouteSig=_currentRouteSig();
+
+      _routeAirspaces=results;
+      if(status) status.textContent=results.length
+        ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
+        : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
       renderAltitudesProfile();
       renderAltitudesCrossingsList();
-      return;
+      roundOk=true;
+    }catch(e){
+      console.error('[Altitudes] Erreur chargement OpenAIP (round '+(round+1)+')', e);
+      roundIsTimeout=(e&&(e.name==='AbortError'||/abort/i.test(e.message||'')));
     }
-
-    _lastOpenaipItems=items;
-    var results=_computeAirspaceCrossings(items);
-    _altitudesRouteSig=_currentRouteSig();
-
-    _routeAirspaces=results;
-    if(status) status.textContent=results.length
-      ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
-      : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
-    renderAltitudesProfile();
-    renderAltitudesCrossingsList();
-  }catch(e){
-    console.error('[Altitudes] Erreur chargement OpenAIP', e);
-    var isTimeout=(e&&(e.name==='AbortError'||/abort/i.test(e.message||'')));
-    if(status) status.textContent=isTimeout
-      ? '❌ OpenAIP ne répond pas (délai dépassé après plusieurs tentatives) — réessaie dans une minute, ou vérifie ta connexion.'
-      : '❌ Erreur réseau/format lors du chargement OpenAIP : '+e.message+' (détail en console F12 — envoie-le-moi si ça persiste).';
+    if(roundOk) return;
+    if(round===ROUND_DELAYS.length-1){
+      if(status) status.textContent=roundIsTimeout
+        ? '❌ OpenAIP ne répond pas, même après plusieurs tentatives automatiques étalées sur '+Math.round(ROUND_DELAYS.reduce(function(s,d){return s+d;},0)/1000)+'s — réessaie plus tard, ou vérifie ta connexion.'
+        : '❌ Erreur réseau/format persistante lors du chargement OpenAIP, malgré plusieurs tentatives automatiques (détail en console F12 — envoie-le-moi si ça persiste).';
+    }
   }
 }
 window.loadRouteAirspaces=loadRouteAirspaces;
@@ -8328,6 +8344,43 @@ function renderAltitudesProfile(){
         if(idx>=0) _altitudes2DragStartTouch(e,idx);
       },{passive:false});
     }
+
+    /* Info-bulle au survol : indique exactement quel(s) espace(s) aérien(s) se
+       trouve(nt) sous le curseur (nom + classe + plancher/plafond), y compris
+       plusieurs zones superposées au même endroit. */
+    var tooltipEl=document.getElementById('alt2Tooltip');
+    if(!tooltipEl){
+      tooltipEl=document.createElement('div');
+      tooltipEl.id='alt2Tooltip';
+      tooltipEl.style.cssText='position:fixed;z-index:9999;pointer-events:none;background:rgba(15,15,28,.97);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 9px;font-size:11px;line-height:1.45;max-width:270px;display:none;box-shadow:0 4px 14px rgba(0,0,0,.45)';
+      document.body.appendChild(tooltipEl);
+    }
+    svg2.addEventListener('mousemove',function(e){
+      var r=svg2.getBoundingClientRect();
+      if(!r.width){ tooltipEl.style.display='none'; return; }
+      var svgX=(e.clientX-r.left)*(W/r.width), svgY=(e.clientY-r.top)*(H/r.height);
+      if(svgX<ml||svgX>W-mr||svgY<mt||svgY>mt+ch){ tooltipEl.style.display='none'; return; }
+      var d=(svgX-ml)/cw*totalDist;
+      var alt=minAlt+((mt+ch-svgY)/ch)*altSpan;
+      var hits=[];
+      _routeAirspaces.forEach(function(a){
+        a.crossings.forEach(function(c){
+          if(d>=c.entryDist && d<=c.exitDist && alt>=(a.lowerFt||0) && alt<=(a.upperFt||maxAlt)) hits.push(a);
+        });
+      });
+      if(!hits.length){ tooltipEl.style.display='none'; return; }
+      tooltipEl.innerHTML=hits.map(function(a){
+        var upperLabel=(a.upperFt>=60000)?'UNL':((a.upperFt||0)+' ft');
+        return '<div style="margin-bottom:4px"><b style="color:'+_airspaceBandColor(a.classLabel)+'">'+escHTML(a.classLabel)+'</b> '+escHTML(a.name)+
+          '<br><span style="opacity:.75">'+(a.lowerFt||0)+'–'+upperLabel+'</span></div>';
+      }).join('');
+      tooltipEl.style.display='block';
+      var tx=e.clientX+14, ty=e.clientY+14;
+      if(tx+270>window.innerWidth) tx=e.clientX-284;
+      tooltipEl.style.left=tx+'px';
+      tooltipEl.style.top=ty+'px';
+    });
+    svg2.addEventListener('mouseleave',function(){ tooltipEl.style.display='none'; });
   }
 
   /* Déclenche le chargement terrain s'il n'est pas déjà en cache (partagé
@@ -8465,6 +8518,41 @@ function _altitudes2UpdateTrajectory(){
     var lbl=document.getElementById('alt2Lbl'+i);
     if(lbl){ lbl.setAttribute('y',wy-9); lbl.textContent=wpAlts[i]+'ft'; }
   }
+}
+
+/* ===== Position sur la carte synchronisée avec le profil d'altitude =====
+   En survolant (souris) ou en glissant le doigt (tactile) sur le profil
+   d'altitude sous la carte de route, un marqueur suit la distance
+   correspondante le long de la route pour se repérer visuellement — sans
+   reconstruire la carte (juste setLatLng, fluide même en glisser continu). */
+function _altProfileLatLonAtDist(dist){
+  var cum=0;
+  for(var i=1;i<waypoints.length;i++){
+    var wp=waypoints[i],prev=waypoints[i-1];
+    var legDist=wp.dist||0;
+    if(prev.lat===null||prev.lon===null||wp.lat===null||wp.lon===null){ cum+=legDist; continue; }
+    if(dist<=cum+legDist||i===waypoints.length-1){
+      var f=legDist>0?Math.max(0,Math.min(1,(dist-cum)/legDist)):0;
+      return {lat:prev.lat+(wp.lat-prev.lat)*f,lon:prev.lon+(wp.lon-prev.lon)*f};
+    }
+    cum+=legDist;
+  }
+  return null;
+}
+var _altProfileMapMarker=null;
+function _altProfileShowMapPos(dist){
+  if(typeof routeMap==='undefined'||!routeMap) return;
+  var ll=_altProfileLatLonAtDist(dist);
+  if(!ll) return;
+  if(!_altProfileMapMarker){
+    _altProfileMapMarker=L.circleMarker([ll.lat,ll.lon],{radius:9,color:'#fff',weight:2,fillColor:'#ff5252',fillOpacity:1,interactive:false}).addTo(routeMap);
+  } else {
+    _altProfileMapMarker.setLatLng([ll.lat,ll.lon]);
+    _altProfileMapMarker.setStyle({opacity:1,fillOpacity:1});
+  }
+}
+function _altProfileHideMapPos(){
+  if(_altProfileMapMarker) _altProfileMapMarker.setStyle({opacity:0,fillOpacity:0});
 }
 
 /* ===== ALTITUDE PROFILE CHART ===== */
@@ -8647,13 +8735,13 @@ function renderAltProfile(){
       var tx=document.getElementById('altCrossText');
       var rc=document.getElementById('altCrossRect');
       if(!g||!ln||!tx||!rc) return;
-      if(svgX<ml||svgX>ml+cw){g.setAttribute('visibility','hidden');return;}
+      if(svgX<ml||svgX>ml+cw){g.setAttribute('visibility','hidden');_altProfileHideMapPos();return;}
       g.setAttribute('visibility','visible');
       ln.setAttribute('x1',svgX);ln.setAttribute('x2',svgX);
+      var d2=(svgX-ml)/cw*totalDist;
       var label='';
       if(tArr&&tArr.length>1){
         var nt2=tArr.length-1;
-        var d2=(svgX-ml)/cw*totalDist;
         var k2=d2/totalDist*nt2;
         var k0=Math.max(0,Math.floor(k2)),k1=Math.min(nt2,k0+1);
         var frac=k2-k0;
@@ -8665,11 +8753,30 @@ function renderAltProfile(){
       var rx=Math.min(ml+cw-tw/2-2,Math.max(ml+tw/2+2,svgX));
       rc.setAttribute('x',rx-tw/2);rc.setAttribute('width',tw);
       tx.setAttribute('x',rx);
+      /* Situe le point survolé/glissé sur la carte de route juste au-dessus — voir
+         _altProfileShowMapPos(). Fonctionne aussi bien en glissant qu'en survolant
+         simplement, pas besoin de cliquer d'abord. */
+      _altProfileShowMapPos(d2);
     }
     svg.addEventListener('mousemove',_updateCrosshair);
     svg.addEventListener('mouseleave',function(){
       var g=document.getElementById('altCrosshair');
       if(g) g.setAttribute('visibility','hidden');
+      _altProfileHideMapPos();
+    });
+    /* Support tactile (mobile) : le mousemove seul ne se déclenche jamais au doigt —
+       sans ceci, glisser le doigt sur le profil ne faisait rien sur téléphone. */
+    function _updateCrosshairTouch(ev){
+      if(!ev.touches||!ev.touches.length) return;
+      ev.preventDefault();
+      _updateCrosshair(ev.touches[0]);
+    }
+    svg.addEventListener('touchstart',_updateCrosshairTouch,{passive:false});
+    svg.addEventListener('touchmove',_updateCrosshairTouch,{passive:false});
+    svg.addEventListener('touchend',function(){
+      var g=document.getElementById('altCrosshair');
+      if(g) g.setAttribute('visibility','hidden');
+      _altProfileHideMapPos();
     });
   }
 
@@ -10736,6 +10843,45 @@ window.applyPerformance=function(tas, fuel){
   }
 };
 
+/* Suit l'avancement du workflow apr\u00E8s d\u00E9clenchement (d\u00E9p\u00F4t public \u2192 API GitHub
+   lisible sans authentification) au lieu de laisser l'utilisateur deviner s'il
+   s'est pass\u00E9 quelque chose ("je ne vois pas l'\u00E9volution"). Une fois termin\u00E9
+   avec succ\u00E8s, recharge automatiquement les cartes m\u00E9t\u00E9o affich\u00E9es. */
+function _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt) {
+  attempt = attempt || 0;
+  if (attempt > 45) { // ~9 min max de suivi automatique
+    if (statusEl) statusEl.textContent = '\u26A0\uFE0F Toujours en attente apr\u00E8s plusieurs minutes \u2014 v\u00E9rifie directement sur GitHub Actions.';
+    return;
+  }
+  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      var runs = (data && data.workflow_runs) || [];
+      var run = runs.find(function(r) { return new Date(r.created_at).getTime() >= dispatchedAtMs - 15000; });
+      if (!run) {
+        if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En attente du d\u00E9marrage\u2026';
+        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+        return;
+      }
+      if (run.status !== 'completed') {
+        if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En cours d\u2019ex\u00E9cution\u2026';
+        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+        return;
+      }
+      if (run.conclusion === 'success') {
+        if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 \u2014 actualisation des cartes\u2026';
+        if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
+        if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
+        setTimeout(function() { if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 et actualis\u00E9.'; }, 800);
+      } else {
+        if (statusEl) statusEl.textContent = '\uD83D\uDD34 \u00C9chec (voir GitHub Actions pour le d\u00E9tail).';
+      }
+    })
+    .catch(function() {
+      setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+    });
+}
+
 window.triggerGithubAction = async function() {
     let token = localStorage.getItem("github_pat");
     if (!token) {
@@ -10743,9 +10889,11 @@ window.triggerGithubAction = async function() {
         if (!token) return;
         localStorage.setItem("github_pat", token);
     }
-    
-    alert("\u23F3 Lancement de l'actualisation des NOTAMs et M\u00E9t\u00E9o sur GitHub Actions.\n\nCela prend g\u00E9n\u00E9ralement 1 \u00E0 2 minutes. Vous pourrez ensuite cliquer sur 'Recharger l'affichage'.");
-    
+
+    var statusEl = document.getElementById('ghaStatus');
+    if (statusEl) { statusEl.style.display = ''; statusEl.textContent = '\u23F3 D\u00E9clenchement\u2026'; }
+    var dispatchedAtMs = Date.now();
+
     try {
         let response = await fetch("https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/dispatches", {
             method: "POST",
@@ -10760,11 +10908,15 @@ window.triggerGithubAction = async function() {
         });
         if(response.ok || response.status === 204) {
              console.log("Action d\u00E9clench\u00E9e avec succ\u00E8s");
+             if (statusEl) statusEl.textContent = '\uD83D\uDFE1 Lanc\u00E9e \u2014 suivi en cours\u2026';
+             setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl); }, 4000);
         } else {
+            if (statusEl) statusEl.style.display = 'none';
             alert("\u274C Erreur: " + response.status + " " + response.statusText + "\n V\u00E9rifiez votre token PAT (il doit avoir les droits 'repo').");
             localStorage.removeItem("github_pat"); // Token invalide
         }
     } catch(e) {
+        if (statusEl) statusEl.style.display = 'none';
         alert("\u274C Erreur de connexion : " + e);
     }
 }
