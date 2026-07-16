@@ -612,6 +612,7 @@ function afficherQuiz() {
   window._immediateAnswers = {};
   window._immediateSavedEntries = {};
   window._immediatePrevStatus = {};
+  window._sessionPrevSnapshot = {};
 
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
@@ -619,6 +620,7 @@ function afficherQuiz() {
   if (!currentQuestions.length) {
     cont.innerHTML = `<p style="color:red;">Aucune question chargée.<br>
       Retournez à l'accueil et cliquez sur «Démarrer le Quiz».</p>`;
+    if (typeof _updateResetBtnVisibility === 'function') _updateResetBtnVisibility(true);
     return;
   }
 
@@ -713,6 +715,47 @@ function afficherQuiz() {
         saved[qIdx] = q2.choix[parseInt(radio.value)];
         localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
       } catch (e2) { /* localStorage plein, tant pis */ }
+
+      // Mode normal (correction différée) : persister aussi la progression (statut +
+      // planification SR) dès le clic — le mode immédiat le fait déjà dans
+      // handleImmediateAnswer. Comme la réponse peut encore être CHANGÉE avant la
+      // validation, on garde un instantané de l'état d'origine de la question et on
+      // recalcule l'entrée depuis cet instantané à chaque changement (sinon changer
+      // d'avis appliquerait deux fois la planification / le failCount).
+      if (localStorage.getItem('correctionImmediate') !== '1') {
+        try {
+          const key2 = getKeyFor(q2);
+          window._sessionPrevSnapshot = window._sessionPrevSnapshot || {};
+          window._immediatePrevStatus = window._immediatePrevStatus || {};
+          window._immediateSavedEntries = window._immediateSavedEntries || {};
+          if (!(key2 in window._sessionPrevSnapshot)) {
+            window._sessionPrevSnapshot[key2] = currentResponses[key2];
+            window._immediatePrevStatus[key2] = currentResponses[key2]?.status;
+          }
+          const orig = window._sessionPrevSnapshot[key2];
+          if (orig === undefined) delete currentResponses[key2];
+          else currentResponses[key2] = orig;
+          const entry2 = _computeSrEntry(q2, parseInt(radio.value));
+          currentResponses[key2] = entry2;
+          window._immediateSavedEntries[key2] = entry2;
+          _persistImmediateEntry(key2, entry2);
+        } catch (e3) { console.warn('[SR au clic] échec:', e3); }
+      }
+    });
+  }
+
+  // Mode normal : relier les réponses restaurées (cochées avant une navigation/rechargement)
+  // à leurs entrées déjà persistées au clic d'origine, pour que la validation ne recalcule
+  // pas la planification SR une seconde fois (même principe que la restauration immédiate).
+  if (localStorage.getItem('correctionImmediate') !== '1') {
+    Object.keys(savedAnswers).forEach(idxStr => {
+      const rIdx = parseInt(idxStr);
+      const rq = currentQuestions[rIdx];
+      if (!rq) return;
+      const rKey = getKeyFor(rq);
+      if (currentResponses[rKey] && currentResponses[rKey].status !== undefined) {
+        window._immediateSavedEntries[rKey] = currentResponses[rKey];
+      }
     });
   }
 
@@ -753,21 +796,35 @@ function _setupQuizPagination(totalBatches) {
   if (!cont) return;
   document.querySelectorAll('.quiz-pagination-bar').forEach(el => el.remove());
 
+  // Session en cours → masquer "Nouvelles Questions" : pendant qu'on répond, la seule
+  // action proposée doit être "Suivant" (ou "Valider" sur le dernier lot). Le bouton
+  // réapparaît une fois la session validée (voir validerReponses).
+  _updateResetBtnVisibility(false);
+
   if (totalBatches <= 1) {
     _updateQuizValidateVisibility(true);
     return;
   }
 
-  const bar = document.createElement('div');
-  bar.className = 'quiz-pagination-bar';
-  bar.innerHTML = `
-    <button type="button" id="quizPrevBatchBtn" class="quiz-btn" onclick="_goToQuizBatch(window._quizCurrentBatch-1)">⬅️ Précédent</button>
-    <span id="quizBatchLabel" class="quiz-batch-label"></span>
-    <button type="button" id="quizNextBatchBtn" class="quiz-btn quiz-btn-next" onclick="_goToQuizBatch(window._quizCurrentBatch+1)">Suivant ➡️</button>
-  `;
-  cont.insertBefore(bar, cont.firstChild);
+  // Deux barres identiques : une en haut ET une en bas du lot de questions — avant, le
+  // "Suivant" n'existait qu'en haut : arrivé en bas d'un lot, le seul bouton visible
+  // était "Nouvelles Questions" (qui jette la session), source de confusion permanente.
+  const mkBar = () => {
+    const bar = document.createElement('div');
+    bar.className = 'quiz-pagination-bar';
+    bar.innerHTML = `
+      <button type="button" class="quiz-btn quiz-prev-batch" onclick="_goToQuizBatch(window._quizCurrentBatch-1)">⬅️ Précédent</button>
+      <span class="quiz-batch-label"></span>
+      <button type="button" class="quiz-btn quiz-btn-next quiz-next-batch" onclick="_goToQuizBatch(window._quizCurrentBatch+1)">Suivant ➡️</button>
+    `;
+    return bar;
+  };
+  cont.insertBefore(mkBar(), cont.firstChild);
+  cont.appendChild(mkBar());
   _updateQuizBatchLabel(totalBatches);
-  _updateQuizValidateVisibility(false);
+  // Respecter le lot restauré (retour en cours de session) : si on reprend directement
+  // sur le dernier lot, "Valider" doit être visible tout de suite.
+  _updateQuizValidateVisibility(window._quizCurrentBatch === totalBatches - 1);
 }
 
 /**
@@ -789,16 +846,18 @@ function _goToQuizBatch(newBatch) {
 window._goToQuizBatch = _goToQuizBatch;
 
 function _updateQuizBatchLabel(totalBatches) {
-  const label = document.getElementById('quizBatchLabel');
-  if (!label) return;
   const bs = window._quizBatchSize;
   const start = window._quizCurrentBatch * bs + 1;
   const end = Math.min(start + bs - 1, currentQuestions.length);
-  label.textContent = `Questions ${start}–${end} sur ${currentQuestions.length}`;
-  const prevBtn = document.getElementById('quizPrevBatchBtn');
-  const nextBtn = document.getElementById('quizNextBatchBtn');
-  if (prevBtn) prevBtn.disabled = (window._quizCurrentBatch === 0);
-  if (nextBtn) nextBtn.style.display = (window._quizCurrentBatch === totalBatches - 1) ? 'none' : '';
+  // Mettre à jour TOUTES les barres de pagination (haut + bas)
+  document.querySelectorAll('.quiz-pagination-bar').forEach(bar => {
+    const label = bar.querySelector('.quiz-batch-label');
+    if (label) label.textContent = `Questions ${start}–${end} sur ${currentQuestions.length}`;
+    const prevBtn = bar.querySelector('.quiz-prev-batch');
+    const nextBtn = bar.querySelector('.quiz-next-batch');
+    if (prevBtn) prevBtn.disabled = (window._quizCurrentBatch === 0);
+    if (nextBtn) nextBtn.style.display = (window._quizCurrentBatch === totalBatches - 1) ? 'none' : '';
+  });
 }
 
 /**
@@ -807,6 +866,16 @@ function _updateQuizBatchLabel(totalBatches) {
  */
 function _updateQuizValidateVisibility(show) {
   const btn = document.querySelector('.quiz-actions-bar .quiz-btn-validate');
+  if (btn) btn.style.display = show ? '' : 'none';
+}
+
+/**
+ * _updateResetBtnVisibility() – Affiche/masque "Nouvelles Questions". Masqué pendant une
+ * session en cours (une seule action à la fois : Suivant, puis Valider), ré-affiché après
+ * la validation ou quand aucune question n'est chargée.
+ */
+function _updateResetBtnVisibility(show) {
+  const btn = document.getElementById('resetQuizBtn');
   if (btn) btn.style.display = show ? '' : 'none';
 }
 
@@ -1086,14 +1155,21 @@ async function validerReponses() {
         answeredCount++;
         const key = getKeyFor(q);
 
-        // Mode correction immédiate : l'entrée SR a déjà été calculée ET sauvegardée au
-        // moment de la réponse (voir handleImmediateAnswer). La réutiliser telle quelle —
-        // la recalculer ici doublerait l'incrément d'intervalle SR (currentResponses[key]
-        // contient déjà la nouvelle entrée) et dupliquerait le statusLog.
-        if (isImmediate && window._immediateSavedEntries && window._immediateSavedEntries[key]) {
+        // L'entrée SR a déjà été calculée ET sauvegardée au moment du clic (mode immédiat :
+        // handleImmediateAnswer ; mode normal : écouteur 'change' de afficherQuiz). La
+        // réutiliser telle quelle — la recalculer ici doublerait l'incrément d'intervalle SR
+        // (currentResponses[key] contient déjà la nouvelle entrée) et dupliquerait le statusLog.
+        if (window._immediateSavedEntries && window._immediateSavedEntries[key]) {
             const savedEntry = window._immediateSavedEntries[key];
             responsesToSave[key] = savedEntry;
             if (savedEntry.status === 'réussie') correctCount++;
+            // En mode immédiat, le log des ratées et la file de ré-interrogation ont déjà
+            // été gérés au moment du clic ; en mode normal ils se font ici, à la validation
+            // (la réponse pouvait encore changer avant).
+            if (!isImmediate && savedEntry.status === 'ratée') {
+                _logWrongAnswer(q, selectedVal);
+                _queueForReask(q);
+            }
             return;
         }
 
@@ -1112,12 +1188,12 @@ async function validerReponses() {
 
     // Compter les questions nouvellement maîtrisées
     // (passées de non-réussie / non-vue → réussie pour la première fois)
-    // En mode immédiat, currentResponses a déjà été mis à jour au moment du clic :
-    // l'ancien statut est mémorisé dans window._immediatePrevStatus.
+    // Quand la réponse a été persistée au clic (les deux modes), currentResponses a déjà
+    // été mis à jour : l'ancien statut est mémorisé dans window._immediatePrevStatus.
     let _newlyMastered = 0;
     currentQuestions.forEach(q => {
         const key = getKeyFor(q);
-        const oldStatus = (isImmediate && window._immediatePrevStatus && key in window._immediatePrevStatus)
+        const oldStatus = (window._immediatePrevStatus && key in window._immediatePrevStatus)
             ? window._immediatePrevStatus[key]
             : currentResponses[key]?.status;
         const newStatus = responsesToSave[key]?.status;
@@ -1125,6 +1201,8 @@ async function validerReponses() {
     });
 
     afficherCorrection();
+    // Session terminée → ré-afficher "Nouvelles Questions" (masqué pendant la session)
+    if (typeof _updateResetBtnVisibility === 'function') _updateResetBtnVisibility(true);
     const skippedCount = currentQuestions.length - answeredCount;
     const rc = document.getElementById('resultContainer');
     if (rc) {
