@@ -1291,6 +1291,21 @@ async function validerReponses() {
         // Sauvegarde avec fallback offline
         currentResponses = await saveResponsesWithOfflineFallback(uid, responsesToSave);
 
+        // Attendre que le SERVEUR accuse réception avant de continuer (pas juste la file
+        // d'attente locale) : sans ça, revenir à l'accueil juste après valider re-déclenche
+        // une lecture forcée source:'server' (voir initIndex()) qui peut arriver AVANT que
+        // cette écriture n'ait fini son aller-retour réseau — l'accueil affiche alors encore
+        // l'ANCIEN nextReview et les questions qu'on vient de réviser réapparaissent aussitôt
+        // comme "dues", même après une session entièrement validée (pas juste abandonnée).
+        if (db.waitForPendingWrites) {
+          try {
+            await Promise.race([
+              db.waitForPendingWrites(),
+              new Promise(resolve => setTimeout(resolve, 6000))
+            ]);
+          } catch (e) { /* hors-ligne ou déjà à jour — pas bloquant */ }
+        }
+
         // Sauvegarder le compteur de sessions dans Firestore
         try {
           await db.collection('quizProgress').doc(uid).update({

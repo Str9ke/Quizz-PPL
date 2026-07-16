@@ -730,6 +730,14 @@ async function categoryChanged() {
   // Restaurer le mode précédent (updateModeCounts recrée les options)
   if (modeSelect) modeSelect.value = previousMode;
   if (typeof _updateRevisionsBadge === 'function') _updateRevisionsBadge();
+
+  // La carte "Progression globale" de l'accueil lit le tableau global `questions` (comme
+  // updateModeCounts()) mais n'était rendue qu'UNE FOIS au chargement initial de la page —
+  // changer de catégorie ne la rafraîchissait jamais, elle restait figée sur la 1ère catégorie
+  // affichée.
+  if (typeof displayHomeProgressBar === 'function' && typeof currentResponses !== 'undefined') {
+    displayHomeProgressBar(currentResponses, window._lastDailyHist || {});
+  }
 }
 
 /**

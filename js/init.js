@@ -230,6 +230,7 @@ async function initIndex() {
   if (corrImm) corrImm.checked = localStorage.getItem('correctionImmediate') === '1';
 
   // Afficher la barre de progression globale sur l'accueil
+  window._lastDailyHist = _dailyHist; // réutilisé par categoryChanged() pour rafraîchir la carte
   displayHomeProgressBar(currentResponses, _dailyHist);
 
   // Lancer displayDailyStats APRÈS les données Firestore/localStorage à jour
