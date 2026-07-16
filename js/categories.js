@@ -309,7 +309,7 @@ async function updateModeCounts() {
     nbRevisionsToday = nbRevisions;
     nbSuspenduesTotal = nbSuspendues;
 
-    const dailyNewTarget = parseInt(localStorage.getItem('dailyNewTarget')) || 15;
+    const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
     const objectifTotal = nbRevisions + dailyNewTarget;
 
     const modeSelect = document.getElementById("mode");
