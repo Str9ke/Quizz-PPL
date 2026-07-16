@@ -5891,18 +5891,25 @@ function renderNavlog(){
   }
   /* Compensation de scroll : quand le board grandit (nouveau WP ajouté),
      on compense en ajoutant la hauteur gagnée au scrollY pour que la vue
-     reste visuellement fixe sur la carte / le bas de page. */
+     reste visuellement fixe sur la carte / le bas de page.
+     _mapLineGrabFinish() (glisser-déposer sur la carte) fait sa PROPRE
+     compensation, plus précise (basée sur la position de la carte elle-même,
+     pas la hauteur du board) — sans ce garde-fou, le rAF ci-dessous s'exécutait
+     APRÈS celui de _mapLineGrabFinish et écrasait silencieusement sa correction,
+     ce qui causait un saut de page résiduel au relâchement du glisser. */
   var _boardBefore = (document.getElementById('navlogBoard')||{}).offsetHeight || 0;
   var _scrollBefore = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   board.innerHTML=html;
-  var _boardAfter = (document.getElementById('navlogBoard')||{}).offsetHeight || 0;
-  var _targetScroll = _scrollBefore + (_boardAfter - _boardBefore);
-  document.documentElement.scrollTop = _targetScroll;
-  document.body.scrollTop = _targetScroll;
-  requestAnimationFrame(function(){
+  if(!window._suppressNavlogScrollCompensation){
+    var _boardAfter = (document.getElementById('navlogBoard')||{}).offsetHeight || 0;
+    var _targetScroll = _scrollBefore + (_boardAfter - _boardBefore);
     document.documentElement.scrollTop = _targetScroll;
     document.body.scrollTop = _targetScroll;
-  });
+    requestAnimationFrame(function(){
+      document.documentElement.scrollTop = _targetScroll;
+      document.body.scrollTop = _targetScroll;
+    });
+  }
   initDragDrop(board);
   var nameInputs=board.querySelectorAll('.wp-name-input');
   for(var ni=0;ni<nameInputs.length;ni++){
@@ -9330,14 +9337,28 @@ function _mapLineGrabFinish(newIdx,moved){
   }
   var mapEl=document.getElementById('routeMapContainer');
   var beforeTop=mapEl?mapEl.getBoundingClientRect().top:null;
+  /* Empêche renderNavlog() d'appliquer SA propre compensation (basée sur la
+     hauteur du board) en parallèle de celle-ci (basée sur la position de la
+     carte) — les deux se marchaient dessus, la deuxième (différée en rAF)
+     écrasant systématiquement celle-ci après coup. */
+  window._suppressNavlogScrollCompensation=true;
   renderNavlog();
   recalcNavlog();
-  if(mapEl && beforeTop!==null){
+  window._suppressNavlogScrollCompensation=false;
+  function _applyCompensation(){
+    if(!mapEl || beforeTop===null) return;
     var afterTop=mapEl.getBoundingClientRect().top;
     if(Math.abs(afterTop-beforeTop)>1){
-      window.scrollTo({top:(window.scrollY||window.pageYOffset)+(afterTop-beforeTop),behavior:'instant'});
+      var target=(window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0)+(afterTop-beforeTop);
+      document.documentElement.scrollTop=target;
+      document.body.scrollTop=target;
     }
   }
+  _applyCompensation();
+  /* Ré-appliquer après le prochain paint : certains éléments (marqueurs
+     Leaflet, redimensionnement de la carte) peuvent finir de se mettre en
+     page juste après notre premier calcul synchrone. */
+  requestAnimationFrame(_applyCompensation);
 }
 /* Mise à jour légère pendant le geste : ne bouge que la ligne (setLatLngs,
    pas de reconstruction). updateRouteMap() est une fonction lourde qui
