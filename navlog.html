@@ -9137,6 +9137,7 @@ document.addEventListener('paste',function(e){
 var routeMap=null;
 var routeMapLayers=[];
 var _routeMapLastCoordsSig=null;
+var _currentRoutePolyline=null; /* référence pour mise à jour légère pendant un glisser (voir _mapLineGrabStartMouse/Touch) */
 
 function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
@@ -9296,25 +9297,52 @@ function _mapLineGrabCore(lat,lon){
   recalcNavlog();
   return newIdx;
 }
+/* Mise à jour légère pendant le geste : ne bouge que la ligne (setLatLngs,
+   pas de reconstruction). updateRouteMap() est une fonction lourde qui
+   détruit et recrée TOUS les calques (ligne, marqueurs, flèches, étiquettes)
+   ET recadre/zoome la carte sur les nouvelles bornes à chaque appel —
+   l'appeler à chaque pixel de déplacement de souris faisait "grossir/
+   rétrécir" la carte en continu pendant le glissement. Le rebuild complet
+   (avec le marqueur définitif et le recadrage) n'a lieu qu'au relâchement. */
+function _mapLineGrabLiveUpdate(newIdx,lat,lon){
+  waypoints[newIdx].lat=lat;
+  waypoints[newIdx].lon=lon;
+  if(!_currentRoutePolyline) return;
+  var coords=[];
+  for(var w=0;w<waypoints.length;w++){
+    if(waypoints[w].lat!==null&&waypoints[w].lon!==null) coords.push([waypoints[w].lat,waypoints[w].lon]);
+  }
+  _currentRoutePolyline.setLatLngs(coords);
+}
 function _mapLineGrabStartMouse(e){
   L.DomEvent.stopPropagation(e);
   var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng);
   if(newIdx<0) return;
   routeMap.dragging.disable();
+  document.body.style.userSelect='none';
+  /* IMPORTANT : écouter sur document, pas sur routeMap. Les événements
+     Leaflet 'mousemove'/'mouseup' de la carte ne se déclenchent que si le
+     curseur est AU-DESSUS de la carte à ce moment précis — si l'utilisateur
+     relâche le bouton en dehors (très probable en positionnant un nouveau
+     point), 'mouseup' n'était jamais reçu et le geste restait bloqué pour
+     toujours : le point continuait à suivre la souris même relâchée, et la
+     carte se recadrait sans arrêt sur des coordonnées aberrantes (d'où le
+     zoom qui oscillait). */
   function onMove(ev){
-    waypoints[newIdx].lat=ev.latlng.lat;
-    waypoints[newIdx].lon=ev.latlng.lng;
-    updateRouteMap();
+    var cp=routeMap.mouseEventToContainerPoint(ev);
+    var ll=routeMap.containerPointToLatLng(cp);
+    _mapLineGrabLiveUpdate(newIdx,ll.lat,ll.lng);
   }
   function onUp(){
-    routeMap.off('mousemove',onMove);
-    routeMap.off('mouseup',onUp);
+    document.removeEventListener('mousemove',onMove,{capture:true});
+    document.removeEventListener('mouseup',onUp,{capture:true});
+    document.body.style.userSelect='';
     routeMap.dragging.enable();
     renderNavlog();
     recalcNavlog();
   }
-  routeMap.on('mousemove',onMove);
-  routeMap.on('mouseup',onUp);
+  document.addEventListener('mousemove',onMove,{capture:true});
+  document.addEventListener('mouseup',onUp,{capture:true});
 }
 function _mapLineGrabStartTouch(ev){
   if(!ev.touches||!ev.touches.length) return;
@@ -9325,19 +9353,19 @@ function _mapLineGrabStartTouch(ev){
   var newIdx=_mapLineGrabCore(latlng.lat,latlng.lng);
   if(newIdx<0) return;
   routeMap.dragging.disable();
+  document.body.style.userSelect='none';
   function onMove(ev2){
     if(!ev2.touches||!ev2.touches.length) return;
     ev2.preventDefault();
     var t2=ev2.touches[0];
     var cp2=routeMap.mouseEventToContainerPoint(t2);
     var ll2=routeMap.containerPointToLatLng(cp2);
-    waypoints[newIdx].lat=ll2.lat;
-    waypoints[newIdx].lon=ll2.lng;
-    updateRouteMap();
+    _mapLineGrabLiveUpdate(newIdx,ll2.lat,ll2.lng);
   }
   function onUp(){
     document.removeEventListener('touchmove',onMove,{passive:false});
     document.removeEventListener('touchend',onUp);
+    document.body.style.userSelect='';
     routeMap.dragging.enable();
     renderNavlog();
     recalcNavlog();
@@ -9370,6 +9398,7 @@ function updateRouteMap(){
   var coords=pts.map(function(p){return [p.lat,p.lon];});
   var polyline=L.polyline(coords,{color:'#ff1493',weight:4,opacity:.9}).addTo(routeMap);
   routeMapLayers.push(polyline);
+  _currentRoutePolyline=polyline;
   /* WP markers with number badges */
   for(var j=0;j<pts.length;j++){
     var p=pts[j];
