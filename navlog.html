@@ -7840,7 +7840,12 @@ function _routeSamplePoints(){
     var wp=waypoints[i], prev=waypoints[i-1];
     var legDist=wp.dist||0;
     if(prev.lat===null||prev.lon===null||wp.lat===null||wp.lon===null){ cum+=legDist; continue; }
-    var steps=Math.max(1,Math.min(300,Math.ceil(legDist/0.5)));
+    /* Échantillonnage tous les 0.1NM (et non 0.5NM) : une petite zone (danger
+       ground, restricted) traversée en biais peut avoir une corde de croisement
+       plus courte que l'ancien pas de 0.5NM — aucun échantillon ne tombait alors
+       dedans et la zone n'apparaissait JAMAIS comme croisée, ni sur le graphique
+       ni dans la liste, malgré une traversée bien réelle et visible sur la carte. */
+    var steps=Math.max(1,Math.min(2000,Math.ceil(legDist/0.1)));
     for(var s=1;s<=steps;s++){
       var f=s/steps;
       pts.push({
