@@ -1725,6 +1725,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <button onclick="window.loadRouteAirspaces()" class="navlog-btn" style="background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700">&#x1F310; Charger les espaces a&#xe9;riens (OpenAIP)</button>
       </div>
+      <div class="nl-card" style="margin:4px 0 16px;padding:12px 14px;background:rgba(76,175,80,.06);border:1px solid rgba(76,175,80,.25)">
+        <div class="nl-card-title" style="font-size:.92em"><span class="icon">&#x1F30D;</span> Export 3D pour Google Earth (Belgique + ~1h de vol autour)</div>
+        <p style="font-size:.8em;color:var(--text-secondary);margin:2px 0 8px">T&#xe9;l&#xe9;charge un fichier .kml avec tous les volumes d'espace a&#xe9;rien de la zone (Belgique, Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord vers le sud-est de l'Angleterre) en vrais blocs 3D plancher/plafond, &#xe0; ouvrir dans Google Earth pour voler dedans et les inspecter.</p>
+        <button onclick="window.exportAirspacesKML()" class="navlog-btn success" id="kmlExportBtn">&#x1F30D; T&#xe9;l&#xe9;charger le KML (zone &#xe9;largie)</button>
+        <div id="kmlExportStatus" style="font-size:.8em;color:var(--text-secondary);margin-top:8px"></div>
+      </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;font-size:.8em;color:var(--text-secondary)">
         <span>&#x1F4CF; &#xc9;chelle du graphique :</span>
         <input type="number" id="altYMin" step="100" style="width:72px" onchange="window.setAltitudesYRange()" title="Altitude basse affich&#xe9;e (ft)">
@@ -7904,6 +7910,152 @@ function _airspaceBandColor(label){
   return m[label]||'#7f8c8d';
 }
 
+/* ===== Export KML (Google Earth) — volumes 3D plancher/plafond =====
+   Un Polygon KML avec extrude=1 ne dessine qu'un "toit" étendu jusqu'au SOL — impossible
+   d'obtenir un vrai bloc plancher→plafond flottant (ex : TMA 2500-19500ft) avec ça seul.
+   La technique standard : dessiner le toit, le plancher, ET un mur latéral par segment du
+   contour (MultiGeometry), tous en altitudeMode=absolute. C'est plus verbeux mais donne un
+   vrai volume 3D fidèle, contrairement à l'extrusion-au-sol qui ferait toucher le sol à
+   n'importe quelle zone (dangereux à l'interprétation pour un pilote). */
+function _hexToKmlColor(hex,alphaHex){
+  hex=(hex||'#7f8c8d').replace('#','');
+  var r=hex.substr(0,2),g=hex.substr(2,2),b=hex.substr(4,2);
+  return (alphaHex||'8c')+b+g+r;
+}
+function _kmlCoordsRing(ring,altM){
+  /* ring : [[lon,lat],...] GeoJSON. Retourne "lon,lat,alt lon,lat,alt ..." */
+  return ring.map(function(pt){ return pt[0].toFixed(6)+','+pt[1].toFixed(6)+','+Math.round(altM); }).join(' ');
+}
+function _kmlPolygon(ring,altM,extrude){
+  return '<Polygon><altitudeMode>absolute</altitudeMode>'+(extrude?'<extrude>1</extrude>':'')+
+    '<outerBoundaryIs><LinearRing><coordinates>'+_kmlCoordsRing(ring,altM)+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+}
+function _kmlWallPolygon(p1,p2,lowerM,upperM){
+  var coords=p1[0].toFixed(6)+','+p1[1].toFixed(6)+','+Math.round(lowerM)+' '+
+    p2[0].toFixed(6)+','+p2[1].toFixed(6)+','+Math.round(lowerM)+' '+
+    p2[0].toFixed(6)+','+p2[1].toFixed(6)+','+Math.round(upperM)+' '+
+    p1[0].toFixed(6)+','+p1[1].toFixed(6)+','+Math.round(upperM)+' '+
+    p1[0].toFixed(6)+','+p1[1].toFixed(6)+','+Math.round(lowerM);
+  return '<Polygon><altitudeMode>absolute</altitudeMode><outerBoundaryIs><LinearRing><coordinates>'+coords+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+}
+function _airspaceToKmlPlacemark(item){
+  var geom=item.geometry||item.geojson;
+  if(!geom||!geom.coordinates) return '';
+  var polys=[];
+  if(geom.type==='Polygon') polys=[geom.coordinates[0]];
+  else if(geom.type==='MultiPolygon') polys=geom.coordinates.map(function(p){return p[0];});
+  if(!polys.length) return '';
+
+  var name=item.name||item.designator||'Zone sans nom';
+  var classLabel=_openaipClassLabel(item);
+  var lowerFt=_openaipLimitToFt(item.lowerLimit||item.lower_limit);
+  var upperFt=_openaipLimitToFt(item.upperLimit||item.upper_limit);
+  var UNLIMITED_FT=60000; /* plafond visuel raisonnable pour les zones "illimitées" */
+  if(upperFt<=0||upperFt>UNLIMITED_FT) upperFt=UNLIMITED_FT;
+  if(upperFt<=lowerFt) upperFt=lowerFt+100;
+  var lowerM=lowerFt*0.3048, upperM=upperFt*0.3048;
+  var col=_hexToKmlColor(_airspaceBandColor(classLabel));
+  var upperLabel=(upperFt>=UNLIMITED_FT)?'UNL':(upperFt+' ft');
+
+  var geomXml='<MultiGeometry>';
+  polys.forEach(function(ring){
+    geomXml+=_kmlPolygon(ring,upperM,false);
+    geomXml+=_kmlPolygon(ring,lowerM,false);
+    for(var i=0;i<ring.length-1;i++){
+      geomXml+=_kmlWallPolygon(ring[i],ring[i+1],lowerM,upperM);
+    }
+  });
+  geomXml+='</MultiGeometry>';
+
+  var desc='Classe/type : '+classLabel+'&lt;br&gt;Plancher : '+(lowerFt||0)+' ft AMSL&lt;br&gt;Plafond : '+upperLabel+
+    ((item.icaoClass!==undefined)?('&lt;br&gt;icaoClass brut : '+item.icaoClass):'')+
+    ((item.type!==undefined)?('&lt;br&gt;type brut OpenAIP : '+item.type):'')+
+    '&lt;br&gt;&lt;i&gt;Approximation visuelle — vérifie toujours la carte VFR/AIP officielle avant le vol.&lt;/i&gt;';
+
+  return '<Placemark><name>'+escHTML(classLabel)+' — '+escHTML(name)+' ('+(lowerFt||0)+'ft-'+upperLabel+')</name>'+
+    '<description><![CDATA['+desc+']]></description>'+
+    '<Style><LineStyle><color>ff'+col.substr(2)+'</color><width>1</width></LineStyle><PolyStyle><color>'+col+'</color></PolyStyle></Style>'+
+    geomXml+'</Placemark>';
+}
+
+window.exportAirspacesKML = async function(){
+  var statusEl=document.getElementById('kmlExportStatus');
+  var btn=document.getElementById('kmlExportBtn');
+  var key=window.OPENAIP_API_KEY||'';
+  if(!key){
+    if(statusEl) statusEl.textContent='❌ Clé OpenAIP indisponible — vérifie la configuration de déploiement.';
+    return;
+  }
+  /* Belgique + ~1h de vol (≈110NM à vitesse de croisière PPL classique) tout autour :
+     Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord et sud-est de
+     l'Angleterre. Ajuste ces 4 valeurs si tu veux une zone plus grande/petite. */
+  var south=47.3, north=53.7, west=-0.5, east=9.4;
+
+  if(btn) btn.disabled=true;
+  if(statusEl) statusEl.textContent='⏳ Téléchargement des espaces aériens OpenAIP pour toute la zone (Belgique + ~1h de vol)… ceci peut prendre une minute, la zone est grande.';
+
+  try{
+    var items=[],page=1,totalPages=1,limitPerPage=1000;
+    do{
+      var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
+      if(statusEl) statusEl.textContent='⏳ Téléchargement… page '+page+(totalPages>1?('/'+totalPages):'')+' ('+items.length+' zones reçues jusqu\'ici)';
+      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
+      if(!resp||!resp.ok){
+        if(statusEl) statusEl.textContent='❌ OpenAIP a répondu '+(resp?resp.status:'(pas de réponse)')+' — réessaie dans une minute.';
+        if(btn) btn.disabled=false;
+        return;
+      }
+      var data=await resp.json();
+      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
+      items=items.concat(pageItems);
+      totalPages=data.totalPages||1;
+      page++;
+    }while(page<=totalPages && page<=20);
+
+    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s) reçue(s) — génération du fichier KML…';
+    await new Promise(function(r){ setTimeout(r,10); }); // laisse le statut s'afficher avant le calcul lourd
+
+    var byClass={};
+    var skipped=0;
+    items.forEach(function(item){
+      var pm=_airspaceToKmlPlacemark(item);
+      if(!pm){ skipped++; return; }
+      var cl=_openaipClassLabel(item);
+      if(!byClass[cl]) byClass[cl]=[];
+      byClass[cl].push(pm);
+    });
+
+    var foldersXml='';
+    Object.keys(byClass).sort().forEach(function(cl){
+      foldersXml+='<Folder><name>'+escHTML(cl)+' ('+byClass[cl].length+')</name>'+byClass[cl].join('')+'</Folder>';
+    });
+
+    var kml='<?xml version="1.0" encoding="UTF-8"?>'+
+      '<kml xmlns="http://www.opengis.net/kml/2.2">'+
+      '<Document><name>Espaces aériens — Belgique + 1h de vol</name>'+
+      '<description>Généré depuis Quiz Aviation PPL — données OpenAIP. Chaque dossier ci-contre (CTR, TMA, DANGER, RESTRICTED…) peut être coché/décoché individuellement dans le panneau de gauche de Google Earth.</description>'+
+      foldersXml+'</Document></kml>';
+
+    var blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='espaces_aeriens_belgique_1h_vol.kml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
+
+    var nbZones=items.length-skipped;
+    if(statusEl) statusEl.textContent='✅ Fichier téléchargé : '+nbZones+' volume(s) exporté(s)'+(skipped?(' ('+skipped+' ignoré(s), géométrie non gérée)'):'')+
+      '. Ouvre-le avec Google Earth (voir mes instructions).';
+  }catch(e){
+    console.error('[KML export] Erreur', e);
+    if(statusEl) statusEl.textContent='❌ Erreur pendant l\'export : '+e.message+' (détail en console F12).';
+  } finally {
+    if(btn) btn.disabled=false;
+  }
+};
+
 /* Cache des zones brutes renvoyées par OpenAIP (indépendant de la route),
    + signature de la route utilisée pour le dernier calcul de croisements.
    Sans ça, modifier la route après le premier chargement (ex: en insérant
@@ -7968,6 +8120,35 @@ function _recomputeAirspacesIfStale(){
   return true;
 }
 
+/* Petites erreurs serveur transitoires (surcharge côté OpenAIP) : on retente avant
+   d'abandonner. fetch() n'a AUCUN délai limite par défaut dans les navigateurs — si
+   OpenAIP (ou un proxy entre nous) ne répond juste pas du tout, la requête reste
+   bloquée indéfiniment. On force donc un timeout via AbortController. Utilisé à la
+   fois par loadRouteAirspaces() (route active) et exportAirspacesKML() (grande zone). */
+function _sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+function _fetchWithTimeout(url,opts,timeoutMs){
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ ctrl.abort(); },timeoutMs);
+  var mergedOpts=Object.assign({},opts,{signal:ctrl.signal});
+  return fetch(url,mergedOpts).finally(function(){ clearTimeout(timer); });
+}
+async function _fetchWithRetry(url,opts){
+  var delays=[0,800,1800];
+  for(var i=0;i<delays.length;i++){
+    if(delays[i]) await _sleep(delays[i]);
+    var resp;
+    try{
+      resp=await _fetchWithTimeout(url,opts,12000);
+    }catch(fetchErr){
+      if(i===delays.length-1) throw fetchErr; /* dernier essai : on laisse remonter au catch principal */
+      console.warn('[Altitudes] Échec réseau ('+fetchErr.message+') — nouvel essai '+(i+2)+'/'+delays.length+'…');
+      continue;
+    }
+    if(resp.ok || ![502,503,504].includes(resp.status) || i===delays.length-1) return resp;
+    console.warn('[Altitudes] OpenAIP HTTP '+resp.status+' — nouvel essai '+(i+2)+'/'+delays.length+'…');
+  }
+}
+
 async function loadRouteAirspaces(){
   var status=document.getElementById('altitudesStatus');
   var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
@@ -7990,37 +8171,6 @@ async function loadRouteAirspaces(){
   var west=Math.min.apply(null,lons)-pad, east=Math.max.apply(null,lons)+pad;
 
   if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
-
-  /* Petites erreurs serveur transitoires (surcharge côté OpenAIP) : on retente
-     2 fois avec un délai croissant avant d'abandonner et d'afficher l'erreur.
-     fetch() n'a AUCUN délai limite par défaut dans les navigateurs — si
-     OpenAIP (ou un proxy entre nous) ne répond juste pas du tout (au lieu de
-     renvoyer une erreur HTTP), la requête reste bloquée indéfiniment et rien
-     ne s'affiche jamais ("Chargement…" qui ne se termine jamais). On force
-     donc un timeout de 12s par tentative via AbortController. */
-  function _sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-  function _fetchWithTimeout(url,opts,timeoutMs){
-    var ctrl=new AbortController();
-    var timer=setTimeout(function(){ ctrl.abort(); },timeoutMs);
-    var mergedOpts=Object.assign({},opts,{signal:ctrl.signal});
-    return fetch(url,mergedOpts).finally(function(){ clearTimeout(timer); });
-  }
-  async function _fetchWithRetry(url,opts){
-    var delays=[0,800,1800];
-    for(var i=0;i<delays.length;i++){
-      if(delays[i]) await _sleep(delays[i]);
-      var resp;
-      try{
-        resp=await _fetchWithTimeout(url,opts,12000);
-      }catch(fetchErr){
-        if(i===delays.length-1) throw fetchErr; /* dernier essai : on laisse remonter au catch principal */
-        console.warn('[Altitudes] Échec réseau ('+fetchErr.message+') — nouvel essai '+(i+2)+'/'+delays.length+'…');
-        continue;
-      }
-      if(resp.ok || ![502,503,504].includes(resp.status) || i===delays.length-1) return resp;
-      console.warn('[Altitudes] OpenAIP HTTP '+resp.status+' — nouvel essai '+(i+2)+'/'+delays.length+'…');
-    }
-  }
 
   /* OpenAIP répond parfois 503/lentement plusieurs fois de suite (surcharge
      ponctuelle) — _fetchWithRetry() gère déjà 3 tentatives rapprochées, mais
