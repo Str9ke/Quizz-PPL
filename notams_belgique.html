@@ -19,6 +19,24 @@
                         }
                     }
                 }
+                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                function highlightNotamTerms(termsStr) {
+                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                    var paragraphs = document.querySelectorAll('p');
+                    var firstMatch = null;
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                        paragraphs[i].style.background = matched ? '#fff59d' : '';
+                        paragraphs[i].style.color = matched ? '#000' : '';
+                        paragraphs[i].style.display = '';
+                        if (matched && !firstMatch) firstMatch = paragraphs[i];
+                    }
+                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return !!firstMatch;
+                }
             </script>
 
 <button accesskey="P" onclick="window.open('aisPdfAction.do?cmd=summaryToPdf')" type="button"><u>P</u>rint this page 
@@ -27,7 +45,7 @@
 <table border="1">
 <tr>
 <td align="center"><font color="red">SKEYES SHALL NOT ACCEPT RESPONSIBILITY FOR ANY CORRUPTION OR CHANGES TO DATA THAT MIGHT BE CAUSED BY OR DURING THE INTERNET TRANSPORT </font>
-<br/>Summary of NOTAM in force on Wednesday 15/07/2026 at 11:35 UTC<br/>Your kind remarks about the layout of the summary are appreciated at the NOTAM office <br/>Phone: +32 (0)2 206 25 30<br/>AFTN: EBBRYNYN<br/>Email: <a href="mailto://notam@skeyes.be">notam@skeyes.be</a>
+<br/>Summary of NOTAM in force on Thursday 16/07/2026 at 06:39 UTC<br/>Your kind remarks about the layout of the summary are appreciated at the NOTAM office <br/>Phone: +32 (0)2 206 25 30<br/>AFTN: EBBRYNYN<br/>Email: <a href="mailto://notam@skeyes.be">notam@skeyes.be</a>
 <br/>Address: Tervuursesteenweg 303 B-1820 Steenokkerzeel</td>
 </tr>
 </table>
@@ -43,6 +61,8 @@
 <a href="#EBBRA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS / BRUSSELS-NATIONAL</a>
 <br/>
 <a href="#EBCIA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHARLEROI / BRUSSELS SOUTH</a>
+<br/>
+<a href="#EBKTA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KORTRIJK / WEVELGEM</a>
 <br/>
 <a href="#EBLGA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LIEGE / LIEGE</a>
 <br/>
@@ -403,30 +423,23 @@ NIGHT MARKED WORKAREA<br/>
 <i>Text:</i>TWY A5 RESTRICTED TO ACFT CODE E<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A2460/26</font>
+<font class="ssstitle-bold">A2469/26</font>
 <br/>
-<i>From:</i>15 JUL 26 05:05  <i>Till:</i>15 JUL 26 14:00 <br/>
+<i>From:</i>16 JUL 26 05:30  <i>Till:</i>16 JUL 26 16:00 <br/>
+<i>Text:</i>TWY Y CLSD DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2470/26</font>
+<br/>
+<i>From:</i>16 JUL 26 05:35  <i>Till:</i>16 JUL 26 14:00 <br/>
 <i>Text:</i>TELESCOPIC CRANE 505243N 0043031E 56M AGL /362FT AMSL. ICAO DAY
 MARKING AVBL<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A2461/26</font>
+<font class="ssstitle-bold">A2471/26</font>
 <br/>
-<i>From:</i>15 JUL 26 05:30  <i>Till:</i>15 JUL 26 12:00 <br/>
-<i>Text:</i>MOWING WORKS NORTH OF RWY 07L/25R BTN 91M AND 150M OF RWY AXIS
-BTN TWY A7 AND A3<br/>
-</p>
-<p>
-<font class="ssstitle-bold">A2462/26</font>
-<br/>
-<i>From:</i>15 JUL 26 07:00  <i>Till:</i>15 JUL 26 16:00 <br/>
-<i>Text:</i>TWY Y CLSD PPR 10 MIN<br/>
-</p>
-<p>
-<font class="ssstitle-bold">A2464/26</font>
-<br/>
-<i>From:</i>15 JUL 26 11:20  <i>Till:</i>15 JUL 26 20:00 <br/>
-<i>Text:</i>TWY C6 CLSD<br/>
+<i>From:</i>16 JUL 26 06:00  <i>Till:</i>16 JUL 26 11:00 <br/>
+<i>Text:</i>MOWING WORKS NORTH OF RWY 07L/25R BTN 91M AND 150M FROM RWY AXIS<br/>
 </p>
 <hr/>
 <a name="EBCIA"></a>
@@ -452,6 +465,24 @@ LGT U/S<br/>
 <i>From:</i>09 JUL 26 00:00  <i>Till:</i>22 JUL 26 23:59 <br/>
 <i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 007/2026 09 JUL 2026. IAP VOR RWY
 24 UPDATED<br/>
+</p>
+<hr/>
+<a name="EBKTA"></a>
+<br/>
+<b>KORTRIJK / WEVELGEM</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2467/26</font>
+<br/>
+<i>From:</i>16 JUL 26 10:30  <i>Till:</i>16 JUL 26 12:30 <br/>
+<i>Text:</i>ALL ACFT MOV AND FUELING PPR DUE TO LARGE ACFT OPS. CTC EBKT AFIS
+BY TEL +3256362044 OR FREQ 120.255MHZ<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2468/26</font>
+<br/>
+<i>From:</i>16 JUL 26 05:30  <i>Till:</i>16 JUL 26 07:30 <br/>
+<i>Text:</i>ALL ACFT MOV AND FUELING PPR DUE TO LARGE ACFT OPS. CTC EBKT AFIS
+BY TEL +3256362044 OR FREQ 120.255MHZ<br/>
 </p>
 <hr/>
 <a name="EBLGA"></a>
@@ -506,16 +537,16 @@ BTN S2 AND S3<br/>
 SEC.<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A2263/26</font>
-<br/>
-<i>From:</i>30 JUN 26 13:30  <i>Till:</i>15 JUL 26 19:00 EST<br/>
-<i>Text:</i>EDGE LGT U/S ON TWY F, G2, K6, K7, K8 AND APN 3<br/>
-</p>
-<p>
 <font class="ssstitle-bold">A2390/26</font>
 <br/>
 <i>From:</i>27 JUL 26 07:00  <i>Till:</i>27 JUL 26 10:00 <br/>
 <i>Text:</i>ATIS OOSTENDE INFORMATION 126.130 MHZ U/S.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2465/26</font>
+<br/>
+<i>From:</i>15 JUL 26 12:10  <i>Till:</i>14 AUG 26 12:00 EST<br/>
+<i>Text:</i>EDGE LGT U/S ON TWY F, G2, K6, K7, K8 AND APN 3<br/>
 </p>
 <hr/>
 <a name="ELLXA"></a>
@@ -856,12 +887,6 @@ AERAZUR 4M6-C CAM SETTING: RED CAM<br/>
 <i>Text:</i>ALL TWY LIGHTS U/S EXC TWY S1 S2 S3 S6 AND S7<br/>
 </p>
 <p>
-<font class="ssstitle-bold">C0936/26</font>
-<br/>
-<i>From:</i>15 JUL 26 11:30  <i>Till:</i>15 JUL 26 13:00 <br/>
-<i>Text:</i>EBBE NO STAND-BY 30 MIN IN TIMEFRAME 1130-1300<br/>
-</p>
-<p>
 <font class="ssstitle-bold">C0943/26</font>
 <br/>
 <i>From:</i>23 JUL 26 08:30  <i>Till:</i>23 JUL 26 11:00 <br/>
@@ -1041,18 +1066,6 @@ TALL. VIOLATION TO APCH AND DEP SFC 13FT.<br/>
 <i>Text:</i>AD OFFICIAL BUSINESS ONLY. FULLSTOP LANDING ONLY BTN 0600-1400<br/>
 </p>
 <p>
-<font class="ssstitle-bold">C0932/26</font>
-<br/>
-<i>From:</i>15 JUL 26 07:00  <i>Till:</i>15 JUL 26 13:30 <br/>
-<i>Text:</i>AD CLSD. NO SERVICES AVAILABLE.<br/>
-</p>
-<p>
-<font class="ssstitle-bold">C0933/26</font>
-<br/>
-<i>From:</i>16 JUL 26 07:00  <i>Till:</i>16 JUL 26 14:30 <br/>
-<i>Text:</i>AD OPR HRS: 0900 - 1430<br/>
-</p>
-<p>
 <font class="ssstitle-bold">C0934/26</font>
 <br/>
 <i>From:</i>18 JUL 26 08:45  <i>Till:</i>18 JUL 26 11:15 <br/>
@@ -1063,6 +1076,12 @@ TALL. VIOLATION TO APCH AND DEP SFC 13FT.<br/>
 <br/>
 <i>From:</i>17 JUL 26 07:00  <i>Till:</i>17 JUL 26 10:00 <br/>
 <i>Text:</i>AD CLSD. NO SERVICES AVAILABLE.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0952/26</font>
+<br/>
+<i>From:</i>16 JUL 26 07:00  <i>Till:</i>16 JUL 26 15:30 <br/>
+<i>Text:</i>AD OPR HRS: 1200-1530<br/>
 </p>
 <hr/>
 <a name="EBFNC"></a>
@@ -1221,6 +1240,14 @@ NIL<br/>
 NEEDS REF AIP SUP 028/2026, AUP OR ANY RELEVANT UUP WILL REFLECT
 THE UPDATE ACCORDINGLY<br/>
 </p>
+<p>
+<font class="ssstitle-bold">D0420/26</font>
+<br/>
+<i>From:</i>15 JUL 26 15:35  <i>Till:</i>PERM<br/>
+<i>Text:</i>MINIMUM RADAR VECTORING ALTITUDE RAISED TO 4000 FT AMSL PSN
+494841N 0055052E RADIUS 3 NM WITHIN LUXEMBOURG TMA ONE A. REF ELLX
+AD 2.24 AD 2.ELLX-ATCSMAC.01. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
 <hr/>
 <a name="EBAWD"></a>
 <br/>
@@ -1348,6 +1375,13 @@ CERTAIN DAYS. ACTIVITY ANNOUNCED ON APP FREQUENCY 120.885MHZ FOR
 ARRIVING FLIGHTS AND ON DELIVERY FREQUENCY 121.855MHZ FOR DEPARTING
 FLIGHTS. ALL STOP BARS SWITCHED ON. LVP SEPARATION APPLIED FOR
 ARRIVING TRAFFIC.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0421/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:10  <i>Till:</i>16 JUL 26 11:45 <br/>
+<i>Text:</i>AIS/ARO. DUE TO STAFF SHORTAGES, EXPECT DELAYS IN SERVICE 
+PROVISION<br/>
 </p>
 <hr/>
 <a name="EBBUE"></a>
@@ -1951,15 +1985,6 @@ NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026<br/>
 <i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
 </p>
 <p>
-<font class="ssstitle-bold">F2099/26</font>
-<br/>
-<i>From:</i>17 JUL 26 17:00  <i>Till:</i>20 JUL 26 20:15 <br/>
-<i>Schedule:</i>DAILY 1700-SS PLUS30<br/>
-<i>Text:</i>HELECINE ASCENTS AND EVOLUTIONS OF ABOUT 5 HOT AIR BALLOONS 
-504446N 0045842E RADIUS 10NM<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
-</p>
-<p>
 <font class="ssstitle-bold">F2107/26</font>
 <br/>
 <i>From:</i>18 JUL 26 03:54  <i>Till:</i>21 JUL 26 19:47 <br/>
@@ -1980,63 +2005,6 @@ U/S<br/>
 <i>From:</i>06 AUG 26 12:00  <i>Till:</i>06 AUG 26 14:00 <br/>
 <i>Text:</i>EBR66-SINT-TRUIDEN 5 ACT<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>550FT AMSL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2128/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:25 <br/>
-<i>Schedule:</i>0900-1040 1215-1525<br/>
-<i>Text:</i>EBD26-ARDENNES 05 ACT<br/>
-<i>Lower limit:</i>1000FT AGL <i>Upper limit:</i>4500FT AMSL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2129/26</font>
-<br/>
-<i>From:</i>15 JUL 26 12:15  <i>Till:</i>15 JUL 26 13:45 <br/>
-<i>Text:</i>EBR05B - HELCHTEREN RUN-IN ACT<br/>
-<i>Lower limit:</i>2050FT AMSL <i>Upper limit:</i>3300FT AMSL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2130/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:30  <i>Till:</i>15 JUL 26 14:30 <br/>
-<i>Text:</i>HTA01-ARDENNES 01 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2131/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:00  <i>Till:</i>15 JUL 26 13:30 <br/>
-<i>Text:</i>HTA02-ARDENNES 02 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2132/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:30  <i>Till:</i>15 JUL 26 14:30 <br/>
-<i>Text:</i>HTA08-HANNUT HELICOPTER TRAINING AREA ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2133/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:00  <i>Till:</i>15 JUL 26 14:30 <br/>
-<i>Text:</i>EBR79A - BEVERLO UAS 90 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2134/26</font>
-<br/>
-<i>From:</i>15 JUL 26 07:00  <i>Till:</i>15 JUL 26 15:00 <br/>
-<i>Text:</i>EBR79C - BEVERLO UAS 20 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F2135/26</font>
-<br/>
-<i>From:</i>15 JUL 26 07:00  <i>Till:</i>15 JUL 26 15:00 <br/>
-<i>Text:</i>EBR79E - BEVERLO UAS 40 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
 </p>
 <p>
 <font class="ssstitle-bold">F2137/26</font>
@@ -2075,6 +2043,72 @@ PROHIBITED TO NON PARTICIPATING TRAFFIC<br/>
 <i>From:</i>27 SEP 26 08:00  <i>Till:</i>27 SEP 26 17:00 <br/>
 <i>Text:</i>MACON 500336N 0041313E MODEL ACFT EVENT RADIUS 400M<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2142/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:25 <br/>
+<i>Schedule:</i>0900-1040 1345-1525<br/>
+<i>Text:</i>EBD26-ARDENNES 05 ACT<br/>
+<i>Lower limit:</i>1000FT AGL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2143/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:30  <i>Till:</i>16 JUL 26 16:00 <br/>
+<i>Text:</i>HTA01-ARDENNES 01 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2144/26</font>
+<br/>
+<i>From:</i>16 JUL 26 08:30  <i>Till:</i>16 JUL 26 16:00 <br/>
+<i>Text:</i>HTA02-ARDENNES 02 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2145/26</font>
+<br/>
+<i>From:</i>16 JUL 26 08:30  <i>Till:</i>16 JUL 26 16:00 <br/>
+<i>Text:</i>HTA04A-ARDENNES 04A ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2146/26</font>
+<br/>
+<i>From:</i>16 JUL 26 08:30  <i>Till:</i>16 JUL 26 16:00 <br/>
+<i>Text:</i>HTA04B-ARDENNES 04B ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2147/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:30  <i>Till:</i>16 JUL 26 11:00 <br/>
+<i>Text:</i>HTA08-HANNUT HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2148/26</font>
+<br/>
+<i>From:</i>16 JUL 26 08:30  <i>Till:</i>16 JUL 26 11:00 <br/>
+<i>Text:</i>HTA14A-TURNHOUT HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2149/26</font>
+<br/>
+<i>From:</i>16 JUL 26 08:00  <i>Till:</i>16 JUL 26 11:00 <br/>
+<i>Text:</i>HTA14B-GEEL HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2151/26</font>
+<br/>
+<i>From:</i>17 JUL 26 17:00  <i>Till:</i>20 JUL 26 20:12 <br/>
+<i>Schedule:</i>DAILY 1700-SS PLUS30<br/>
+<i>Text:</i>HELECINE ASCENTS AND EVOLUTIONS OF ABOUT 5 HOT AIR BALLOONS 
+504446N 0045842E RADIUS 10NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
 </p>
 <hr/>
 <a name="EBCVF"></a>
@@ -2253,80 +2287,6 @@ FLT ALLOWED<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>1500FT AMSL<br/>
 </p>
 <p>
-<font class="ssstitle-bold">G1711/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:25 <br/>
-<i>Schedule:</i>0900-1040 1215-1525<br/>
-<i>Text:</i>TSA26A - ARDENNES 01 ACT. 
-GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER 
-COOR BTN BELGA RADAR AND CRNA/NORD<br/>
-<i>Lower limit:</i>FL095 <i>Upper limit:</i>UNL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1712/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:25 <br/>
-<i>Schedule:</i>0900-1040 1215-1525<br/>
-<i>Text:</i>TSA26B - ARDENNES 04 ACT<br/>
-<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL095<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1713/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:00  <i>Till:</i>15 JUL 26 22:00 <br/>
-<i>Text:</i>EBR04-ELSENBORN 01 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>FL105<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1714/26</font>
-<br/>
-<i>From:</i>15 JUL 26 12:15  <i>Till:</i>15 JUL 26 13:45 <br/>
-<i>Text:</i>EBR05A - HELCHTEREN ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>FL100<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1715/26</font>
-<br/>
-<i>From:</i>15 JUL 26 12:15  <i>Till:</i>15 JUL 26 13:45 <br/>
-<i>Text:</i>EBR05C - HELCHTEREN DOWNWIND ACT<br/>
-<i>Lower limit:</i>2850FT AMSL <i>Upper limit:</i>FL050<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1716/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:00  <i>Till:</i>15 JUL 26 13:00 <br/>
-<i>Text:</i>EBR20-BRASSCHAAT ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>FL070<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1717/26</font>
-<br/>
-<i>From:</i>15 JUL 26 06:30  <i>Till:</i>15 JUL 26 15:30 <br/>
-<i>Text:</i>LFA11-KOKSIJDE TRAINING AREA ACT<br/>
-<i>Lower limit:</i>10FT AMSL <i>Upper limit:</i>500FT AMSL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1718/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:30 <br/>
-<i>Text:</i>EBBUGLD11-GLIDER AREA SAINT-HUBERT ACT<br/>
-<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1719/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:30 <br/>
-<i>Text:</i>EBBUGLD12-GLIDER AREA LA ROCHE ACT<br/>
-<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G1720/26</font>
-<br/>
-<i>From:</i>15 JUL 26 09:00  <i>Till:</i>15 JUL 26 15:30 <br/>
-<i>Text:</i>EBBUGLD13-GLIDER AREA MALMEDY ACT<br/>
-<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
-</p>
-<p>
 <font class="ssstitle-bold">G1723/26</font>
 <br/>
 <i>From:</i>24 JUL 26 09:00  <i>Till:</i>29 JUL 26 13:00 <br/>
@@ -2342,20 +2302,70 @@ COOR BTN BELGA RADAR AND CRNA/NORD<br/>
 <i>Text:</i>HOEVERHEIDE PJE 510502N 0052123E PJE RADIUS 03NM<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>FL100<br/>
 </p>
+<p>
+<font class="ssstitle-bold">G1725/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:25 <br/>
+<i>Schedule:</i>0900-1040 1345-1525<br/>
+<i>Text:</i>TSA26A - ARDENNES 01 ACT. 
+GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER 
+COOR BTN BELGA RADAR AND CRNA/NORD<br/>
+<i>Lower limit:</i>FL095 <i>Upper limit:</i>UNL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1726/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:25 <br/>
+<i>Schedule:</i>0900-1040 1345-1525<br/>
+<i>Text:</i>TSA26B - ARDENNES 04 ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL095<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1727/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:00  <i>Till:</i>16 JUL 26 15:00 <br/>
+<i>Text:</i>EBR04-ELSENBORN 01 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL105<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1728/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:00  <i>Till:</i>16 JUL 26 13:00 <br/>
+<i>Text:</i>EBR20-BRASSCHAAT ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL070<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1729/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:30 <br/>
+<i>Text:</i>EBBUGLD11-GLIDER AREA SAINT-HUBERT ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1730/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:30 <br/>
+<i>Text:</i>EBBUGLD12-GLIDER AREA LA ROCHE ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1731/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:00  <i>Till:</i>16 JUL 26 15:30 <br/>
+<i>Text:</i>EBBUGLD13-GLIDER AREA MALMEDY ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1732/26</font>
+<br/>
+<i>From:</i>16 JUL 26 06:30  <i>Till:</i>16 JUL 26 15:30 <br/>
+<i>Text:</i>LFA11-KOKSIJDE TRAINING AREA ACT<br/>
+<i>Lower limit:</i>10FT AMSL <i>Upper limit:</i>500FT AMSL<br/>
+</p>
 <hr/>
 <a name="EBBRG"></a>
 <br/>
 <b>BRUSSELS / BRUSSELS-NATIONAL</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
-<p>
-<font class="ssstitle-bold">G1691/26</font>
-<br/>
-<i>From:</i>13 JUL 26 07:00  <i>Till:</i>15 JUL 26 15:00 <br/>
-<i>Schedule:</i>DAILY 0700-1500<br/>
-<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'PEUTIE' ESTABLISHED 505607N 0042813E 
-RADIUS 500M FOR UAS ACT IN VISUAL LINE OF SIGHT. STATUS OF THE AREA 
-CAN BE CHECKED WITH BRUSSELS TWR<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>310FT AMSL<br/>
-</p>
 <p>
 <font class="ssstitle-bold">G1709/26</font>
 <br/>
