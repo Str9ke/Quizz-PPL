@@ -9301,9 +9301,38 @@ function _mapLineGrabCore(lat,lon){
   var newWp={name:'',lat:lat,lon:lon,icon:'',dist:0,route:0};
   var newIdx=insertAfterIdx+1;
   waypoints.splice(newIdx,0,newWp);
+  /* SURTOUT PAS de renderNavlog/recalcNavlog ici (pendant le geste) :
+     1) reconstruire la liste des waypoints insère une carte AU-DESSUS de la
+        carte Leaflet → toute la page se décale → "ça saute" à l'écran ;
+     2) recalcNavlog → updateRouteMap détruit et recrée les polylines — or sur
+        Android les touchmove d'un geste sont livrés à l'ÉLÉMENT où le toucher
+        a commencé ; une fois cet élément SVG supprimé du DOM, plus aucun
+        événement n'atteint nos écouteurs document et le glisser meurt
+        immédiatement (waypoint orphelin impossible à positionner).
+     Le rendu complet est différé à la fin du geste (_mapLineGrabFinish). */
+  _mapLineGrabLiveUpdate(newIdx,lat,lon);
+  return newIdx;
+}
+/* Fin de geste : si l'utilisateur a réellement glissé, reconstruire la page en
+   maintenant la carte au même endroit à l'écran (la nouvelle carte waypoint
+   insérée au-dessus décalerait tout vers le bas) ; si c'était un simple appui
+   sans déplacement, retirer le waypoint créé — pas de point fantôme. */
+function _mapLineGrabFinish(newIdx,moved){
+  if(!moved){
+    waypoints.splice(newIdx,1);
+    _mapLineGrabRefreshLines();
+    return;
+  }
+  var mapEl=document.getElementById('routeMapContainer');
+  var beforeTop=mapEl?mapEl.getBoundingClientRect().top:null;
   renderNavlog();
   recalcNavlog();
-  return newIdx;
+  if(mapEl && beforeTop!==null){
+    var afterTop=mapEl.getBoundingClientRect().top;
+    if(Math.abs(afterTop-beforeTop)>1){
+      window.scrollTo({top:(window.scrollY||window.pageYOffset)+(afterTop-beforeTop),behavior:'instant'});
+    }
+  }
 }
 /* Mise à jour légère pendant le geste : ne bouge que la ligne (setLatLngs,
    pas de reconstruction). updateRouteMap() est une fonction lourde qui
@@ -9312,9 +9341,7 @@ function _mapLineGrabCore(lat,lon){
    l'appeler à chaque pixel de déplacement de souris faisait "grossir/
    rétrécir" la carte en continu pendant le glissement. Le rebuild complet
    (avec le marqueur définitif et le recadrage) n'a lieu qu'au relâchement. */
-function _mapLineGrabLiveUpdate(newIdx,lat,lon){
-  waypoints[newIdx].lat=lat;
-  waypoints[newIdx].lon=lon;
+function _mapLineGrabRefreshLines(){
   if(!_currentRoutePolyline) return;
   var coords=[];
   for(var w=0;w<waypoints.length;w++){
@@ -9323,12 +9350,20 @@ function _mapLineGrabLiveUpdate(newIdx,lat,lon){
   _currentRoutePolyline.setLatLngs(coords);
   if(_currentRouteHitPolyline) _currentRouteHitPolyline.setLatLngs(coords);
 }
+function _mapLineGrabLiveUpdate(newIdx,lat,lon){
+  waypoints[newIdx].lat=lat;
+  waypoints[newIdx].lon=lon;
+  _mapLineGrabRefreshLines();
+}
 function _mapLineGrabStartMouse(e){
   L.DomEvent.stopPropagation(e);
   var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng);
   if(newIdx<0) return;
   routeMap.dragging.disable();
   document.body.style.userSelect='none';
+  var startX=e.originalEvent?e.originalEvent.clientX:0;
+  var startY=e.originalEvent?e.originalEvent.clientY:0;
+  var moved=false;
   /* IMPORTANT : écouter sur document, pas sur routeMap. Les événements
      Leaflet 'mousemove'/'mouseup' de la carte ne se déclenchent que si le
      curseur est AU-DESSUS de la carte à ce moment précis — si l'utilisateur
@@ -9338,6 +9373,7 @@ function _mapLineGrabStartMouse(e){
      carte se recadrait sans arrêt sur des coordonnées aberrantes (d'où le
      zoom qui oscillait). */
   function onMove(ev){
+    if(Math.abs(ev.clientX-startX)+Math.abs(ev.clientY-startY)>8) moved=true;
     var cp=routeMap.mouseEventToContainerPoint(ev);
     var ll=routeMap.containerPointToLatLng(cp);
     _mapLineGrabLiveUpdate(newIdx,ll.lat,ll.lng);
@@ -9347,8 +9383,7 @@ function _mapLineGrabStartMouse(e){
     document.removeEventListener('mouseup',onUp,{capture:true});
     document.body.style.userSelect='';
     routeMap.dragging.enable();
-    renderNavlog();
-    recalcNavlog();
+    _mapLineGrabFinish(newIdx,moved);
   }
   document.addEventListener('mousemove',onMove,{capture:true});
   document.addEventListener('mouseup',onUp,{capture:true});
@@ -9365,10 +9400,13 @@ function _mapLineGrabStartTouch(ev){
   if(newIdx<0) return;
   routeMap.dragging.disable();
   document.body.style.userSelect='none';
+  var startX=t.clientX, startY=t.clientY;
+  var moved=false;
   function onMove(ev2){
     if(!ev2.touches||!ev2.touches.length) return;
     ev2.preventDefault();
     var t2=ev2.touches[0];
+    if(Math.abs(t2.clientX-startX)+Math.abs(t2.clientY-startY)>8) moved=true;
     var cp2=routeMap.mouseEventToContainerPoint(t2);
     var ll2=routeMap.containerPointToLatLng(cp2);
     _mapLineGrabLiveUpdate(newIdx,ll2.lat,ll2.lng);
@@ -9376,13 +9414,14 @@ function _mapLineGrabStartTouch(ev){
   function onUp(){
     document.removeEventListener('touchmove',onMove,{passive:false});
     document.removeEventListener('touchend',onUp);
+    document.removeEventListener('touchcancel',onUp);
     document.body.style.userSelect='';
     routeMap.dragging.enable();
-    renderNavlog();
-    recalcNavlog();
+    _mapLineGrabFinish(newIdx,moved);
   }
   document.addEventListener('touchmove',onMove,{passive:false});
   document.addEventListener('touchend',onUp);
+  document.addEventListener('touchcancel',onUp);
 }
 
 function updateRouteMap(){
