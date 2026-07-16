@@ -8412,15 +8412,22 @@ function _altitudes2DragEnd(){
 /* Pendant le drag : déplace juste le point/texte concernés et redessine la
    trajectoire, sans reconstruire tout le SVG (garde le geste fluide). */
 function _altitudes2OwnerForDist(d,cumDists){
-  var candidates=[];
-  for(var i=1;i<waypoints.length-1;i++){ if(!waypoints[i].isEtape) candidates.push(i); }
-  if(!candidates.length) return -1;
-  var best=candidates[0], bestDist=Math.abs(d-cumDists[best]);
-  for(var k=1;k<candidates.length;k++){
-    var dd=Math.abs(d-cumDists[candidates[k]]);
-    if(dd<bestDist){ bestDist=dd; best=candidates[k]; }
+  /* Cibler le waypoint de FIN du tronçon saisi — EXACTEMENT la même logique que le
+     profil d'altitude du Navlog (chaque tronçon i règle waypoints[i].altitude, la
+     zone de saisie d'un tronçon s'étend de cumDists[i-1] à cumDists[i]). L'ancienne
+     version prenait le waypoint le plus PROCHE du point saisi, ce qui pouvait
+     modifier un segment différent de celui qu'on tenait sous le doigt. */
+  var legEnd=-1;
+  for(var i=1;i<waypoints.length;i++){
+    if(d<=cumDists[i]+1e-9){ legEnd=i; break; }
   }
-  return best;
+  if(legEnd<0) legEnd=waypoints.length-1;
+  var isEligible=function(i){ return i>0 && i<waypoints.length-1 && !waypoints[i].isEtape; };
+  if(isEligible(legEnd)) return legEnd;
+  /* Tronçon final (descente vers l'arrivée) : son palier correspond au dernier
+     waypoint de croisière — le régler lui plutôt que d'ignorer le geste. */
+  if(legEnd===waypoints.length-1 && isEligible(legEnd-1)) return legEnd-1;
+  return -1;
 }
 
 function _altitudes2UpdateTrajectory(){
@@ -9138,6 +9145,7 @@ var routeMap=null;
 var routeMapLayers=[];
 var _routeMapLastCoordsSig=null;
 var _currentRoutePolyline=null; /* référence pour mise à jour légère pendant un glisser (voir _mapLineGrabStartMouse/Touch) */
+var _currentRouteHitPolyline=null; /* polyline invisible élargie servant de zone de saisie tactile */
 
 function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
@@ -9313,6 +9321,7 @@ function _mapLineGrabLiveUpdate(newIdx,lat,lon){
     if(waypoints[w].lat!==null&&waypoints[w].lon!==null) coords.push([waypoints[w].lat,waypoints[w].lon]);
   }
   _currentRoutePolyline.setLatLngs(coords);
+  if(_currentRouteHitPolyline) _currentRouteHitPolyline.setLatLngs(coords);
 }
 function _mapLineGrabStartMouse(e){
   L.DomEvent.stopPropagation(e);
@@ -9347,6 +9356,8 @@ function _mapLineGrabStartMouse(e){
 function _mapLineGrabStartTouch(ev){
   if(!ev.touches||!ev.touches.length) return;
   ev.preventDefault();
+  /* Empêcher Leaflet de démarrer en parallèle un pan de la carte avec le même toucher */
+  ev.stopPropagation();
   var t=ev.touches[0];
   var cp=routeMap.mouseEventToContainerPoint(t);
   var latlng=routeMap.containerPointToLatLng(cp);
@@ -9447,10 +9458,21 @@ function updateRouteMap(){
   }
   /* Saisir la ligne de route n'importe où (pas une poignée dédiée à repérer)
      insère un nouveau waypoint à l'endroit touché et continue le geste pour
-     le positionner immédiatement — voir _mapLineGrabStartMouse/Touch. */
-  polyline.on('mousedown',_mapLineGrabStartMouse);
-  var _polyEl=polyline.getElement&&polyline.getElement();
-  if(_polyEl) _polyEl.addEventListener('touchstart',_mapLineGrabStartTouch,{passive:false});
+     le positionner immédiatement — voir _mapLineGrabStartMouse/Touch.
+     La ligne visible ne fait que 4px de large : impossible à toucher au doigt
+     sur mobile. On superpose donc une polyline INVISIBLE de 30px qui sert de
+     zone de saisie (même technique que le hit-path du graphique Altitudes),
+     avec touch-action:none pour que le navigateur ne détourne pas le geste
+     en défilement de page avant même qu'on le reçoive. */
+  var hitLine=L.polyline(coords,{color:'#ff1493',opacity:0.001,weight:30,interactive:true}).addTo(routeMap);
+  routeMapLayers.push(hitLine);
+  _currentRouteHitPolyline=hitLine;
+  hitLine.on('mousedown',_mapLineGrabStartMouse);
+  var _hitEl=hitLine.getElement&&hitLine.getElement();
+  if(_hitEl){
+    _hitEl.style.touchAction='none';
+    _hitEl.addEventListener('touchstart',_mapLineGrabStartTouch,{passive:false});
+  }
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
