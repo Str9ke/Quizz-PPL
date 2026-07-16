@@ -328,15 +328,22 @@ function initAutoStartCheckbox() {
 /**
  * _isEligibleForSR() – Une question est éligible à la répétition espacée si :
  * 1) Elle a déjà un nextReview programmé (= elle est dans le cycle SR), OU
- * 2) Elle est marquée, importante, ou difficile (failCount >= 2) → entre dans le cycle immédiatement
- * Les questions non vues (pas de réponse) ne sont jamais éligibles.
+ * 2) Elle a déjà été RÉPONDUE (status présent) et est marquée, importante, ou difficile
+ *    (failCount >= 2) → entre dans le cycle immédiatement.
+ * Les questions jamais répondues ne sont JAMAIS éligibles — même marquées/importantes.
+ * Sans cette condition sur status, une question marquée dont la planification vient
+ * d'être réinitialisée (reset de catégorie : status/srInterval/nextReview supprimés,
+ * marked/important conservés) comptait comme "révision due" immédiatement et pour
+ * toujours, gonflant artificiellement le compteur "N dues" de l'Objectif du jour avec
+ * des questions qui ne sont pas de vraies révisions planifiées.
  */
 function _isEligibleForSR(r) {
   if (!r) return false;
   // Déjà dans le cycle SR (a été répondue depuis l'activation du SR)
   if (r.nextReview !== undefined && r.nextReview !== null) return true;
-  // Pas encore dans le cycle mais marquée/importante/difficile → y entre maintenant
-  return r.marked === true || r.important === true || (r.failCount || 0) >= 2;
+  // Répondue par le passé (pré-SR) et marquée/importante/difficile → entre dans le cycle
+  return r.status !== undefined
+    && (r.marked === true || r.important === true || (r.failCount || 0) >= 2);
 }
 
 /**
@@ -370,6 +377,19 @@ function _updateRevisionsBadge() {
   } else {
     badge.style.display = 'none';
   }
+}
+
+/**
+ * getDailyNewTarget() – Objectif de nouvelles questions/jour, en honorant la valeur 0.
+ * ATTENTION : ne PAS remplacer par `parseInt(...) || 15` — 0 est une valeur valide
+ * ("aucune nouvelle question, uniquement les révisions") mais 0 est falsy en JS, donc
+ * `0 || 15` donnerait 15 et rendrait le réglage 0 silencieusement impossible.
+ * Le défaut 15 ne s'applique que si la valeur est absente ou invalide.
+ */
+function getDailyNewTarget() {
+  const raw = localStorage.getItem('dailyNewTarget');
+  const v = parseInt(raw);
+  return (Number.isFinite(v) && v >= 0) ? v : 15;
 }
 
 /**
@@ -456,7 +476,7 @@ async function _startObjectifDuJour() {
     }
     if (typeof updateModeCounts === 'function') await updateModeCounts();
 
-    const dailyNewTarget = parseInt(localStorage.getItem('dailyNewTarget')) || 15;
+    const dailyNewTarget = getDailyNewTarget();
     const nb = nbRevisionsToday + dailyNewTarget;
 
     const modeSelect = document.getElementById('mode');

@@ -610,6 +610,8 @@ function afficherQuiz() {
   // Reset validation state pour le nouveau quiz
   window._quizValidated = false;
   window._immediateAnswers = {};
+  window._immediateSavedEntries = {};
+  window._immediatePrevStatus = {};
 
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
@@ -809,6 +811,95 @@ function _updateQuizValidateVisibility(show) {
 }
 
 /**
+ * _computeSrEntry() – Calcule l'entrée de réponse (statut + planification de répétition
+ * espacée + historique) pour une question répondue, à partir de l'état ACTUEL de
+ * currentResponses[key]. Source unique de vérité utilisée à la fois par validerReponses()
+ * (mode normal) et handleImmediateAnswer() (mode correction immédiate, persistance au clic).
+ * NE modifie PAS currentResponses — c'est à l'appelant de décider quand l'appliquer.
+ */
+function _computeSrEntry(q, selectedVal) {
+    const key = getKeyFor(q);
+    const hasExisting = !!currentResponses[key];
+    const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
+    const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
+    const prevFailCount = hasExisting ? (currentResponses[key].failCount || 0) : 0;
+    const status = selectedVal === q.bonne_reponse ? 'réussie' : 'ratée';
+
+    // Répétition espacée : calculer le prochain intervalle
+    const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
+    let newInterval;
+    if (status === 'réussie') {
+      // Bonne réponse : augmenter l'intervalle. Le plafond dépend de la fiabilité de la
+      // question : une question jamais ratée peut monter jusqu'à 365j (on arrête de vous
+      // la ressasher une fois qu'elle est clairement acquise), une question ratée 1-2 fois
+      // plafonne à 120j, au-delà elle reste plus surveillée (60j). Le multiplicateur de
+      // croissance est aussi réduit pour les questions historiquement difficiles.
+      if (prevInterval <= 0) newInterval = 1;
+      else if (prevInterval === 1) newInterval = 3;
+      else {
+        const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
+        const cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
+        newInterval = Math.min(Math.round(prevInterval * growthFactor), cap);
+      }
+    } else {
+      // Mauvaise réponse : "lapse doux" pour les questions qui avaient déjà un peu de vécu
+      // (intervalle >= 3j) — on retombe à 30% de l'intervalle précédent plutôt qu'un reset
+      // brutal à 1 jour, pour éviter qu'une question presque maîtrisée qui trébuche une fois
+      // ne revienne aussi souvent qu'une question jamais vue. Une question tout juste
+      // découverte (intervalle 0 ou 1) repart bien à 1 jour.
+      newInterval = (prevInterval >= 3) ? Math.max(1, Math.round(prevInterval * 0.3)) : 1;
+    }
+    const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
+
+    const entry = {
+        category: q.categorie,
+        questionId: q.id,
+        status,
+        failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
+        srInterval: newInterval,
+        nextReview: nextReviewMs,
+        timestamp: firebase.firestore.Timestamp.now()
+    };
+    // Préserver et enrichir le statusLog (historique des réponses par jour)
+    const existingLog = (currentResponses[key] && currentResponses[key].statusLog) ? [...currentResponses[key].statusLog] : [];
+    existingLog.push({ status, ts: Date.now() });
+    // Garder les 100 dernières entrées max
+    if (existingLog.length > 100) existingLog.splice(0, existingLog.length - 100);
+    entry.statusLog = existingLog;
+    // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
+    if (wasMarked !== undefined) entry.marked = wasMarked;
+    if (wasImportant !== undefined) entry.important = wasImportant;
+    // Mode marquées : planifier la ré-interrogation à session+3
+    if (status === 'ratée' && wasMarked) {
+      entry.retryAfterSession = (_currentSessionCount || 0) + 3;
+    }
+    return entry;
+}
+
+/**
+ * _persistImmediateEntry() – Sauvegarde incrémentale (débouncée) des réponses données en
+ * mode correction immédiate. AVANT ce mécanisme, rien n'était écrit dans Firestore tant que
+ * la session complète n'était pas validée : abandonner une session de 37 questions après en
+ * avoir répondu 22 perdait les 22 réponses — statut et planification de révision inclus —
+ * et les mêmes questions revenaient en "révisions dues" à la session suivante.
+ */
+let _immPersistPending = {};
+let _immPersistTimer = null;
+function _persistImmediateEntry(key, entry) {
+  _immPersistPending[key] = entry;
+  if (_immPersistTimer) clearTimeout(_immPersistTimer);
+  _immPersistTimer = setTimeout(() => {
+    const batch = _immPersistPending;
+    _immPersistPending = {};
+    _immPersistTimer = null;
+    const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+    if (!uid || typeof saveResponsesWithOfflineFallback !== 'function') return;
+    saveResponsesWithOfflineFallback(uid, batch)
+      .catch(e => console.warn('[SR incrémental] échec sauvegarde:', e));
+  }, 800);
+}
+
+/**
  * handleImmediateAnswer() – Gère la correction immédiate d'une question
  * @param {boolean} isRestore - true quand on ré-affiche une réponse déjà donnée avant une
  *   navigation/rechargement (pas une vraie nouvelle réponse) : dans ce cas on ne relit pas
@@ -822,6 +913,30 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   // Sauvegarder la réponse en mémoire (pour validerReponses) — indexé par position dans le tableau
   if (!window._immediateAnswers) window._immediateAnswers = {};
   window._immediateAnswers[idx] = selectedVal;
+
+  // Persistance immédiate de la réponse (statut + planification SR) : calculée et écrite
+  // MAINTENANT, pas à la validation de fin de session — abandonner en cours de route ne
+  // perd plus les réponses déjà données. validerReponses() réutilisera ces entrées telles
+  // quelles (via _immediateSavedEntries) au lieu de recalculer la planification une 2e fois.
+  if (!window._immediateSavedEntries) window._immediateSavedEntries = {};
+  if (!window._immediatePrevStatus) window._immediatePrevStatus = {};
+  const _pKey = getKeyFor(q);
+  if (isRestore) {
+    // Réponse restaurée après un rechargement : elle a déjà été persistée au moment du
+    // clic d'origine — relier l'entrée existante pour éviter tout double comptage.
+    if (currentResponses[_pKey] && currentResponses[_pKey].status !== undefined) {
+      window._immediateSavedEntries[_pKey] = currentResponses[_pKey];
+    }
+  } else {
+    if (!(_pKey in window._immediatePrevStatus)) {
+      window._immediatePrevStatus[_pKey] = currentResponses[_pKey]?.status;
+    }
+    const _pEntry = _computeSrEntry(q, selectedVal);
+    window._immediateSavedEntries[_pKey] = _pEntry;
+    currentResponses[_pKey] = _pEntry;
+    if (!isCorrect) _logWrongAnswer(q, selectedVal);
+    _persistImmediateEntry(_pKey, _pEntry);
+  }
 
   // Mettre à jour le score
   window._immediateScore.answered++;
@@ -953,6 +1068,7 @@ async function validerReponses() {
     const immediateAnswers = window._immediateAnswers || {};
 
     let responsesToSave = {};
+    let answeredCount = 0;
     currentQuestions.forEach((q, idx) => {
         let selectedVal = null;
         if (isImmediate && immediateAnswers[idx] !== undefined) {
@@ -961,95 +1077,69 @@ async function validerReponses() {
             const sel = document.querySelector(`input[name="qidx${idx}"]:checked`);
             selectedVal = sel ? parseInt(sel.value) : null;
         }
+        // Question jamais répondue → on ne touche à RIEN : pas d'entrée, pas de statut
+        // "ratée" infligé, pas de failCount, pas de planification SR. Avant ce correctif,
+        // valider une session incomplète marquait toutes les questions non répondues comme
+        // ratées : la progression s'effondrait ("0 restantes" alors que jamais vues), le
+        // failCount montait à tort, et elles revenaient en "révisions dues" le lendemain.
+        if (selectedVal === null) return;
+        answeredCount++;
         const key = getKeyFor(q);
-        const hasExisting = !!currentResponses[key];
-        const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
-        const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
-        const prevFailCount = hasExisting ? (currentResponses[key].failCount || 0) : 0;
-        const status = selectedVal !== null
-            ? (selectedVal === q.bonne_reponse ? 'réussie' : 'ratée')
-            : 'ratée';
 
-        // Répétition espacée : calculer le prochain intervalle
-        const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
-        let newInterval;
-        if (status === 'réussie') {
-          // Bonne réponse : augmenter l'intervalle. Le plafond dépend de la fiabilité de la
-          // question : une question jamais ratée peut monter jusqu'à 365j (on arrête de vous
-          // la ressasher une fois qu'elle est clairement acquise), une question ratée 1-2 fois
-          // plafonne à 120j, au-delà elle reste plus surveillée (60j). Le multiplicateur de
-          // croissance est aussi réduit pour les questions historiquement difficiles.
-          if (prevInterval <= 0) newInterval = 1;
-          else if (prevInterval === 1) newInterval = 3;
-          else {
-            const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
-            const cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
-            newInterval = Math.min(Math.round(prevInterval * growthFactor), cap);
-          }
-        } else {
-          // Mauvaise réponse : "lapse doux" pour les questions qui avaient déjà un peu de vécu
-          // (intervalle >= 3j) — on retombe à 30% de l'intervalle précédent plutôt qu'un reset
-          // brutal à 1 jour, pour éviter qu'une question presque maîtrisée qui trébuche une fois
-          // ne revienne aussi souvent qu'une question jamais vue. Une question tout juste
-          // découverte (intervalle 0 ou 1) repart bien à 1 jour.
-          newInterval = (prevInterval >= 3) ? Math.max(1, Math.round(prevInterval * 0.3)) : 1;
+        // Mode correction immédiate : l'entrée SR a déjà été calculée ET sauvegardée au
+        // moment de la réponse (voir handleImmediateAnswer). La réutiliser telle quelle —
+        // la recalculer ici doublerait l'incrément d'intervalle SR (currentResponses[key]
+        // contient déjà la nouvelle entrée) et dupliquerait le statusLog.
+        if (isImmediate && window._immediateSavedEntries && window._immediateSavedEntries[key]) {
+            const savedEntry = window._immediateSavedEntries[key];
+            responsesToSave[key] = savedEntry;
+            if (savedEntry.status === 'réussie') correctCount++;
+            return;
         }
-        const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
 
-        const entry = {
-            category: q.categorie,
-            questionId: q.id,
-            status,
-            failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
-            srInterval: newInterval,
-            nextReview: nextReviewMs,
-            timestamp: firebase.firestore.Timestamp.now()
-        };
-        // Préserver et enrichir le statusLog (historique des réponses par jour)
-        const existingLog = (currentResponses[key] && currentResponses[key].statusLog) ? [...currentResponses[key].statusLog] : [];
-        existingLog.push({ status, ts: Date.now() });
-        // Garder les 100 dernières entrées max
-        if (existingLog.length > 100) existingLog.splice(0, existingLog.length - 100);
-        entry.statusLog = existingLog;
-        // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
-        if (wasMarked !== undefined) entry.marked = wasMarked;
-        if (wasImportant !== undefined) entry.important = wasImportant;
+        const entry = _computeSrEntry(q, selectedVal);
         responsesToSave[key] = entry;
-        if (status === 'réussie') correctCount++;
+        if (entry.status === 'réussie') correctCount++;
         // Logger la question ratée pour la page "Ratés du jour"
-        if (status === 'ratée') {
+        if (entry.status === 'ratée') {
           _logWrongAnswer(q, selectedVal);
         }
         // Mode non-immédiat : ajouter les questions ratées à la file de ré-interrogation
-        if (status === 'ratée' && !isImmediate) {
+        if (entry.status === 'ratée' && !isImmediate) {
           _queueForReask(q);
-        }
-        // Mode marquées : planifier la ré-interrogation à session+3
-        if (status === 'ratée' && wasMarked) {
-          entry.retryAfterSession = (_currentSessionCount || 0) + 3;
         }
     });
 
     // Compter les questions nouvellement maîtrisées
     // (passées de non-réussie / non-vue → réussie pour la première fois)
+    // En mode immédiat, currentResponses a déjà été mis à jour au moment du clic :
+    // l'ancien statut est mémorisé dans window._immediatePrevStatus.
     let _newlyMastered = 0;
     currentQuestions.forEach(q => {
         const key = getKeyFor(q);
-        const oldStatus = currentResponses[key]?.status;
+        const oldStatus = (isImmediate && window._immediatePrevStatus && key in window._immediatePrevStatus)
+            ? window._immediatePrevStatus[key]
+            : currentResponses[key]?.status;
         const newStatus = responsesToSave[key]?.status;
         if (newStatus === 'réussie' && oldStatus !== 'réussie') _newlyMastered++;
     });
 
     afficherCorrection();
+    const skippedCount = currentQuestions.length - answeredCount;
     const rc = document.getElementById('resultContainer');
     if (rc) {
         rc.style.display = "block";
         rc.innerHTML = `
-            Vous avez <strong>${correctCount}</strong> bonnes réponses 
-            sur <strong>${currentQuestions.length}</strong>.
+            Vous avez <strong>${correctCount}</strong> bonnes réponses
+            sur <strong>${answeredCount}</strong> répondue${answeredCount > 1 ? 's' : ''}.
+            ${skippedCount > 0 ? `<br><small style="color:var(--text-secondary)">(${skippedCount} question${skippedCount > 1 ? 's' : ''} non répondue${skippedCount > 1 ? 's' : ''} — non comptée${skippedCount > 1 ? 's' : ''}, ${skippedCount > 1 ? 'elles restent' : 'elle reste'} à voir)</small>` : ''}
         `;
         rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // Rien n'a été répondu → rien à enregistrer (ne pas polluer l'historique de sessions
+    // ni les compteurs quotidiens avec une session vide)
+    if (answeredCount === 0) return;
 
     // Incrémenter le compteur quotidien direct dans localStorage
     // (fiable même si Firestore n'est pas prêt offline)
@@ -1095,7 +1185,7 @@ async function validerReponses() {
     // (avant toute opération Firestore qui peut bloquer 10-15s offline)
     const sessionDate = new Date().toISOString();
     if (typeof _saveSessionToLocalBackup === 'function') {
-      _saveSessionToLocalBackup(correctCount, currentQuestions.length, selectedCategory, sessionDate);
+      _saveSessionToLocalBackup(correctCount, answeredCount, selectedCategory, sessionDate);
     }
 
     try {
@@ -1142,7 +1232,7 @@ async function validerReponses() {
           } catch(_e){ /* ignore */ }
         }
         // Sauvegarder le résultat de la session (avec la même date pour déduplication)
-        await saveSessionResultOffline(uid, correctCount, currentQuestions.length, selectedCategory, sessionDate);
+        await saveSessionResultOffline(uid, correctCount, answeredCount, selectedCategory, sessionDate);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
     }
