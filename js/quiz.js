@@ -957,16 +957,33 @@ let _immPersistTimer = null;
 function _persistImmediateEntry(key, entry) {
   _immPersistPending[key] = entry;
   if (_immPersistTimer) clearTimeout(_immPersistTimer);
-  _immPersistTimer = setTimeout(() => {
-    const batch = _immPersistPending;
-    _immPersistPending = {};
-    _immPersistTimer = null;
-    const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
-    if (!uid || typeof saveResponsesWithOfflineFallback !== 'function') return;
-    saveResponsesWithOfflineFallback(uid, batch)
-      .catch(e => console.warn('[SR incrémental] échec sauvegarde:', e));
-  }, 800);
+  _immPersistTimer = setTimeout(_flushImmPersist, 800);
 }
+
+/**
+ * _flushImmPersist() – Envoie immédiatement (sans attendre le debounce de 800ms) les entrées
+ * en attente. Répondre à une question puis quitter la page (retour, changement d'onglet,
+ * fermeture) dans l'intervalle du debounce détruisait le setTimeout en attente avant qu'il ne
+ * se déclenche jamais : la réponse n'atteignait donc jamais db.collection(...).update(), pas
+ * même la file d'attente locale de persistance Firestore (IndexedDB) — d'où des questions
+ * répondues qui réapparaissaient "à revoir" à la session suivante. 'visibilitychange' (passage
+ * à 'hidden') et 'pagehide' se déclenchent de façon fiable, y compris sur mobile où
+ * 'beforeunload' est peu fiable, y compris pour une navigation interne vers une autre page.
+ */
+function _flushImmPersist() {
+  if (_immPersistTimer) { clearTimeout(_immPersistTimer); _immPersistTimer = null; }
+  const batch = _immPersistPending;
+  _immPersistPending = {};
+  if (Object.keys(batch).length === 0) return;
+  const uid = (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
+  if (!uid || typeof saveResponsesWithOfflineFallback !== 'function') return;
+  saveResponsesWithOfflineFallback(uid, batch)
+    .catch(e => console.warn('[SR incrémental] échec sauvegarde:', e));
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') _flushImmPersist();
+});
+window.addEventListener('pagehide', _flushImmPersist);
 
 /**
  * handleImmediateAnswer() – Gère la correction immédiate d'une question
