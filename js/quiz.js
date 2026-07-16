@@ -946,32 +946,31 @@ function _computeSrEntry(q, selectedVal) {
 }
 
 /**
- * _persistImmediateEntry() – Sauvegarde incrémentale (débouncée) des réponses données en
- * mode correction immédiate. AVANT ce mécanisme, rien n'était écrit dans Firestore tant que
- * la session complète n'était pas validée : abandonner une session de 37 questions après en
- * avoir répondu 22 perdait les 22 réponses — statut et planification de révision inclus —
- * et les mêmes questions revenaient en "révisions dues" à la session suivante.
+ * _persistImmediateEntry() – Sauvegarde la réponse donnée (mode correction immédiate ou clic
+ * en mode normal). AVANT ce mécanisme, rien n'était écrit dans Firestore tant que la session
+ * complète n'était pas validée : abandonner une session de 37 questions après en avoir répondu
+ * 22 perdait les 22 réponses — statut et planification de révision inclus — et les mêmes
+ * questions revenaient en "révisions dues" à la session suivante.
+ *
+ * Écriture lancée IMMÉDIATEMENT au clic (pas de debounce) : un debounce (même court, ex. 800ms)
+ * fait courir un vrai risque de perte — si l'utilisateur quitte la page dans cet intervalle
+ * (retour, changement d'onglet), le setTimeout en attente est détruit avant de s'être jamais
+ * déclenché, et la réponse n'atteint donc jamais db.collection(...).update(), pas même la file
+ * d'attente locale de persistance Firestore (IndexedDB) — c'est arrivé en pratique même avec un
+ * flush sur 'visibilitychange'/'pagehide' en filet de sécurité, la chaîne de promesses vers
+ * l'écriture n'ayant pas forcément le temps de s'exécuter avant que le navigateur ne coupe le
+ * contexte JS de la page en cours de navigation. Lancer l'écriture dès le clic lui donne le
+ * maximum de temps possible pour aboutir avant que l'utilisateur ne parte (ce qui suppose un
+ * nouveau geste de sa part, donc un délai physique d'au moins quelques centaines de ms).
  */
 let _immPersistPending = {};
-let _immPersistTimer = null;
 function _persistImmediateEntry(key, entry) {
   _immPersistPending[key] = entry;
-  if (_immPersistTimer) clearTimeout(_immPersistTimer);
-  _immPersistTimer = setTimeout(_flushImmPersist, 800);
+  _flushImmPersist();
 }
 
-/**
- * _flushImmPersist() – Envoie immédiatement (sans attendre le debounce de 800ms) les entrées
- * en attente. Répondre à une question puis quitter la page (retour, changement d'onglet,
- * fermeture) dans l'intervalle du debounce détruisait le setTimeout en attente avant qu'il ne
- * se déclenche jamais : la réponse n'atteignait donc jamais db.collection(...).update(), pas
- * même la file d'attente locale de persistance Firestore (IndexedDB) — d'où des questions
- * répondues qui réapparaissaient "à revoir" à la session suivante. 'visibilitychange' (passage
- * à 'hidden') et 'pagehide' se déclenchent de façon fiable, y compris sur mobile où
- * 'beforeunload' est peu fiable, y compris pour une navigation interne vers une autre page.
- */
+/** _flushImmPersist() – Envoie toutes les entrées en attente à Firestore sans attendre. */
 function _flushImmPersist() {
-  if (_immPersistTimer) { clearTimeout(_immPersistTimer); _immPersistTimer = null; }
   const batch = _immPersistPending;
   _immPersistPending = {};
   if (Object.keys(batch).length === 0) return;
@@ -980,6 +979,8 @@ function _flushImmPersist() {
   saveResponsesWithOfflineFallback(uid, batch)
     .catch(e => console.warn('[SR incrémental] échec sauvegarde:', e));
 }
+// Filet de sécurité : si un appel venait à être remis en file d'attente sans flush immédiat
+// (ex. futur appelant groupé), s'assurer que rien ne reste bloqué à la fermeture de la page.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') _flushImmPersist();
 });
