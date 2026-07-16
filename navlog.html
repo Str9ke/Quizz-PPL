@@ -2458,6 +2458,11 @@ function switchTab(id){
   if(id==='nav' && typeof routeMap!=='undefined' && routeMap){
     setTimeout(function(){ routeMap.invalidateSize(); }, 80);
   }
+  if(id==='nav' && typeof renderAltProfile==='function'){
+    /* Reprend les espaces aériens chargés entre-temps depuis l'onglet Altitudes — sans ça,
+       le mini-profil sous la carte restait figé sur son dernier rendu (avant chargement). */
+    renderAltProfile();
+  }
   if(id==='perf'){
     window.perfCalc();
     /* Auto-remplir vent/temp si un METAR est déjà disponible */
@@ -8072,6 +8077,10 @@ async function loadRouteAirspaces(){
         : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
       renderAltitudesProfile();
       renderAltitudesCrossingsList();
+      /* Le mini-profil sous la carte de route (onglet Navlog) affiche les mêmes zones —
+         le rafraîchir aussi, sinon il reste vide tant qu'on ne revient pas manuellement
+         sur l'onglet Navlog (voir switchTab) une fois le chargement terminé. */
+      if(typeof renderAltProfile==='function') renderAltProfile();
       roundOk=true;
     }catch(e){
       console.error('[Altitudes] Erreur chargement OpenAIP (round '+(round+1)+')', e);
@@ -8555,6 +8564,68 @@ function _altProfileHideMapPos(){
   if(_altProfileMapMarker) _altProfileMapMarker.setStyle({opacity:0,fillOpacity:0});
 }
 
+/* ===== Survol inverse : carte → profil d'altitude =====
+   Survoler le tracé sur la carte doit aussi indiquer où on se trouve sur le profil
+   d'altitude (pas seulement l'inverse). _routeDistAtLatLon() projette le point survolé
+   sur le segment de route le plus proche et renvoie la distance cumulée (NM) le long de
+   la route à cet endroit ; _altProfileSetCrosshair(dist) pilote alors le crosshair du
+   profil exactement comme s'il avait été survolé directement. */
+var _altProfileGeom=null; /* {ml,cw,mt,ch,totalDist,tArr} — mis à jour à chaque renderAltProfile() */
+function _routeDistAtLatLon(lat,lon){
+  var pts=[];
+  for(var w=0;w<waypoints.length;w++){
+    if(waypoints[w].lat!==null&&waypoints[w].lon!==null) pts.push({lat:waypoints[w].lat,lon:waypoints[w].lon,dist:waypoints[w].dist||0});
+  }
+  if(pts.length<2) return null;
+  var bestD=Infinity,bestDist=0,cum=0;
+  for(var i=0;i<pts.length-1;i++){
+    var a=pts[i],b=pts[i+1];
+    var legDist=b.dist||0;
+    var dx=b.lon-a.lon,dy=b.lat-a.lat;
+    var lenSq=dx*dx+dy*dy;
+    var t=lenSq>0?((lon-a.lon)*dx+(lat-a.lat)*dy)/lenSq:0;
+    t=Math.max(0,Math.min(1,t));
+    var cx=a.lon+t*dx,cy=a.lat+t*dy;
+    var d=Math.hypot(lon-cx,lat-cy);
+    if(d<bestD){ bestD=d; bestDist=cum+t*legDist; }
+    cum+=legDist;
+  }
+  return bestDist;
+}
+function _altProfileSetCrosshair(dist){
+  var geo=_altProfileGeom;
+  if(!geo) return;
+  var g=document.getElementById('altCrosshair');
+  var ln=document.getElementById('altCrossLine');
+  var tx=document.getElementById('altCrossText');
+  var rc=document.getElementById('altCrossRect');
+  if(!g||!ln||!tx||!rc) return;
+  dist=Math.max(0,Math.min(geo.totalDist,dist));
+  var svgX=geo.ml+(dist/geo.totalDist)*geo.cw;
+  g.setAttribute('visibility','visible');
+  ln.setAttribute('x1',svgX);ln.setAttribute('x2',svgX);
+  var label='';
+  if(geo.tArr&&geo.tArr.length>1){
+    var nt=geo.tArr.length-1;
+    var k=dist/geo.totalDist*nt;
+    var k0=Math.max(0,Math.floor(k)),k1=Math.min(nt,k0+1);
+    var frac=k-k0;
+    var elev=Math.round(geo.tArr[k0]*(1-frac)+geo.tArr[k1]*frac);
+    label='Sol : '+elev+' ft';
+  }
+  tx.textContent=label;
+  var tw=Math.max(58,label.length*5.4+10);
+  var rx=Math.min(geo.ml+geo.cw-tw/2-2,Math.max(geo.ml+tw/2+2,svgX));
+  rc.setAttribute('x',rx-tw/2);rc.setAttribute('width',tw);
+  tx.setAttribute('x',rx);
+  _altProfileShowMapPos(dist);
+}
+function _altProfileHideCrosshair(){
+  var g=document.getElementById('altCrosshair');
+  if(g) g.setAttribute('visibility','hidden');
+  _altProfileHideMapPos();
+}
+
 /* ===== ALTITUDE PROFILE CHART ===== */
 var _altDragState=null;
 function renderAltProfile(){
@@ -8572,8 +8643,13 @@ function renderAltProfile(){
   var totalDist=0;for(var i=1;i<waypoints.length;i++) totalDist+=(waypoints[i].dist||0);
   if(totalDist<=0) return;
 
+  /* Reprend les espaces aériens déjà chargés depuis l'onglet Altitudes (s'ils existent) —
+     avant, ce profil du Navlog ne montrait jamais les volumes d'espace aérien, même une fois
+     chargés et visibles dans l'onglet Altitudes. */
+  if(typeof _recomputeAirspacesIfStale==='function') _recomputeAirspacesIfStale();
+
   var sub=document.getElementById('altProfileSubtitle');
-  if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM';
+  if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM'+((typeof _routeAirspaces!=='undefined'&&_routeAirspaces.length)?' · '+_routeAirspaces.length+' espace(s) aérien(s)':'');
 
   /* Helper : élévation terrain interpolée à une distance donnée */
   function _terrainAtDist(d){
@@ -8647,6 +8723,23 @@ function renderAltProfile(){
   xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
   yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
 
+  /* Bandes d'espace aérien (mêmes données que l'onglet Altitudes, voir _recomputeAirspacesIfStale
+     ci-dessus) — plus hautes en premier pour servir de fond, plus petites/spécifiques par-dessus. */
+  var bandsHtml='';
+  if(typeof _routeAirspaces!=='undefined'&&_routeAirspaces.length){
+    var sortedAirspacesMini=_routeAirspaces.slice().sort(function(a,b){return (b.upperFt-b.lowerFt)-(a.upperFt-a.lowerFt);});
+    sortedAirspacesMini.forEach(function(a){
+      var col=_airspaceBandColor(a.classLabel);
+      a.crossings.forEach(function(c){
+        var bx1=xS(c.entryDist),bx2=xS(c.exitDist);
+        var byTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(a.lowerFt||0,0));
+        var bw=bx2-bx1,bh=byBot-byTop;
+        bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
+        if(bw>30 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+      });
+    });
+  }
+
   /* Poignées de drag au MILIEU plat de chaque leg (invisible sur toute la longueur) */
   var legHits='',cumD3=0;
   for(var i=1;i<waypoints.length-1;i++){
@@ -8697,7 +8790,7 @@ function renderAltProfile(){
     /* Overlay au fond — sous les hit zones — pour capter les mousemove sur la zone vide */
     '<rect id="altOverlay" x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="transparent" style="cursor:crosshair"/>'+
     '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3" style="pointer-events:none"/>'+
-    yGrid+xGrid+
+    yGrid+xGrid+bandsHtml+
     (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')+
     '<path d="'+fillD+'" fill="rgba(102,126,234,.17)" style="pointer-events:none"/>'+
     '<path d="'+pD+'" fill="none" stroke="#667eea" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="pointer-events:none"/>'+
@@ -8724,46 +8817,21 @@ function renderAltProfile(){
         window._altDragStartTouch(e,idx);
       },{passive:false});
     });
+    /* Géométrie mise en cache pour piloter le crosshair depuis EN DEHORS du survol du
+       graphique lui-même — voir _altProfileSetCrosshair(dist), utilisé par le survol
+       inverse carte→profil (survoler le tracé sur la carte affiche la position ici). */
+    _altProfileGeom={ml:ml,cw:cw,mt:mt,ch:ch,totalDist:totalDist,tArr:tArr};
     /* Crosshair : écoute mousemove sur le SVG entier (bulle depuis tous les enfants) */
     function _updateCrosshair(ev){
       var rect=svg.getBoundingClientRect();
       if(!rect.width) return;
       var scaleX=W/rect.width;
       var svgX=(ev.clientX-rect.left)*scaleX;
-      var g=document.getElementById('altCrosshair');
-      var ln=document.getElementById('altCrossLine');
-      var tx=document.getElementById('altCrossText');
-      var rc=document.getElementById('altCrossRect');
-      if(!g||!ln||!tx||!rc) return;
-      if(svgX<ml||svgX>ml+cw){g.setAttribute('visibility','hidden');_altProfileHideMapPos();return;}
-      g.setAttribute('visibility','visible');
-      ln.setAttribute('x1',svgX);ln.setAttribute('x2',svgX);
-      var d2=(svgX-ml)/cw*totalDist;
-      var label='';
-      if(tArr&&tArr.length>1){
-        var nt2=tArr.length-1;
-        var k2=d2/totalDist*nt2;
-        var k0=Math.max(0,Math.floor(k2)),k1=Math.min(nt2,k0+1);
-        var frac=k2-k0;
-        var elev=Math.round(tArr[k0]*(1-frac)+tArr[k1]*frac);
-        label='Sol : '+elev+' ft';
-      }
-      tx.textContent=label;
-      var tw=Math.max(58,label.length*5.4+10);
-      var rx=Math.min(ml+cw-tw/2-2,Math.max(ml+tw/2+2,svgX));
-      rc.setAttribute('x',rx-tw/2);rc.setAttribute('width',tw);
-      tx.setAttribute('x',rx);
-      /* Situe le point survolé/glissé sur la carte de route juste au-dessus — voir
-         _altProfileShowMapPos(). Fonctionne aussi bien en glissant qu'en survolant
-         simplement, pas besoin de cliquer d'abord. */
-      _altProfileShowMapPos(d2);
+      if(svgX<ml||svgX>ml+cw){ _altProfileHideCrosshair(); return; }
+      _altProfileSetCrosshair((svgX-ml)/cw*totalDist);
     }
     svg.addEventListener('mousemove',_updateCrosshair);
-    svg.addEventListener('mouseleave',function(){
-      var g=document.getElementById('altCrosshair');
-      if(g) g.setAttribute('visibility','hidden');
-      _altProfileHideMapPos();
-    });
+    svg.addEventListener('mouseleave',_altProfileHideCrosshair);
     /* Support tactile (mobile) : le mousemove seul ne se déclenche jamais au doigt —
        sans ceci, glisser le doigt sur le profil ne faisait rien sur téléphone. */
     function _updateCrosshairTouch(ev){
@@ -8773,11 +8841,7 @@ function renderAltProfile(){
     }
     svg.addEventListener('touchstart',_updateCrosshairTouch,{passive:false});
     svg.addEventListener('touchmove',_updateCrosshairTouch,{passive:false});
-    svg.addEventListener('touchend',function(){
-      var g=document.getElementById('altCrosshair');
-      if(g) g.setAttribute('visibility','hidden');
-      _altProfileHideMapPos();
-    });
+    svg.addEventListener('touchend',_altProfileHideCrosshair);
   }
 
   /* Lance fetch terrain si pas encore en cache */
@@ -9645,6 +9709,14 @@ function updateRouteMap(){
     _hitEl.style.touchAction='none';
     _hitEl.addEventListener('touchstart',_mapLineGrabStartTouch,{passive:false});
   }
+  /* Survol inverse : survoler le tracé sur la carte indique la position correspondante
+     sur le profil d'altitude sous la carte (voir _routeDistAtLatLon/_altProfileSetCrosshair) —
+     sans ça, seul le sens profil→carte fonctionnait. */
+  hitLine.on('mousemove',function(e){
+    var d=_routeDistAtLatLon(e.latlng.lat,e.latlng.lng);
+    if(d!==null) _altProfileSetCrosshair(d);
+  });
+  hitLine.on('mouseout',_altProfileHideCrosshair);
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
