@@ -1126,6 +1126,14 @@ body.light .home-hero-title {
 body.light .home-hero-subtitle {
   color: rgba(100, 100, 130, 0.6);
 }
+.deploy-status {
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+.deploy-status-ok { color: rgba(46, 204, 113, 0.85) !important; }
+.deploy-status-pending { color: rgba(241, 196, 15, 0.9) !important; }
+.deploy-status-fail { color: rgba(231, 76, 60, 0.9) !important; font-weight: 600; }
 
 /* Home cards */
 .home-card {

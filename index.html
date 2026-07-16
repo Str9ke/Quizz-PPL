@@ -117,6 +117,7 @@
     <div class="home-hero-icon">✈️</div>
     <h1 class="home-hero-title">Quiz Aviation PPL</h1>
     <div id="lastUpdateInfo" class="home-hero-subtitle"></div>
+    <a id="deployStatusInfo" class="home-hero-subtitle deploy-status" href="https://github.com/Str9ke/Quizz-PPL/actions" target="_blank" rel="noopener" style="display:none"></a>
   </div>
 
   <!-- Top navigation -->
@@ -147,6 +148,74 @@
         var el = document.getElementById('lastUpdateInfo');
         if (el) el.textContent = 'Derni\u00e8re mise \u00e0 jour : ' + formatted;
       });
+    })();
+  </script>
+  <script>
+    // Statut du dernier d\u00e9ploiement GitHub Actions, affich\u00e9 directement sur la page d'accueil
+    // (avant, il fallait aller sur github.com pour savoir si le d\u00e9ploiement \u00e9tait en cours,
+    // r\u00e9ussi ou en \u00e9chec). D\u00e9p\u00f4t public \u2192 l'API GitHub r\u00e9pond sans authentification et
+    // autorise les requ\u00eates cross-origin (CORS) depuis GitHub Pages.
+    (function() {
+      var API_URL = 'https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/deploy-pages.yml/runs?per_page=1';
+      var CACHE_KEY = 'deployStatusCache';
+      var CACHE_MS = 60000; // 60s : \u00e9vite de retaper l'API \u00e0 chaque navigation entre pages
+
+      function relativeTime(iso) {
+        var diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diffSec < 60) return '\u00e0 l\'instant';
+        var diffMin = Math.round(diffSec / 60);
+        if (diffMin < 60) return 'il y a ' + diffMin + ' min';
+        var diffH = Math.round(diffMin / 60);
+        if (diffH < 24) return 'il y a ' + diffH + ' h';
+        return 'il y a ' + Math.round(diffH / 24) + ' j';
+      }
+
+      function render(run) {
+        var el = document.getElementById('deployStatusInfo');
+        if (!el || !run) return;
+        var label, cls;
+        if (run.status !== 'completed') {
+          label = '\ud83d\udfe1 D\u00e9ploiement en cours\u2026';
+          cls = 'deploy-status-pending';
+        } else if (run.conclusion === 'success') {
+          label = '\ud83d\udfe2 D\u00e9ploy\u00e9 avec succ\u00e8s \u2014 ' + relativeTime(run.updated_at || run.run_started_at);
+          cls = 'deploy-status-ok';
+        } else {
+          label = '\ud83d\udd34 \u00c9chec du dernier d\u00e9ploiement (voir GitHub Actions)';
+          cls = 'deploy-status-fail';
+        }
+        el.textContent = label;
+        el.className = 'home-hero-subtitle deploy-status ' + cls;
+        el.style.display = '';
+        // Tant que le d\u00e9ploiement est en cours, on rev\u00e9rifie r\u00e9guli\u00e8rement (sans re-fetch trop
+        // fr\u00e9quent) jusqu'\u00e0 ce qu'il se termine, pour que le badge passe automatiquement au vert/rouge.
+        if (run.status !== 'completed') {
+          setTimeout(fetchStatus.bind(null, true), 15000);
+        }
+      }
+
+      function fetchStatus(force) {
+        if (!force) {
+          try {
+            var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+            if (cached && (Date.now() - cached.ts) < CACHE_MS) {
+              render(cached.run);
+              return;
+            }
+          } catch (e) { /* ignore */ }
+        }
+        fetch(API_URL, { headers: { 'Accept': 'application/vnd.github+json' } })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            var run = data && data.workflow_runs && data.workflow_runs[0];
+            if (!run) return;
+            try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), run: run })); } catch (e) { /* ignore */ }
+            render(run);
+          })
+          .catch(function() { /* hors-ligne ou API indisponible : badge simplement masqu\u00e9 */ });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() { fetchStatus(false); });
     })();
   </script>
   <script>
