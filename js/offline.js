@@ -7,11 +7,34 @@
 // ============================================================
 
 /**
+ * _stripUndefinedFields() – Retire récursivement les clés dont la valeur est `undefined`.
+ * Firestore REFUSE toute écriture contenant un champ `undefined` (erreur synchrone côté
+ * client, ex: "Unsupported field value: undefined") — un seul champ oublié (ex: q.id ou
+ * q.categorie absent sur une question mal formée) suffit à faire échouer TOUTE l'écriture
+ * de saveResponsesWithOfflineFallback(), qui avalait cette erreur silencieusement (voir plus
+ * bas) : la réponse semblait "prise en compte" côté UI mais n'était jamais réellement écrite
+ * sur le serveur, et donc réapparaissait comme "à revoir" indéfiniment.
+ */
+function _stripUndefinedFields(obj) {
+  if (obj === null || typeof obj !== 'object' || obj instanceof Date) return obj;
+  if (Array.isArray(obj)) return obj.map(_stripUndefinedFields);
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    out[k] = (v !== null && typeof v === 'object') ? _stripUndefinedFields(v) : v;
+  }
+  return out;
+}
+
+/**
  * Sauvegarde les réponses dans Firestore.
  * Firestore gère automatiquement la persistence hors-ligne et la synchronisation.
  * @param {string} uid
  * @param {Object} responsesToSave - Les nouvelles réponses à merger
  * @returns {Object} merged responses (local or from Firestore)
+ * @throws en cas d'échec réel de l'écriture — voir _flushImmPersist()/validerReponses() qui
+ *   utilisent ce signal pour prévenir l'utilisateur au lieu de le laisser croire, à tort,
+ *   que sa réponse a bien été enregistrée.
  */
 async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
   // S'assurer que la persistance Firestore est initialisée
@@ -51,7 +74,7 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
   try {
     const firestoreUpdate = { lastUpdated: firebase.firestore.Timestamp.now() };
     Object.keys(responsesToSave).forEach(key => {
-      firestoreUpdate['responses.' + key] = merged[key];
+      firestoreUpdate['responses.' + key] = _stripUndefinedFields(merged[key]);
     });
 
     try {
@@ -61,7 +84,7 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
       if (e.code === 'not-found') {
         // Premier enregistrement : créer le document avec set()
         await db.collection('quizProgress').doc(uid).set(
-          { responses: merged, lastUpdated: firebase.firestore.Timestamp.now() },
+          { responses: _stripUndefinedFields(merged), lastUpdated: firebase.firestore.Timestamp.now() },
           { merge: true }
         );
       } else {
@@ -76,11 +99,14 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     return normalizeResponses(merged);
   } catch (e) {
     console.error('[offline] Firestore save failed permanently:', e);
-    // En cas d'erreur, on retourne quand même le merged local pour ne pas bloquer l'UI
+    // Mettre à jour l'objet global LOCAL quand même (UI réactive), mais SIGNALER l'échec à
+    // l'appelant en relançant l'erreur — avant ce fix, l'erreur était avalée ici et la
+    // réponse semblait "enregistrée" pour l'utilisateur alors qu'elle n'avait jamais atteint
+    // le serveur, réapparaissant comme "à revoir" à la session suivante sans aucune trace.
     if (typeof currentResponses !== 'undefined') {
       currentResponses = normalizeResponses(merged);
     }
-    return normalizeResponses(merged);
+    throw e;
   }
 }
 
