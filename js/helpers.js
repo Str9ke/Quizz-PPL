@@ -458,6 +458,32 @@ function syncCategorieFromObjectif() {
 }
 
 /**
+ * _syncModeFilterState() – Grise le menu "Mode" quand au moins une case
+ * marquées/importantes/avec notes est cochée (ces cases remplacent alors le Mode).
+ */
+function _syncModeFilterState() {
+  const any = ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox']
+    .some(id => document.getElementById(id)?.checked);
+  const modeSelect = document.getElementById('mode');
+  if (modeSelect) modeSelect.disabled = any;
+}
+
+/**
+ * _resolveModeSelection() – Détermine le mode effectif à utiliser pour démarrer un quiz :
+ * si au moins une case marquées/importantes/avec notes est cochée, combine-les en un
+ * mode "combo:..." (union, cochables ensemble) ; sinon utilise la valeur du menu "Mode".
+ */
+function _resolveModeSelection() {
+  const flags = [];
+  if (document.getElementById('filterMarqueesCheckbox')?.checked) flags.push('marquees');
+  if (document.getElementById('filterImportantesCheckbox')?.checked) flags.push('importantes');
+  if (document.getElementById('filterNotesCheckbox')?.checked) flags.push('avecnotes');
+  if (flags.length) return 'combo:' + flags.join(',');
+  const modeSelect = document.getElementById('mode');
+  return modeSelect ? modeSelect.value : 'toutes';
+}
+
+/**
  * _startObjectifDuJour() – Lance directement une session "Objectif du jour" (toutes les
  * révisions dues + l'objectif de nouvelles questions) pour la catégorie actuellement
  * sélectionnée dans le menu "Catégorie" (TOUTES par défaut), sans passer par la config manuelle.
@@ -466,6 +492,13 @@ async function _startObjectifDuJour() {
   const btn = document.getElementById('objectifStartBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
+    // "Objectif du jour" est un mode dédié (révisions dues + nouvelles) : il prime toujours
+    // sur les cases marquées/importantes/notes, qu'on désactive donc pour cette session.
+    ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = false;
+    });
+    if (typeof _syncModeFilterState === 'function') _syncModeFilterState();
     const catSelect = document.getElementById('categorie');
     const cat = catSelect ? catSelect.value : 'TOUTES';
     selectedCategory = cat;
