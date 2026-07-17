@@ -77,14 +77,43 @@ function normalizeResponses(raw) {
 }
 
 /**
- * _isUnseen(r) – Une réponse est "non vue" si elle n'existe pas OU si elle existe
- * sans statut réussie/ratée (ex: après un reset ciblé qui supprime le statut tout en
- * conservant marqué/important/historique). À utiliser partout où une question est
- * classée "nouvelle/non vue" pour rester cohérent avec stats.js et éviter qu'une
- * question réinitialisée soit comptée comme "déjà vue" sans statut valide.
+ * _effectiveStatus(r) – Statut "effectif" d'une réponse pour tous les compteurs de
+ * progression (barre globale, par catégorie, menu Mode) : une question suspendue
+ * ("🚫 Ne plus revoir") compte TOUJOURS comme réussie — l'utilisateur a décidé de ne
+ * plus la revoir, elle est donc considérée maîtrisée, quel que soit son dernier statut
+ * réel avant suspension (même si elle avait été ratée, ou même jamais répondue).
+ * Sinon, renvoie le statut réel ('réussie'/'ratée'/undefined). À utiliser PARTOUT où on
+ * calcule réussie/ratée/non-vue pour rester cohérent entre l'accueil, les stats et le quiz.
+ */
+function _effectiveStatus(r) {
+  if (!r) return undefined;
+  if (r.suspended) return 'réussie';
+  return r.status;
+}
+
+/**
+ * _isUnseen(r) – Une réponse est "non vue" si elle n'existe pas OU si son statut
+ * effectif (voir _effectiveStatus) est absent (ex: après un reset ciblé qui supprime le
+ * statut tout en conservant marqué/important/historique). À utiliser partout où une
+ * question est classée "nouvelle/non vue" pour rester cohérent avec stats.js et éviter
+ * qu'une question réinitialisée soit comptée comme "déjà vue" sans statut valide.
  */
 function _isUnseen(r) {
-  return !r || r.status === undefined || r.status === null;
+  return !r || _effectiveStatus(r) === undefined;
+}
+
+/**
+ * _isAggregateCategory(normalizedSel) – Vrai si la catégorie normalisée sélectionnée est
+ * une catégorie "agrégée" (TOUTES/EASA ALL/GLIGLI ALL/GLIGLI HARD ALL/GLIGLI EASY ALL/
+ * AUTRES) — dans ce cas, `questions[]` contient déjà le bon mélange de sous-catégories
+ * (chargé par chargerQuestions()/loadAllQuestions()) et ne doit pas être re-filtré par
+ * `q.categorie === normalizedSel`. Centralisé ici : ce test était dupliqué à l'identique
+ * dans 3 endroits (categories.js + 2x quiz.js), un risque de désynchronisation si une
+ * nouvelle catégorie agrégée est ajoutée un jour sans mettre à jour les 3 copies.
+ */
+function _isAggregateCategory(normalizedSel) {
+  return normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" ||
+    normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
 }
 
 // Replace curly apostrophes etc. with straight apostrophes for consistency

@@ -5524,18 +5524,25 @@ window.computeFullFuelBreakdown=computeFullFuelBreakdown;
 
 function getFuelBurnForLeg(alt, tas, defaultBurn){
   if(!alt || alt < 2500) return defaultBurn;
-  
-  /* Find closest altitude block in CRUISE_DATA */
-  var bestBlock = CRUISE_DATA[0];
+
+  /* bug corrigé : utilisait toujours CRUISE_DATA (table du Cessna F-150M) même quand
+     le Cessna F-172M (OO-FCE) était sélectionné — sous-estimait le carburant de route
+     pour le 172, qui consomme davantage. */
+  var acReg=window._perfAircraft||'OO-MQA';
+  var is172=acReg==='OO-FCE';
+  var cruiseData=(is172 && typeof CRUISE_DATA_172!=='undefined')?CRUISE_DATA_172:CRUISE_DATA;
+
+  /* Find closest altitude block in cruiseData */
+  var bestBlock = cruiseData[0];
   var minAltDiff = Math.abs(alt - bestBlock.alt);
-  for(var i=1; i<CRUISE_DATA.length; i++){
-    var diff=Math.abs(alt - CRUISE_DATA[i].alt);
+  for(var i=1; i<cruiseData.length; i++){
+    var diff=Math.abs(alt - cruiseData[i].alt);
     if(diff < minAltDiff){
       minAltDiff = diff;
-      bestBlock = CRUISE_DATA[i];
+      bestBlock = cruiseData[i];
     }
   }
-  
+
   /* Find closest TAS in that block */
   var bestRow = bestBlock.rows[0];
   var minTasDiff = Math.abs(tas - bestRow.tasKt);
@@ -5555,20 +5562,26 @@ function calcLeg(dist,routeTrue,cfg,legWind,legAlt){
     wDir=legWind.dir!==undefined?legWind.dir:cfg.windDir;
     wSpd=legWind.spd!==undefined?legWind.spd:cfg.windSpd;
   }
-  
+  /* bug corrigé : le vent (METAR/saisi) est en degrés MAGNÉTIQUES (convention OACI Annexe 3),
+     alors que routeTrue est en degrés VRAIS (cap orthodromique) — les deux étaient comparés
+     directement (awa=wDir-routeTrue), mélangeant deux référentiels. Conversion magnétique->vrai
+     avec la même convention que hdgMag=hdgTrue+cfg.dev utilisée plus bas (donc vrai=magnétique-dev).
+     wDir (magnétique) reste inchangé pour l'affichage, seul wDirTrue sert au triangle des vents. */
+  var wDirTrue=wDir-cfg.dev;
+
   /* Fallback if dist is negligible */
   if(dist<=0) return {gs:cfg.tas,ete:0,fuel:0,hdgTrue:routeTrue,hdgMag:routeTrue+cfg.dev,wDir:wDir,wSpd:wSpd};
-  
+
   var wca=0;
   if(wSpd>0){
-    var awa=deg2rad(wDir-routeTrue);
+    var awa=deg2rad(wDirTrue-routeTrue);
     var sinWCA=wSpd*Math.sin(awa)/cfg.tas;
     /* Prevent NaN if wind > TAS (unlikely but possible in sim) */
     if(Math.abs(sinWCA)<1) wca=Math.asin(sinWCA);
     else wca=0; /* Assume full headwind/tailwind or nonsense */
   }
   var hdgTrue=routeTrue+rad2deg(wca);
-  var gs=cfg.tas*Math.cos(wca)-wSpd*Math.cos(deg2rad(wDir-routeTrue));
+  var gs=cfg.tas*Math.cos(wca)-wSpd*Math.cos(deg2rad(wDirTrue-routeTrue));
   
   /* Prevent infinite time or negative GS */
   if(isNaN(gs) || gs<1) gs=1; 
@@ -10332,18 +10345,23 @@ function mbRecalc(){
   var autoEl=document.getElementById('mbAutonomy');
   if(autoEl){
     var tas=parseFloat(document.getElementById('cfgTAS').value)||90;
-    // Find matching cruise consumption from CRUISE_DATA
-    var conso=21.9; // default L/h at ~90kt
-    if(typeof CRUISE_DATA!=='undefined'){
-      for(var ci=0;ci<CRUISE_DATA.length;ci++){
-        var block=CRUISE_DATA[ci];
+    // Find matching cruise consumption from the cruise table of the SELECTED aircraft
+    // (bug corrigé : utilisait toujours CRUISE_DATA, la table du Cessna 150, même pour le 172)
+    var is172ForAuto=sel==='OO-FCE';
+    var cruiseDataForAuto=(is172ForAuto && typeof CRUISE_DATA_172!=='undefined')?CRUISE_DATA_172:CRUISE_DATA;
+    var conso=21.9; // valeur de repli si aucune ligne ne correspond (~90kt, C150)
+    var consoFound=false;
+    if(typeof cruiseDataForAuto!=='undefined'){
+      for(var ci=0;ci<cruiseDataForAuto.length && !consoFound;ci++){
+        var block=cruiseDataForAuto[ci];
         for(var ri=0;ri<block.rows.length;ri++){
-          if(Math.abs(block.rows[ri].tasKt-tas)<5){conso=block.rows[ri].fuelLh;break;}
+          if(Math.abs(block.rows[ri].tasKt-tas)<5){conso=block.rows[ri].fuelLh;consoFound=true;break;}
         }
-        if(Math.abs(conso-21.9)>0.1)break;
       }
     }
-    var reserveMin=parseFloat(document.getElementById('cfgReserve')?document.getElementById('cfgReserve').value:30)||30;
+    // bug corrigé : référençait un élément #cfgReserve inexistant (toujours 30 min) —
+    // la vraie réserve sélectionnée par l'utilisateur est dans #fuelResType (onglet Carbu)
+    var reserveMin=parseFloat(document.getElementById('fuelResType')?document.getElementById('fuelResType').value:30)||30;
     var reserveL=conso*(reserveMin/60);
     var usableForFlight=fuelL-reserveL;
     if(usableForFlight<0)usableForFlight=0;

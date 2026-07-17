@@ -144,8 +144,11 @@ function displayHomeProgressBar(responses, dailyHistory) {
     const r = responses[key];
     if (!r) { nonvue++; }
     else {
-      if (r.status === 'réussie') reussie++;
-      else if (r.status === 'ratée') ratee++;
+      // Une question suspendue ("Ne plus revoir") compte obligatoirement comme réussie
+      // dans la progression — voir _effectiveStatus() dans helpers.js.
+      const eff = (typeof _effectiveStatus === 'function') ? _effectiveStatus(r) : r.status;
+      if (eff === 'réussie') reussie++;
+      else if (eff === 'ratée') ratee++;
       else nonvue++;
       if (r.marked) marquee++;
       if (r.important) importante++;
@@ -442,14 +445,21 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
 
 /** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
 function computeStatsForFirestore(categoryQuestions, responses) {
+  // Normaliser (legacy status==='marquée', etc.) comme le fait l'accueil/le quiz — cette
+  // fonction lisait auparavant les données brutes, un chemin distinct de normalizeResponses()
+  // qui pouvait diverger sur d'anciennes données pas encore migrées vers le format actuel.
+  const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : responses;
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0, marqueeVue = 0, importanteVue = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
-    const r = responses[key] || {};
-    const seen = r.status === 'réussie' || r.status === 'ratée';
+    const r = normResponses[key] || {};
+    // Une question suspendue ("Ne plus revoir") compte obligatoirement comme réussie
+    // dans les stats — voir _effectiveStatus() dans helpers.js.
+    const eff = (typeof _effectiveStatus === 'function') ? _effectiveStatus(r) : r.status;
+    const seen = eff === 'réussie' || eff === 'ratée';
     // compter toujours réussite/échec/non-vu
-    if (r.status === 'réussie')      reussie++;
-    else if (r.status === 'ratée')    ratee++;
+    if (eff === 'réussie')      reussie++;
+    else if (eff === 'ratée')    ratee++;
     else                               nonvue++;
     // marquée / importante en supplément
     if (r.marked)    { marquee++;    if (seen) marqueeVue++; }
@@ -621,11 +631,16 @@ async function initStats() {
       const d = new Date(_today);
       d.setDate(d.getDate() - i);
       const localKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      // Vérifier les clés UTC (toISOString) — couvrir aussi le décalage horaire potentiel
-      const utcKey1 = localKey; // Même date si pas de décalage minuit
+      // bug corrigé : le code prétendait convertir UTC->local mais réutilisait en fait
+      // localKey tel quel (utcKey1 = localKey), donc pour l'heure suivant minuit local
+      // (ex: 00h30 en France = 23h30 UTC la veille), la vraie clé UTC utilisée à l'écriture
+      // n'était jamais vérifiée et cette activité legacy passait silencieusement à la trappe.
+      const utcKey = d.toISOString().slice(0, 10);
       const lsVal = Math.max(
-        parseInt(localStorage.getItem('dailyAnswered_' + utcKey1)) || 0,
-        parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey1)) || 0
+        parseInt(localStorage.getItem('dailyAnswered_' + localKey)) || 0,
+        parseInt(localStorage.getItem('dailyCountRatchet_' + localKey)) || 0,
+        parseInt(localStorage.getItem('dailyAnswered_' + utcKey)) || 0,
+        parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0
       );
       if (lsVal > 0) {
         dailyHistory[localKey] = Math.max(dailyHistory[localKey] || 0, lsVal);
