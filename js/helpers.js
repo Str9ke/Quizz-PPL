@@ -465,6 +465,109 @@ function _saveQuizBatchSize() {
 }
 
 /**
+ * ===== Suivi du temps réel passé par question (_qt*) =====
+ * Apprend, séparément pour les questions "nouvelles" et "révisions", le temps réel que
+ * l'utilisateur passe par question — pour que l'estimation "~X min" reflète son vrai rythme
+ * au lieu de constantes fixes. Exclut intelligemment :
+ *  - le temps où l'onglet/la page est masqué (changement d'onglet, minimisation) via l'API
+ *    Page Visibility ;
+ *  - le temps d'inactivité prolongée SANS changement de visibilité (téléphone posé écran
+ *    allumé, PC oublié au premier plan) : au-delà de QTIME_IDLE_MS sans interaction (clic,
+ *    touche, défilement, tap), le temps écoulé depuis la DERNIÈRE interaction réelle n'est
+ *    pas compté.
+ * Stocké en localStorage (moyenne mobile exponentielle, adaptative), pas besoin de Firestore
+ * pour une estimation purement indicative côté interface.
+ */
+const QTIME_STORAGE_KEY = 'qTimeStats';
+const QTIME_IDLE_MS = 60000; // au-delà de 60s sans interaction, on considère l'utilisateur parti
+const QTIME_MIN_SAMPLE_SEC = 1; // ignorer un échantillon < 1s (glitch/double clic)
+const QTIME_MAX_SAMPLE_SEC = 180; // plafonner un échantillon à 3 min pour ne pas fausser la moyenne
+const QTIME_EMA_ALPHA = 0.15; // poids du nouvel échantillon dans la moyenne mobile (adaptatif)
+const QTIME_MIN_SAMPLES_TO_TRUST = 5; // sous ce seuil, on garde encore l'estimation par défaut
+
+let _qtActiveAccumMs = 0;
+let _qtSegStart = null; // null = en pause (onglet masqué ou utilisateur inactif)
+let _qtLastActivity = 0;
+
+function _qtResume() {
+  const now = Date.now();
+  if (_qtSegStart === null) _qtSegStart = now;
+  _qtLastActivity = now;
+}
+function _qtPause() {
+  if (_qtSegStart !== null) {
+    _qtActiveAccumMs += Date.now() - _qtSegStart;
+    _qtSegStart = null;
+  }
+}
+function _qtCheckIdle() {
+  if (_qtSegStart !== null && Date.now() - _qtLastActivity > QTIME_IDLE_MS) {
+    // Inactif depuis trop longtemps : ne compter le temps actif que jusqu'à la dernière
+    // interaction réelle (pas jusqu'à maintenant — l'utilisateur est probablement parti).
+    _qtActiveAccumMs += _qtLastActivity - _qtSegStart;
+    _qtSegStart = null;
+  }
+}
+function _qtElapsedMs() {
+  _qtCheckIdle();
+  return _qtActiveAccumMs + (_qtSegStart !== null ? Date.now() - _qtSegStart : 0);
+}
+function _qtResetElapsed() {
+  _qtCheckIdle();
+  _qtActiveAccumMs = 0;
+  if (_qtSegStart !== null) {
+    // bug corrigé : _qtLastActivity devait aussi être resynchronisé ici, sinon il pouvait
+    // rester "dans le passé" par rapport au nouveau _qtSegStart et faire calculer un temps
+    // négatif dans _qtCheckIdle() (Date.now() - _qtLastActivity - _qtSegStart mal alignés).
+    _qtSegStart = Date.now();
+    _qtLastActivity = Date.now();
+  }
+}
+function _qtInit() {
+  if (window._qtInitialized) return;
+  window._qtInitialized = true;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) _qtPause(); else _qtResume();
+  });
+  ['click', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, () => { if (!document.hidden) _qtResume(); }, { passive: true });
+  });
+  // mousemove à part et throttlé : une lecture silencieuse (pas de clic/scroll) avec la
+  // souris posée sur l'écran ne doit pas être considérée comme "parti" avant QTIME_IDLE_MS —
+  // sans ce signal, une lecture > 60s sans bouger la souris serait comptée comme inactive.
+  let _qtLastMouseResume = 0;
+  document.addEventListener('mousemove', () => {
+    if (document.hidden) return;
+    const now = Date.now();
+    if (now - _qtLastMouseResume < 5000) return; // pas besoin de rafraîchir à chaque pixel
+    _qtLastMouseResume = now;
+    _qtResume();
+  }, { passive: true });
+  if (!document.hidden) _qtResume();
+}
+function _qtRecordSample(sec, isNew) {
+  if (!isFinite(sec) || sec < QTIME_MIN_SAMPLE_SEC) return;
+  const clamped = Math.min(sec, QTIME_MAX_SAMPLE_SEC);
+  let data;
+  try { data = JSON.parse(localStorage.getItem(QTIME_STORAGE_KEY) || '{}'); } catch (e) { data = {}; }
+  const bucketKey = isNew ? 'new' : 'review';
+  const bucket = data[bucketKey] || { avgSec: isNew ? 35 : 22, n: 0 };
+  bucket.avgSec = bucket.n === 0 ? clamped : bucket.avgSec * (1 - QTIME_EMA_ALPHA) + clamped * QTIME_EMA_ALPHA;
+  bucket.n = Math.min(bucket.n + 1, 9999);
+  data[bucketKey] = bucket;
+  try { localStorage.setItem(QTIME_STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* quota plein, tant pis */ }
+}
+function _qtGetEstimateSecPerQuestion() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(QTIME_STORAGE_KEY) || '{}'); } catch (e) { data = {}; }
+  const nb = data.new, rb = data.review;
+  return {
+    secPerNew: (nb && nb.n >= QTIME_MIN_SAMPLES_TO_TRUST) ? nb.avgSec : 35,
+    secPerReview: (rb && rb.n >= QTIME_MIN_SAMPLES_TO_TRUST) ? rb.avgSec : 22
+  };
+}
+
+/**
  * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
  * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
  * Reflète la catégorie actuellement sélectionnée dans le menu "Catégorie".
@@ -472,8 +575,8 @@ function _saveQuizBatchSize() {
 function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
   const el = document.getElementById('objectifSummary');
   if (!el) return;
-  const SEC_PER_REVIEW = 22, SEC_PER_NEW = 35;
-  const estMin = Math.round((nbRevisions * SEC_PER_REVIEW + dailyNewTarget * SEC_PER_NEW) / 60);
+  const { secPerNew, secPerReview } = _qtGetEstimateSecPerQuestion();
+  const estMin = Math.round((nbRevisions * secPerReview + dailyNewTarget * secPerNew) / 60);
   const catSelect = document.getElementById('categorie');
   const catLabel = (catSelect && catSelect.selectedOptions && catSelect.selectedOptions[0])
     ? catSelect.selectedOptions[0].textContent
