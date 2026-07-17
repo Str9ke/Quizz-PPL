@@ -103,6 +103,10 @@ async function initIndex() {
   // countGligliAll : charger GLIGLI ALL (dédupliqué) pour obtenir le vrai total unique
   await chargerQuestions("GLIGLI ALL");
   countGligliAll = questions.length;
+  await chargerQuestions("GLIGLI HARD ALL");
+  countGligliHardAll = questions.length;
+  await chargerQuestions("GLIGLI EASY ALL");
+  countGligliEasyAll = questions.length;
 
   // Catégories autres (hors EASA / GLIGLI)
   countAutresAll = countRadio + countOp + countRegl + countConv + countInstr + countMasse + countMotor + countAer;

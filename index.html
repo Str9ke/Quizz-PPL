@@ -327,6 +327,21 @@
           <span>⚡ Correction immédiate</span>
         </label>
       </div>
+      <div class="home-options" id="modeFilterCheckboxes" style="border-top:1px dashed rgba(255,255,255,.12);margin-top:8px;padding-top:8px">
+        <span style="font-size:.75em;color:var(--text-secondary,#aaa);width:100%">Combiner des filtres (remplace le Mode ci-dessus, cochables ensemble) :</span>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterMarqueesCheckbox" onchange="_syncModeFilterState()">
+          <span>🔖 Marquées</span>
+        </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterImportantesCheckbox" onchange="_syncModeFilterState()">
+          <span>⭐ Importantes</span>
+        </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterNotesCheckbox" onchange="_syncModeFilterState()">
+          <span>📝 Avec notes</span>
+        </label>
+      </div>
       <button id="btnStart" class="home-btn-start" disabled onclick="demarrerQuiz()">
         🎯 Démarrer le Quiz
       </button>
@@ -385,12 +400,12 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260224i"></script>
-  <script src="js/helpers.js?v=20260716a"></script>
-  <script src="js/categories.js?v=20260716b"></script>
+  <script src="js/globals.js?v=20260717a"></script>
+  <script src="js/helpers.js?v=20260717a"></script>
+  <script src="js/categories.js?v=20260717a"></script>
   <script src="js/stats.js?v=20260224i"></script>
-  <script src="js/quiz.js?v=20260716h"></script>
-  <script src="js/init.js?v=20260224j"></script>
+  <script src="js/quiz.js?v=20260717a"></script>
+  <script src="js/init.js?v=20260717a"></script>
   <script src="js/offline.js?v=20260224i"></script>
 
   <!-- Sélecteur de voix TTS : population & test -->

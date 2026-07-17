@@ -146,6 +146,8 @@ function getNormalizedCategory(cat) {
 
   // GLIGLI agrégées et spécifiques
   if (catAscii.includes("easa") && catAscii.includes("all")) return "EASA ALL";
+  if (isGligli && catAscii.includes("all") && catAscii.includes("hard")) return "GLIGLI HARD ALL";
+  if (isGligli && catAscii.includes("all") && catAscii.includes("easy")) return "GLIGLI EASY ALL";
   if (isGligli && catAscii.includes("all")) return "GLIGLI ALL";
   if (catAscii.includes("autres")) return "AUTRES";
 
@@ -211,6 +213,8 @@ function getNormalizedSelectedCategory(selected) {
   const mentionsHard = sAscii.includes("hard") || (isGligli && !mentionsEasy);
 
   if (sAscii.includes("easa") && sAscii.includes("all")) return "EASA ALL";
+  if (isGligli && sAscii.includes("all") && sAscii.includes("hard")) return "GLIGLI HARD ALL";
+  if (isGligli && sAscii.includes("all") && sAscii.includes("easy")) return "GLIGLI EASY ALL";
   if (isGligli && sAscii.includes("all")) return "GLIGLI ALL";
   if (sAscii.includes("autres")) return "AUTRES";
 
@@ -272,7 +276,7 @@ async function updateModeCounts() {
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
     // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
     // because chargerQuestions already loaded the right set with correct individual categories
-    const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+    const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
     // Épreuve categories also contain mixed-category questions (refs resolved from thematic files)
     const isEpreuve = normalizedSel.includes('EPREUVE');
     const list = (isAggregate || isEpreuve)
@@ -526,6 +530,60 @@ async function chargerQuestions(cat) {
           }
           return;
         }
+        case "GLIGLI HARD ALL": {
+          const gligliHardCategories = [
+            "GLIGLI COMMUNICATIONS HARD",
+            "GLIGLI CONNAISSANCES GENERALES AERONEF HARD",
+            "GLIGLI EPREUVE COMMUNE HARD",
+            "GLIGLI EPREUVE SPECIFIQUE HARD",
+            "GLIGLI METEOROLOGIE HARD",
+            "GLIGLI NAVIGATION HARD",
+            "GLIGLI PERFORMANCE HUMAINE HARD",
+            "GLIGLI PERFORMANCES PREPARATION VOL HARD",
+            "GLIGLI PRINCIPES DU VOL HARD",
+            "GLIGLI PROCEDURES OPERATIONNELLES HARD",
+            "GLIGLI REGLEMENTATION HARD"
+          ];
+          try {
+            const all = [];
+            for (const subCat of gligliHardCategories) {
+              await chargerQuestions(subCat);
+              all.push(...questions);
+            }
+            questions = _deduplicateQuestions(all);
+          } catch (err) {
+            console.error("Erreur de chargement GLIGLI HARD ALL", err);
+            questions = [];
+          }
+          return;
+        }
+        case "GLIGLI EASY ALL": {
+          const gligliEasyCategories = [
+            "GLIGLI COMMUNICATIONS EASY",
+            "GLIGLI CONNAISSANCES GENERALES AERONEF EASY",
+            "GLIGLI EPREUVE COMMUNE EASY",
+            "GLIGLI EPREUVE SPECIFIQUE EASY",
+            "GLIGLI METEOROLOGIE EASY",
+            "GLIGLI NAVIGATION EASY",
+            "GLIGLI PERFORMANCE HUMAINE EASY",
+            "GLIGLI PERFORMANCES PREPARATION VOL EASY",
+            "GLIGLI PRINCIPES DU VOL EASY",
+            "GLIGLI PROCEDURES OPERATIONNELLES EASY",
+            "GLIGLI REGLEMENTATION EASY"
+          ];
+          try {
+            const all = [];
+            for (const subCat of gligliEasyCategories) {
+              await chargerQuestions(subCat);
+              all.push(...questions);
+            }
+            questions = _deduplicateQuestions(all);
+          } catch (err) {
+            console.error("Erreur de chargement GLIGLI EASY ALL", err);
+            questions = [];
+          }
+          return;
+        }
         case "AUTRES": {
           const autresCategories = [
             "PROCÉDURE RADIO",
@@ -650,6 +708,8 @@ function updateCategorySelect() {
   const categories = [
     // Mettre les trois catégories agrégées juste après "Toutes"
     { value: "GLIGLI ALL", display: "GLIGLI - TOUTES", count: countGligliAll },
+    { value: "GLIGLI HARD ALL", display: "GLIGLI - TOUTES (HARD)", count: countGligliHardAll },
+    { value: "GLIGLI EASY ALL", display: "GLIGLI - TOUTES (EASY)", count: countGligliEasyAll },
     { value: "AUTRES", display: "AUTRES (hors EASA/GLIGLI)", count: countAutresAll },
     { value: "EASA ALL", display: "EASA - TOUTES", count: countEasaAll },
     // Puis les autres catégories
@@ -878,6 +938,38 @@ async function filtrerQuestions(mode, nb) {
     currentQuestions = shuffled
       .filter(q => !!notesMap[getKeyFor(q)])
       .slice(0, nb);
+  }
+  else if (typeof mode === 'string' && mode.startsWith('combo:')) {
+    // Combinaison cochable "marquées" / "importantes" / "avec notes" (union, pas exclusion)
+    const flags = mode.slice(6).split(',').filter(Boolean);
+    let notesMap = {};
+    if (flags.includes('avecnotes') && uid) {
+      try {
+        const docN = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+        notesMap = docN.exists ? (docN.data().notes || {}) : {};
+      } catch (e) {
+        notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+      }
+    }
+    const matches = shuffled.filter(q => {
+      const r = responses[getKeyFor(q)];
+      if (flags.includes('marquees') && r?.marked) return true;
+      if (flags.includes('importantes') && r?.important) return true;
+      if (flags.includes('avecnotes') && !!notesMap[getKeyFor(q)]) return true;
+      return false;
+    });
+    // Même priorité que le mode "marquees" seul : questions ratées marquées dont le retry est dû
+    let ordered = matches;
+    if (flags.includes('marquees')) {
+      const dueRetry = matches.filter(q => {
+        const r = responses[getKeyFor(q)];
+        return r && r.marked && r.retryAfterSession && r.retryAfterSession <= _currentSessionCount && r.status === 'ratée';
+      });
+      const dueRetryKeys = new Set(dueRetry.map(getKeyFor));
+      const rest = matches.filter(q => !dueRetryKeys.has(getKeyFor(q)));
+      ordered = [...dueRetry, ...rest];
+    }
+    currentQuestions = _excludeRecentlyAnswered(ordered, nb);
   }
   else if (mode === "uniques") {
     // Questions exclusives à cette épreuve (pas des références thématiques)

@@ -234,7 +234,7 @@ function _buildExplicationHtml(q) {
 
 async function demarrerQuiz() {
   selectedCategory = document.getElementById('categorie').value;
-  modeQuiz = document.getElementById('mode').value;
+  modeQuiz = (typeof _resolveModeSelection === 'function') ? _resolveModeSelection() : document.getElementById('mode').value;
   nbQuestions = parseInt(document.getElementById('nbQuestions').value);
 
   if (selectedCategory === "TOUTES") {
@@ -610,7 +610,7 @@ async function initQuiz() {
         await chargerQuestions(catNorm);
       }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-      const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+      const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
       const fullList = isAggregate ? questions : questions.filter(q => q.categorie === normalizedSel);
       let nbRatees = 0, nbNonvues = 0;
       fullList.forEach(q => {
@@ -1447,7 +1447,7 @@ async function validerReponses() {
       const catNorm = getNormalizedCategory(selectedCategory);
       if (catNorm === "TOUTES") { await loadAllQuestions(); } else { await chargerQuestions(catNorm); }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-      const isAgg = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "AUTRES";
+      const isAgg = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
       const fullL = isAgg ? questions : questions.filter(q => q.categorie === normalizedSel);
       let nR = 0, nNV = 0;
       fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (!r) nNV++; else if (r.status === 'ratée') nR++; });

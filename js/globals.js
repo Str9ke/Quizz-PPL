@@ -143,5 +143,7 @@ let countGligliPrincipesVolEasy = 0;
 let countGligliProceduresEasy = 0;
 let countGligliReglementationEasy = 0;
 let countGligliAll = 0;
+let countGligliHardAll = 0;
+let countGligliEasyAll = 0;
 let countAutresAll = 0;
 let totalGlobal = 0;
