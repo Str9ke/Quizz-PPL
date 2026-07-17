@@ -282,7 +282,7 @@ async function updateModeCounts(filterFlags) {
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
     // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
     // because chargerQuestions already loaded the right set with correct individual categories
-    const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
+    const isAggregate = _isAggregateCategory(normalizedSel);
     // Épreuve categories also contain mixed-category questions (refs resolved from thematic files)
     const isEpreuve = normalizedSel.includes('EPREUVE');
     let list = (isAggregate || isEpreuve)
@@ -328,21 +328,25 @@ async function updateModeCounts(filterFlags) {
       const key = getKeyFor(q);
       const r = currentResponses[key];
       if (notesMap[key]) nbAvecNotes++;
-      // Une question suspendue ("je ne veux plus la revoir") sort du décompte actif :
-      // elle n'est plus comptée en nonvue/réussie/ratée/révision, seulement dans son propre total.
-      if (r && r.suspended) { nbSuspendues++; return; }
+      // Une question suspendue ("🚫 Ne plus revoir") compte OBLIGATOIREMENT comme réussie
+      // dans la progression globale et par catégorie (l'utilisateur a décidé qu'elle est
+      // maîtrisée) — voir _effectiveStatus(). Elle reste comptabilisée à part (nbSuspendues)
+      // pour le mode dédié "Ne plus revoir", et n'est jamais due pour une révision espacée.
+      if (r && r.suspended) nbSuspendues++;
       total++;
       if (_isUnseen(r)) {
         nbNonvues++;
       }
       if (r) {
-        if (r.status==="réussie") nbReussies++;
-        if (r.status==="ratée")   nbRatees++;
+        const eff = _effectiveStatus(r);
+        if (eff==="réussie") nbReussies++;
+        if (eff==="ratée")   nbRatees++;
         if (r.marked)             nbMarquees++;
         if (r.important)          nbImportantes++;
         if ((r.failCount || 0) >= 2) nbDifficiles++;
-        // Révisions du jour : question éligible SR et due
-        if (_isEligibleForSR(r) && _isDueForReview(r, now)) nbRevisions++;
+        // Révisions du jour : question éligible SR et due (jamais une question suspendue,
+        // désormais toujours "réussie" et donc hors du cycle de révision)
+        if (!r.suspended && _isEligibleForSR(r) && _isDueForReview(r, now)) nbRevisions++;
       }
     });
 

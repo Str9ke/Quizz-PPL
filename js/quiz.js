@@ -305,15 +305,14 @@ function toggleMarquerQuestion(questionIdx, button) {
   // use local state to preserve status
   const prev = currentResponses[key] || {};
   const newMarked = !prev.marked;
-  const payload = {
-    responses: {
-      [key]: {
-        status: prev.status || 'ratée',
-        marked: newMarked,
-        important: prev.important === true
-      }
-    }
-  };
+  // bug corrigé : "status: prev.status || 'ratée'" écrivait 'ratée' dans Firestore même pour
+  // une question jamais répondue (prev.status undefined). Firestore rejette un champ explicite
+  // à `undefined` dans set()/update() — on omet donc le champ status quand il n'existe pas
+  // encore, pour que le merge Firestore préserve l'état "non vue" au lieu de le convertir en
+  // "ratée" (elle réapparaissait ensuite comme échouée partout, y compris comme due en SR).
+  const entry = { marked: newMarked, important: prev.important === true };
+  if (prev.status !== undefined) entry.status = prev.status;
+  const payload = { responses: { [key]: entry } };
   db.collection('quizProgress').doc(uid)
     .set(payload, { merge: true })
     .then(() => {
@@ -354,15 +353,12 @@ function toggleImportantQuestion(questionIdx, button) {
   const key = getKeyFor(question);
   const prev = currentResponses[key] || {};
   const newImportant = !prev.important;
-  const payload = {
-    responses: {
-      [key]: {
-        status: prev.status || 'ratée',
-        marked: prev.marked === true,
-        important: newImportant
-      }
-    }
-  };
+  // bug corrigé : voir toggleMarquerQuestion() — ne pas défauter status à 'ratée' pour une
+  // question jamais répondue, sinon elle est convertie en "ratée" en base au lieu de rester
+  // "non vue".
+  const entry = { marked: prev.marked === true, important: newImportant };
+  if (prev.status !== undefined) entry.status = prev.status;
+  const payload = { responses: { [key]: entry } };
 
   db.collection('quizProgress').doc(uid)
     .set(payload, { merge: true })
@@ -405,16 +401,12 @@ function toggleSuspendQuestion(questionIdx, button) {
   const key = getKeyFor(question);
   const prev = currentResponses[key] || {};
   const newSuspended = !prev.suspended;
-  const payload = {
-    responses: {
-      [key]: {
-        status: prev.status || 'ratée',
-        marked: prev.marked === true,
-        important: prev.important === true,
-        suspended: newSuspended
-      }
-    }
-  };
+  // bug corrigé : voir toggleMarquerQuestion() — ne pas défauter status à 'ratée' pour une
+  // question jamais répondue, sinon elle est convertie en "ratée" en base au lieu de rester
+  // "non vue" (elle compte désormais comme "réussie" via suspended, indépendamment du statut).
+  const entry = { marked: prev.marked === true, important: prev.important === true, suspended: newSuspended };
+  if (prev.status !== undefined) entry.status = prev.status;
+  const payload = { responses: { [key]: entry } };
 
   db.collection('quizProgress').doc(uid)
     .set(payload, { merge: true })
@@ -623,13 +615,13 @@ async function initQuiz() {
         await chargerQuestions(catNorm);
       }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-      const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
+      const isAggregate = _isAggregateCategory(normalizedSel);
       const fullList = isAggregate ? questions : questions.filter(q => q.categorie === normalizedSel);
       let nbRatees = 0, nbNonvues = 0;
       fullList.forEach(q => {
         const r = currentResponses[getKeyFor(q)];
         if (_isUnseen(r)) { nbNonvues++; }
-        else if (r.status === 'ratée') { nbRatees++; }
+        else if (_effectiveStatus(r) === 'ratée') { nbRatees++; }
       });
       updateCategoryInfoBar(selectedCategory, nbRatees + nbNonvues, fullList.length);
       currentQuestions = savedCurrent; // restaurer le quiz en cours
@@ -1460,10 +1452,10 @@ async function validerReponses() {
       const catNorm = getNormalizedCategory(selectedCategory);
       if (catNorm === "TOUTES") { await loadAllQuestions(); } else { await chargerQuestions(catNorm); }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-      const isAgg = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
+      const isAgg = _isAggregateCategory(normalizedSel);
       const fullL = isAgg ? questions : questions.filter(q => q.categorie === normalizedSel);
       let nR = 0, nNV = 0;
-      fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (_isUnseen(r)) nNV++; else if (r.status === 'ratée') nR++; });
+      fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (_isUnseen(r)) nNV++; else if (_effectiveStatus(r) === 'ratée') nR++; });
       updateCategoryInfoBar(selectedCategory, nR + nNV, fullL.length);
       currentQuestions = savedCQ;
     } catch (e) { /* ignore */ }

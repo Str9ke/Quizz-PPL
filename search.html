@@ -29,10 +29,10 @@
     });
   </script>
   <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717f"></script>
-  <script src="js/categories.js?v=20260717f"></script>
-  <script src="js/stats.js?v=20260224i"></script>
-  <script src="js/quiz.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717g"></script>
+  <script src="js/categories.js?v=20260717g"></script>
+  <script src="js/stats.js?v=20260717g"></script>
+  <script src="js/quiz.js?v=20260717g"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
 </head>
@@ -378,9 +378,11 @@
       if (!uid) return;
       const prev = currentResponses[key] || {};
       const newMarked = !prev.marked;
-      const payload = {
-        responses: { [key]: { status: prev.status || 'ratée', marked: newMarked, important: prev.important === true } }
-      };
+      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue
+      // (Firestore rejette un champ explicite à undefined, donc on l'omet simplement).
+      const entry = { marked: newMarked, important: prev.important === true };
+      if (prev.status !== undefined) entry.status = prev.status;
+      const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, marked: newMarked };
       btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
       btn.className = newMarked ? 'delete-button' : 'mark-button';
@@ -398,9 +400,10 @@
       if (!uid) return;
       const prev = currentResponses[key] || {};
       const newImportant = !prev.important;
-      const payload = {
-        responses: { [key]: { status: prev.status || 'ratée', marked: prev.marked === true, important: newImportant } }
-      };
+      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue.
+      const entry = { marked: prev.marked === true, important: newImportant };
+      if (prev.status !== undefined) entry.status = prev.status;
+      const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, important: newImportant };
       btn.textContent = newImportant ? 'Retirer Important' : 'Important';
       btn.className = newImportant ? 'delete-button' : 'mark-button';

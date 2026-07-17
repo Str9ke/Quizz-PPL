@@ -29,10 +29,10 @@
     });
   </script>
   <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717f"></script>
-  <script src="js/categories.js?v=20260717f"></script>
-  <script src="js/stats.js?v=20260224i"></script>
-  <script src="js/quiz.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717g"></script>
+  <script src="js/categories.js?v=20260717g"></script>
+  <script src="js/stats.js?v=20260717g"></script>
+  <script src="js/quiz.js?v=20260717g"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
 </head>
@@ -303,14 +303,31 @@
       });
     }
 
+    // bug corrigé : _lastDayQuestions (utilisé par les filtres Marqués/Importants et par
+    // "Lancer le quiz") gardait un instantané figé de resp.marked/important — soit un clone
+    // (statusLog), soit une référence vers l'ancien objet remplacé par currentResponses[key]
+    // = Object.assign(...). Cocher/décocher une case ne se reflétait donc pas dans le filtre
+    // tant que le jour n'était pas rechargé. On met maintenant à jour TOUTES les entrées
+    // correspondant à cette clé (une question peut apparaître plusieurs fois dans la journée).
+    function _syncLastDayQuestionsMark(key, field, value) {
+      _lastDayQuestions.forEach(function(item) {
+        if (getKeyFor(item.q) === key && item.resp) item.resp[field] = value;
+      });
+    }
+
     // === Toggle Marquer ===
     window.histToggleMarquer = function(key, btn) {
       if (!uid) return;
       var prev = currentResponses[key] || {};
       var newMarked = !prev.marked;
       var payload = { responses: {} };
-      payload.responses[key] = { status: prev.status || 'ratée', marked: newMarked, important: prev.important === true };
+      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue
+      // (Firestore rejette un champ explicite à undefined, donc on l'omet simplement).
+      var entry = { marked: newMarked, important: prev.important === true };
+      if (prev.status !== undefined) entry.status = prev.status;
+      payload.responses[key] = entry;
       currentResponses[key] = Object.assign({}, prev, { marked: newMarked });
+      _syncLastDayQuestionsMark(key, 'marked', newMarked);
       btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
       btn.className = newMarked ? 'delete-button' : 'mark-button';
       var block = btn.closest('.search-result-block');
@@ -326,8 +343,12 @@
       var prev = currentResponses[key] || {};
       var newImportant = !prev.important;
       var payload = { responses: {} };
-      payload.responses[key] = { status: prev.status || 'ratée', marked: prev.marked === true, important: newImportant };
+      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue.
+      var entry = { marked: prev.marked === true, important: newImportant };
+      if (prev.status !== undefined) entry.status = prev.status;
+      payload.responses[key] = entry;
       currentResponses[key] = Object.assign({}, prev, { important: newImportant });
+      _syncLastDayQuestionsMark(key, 'important', newImportant);
       btn.textContent = newImportant ? 'Retirer Important' : 'Important';
       btn.className = newImportant ? 'delete-button' : 'mark-button';
       var block = btn.closest('.search-result-block');
