@@ -22,6 +22,7 @@ function resetQuiz() {
   localStorage.removeItem('currentQuestions');
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
+  if (typeof _qtResetSessionTotal === 'function') _qtResetSessionTotal();
 
   // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
   try {
@@ -87,7 +88,7 @@ let currentQuestions = [];
 let currentResponses = {};
 let quizInitTriggered = false;
 
-const APP_BUILD_TAG = '2024-02-15-quiz-counter-v4';
+const APP_BUILD_TAG = '2026-07-17-quiz-resume-fix';
 
 function showBuildTag(targetId = 'buildInfo') {
   let el = document.getElementById(targetId);

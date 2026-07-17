@@ -568,6 +568,59 @@ function _qtGetEstimateSecPerQuestion() {
 }
 
 /**
+ * _qtSessionTotalMs / _qtSessionCountedIdx (localStorage) — Temps actif RÉEL cumulé sur
+ * l'ENSEMBLE du questionnaire en cours (pas juste la question actuelle comme _qtElapsedMs).
+ * Persisté en localStorage (pas juste une variable mémoire) pour survivre à une navigation
+ * vers une autre page puis un retour au quiz en cours — voir _refreshCategoryInfoBarLive() et
+ * le même besoin pour currentQuizAnswers/currentQuizBatchPos. Affiché à la validation à côté
+ * du score : "temps réel de travail" + moyenne par question.
+ */
+function _qtResetSessionTotal() {
+  localStorage.setItem('qtSessionTotalMs', '0');
+  localStorage.setItem('qtSessionCountedIdx', '[]');
+}
+function _qtAddSessionTime(ms, qIdx) {
+  if (!isFinite(ms) || ms <= 0) return;
+  let counted;
+  try { counted = JSON.parse(localStorage.getItem('qtSessionCountedIdx') || '[]'); } catch (e) { counted = []; }
+  // Une question déjà comptabilisée (ex: on re-coche la même question après un retour sur la
+  // page, ce qui remet _qtLastTouchedIdx à null) ne doit pas ajouter une 2e fois son temps.
+  if (counted.includes(qIdx)) return;
+  counted.push(qIdx);
+  try { localStorage.setItem('qtSessionCountedIdx', JSON.stringify(counted)); } catch (e) { /* ignore */ }
+  const total = (parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0) + ms;
+  try { localStorage.setItem('qtSessionTotalMs', String(total)); } catch (e) { /* ignore */ }
+}
+/**
+ * _qtFlushFinalSegment() – À appeler à la validation du quiz : ajoute au total le temps actif
+ * écoulé depuis le dernier clic (temps de relecture avant de valider), qui n'a sinon jamais
+ * l'occasion d'être comptabilisé puisqu'aucun clic sur une NOUVELLE question ne vient le clore.
+ */
+function _qtFlushFinalSegment() {
+  if (typeof _qtElapsedMs !== 'function') return;
+  const ms = _qtElapsedMs();
+  if (!isFinite(ms) || ms <= 0) return;
+  const total = (parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0) + ms;
+  try { localStorage.setItem('qtSessionTotalMs', String(total)); } catch (e) { /* ignore */ }
+}
+function _qtGetSessionTotal() {
+  const ms = parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0;
+  let counted;
+  try { counted = JSON.parse(localStorage.getItem('qtSessionCountedIdx') || '[]'); } catch (e) { counted = []; }
+  return { ms, count: counted.length };
+}
+/**
+ * _qtFormatDuration(ms) – "4 min 32 s" / "48 s" pour l'affichage du temps réel de session.
+ */
+function _qtFormatDuration(ms) {
+  const totalSec = Math.round(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min <= 0) return `${sec} s`;
+  return `${min} min ${String(sec).padStart(2, '0')} s`;
+}
+
+/**
  * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
  * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
  * Reflète la catégorie actuellement sélectionnée dans le menu "Catégorie".

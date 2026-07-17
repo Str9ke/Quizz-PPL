@@ -11,9 +11,13 @@
         
         // Si autoStartQuiz est activé, redirection vers le quiz
         if (autoStartQuiz && !window.location.search.includes('accueil')) {
-          if (cat && mode && nb) {
-            // IMPORTANT: Nettoyer currentQuestions pour FORCER la régénération de nouvelles questions
-            localStorage.removeItem('currentQuestions');
+          // Une session est déjà en cours (pas encore validée, voir validerReponses() qui
+          // supprime currentQuestions à la soumission) → la REPRENDRE telle quelle plutôt que
+          // de la remplacer : sinon atterrir sur l'accueil en cours de session (redirection,
+          // onglet rouvert, etc.) effaçait silencieusement la progression non validée.
+          if (localStorage.getItem('currentQuestions')) {
+            window.location = 'quiz.html';
+          } else if (cat && mode && nb) {
             // Redirection IMMEDIATE sans setTimeout
             window.location = 'quiz.html';
           }
@@ -440,11 +444,11 @@
   <div id="missingElement"></div>
 
   <!-- Inclusion de votre script principal -->
-  <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717i"></script>
+  <script src="js/globals.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717j"></script>
   <script src="js/categories.js?v=20260717h"></script>
   <script src="js/stats.js?v=20260717h"></script>
-  <script src="js/quiz.js?v=20260717h"></script>
+  <script src="js/quiz.js?v=20260717i"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
 

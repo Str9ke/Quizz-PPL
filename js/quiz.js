@@ -264,6 +264,7 @@ async function demarrerQuiz() {
   // Nouveau quiz : effacer les réponses/position en cours d'une session précédente
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
+  if (typeof _qtResetSessionTotal === 'function') _qtResetSessionTotal();
 
   // Nettoyer les recently answered quand on démarre un nouveau quiz depuis l'accueil
   localStorage.removeItem('recentlyAnsweredKeys');
@@ -519,6 +520,25 @@ function updateCategoryInfoBar(categoryName, remaining, total) {
   }
 }
 
+/**
+ * _refreshCategoryInfoBarLive() – Recalcule et réaffiche IMMÉDIATEMENT la barre de progression
+ * de catégorie (en haut du quiz) après chaque réponse, à partir de window._categoryFullList
+ * (figée une fois par initQuiz()) et de currentResponses (mise à jour au clic). Avant ce
+ * correctif, cette barre n'était calculée qu'une fois au chargement de la page — répondre à des
+ * questions pendant la session ne la faisait jamais bouger, seul un retour à l'accueil (ou un
+ * rechargement) la rafraîchissait.
+ */
+function _refreshCategoryInfoBarLive() {
+  if (!window._categoryFullList || !window._categoryFullList.length) return;
+  let nbRatees = 0, nbNonvues = 0;
+  window._categoryFullList.forEach(q => {
+    const r = currentResponses[getKeyFor(q)];
+    if (_isUnseen(r)) nbNonvues++;
+    else if (_effectiveStatus(r) === 'ratée') nbRatees++;
+  });
+  updateCategoryInfoBar(selectedCategory, nbRatees + nbNonvues, window._categoryFullList.length);
+}
+
 async function initQuiz() {
   // redirect if not logged in (sauf si offline avec UID en cache)
   if (!auth.currentUser && !localStorage.getItem('cachedUid')) {
@@ -617,6 +637,9 @@ async function initQuiz() {
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
       const isAggregate = _isAggregateCategory(normalizedSel);
       const fullList = isAggregate ? questions : questions.filter(q => q.categorie === normalizedSel);
+      // Conservée pour _refreshCategoryInfoBarLive() : permet de recalculer la barre à chaque
+      // réponse (voir plus bas) sans re-fetcher/filtrer la liste complète à chaque clic.
+      window._categoryFullList = fullList;
       let nbRatees = 0, nbNonvues = 0;
       fullList.forEach(q => {
         const r = currentResponses[getKeyFor(q)];
@@ -762,9 +785,14 @@ function afficherQuiz() {
       // MÊME question (changement d'avis) ne recompte rien de plus (chrono inchangé).
       if (window._qtLastTouchedIdx !== qIdx) {
         if (typeof _qtElapsedMs === 'function' && typeof _qtRecordSample === 'function') {
-          const sec = _qtElapsedMs() / 1000;
+          const ms = _qtElapsedMs();
+          const sec = ms / 1000;
           const isNew = window._qtIsNewByIdx ? window._qtIsNewByIdx[qIdx] : true;
           _qtRecordSample(sec, isNew);
+          // Temps réel cumulé pour LA SESSION ENTIÈRE (affiché à la validation, voir
+          // validerReponses()) — distinct de l'apprentissage EMA ci-dessus qui alimente
+          // l'estimation "~X min" de l'accueil.
+          if (typeof _qtAddSessionTime === 'function') _qtAddSessionTime(ms, qIdx);
         }
         window._qtLastTouchedIdx = qIdx;
         if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
@@ -799,6 +827,7 @@ function afficherQuiz() {
           currentResponses[key2] = entry2;
           window._immediateSavedEntries[key2] = entry2;
           _persistImmediateEntry(key2, entry2);
+          if (typeof _refreshCategoryInfoBarLive === 'function') _refreshCategoryInfoBarLive();
         } catch (e3) { console.warn('[SR au clic] échec:', e3); }
       }
     });
@@ -1134,6 +1163,7 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     currentResponses[_pKey] = _pEntry;
     if (!isCorrect) _logWrongAnswer(q, selectedVal);
     _persistImmediateEntry(_pKey, _pEntry);
+    if (typeof _refreshCategoryInfoBarLive === 'function') _refreshCategoryInfoBarLive();
   }
 
   // Mettre à jour le score
@@ -1259,9 +1289,15 @@ async function validerReponses() {
       return;
     }
     window._quizValidated = true;
-    // Quiz soumis : effacer les réponses/position en cours de session mémorisées
+    // Quiz soumis : effacer les réponses/position en cours de session mémorisées, ET le jeu
+    // de questions lui-même — sinon revenir sur quiz.html via le bouton "Quiz" (au lieu de
+    // cliquer "Nouvelles Questions") re-servait le MÊME lot déjà corrigé comme un questionnaire
+    // vierge (réponses effacées, mais questions identiques), au lieu de reprendre la session en
+    // cours ou d'en proposer une nouvelle : ça donnait l'impression que la progression venait
+    // d'être perdue alors qu'elle était bien enregistrée.
     localStorage.removeItem('currentQuizAnswers');
     localStorage.removeItem('currentQuizBatchPos');
+    localStorage.removeItem('currentQuestions');
 
     let correctCount = 0;
     const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
@@ -1339,6 +1375,20 @@ async function validerReponses() {
     // Session terminée → ré-afficher "Nouvelles Questions" (masqué pendant la session)
     if (typeof _updateResetBtnVisibility === 'function') _updateResetBtnVisibility(true);
     const skippedCount = currentQuestions.length - answeredCount;
+
+    // Temps réel de travail pour l'ENSEMBLE du questionnaire : on ajoute d'abord le segment
+    // encore en cours (temps de relecture depuis la dernière réponse jusqu'au clic sur
+    // "Valider"), sinon il ne serait jamais comptabilisé nulle part.
+    if (typeof _qtFlushFinalSegment === 'function') _qtFlushFinalSegment();
+    let timingHtml = '';
+    if (typeof _qtGetSessionTotal === 'function') {
+        const { ms, count } = _qtGetSessionTotal();
+        if (ms > 0 && count > 0) {
+            const avgMs = ms / count;
+            timingHtml = `<br><small style="color:var(--text-secondary)">⏱️ Temps réel : ${_qtFormatDuration(ms)} pour ${count} question${count > 1 ? 's' : ''} (~${_qtFormatDuration(avgMs)}/question)</small>`;
+        }
+    }
+
     const rc = document.getElementById('resultContainer');
     if (rc) {
         rc.style.display = "block";
@@ -1346,6 +1396,7 @@ async function validerReponses() {
             Vous avez <strong>${correctCount}</strong> bonnes réponses
             sur <strong>${answeredCount}</strong> répondue${answeredCount > 1 ? 's' : ''}.
             ${skippedCount > 0 ? `<br><small style="color:var(--text-secondary)">(${skippedCount} question${skippedCount > 1 ? 's' : ''} non répondue${skippedCount > 1 ? 's' : ''} — non comptée${skippedCount > 1 ? 's' : ''}, ${skippedCount > 1 ? 'elles restent' : 'elle reste'} à voir)</small>` : ''}
+            ${timingHtml}
         `;
         rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
