@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#121218">
-  <title>Quiz Aviation - Recherche</title>
+  <title>Quiz Aviation - Plus ratées</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
   <script src="config.js"></script>
@@ -53,9 +53,9 @@
 
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">🔍</div>
-    <h1 class="home-hero-title">Recherche de questions</h1>
-    <div class="home-hero-subtitle">Trouvez n'importe quelle question</div>
+    <div class="home-hero-icon">🔥</div>
+    <h1 class="home-hero-title">Questions les plus ratées</h1>
+    <div class="home-hero-subtitle">Concentrez-vous sur vos points faibles</div>
   </div>
 
   <!-- Top navigation -->
@@ -65,8 +65,8 @@
     <a href="stats.html" class="top-nav-link">📊 Stats</a>
     <a href="rates.html" class="top-nav-link">📖 Révision</a>
     <a href="historique.html" class="top-nav-link">📅 Historique</a>
-    <a href="search.html" class="top-nav-link top-nav-current">🔍 Recherche</a>
-    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="echecs.html" class="top-nav-link top-nav-current">🔥 Plus ratées</a>
     <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
     <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
     <a href="radial.html" class="top-nav-link">📡 Radial</a>
@@ -74,18 +74,24 @@
     <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
   </div>
 
-  <!-- Search bar -->
-  <div class="home-card" id="searchBarContainer">
-    <div class="search-input-row">
-      <input type="text" id="searchInput" placeholder="Rechercher une question…" autocomplete="off" />
-      <button id="btnClearSearch" onclick="clearSearch()" style="display:none;" title="Effacer">✕</button>
+  <!-- Controls -->
+  <div class="home-card" id="echecsControls">
+    <p id="echecsLoading" style="text-align:center;color:var(--text-secondary);">Chargement…</p>
+    <div id="echecsControlsBody" style="display:none;">
+      <label class="home-checkbox-label" style="margin-bottom:10px;">
+        <input type="checkbox" id="echecsSortCheckbox" checked onchange="echecsRender()">
+        <span>⬇️ Trier par nombre d'échecs (les plus ratées en premier)</span>
+      </label>
+      <div style="font-size:.75em;color:var(--text-secondary,#aaa);margin-bottom:6px;">
+        Filtrer par nombre exact d'échecs (cochables ensemble — aucune case cochée = toutes les questions ratées au moins une fois) :
+      </div>
+      <div id="echecsCountCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px 12px;"></div>
+      <div id="echecsStatus" style="margin-top:10px;font-size:.85em;color:var(--text-secondary,#aaa);"></div>
     </div>
-    <div id="searchHint" class="search-hint">Entrez au moins 3 caractères pour lancer la recherche</div>
-    <div id="searchStatus" class="search-status" style="display:none;"></div>
   </div>
 
-  <!-- Search results -->
-  <div id="searchResults"></div>
+  <!-- Results -->
+  <div id="echecsResults"></div>
 
   <!-- Navigation -->
   <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
@@ -109,17 +115,17 @@
 
   <script>
   // ============================================================
-  // Search page logic
+  // Page "Plus ratées" — questions triées par nb d'échecs, avec cases à cocher générées
+  // dynamiquement (une par valeur de failCount réellement présente dans les données).
   // ============================================================
   (function() {
-    let allQuestionsLoaded = [];
+    let allFailed = []; // [{q, key, failCount}], failCount >= 1 uniquement
     let currentResponses = {};
     let _notesCache = {};
     let uid = null;
-    let searchTimeout = null;
+    let checkedCounts = new Set(); // valeurs de failCount cochées (vide = toutes)
 
-
-    // === TTS ===
+    // === TTS (repris de search.html) ===
     function speakText(text) {
       if (!('speechSynthesis' in window) || localStorage.getItem('ttsEnabled') !== '1') return;
       speechSynthesis.cancel();
@@ -142,10 +148,6 @@
       }
     }
 
-    /**
-     * resolveTtsText(q) – Pour les questions à propositions numérotées,
-     * résout "1, 2 et 3" en texte réel des propositions.
-     */
     function resolveTtsText(q) {
       var correctChoice = (q.choix[q.bonne_reponse] || '').trim();
       if (!correctChoice) return correctChoice;
@@ -156,7 +158,7 @@
       var propositions = {};
       var lines = q.question.split('\n');
       lines.forEach(function(line) {
-        var m = line.trim().match(/^(\d+)\s*[-\u2013\u2014]\s*(.+)/);
+        var m = line.trim().match(/^(\d+)\s*[-–—]\s*(.+)/);
         if (m) propositions[m[1]] = m[2].trim().replace(/\.?\s*$/, '');
       });
       if (Object.keys(propositions).length === 0) return correctChoice;
@@ -168,22 +170,18 @@
     }
 
     // === Init ===
-    async function initSearch() {
+    async function initEchecs() {
       uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
       if (!uid) {
         window.location = 'index.html';
         return;
       }
 
-      // Show loading
-      document.getElementById('searchHint').textContent = 'Chargement des questions…';
+      document.getElementById('echecsLoading').textContent = 'Chargement des questions…';
 
-      // Load all questions
       await prefetchAllJsonFiles();
       await loadAllQuestions();
-      allQuestionsLoaded = [...questions];
 
-      // Load responses + notes from Firestore
       try {
         let doc;
         if (navigator.onLine) {
@@ -201,104 +199,99 @@
         const data = doc.exists ? doc.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
         _notesCache = data.notes || {};
-        // Also merge localStorage notes
         try {
           const lsNotes = JSON.parse(localStorage.getItem('personalNotes_' + uid) || '{}');
           Object.keys(lsNotes).forEach(k => { if (!_notesCache[k]) _notesCache[k] = lsNotes[k]; });
         } catch (e) {}
       } catch (e) {
-        console.warn('[search] Firestore load failed:', e);
+        console.warn('[echecs] Firestore load failed:', e);
       }
 
-      document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
-
-      // Bind search input
-      const input = document.getElementById('searchInput');
-      input.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const val = this.value.trim();
-        document.getElementById('btnClearSearch').style.display = val.length > 0 ? 'inline-block' : 'none';
-        if (val.length < 3) {
-          document.getElementById('searchResults').innerHTML = '';
-          document.getElementById('searchStatus').style.display = 'none';
-          document.getElementById('searchHint').style.display = val.length === 0 ? 'block' : 'block';
-          if (val.length > 0 && val.length < 3) {
-            document.getElementById('searchHint').textContent = 'Entrez au moins 3 caractères…';
-          } else {
-            document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
-          }
-          return;
+      // Construire la liste des questions ratées au moins une fois (dédupliquées par clé,
+      // au cas où une même question apparaîtrait dans plusieurs fichiers de catégorie).
+      const seen = new Set();
+      allFailed = [];
+      questions.forEach(q => {
+        const key = getKeyFor(q);
+        if (seen.has(key)) return;
+        const r = currentResponses[key];
+        const fc = (r && r.failCount) || 0;
+        if (fc >= 1) {
+          seen.add(key);
+          allFailed.push({ q, key, failCount: fc });
         }
-        document.getElementById('searchHint').style.display = 'none';
-        searchTimeout = setTimeout(() => doSearch(val), 250);
       });
-      input.focus();
 
+      buildCountCheckboxes();
+      document.getElementById('echecsLoading').style.display = 'none';
+      document.getElementById('echecsControlsBody').style.display = 'block';
+      echecsRender();
     }
 
-    // === Search ===
-    function doSearch(query) {
-      const normalizedQuery = query.toLowerCase()
-        .replace(/['']/g, "'")
-        .replace(/[""]/g, '"')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-      const terms = normalizedQuery.split(/\s+/).filter(t => t.length > 0);
-
-      const results = allQuestionsLoaded.filter(q => {
-        const haystack = (q.question + ' ' + (q.choix || []).join(' ') + ' ' + (q.explication || ''))
-          .toLowerCase()
-          .replace(/['']/g, "'")
-          .replace(/[""]/g, '"')
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        return terms.every(term => haystack.includes(term));
+    // === Cases à cocher dynamiques : une par valeur de failCount réellement présente ===
+    function buildCountCheckboxes() {
+      const counts = new Map(); // failCount -> nb questions
+      allFailed.forEach(item => {
+        counts.set(item.failCount, (counts.get(item.failCount) || 0) + 1);
       });
-
-      const statusEl = document.getElementById('searchStatus');
-      statusEl.style.display = 'block';
-      if (results.length === 0) {
-        statusEl.innerHTML = '<span style="color:var(--text-secondary)">Aucun résultat pour « ' + escapeHtml(query) + ' »</span>';
-      } else {
-        const shown = Math.min(results.length, 50);
-        statusEl.innerHTML = '<strong>' + results.length + '</strong> résultat' + (results.length > 1 ? 's' : '') +
-          (results.length > 50 ? ' (50 premiers affichés)' : '');
+      // Décroissant : les échecs les plus nombreux (les plus "graves") en premier
+      const values = [...counts.keys()].sort((a, b) => b - a);
+      const cont = document.getElementById('echecsCountCheckboxes');
+      if (!values.length) {
+        cont.innerHTML = '<span style="color:var(--text-secondary)">Aucune question ratée pour l\'instant 🎉</span>';
+        return;
       }
-
-      renderQuestions(results.slice(0, 50), document.getElementById('searchResults'));
+      cont.innerHTML = values.map(v => `
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" class="echecsCountCb" value="${v}" onchange="echecsToggleCount(${v}, this.checked)">
+          <span>❌×${v} <span class="filter-count">(${counts.get(v)})</span></span>
+        </label>
+      `).join('');
     }
 
-    window.clearSearch = function() {
-      const input = document.getElementById('searchInput');
-      input.value = '';
-      input.focus();
-      document.getElementById('searchResults').innerHTML = '';
-      document.getElementById('searchStatus').style.display = 'none';
-      document.getElementById('btnClearSearch').style.display = 'none';
-      document.getElementById('searchHint').style.display = 'block';
-      document.getElementById('searchHint').textContent = allQuestionsLoaded.length + ' questions disponibles — Entrez au moins 3 caractères';
+    window.echecsToggleCount = function(value, checked) {
+      if (checked) checkedCounts.add(value); else checkedCounts.delete(value);
+      echecsRender();
     };
 
-    // === Render questions ===
-    function renderQuestions(questionsList, container) {
-      if (!questionsList.length) {
+    // === Rendu principal ===
+    window.echecsRender = function() {
+      let list = checkedCounts.size
+        ? allFailed.filter(item => checkedCounts.has(item.failCount))
+        : allFailed.slice();
+
+      const sortOn = document.getElementById('echecsSortCheckbox').checked;
+      if (sortOn) {
+        list = list.slice().sort((a, b) => b.failCount - a.failCount);
+      }
+
+      const statusEl = document.getElementById('echecsStatus');
+      statusEl.innerHTML = list.length
+        ? '<strong>' + list.length + '</strong> question' + (list.length > 1 ? 's' : '') + ' ratée' + (list.length > 1 ? 's' : '') + ' au moins une fois'
+        : '<span style="color:var(--text-secondary)">Aucune question ne correspond aux cases cochées</span>';
+
+      renderQuestions(list.slice(0, 100), document.getElementById('echecsResults'));
+    };
+
+    // === Render questions (repris de search.html) ===
+    function renderQuestions(items, container) {
+      if (!items.length) {
         container.innerHTML = '';
         return;
       }
 
       let html = '';
-      questionsList.forEach((q, idx) => {
-        const key = getKeyFor(q);
+      items.forEach(item => {
+        const q = item.q;
+        const key = item.key;
         const resp = currentResponses[key] || {};
         const isMarked = resp.marked === true;
         const isImportant = resp.important === true;
-        const status = resp.status || null;
+        const status = _effectiveStatus(resp);
 
-        // Status badge
-        let statusBadge = '';
-        if (status === 'réussie') statusBadge = '<span class="search-badge search-badge-ok">✅ Réussie</span>';
-        else if (status === 'ratée') statusBadge = '<span class="search-badge search-badge-fail">❌ Ratée</span>';
-        else statusBadge = '<span class="search-badge search-badge-unseen">👀 Non vue</span>';
-
+        let statusBadge = '<span class="search-badge search-badge-fail">🔥 Ratée ' + item.failCount + ' fois</span>';
+        if (status === 'réussie') statusBadge += ' <span class="search-badge search-badge-ok">✅ Réussie (actuellement)</span>';
+        else if (status === 'ratée') statusBadge += ' <span class="search-badge search-badge-fail">❌ Ratée (actuellement)</span>';
         if (isMarked) statusBadge += ' <span class="search-badge search-badge-marked">📌 Marquée</span>';
         if (isImportant) statusBadge += ' <span class="search-badge search-badge-important">⭐ Importante</span>';
 
@@ -309,12 +302,10 @@
         html += '</div>';
         html += '<div class="question-title">' + escapeHtml(q.question) + '</div>';
 
-        // Image
         if (q.image) {
           html += '<div class="question-image"><img src="' + q.image + '" alt="illustration" onerror="this.style.display=\'none\';" loading="lazy" /></div>';
         }
 
-        // Choices with correct answer highlighted
         var ttsText = resolveTtsText(q);
         html += '<div class="answer-list" data-question="' + encodeURIComponent(q.question) + '" data-correct="' + encodeURIComponent(ttsText) + '">';
         (q.choix || []).forEach((choixText, i) => {
@@ -326,7 +317,6 @@
         });
         html += '</div>';
 
-        // Explication
         if (q.explication || (q.explication_images && q.explication_images.length)) {
           html += '<div class="explication-block">';
           html += '<strong>💡 Explication :</strong><br>';
@@ -341,14 +331,12 @@
           html += '</div>';
         }
 
-        // Note display
         html += '<div class="personal-note-display" id="noteDisplay_' + key + '"></div>';
 
-        // Action buttons
         html += '<div class="question-actions-row">';
-        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="searchToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
-        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="searchToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
-        html += '<button class="note-toggle-btn" onclick="searchToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
+        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="echecsToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
+        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="echecsToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
+        html += '<button class="note-toggle-btn" onclick="echecsToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
         html += '</div>';
 
         html += '</div>';
@@ -356,7 +344,6 @@
 
       container.innerHTML = html;
 
-      // Attach TTS click listeners
       container.querySelectorAll('.answer-list').forEach(el => {
         el.style.cursor = 'pointer';
         el.addEventListener('click', function() {
@@ -364,44 +351,36 @@
         });
       });
 
-      // Render existing notes
-      questionsList.forEach(q => {
-        const key = getKeyFor(q);
-        const note = _notesCache[key];
+      items.forEach(item => {
+        const note = _notesCache[item.key];
         if (note && (note.text || note.image)) {
-          searchRenderNote(key, note);
+          echecsRenderNote(item.key, note);
         }
       });
     }
 
-    // === Toggle Marquer ===
-    window.searchToggleMarquer = function(key, qid, btn) {
+    // === Toggle Marquer / Important (repris de search.html, mêmes correctifs status) ===
+    window.echecsToggleMarquer = function(key, qid, btn) {
       if (!uid) return;
       const prev = currentResponses[key] || {};
       const newMarked = !prev.marked;
-      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue
-      // (Firestore rejette un champ explicite à undefined, donc on l'omet simplement).
       const entry = { marked: newMarked, important: prev.important === true };
       if (prev.status !== undefined) entry.status = prev.status;
       const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, marked: newMarked };
       btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
       btn.className = newMarked ? 'delete-button' : 'mark-button';
-      // Update badge
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-
       db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
         try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
       });
     };
 
-    // === Toggle Important ===
-    window.searchToggleImportant = function(key, qid, btn) {
+    window.echecsToggleImportant = function(key, qid, btn) {
       if (!uid) return;
       const prev = currentResponses[key] || {};
       const newImportant = !prev.important;
-      // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue.
       const entry = { marked: prev.marked === true, important: newImportant };
       if (prev.status !== undefined) entry.status = prev.status;
       const payload = { responses: { [key]: entry } };
@@ -410,7 +389,6 @@
       btn.className = newImportant ? 'delete-button' : 'mark-button';
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-
       db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
         try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
       });
@@ -418,19 +396,20 @@
 
     function updateBadges(block, key) {
       const resp = currentResponses[key] || {};
+      const item = allFailed.find(it => it.key === key);
       const badges = block.querySelector('.search-result-badges');
       if (!badges) return;
-      let html = '';
-      if (resp.status === 'réussie') html += '<span class="search-badge search-badge-ok">✅ Réussie</span>';
-      else if (resp.status === 'ratée') html += '<span class="search-badge search-badge-fail">❌ Ratée</span>';
-      else html += '<span class="search-badge search-badge-unseen">👀 Non vue</span>';
+      const eff = _effectiveStatus(resp);
+      let html = '<span class="search-badge search-badge-fail">🔥 Ratée ' + (item ? item.failCount : (resp.failCount || 0)) + ' fois</span>';
+      if (eff === 'réussie') html += ' <span class="search-badge search-badge-ok">✅ Réussie (actuellement)</span>';
+      else if (eff === 'ratée') html += ' <span class="search-badge search-badge-fail">❌ Ratée (actuellement)</span>';
       if (resp.marked) html += ' <span class="search-badge search-badge-marked">📌 Marquée</span>';
       if (resp.important) html += ' <span class="search-badge search-badge-important">⭐ Importante</span>';
       badges.innerHTML = html;
     }
 
-    // === Notes ===
-    window.searchToggleNote = function(key, btn) {
+    // === Notes (repris de search.html) ===
+    window.echecsToggleNote = function(key, btn) {
       const existingEditor = document.getElementById('noteEditor_' + key);
       if (existingEditor) {
         existingEditor.style.display = existingEditor.style.display === 'none' ? 'block' : 'none';
@@ -449,7 +428,7 @@
             <input type="file" accept="image/*" id="noteImage_${key}" style="display:none" />
           </label>
           <span class="note-image-name" id="noteImageName_${key}"></span>
-          <button class="note-publish-btn" onclick="searchPublishNote('${key}')">Publier</button>
+          <button class="note-publish-btn" onclick="echecsPublishNote('${key}')">Publier</button>
         </div>
         <div id="noteImagePreview_${key}" class="note-image-preview"></div>
       `;
@@ -457,10 +436,8 @@
       if (block) block.appendChild(editor);
       else btn.parentElement.appendChild(editor);
 
-      // contenteditable grows naturally
       if (existingText) document.getElementById('noteText_' + key).focus();
 
-      // Image handler
       document.getElementById('noteImage_' + key).addEventListener('change', function() {
         const file = this.files[0];
         const nameSpan = document.getElementById('noteImageName_' + key);
@@ -474,7 +451,7 @@
       });
     };
 
-    window.searchPublishNote = async function(key) {
+    window.echecsPublishNote = async function(key) {
       if (!uid) { alert('Vous devez être connecté.'); return; }
       const noteEl = document.getElementById('noteText_' + key);
       const fileInput = document.getElementById('noteImage_' + key);
@@ -504,25 +481,25 @@
         } catch (e2) {}
       }
       _notesCache[key] = notePayload;
-      searchRenderNote(key, notePayload);
+      echecsRenderNote(key, notePayload);
       const editor = document.getElementById('noteEditor_' + key);
       if (editor) editor.style.display = 'none';
     };
 
-    window.searchEditNote = function(key) {
+    window.echecsEditNote = function(key) {
       const block = document.getElementById('noteDisplay_' + key);
       if (!block) return;
       const qBlock = block.closest('.question-block');
       if (!qBlock) return;
       const noteBtn = qBlock.querySelector('.note-toggle-btn');
       if (noteBtn) {
-        searchToggleNote(key, noteBtn);
+        echecsToggleNote(key, noteBtn);
         const editor = document.getElementById('noteEditor_' + key);
         if (editor) editor.style.display = 'block';
       }
     };
 
-    window.searchDeleteNote = async function(key) {
+    window.echecsDeleteNote = async function(key) {
       if (!confirm('Supprimer cette note personnelle ?')) return;
       if (!uid) return;
       try {
@@ -541,7 +518,7 @@
       if (div) div.innerHTML = '';
     };
 
-    function searchRenderNote(key, note) {
+    function echecsRenderNote(key, note) {
       const div = document.getElementById('noteDisplay_' + key);
       if (!div) return;
       if (!note || (!note.text && !note.image)) { div.innerHTML = ''; return; }
@@ -549,8 +526,8 @@
       html += '<div class="personal-note-header">';
       html += '<strong>📌 Ma note personnelle :</strong>';
       html += '<span class="personal-note-actions">';
-      html += '<button class="note-edit-btn" onclick="searchEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
-      html += '<button class="note-delete-btn" onclick="searchDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
+      html += '<button class="note-edit-btn" onclick="echecsEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
+      html += '<button class="note-delete-btn" onclick="echecsDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
       html += '</span></div>';
       if (note.text) { html += renderNoteText(note.text); }
       if (note.image) { html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />'; }
@@ -604,7 +581,7 @@
     function doInit() {
       if (initDone) return;
       initDone = true;
-      initSearch();
+      initEchecs();
     }
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
