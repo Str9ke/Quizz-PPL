@@ -56,6 +56,13 @@ async function getDocWithTimeout(docRef, timeoutMs = 2000) {
 
 /**
  * normalizeResponses() – Normalize raw Firestore responses into { status, marked }
+ * IMPORTANT : un statut absent (r.status undefined) DOIT rester undefined, pas être
+ * défauté à 'ratée' — sinon une question "réinitialisée" via _resetCategoryField()
+ * (qui supprime précisément status/srInterval/nextReview pour la faire redevenir
+ * "non vue") réapparaît comme "ratée" partout où normalizeResponses() est utilisé
+ * (accueil, compteurs de mode, calcul des révisions dues), alors que stats.js — qui lit
+ * data.responses brut sans normalizeResponses() — l'affiche correctement en "non vue".
+ * C'était la cause des incohérences de compteurs "Accueil vs Stats" observées après reset.
  */
 function normalizeResponses(raw) {
   const out = {};
@@ -63,10 +70,21 @@ function normalizeResponses(raw) {
     const isMarked = (r.status === 'marquée') || (r.marked === true);
     const status = r.status === 'marquée'
       ? (r.previousStatus || 'ratée')
-      : (r.status || 'ratée');
+      : r.status;
     out[key] = { ...r, status, marked: isMarked };
   });
   return out;
+}
+
+/**
+ * _isUnseen(r) – Une réponse est "non vue" si elle n'existe pas OU si elle existe
+ * sans statut réussie/ratée (ex: après un reset ciblé qui supprime le statut tout en
+ * conservant marqué/important/historique). À utiliser partout où une question est
+ * classée "nouvelle/non vue" pour rester cohérent avec stats.js et éviter qu'une
+ * question réinitialisée soit comptée comme "déjà vue" sans statut valide.
+ */
+function _isUnseen(r) {
+  return !r || r.status === undefined || r.status === null;
 }
 
 // Replace curly apostrophes etc. with straight apostrophes for consistency

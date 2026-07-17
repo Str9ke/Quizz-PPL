@@ -296,9 +296,10 @@ async function updateModeCounts() {
       // elle n'est plus comptée en nonvue/réussie/ratée/révision, seulement dans son propre total.
       if (r && r.suspended) { nbSuspendues++; return; }
       total++;
-      if (!r) {
+      if (_isUnseen(r)) {
         nbNonvues++;
-      } else {
+      }
+      if (r) {
         if (r.status==="réussie") nbReussies++;
         if (r.status==="ratée")   nbRatees++;
         if (r.marked)             nbMarquees++;
@@ -857,14 +858,14 @@ async function filtrerQuestions(mode, nb, filterFlags) {
   }
   else if (mode === "nonvues") {
     currentQuestions = shuffled
-      .filter(q => !responses[getKeyFor(q)])
+      .filter(q => _isUnseen(responses[getKeyFor(q)]))
       .slice(0, nb);
   }
   else if (mode === "ratees_nonvues") {
     currentQuestions = shuffled
       .filter(q => {
-         const s = responses[getKeyFor(q)]?.status;
-         return s === 'ratée' || !s;
+         const r = responses[getKeyFor(q)];
+         return r?.status === 'ratée' || _isUnseen(r);
       })
       .slice(0, nb);
   }
@@ -876,7 +877,7 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     // prioritaires (planification SR), mais on réserve toujours une part aux nouvelles questions
     // pour ne pas bloquer la progression si le retard de révisions est important.
     const dueSorted = _dueQuestionsSorted(shuffled, responses);
-    const newPool = shuffled.filter(q => !responses[getKeyFor(q)]);
+    const newPool = shuffled.filter(q => _isUnseen(responses[getKeyFor(q)]));
     const minNewSlots = Math.min(newPool.length, Math.max(1, Math.round(nb * 0.3)));
     const dueSlots = Math.max(0, Math.min(dueSorted.length, nb - minNewSlots));
     let mix = [...dueSorted.slice(0, dueSlots), ...newPool.slice(0, nb - dueSlots)];
@@ -895,7 +896,7 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     // de nouvelles questions. Contrairement à "mixte", on ne réserve pas un quota de nouvelles
     // au détriment des révisions : nb est calculé par l'appelant = dues + objectif de nouvelles.
     const dueSorted = _dueQuestionsSorted(shuffled, responses);
-    const newPool = shuffled.filter(q => !responses[getKeyFor(q)]);
+    const newPool = shuffled.filter(q => _isUnseen(responses[getKeyFor(q)]));
     const newTarget = Math.max(0, nb - dueSorted.length);
     const mix = [...dueSorted, ...newPool.slice(0, newTarget)];
     currentQuestions = mix.sort(() => 0.5 - Math.random());
