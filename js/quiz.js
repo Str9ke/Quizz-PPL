@@ -960,11 +960,17 @@ function _computeSrEntry(q, selectedVal) {
         nextReview: nextReviewMs,
         timestamp: firebase.firestore.Timestamp.now()
     };
-    // Préserver et enrichir le statusLog (historique des réponses par jour)
+    // Préserver et enrichir le statusLog (historique des réponses par jour). Plafonné à 15
+    // (au lieu de 100 auparavant) : failCount/successCount portent déjà le compte total exact
+    // (voir _srStatsHtml) — le log ne sert qu'à un aperçu récent, pas à stocker l'historique
+    // complet. Avec des milliers de questions répondues, un plafond à 100 entrées par question
+    // fait grossir le document Firestore unique 'quizProgress/{uid}' au-delà de la limite dure
+    // de 1 Mio de Firestore, ce qui fait échouer TOUTE écriture (même sur d'autres questions)
+    // sans qu'aucun indice ne soit visible avant l'ajout du message d'erreur explicite.
     const existingLog = (currentResponses[key] && currentResponses[key].statusLog) ? [...currentResponses[key].statusLog] : [];
     existingLog.push({ status, ts: Date.now() });
-    // Garder les 100 dernières entrées max
-    if (existingLog.length > 100) existingLog.splice(0, existingLog.length - 100);
+    const STATUS_LOG_CAP = 15;
+    if (existingLog.length > STATUS_LOG_CAP) existingLog.splice(0, existingLog.length - STATUS_LOG_CAP);
     entry.statusLog = existingLog;
     // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
     if (wasMarked !== undefined) entry.marked = wasMarked;
