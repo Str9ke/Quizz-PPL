@@ -458,21 +458,30 @@ function syncCategorieFromObjectif() {
 }
 
 /**
- * _syncModeFilterState() – Grise le menu "Mode" quand au moins une case
- * marquées/importantes/avec notes est cochée (ces cases remplacent alors le Mode).
+ * _getCheckedFilterFlags() – Lit les cases marquées/importantes/avec notes cochées.
+ * Ces filtres s'appliquent EN PLUS du mode choisi dans le menu "Mode" (y compris
+ * "Révisions du jour"/"Mixte"/"Objectif du jour") : ils réduisent le résultat du mode
+ * à seulement les questions correspondant à au moins un critère coché.
  */
-function _syncModeFilterState() {
-  const any = ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox']
-    .some(id => document.getElementById(id)?.checked);
-  const modeSelect = document.getElementById('mode');
-  if (modeSelect) modeSelect.disabled = any;
+function _getCheckedFilterFlags() {
+  const flags = [];
+  if (document.getElementById('filterMarqueesCheckbox')?.checked) flags.push('marquees');
+  if (document.getElementById('filterImportantesCheckbox')?.checked) flags.push('importantes');
+  if (document.getElementById('filterNotesCheckbox')?.checked) flags.push('avecnotes');
+  return flags;
 }
+
+/**
+ * _syncModeFilterState() – Conservé pour compat avec les appels existants (les cases ne
+ * grisent plus le menu Mode depuis qu'elles filtrent EN PLUS de lui plutôt que de le remplacer).
+ */
+function _syncModeFilterState() { /* no-op */ }
 
 /**
  * _onModeFilterCheckboxChange() – Appelé quand l'utilisateur coche/décoche une case
  * marquées/importantes/avec notes à la main : mémorise son choix (localStorage) pour
- * qu'il soit restauré à la prochaine visite, puis met à jour l'état visuel du menu Mode.
- * NB: volontairement séparé de _syncModeFilterState() — les décochages programmatiques
+ * qu'il soit restauré à la prochaine visite.
+ * NB: volontairement séparé de _restoreModeFilterCheckboxes() — les décochages programmatiques
  * (ex. _startObjectifDuJour) ne doivent PAS écraser la configuration mémorisée.
  */
 function _onModeFilterCheckboxChange() {
@@ -480,7 +489,6 @@ function _onModeFilterCheckboxChange() {
     const el = document.getElementById(id);
     if (el) localStorage.setItem(id, el.checked ? '1' : '0');
   });
-  _syncModeFilterState();
 }
 
 /**
@@ -492,7 +500,6 @@ function _restoreModeFilterCheckboxes() {
     const el = document.getElementById(id);
     if (el) el.checked = localStorage.getItem(id) === '1';
   });
-  _syncModeFilterState();
 }
 
 /**
@@ -506,21 +513,6 @@ function _saveModeSelectValue() {
 }
 
 /**
- * _resolveModeSelection() – Détermine le mode effectif à utiliser pour démarrer un quiz :
- * si au moins une case marquées/importantes/avec notes est cochée, combine-les en un
- * mode "combo:..." (union, cochables ensemble) ; sinon utilise la valeur du menu "Mode".
- */
-function _resolveModeSelection() {
-  const flags = [];
-  if (document.getElementById('filterMarqueesCheckbox')?.checked) flags.push('marquees');
-  if (document.getElementById('filterImportantesCheckbox')?.checked) flags.push('importantes');
-  if (document.getElementById('filterNotesCheckbox')?.checked) flags.push('avecnotes');
-  if (flags.length) return 'combo:' + flags.join(',');
-  const modeSelect = document.getElementById('mode');
-  return modeSelect ? modeSelect.value : 'toutes';
-}
-
-/**
  * _startObjectifDuJour() – Lance directement une session "Objectif du jour" (toutes les
  * révisions dues + l'objectif de nouvelles questions) pour la catégorie actuellement
  * sélectionnée dans le menu "Catégorie" (TOUTES par défaut), sans passer par la config manuelle.
@@ -530,12 +522,13 @@ async function _startObjectifDuJour() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
     // "Objectif du jour" est un mode dédié (révisions dues + nouvelles) : il prime toujours
-    // sur les cases marquées/importantes/notes, qu'on désactive donc pour cette session.
+    // sur les cases marquées/importantes/notes, qu'on désactive donc pour cette session (son
+    // calcul de nb ne tient pas compte de ces filtres — les combiner risquerait de reproduire
+    // le bug "0 question chargée" en promettant plus de nouvelles qu'il n'y en a de disponibles).
     ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.checked = false;
     });
-    if (typeof _syncModeFilterState === 'function') _syncModeFilterState();
     const catSelect = document.getElementById('categorie');
     const cat = catSelect ? catSelect.value : 'TOUTES';
     selectedCategory = cat;
@@ -546,7 +539,9 @@ async function _startObjectifDuJour() {
     }
     if (typeof updateModeCounts === 'function') await updateModeCounts();
 
-    const dailyNewTarget = getDailyNewTarget();
+    // Ne jamais promettre plus de "nouvelles" qu'il n'en reste réellement de non vues
+    // dans cette catégorie (sinon l'objectif affiché ment et le quiz démarre vide).
+    const dailyNewTarget = Math.min(getDailyNewTarget(), typeof nbNonvuesToday === 'number' ? nbNonvuesToday : getDailyNewTarget());
     const nb = nbRevisionsToday + dailyNewTarget;
 
     const modeSelect = document.getElementById('mode');

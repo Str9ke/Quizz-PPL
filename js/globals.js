@@ -6,6 +6,8 @@ function resetQuiz() {
   const mode = localStorage.getItem('quizMode') || "toutes";
   const nb = parseInt(localStorage.getItem('quizNbQuestions')) || 10;
   const sousCat = localStorage.getItem('quizSousCategorie');
+  let filterFlags = [];
+  try { filterFlags = JSON.parse(localStorage.getItem('quizFilterFlags') || '[]'); } catch (e) { /* ignore */ }
 
   // Sauvegarder les questions du quiz actuel comme "récemment posées"
   // pour éviter qu'elles retombent immédiatement en mode marquées/importantes
@@ -38,7 +40,15 @@ function resetQuiz() {
       } else {
         await chargerQuestions(catNorm);
       }
-      await filtrerQuestions(mode, nb);
+      await filtrerQuestions(mode, nb, filterFlags);
+      if (!currentQuestions.length) {
+        alert(
+          filterFlags.length
+            ? "Aucune question ne correspond à ce mode combiné à ces filtres (marquées/importantes/notes) en ce moment."
+            : "Aucune nouvelle question disponible pour ce mode en ce moment."
+        );
+        return;
+      }
       localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
       if (sousCat) localStorage.setItem('quizSousCategorie', sousCat);
       // Éviter un reload complet (lent offline) : ré-afficher le quiz directement
@@ -101,6 +111,7 @@ let modeQuiz = "toutes";
 let nbQuestions = 10;
 let _currentSessionCount = 0; // compteur de sessions quiz (sync Firestore)
 let nbRevisionsToday = 0; // nombre de questions dues pour révision espacée (recalculé par updateModeCounts)
+let nbNonvuesToday = 0; // nombre de questions jamais vues dans la catégorie sélectionnée (recalculé par updateModeCounts)
 let nbSuspenduesTotal = 0; // nombre de questions marquées "ne plus revoir" (recalculé par updateModeCounts)
 
 let countRadio = 0;

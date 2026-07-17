@@ -234,8 +234,9 @@ function _buildExplicationHtml(q) {
 
 async function demarrerQuiz() {
   selectedCategory = document.getElementById('categorie').value;
-  modeQuiz = (typeof _resolveModeSelection === 'function') ? _resolveModeSelection() : document.getElementById('mode').value;
+  modeQuiz = document.getElementById('mode').value;
   nbQuestions = parseInt(document.getElementById('nbQuestions').value);
+  const filterFlags = (typeof _getCheckedFilterFlags === 'function') ? _getCheckedFilterFlags() : [];
 
   if (selectedCategory === "TOUTES") {
     await loadAllQuestions();
@@ -243,11 +244,21 @@ async function demarrerQuiz() {
     await chargerQuestions(selectedCategory);
   }
 
-  await filtrerQuestions(modeQuiz, nbQuestions);
+  await filtrerQuestions(modeQuiz, nbQuestions, filterFlags);
+
+  if (!currentQuestions.length) {
+    alert(
+      filterFlags.length
+        ? "Aucune question ne correspond à ce mode combiné à ces filtres (marquées/importantes/notes) en ce moment."
+        : "Aucune question disponible pour ce mode dans cette catégorie en ce moment."
+    );
+    return;
+  }
 
   // store parameters for quiz page
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('quizMode', modeQuiz);
+  localStorage.setItem('quizFilterFlags', JSON.stringify(filterFlags));
   localStorage.setItem('quizNbQuestions', nbQuestions);
   localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   // Nouveau quiz : effacer les réponses/position en cours d'une session précédente
@@ -552,7 +563,9 @@ async function initQuiz() {
     } else {
       await chargerQuestions(catNorm);
     }
-    await filtrerQuestions(modeQuiz, nbQuestions);
+    let restoredFlags = [];
+    try { restoredFlags = JSON.parse(localStorage.getItem('quizFilterFlags') || '[]'); } catch (e) { /* ignore */ }
+    await filtrerQuestions(modeQuiz, nbQuestions, restoredFlags);
     localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
   }
 

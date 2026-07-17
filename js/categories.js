@@ -311,9 +311,13 @@ async function updateModeCounts() {
 
     // Exposer les compteurs globalement (mode par défaut, badge accueil, bouton "Objectif du jour")
     nbRevisionsToday = nbRevisions;
+    nbNonvuesToday = nbNonvues;
     nbSuspenduesTotal = nbSuspendues;
 
-    const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
+    // Ne jamais promettre plus de "nouvelles" que de questions réellement non vues :
+    // sinon l'aperçu ment et "Objectif du jour"/"Mixte" peuvent démarrer un quiz vide.
+    const dailyNewTargetRaw = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
+    const dailyNewTarget = Math.min(dailyNewTargetRaw, nbNonvues);
     const objectifTotal = nbRevisions + dailyNewTarget;
 
     const modeSelect = document.getElementById("mode");
@@ -818,7 +822,7 @@ function _dueQuestionsSorted(pool, responses) {
   return due;
 }
 
-async function filtrerQuestions(mode, nb) {
+async function filtrerQuestions(mode, nb, filterFlags) {
   if (!questions.length) {
     console.warn("    questions[] est vide");
     currentQuestions = [];
@@ -977,6 +981,33 @@ async function filtrerQuestions(mode, nb) {
     currentQuestions = shuffled
       .filter(q => q.categorie === normalizedSel)
       .slice(0, nb);
+  }
+
+  // FILTRES marquées/importantes/avec notes (cases à cocher) : réduisent le résultat du mode
+  // ci-dessus à seulement les questions correspondant à au moins un critère coché — s'appliquent
+  // à TOUS les modes, y compris "Révisions du jour"/"Mixte", pour pouvoir ne réviser que ses
+  // questions marquées/importantes/notées parmi celles dues.
+  if (Array.isArray(filterFlags) && filterFlags.length && mode !== 'suspendues') {
+    let notesMapFlt = null;
+    if (filterFlags.includes('avecnotes')) {
+      if (uid) {
+        try {
+          const docNF = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+          notesMapFlt = docNF.exists ? (docNF.data().notes || {}) : {};
+        } catch (e) {
+          notesMapFlt = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+        }
+      } else {
+        notesMapFlt = {};
+      }
+    }
+    currentQuestions = currentQuestions.filter(q => {
+      const r = responses[getKeyFor(q)];
+      if (filterFlags.includes('marquees') && r?.marked) return true;
+      if (filterFlags.includes('importantes') && r?.important) return true;
+      if (filterFlags.includes('avecnotes') && notesMapFlt && !!notesMapFlt[getKeyFor(q)]) return true;
+      return false;
+    });
   }
 
   // INJECTION : questions de la file de ré-interrogation (countdown === 0)
