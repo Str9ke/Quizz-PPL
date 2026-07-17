@@ -271,6 +271,21 @@
         <label class="home-label" style="margin:0" for="dailyNewTarget">Nouvelles questions/jour&nbsp;:</label>
         <input type="number" id="dailyNewTarget" class="home-input" style="width:70px" min="0" value="15" onchange="_saveDailyNewTarget()">
       </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:12px;font-size:.85em">
+        <span style="color:var(--text-secondary,#aaa);width:100%">Filtrer cette session (cochables ensemble) :</span>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>🔖 Marquées</span>
+        </label>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterImportantesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>⭐ Importantes</span>
+        </label>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>📝 Avec notes</span>
+        </label>
+      </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
     </div>
     <script>
@@ -330,15 +345,15 @@
       <div class="home-options" id="modeFilterCheckboxes" style="border-top:1px dashed rgba(255,255,255,.12);margin-top:8px;padding-top:8px">
         <span style="font-size:.75em;color:var(--text-secondary,#aaa);width:100%">Filtrer en plus du Mode ci-dessus (ex. Révisions du jour + Marquées), cochables ensemble :</span>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange()">
+          <input type="checkbox" id="filterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>🔖 Marquées</span>
         </label>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterImportantesCheckbox" onchange="_onModeFilterCheckboxChange()">
+          <input type="checkbox" id="filterImportantesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>⭐ Importantes</span>
         </label>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterNotesCheckbox" onchange="_onModeFilterCheckboxChange()">
+          <input type="checkbox" id="filterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>📝 Avec notes</span>
         </label>
       </div>
@@ -401,8 +416,8 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717d"></script>
-  <script src="js/categories.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717e"></script>
+  <script src="js/categories.js?v=20260717e"></script>
   <script src="js/stats.js?v=20260224i"></script>
   <script src="js/quiz.js?v=20260717d"></script>
   <script src="js/init.js?v=20260717b"></script>

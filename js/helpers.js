@@ -476,17 +476,28 @@ function syncCategorieFromObjectif() {
 }
 
 /**
- * _getCheckedFilterFlags() – Lit les cases marquées/importantes/avec notes cochées.
- * Ces filtres s'appliquent EN PLUS du mode choisi dans le menu "Mode" (y compris
- * "Révisions du jour"/"Mixte"/"Objectif du jour") : ils réduisent le résultat du mode
- * à seulement les questions correspondant à au moins un critère coché.
+ * Les cases marquées/importantes/avec notes existent en DEUX endroits de l'accueil (carte
+ * "Configuration du Quiz" ET carte "Objectif du jour") mais représentent le MÊME filtre :
+ * chaque paire est synchronisée en direct et partage la même clé localStorage (le 1er id de
+ * chaque paire), pour que cocher l'une coche l'autre et que le choix soit mémorisé une seule fois.
+ */
+const _FILTER_CHECKBOX_PAIRS = [
+  { flag: 'marquees',    ids: ['filterMarqueesCheckbox', 'objFilterMarqueesCheckbox'] },
+  { flag: 'importantes', ids: ['filterImportantesCheckbox', 'objFilterImportantesCheckbox'] },
+  { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'] }
+];
+
+/**
+ * _getCheckedFilterFlags() – Lit les cases marquées/importantes/avec notes cochées (dans
+ * n'importe laquelle des deux cartes, elles sont synchronisées). Ces filtres s'appliquent EN
+ * PLUS du mode choisi dans le menu "Mode" (y compris "Révisions du jour"/"Mixte"/"Objectif du
+ * jour") : ils réduisent le résultat du mode à seulement les questions correspondant à au
+ * moins un critère coché.
  */
 function _getCheckedFilterFlags() {
-  const flags = [];
-  if (document.getElementById('filterMarqueesCheckbox')?.checked) flags.push('marquees');
-  if (document.getElementById('filterImportantesCheckbox')?.checked) flags.push('importantes');
-  if (document.getElementById('filterNotesCheckbox')?.checked) flags.push('avecnotes');
-  return flags;
+  return _FILTER_CHECKBOX_PAIRS
+    .filter(({ ids }) => ids.some(id => document.getElementById(id)?.checked))
+    .map(({ flag }) => flag);
 }
 
 /**
@@ -496,27 +507,38 @@ function _getCheckedFilterFlags() {
 function _syncModeFilterState() { /* no-op */ }
 
 /**
- * _onModeFilterCheckboxChange() – Appelé quand l'utilisateur coche/décoche une case
- * marquées/importantes/avec notes à la main : mémorise son choix (localStorage) pour
- * qu'il soit restauré à la prochaine visite.
+ * _onModeFilterCheckboxChange(sourceEl) – Appelé quand l'utilisateur coche/décoche une case
+ * marquées/importantes/avec notes à la main (dans l'une ou l'autre carte) : répercute son choix
+ * sur la case jumelle de l'autre carte, puis mémorise (localStorage) pour la prochaine visite.
  * NB: volontairement séparé de _restoreModeFilterCheckboxes() — les décochages programmatiques
  * (ex. _startObjectifDuJour) ne doivent PAS écraser la configuration mémorisée.
  */
-function _onModeFilterCheckboxChange() {
-  ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) localStorage.setItem(id, el.checked ? '1' : '0');
+function _onModeFilterCheckboxChange(sourceEl) {
+  _FILTER_CHECKBOX_PAIRS.forEach(({ ids }) => {
+    if (sourceEl && ids.includes(sourceEl.id)) {
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el !== sourceEl) el.checked = sourceEl.checked;
+      });
+    }
+    const primaryId = ids[0];
+    const anyChecked = ids.some(id => document.getElementById(id)?.checked);
+    localStorage.setItem(primaryId, anyChecked ? '1' : '0');
   });
 }
 
 /**
  * _restoreModeFilterCheckboxes() – Restaure au chargement de la page les cases
- * marquées/importantes/avec notes telles qu'elles étaient lors de la dernière visite.
+ * marquées/importantes/avec notes (dans les deux cartes) telles qu'elles étaient lors de
+ * la dernière visite.
  */
 function _restoreModeFilterCheckboxes() {
-  ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.checked = localStorage.getItem(id) === '1';
+  _FILTER_CHECKBOX_PAIRS.forEach(({ ids }) => {
+    const checked = localStorage.getItem(ids[0]) === '1';
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = checked;
+    });
   });
 }
 
@@ -539,14 +561,10 @@ async function _startObjectifDuJour() {
   const btn = document.getElementById('objectifStartBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
-    // "Objectif du jour" est un mode dédié (révisions dues + nouvelles) : il prime toujours
-    // sur les cases marquées/importantes/notes, qu'on désactive donc pour cette session (son
-    // calcul de nb ne tient pas compte de ces filtres — les combiner risquerait de reproduire
-    // le bug "0 question chargée" en promettant plus de nouvelles qu'il n'y en a de disponibles).
-    ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.checked = false;
-    });
+    // Les cases marquées/importantes/avec notes s'appliquent aussi à "Objectif du jour" :
+    // updateModeCounts() (appelé ci-dessous sans argument) les lit automatiquement et scope
+    // nbRevisionsToday/nbNonvuesToday sur ce sous-ensemble, donc le nb calculé plus bas promet
+    // exactement ce que filtrerQuestions() (qui relit les mêmes cases) livrera.
     const catSelect = document.getElementById('categorie');
     const cat = catSelect ? catSelect.value : 'TOUTES';
     selectedCategory = cat;
