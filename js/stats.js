@@ -444,12 +444,14 @@ function enrichDailyHistoryFromResponses(dailyHistory, responses) {
 }
 
 /** computeStatsForFirestore() — Calcule les stats pour une catégorie à partir des réponses Firestore */
-function computeStatsForFirestore(categoryQuestions, responses) {
+function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
   // Normaliser (legacy status==='marquée', etc.) comme le fait l'accueil/le quiz — cette
   // fonction lisait auparavant les données brutes, un chemin distinct de normalizeResponses()
   // qui pouvait diverger sur d'anciennes données pas encore migrées vers le format actuel.
   const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : responses;
+  const notes = notesMap || (typeof _notesCache === 'object' && _notesCache) || {};
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0, marqueeVue = 0, importanteVue = 0;
+  let flagged = 0, flaggedVue = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
     const r = normResponses[key] || {};
@@ -464,8 +466,13 @@ function computeStatsForFirestore(categoryQuestions, responses) {
     // marquée / importante en supplément
     if (r.marked)    { marquee++;    if (seen) marqueeVue++; }
     if (r.important) { importante++; if (seen) importanteVue++; }
+    // marquée OU importante OU notée ("caractérisée") — sert au reset ciblé (garder progression à 0)
+    if (r.marked || r.important || !!notes[key]) {
+      flagged++;
+      if (seen) flaggedVue++;
+    }
   });
-  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue };
+  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue, flagged, flaggedVue };
 }
 
 /**
@@ -604,7 +611,7 @@ async function initStats() {
           catStats.push({ label: cat.label, value: cat.value, stats: fullStats, globalContrib });
         } catch (err) {
           console.error("Stat error for", cat.value, err);
-          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0, marqueeVue: 0, importanteVue: 0 };
+          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0, marqueeVue: 0, importanteVue: 0, flagged: 0, flaggedVue: 0 };
           catStats.push({ label: cat.label, value: cat.value, stats: emptyStats, globalContrib: emptyStats });
         }
       }
@@ -930,7 +937,7 @@ function afficherStats(groupsData, globalStats) {
 
   // Chaque groupe
   groupsData.forEach(group => {
-    let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0, grMaV = 0, grImV = 0;
+    let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0, grMaV = 0, grImV = 0, grFl = 0, grFlV = 0;
     group.categories.forEach(c => {
       const s = c.globalContrib || c.stats;
       grRe += s.reussie;
@@ -940,6 +947,8 @@ function afficherStats(groupsData, globalStats) {
       grIm += s.importante || 0;
       grMaV += s.marqueeVue || 0;
       grImV += s.importanteVue || 0;
+      grFl += s.flagged || 0;
+      grFlV += s.flaggedVue || 0;
     });
     const grTotal = grRe + grRa + grNv;
     const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;
@@ -967,6 +976,7 @@ function afficherStats(groupsData, globalStats) {
         <span>${grImPerc}%</span>
       </div>
       <button class="stats-cat-reset-btn" onclick="_resetGroupStats('${grName}')" title="Réinitialiser la progression ${group.name}" style="font-size:0.95em">🔄 Reset</button>
+      <button class="stats-cat-reset-btn" onclick="_resetGroupFlaggedStats('${grName}')" title="Remettre à zéro uniquement les questions 📌⭐📝 déjà vues de ${group.name} (garde le marquage)" style="font-size:0.95em">🎯 Reset 📌⭐📝 (${grFlV}/${grFl} vues)</button>
     </div>`;
 
     // Lignes par catégorie
@@ -997,6 +1007,7 @@ function afficherStats(groupsData, globalStats) {
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','ratee')">❌ Ratées</button>
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','marquee')">📌 Marquées</button>
             <button onclick="_resetCategoryField('${catVal}','${catLabelEsc}','importante')">⭐ Importantes</button>
+            <button onclick="_resetCategoryFlaggedField('${catVal}','${catLabelEsc}')" title="Remet à zéro uniquement les 📌⭐📝 déjà vues (garde le marquage)">🎯 📌⭐📝 (${s.flaggedVue || 0}/${s.flagged || 0} vues)</button>
           </div>
         </span>
       </div>`;
@@ -1543,6 +1554,70 @@ async function _resetCategoryField(catValue, catLabel, field) {
 }
 
 /**
+ * _resetCategoryFlaggedField() – Remet à "non vue" (réussie ET ratée effacées) UNIQUEMENT les
+ * questions marquées 📌, importantes ⭐ ou notées 📝 d'une catégorie — "remettre ses cartes à
+ * zéro" pour recommencer une progression sur ce sous-ensemble sans perdre le marquage/la note
+ * ni la mémoire de difficulté (failCount/successCount/statusLog conservés).
+ */
+async function _resetCategoryFlaggedField(catValue, catLabel) {
+  if (!confirm(
+    `Réinitialiser « ${catLabel} » — questions 📌 marquées, ⭐ importantes ou 📝 notées uniquement ?\n\n` +
+    `• Ces questions redeviendront "non vues" (réussies/ratées effacées)\n` +
+    `• Le marquage 📌⭐ et vos notes 📝 sont conservés\n` +
+    `• La mémoire de difficulté (nb d'échecs) est conservée\n` +
+    `• Les autres questions (ni marquées, ni importantes, ni notées) ne sont pas touchées`
+  )) return;
+
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  try {
+    await chargerQuestions(catValue);
+    const keys = questions.map(q => getKeyFor(q));
+    if (!keys.length) { alert('Aucune question trouvée pour cette catégorie.'); return; }
+
+    const existingResponses = await _fetchQuizProgressResponses(uid);
+    if (existingResponses === null) {
+      alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
+      return;
+    }
+    const notes = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+
+    const update = {};
+    const changedKeys = [];
+    keys.forEach(k => {
+      const r = existingResponses[k];
+      if (!r || r.status === undefined) return; // déjà "non vue"
+      const flagged = !!r.marked || !!r.important || !!notes[k];
+      if (!flagged) return;
+      update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
+      changedKeys.push(k);
+    });
+
+    if (!changedKeys.length) { alert(`Aucune question 📌⭐📝 déjà vue trouvée dans « ${catLabel} ».`); return; }
+
+    await db.collection('quizProgress').doc(uid).update(update);
+
+    if (typeof currentResponses !== 'undefined' && currentResponses) {
+      changedKeys.forEach(k => {
+        const r = currentResponses[k];
+        if (!r) return;
+        delete r.status; delete r.srInterval; delete r.nextReview;
+      });
+    }
+    keys.forEach(k => { localStorage.removeItem(k); });
+
+    alert(`« ${catLabel} » — 📌⭐📝 réinitialisées ! (${changedKeys.length} question${changedKeys.length > 1 ? 's' : ''}, marquages et notes conservés)`);
+    window.location.reload();
+  } catch (e) {
+    console.error('[resetCategoryFlaggedField] Erreur:', e);
+    alert('Erreur lors de la réinitialisation : ' + e.message);
+  }
+}
+
+/**
  * afficherDailyChart() – Affiche un graphique en barres de l'activité quotidienne (60 derniers jours)
  */
 function afficherDailyChart(dailyHistory) {
@@ -1867,6 +1942,67 @@ async function _resetGroupStats(groupName) {
     window.location.reload();
   } catch (e) {
     console.error('[resetGroup] Erreur:', e);
+    alert('Erreur : ' + e.message);
+  }
+}
+
+/**
+ * _resetGroupFlaggedStats() – Comme _resetGroupStats(), mais restreint aux questions marquées
+ * 📌, importantes ⭐ ou notées 📝 de TOUTES les sous-catégories du groupe (grande catégorie) —
+ * "remettre ses cartes à zéro" sur tout un groupe (ex. GLIGLI HARD) sans perdre le marquage/note.
+ */
+async function _resetGroupFlaggedStats(groupName) {
+  if (!confirm(
+    `Réinitialiser « ${groupName} » — questions 📌 marquées, ⭐ importantes ou 📝 notées uniquement, dans TOUTES ses sous-catégories ?\n\n` +
+    `• Ces questions redeviendront "non vues" (réussies/ratées effacées)\n` +
+    `• Le marquage 📌⭐ et vos notes 📝 sont conservés\n` +
+    `• La mémoire de difficulté (nb d'échecs) est conservée\n` +
+    `• Les autres questions (ni marquées, ni importantes, ni notées) ne sont pas touchées`
+  )) return;
+
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+
+  const catValues = _getGroupCategories(groupName);
+  if (!catValues.length) { alert('Groupe introuvable.'); return; }
+
+  try {
+    let allKeys = [];
+    for (const catVal of catValues) {
+      await chargerQuestions(catVal);
+      allKeys = allKeys.concat(questions.map(q => getKeyFor(q)));
+    }
+    if (!allKeys.length) { alert('Aucune question trouvée.'); return; }
+
+    const existingResponses = await _fetchQuizProgressResponses(uid);
+    if (existingResponses === null) {
+      alert('Impossible de charger vos données (hors ligne et pas de cache local). Réessayez avec une meilleure connexion.');
+      return;
+    }
+    const notes = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+
+    const update = {};
+    const changedKeys = [];
+    allKeys.forEach(k => {
+      const r = existingResponses[k];
+      if (!r || r.status === undefined) return; // déjà "non vue"
+      const flagged = !!r.marked || !!r.important || !!notes[k];
+      if (!flagged) return;
+      update['responses.' + k + '.status'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.srInterval'] = firebase.firestore.FieldValue.delete();
+      update['responses.' + k + '.nextReview'] = firebase.firestore.FieldValue.delete();
+      changedKeys.push(k);
+    });
+
+    if (!changedKeys.length) { alert(`Aucune question 📌⭐📝 déjà vue trouvée dans « ${groupName} ».`); return; }
+
+    await db.collection('quizProgress').doc(uid).update(update);
+    // Dédupliquer avant de purger le localStorage (une clé peut apparaître dans plusieurs sous-catégories/épreuves)
+    [...new Set(changedKeys)].forEach(k => localStorage.removeItem(k));
+    alert(`« ${groupName} » — 📌⭐📝 réinitialisées ! (${changedKeys.length} question${changedKeys.length > 1 ? 's' : ''}, marquages et notes conservés)`);
+    window.location.reload();
+  } catch (e) {
+    console.error('[resetGroupFlagged] Erreur:', e);
     alert('Erreur : ' + e.message);
   }
 }

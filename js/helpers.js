@@ -616,22 +616,56 @@ function syncCategorieFromObjectif() {
 const _FILTER_CHECKBOX_PAIRS = [
   { flag: 'marquees',    ids: ['filterMarqueesCheckbox', 'objFilterMarqueesCheckbox'],    countIds: ['filterMarqueesCount', 'objFilterMarqueesCount'] },
   { flag: 'importantes', ids: ['filterImportantesCheckbox', 'objFilterImportantesCheckbox'], countIds: ['filterImportantesCount', 'objFilterImportantesCount'] },
-  { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'],          countIds: ['filterNotesCount', 'objFilterNotesCount'] }
+  { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'],          countIds: ['filterNotesCount', 'objFilterNotesCount'] },
+  { flag: 'aucune',          ids: ['filterAucuneCheckbox', 'objFilterAucuneCheckbox'],                 countIds: ['filterAucuneCount', 'objFilterAucuneCount'] },
+  { flag: 'avecexplication', ids: ['filterAvecExplicationCheckbox', 'objFilterAvecExplicationCheckbox'], countIds: ['filterAvecExplicationCount', 'objFilterAvecExplicationCount'] },
+  { flag: 'plusratees',      ids: ['filterPlusRateesCheckbox', 'objFilterPlusRateesCheckbox'],          countIds: ['filterPlusRateesCount', 'objFilterPlusRateesCount'] }
 ];
 
 /**
- * _updateFilterCheckboxCounts(counts) – Affiche, à côté de chaque case marquées/importantes/
- * avec notes, le nombre de questions concernées dans la catégorie actuellement sélectionnée
- * (indépendamment des autres cases cochées — chaque compteur reste "tel quel", pas croisé).
- * @param {{marquees:number, importantes:number, avecnotes:number}} counts
+ * Flags qui filtrent l'ENSEMBLE des questions (au moins un critère coché parmi ceux-ci doit
+ * matcher). 'plusratees' n'en fait PAS partie : c'est un critère de PRIORITÉ D'ORDRE (les plus
+ * ratées en premier, en conservant la diversité des catégories), pas un critère d'appartenance —
+ * s'il était traité comme les autres, le cocher seul viderait le résultat (aucune question ne
+ * "correspond" à "plusratees" au sens membership du filtre OR).
+ */
+const _MEMBERSHIP_FILTER_FLAGS = ['marquees', 'importantes', 'avecnotes', 'aucune', 'avecexplication'];
+
+/**
+ * _hasOfficialExplication(q) – Vrai si la question a un commentaire/explication OFFICIEL fourni
+ * avec la question (texte et/ou images), à distinguer de la note personnelle de l'utilisateur
+ * (_notesCache). Même prédicat que celui utilisé pour afficher le bouton "Voir l'explication"
+ * en correction (js/quiz.js).
+ */
+function _hasOfficialExplication(q) {
+  if (!q) return false;
+  return !!(q.explication || (q.explication_images && q.explication_images.length));
+}
+
+/**
+ * _updateFilterCheckboxCounts(counts) – Affiche, à côté de chaque case de filtre, le nombre de
+ * questions concernées dans la catégorie actuellement sélectionnée (indépendamment des autres
+ * cases cochées — chaque compteur reste "tel quel", pas croisé). Accepte soit un nombre simple,
+ * soit {total, vues} pour afficher en plus la répartition déjà vues / restantes ("combien il en
+ * reste" par rapport au critère coché).
+ * @param {Object<string, number|{total:number, vues:number}>} counts
  */
 function _updateFilterCheckboxCounts(counts) {
   if (!counts) return;
   _FILTER_CHECKBOX_PAIRS.forEach(({ flag, countIds }) => {
-    const n = counts[flag] || 0;
+    const c = counts[flag];
+    let text;
+    if (c && typeof c === 'object') {
+      const total = c.total || 0;
+      const vues = c.vues || 0;
+      const restantes = Math.max(0, total - vues);
+      text = total ? ` (${total} · ${vues} vues, ${restantes} restantes)` : ' (0)';
+    } else {
+      text = ` (${c || 0})`;
+    }
     countIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.textContent = ` (${n})`;
+      if (el) el.textContent = text;
     });
   });
 }

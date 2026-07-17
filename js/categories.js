@@ -292,30 +292,51 @@ async function updateModeCounts(filterFlags) {
     const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
 
     // Compteurs "bruts" par critère (indépendants les uns des autres, PAS croisés avec les
-    // cases cochées) pour afficher "(N)" à côté de chaque case marquées/importantes/avec notes.
+    // cases cochées) pour afficher "(N · vues/restantes)" à côté de chaque case de filtre.
     if (typeof _updateFilterCheckboxCounts === 'function') {
-      let rawMarquees = 0, rawImportantes = 0, rawAvecNotes = 0;
+      let rawMarquees = 0, rawImportantes = 0, rawAvecNotes = 0, rawAucune = 0, rawAvecExpl = 0, rawPlusRatees = 0;
+      let vMarquees = 0, vImportantes = 0, vAvecNotes = 0, vAucune = 0, vAvecExpl = 0;
       list.forEach(q => {
         const key = getKeyFor(q);
         const r = currentResponses[key];
         if (r && r.suspended) return;
-        if (r && r.marked) rawMarquees++;
-        if (r && r.important) rawImportantes++;
-        if (notesMap[key]) rawAvecNotes++;
+        const eff = r ? _effectiveStatus(r) : undefined;
+        const seen = eff === 'réussie' || eff === 'ratée';
+        const isMarquee = !!(r && r.marked);
+        const isImportante = !!(r && r.important);
+        const hasNote = !!notesMap[key];
+        if (isMarquee)    { rawMarquees++;    if (seen) vMarquees++; }
+        if (isImportante) { rawImportantes++; if (seen) vImportantes++; }
+        if (hasNote)       { rawAvecNotes++;   if (seen) vAvecNotes++; }
+        if (!isMarquee && !isImportante && !hasNote) { rawAucune++; if (seen) vAucune++; }
+        if (_hasOfficialExplication(q)) { rawAvecExpl++; if (seen) vAvecExpl++; }
+        if ((r && r.failCount || 0) >= 1) rawPlusRatees++;
       });
-      _updateFilterCheckboxCounts({ marquees: rawMarquees, importantes: rawImportantes, avecnotes: rawAvecNotes });
+      _updateFilterCheckboxCounts({
+        marquees: { total: rawMarquees, vues: vMarquees },
+        importantes: { total: rawImportantes, vues: vImportantes },
+        avecnotes: { total: rawAvecNotes, vues: vAvecNotes },
+        aucune: { total: rawAucune, vues: vAucune },
+        avecexplication: { total: rawAvecExpl, vues: vAvecExpl },
+        plusratees: rawPlusRatees
+      });
     }
 
-    // Cases marquées/importantes/avec notes cochées : les compteurs (et donc l'aperçu
-    // "Objectif du jour"/menu Mode) doivent porter sur CE sous-ensemble, sinon l'aperçu
-    // promet un nombre de questions qui ne correspond pas à ce que filtrerQuestions() livrera.
-    if (Array.isArray(filterFlags) && filterFlags.length) {
+    // Cases marquées/importantes/avec notes/aucune/avec commentaire officiel cochées : les
+    // compteurs (et donc l'aperçu "Objectif du jour"/menu Mode) doivent porter sur CE
+    // sous-ensemble, sinon l'aperçu promet un nombre de questions qui ne correspond pas à ce
+    // que filtrerQuestions() livrera. 'plusratees' n'est PAS un critère d'appartenance (voir
+    // _MEMBERSHIP_FILTER_FLAGS) : il ne doit pas participer à ce filtre, seulement à l'ordre.
+    const membershipFlags = Array.isArray(filterFlags) ? filterFlags.filter(f => _MEMBERSHIP_FILTER_FLAGS.includes(f)) : [];
+    if (membershipFlags.length) {
       list = list.filter(q => {
         const key = getKeyFor(q);
         const r = currentResponses[key];
-        if (filterFlags.includes('marquees') && r?.marked) return true;
-        if (filterFlags.includes('importantes') && r?.important) return true;
-        if (filterFlags.includes('avecnotes') && !!notesMap[key]) return true;
+        if (membershipFlags.includes('marquees') && r?.marked) return true;
+        if (membershipFlags.includes('importantes') && r?.important) return true;
+        if (membershipFlags.includes('avecnotes') && !!notesMap[key]) return true;
+        if (membershipFlags.includes('avecexplication') && _hasOfficialExplication(q)) return true;
+        if (membershipFlags.includes('aucune') && !(r?.marked) && !(r?.important) && !notesMap[key]) return true;
         return false;
       });
     }
@@ -846,6 +867,36 @@ async function categoryChanged() {
 }
 
 /**
+ * _orderByFailCountRoundRobin() – Réordonne une liste de questions pour prioriser celles avec
+ * le plus d'échecs (failCount), SANS laisser une seule catégorie très difficile écraser les
+ * autres : on trie d'abord chaque catégorie séparément par failCount décroissant, puis on
+ * pioche un tour de rôle (round-robin) une question par catégorie à chaque tour. Résultat :
+ * chaque catégorie représentée dans `pool` garde une chance d'apparaître tôt, tout en mettant
+ * en avant, en son sein, ses questions les plus ratées.
+ */
+function _orderByFailCountRoundRobin(pool, responses) {
+  const byCat = new Map();
+  pool.forEach(q => {
+    const cat = q.categorie || '_';
+    if (!byCat.has(cat)) byCat.set(cat, []);
+    byCat.get(cat).push(q);
+  });
+  byCat.forEach(arr => arr.sort((a, b) => (responses[getKeyFor(b)]?.failCount || 0) - (responses[getKeyFor(a)]?.failCount || 0)));
+  const groups = [...byCat.values()];
+  const result = [];
+  let i = 0;
+  while (result.length < pool.length) {
+    let addedAny = false;
+    for (const arr of groups) {
+      if (i < arr.length) { result.push(arr[i]); addedAny = true; }
+    }
+    if (!addedAny) break;
+    i++;
+  }
+  return result;
+}
+
+/**
  * _dueQuestionsSorted() – Questions éligibles à la répétition espacée ET dues maintenant,
  * triées des plus en retard (nextReview le plus ancien) aux moins urgentes.
  */
@@ -889,14 +940,17 @@ async function filtrerQuestions(mode, nb, filterFlags) {
   }
   let shuffled = shuffledAll.filter(q => !responses[getKeyFor(q)]?.suspended);
 
-  // FILTRES marquées/importantes/avec notes (cases à cocher) : réduisent le VIVIER de départ
-  // à seulement les questions correspondant à au moins un critère coché, AVANT que le mode
-  // ci-dessus (Révisions du jour/Mixte/Objectif du jour/etc.) ne fasse sa sélection — sinon un
-  // mode qui plafonne son résultat (ex. Objectif du jour) pourrait piocher des questions non
-  // cochées dans son lot initial puis les perdre en filtrant après coup, livrant moins que promis.
-  if (Array.isArray(filterFlags) && filterFlags.length) {
+  // FILTRES marquées/importantes/avec notes/aucune/avec commentaire officiel (cases à cocher) :
+  // réduisent le VIVIER de départ à seulement les questions correspondant à au moins un critère
+  // coché, AVANT que le mode ci-dessus (Révisions du jour/Mixte/Objectif du jour/etc.) ne fasse
+  // sa sélection — sinon un mode qui plafonne son résultat (ex. Objectif du jour) pourrait piocher
+  // des questions non cochées dans son lot initial puis les perdre en filtrant après coup,
+  // livrant moins que promis. 'plusratees' n'est PAS un critère d'appartenance (voir
+  // _MEMBERSHIP_FILTER_FLAGS dans helpers.js) : traité séparément plus bas, comme un ORDRE.
+  const membershipFlagsFQ = Array.isArray(filterFlags) ? filterFlags.filter(f => _MEMBERSHIP_FILTER_FLAGS.includes(f)) : [];
+  if (membershipFlagsFQ.length) {
     let notesMapFlt = null;
-    if (filterFlags.includes('avecnotes')) {
+    if (membershipFlagsFQ.includes('avecnotes') || membershipFlagsFQ.includes('aucune')) {
       if (uid) {
         try {
           const docNF = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
@@ -909,12 +963,22 @@ async function filtrerQuestions(mode, nb, filterFlags) {
       }
     }
     shuffled = shuffled.filter(q => {
-      const r = responses[getKeyFor(q)];
-      if (filterFlags.includes('marquees') && r?.marked) return true;
-      if (filterFlags.includes('importantes') && r?.important) return true;
-      if (filterFlags.includes('avecnotes') && notesMapFlt && !!notesMapFlt[getKeyFor(q)]) return true;
+      const key = getKeyFor(q);
+      const r = responses[key];
+      if (membershipFlagsFQ.includes('marquees') && r?.marked) return true;
+      if (membershipFlagsFQ.includes('importantes') && r?.important) return true;
+      if (membershipFlagsFQ.includes('avecnotes') && notesMapFlt && !!notesMapFlt[key]) return true;
+      if (membershipFlagsFQ.includes('avecexplication') && _hasOfficialExplication(q)) return true;
+      if (membershipFlagsFQ.includes('aucune') && !(r?.marked) && !(r?.important) && !(notesMapFlt && notesMapFlt[key])) return true;
       return false;
     });
+  }
+
+  // "Plus ratées" : priorise les questions avec le plus d'échecs, EN CONSERVANT la
+  // représentation de chaque catégorie (round-robin par catégorie plutôt qu'un tri global qui
+  // ferait disparaître les catégories les moins difficiles derrière une seule très difficile).
+  if (Array.isArray(filterFlags) && filterFlags.includes('plusratees')) {
+    shuffled = _orderByFailCountRoundRobin(shuffled, responses);
   }
 
   if (mode === "toutes") {

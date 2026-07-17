@@ -128,6 +128,7 @@
     <a href="rates.html" class="top-nav-link">📖 Révision</a>
     <a href="historique.html" class="top-nav-link">📅 Historique</a>
     <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
     <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
     <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
     <a href="radial.html" class="top-nav-link">📡 Radial</a>
@@ -285,6 +286,18 @@
           <input type="checkbox" id="objFilterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>📝 Avec notes<span class="filter-count" id="objFilterNotesCount"></span></span>
         </label>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterAucuneCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>▫️ Aucune caractéristique<span class="filter-count" id="objFilterAucuneCount"></span></span>
+        </label>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterAvecExplicationCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>💬 Avec commentaire officiel<span class="filter-count" id="objFilterAvecExplicationCount"></span></span>
+        </label>
+        <label class="home-checkbox-label" style="margin:0">
+          <input type="checkbox" id="objFilterPlusRateesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>🔥 Plus ratées d'abord<span class="filter-count" id="objFilterPlusRateesCount"></span></span>
+        </label>
       </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
     </div>
@@ -356,6 +369,18 @@
           <input type="checkbox" id="filterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>📝 Avec notes<span class="filter-count" id="filterNotesCount"></span></span>
         </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterAucuneCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>▫️ Aucune caractéristique<span class="filter-count" id="filterAucuneCount"></span></span>
+        </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterAvecExplicationCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>💬 Avec commentaire officiel<span class="filter-count" id="filterAvecExplicationCount"></span></span>
+        </label>
+        <label class="home-checkbox-label">
+          <input type="checkbox" id="filterPlusRateesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+          <span>🔥 Plus ratées d'abord<span class="filter-count" id="filterPlusRateesCount"></span></span>
+        </label>
       </div>
       <button id="btnStart" class="home-btn-start" disabled onclick="demarrerQuiz()">
         🎯 Démarrer le Quiz
@@ -416,9 +441,9 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717h"></script>
-  <script src="js/categories.js?v=20260717g"></script>
-  <script src="js/stats.js?v=20260717g"></script>
+  <script src="js/helpers.js?v=20260717i"></script>
+  <script src="js/categories.js?v=20260717h"></script>
+  <script src="js/stats.js?v=20260717h"></script>
   <script src="js/quiz.js?v=20260717h"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
