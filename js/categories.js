@@ -272,22 +272,43 @@ function getNormalizedSelectedCategory(selected) {
 /**
  * updateModeCounts() – Met à jour le menu "mode" en fonction des statistiques locales et Firebase
  */
-async function updateModeCounts() {
+async function updateModeCounts(filterFlags) {
+    // Par défaut (aucun argument passé), lire les cases marquées/importantes/avec notes
+    // actuellement cochées, pour que l'aperçu (menu Mode, "Objectif du jour") reste toujours
+    // cohérent avec ce que filtrerQuestions() livrera réellement au lancement du quiz.
+    if (filterFlags === undefined) {
+      filterFlags = (typeof _getCheckedFilterFlags === 'function') ? _getCheckedFilterFlags() : [];
+    }
     const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
     // For aggregate categories (EASA ALL, GLIGLI ALL, AUTRES, TOUTES), use all loaded questions
     // because chargerQuestions already loaded the right set with correct individual categories
     const isAggregate = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
     // Épreuve categories also contain mixed-category questions (refs resolved from thematic files)
     const isEpreuve = normalizedSel.includes('EPREUVE');
-    const list = (isAggregate || isEpreuve)
+    let list = (isAggregate || isEpreuve)
       ? questions
       : questions.filter(q => q.categorie === normalizedSel);
+
+    const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+
+    // Cases marquées/importantes/avec notes cochées : les compteurs (et donc l'aperçu
+    // "Objectif du jour"/menu Mode) doivent porter sur CE sous-ensemble, sinon l'aperçu
+    // promet un nombre de questions qui ne correspond pas à ce que filtrerQuestions() livrera.
+    if (Array.isArray(filterFlags) && filterFlags.length) {
+      list = list.filter(q => {
+        const key = getKeyFor(q);
+        const r = currentResponses[key];
+        if (filterFlags.includes('marquees') && r?.marked) return true;
+        if (filterFlags.includes('importantes') && r?.important) return true;
+        if (filterFlags.includes('avecnotes') && !!notesMap[key]) return true;
+        return false;
+      });
+    }
 
     let total=0, nbReussies=0, nbRatees=0, nbNonvues=0, nbMarquees=0, nbImportantes=0, nbDifficiles=0, nbRevisions=0, nbAvecNotes=0, nbSuspendues=0;
     // Compter les questions uniques (propres à l'épreuve, pas des références thématiques)
     const nbUniques = isEpreuve ? questions.filter(q => q.categorie === normalizedSel).length : 0;
     const now = Date.now();
-    const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
     list.forEach(q => {
       const key = getKeyFor(q);
       const r = currentResponses[key];
@@ -847,7 +868,36 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     currentQuestions = shuffledAll.filter(q => responses[getKeyFor(q)]?.suspended).slice(0, nb);
     return;
   }
-  const shuffled = shuffledAll.filter(q => !responses[getKeyFor(q)]?.suspended);
+  let shuffled = shuffledAll.filter(q => !responses[getKeyFor(q)]?.suspended);
+
+  // FILTRES marquées/importantes/avec notes (cases à cocher) : réduisent le VIVIER de départ
+  // à seulement les questions correspondant à au moins un critère coché, AVANT que le mode
+  // ci-dessus (Révisions du jour/Mixte/Objectif du jour/etc.) ne fasse sa sélection — sinon un
+  // mode qui plafonne son résultat (ex. Objectif du jour) pourrait piocher des questions non
+  // cochées dans son lot initial puis les perdre en filtrant après coup, livrant moins que promis.
+  if (Array.isArray(filterFlags) && filterFlags.length) {
+    let notesMapFlt = null;
+    if (filterFlags.includes('avecnotes')) {
+      if (uid) {
+        try {
+          const docNF = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+          notesMapFlt = docNF.exists ? (docNF.data().notes || {}) : {};
+        } catch (e) {
+          notesMapFlt = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
+        }
+      } else {
+        notesMapFlt = {};
+      }
+    }
+    shuffled = shuffled.filter(q => {
+      const r = responses[getKeyFor(q)];
+      if (filterFlags.includes('marquees') && r?.marked) return true;
+      if (filterFlags.includes('importantes') && r?.important) return true;
+      if (filterFlags.includes('avecnotes') && notesMapFlt && !!notesMapFlt[getKeyFor(q)]) return true;
+      return false;
+    });
+  }
+
   if (mode === "toutes") {
     currentQuestions = shuffled.slice(0, nb);
   }
@@ -982,33 +1032,6 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     currentQuestions = shuffled
       .filter(q => q.categorie === normalizedSel)
       .slice(0, nb);
-  }
-
-  // FILTRES marquées/importantes/avec notes (cases à cocher) : réduisent le résultat du mode
-  // ci-dessus à seulement les questions correspondant à au moins un critère coché — s'appliquent
-  // à TOUS les modes, y compris "Révisions du jour"/"Mixte", pour pouvoir ne réviser que ses
-  // questions marquées/importantes/notées parmi celles dues.
-  if (Array.isArray(filterFlags) && filterFlags.length && mode !== 'suspendues') {
-    let notesMapFlt = null;
-    if (filterFlags.includes('avecnotes')) {
-      if (uid) {
-        try {
-          const docNF = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-          notesMapFlt = docNF.exists ? (docNF.data().notes || {}) : {};
-        } catch (e) {
-          notesMapFlt = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
-        }
-      } else {
-        notesMapFlt = {};
-      }
-    }
-    currentQuestions = currentQuestions.filter(q => {
-      const r = responses[getKeyFor(q)];
-      if (filterFlags.includes('marquees') && r?.marked) return true;
-      if (filterFlags.includes('importantes') && r?.important) return true;
-      if (filterFlags.includes('avecnotes') && notesMapFlt && !!notesMapFlt[getKeyFor(q)]) return true;
-      return false;
-    });
   }
 
   // INJECTION : questions de la file de ré-interrogation (countdown === 0)
