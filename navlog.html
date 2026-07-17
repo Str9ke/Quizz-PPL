@@ -9171,16 +9171,19 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
     .then(function(r){return r.json();})
     .then(function(data){
       if(!data.results||!data.results.length) throw new Error('no results');
-      _applyTerrain(data.results.map(function(r){return Math.max(0,r.elevation||0);}));
+      /* open-elevation.com renvoie l'élévation en MÈTRES — le graphique (échelle Y, altitude
+         planifiée, AIRPORT_ELEV…) est entièrement en PIEDS : conversion indispensable, sinon
+         le relief affiché est ~3.28x trop bas (un sommet à 4200m s'affichait "4200 ft"). */
+      _applyTerrain(data.results.map(function(r){return Math.max(0,Math.round((r.elevation||0)*3.28084));}));
     })
     .catch(function(){
-      /* Essai 2 : opentopodata.org */
+      /* Essai 2 : opentopodata.org (dataset SRTM30m, également en MÈTRES) */
       var locsStr=locs.map(function(l){return l.latitude+','+l.longitude;}).join('|');
       fetch('https://api.opentopodata.org/v1/srtm30m?locations='+locsStr)
         .then(function(r){return r.json();})
         .then(function(data){
           if(!data.results||!data.results.length) throw new Error('no results');
-          _applyTerrain(data.results.map(function(r){return Math.max(0,(r&&r.elevation)||0);}));
+          _applyTerrain(data.results.map(function(r){return Math.max(0,Math.round(((r&&r.elevation)||0)*3.28084));}));
         })
         .catch(function(){
           _altTerrainFetching=false;
