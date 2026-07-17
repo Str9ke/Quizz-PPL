@@ -482,10 +482,27 @@ function syncCategorieFromObjectif() {
  * chaque paire), pour que cocher l'une coche l'autre et que le choix soit mémorisé une seule fois.
  */
 const _FILTER_CHECKBOX_PAIRS = [
-  { flag: 'marquees',    ids: ['filterMarqueesCheckbox', 'objFilterMarqueesCheckbox'] },
-  { flag: 'importantes', ids: ['filterImportantesCheckbox', 'objFilterImportantesCheckbox'] },
-  { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'] }
+  { flag: 'marquees',    ids: ['filterMarqueesCheckbox', 'objFilterMarqueesCheckbox'],    countIds: ['filterMarqueesCount', 'objFilterMarqueesCount'] },
+  { flag: 'importantes', ids: ['filterImportantesCheckbox', 'objFilterImportantesCheckbox'], countIds: ['filterImportantesCount', 'objFilterImportantesCount'] },
+  { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'],          countIds: ['filterNotesCount', 'objFilterNotesCount'] }
 ];
+
+/**
+ * _updateFilterCheckboxCounts(counts) – Affiche, à côté de chaque case marquées/importantes/
+ * avec notes, le nombre de questions concernées dans la catégorie actuellement sélectionnée
+ * (indépendamment des autres cases cochées — chaque compteur reste "tel quel", pas croisé).
+ * @param {{marquees:number, importantes:number, avecnotes:number}} counts
+ */
+function _updateFilterCheckboxCounts(counts) {
+  if (!counts) return;
+  _FILTER_CHECKBOX_PAIRS.forEach(({ flag, countIds }) => {
+    const n = counts[flag] || 0;
+    countIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = ` (${n})`;
+    });
+  });
+}
 
 /**
  * _getCheckedFilterFlags() – Lit les cases marquées/importantes/avec notes cochées (dans

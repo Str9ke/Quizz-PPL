@@ -291,6 +291,21 @@ async function updateModeCounts(filterFlags) {
 
     const notesMap = (typeof _notesCache === 'object' && _notesCache) ? _notesCache : {};
 
+    // Compteurs "bruts" par critère (indépendants les uns des autres, PAS croisés avec les
+    // cases cochées) pour afficher "(N)" à côté de chaque case marquées/importantes/avec notes.
+    if (typeof _updateFilterCheckboxCounts === 'function') {
+      let rawMarquees = 0, rawImportantes = 0, rawAvecNotes = 0;
+      list.forEach(q => {
+        const key = getKeyFor(q);
+        const r = currentResponses[key];
+        if (r && r.suspended) return;
+        if (r && r.marked) rawMarquees++;
+        if (r && r.important) rawImportantes++;
+        if (notesMap[key]) rawAvecNotes++;
+      });
+      _updateFilterCheckboxCounts({ marquees: rawMarquees, importantes: rawImportantes, avecnotes: rawAvecNotes });
+    }
+
     // Cases marquées/importantes/avec notes cochées : les compteurs (et donc l'aperçu
     // "Objectif du jour"/menu Mode) doivent porter sur CE sous-ensemble, sinon l'aperçu
     // promet un nombre de questions qui ne correspond pas à ce que filtrerQuestions() livrera.
@@ -345,7 +360,7 @@ async function updateModeCounts(filterFlags) {
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
       modeSelect.innerHTML = `
-        <option value="objectif">🚀 Objectif du jour (${nbRevisions} dues + ${dailyNewTarget} nouvelles)</option>
+        <option value="objectif">🚀 Répétition espacée (${nbRevisions} dues + ${dailyNewTarget} nouvelles)</option>
         <option value="mixte">🔀 Mixte : nouvelles + révisions dues (${Math.min(total, nbNonvues + nbRevisions)})</option>
         <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
         <option value="toutes">Toutes (${total})</option>
