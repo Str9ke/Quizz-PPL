@@ -1907,6 +1907,98 @@ async function _exportProgress() {
 }
 
 /**
+ * _compactQuizProgress() – Réduit la taille du document Firestore quizProgress/{uid} en
+ * plafonnant statusLog à 15 entrées par question (au lieu de jusqu'à 100 auparavant).
+ * Firestore refuse TOUTE écriture sur un document dépassant 1 Mio (1 048 576 octets), même une
+ * mise à jour minime sur une seule question — avec des milliers de questions répondues,
+ * statusLog (jusqu'à 100 entrées/question) peut à lui seul faire dépasser cette limite,
+ * bloquant alors TOUTES les sauvegardes sans qu'aucune ne réussisse plus jamais, sur aucune
+ * question, jusqu'à ce que le document soit dégonflé. Ne touche à AUCUNE statistique
+ * (failCount/successCount/marked/important/srInterval/nextReview intacts) — uniquement à
+ * l'historique détaillé au-delà des 15 réponses les plus récentes par question.
+ */
+async function _compactQuizProgress() {
+  const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+  const statusEl = document.getElementById('compactStatus');
+  const btn = document.getElementById('compactBtn');
+  if (!uid) { alert('Vous devez être connecté.'); return; }
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = '⏳ Lecture de tes données…';
+
+  try {
+    let doc;
+    try {
+      doc = await Promise.race([
+        db.collection('quizProgress').doc(uid).get({ source: 'server' }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout serveur')), 8000))
+      ]);
+    } catch (e) {
+      doc = await db.collection('quizProgress').doc(uid).get();
+    }
+    if (!doc.exists) { if (statusEl) statusEl.textContent = 'ℹ️ Aucune donnée à compacter.'; if (btn) btn.disabled = false; return; }
+
+    const data = doc.data();
+    const sizeBefore = new Blob([JSON.stringify(data)]).size;
+    const SAFETY_LIMIT = 900 * 1024; // vise nettement sous la limite dure de 1 Mio, avec marge pour de futures réponses
+    const responses = data.responses || {};
+
+    // Compactage par paliers de plus en plus agressifs : on s'arrête dès que la taille estimée
+    // repasse sous la marge de sécurité, pour perdre le MOINS d'historique détaillé possible.
+    function trimTo(cap) {
+      let trimmedCount = 0, entriesRemoved = 0;
+      Object.keys(responses).forEach(key => {
+        const r = responses[key];
+        if (r && Array.isArray(r.statusLog) && r.statusLog.length > cap) {
+          entriesRemoved += r.statusLog.length - cap;
+          r.statusLog = cap > 0 ? r.statusLog.slice(-cap) : undefined;
+          if (cap === 0) delete r.statusLog;
+          trimmedCount++;
+        }
+      });
+      return { trimmedCount, entriesRemoved };
+    }
+
+    let totalTrimmed = 0, totalEntriesRemoved = 0, currentSize = sizeBefore;
+    for (const cap of [15, 5, 0]) {
+      if (currentSize <= SAFETY_LIMIT) break;
+      const { trimmedCount, entriesRemoved } = trimTo(cap);
+      totalTrimmed += trimmedCount;
+      totalEntriesRemoved += entriesRemoved;
+      currentSize = new Blob([JSON.stringify(data)]).size;
+      if (statusEl) statusEl.textContent = `⏳ Palier ${cap === 0 ? 'historique retiré' : 'plafond ' + cap} — taille actuelle : ~${Math.round(currentSize / 1024)} Ko…`;
+    }
+
+    if (!totalTrimmed) {
+      const sizeKb = Math.round(sizeBefore / 1024);
+      if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (document actuel : ~${sizeKb} Ko, déjà sous la limite historique). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = `⏳ Compactage de ${totalTrimmed} question(s) (${totalEntriesRemoved} entrée(s) d'historique en trop retirée(s))…`;
+
+    // set() (pas update()) : on réécrit le document entier avec les statusLog déjà réduits,
+    // pour que la taille du document lui-même redescende sous la limite — un update() partiel
+    // sur une seule question n'aurait rien changé à la taille globale déjà trop grande.
+    await db.collection('quizProgress').doc(uid).set(data);
+
+    const sizeAfter = new Blob([JSON.stringify(data)]).size;
+    if (statusEl) {
+      statusEl.textContent = `✅ Compactage terminé : ${Math.round(sizeBefore / 1024)} Ko → ${Math.round(sizeAfter / 1024)} Ko `
+        + `(${totalTrimmed} question(s) allégée(s), aucune statistique perdue — réussites/échecs/planification intacts). Tes sauvegardes devraient de nouveau fonctionner.`;
+    }
+    // Recharger currentResponses en mémoire pour que le reste de la page reflète le compactage
+    if (typeof currentResponses !== 'undefined') currentResponses = normalizeResponses(responses);
+  } catch (e) {
+    console.error('[compactQuizProgress]', e);
+    if (statusEl) statusEl.textContent = '❌ Échec du compactage : ' + e.message + ' (détail en console F12).';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+window._compactQuizProgress = _compactQuizProgress;
+
+/**
  * _importProgress() – Importe la progression depuis un fichier JSON
  */
 function _importProgress() {
