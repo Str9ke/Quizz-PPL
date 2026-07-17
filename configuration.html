@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Configuration</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717j"></script>
+  <script src="js/categories.js?v=20260717h"></script>
+  <script src="js/stats.js?v=20260717j"></script>
+  <script src="js/quiz.js?v=20260717i"></script>
+  <script src="js/init.js?v=20260717b"></script>
+  <script src="js/offline.js?v=20260224i"></script>
+  <style>
+    .cfg-section { margin-bottom: 10px; }
+    .cfg-section-title { font-weight: 700; font-size: 1em; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+    .cfg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .cfg-row:last-child { border-bottom: none; }
+    .cfg-label { flex: 1; min-width: 200px; font-size: .88em; }
+    .cfg-hint { font-size: .76em; color: var(--text-secondary, #aaa); margin-top: 2px; }
+    .cfg-control { display: flex; align-items: center; gap: 8px; }
+    .cfg-reset-btn { background: none; border: 1px solid rgba(255,255,255,.15); color: var(--text-secondary, #aaa); border-radius: 6px; padding: 3px 8px; font-size: .72em; cursor: pointer; }
+    .cfg-reset-btn:hover { border-color: #667eea; color: #667eea; }
+  </style>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <div class="tts-container" id="ttsContainer" onclick="(function(e){if(e.target.id==='ttsVolume')return;document.getElementById('ttsContainer').classList.toggle('open')})(event)"><div class="tts-volume-track"><input type="range" id="ttsVolume" min="0" max="100" value="80" orient="vertical" oninput="(function(v){localStorage.setItem('ttsVolume',v);document.getElementById('ttsPct').textContent=v+'%'})(this.value)"><div class="tts-volume-pct" id="ttsPct">80%</div></div><button id="ttsToggle" onclick="(function(e){e.stopPropagation();var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})(event)" title="TTS désactivé">🔇</button></div>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}(function(){var v=localStorage.getItem('ttsVolume');if(v!==null){document.getElementById('ttsVolume').value=v;document.getElementById('ttsPct').textContent=v+'%';}})();
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">⚙️</div>
+    <h1 class="home-hero-title">Configuration</h1>
+    <div class="home-hero-subtitle">Tous les réglages du site, à un seul endroit</div>
+  </div>
+
+  <!-- Top navigation -->
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
+    <a href="radial.html" class="top-nav-link">📡 Radial</a>
+    <a href="fiches.html" class="top-nav-link">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
+    <a href="configuration.html" class="top-nav-link top-nav-current">⚙️ Configuration</a>
+  </div>
+
+  <p style="font-size:.8em;color:var(--text-secondary);text-align:center;margin:0 0 14px">
+    Ces réglages sont propres à cet appareil/navigateur (stockés en local, pas synchronisés entre appareils).
+    Chaque réglage a une valeur par défaut indiquée entre parenthèses.
+  </p>
+
+  <!-- Apparence -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🎨 Apparence</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Thème<div class="cfg-hint">Par défaut : Sombre</div></div>
+      <div class="cfg-control">
+        <select id="cfgTheme" class="home-select" onchange="_cfgSetTheme(this.value)">
+          <option value="dark">🌙 Sombre</option>
+          <option value="light">☀️ Clair</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voix / lecture vocale -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🔊 Lecture vocale (TTS)</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Activer la lecture vocale<div class="cfg-hint">Par défaut : désactivée</div></div>
+      <div class="cfg-control">
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="cfgTtsEnabled" onchange="_cfgSetTtsEnabled(this.checked)"><span></span></label>
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Volume<div class="cfg-hint">Par défaut : 80%</div></div>
+      <div class="cfg-control">
+        <input type="range" id="cfgTtsVolume" min="0" max="100" style="width:140px" oninput="_cfgSetTtsVolume(this.value)">
+        <span id="cfgTtsVolumeVal" style="font-size:.82em;min-width:34px">80%</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="flex-direction:column;align-items:stretch">
+      <div class="cfg-label">Voix préférée<div class="cfg-hint">Par défaut : première voix française du système</div></div>
+      <div class="cfg-control" style="width:100%">
+        <select id="cfgTtsVoice" class="home-select" style="flex:1"></select>
+        <button type="button" class="stats-btn" onclick="_cfgTestVoice()" style="padding:6px 12px">▶ Tester</button>
+      </div>
+      <div id="cfgTtsVoiceInfo" class="cfg-hint"></div>
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🎯 Quiz</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Démarrage automatique depuis l'accueil<div class="cfg-hint">Par défaut : désactivé</div></div>
+      <div class="cfg-control">
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="cfgAutoStart" onchange="_cfgSetAutoStart(this.checked)"><span></span></label>
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Correction immédiate par défaut<div class="cfg-hint">Par défaut : désactivée (correction en fin de session)</div></div>
+      <div class="cfg-control">
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="cfgCorrImm" onchange="_cfgSetCorrImm(this.checked)"><span></span></label>
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Questions affichées par page<div class="cfg-hint">Par défaut : 5</div></div>
+      <div class="cfg-control">
+        <input type="number" id="cfgBatchSize" class="home-input" style="width:70px" min="1" max="50" onchange="_cfgSetBatchSize(this.value)">
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Nouvelles questions par jour (objectif)<div class="cfg-hint">Par défaut : 15</div></div>
+      <div class="cfg-control">
+        <input type="number" id="cfgDailyNew" class="home-input" style="width:70px" min="0" onchange="_cfgSetDailyNew(this.value)">
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Objectif quotidien affiché (série 🔥)<div class="cfg-hint">Par défaut : automatique (moyenne des 7 derniers jours, min. 10)</div></div>
+      <div class="cfg-control">
+        <input type="number" id="cfgDailyGoal" class="home-input" style="width:70px" min="0" placeholder="auto" onchange="_cfgSetDailyGoal(this.value)">
+        <button type="button" class="cfg-reset-btn" onclick="_cfgResetDailyGoal()">↩ auto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres mémorisés -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🔖 Filtres mémorisés (accueil / répétition espacée)</div>
+    <p class="cfg-hint" style="margin:0 0 6px">État actuel des cases de filtre (marquées, importantes, notées…) — cochées ici = elles le seront aussi à l'accueil.</p>
+    <div id="cfgFiltersList"></div>
+    <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:8px">
+      <button type="button" class="cfg-reset-btn" onclick="_cfgResetFilters()">↩ Tout décocher</button>
+    </div>
+  </div>
+
+  <!-- Navlog -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🗺️ Briefing / Navlog</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Avion par défaut<div class="cfg-hint">Par défaut : Cessna F-150M — OO-MQA</div></div>
+      <div class="cfg-control">
+        <select id="cfgAircraft" class="home-select" onchange="_cfgSetAircraft(this.value)">
+          <option value="OO-MQA">Cessna F-150M — OO-MQA</option>
+          <option value="OO-FCE">Cessna F-172M — OO-FCE</option>
+        </select>
+      </div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-label">Email pour l'envoi des notes/fiches<div class="cfg-hint">Par défaut : vide</div></div>
+      <div class="cfg-control">
+        <input type="email" id="cfgNotesEmail" class="home-input" style="width:220px" placeholder="votre@email.com" onchange="_cfgSetNotesEmail(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Confidentialité -->
+  <div class="home-card cfg-section" id="cfgPrivacySection" style="display:none">
+    <div class="cfg-section-title">🔒 Confidentialité</div>
+    <div class="cfg-row">
+      <div class="cfg-label">Jeton GitHub enregistré (pour déclencher l'actualisation météo depuis le site)<div class="cfg-hint">Jamais affiché ici, uniquement effaçable</div></div>
+      <div class="cfg-control">
+        <button type="button" class="cfg-reset-btn" onclick="_cfgClearGithubPat()">🗑️ Effacer le jeton enregistré</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset global -->
+  <div class="home-card cfg-section" style="text-align:center">
+    <button type="button" class="stats-btn stats-btn-reset" onclick="_cfgResetAll()">
+      🔄 Réinitialiser TOUS ces réglages aux valeurs par défaut
+    </button>
+    <p class="cfg-hint" style="margin-top:8px">Ne touche jamais à ta progression, tes stats ou tes réponses — uniquement à ces préférences.</p>
+  </div>
+
+  <!-- Navigation -->
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
+      <div class="home-nav-icon">📖</div>
+      <div class="home-nav-label">Révision</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // Page Configuration — hub central de TOUS les réglages du site (localStorage).
+  // Chaque contrôle lit/écrit EXACTEMENT la même clé localStorage que le contrôle
+  // d'origine ailleurs dans l'app (accueil, navlog…) pour ne jamais diverger — c'est
+  // un miroir, pas une 2e source de vérité. En ajoutant un nouveau réglage ailleurs
+  // dans le site, penser à l'ajouter aussi ici (une section par thème ci-dessus).
+  // ============================================================
+  (function() {
+    let uid = null;
+
+    // === Apparence ===
+    function _loadTheme() {
+      const el = document.getElementById('cfgTheme');
+      el.value = (localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+    }
+    window._cfgSetTheme = function(val) {
+      localStorage.setItem('theme', val);
+      document.body.classList.toggle('light', val === 'light');
+      const btn = document.getElementById('themeToggle');
+      if (btn) btn.textContent = val === 'light' ? '🌙' : '☀️';
+    };
+
+    // === TTS ===
+    function _loadTts() {
+      document.getElementById('cfgTtsEnabled').checked = localStorage.getItem('ttsEnabled') === '1';
+      const vol = parseInt(localStorage.getItem('ttsVolume')) || 80;
+      document.getElementById('cfgTtsVolume').value = vol;
+      document.getElementById('cfgTtsVolumeVal').textContent = vol + '%';
+    }
+    window._cfgSetTtsEnabled = function(checked) {
+      localStorage.setItem('ttsEnabled', checked ? '1' : '0');
+      const btn = document.getElementById('ttsToggle');
+      if (btn) { btn.textContent = checked ? '🔊' : '🔇'; btn.title = checked ? 'TTS activé' : 'TTS désactivé'; }
+    };
+    window._cfgSetTtsVolume = function(val) {
+      localStorage.setItem('ttsVolume', val);
+      document.getElementById('cfgTtsVolumeVal').textContent = val + '%';
+      const floatVol = document.getElementById('ttsVolume');
+      const floatPct = document.getElementById('ttsPct');
+      if (floatVol) floatVol.value = val;
+      if (floatPct) floatPct.textContent = val + '%';
+    };
+
+    // Sélecteur de voix — même logique que la carte "Voix TTS" de l'accueil (index.html),
+    // dupliquée ici volontairement (page autonome, pas de module partagé dans ce projet).
+    const femaleNames = ['denise','amelie','amélie','aurelie','aurélie','caroline','virginie','marie',
+      'hortense','eloise','éloïse','sylvie','céline','celine','lea','léa','nathalie','julie',
+      'sophie','isabelle','alice','lucienne','brigitte','aria','jenny','clara','coralie',
+      'josephine','joséphine','vivienne','yvette','charline','renée','renee','salli','kendra',
+      'joanna','ivy','kimberly','ruth','emma','olivia','anna'];
+    const maleNames = ['paul','thomas','henri','nicolas','pierre','mathieu','guillaume','patrick',
+      'raphael','raphaël','alain','jean','luc','jacques','françois','francois','claude',
+      'vivien','fabrice','yves','joey','matthew','justin','kevin','stephen','brian','gregory'];
+    function genderIcon(name) {
+      const n = name.toLowerCase();
+      for (const f of femaleNames) if (n.indexOf(f) >= 0) return ' ♀';
+      for (const m of maleNames) if (n.indexOf(m) >= 0) return ' ♂';
+      return '';
+    }
+    function qualityBadge(name) {
+      const n = name.toLowerCase();
+      if (n.indexOf('natural') >= 0 || n.indexOf('neural') >= 0) return ' ✨HD';
+      if (n.indexOf('online') >= 0) return ' ☁️';
+      return '';
+    }
+    function _populateVoices() {
+      const select = document.getElementById('cfgTtsVoice');
+      if (!select) return;
+      if (!('speechSynthesis' in window)) { select.innerHTML = '<option>TTS non supporté</option>'; return; }
+      let voices = speechSynthesis.getVoices();
+      let frVoices = voices.filter(v => v.lang && v.lang.match(/^fr/i));
+      if (frVoices.length === 0 && voices.length === 0) return;
+      if (frVoices.length === 0) frVoices = voices;
+      const saved = localStorage.getItem('ttsPreferredVoiceName') || '';
+      select.innerHTML = '';
+      const defOpt = document.createElement('option');
+      defOpt.value = ''; defOpt.textContent = '🔄 Voix par défaut du système';
+      select.appendChild(defOpt);
+      frVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        let label = v.name + genderIcon(v.name) + qualityBadge(v.name);
+        if (v.localService) label += ' 📱';
+        opt.textContent = label;
+        if (v.name === saved) opt.selected = true;
+        select.appendChild(opt);
+      });
+      _updateVoiceInfo();
+    }
+    function _updateVoiceInfo() {
+      const select = document.getElementById('cfgTtsVoice');
+      const infoDiv = document.getElementById('cfgTtsVoiceInfo');
+      if (!select || !infoDiv || !('speechSynthesis' in window)) return;
+      const selectedName = select.value;
+      if (!selectedName) { infoDiv.textContent = 'La première voix française disponible sera utilisée.'; return; }
+      const voice = speechSynthesis.getVoices().find(v => v.name === selectedName);
+      if (voice) {
+        let info = voice.lang;
+        info += voice.localService ? ' · Locale (hors-ligne)' : ' · En ligne';
+        if (voice.default) info += ' · Par défaut';
+        infoDiv.textContent = info;
+      }
+    }
+    window._cfgTestVoice = function() {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const select = document.getElementById('cfgTtsVoice');
+      const utterance = new SpeechSynthesisUtterance('Ceci est un test de la voix sélectionnée pour le quiz aviation.');
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
+      const voices = speechSynthesis.getVoices();
+      const voice = select.value ? voices.find(v => v.name === select.value) : voices.find(v => v.lang && v.lang.match(/^fr/i));
+      if (voice) utterance.voice = voice;
+      speechSynthesis.speak(utterance);
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      const select = document.getElementById('cfgTtsVoice');
+      if (select) select.addEventListener('change', () => {
+        localStorage.setItem('ttsPreferredVoiceName', select.value);
+        _updateVoiceInfo();
+      });
+    });
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+      if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = _populateVoices;
+    }
+
+    // === Quiz ===
+    function _loadQuiz() {
+      document.getElementById('cfgAutoStart').checked = localStorage.getItem('autoStartQuiz') === 'true';
+      document.getElementById('cfgCorrImm').checked = localStorage.getItem('correctionImmediate') === '1';
+      document.getElementById('cfgBatchSize').value = parseInt(localStorage.getItem('quizBatchSize')) || 5;
+      document.getElementById('cfgDailyNew').value = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
+      const goalOverride = parseInt(localStorage.getItem('dailyGoalOverride'));
+      document.getElementById('cfgDailyGoal').value = (goalOverride > 0) ? goalOverride : '';
+    }
+    window._cfgSetAutoStart = checked => localStorage.setItem('autoStartQuiz', checked ? 'true' : 'false');
+    window._cfgSetCorrImm = checked => localStorage.setItem('correctionImmediate', checked ? '1' : '0');
+    window._cfgSetBatchSize = val => { const v = Math.max(1, parseInt(val) || 5); document.getElementById('cfgBatchSize').value = v; localStorage.setItem('quizBatchSize', v); };
+    window._cfgSetDailyNew = val => { const v = Math.max(0, parseInt(val) || 0); document.getElementById('cfgDailyNew').value = v; localStorage.setItem('dailyNewTarget', v); };
+    window._cfgSetDailyGoal = val => {
+      const v = parseInt(val);
+      if (v > 0) localStorage.setItem('dailyGoalOverride', v);
+      else localStorage.removeItem('dailyGoalOverride');
+    };
+    window._cfgResetDailyGoal = () => { localStorage.removeItem('dailyGoalOverride'); document.getElementById('cfgDailyGoal').value = ''; };
+
+    // === Filtres mémorisés ===
+    function _loadFilters() {
+      const list = document.getElementById('cfgFiltersList');
+      if (!list || typeof _FILTER_CHECKBOX_PAIRS === 'undefined') return;
+      const flagLabels = {
+        marquees: '🔖 Marquées', importantes: '⭐ Importantes', avecnotes: '📝 Notées',
+        aucune: '▫️ Aucune caractéristique', avecexplication: '💬 Avec commentaire officiel',
+        plusratees: '🔥 Plus ratées d\'abord'
+      };
+      list.innerHTML = _FILTER_CHECKBOX_PAIRS.map(({ flag, ids }) => {
+        const checked = localStorage.getItem(ids[0]) === '1';
+        return `<div class="cfg-row">
+          <div class="cfg-label">${flagLabels[flag] || flag}</div>
+          <div class="cfg-control">
+            <label class="home-checkbox-label" style="margin:0">
+              <input type="checkbox" data-flag-primary-id="${ids[0]}" ${checked ? 'checked' : ''} onchange="_cfgSetFilter('${ids[0]}', this.checked)">
+              <span></span>
+            </label>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    window._cfgSetFilter = (primaryId, checked) => localStorage.setItem(primaryId, checked ? '1' : '0');
+    window._cfgResetFilters = function() {
+      if (typeof _FILTER_CHECKBOX_PAIRS === 'undefined') return;
+      _FILTER_CHECKBOX_PAIRS.forEach(({ ids }) => localStorage.setItem(ids[0], '0'));
+      _loadFilters();
+    };
+
+    // === Navlog ===
+    function _loadNavlog() {
+      document.getElementById('cfgAircraft').value = localStorage.getItem('perfAircraft') === 'OO-FCE' ? 'OO-FCE' : 'OO-MQA';
+      document.getElementById('cfgNotesEmail').value = localStorage.getItem('notesEmail') || '';
+    }
+    window._cfgSetAircraft = val => localStorage.setItem('perfAircraft', val);
+    window._cfgSetNotesEmail = val => localStorage.setItem('notesEmail', (val || '').trim());
+
+    // === Confidentialité ===
+    function _loadPrivacy() {
+      const section = document.getElementById('cfgPrivacySection');
+      if (section) section.style.display = localStorage.getItem('github_pat') ? 'block' : 'none';
+    }
+    window._cfgClearGithubPat = function() {
+      if (!confirm('Effacer le jeton GitHub enregistré sur cet appareil ?')) return;
+      localStorage.removeItem('github_pat');
+      _loadPrivacy();
+    };
+
+    // === Reset global (réglages uniquement, jamais la progression) ===
+    window._cfgResetAll = function() {
+      if (!confirm('Réinitialiser TOUS les réglages de cette page à leurs valeurs par défaut ?\n\nTa progression, tes statistiques et tes réponses ne sont pas concernées.')) return;
+      const keysToReset = ['theme', 'ttsEnabled', 'ttsVolume', 'ttsPreferredVoiceName',
+        'autoStartQuiz', 'correctionImmediate', 'quizBatchSize', 'dailyNewTarget', 'dailyGoalOverride',
+        'perfAircraft', 'notesEmail'];
+      keysToReset.forEach(k => localStorage.removeItem(k));
+      if (typeof _FILTER_CHECKBOX_PAIRS !== 'undefined') {
+        _FILTER_CHECKBOX_PAIRS.forEach(({ ids }) => localStorage.removeItem(ids[0]));
+      }
+      window.location.reload();
+    };
+
+    // === Auth (ces réglages sont locaux, mais la page suit la même convention d'accès que le reste du site) ===
+    let initDone = false;
+    function doInit() {
+      if (initDone) return;
+      initDone = true;
+      _loadTheme();
+      _loadTts();
+      _populateVoices();
+      _loadQuiz();
+      _loadFilters();
+      _loadNavlog();
+      _loadPrivacy();
+    }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }
+      else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      if (!initDone && localStorage.getItem('cachedUid')) doInit();
+    }, 2500);
+  })();
+  </script>
+</body>
+</html>
