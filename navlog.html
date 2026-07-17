@@ -8442,6 +8442,7 @@ function renderAltitudesProfile(){
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonnées.</p>';return;}
 
+  _invalidateTerrainCacheIfStale();
   _recomputeAirspacesIfStale();
   var traj=_altitudesTrajectory();
   var totalDist=traj.totalDist, wpAlts=traj.wpAlts, cumDists=traj.cumDists;
@@ -8857,6 +8858,8 @@ function renderAltProfile(){
   var hasC=0;for(var i=0;i<waypoints.length;i++) if(waypoints[i].lat!==null&&waypoints[i].lon!==null) hasC++;
   if(hasC<2){container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonn\u00e9es pour afficher le profil.</p>';return;}
 
+  _invalidateTerrainCacheIfStale();
+
   /* Élévations dep/arr : AIRPORT_ELEV en priorité, sinon terrain cache */
   function _wpElev(wpIdx,distAtWp){
     var icao=(waypoints[wpIdx].name||'').trim().toUpperCase();
@@ -9073,7 +9076,24 @@ function renderAltProfile(){
 }
 
 var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
+var _altTerrainRouteSig=null; /* signature de route (_currentRouteSig) pour laquelle _altTerrainCache est valide */
 var _altTerrainFetching=false; /* évite un double appel réseau si les deux graphiques (Navlog + Altitudes) le déclenchent au même moment */
+var _altTerrainFetchSig=null; /* signature de route au moment où le fetch en cours a démarré */
+
+/* BUG CRITIQUE corrigé : _altTerrainCache n'était invalidé QUE lors du chargement d'un vol
+   sauvegardé — modifier la route en place (changer la destination, glisser un waypoint,
+   taper un nouvel aérodrome…) ne le vidait JAMAIS. Résultat : le profil de terrain affiché
+   restait celui de l'ANCIENNE route (ex: un vol dans les Alpes) même après avoir complètement
+   changé de destination (ex: vers les Ardennes) — deux routes totalement différentes montraient
+   exactement le même relief. On revalide maintenant via la signature de route à chaque rendu. */
+function _invalidateTerrainCacheIfStale(){
+  var sig=_currentRouteSig();
+  if(_altTerrainCache && _altTerrainRouteSig!==sig){
+    _altTerrainCache=null;
+    _altTerrainRouteSig=null;
+  }
+  return sig;
+}
 
 /* Les API d'élévation gratuites (open-elevation.com/opentopodata.org) ont parfois des
    "trous" de données isolés (voids SRTM) qui renvoient 0 ou une valeur aberrante sur UN
@@ -9099,6 +9119,7 @@ function _smoothTerrainOutliers(elevs){
 function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
   if(_altTerrainFetching) return;
   _altTerrainFetching=true;
+  _altTerrainFetchSig=_currentRouteSig();
   var segs=[];
   for(var i=1;i<waypoints.length;i++){
     if(waypoints[i-1].lat!==null&&waypoints[i-1].lon!==null&&waypoints[i].lat!==null&&waypoints[i].lon!==null)
@@ -9124,9 +9145,18 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
   if(layer) layer.innerHTML='<text x="'+(ml+cw2/2)+'" y="'+(mt+ch2/2)+'" text-anchor="middle" font-size="9" fill="rgba(150,100,40,.6)">Chargement terrain…</text>';
 
   /* Essai 1 : open-elevation.com (POST JSON) */
+  var _fetchStartSig=_altTerrainFetchSig;
   var _applyTerrain=function(elevs){
     _altTerrainFetching=false;
+    if(_fetchStartSig!==_currentRouteSig()){
+      /* La route a changé pendant le téléchargement (waypoint modifié/ajouté/déplacé) :
+         ce résultat ne correspond plus à la route actuelle, on l'ignore et on relance
+         pour la route actuelle plutôt que d'afficher un relief qui ne correspond à rien. */
+      renderAltProfile();
+      return;
+    }
     _altTerrainCache=_smoothTerrainOutliers(elevs);
+    _altTerrainRouteSig=_fetchStartSig;
     renderAltProfile();
     /* Le graphique de l'onglet Altitudes réutilise le même cache terrain —
        le rafraîchir aussi s'il existe (tab ouverte ou pas, ça ne coûte rien) */
