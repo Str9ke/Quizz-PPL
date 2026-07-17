@@ -969,15 +969,49 @@ function _persistImmediateEntry(key, entry) {
   _flushImmPersist();
 }
 
+/**
+ * _showSaveStatus() – Petit indicateur visuel discret, en bas de l'écran, confirmant (ou pas)
+ * que la réponse a bien été écrite sur le serveur. AVANT ce fix, saveResponsesWithOfflineFallback
+ * avalait silencieusement toute erreur d'écriture (voir js/offline.js) — la réponse semblait
+ * "prise en compte" côté UI (couleur verte/rouge appliquée localement) sans AUCUN indice que
+ * l'écriture réelle avait échoué, jusqu'à ce que la question réapparaisse "à revoir" des jours
+ * plus tard sans explication possible. Utile aussi pour diagnostiquer un vrai souci réseau/règles
+ * Firestore côté utilisateur, puisqu'un message d'erreur concret s'affiche directement.
+ */
+function _showSaveStatus(ok, msg) {
+  let el = document.getElementById('srSaveStatus');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'srSaveStatus';
+    el.style.cssText = 'position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:10000;'
+      + 'padding:7px 16px;border-radius:20px;font-size:.82em;font-weight:600;color:#fff;'
+      + 'box-shadow:0 2px 10px rgba(0,0,0,.35);transition:opacity .25s;pointer-events:none;'
+      + 'max-width:92vw;text-align:center;opacity:0';
+    document.body.appendChild(el);
+  }
+  el.style.background = ok ? 'rgba(46,125,50,.95)' : 'rgba(198,40,40,.95)';
+  el.textContent = ok ? '✅ Réponse enregistrée' : ('❌ Échec de sauvegarde : ' + (msg || 'erreur inconnue'));
+  el.style.opacity = '1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, ok ? 1300 : 7000);
+}
+
 /** _flushImmPersist() – Envoie toutes les entrées en attente à Firestore sans attendre. */
 function _flushImmPersist() {
   const batch = _immPersistPending;
   _immPersistPending = {};
   if (Object.keys(batch).length === 0) return;
   const uid = (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
-  if (!uid || typeof saveResponsesWithOfflineFallback !== 'function') return;
+  if (!uid || typeof saveResponsesWithOfflineFallback !== 'function') {
+    _showSaveStatus(false, uid ? 'fonction de sauvegarde indisponible' : 'utilisateur non identifié');
+    return;
+  }
   saveResponsesWithOfflineFallback(uid, batch)
-    .catch(e => console.warn('[SR incrémental] échec sauvegarde:', e));
+    .then(() => _showSaveStatus(true))
+    .catch(e => {
+      console.warn('[SR incrémental] échec sauvegarde:', e);
+      _showSaveStatus(false, e && e.message ? e.message : String(e));
+    });
 }
 // Filet de sécurité : si un appel venait à être remis en file d'attente sans flush immédiat
 // (ex. futur appelant groupé), s'assurer que rien ne reste bloqué à la fermeture de la page.
@@ -1346,6 +1380,17 @@ async function validerReponses() {
         await saveSessionResultOffline(uid, correctCount, answeredCount, selectedCategory, sessionDate);
     } catch (e) {
         console.error("Erreur sauvegarde validerReponses:", e);
+        // AVANT : cette erreur était juste logguée en console — la session semblait validée
+        // avec succès (le message "Terminé !" restait affiché tel quel) alors que rien
+        // n'avait réellement atteint le serveur, et les questions revenaient "à revoir" à la
+        // session suivante sans que l'utilisateur ait le moindre indice de ce qui s'est passé.
+        const rcErr = document.getElementById('resultContainer');
+        if (rcErr) {
+          const warnDiv = document.createElement('div');
+          warnDiv.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:6px;background:rgba(198,40,40,.15);border:1px solid rgba(198,40,40,.4);color:#ffb4b4;font-size:.85em;font-weight:600';
+          warnDiv.textContent = '⚠️ Échec de l\'enregistrement (' + (e && e.message ? e.message : 'erreur inconnue') + ') — tes réponses n\'ont PAS été sauvegardées sur le serveur. Réessaie avec une meilleure connexion avant de quitter la page.';
+          rcErr.appendChild(warnDiv);
+        }
     }
     updateModeCounts();
     afficherBoutonsMarquer();
