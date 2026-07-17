@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Examen blanc</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20260717d"></script>
+  <script src="js/helpers.js?v=20260717k"></script>
+  <script src="js/categories.js?v=20260717h"></script>
+  <script src="js/stats.js?v=20260717k"></script>
+  <script src="js/quiz.js?v=20260717i"></script>
+  <script src="js/init.js?v=20260717b"></script>
+  <script src="js/offline.js?v=20260224i"></script>
+  <style>
+    .ex-card{max-width:700px;margin:14px auto}
+    .ex-config-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .ex-config-row:last-child{border-bottom:none}
+    .ex-config-label{flex:1;min-width:200px;font-size:.88em}
+    .ex-subject-progress{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+    .ex-subject-chip{padding:4px 10px;border-radius:20px;font-size:.75em;font-weight:700;border:1px solid rgba(255,255,255,.15);color:var(--text-secondary)}
+    .ex-subject-chip.active{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.12)}
+    .ex-subject-chip.done-pass{border-color:#4caf50;color:#4caf50;background:rgba(76,175,80,.1)}
+    .ex-subject-chip.done-fail{border-color:#f44336;color:#f44336;background:rgba(244,67,54,.1)}
+    #exTimer{font-size:1.3em;font-weight:800;padding:6px 14px;border-radius:10px;background:rgba(102,126,234,.12);color:#667eea}
+    #exTimer.ex-timer-warn{background:rgba(244,67,54,.15);color:#f44336}
+    .ex-result-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.9em}
+    .ex-result-badge{flex:0 0 70px;text-align:center;font-weight:800;padding:3px 0;border-radius:8px}
+  </style>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">📝</div>
+    <h1 class="home-hero-title">Examen blanc</h1>
+    <div class="home-hero-subtitle">Simule le format réel de l'examen théorique PPL(A)</div>
+  </div>
+
+  <!-- Top navigation -->
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="navlog.html" class="top-nav-link">🗺️ Briefing</a>
+    <a href="radial.html" class="top-nav-link">📡 Radial</a>
+    <a href="fiches.html" class="top-nav-link">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
+    <a href="configuration.html" class="top-nav-link">⚙️ Configuration</a>
+    <a href="epreuve.html" class="top-nav-link top-nav-current">📝 Examen blanc</a>
+  </div>
+
+  <!-- ===== SETUP ===== -->
+  <div class="home-card ex-card" id="exSetupCard">
+    <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">
+      Simule le format de l'examen réel : les <strong>9 matières officielles</strong> sont
+      évaluées <strong>séparément</strong> (comme à l'examen — une matière sous le seuil fait
+      échouer cette matière, même si les autres sont réussies), avec un temps limité par
+      matière. <strong>Cet examen blanc n'affecte pas ta progression normale ni la répétition
+      espacée</strong> (aucune réponse n'est enregistrée dans tes statistiques habituelles).
+    </p>
+    <p style="font-size:.78em;color:#ff9800;margin:0 0 12px">
+      ⚠️ Le nombre de questions/temps/seuil ci-dessous sont des valeurs <strong>indicatives</strong>
+      — ajuste-les si tu connais les valeurs exactes en vigueur pour ton examen (BCAA/EASA),
+      elles n'ont pas pu être garanties ici.
+    </p>
+
+    <div class="ex-config-row">
+      <div class="ex-config-label">Portée</div>
+      <div>
+        <select id="exScope" class="home-select" onchange="_exOnScopeChange()">
+          <option value="full">Examen complet (9 matières)</option>
+          <option value="single">Une seule matière</option>
+        </select>
+      </div>
+    </div>
+    <div class="ex-config-row" id="exSingleSubjectRow" style="display:none">
+      <div class="ex-config-label">Matière</div>
+      <div><select id="exSingleSubject" class="home-select"></select></div>
+    </div>
+    <div class="ex-config-row">
+      <div class="ex-config-label">Questions par matière</div>
+      <div><input type="number" id="exQPerSubject" class="home-input" style="width:70px" min="4" max="60" value="16"></div>
+    </div>
+    <div class="ex-config-row">
+      <div class="ex-config-label">Minutes par matière</div>
+      <div><input type="number" id="exMinutes" class="home-input" style="width:70px" min="1" max="120" value="30"></div>
+    </div>
+    <div class="ex-config-row">
+      <div class="ex-config-label">Seuil de réussite (%)</div>
+      <div><input type="number" id="exThreshold" class="home-input" style="width:70px" min="1" max="100" value="75"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:14px">
+      <button class="home-btn-start" id="exStartBtn" onclick="_exStart()">🚀 Démarrer l'examen</button>
+    </div>
+    <div id="exSetupStatus" style="font-size:.82em;color:var(--text-secondary);margin-top:8px;text-align:center"></div>
+  </div>
+
+  <!-- ===== EXAM IN PROGRESS ===== -->
+  <div class="home-card ex-card" id="exExamCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <div>
+        <div style="font-weight:700" id="exCurrentSubjectName"></div>
+        <div style="font-size:.78em;color:var(--text-secondary)" id="exCurrentSubjectSub"></div>
+      </div>
+      <span id="exTimer">--:--</span>
+    </div>
+    <div class="ex-subject-progress" id="exSubjectChips"></div>
+    <div id="exQuestionsContainer"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button class="home-btn-start" onclick="_exSubmitSubject(false)">✅ Terminer cette matière</button>
+    </div>
+  </div>
+
+  <!-- ===== RESULTS ===== -->
+  <div class="home-card ex-card" id="exResultsCard" style="display:none">
+    <div class="home-card-header">
+      <span class="home-card-icon">🏁</span>
+      <span class="home-card-title">Résultat de l'examen blanc</span>
+    </div>
+    <div id="exResultsOverall" style="text-align:center;font-size:1.2em;font-weight:800;margin:10px 0"></div>
+    <div id="exResultsList"></div>
+    <div style="text-align:center;margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="stats-btn" onclick="_exRestart()" style="background:#667eea;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">🔄 Recommencer</button>
+      <button class="stats-btn" onclick="window.location='stats.html'" style="background:#4caf50;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">📊 Retour aux stats</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card home-nav-rates" onclick="window.location='rates.html'">
+      <div class="home-nav-icon">📖</div>
+      <div class="home-nav-label">Révision</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // Page "Examen blanc" — simule le FORMAT de l'examen théorique PPL(A) : les 9 matières
+  // officielles (EASA_SUBJECTS, définies dans helpers.js) évaluées séparément, chacune
+  // timée, avec un seuil de réussite par matière (pas juste une moyenne globale).
+  // Volontairement ISOLÉE de currentResponses/Firestore : aucune réponse donnée ici
+  // n'affecte la progression normale ni la répétition espacée (conditions d'examen, pas
+  // d'entraînement — mélanger les deux fausserait le calibrage de la répétition espacée).
+  // ============================================================
+  (function() {
+    let uid = null;
+    let state = null; // construit par _exStart()
+    let timerInterval = null;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // === Setup ===
+    function _populateSubjectSelect() {
+      const sel = document.getElementById('exSingleSubject');
+      if (!sel || typeof EASA_SUBJECTS === 'undefined') return;
+      sel.innerHTML = EASA_SUBJECTS.map((s, i) => `<option value="${i}">${escapeHtml(s.name)}</option>`).join('');
+    }
+    window._exOnScopeChange = function() {
+      const isSingle = document.getElementById('exScope').value === 'single';
+      document.getElementById('exSingleSubjectRow').style.display = isSingle ? 'flex' : 'none';
+    };
+
+    async function _loadSubjectPool(subject) {
+      const seen = new Set();
+      const pool = [];
+      for (const catVal of subject.categories) {
+        try {
+          await chargerQuestions(catVal);
+          questions.forEach(q => {
+            const key = getKeyFor(q);
+            if (!seen.has(key)) { seen.add(key); pool.push(q); }
+          });
+        } catch (e) { /* catégorie absente/erreur de chargement — on continue avec le reste */ }
+      }
+      return pool;
+    }
+
+    function _pickRandom(pool, n) {
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, Math.min(n, shuffled.length));
+    }
+
+    window._exStart = async function() {
+      const scope = document.getElementById('exScope').value;
+      const qPerSubject = Math.max(1, parseInt(document.getElementById('exQPerSubject').value) || 16);
+      const minutes = Math.max(1, parseInt(document.getElementById('exMinutes').value) || 30);
+      const threshold = Math.max(1, Math.min(100, parseInt(document.getElementById('exThreshold').value) || 75));
+
+      const statusEl = document.getElementById('exSetupStatus');
+      const btn = document.getElementById('exStartBtn');
+      btn.disabled = true;
+      statusEl.textContent = '⏳ Préparation des questions…';
+
+      const subjectDefs = (scope === 'single')
+        ? [EASA_SUBJECTS[parseInt(document.getElementById('exSingleSubject').value)]]
+        : EASA_SUBJECTS;
+
+      const subjects = [];
+      for (const subj of subjectDefs) {
+        const pool = await _loadSubjectPool(subj);
+        const selected = _pickRandom(pool, qPerSubject);
+        subjects.push({
+          name: subj.name,
+          poolSize: pool.length,
+          questions: selected,
+          answers: {},
+          result: null
+        });
+      }
+
+      const tooSmall = subjects.filter(s => s.poolSize < qPerSubject);
+      if (tooSmall.length) {
+        statusEl.textContent = '⚠️ ' + tooSmall.map(s => `"${s.name}" n'a que ${s.poolSize} question(s) disponible(s)`).join(', ') + ' — l\'examen continue avec ce qui est disponible.';
+      }
+
+      state = { subjects, currentIdx: 0, minutes, threshold, secondsLeft: minutes * 60 };
+      document.getElementById('exSetupCard').style.display = 'none';
+      document.getElementById('exExamCard').style.display = 'block';
+      btn.disabled = false;
+      _exRenderSubject();
+    };
+
+    // === Exam flow ===
+    function _exRenderChips() {
+      const cont = document.getElementById('exSubjectChips');
+      cont.innerHTML = state.subjects.map((s, i) => {
+        let cls = 'ex-subject-chip';
+        if (i === state.currentIdx) cls += ' active';
+        else if (s.result) cls += s.result.pass ? ' done-pass' : ' done-fail';
+        const shortName = s.name.split('(')[0].trim();
+        return `<span class="${cls}">${escapeHtml(shortName)}${s.result ? ' ' + s.result.pct + '%' : ''}</span>`;
+      }).join('');
+    }
+
+    function _exRenderSubject() {
+      const subj = state.subjects[state.currentIdx];
+      document.getElementById('exCurrentSubjectName').textContent = subj.name;
+      document.getElementById('exCurrentSubjectSub').textContent = `Matière ${state.currentIdx + 1}/${state.subjects.length} — ${subj.questions.length} question(s)`;
+      _exRenderChips();
+
+      let html = '';
+      subj.questions.forEach((q, idx) => {
+        html += `<div class="question-block">
+          <div class="question-title">${idx + 1}. ${escapeHtml(q.question)}</div>`;
+        if (q.image) html += `<div class="question-image"><img src="${q.image}" alt="illustration" onerror="this.style.display='none';" loading="lazy" /></div>`;
+        html += `<div class="answer-list">`;
+        (q.choix || []).forEach((c, i) => {
+          html += `<label style="display:block;margin-bottom:4px;">
+            <input type="radio" name="exq${idx}" value="${i}" onchange="_exAnswer(${idx},${i})"> <span>${escapeHtml(c)}</span>
+          </label>`;
+        });
+        html += `</div></div>`;
+      });
+      document.getElementById('exQuestionsContainer').innerHTML = html;
+
+      state.secondsLeft = state.minutes * 60;
+      _exUpdateTimerDisplay();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        state.secondsLeft--;
+        _exUpdateTimerDisplay();
+        if (state.secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          _exSubmitSubject(true);
+        }
+      }, 1000);
+    }
+
+    function _exUpdateTimerDisplay() {
+      const el = document.getElementById('exTimer');
+      const m = Math.floor(Math.max(0, state.secondsLeft) / 60);
+      const s = Math.max(0, state.secondsLeft) % 60;
+      el.textContent = m + ':' + String(s).padStart(2, '0');
+      el.classList.toggle('ex-timer-warn', state.secondsLeft <= 60);
+    }
+
+    window._exAnswer = function(idx, choiceIdx) {
+      state.subjects[state.currentIdx].answers[idx] = choiceIdx;
+    };
+
+    window._exSubmitSubject = function(timedOut) {
+      if (timerInterval) clearInterval(timerInterval);
+      const subj = state.subjects[state.currentIdx];
+      let correct = 0;
+      subj.questions.forEach((q, idx) => {
+        if (subj.answers[idx] !== undefined && subj.answers[idx] === q.bonne_reponse) correct++;
+      });
+      const total = subj.questions.length;
+      const pct = total ? Math.round((correct * 100) / total) : 0;
+      subj.result = { correct, total, pct, pass: pct >= state.threshold, timedOut: !!timedOut };
+
+      if (state.currentIdx < state.subjects.length - 1) {
+        state.currentIdx++;
+        _exRenderSubject();
+      } else {
+        _exShowResults();
+      }
+    };
+
+    function _exShowResults() {
+      document.getElementById('exExamCard').style.display = 'none';
+      document.getElementById('exResultsCard').style.display = 'block';
+
+      const allPass = state.subjects.every(s => s.result.pass);
+      const overallEl = document.getElementById('exResultsOverall');
+      overallEl.innerHTML = allPass
+        ? '✅ <span style="color:#4caf50">Admissible</span> — toutes les matières réussies'
+        : '❌ <span style="color:#f44336">Non admissible</span> — au moins une matière sous le seuil';
+
+      document.getElementById('exResultsList').innerHTML = state.subjects.map(s => `
+        <div class="ex-result-row">
+          <span class="ex-result-badge" style="background:${s.result.pass ? 'rgba(76,175,80,.15)' : 'rgba(244,67,54,.15)'};color:${s.result.pass ? '#4caf50' : '#f44336'}">${s.result.pass ? 'RÉUSSI' : 'ÉCHOUÉ'}</span>
+          <span style="flex:1">${escapeHtml(s.name)}${s.result.timedOut ? ' <span style="color:#ff9800">(temps écoulé)</span>' : ''}</span>
+          <span style="font-weight:700">${s.result.correct}/${s.result.total} (${s.result.pct}%)</span>
+        </div>
+      `).join('');
+    }
+
+    window._exRestart = function() {
+      if (timerInterval) clearInterval(timerInterval);
+      state = null;
+      document.getElementById('exResultsCard').style.display = 'none';
+      document.getElementById('exExamCard').style.display = 'none';
+      document.getElementById('exSetupCard').style.display = 'block';
+      document.getElementById('exSetupStatus').textContent = '';
+    };
+
+    // === Auth ===
+    let initDone = false;
+    async function doInit() {
+      if (initDone) return;
+      initDone = true;
+      await prefetchAllJsonFiles();
+      _populateSubjectSelect();
+    }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }
+      else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      if (!initDone && localStorage.getItem('cachedUid')) doInit();
+    }, 2500);
+  })();
+  </script>
+</body>
+</html>

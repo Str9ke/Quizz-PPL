@@ -630,6 +630,7 @@ async function initStats() {
     window._masteryNotes = data.notes || {};
     if (typeof _renderMasteryEstimator === 'function') _renderMasteryEstimator(groups);
     if (typeof _renderSrForecast === 'function') _renderSrForecast(data.responses || {});
+    if (typeof _renderReadinessDashboard === 'function') _renderReadinessDashboard(groupsData);
 
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
     const dailyHistory = data.dailyHistory || {};
@@ -2012,6 +2013,77 @@ async function _resetGroupFlaggedStats(groupName) {
     console.error('[resetGroupFlagged] Erreur:', e);
     alert('Erreur : ' + e.message);
   }
+}
+
+/**
+ * _renderReadinessDashboard(groupsData) – Carte "Suis-je prêt ?" : regroupe les stats déjà
+ * calculées par catégorie (groupsData, voir initStats()) selon les 9 matières officielles de
+ * l'examen théorique PPL(A) (EASA_SUBJECTS, définies une seule fois dans helpers.js). Utile
+ * car à l'examen réel, CHAQUE matière doit individuellement atteindre le seuil de réussite —
+ * une moyenne globale flatteuse peut cacher une matière précise en dessous du seuil.
+ */
+function _renderReadinessDashboard(groupsData) {
+  const cont = document.getElementById('readinessDashboardContainer');
+  if (!cont || typeof EASA_SUBJECTS === 'undefined') return;
+
+  const catByValue = {};
+  (groupsData || []).forEach(g => g.categories.forEach(c => { catByValue[c.value] = c; }));
+
+  const PASS_THRESHOLD = 75; // seuil indicatif (généralement admis pour l'examen PPL EASA)
+  const rows = EASA_SUBJECTS.map(subj => {
+    let reussie = 0, ratee = 0, nonvue = 0, found = 0;
+    subj.categories.forEach(catVal => {
+      const c = catByValue[catVal];
+      if (!c) return;
+      found++;
+      const s = c.globalContrib || c.stats;
+      reussie += s.reussie; ratee += s.ratee; nonvue += s.nonvue;
+    });
+    const total = reussie + ratee + nonvue;
+    const pct = total ? Math.round((reussie * 100) / total) : 0;
+    return { name: subj.name, reussie, ratee, nonvue, total, pct, found };
+  }).sort((a, b) => a.pct - b.pct); // matières les plus faibles en premier
+
+  function readinessColor(pct) {
+    if (pct >= PASS_THRESHOLD) return '#4caf50';
+    if (pct >= 50) return '#ff9800';
+    return '#f44336';
+  }
+
+  const rowsHtml = rows.map(r => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span style="flex:0 0 auto;font-size:1.1em">${r.pct >= PASS_THRESHOLD ? '✅' : (r.pct >= 50 ? '⚠️' : '🔴')}</span>
+      <span style="flex:1;min-width:140px">${r.name}</span>
+      <div style="flex:1;min-width:60px;background:rgba(255,255,255,.06);border-radius:4px;height:12px;position:relative;overflow:hidden">
+        <div style="height:100%;width:${r.pct}%;background:${readinessColor(r.pct)};border-radius:4px"></div>
+      </div>
+      <span style="flex:0 0 46px;text-align:right;font-weight:700;color:${readinessColor(r.pct)}">${r.pct}%</span>
+      <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">${r.reussie}/${r.total}</span>
+    </div>`).join('');
+
+  const nbAtRisk = rows.filter(r => r.pct < PASS_THRESHOLD).length;
+
+  cont.innerHTML = `
+    <div class="home-card" id="readinessDashboardCard">
+      <div class="home-card-header">
+        <span class="home-card-icon">🎯</span>
+        <span class="home-card-title">Suis-je prêt ? (par matière officielle)</span>
+      </div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 8px">
+        À l'examen réel, chaque matière est notée <strong>séparément</strong> — une bonne
+        moyenne globale peut cacher une matière en dessous du seuil. Seuil indicatif :
+        ${PASS_THRESHOLD}% (à ajuster mentalement selon le seuil exact en vigueur pour ton
+        examen — non garanti ici).
+      </p>
+      ${rowsHtml}
+      <p style="font-size:.8em;margin:10px 0 0;${nbAtRisk ? 'color:#ff9800' : 'color:#4caf50'}">
+        ${nbAtRisk ? `⚠️ ${nbAtRisk} matière${nbAtRisk > 1 ? 's' : ''} sous le seuil indicatif.` : '✅ Toutes les matières sont au-dessus du seuil indicatif.'}
+      </p>
+      <div style="text-align:center;margin-top:10px">
+        <a href="epreuve.html" class="stats-btn" style="display:inline-block;text-decoration:none;background:#667eea;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600">📝 Passer un examen blanc</a>
+      </div>
+    </div>
+  `;
 }
 
 /**
