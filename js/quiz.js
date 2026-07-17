@@ -628,7 +628,7 @@ async function initQuiz() {
       let nbRatees = 0, nbNonvues = 0;
       fullList.forEach(q => {
         const r = currentResponses[getKeyFor(q)];
-        if (!r) { nbNonvues++; }
+        if (_isUnseen(r)) { nbNonvues++; }
         else if (r.status === 'ratée') { nbRatees++; }
       });
       updateCategoryInfoBar(selectedCategory, nbRatees + nbNonvues, fullList.length);
@@ -1463,7 +1463,7 @@ async function validerReponses() {
       const isAgg = normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" || normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
       const fullL = isAgg ? questions : questions.filter(q => q.categorie === normalizedSel);
       let nR = 0, nNV = 0;
-      fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (!r) nNV++; else if (r.status === 'ratée') nR++; });
+      fullL.forEach(q => { const r = currentResponses[getKeyFor(q)]; if (_isUnseen(r)) nNV++; else if (r.status === 'ratée') nR++; });
       updateCategoryInfoBar(selectedCategory, nR + nNV, fullL.length);
       currentQuestions = savedCQ;
     } catch (e) { /* ignore */ }
