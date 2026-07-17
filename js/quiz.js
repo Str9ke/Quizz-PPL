@@ -158,6 +158,35 @@ function _queueForReask(q) {
 }
 
 /**
+ * _srStatsHtml() – Petit badge affiché sous chaque question répondue : combien de fois
+ * ratée/réussie au total, et où elle en est dans le cycle de répétition espacée (prochaine
+ * révision dans combien de jours, avec l'intervalle actuel). successCount est le compteur
+ * dédié (voir _computeSrEntry) ; pour une question déjà répondue avant l'ajout de ce champ,
+ * on retombe sur un décompte approximatif depuis statusLog (limité aux 100 dernières entrées).
+ */
+function _srStatsHtml(q) {
+  const key = getKeyFor(q);
+  const r = currentResponses[key];
+  if (!r || r.status === undefined) return '';
+  const fails = r.failCount || 0;
+  const successes = (r.successCount !== undefined)
+    ? r.successCount
+    : ((r.statusLog || []).filter(e => e.status === 'réussie').length);
+  let posText;
+  if (r.nextReview !== undefined && r.nextReview !== null) {
+    let reviewMs = r.nextReview;
+    if (typeof reviewMs === 'object' && reviewMs.seconds) reviewMs = reviewMs.seconds * 1000;
+    const days = Math.ceil((reviewMs - Date.now()) / (24 * 60 * 60 * 1000));
+    posText = days <= 0 ? 'due maintenant' : `dans ${days} j (intervalle actuel : ${r.srInterval || 0} j)`;
+  } else {
+    posText = 'pas encore planifiée';
+  }
+  return `<div class="sr-stats-badge" style="font-size:.8em;color:var(--text-secondary);margin:4px 0 2px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04)">`
+    + `❌ Ratée <strong>${fails}</strong> fois · ✅ Réussie <strong>${successes}</strong> fois · 🔁 Répétition espacée : ${posText}`
+    + `</div>`;
+}
+
+/**
  * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
  */
 function _buildExplicationHtml(q) {
@@ -892,6 +921,7 @@ function _computeSrEntry(q, selectedVal) {
     const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
     const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
     const prevFailCount = hasExisting ? (currentResponses[key].failCount || 0) : 0;
+    const prevSuccessCount = hasExisting ? (currentResponses[key].successCount || 0) : 0;
     const status = selectedVal === q.bonne_reponse ? 'réussie' : 'ratée';
 
     // Répétition espacée : calculer le prochain intervalle
@@ -925,6 +955,7 @@ function _computeSrEntry(q, selectedVal) {
         questionId: q.id,
         status,
         failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
+        successCount: status === 'réussie' ? prevSuccessCount + 1 : prevSuccessCount,
         srInterval: newInterval,
         nextReview: nextReviewMs,
         timestamp: firebase.firestore.Timestamp.now()
@@ -1110,6 +1141,12 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   // Afficher l'explication si disponible
   const questionBlock = selectedRadio.closest('.question-block');
   if (questionBlock) {
+    // Historique ratée/réussie + position dans la répétition espacée — inséré une seule fois
+    if (!questionBlock.querySelector('.sr-stats-badge')) {
+      const statsDiv = document.createElement('div');
+      statsDiv.innerHTML = _srStatsHtml(q);
+      if (statsDiv.firstChild) questionBlock.appendChild(statsDiv.firstChild);
+    }
     if (q.explication || (q.explication_images && q.explication_images.length)) {
       // Vérifier qu'on n'a pas déjà ajouté l'explication
       if (!questionBlock.querySelector('.explication-block')) {
@@ -1471,6 +1508,7 @@ function afficherCorrection() {
         <div class="answer-list">
           ${ansHtml}
         </div>
+        ${_srStatsHtml(q)}
         ${_buildExplicationHtml(q)}
       </div>
     `;
