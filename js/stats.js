@@ -624,6 +624,12 @@ async function initStats() {
 
     afficherStats(groupsData, globalStats);
 
+    // Estimation du temps pour tout maîtriser : garder les réponses/notes déjà chargées
+    // (évite un 2e appel Firestore) et construire la carte de sélection en bas de page.
+    window._masteryResponses = data.responses || {};
+    window._masteryNotes = data.notes || {};
+    if (typeof _renderMasteryEstimator === 'function') _renderMasteryEstimator(groups);
+
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
     const dailyHistory = data.dailyHistory || {};
     const _today = new Date();
@@ -2005,6 +2011,254 @@ async function _resetGroupFlaggedStats(groupName) {
     console.error('[resetGroupFlagged] Erreur:', e);
     alert('Erreur : ' + e.message);
   }
+}
+
+/**
+ * _renderMasteryEstimator(groups) – Construit la carte "Estimation du temps pour tout
+ * maîtriser" en bas de stats.html : sélection (toutes / un ou plusieurs des 4 grands blocs /
+ * une ou plusieurs catégories précises, combinables), restriction optionnelle marquées/
+ * importantes/notées, seuil de "réussites nécessaires" et rythme d'étude (min/jour).
+ * `groups` est le même tableau {name, categories} déjà utilisé pour l'affichage des stats —
+ * mêmes 4 grandes parties (CLASSIQUES / EASA / GLIGLI HARD / GLIGLI EASY).
+ */
+function _renderMasteryEstimator(groups) {
+  const cont = document.getElementById('masteryEstimatorContainer');
+  if (!cont) return;
+  window._masteryGroupsDef = groups;
+
+  let groupsHtml = '';
+  groups.forEach((group, gi) => {
+    groupsHtml += `<div style="margin-bottom:8px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px">`;
+    groupsHtml += `<label class="home-checkbox-label" style="font-weight:700;margin:0">
+      <input type="checkbox" id="mastGroup_${gi}" onchange="_onMastGroupChange(${gi})">
+      <span>${group.name}</span>
+    </label>`;
+    groupsHtml += `<div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-left:6px;font-size:.82em">`;
+    group.categories.forEach((cat, ci) => {
+      groupsHtml += `<label class="home-checkbox-label" style="margin:0">
+        <input type="checkbox" id="mastCat_${gi}_${ci}" data-group-idx="${gi}">
+        <span>${cat.label}</span>
+      </label>`;
+    });
+    groupsHtml += `</div></div>`;
+  });
+
+  cont.innerHTML = `
+    <div class="home-card" id="masteryEstimatorCard">
+      <div class="home-card-header">
+        <span class="home-card-icon">🎯</span>
+        <span class="home-card-title">Estimation du temps pour tout maîtriser</span>
+      </div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 10px">
+        Sélectionne ce que tu veux maîtriser — tout, un ou plusieurs des 4 grands blocs, une ou
+        plusieurs catégories précises (combinable) — et le nombre de bonnes réponses nécessaires
+        par question pour la considérer acquise. L'estimation utilise ton rythme réel (temps par
+        question mesuré) et ton taux de réussite actuel pour ce sous-ensemble.
+      </p>
+      <label class="home-checkbox-label" style="font-weight:700">
+        <input type="checkbox" id="mastToutes" onchange="_onMastToutesChange()">
+        <span>🌐 Toutes les catégories</span>
+      </label>
+      <div id="mastGroupsList" style="margin-top:8px">${groupsHtml}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0;font-size:.85em">
+        <span style="width:100%;color:var(--text-secondary)">Restreindre en plus à (optionnel, cochables ensemble) :</span>
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="mastFlagMarquees"><span>🔖 Marquées</span></label>
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="mastFlagImportantes"><span>⭐ Importantes</span></label>
+        <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="mastFlagNotes"><span>📝 Notées</span></label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:12px">
+        <label style="font-size:.85em">✅ Réussites nécessaires / question&nbsp;:
+          <input type="number" id="mastThreshold" class="home-input" style="width:60px" min="1" value="3">
+        </label>
+        <label style="font-size:.85em">🕐 Minutes d'étude / jour&nbsp;:
+          <input type="number" id="mastMinPerDay" class="home-input" style="width:70px" min="1" value="20">
+        </label>
+      </div>
+      <button class="stats-btn" onclick="_computeMasteryEstimate()" style="background:#667eea;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">
+        📐 Calculer le temps nécessaire
+      </button>
+      <div id="masteryEstimateResult" style="margin-top:14px"></div>
+    </div>
+  `;
+}
+
+/** _onMastToutesChange() – "Toutes" grise/dégrise la liste groupes/catégories (mutuellement exclusif). */
+function _onMastToutesChange() {
+  const toutes = document.getElementById('mastToutes').checked;
+  const list = document.getElementById('mastGroupsList');
+  if (!list) return;
+  list.style.opacity = toutes ? '0.4' : '1';
+  list.style.pointerEvents = toutes ? 'none' : 'auto';
+}
+
+/** _onMastGroupChange(gi) – Cocher/décocher un grand bloc répercute l'état sur ses catégories. */
+function _onMastGroupChange(gi) {
+  const gEl = document.getElementById('mastGroup_' + gi);
+  if (!gEl) return;
+  document.querySelectorAll('input[data-group-idx="' + gi + '"]').forEach(cb => { cb.checked = gEl.checked; });
+}
+
+/**
+ * _fmtMasteryDuration(sec) – "3 j 6 h" / "2 h 15 min" / "45 min" / "30 s" selon l'échelle —
+ * distinct de _qtFormatDuration() (min/sec uniquement) car une estimation de maîtrise complète
+ * peut facilement dépasser plusieurs dizaines d'heures, illisible en simples minutes.
+ */
+function _fmtMasteryDuration(sec) {
+  sec = Math.round(sec);
+  const days = Math.floor(sec / 86400);
+  const hours = Math.floor((sec % 86400) / 3600);
+  const minutes = Math.floor((sec % 3600) / 60);
+  const seconds = sec % 60;
+  if (days > 0) return `${days} j ${hours} h`;
+  if (hours > 0) return `${hours} h ${minutes} min`;
+  if (minutes > 0) return `${minutes} min ${String(seconds).padStart(2, '0')} s`;
+  return `${seconds} s`;
+}
+
+/**
+ * _computeMasteryEstimate() – Calcule le temps de travail actif restant pour que TOUTES les
+ * questions de la sélection atteignent "réussites >= seuil" (mastThreshold), en estimant le
+ * nombre de tentatives nécessaires via le taux de réussite observé sur la sélection (une
+ * question ratée régulièrement demandera statistiquement plus de tentatives pour accumuler le
+ * même nombre de succès), et le temps par tentative via le rythme réel déjà mesuré (_qt*).
+ */
+async function _computeMasteryEstimate() {
+  const resultEl = document.getElementById('masteryEstimateResult');
+  if (!resultEl) return;
+  resultEl.innerHTML = '<p style="color:var(--text-secondary)">⏳ Calcul en cours…</p>';
+
+  const groups = window._masteryGroupsDef || [];
+  const toutes = document.getElementById('mastToutes').checked;
+  const threshold = Math.max(1, parseInt(document.getElementById('mastThreshold').value) || 3);
+  const minPerDay = Math.max(1, parseInt(document.getElementById('mastMinPerDay').value) || 20);
+  const flagMarquees = document.getElementById('mastFlagMarquees').checked;
+  const flagImportantes = document.getElementById('mastFlagImportantes').checked;
+  const flagNotes = document.getElementById('mastFlagNotes').checked;
+  const anyFlag = flagMarquees || flagImportantes || flagNotes;
+
+  let pool = [];
+  const seenKeys = new Set();
+  let selectionLabel = '';
+
+  try {
+    if (toutes) {
+      await loadAllQuestions();
+      questions.forEach(q => {
+        const key = getKeyFor(q);
+        if (!seenKeys.has(key)) { seenKeys.add(key); pool.push(q); }
+      });
+      selectionLabel = 'Toutes les catégories';
+    } else {
+      const checkedGroupNames = [];
+      const catValuesToLoad = [];
+      groups.forEach((g, gi) => {
+        const gEl = document.getElementById('mastGroup_' + gi);
+        if (gEl && gEl.checked) {
+          checkedGroupNames.push(g.name);
+          g.categories.forEach(c => catValuesToLoad.push(c.value));
+        }
+      });
+      const checkedCatLabels = [];
+      groups.forEach((g, gi) => {
+        g.categories.forEach((c, ci) => {
+          const cEl = document.getElementById('mastCat_' + gi + '_' + ci);
+          if (cEl && cEl.checked && !catValuesToLoad.includes(c.value)) {
+            catValuesToLoad.push(c.value);
+            checkedCatLabels.push(c.label);
+          }
+        });
+      });
+      if (!catValuesToLoad.length) {
+        resultEl.innerHTML = '<p style="color:#f87171">Sélectionne au moins une catégorie (ou coche "Toutes les catégories").</p>';
+        return;
+      }
+      for (const catVal of catValuesToLoad) {
+        await chargerQuestions(catVal);
+        questions.forEach(q => {
+          const key = getKeyFor(q);
+          if (!seenKeys.has(key)) { seenKeys.add(key); pool.push(q); }
+        });
+      }
+      const parts = [];
+      if (checkedGroupNames.length) parts.push(checkedGroupNames.join(', '));
+      if (checkedCatLabels.length) parts.push(checkedCatLabels.join(', '));
+      selectionLabel = parts.join(' + ');
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<p style="color:#f87171">Erreur de chargement : ' + e.message + '</p>';
+    return;
+  }
+
+  const responses = window._masteryResponses || {};
+  const notes = window._masteryNotes || {};
+
+  if (anyFlag) {
+    pool = pool.filter(q => {
+      const key = getKeyFor(q);
+      const r = responses[key];
+      if (flagMarquees && r && r.marked) return true;
+      if (flagImportantes && r && r.important) return true;
+      if (flagNotes && notes[key]) return true;
+      return false;
+    });
+  }
+
+  if (!pool.length) {
+    resultEl.innerHTML = '<p style="color:var(--text-secondary)">Aucune question ne correspond à cette sélection.</p>';
+    return;
+  }
+
+  // Taux de réussite observé sur LE POOL sélectionné : sert à la fois de repli pour les
+  // questions jamais tentées et à estimer le nombre de tentatives nécessaires pour les autres.
+  // Plafonné [35%, 95%] pour éviter une estimation absurde (temps infini ou nul) sur un
+  // sous-ensemble avec très peu d'historique.
+  let sumSuccess = 0, sumFail = 0;
+  pool.forEach(q => {
+    const r = responses[getKeyFor(q)];
+    if (r) { sumSuccess += r.successCount || 0; sumFail += r.failCount || 0; }
+  });
+  const hasHistory = (sumSuccess + sumFail) > 0;
+  const observedRate = hasHistory ? sumSuccess / (sumSuccess + sumFail) : 0.65;
+  const effectiveRate = Math.min(0.95, Math.max(0.35, observedRate));
+
+  const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
+    ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
+
+  let totalSeconds = 0, masteredCount = 0, remainingCount = 0;
+  pool.forEach(q => {
+    const key = getKeyFor(q);
+    const r = responses[key];
+    const successCount = (r && r.successCount) || 0;
+    const failCount = (r && r.failCount) || 0;
+    if (successCount >= threshold) { masteredCount++; return; }
+    remainingCount++;
+    const remainingSuccesses = threshold - successCount;
+    // Espérance du nb de tentatives (succès+échecs) pour accumuler `remainingSuccesses`
+    // succès de plus, à taux de réussite `effectiveRate` constant.
+    const expectedAttempts = remainingSuccesses / effectiveRate;
+    const neverAttempted = (successCount + failCount) === 0;
+    const newPortion = neverAttempted ? Math.min(1, expectedAttempts) : 0;
+    const reviewPortion = expectedAttempts - newPortion;
+    totalSeconds += newPortion * secPerNew + reviewPortion * secPerReview;
+  });
+
+  const totalMinutes = totalSeconds / 60;
+  const totalHours = totalMinutes / 60;
+  const daysNeeded = Math.max(1, Math.ceil(totalMinutes / minPerDay));
+  const flagsLabel = [flagMarquees && '🔖', flagImportantes && '⭐', flagNotes && '📝'].filter(Boolean).join('/');
+
+  resultEl.innerHTML = `
+    <div style="background:rgba(102,126,234,.08);border:1px solid rgba(102,126,234,.3);border-radius:10px;padding:12px 14px">
+      <div style="font-size:.8em;color:var(--text-secondary);margin-bottom:6px">📚 Sélection : <strong>${selectionLabel}</strong>${anyFlag ? ' · restreint à ' + flagsLabel : ''} — seuil de maîtrise : <strong>${threshold}</strong> réussite${threshold > 1 ? 's' : ''}/question</div>
+      <div style="font-size:1.3em;font-weight:800;margin-bottom:4px">⏱️ ${_fmtMasteryDuration(totalSeconds)}</div>
+      <div style="font-size:.85em;color:var(--text-secondary);margin-bottom:8px">≈ ${Math.round(totalHours * 10) / 10} h de travail actif restant, à raison de ${minPerDay} min/jour → <strong>${daysNeeded}</strong> jour${daysNeeded > 1 ? 's' : ''}</div>
+      <div style="font-size:.82em;display:flex;flex-wrap:wrap;gap:4px 16px">
+        <span>✅ Déjà maîtrisées : <strong>${masteredCount}</strong> / ${pool.length}</span>
+        <span>📋 Restantes : <strong>${remainingCount}</strong></span>
+        <span>🎯 Taux de réussite utilisé : <strong>${Math.round(effectiveRate * 100)}%</strong>${hasHistory ? '' : ' (estimation par défaut, pas encore d\'historique sur cette sélection)'}</span>
+      </div>
+    </div>
+  `;
 }
 
 /**
