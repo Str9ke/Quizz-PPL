@@ -1728,7 +1728,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       </div>
       <div class="nl-card" style="margin:4px 0 16px;padding:12px 14px;background:rgba(76,175,80,.06);border:1px solid rgba(76,175,80,.25)">
         <div class="nl-card-title" style="font-size:.92em"><span class="icon">&#x1F30D;</span> Export 3D pour Google Earth (Belgique + ~1h de vol autour)</div>
-        <p style="font-size:.8em;color:var(--text-secondary);margin:2px 0 8px">T&#xe9;l&#xe9;charge un fichier .kml avec tous les volumes d'espace a&#xe9;rien de la zone (Belgique, Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord vers le sud-est de l'Angleterre) en vrais blocs 3D plancher/plafond, &#xe0; ouvrir dans Google Earth pour voler dedans et les inspecter.</p>
+        <p style="font-size:.8em;color:var(--text-secondary);margin:2px 0 8px">T&#xe9;l&#xe9;charge un fichier .kml avec tous les volumes d'espace a&#xe9;rien de la zone (Belgique, Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord vers le sud-est de l'Angleterre) en vrais blocs 3D plancher/plafond, plus les a&#xe9;rodromes et les VOR/NDB/DME de la zone, &#xe0; ouvrir dans Google Earth pour voler dedans et les inspecter. Le type de chaque zone (CTR/TMA/DANGER/RESTRICTED...) est lu directement dans son nom officiel — v&#xe9;rifie toujours l'AIP/carte VFR avant de pr&#xe9;parer un vol.</p>
         <button onclick="window.exportAirspacesKML()" class="navlog-btn success" id="kmlExportBtn">&#x1F30D; T&#xe9;l&#xe9;charger le KML (zone &#xe9;largie)</button>
         <div id="kmlExportStatus" style="font-size:.8em;color:var(--text-secondary);margin-top:8px"></div>
       </div>
@@ -7908,19 +7908,47 @@ function _openaipLimitToFt(lim){
   return val; /* FT par défaut (unit 1) */
 }
 
+/* _openaipClassLabel() — La table numérique type→libellé d'OpenAIP (ex: 1=CTR, 8=DANGER...)
+   n'a PAS pu être vérifiée auprès de la documentation officielle (docs.openaip.net et
+   api.core.openaip.net renvoient 403 aux outils de récupération disponibles ici) — l'ancienne
+   table {1:'CTR',4:'TMA',5:'TMZ',6:'RMZ',7:'RESTRICTED',8:'DANGER',9:'PROHIBITED',14:'ATZ'}
+   était visiblement incomplète (des codes bruts comme "type 10/21/28/33" apparaissaient déjà,
+   preuve qu'il existe bien plus de types que ceux couverts) et potentiellement erronée pour
+   certains codes. Stratégie plus fiable : lire le TYPE directement dans le nom/désignateur de
+   la zone, qui suit quasi-universellement la convention AIP (CTR/TMA/TMZ/RMZ/ATZ/FIR en toutes
+   lettres, zones D/R/P désignées "XX-D5"/"XX-R3"/"XX-P1") — indépendant du code numérique
+   OpenAIP, donc fiable même sans connaître sa table exacte. La classe A-G (icaoClass) n'est
+   qu'un attribut SECONDAIRE de certains types (un CTR classé D reste avant tout "un CTR", pas
+   juste "de la classe D") : elle ne sert plus qu'en repli, avant le code numérique brut en
+   tout dernier recours — jamais caché derrière une étiquette peut-être fausse. */
 function _openaipClassLabel(item){
   var classMap={0:'A',1:'B',2:'C',3:'D',4:'E',5:'F',6:'G'};
-  var typeMap={1:'CTR',4:'TMA',5:'TMZ',6:'RMZ',7:'RESTRICTED',8:'DANGER',9:'PROHIBITED',14:'ATZ'};
+  var nm=((item.name||'')+' '+(item.designator||item.icaoCode||'')).toUpperCase();
+  var nmAscii=nm.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(/\bFIR\b/.test(nm)) return 'FIR';
+  if(/\bUIR\b/.test(nm)) return 'UIR';
+  if(/\bCTR\b/.test(nm)) return 'CTR';
+  if(/\bTMA\b/.test(nm)) return 'TMA';
+  if(/\bTMZ\b/.test(nm)) return 'TMZ';
+  if(/\bRMZ\b/.test(nm)) return 'RMZ';
+  if(/\bMATZ\b/.test(nm)) return 'MATZ';
+  if(/\bATZ\b/.test(nm)) return 'ATZ';
+  if(/PROHIBITED/.test(nm) || /(^|[\s(])[A-Z]{1,2}-?P\d/.test(nm)) return 'PROHIBITED';
+  if(/RESTRICTED/.test(nm) || /(^|[\s(])[A-Z]{1,2}-?R\d/.test(nm)) return 'RESTRICTED';
+  if(/\bDANGER\b/.test(nm) || /(^|[\s(])[A-Z]{1,2}-?D\d/.test(nm)) return 'DANGER';
+  if(/GLID(ER|ING)|PLANEUR/.test(nmAscii)) return 'GLIDING_SECTOR';
+  if(/\bWARNING\b/.test(nm)) return 'WARNING';
   if(item.icaoClass!==undefined && classMap[item.icaoClass]!==undefined) return classMap[item.icaoClass];
   if(typeof item.icaoClass==='string' && item.icaoClass) return item.icaoClass;
-  if(item.type!==undefined && typeMap[item.type]!==undefined) return typeMap[item.type];
-  return (item.type!==undefined?('type '+item.type):'zone');
+  if(item.type!==undefined) return 'TYPE '+item.type;
+  return 'ZONE';
 }
 
 function _airspaceBandColor(label){
   var m={A:'#e74c3c',B:'#e67e22',C:'#f1c40f',D:'#3498db',E:'#2ecc71',F:'#1abc9c',G:'#95a5a6',
-    CTR:'#3498db',TMA:'#9b59b6',TMZ:'#8e44ad',RMZ:'#8e44ad',ATZ:'#2980b9',
-    RESTRICTED:'#e74c3c',DANGER:'#e74c3c',PROHIBITED:'#c0392b'};
+    CTR:'#3498db',TMA:'#9b59b6',TMZ:'#8e44ad',RMZ:'#8e44ad',ATZ:'#2980b9',MATZ:'#5b2c8e',
+    RESTRICTED:'#e74c3c',DANGER:'#e74c3c',PROHIBITED:'#c0392b',WARNING:'#e67e22',
+    FIR:'#16a085',UIR:'#0e6655',GLIDING_SECTOR:'#27ae60'};
   return m[label]||'#7f8c8d';
 }
 
@@ -7992,6 +8020,97 @@ function _airspaceToKmlPlacemark(item){
     geomXml+'</Placemark>';
 }
 
+/* ===== Aérodromes et radionavigation (VOR/NDB/DME) pour l'export KML =====
+   Endpoints /airports et /navaids déduits par analogie avec /airspaces (même API
+   api.core.openaip.net, même authentification) — leur nom exact et le format précis des
+   champs retournés n'ont pas pu être vérifiés (documentation OpenAIP inaccessible aux outils
+   disponibles ici). Lecture DÉFENSIVE des champs (plusieurs noms plausibles essayés), et
+   chaque type de donnée est chargé dans son propre try/catch — un nom d'endpoint incorrect
+   fait échouer PROPREMENT cette seule section (message clair) sans empêcher le reste de
+   l'export de fonctionner. */
+function _pointKmlPlacemark(name,desc,lon,lat,iconColorAbgr,iconHref){
+  if(lon===undefined||lat===undefined||isNaN(lon)||isNaN(lat)) return '';
+  return '<Placemark><name>'+escHTML(name)+'</name>'+
+    '<description><![CDATA['+desc+']]></description>'+
+    '<Style><IconStyle><color>'+iconColorAbgr+'</color><scale>1.0</scale>'+
+    '<Icon><href>'+iconHref+'</href></Icon></IconStyle></Style>'+
+    '<Point><altitudeMode>clampToGround</altitudeMode><coordinates>'+Number(lon).toFixed(6)+','+Number(lat).toFixed(6)+',0</coordinates></Point>'+
+    '</Placemark>';
+}
+function _pointCoords(item){
+  var geom=item.geometry||item.geojson;
+  if(geom && geom.type==='Point' && Array.isArray(geom.coordinates)) return {lon:geom.coordinates[0],lat:geom.coordinates[1]};
+  if(item.lon!==undefined && item.lat!==undefined) return {lon:item.lon,lat:item.lat};
+  if(item.longitude!==undefined && item.latitude!==undefined) return {lon:item.longitude,lat:item.latitude};
+  if(item.coordinates && item.coordinates.lon!==undefined) return {lon:item.coordinates.lon,lat:item.coordinates.lat};
+  return {lon:undefined,lat:undefined};
+}
+function _airportToKmlPlacemark(item){
+  var c=_pointCoords(item);
+  if(c.lon===undefined) return '';
+  var icao=item.icaoCode||item.icao||item.designator||'';
+  var name=item.name||icao||'Aérodrome sans nom';
+  var elevFt=item.elevation!==undefined?_openaipLimitToFt(item.elevation):(item.elev!==undefined?item.elev:'');
+  var desc='Code OACI : '+(icao||'?')+
+    (item.type!==undefined?('&lt;br&gt;Type brut OpenAIP : '+item.type):'')+
+    (elevFt!==''?('&lt;br&gt;Élévation : '+elevFt+' ft'):'')+
+    '&lt;br&gt;&lt;i&gt;Vérifie toujours l\'AIP/carte VFR officielle.&lt;/i&gt;';
+  var label=(icao?icao+' — ':'')+name;
+  return _pointKmlPlacemark(label,desc,c.lon,c.lat,'ff0080ff','http://maps.google.com/mapfiles/kml/shapes/airports.png');
+}
+function _navaidTypeLabel(item){
+  var m={2:'VOR',3:'VOR-DME',7:'TACAN',8:'VORTAC',9:'NDB',13:'DME'};
+  if(typeof item.type==='string' && item.type) return item.type.toUpperCase();
+  if(item.type!==undefined && m[item.type]!==undefined) return m[item.type];
+  return item.type!==undefined?('TYPE '+item.type):'NAVAID';
+}
+function _fmtNavaidFreq(item){
+  var f=item.frequency!==undefined?item.frequency:item.freq;
+  if(f==null) return '';
+  if(typeof f==='object'){
+    var val=f.value!==undefined?f.value:(f.freq!==undefined?f.freq:null);
+    var unit=f.unit||'MHz';
+    return val==null?'':(val+' '+(typeof unit==='string'?unit:'MHz'));
+  }
+  return f+' MHz';
+}
+function _navaidToKmlPlacemark(item){
+  var c=_pointCoords(item);
+  if(c.lon===undefined) return '';
+  var ident=item.identifier||item.ident||item.designator||'';
+  var name=item.name||ident||'Navaid sans nom';
+  var typeLabel=_navaidTypeLabel(item);
+  var freq=_fmtNavaidFreq(item);
+  var desc='Type : '+typeLabel+
+    (freq?('&lt;br&gt;Fréquence : '+freq):'')+
+    (item.type!==undefined?('&lt;br&gt;Type brut OpenAIP : '+item.type):'')+
+    '&lt;br&gt;&lt;i&gt;Vérifie toujours l\'AIP/carte VFR officielle.&lt;/i&gt;';
+  var label=typeLabel+' '+(ident?ident+' — ':'')+name+(freq?(' ('+freq+')'):'');
+  return _pointKmlPlacemark(label,desc,c.lon,c.lat,'ff00d7ff','http://maps.google.com/mapfiles/kml/shapes/heliport.png');
+}
+/* Récupère toutes les pages d'un endpoint OpenAIP paginé (même heuristique "page pleine
+   = probablement une suite" que pour /airspaces, voir plus haut). Ne lève jamais d'exception
+   pour un endpoint absent/erroné : renvoie {items:[], failed:true, status} pour que l'appelant
+   décide comment réagir (échec silencieux ET PARTIEL, pas un blocage de tout l'export). */
+async function _fetchOpenAipPaginated(pathName,bbox,key){
+  var items=[],page=1,limitPerPage=1000,keepPaging=true;
+  try{
+    while(keepPaging && page<=40){
+      var url='https://api.core.openaip.net/api/'+pathName+'?bbox='+bbox.west+','+bbox.south+','+bbox.east+','+bbox.north+'&limit='+limitPerPage+'&page='+page;
+      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
+      if(!resp||!resp.ok) return {items:items,failed:true,status:resp?resp.status:null};
+      var data=await resp.json();
+      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
+      items=items.concat(pageItems);
+      keepPaging=pageItems.length>=limitPerPage;
+      page++;
+    }
+    return {items:items,failed:false,status:null};
+  }catch(e){
+    return {items:items,failed:true,status:null,error:e.message};
+  }
+}
+
 window.exportAirspacesKML = async function(){
   var statusEl=document.getElementById('kmlExportStatus');
   var btn=document.getElementById('kmlExportBtn');
@@ -8010,11 +8129,12 @@ window.exportAirspacesKML = async function(){
   if(statusEl) statusEl.textContent='⏳ Téléchargement des espaces aériens OpenAIP pour toute la zone (Belgique + ~1h de vol)… ceci peut prendre une minute, la zone est grande.';
 
   try{
-    var items=[],page=1,totalPages=1,limitPerPage=1000;
+    var items=[],page=1,limitPerPage=1000;
     var fetchFailed=false, fetchFailStatus=null;
-    do{
+    var keepPaging=true;
+    while(keepPaging && page<=40){
       var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
-      if(statusEl) statusEl.textContent='⏳ Téléchargement… page '+page+(totalPages>1?('/'+totalPages):'')+' ('+items.length+' zones reçues jusqu\'ici)';
+      if(statusEl) statusEl.textContent='⏳ Téléchargement… page '+page+' ('+items.length+' zones reçues jusqu\'ici)';
       var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
       if(!resp||!resp.ok){
         fetchFailed=true; fetchFailStatus=resp?resp.status:null;
@@ -8023,9 +8143,14 @@ window.exportAirspacesKML = async function(){
       var data=await resp.json();
       var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
       items=items.concat(pageItems);
-      totalPages=data.totalPages||1;
+      /* Ne pas se fier à un champ "totalPages" dont le nom/emplacement exact dans la réponse
+         OpenAIP n'a pas pu être vérifié (documentation inaccessible) — heuristique robuste,
+         indépendante du format exact : tant qu'une page revient PLEINE (autant d'items que la
+         limite demandée), il y a probablement une suite. Une page reçue incomplète = dernière
+         page, quel que soit le nom du champ de pagination réel. */
+      keepPaging=pageItems.length>=limitPerPage;
       page++;
-    }while(page<=totalPages && page<=20);
+    }
 
     if(fetchFailed){
       /* OpenAIP indisponible : proposer le dernier export complet réussi en cache (s'il
@@ -8066,10 +8191,24 @@ window.exportAirspacesKML = async function(){
       foldersXml+='<Folder><name>'+escHTML(cl)+' ('+byClass[cl].length+')</name>'+byClass[cl].join('')+'</Folder>';
     });
 
+    // Aérodromes + VOR/NDB/DME, en plus des espaces aériens (voir _fetchOpenAipPaginated
+    // plus haut : chaque source échoue indépendamment, sans bloquer les autres).
+    var bboxObj={south:south,north:north,west:west,east:east};
+    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s) — téléchargement des aérodromes…';
+    var airportsResult=await _fetchOpenAipPaginated('airports',bboxObj,key);
+    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s), '+airportsResult.items.length+' aérodrome(s) — téléchargement des VOR/NDB/DME…';
+    var navaidsResult=await _fetchOpenAipPaginated('navaids',bboxObj,key);
+
+    var airportsPm=[]; var navaidsPm=[];
+    airportsResult.items.forEach(function(it){ var pm=_airportToKmlPlacemark(it); if(pm) airportsPm.push(pm); });
+    navaidsResult.items.forEach(function(it){ var pm=_navaidToKmlPlacemark(it); if(pm) navaidsPm.push(pm); });
+    if(airportsPm.length) foldersXml+='<Folder><name>✈️ Aérodromes ('+airportsPm.length+')</name>'+airportsPm.join('')+'</Folder>';
+    if(navaidsPm.length) foldersXml+='<Folder><name>📡 VOR/NDB/DME ('+navaidsPm.length+')</name>'+navaidsPm.join('')+'</Folder>';
+
     var kml='<?xml version="1.0" encoding="UTF-8"?>'+
       '<kml xmlns="http://www.opengis.net/kml/2.2">'+
       '<Document><name>Espaces aériens — Belgique + 1h de vol</name>'+
-      '<description>Généré depuis Quiz Aviation PPL — données OpenAIP. Chaque dossier ci-contre (CTR, TMA, DANGER, RESTRICTED…) peut être coché/décoché individuellement dans le panneau de gauche de Google Earth.</description>'+
+      '<description>Généré depuis Quiz Aviation PPL — données OpenAIP. Chaque dossier ci-contre (CTR, TMA, DANGER, RESTRICTED, Aérodromes, VOR/NDB/DME…) peut être coché/décoché individuellement dans le panneau de gauche de Google Earth.</description>'+
       foldersXml+'</Document></kml>';
 
     var blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
@@ -8082,7 +8221,13 @@ window.exportAirspacesKML = async function(){
     setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
 
     var nbZones=items.length-skipped;
+    var extraBits=[];
+    if(airportsPm.length) extraBits.push(airportsPm.length+' aérodrome(s)');
+    else if(airportsResult.failed) extraBits.push('aérodromes indisponibles (endpoint /airports en échec'+(airportsResult.status?(' HTTP '+airportsResult.status):'')+')');
+    if(navaidsPm.length) extraBits.push(navaidsPm.length+' VOR/NDB/DME');
+    else if(navaidsResult.failed) extraBits.push('VOR/NDB/DME indisponibles (endpoint /navaids en échec'+(navaidsResult.status?(' HTTP '+navaidsResult.status):'')+')');
     if(statusEl) statusEl.textContent=(fetchFailed?'⚠️ Fichier téléchargé depuis le cache (OpenAIP indisponible, données du '+_formatCacheDate(wideCached.ts)+') : ':'✅ Fichier téléchargé : ')+nbZones+' volume(s) exporté(s)'+(skipped?(' ('+skipped+' ignoré(s), géométrie non gérée)'):'')+
+      (extraBits.length?(', '+extraBits.join(', ')):'')+
       '. Ouvre-le avec Google Earth (voir mes instructions).';
   }catch(e){
     console.error('[KML export] Erreur', e);
@@ -8267,11 +8412,13 @@ async function loadRouteAirspaces(){
     }
     var roundOk=false, roundIsTimeout=false;
     try{
-      /* OpenAIP paginé — on suit totalPages au cas où la bbox contient plus
-         d'items que la limite d'une seule page (les CTR/TMZ/zones autour de
-         Bruxelles/Anvers sont nombreuses) */
-      var items=[], page=1, totalPages=1, limitPerPage=1000;
-      do{
+      /* OpenAIP paginé — la bbox peut contenir plus d'items que la limite d'une seule page
+         (CTR/TMZ/zones autour de Bruxelles/Anvers nombreuses). On ne se fie PAS à un champ
+         "totalPages" dont le nom/emplacement exact dans la réponse n'a pas pu être vérifié :
+         heuristique robuste, indépendante du format — tant qu'une page revient PLEINE (autant
+         d'items que la limite demandée), il y a probablement une suite. */
+      var items=[], page=1, limitPerPage=1000, keepPaging=true;
+      while(keepPaging && page<=40){
         var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
         var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
         if(!resp.ok){
@@ -8284,9 +8431,9 @@ async function loadRouteAirspaces(){
         console.log('[Altitudes] Réponse OpenAIP brute (page '+page+', round '+(round+1)+') :', data);
         var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
         items=items.concat(pageItems);
-        totalPages=data.totalPages||1;
+        keepPaging=pageItems.length>=limitPerPage;
         page++;
-      }while(page<=totalPages && page<=10);
+      }
 
       if(!items.length){
         _routeAirspaces=[];
