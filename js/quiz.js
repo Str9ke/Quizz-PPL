@@ -933,7 +933,9 @@ function _computeSrEntry(q, selectedVal) {
       // la ressasher une fois qu'elle est clairement acquise), une question ratée 1-2 fois
       // plafonne à 120j, au-delà elle reste plus surveillée (60j). Le multiplicateur de
       // croissance est aussi réduit pour les questions historiquement difficiles.
-      if (prevInterval <= 0) newInterval = 1;
+      // Une toute première bonne réponse saute directement à 3j (pas 1j) : revoir une
+      // question réussie dès le lendemain n'apporte rien, elle est déjà fraîche en mémoire.
+      if (prevInterval <= 0) newInterval = 3;
       else if (prevInterval === 1) newInterval = 3;
       else {
         const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
