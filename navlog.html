@@ -7990,20 +7990,21 @@ window.exportAirspacesKML = async function(){
      Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord et sud-est de
      l'Angleterre. Ajuste ces 4 valeurs si tu veux une zone plus grande/petite. */
   var south=47.3, north=53.7, west=-0.5, east=9.4;
+  var WIDE_CACHE_KEY='navlogAirspacesWideCache_v1';
 
   if(btn) btn.disabled=true;
   if(statusEl) statusEl.textContent='⏳ Téléchargement des espaces aériens OpenAIP pour toute la zone (Belgique + ~1h de vol)… ceci peut prendre une minute, la zone est grande.';
 
   try{
     var items=[],page=1,totalPages=1,limitPerPage=1000;
+    var fetchFailed=false, fetchFailStatus=null;
     do{
       var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
       if(statusEl) statusEl.textContent='⏳ Téléchargement… page '+page+(totalPages>1?('/'+totalPages):'')+' ('+items.length+' zones reçues jusqu\'ici)';
       var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
       if(!resp||!resp.ok){
-        if(statusEl) statusEl.textContent='❌ OpenAIP a répondu '+(resp?resp.status:'(pas de réponse)')+' — réessaie dans une minute.';
-        if(btn) btn.disabled=false;
-        return;
+        fetchFailed=true; fetchFailStatus=resp?resp.status:null;
+        break;
       }
       var data=await resp.json();
       var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
@@ -8012,7 +8013,28 @@ window.exportAirspacesKML = async function(){
       page++;
     }while(page<=totalPages && page<=20);
 
-    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s) reçue(s) — génération du fichier KML…';
+    if(fetchFailed){
+      /* OpenAIP indisponible : proposer le dernier export complet réussi en cache (s'il
+         existe) plutôt que d'abandonner sans rien — même logique que pour les zones de
+         la route (voir _loadAirspacesCache), mais dans un slot séparé car la zone est
+         beaucoup plus large ici (toute la Belgique + 1h de vol, pas juste la route). */
+      var wideCached=null;
+      try{
+        var rawWide=localStorage.getItem(WIDE_CACHE_KEY);
+        if(rawWide){ var pw=JSON.parse(rawWide); if(pw&&Array.isArray(pw.items)&&pw.items.length) wideCached=pw; }
+      }catch(e3){}
+      if(!wideCached){
+        if(statusEl) statusEl.textContent='❌ OpenAIP a répondu '+(fetchFailStatus||'(pas de réponse)')+' — réessaie dans une minute. (Aucun export précédent en cache à proposer.)';
+        if(btn) btn.disabled=false;
+        return;
+      }
+      items=wideCached.items;
+      if(statusEl) statusEl.textContent='⚠️ OpenAIP indisponible ('+(fetchFailStatus||'pas de réponse')+') — génération du KML à partir du dernier export réussi, du '+_formatCacheDate(wideCached.ts)+'…';
+    } else {
+      try{ localStorage.setItem(WIDE_CACHE_KEY,JSON.stringify({items:items,ts:Date.now()})); }catch(e4){ console.warn('[KML export] Cache local indisponible (quota ?)',e4); }
+    }
+
+    if(statusEl) statusEl.textContent=(fetchFailed?'⚠️ (cache) ':'⏳ ')+items.length+' zone(s) '+(fetchFailed?'(en cache) ':'reçue(s) ')+'— génération du fichier KML…';
     await new Promise(function(r){ setTimeout(r,10); }); // laisse le statut s'afficher avant le calcul lourd
 
     var byClass={};
@@ -8046,7 +8068,7 @@ window.exportAirspacesKML = async function(){
     setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
 
     var nbZones=items.length-skipped;
-    if(statusEl) statusEl.textContent='✅ Fichier téléchargé : '+nbZones+' volume(s) exporté(s)'+(skipped?(' ('+skipped+' ignoré(s), géométrie non gérée)'):'')+
+    if(statusEl) statusEl.textContent=(fetchFailed?'⚠️ Fichier téléchargé depuis le cache (OpenAIP indisponible, données du '+_formatCacheDate(wideCached.ts)+') : ':'✅ Fichier téléchargé : ')+nbZones+' volume(s) exporté(s)'+(skipped?(' ('+skipped+' ignoré(s), géométrie non gérée)'):'')+
       '. Ouvre-le avec Google Earth (voir mes instructions).';
   }catch(e){
     console.error('[KML export] Erreur', e);
@@ -8149,6 +8171,33 @@ async function _fetchWithRetry(url,opts){
   }
 }
 
+/* ===== Cache local des espaces aériens OpenAIP (localStorage) =====
+   OpenAIP est régulièrement indisponible (503/surcharge). On garde toujours le dernier
+   jeu de données téléchargé avec succès (toutes routes confondues — un seul "slot"), pour
+   pouvoir travailler hors-ligne/en attendant qu'OpenAIP réponde à nouveau, avec une date
+   claire de validité. Remplacé automatiquement dès qu'un chargement réseau réussit. */
+var AIRSPACES_CACHE_KEY='navlogAirspacesCache_v1';
+function _saveAirspacesCache(items,bbox){
+  try{
+    localStorage.setItem(AIRSPACES_CACHE_KEY,JSON.stringify({items:items,bbox:bbox,ts:Date.now()}));
+  }catch(e){
+    console.warn('[Altitudes] Cache local indisponible (quota localStorage ?)',e);
+  }
+}
+function _loadAirspacesCache(){
+  try{
+    var raw=localStorage.getItem(AIRSPACES_CACHE_KEY);
+    if(!raw) return null;
+    var parsed=JSON.parse(raw);
+    if(!parsed||!Array.isArray(parsed.items)||!parsed.items.length) return null;
+    return parsed;
+  }catch(e){ return null; }
+}
+function _formatCacheDate(ts){
+  var d=new Date(ts);
+  return d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+
 async function loadRouteAirspaces(){
   var status=document.getElementById('altitudesStatus');
   var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
@@ -8170,7 +8219,23 @@ async function loadRouteAirspaces(){
   var south=Math.min.apply(null,lats)-pad, north=Math.max.apply(null,lats)+pad;
   var west=Math.min.apply(null,lons)-pad, east=Math.max.apply(null,lons)+pad;
 
-  if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
+  /* Appliquer immédiatement le cache local (s'il existe) pendant que la requête réseau
+     tourne en arrière-plan, pour ne jamais laisser l'utilisateur sans rien si OpenAIP est
+     indisponible — remplacé automatiquement dès que le chargement réseau réussit. */
+  var _airspacesCached=_loadAirspacesCache();
+  var _usedCacheFallback=false;
+  if(_airspacesCached){
+    _lastOpenaipItems=_airspacesCached.items;
+    _routeAirspaces=_computeAirspaceCrossings(_airspacesCached.items);
+    _altitudesRouteSig=_currentRouteSig();
+    _usedCacheFallback=true;
+    if(status) status.textContent='🗂️ Zones en cache (téléchargées le '+_formatCacheDate(_airspacesCached.ts)+') — chargement des données à jour…';
+    renderAltitudesProfile();
+    renderAltitudesCrossingsList();
+    if(typeof renderAltProfile==='function') renderAltProfile();
+  } else {
+    if(status) status.textContent='⏳ Chargement des espaces aériens OpenAIP…';
+  }
 
   /* OpenAIP répond parfois 503/lentement plusieurs fois de suite (surcharge
      ponctuelle) — _fetchWithRetry() gère déjà 3 tentatives rapprochées, mais
@@ -8222,6 +8287,8 @@ async function loadRouteAirspaces(){
       _altitudesRouteSig=_currentRouteSig();
 
       _routeAirspaces=results;
+      _saveAirspacesCache(items,{south:south,north:north,west:west,east:east});
+      _usedCacheFallback=false;
       if(status) status.textContent=results.length
         ? '✅ '+results.length+' espace(s) aérien(s) croisé(s) par la route ('+items.length+' zone(s) analysée(s) dans la zone chargée).'
         : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+items.length+' zone(s) analysée(s) autour, détail en console F12).';
@@ -8238,9 +8305,16 @@ async function loadRouteAirspaces(){
     }
     if(roundOk) return;
     if(round===ROUND_DELAYS.length-1){
-      if(status) status.textContent=roundIsTimeout
-        ? '❌ OpenAIP ne répond pas, même après plusieurs tentatives automatiques étalées sur '+Math.round(ROUND_DELAYS.reduce(function(s,d){return s+d;},0)/1000)+'s — réessaie plus tard, ou vérifie ta connexion.'
-        : '❌ Erreur réseau/format persistante lors du chargement OpenAIP, malgré plusieurs tentatives automatiques (détail en console F12 — envoie-le-moi si ça persiste).';
+      if(_usedCacheFallback){
+        /* Une version en cache est déjà appliquée et visible — on le dit clairement
+           plutôt que d'afficher une erreur alarmante alors que l'utilisateur a déjà
+           des zones à l'écran (juste pas les plus fraîches). */
+        if(status) status.textContent='⚠️ OpenAIP indisponible — zones en cache du '+_formatCacheDate(_airspacesCached.ts)+' toujours affichées (peuvent être obsolètes, notamment zones temporaires/NOTAMs). Réessaie plus tard pour les données à jour.';
+      } else if(status) {
+        status.textContent=roundIsTimeout
+          ? '❌ OpenAIP ne répond pas, même après plusieurs tentatives automatiques étalées sur '+Math.round(ROUND_DELAYS.reduce(function(s,d){return s+d;},0)/1000)+'s — réessaie plus tard, ou vérifie ta connexion.'
+          : '❌ Erreur réseau/format persistante lors du chargement OpenAIP, malgré plusieurs tentatives automatiques (détail en console F12 — envoie-le-moi si ça persiste).';
+      }
     }
   }
 }
@@ -9001,6 +9075,27 @@ function renderAltProfile(){
 var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
 var _altTerrainFetching=false; /* évite un double appel réseau si les deux graphiques (Navlog + Altitudes) le déclenchent au même moment */
 
+/* Les API d'élévation gratuites (open-elevation.com/opentopodata.org) ont parfois des
+   "trous" de données isolés (voids SRTM) qui renvoient 0 ou une valeur aberrante sur UN
+   SEUL point d'échantillonnage, même en terrain vallonné/montagneux (ex: Ardennes) — ça
+   crée un pic ou un creux visuellement faux et trompeur sur le profil (terrain qui semble
+   plat/bas alors qu'il monte réellement). On lisse : un point isolé qui s'écarte de plus de
+   800ft de SES DEUX voisins, dans le même sens (creux ou pic ponctuel), est remplacé par
+   leur moyenne — les vraies variations progressives du relief ne sont jamais affectées.
+*/
+function _smoothTerrainOutliers(elevs){
+  if(!elevs||elevs.length<3) return elevs;
+  var out=elevs.slice();
+  for(var i=1;i<elevs.length-1;i++){
+    var prev=elevs[i-1], cur=elevs[i], next=elevs[i+1];
+    var dPrev=cur-prev, dNext=cur-next;
+    if(Math.abs(dPrev)>800 && Math.abs(dNext)>800 && ((dPrev>0)===(dNext>0))){
+      out[i]=Math.round((prev+next)/2);
+    }
+  }
+  return out;
+}
+
 function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
   if(_altTerrainFetching) return;
   _altTerrainFetching=true;
@@ -9010,7 +9105,7 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
       segs.push({lat1:waypoints[i-1].lat,lon1:waypoints[i-1].lon,lat2:waypoints[i].lat,lon2:waypoints[i].lon,dist:waypoints[i].dist||0});
   }
   if(!segs.length){ _altTerrainFetching=false; return; }
-  var n=24,locs=[],xs=[];
+  var n=40,locs=[],xs=[];
   for(var s=0;s<=n;s++){
     var td=totalDist*(s/n),cd=0;
     for(var si=0;si<segs.length;si++){
@@ -9031,7 +9126,7 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
   /* Essai 1 : open-elevation.com (POST JSON) */
   var _applyTerrain=function(elevs){
     _altTerrainFetching=false;
-    _altTerrainCache=elevs;
+    _altTerrainCache=_smoothTerrainOutliers(elevs);
     renderAltProfile();
     /* Le graphique de l'onglet Altitudes réutilise le même cache terrain —
        le rafraîchir aussi s'il existe (tab ouverte ou pas, ça ne coûte rien) */
