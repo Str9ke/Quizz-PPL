@@ -116,6 +116,33 @@ function _isAggregateCategory(normalizedSel) {
     normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
 }
 
+/**
+ * EASA_SUBJECTS – Les 9 matières officielles de l'examen théorique PPL(A) (syllabus EASA
+ * Part-FCL), chacune évaluée et notée SÉPARÉMENT à l'examen réel (contrairement à une
+ * simple moyenne globale, chaque matière doit individuellement atteindre le seuil de
+ * réussite). Utilisé à la fois par epreuve.html (examen blanc) et par le tableau de bord
+ * "Suis-je prêt ?" de stats.html — définie UNE SEULE FOIS ici pour que les deux restent
+ * cohérents. Chaque matière liste les valeurs de catégorie (telles qu'utilisées ailleurs
+ * dans l'app) dont les questions relèvent de cette matière.
+ *
+ * IMPORTANT : le nombre de questions et le seuil de réussite exacts de l'examen réel
+ * (BCAA/EASA) peuvent varier et n'ont pas pu être vérifiés de façon certaine ici — les
+ * valeurs par défaut proposées dans epreuve.html sont indicatives et modifiables, PAS une
+ * garantie de correspondance exacte avec l'examen officiel en vigueur. Les 9 noms de
+ * matières eux-mêmes suivent le syllabus EASA Part-FCL standard (stable, documenté).
+ */
+const EASA_SUBJECTS = [
+  { name: 'Air Law (Réglementation)', categories: ['EASA REGLEMENTATION', 'GLIGLI REGLEMENTATION HARD', 'GLIGLI REGLEMENTATION EASY', 'RÉGLEMENTATION'] },
+  { name: 'Aircraft General Knowledge (Connaissance avion)', categories: ['EASA CONNAISSANCE DE L\'AVION', 'GLIGLI CONNAISSANCES GENERALES AERONEF HARD', 'GLIGLI CONNAISSANCES GENERALES AERONEF EASY', 'CONNAISSANCE DE L\'AVION', 'INSTRUMENTATION', 'MOTORISATION'] },
+  { name: 'Flight Performance & Planning (Performances et préparation du vol)', categories: ['EASA PERFORMANCE ET PLANIFICATION', 'GLIGLI PERFORMANCES PREPARATION VOL HARD', 'GLIGLI PERFORMANCES PREPARATION VOL EASY', 'MASSE ET CENTRAGE'] },
+  { name: 'Human Performance & Limitations (Performances humaines)', categories: ['EASA PERFORMANCES HUMAINES', 'GLIGLI PERFORMANCE HUMAINE HARD', 'GLIGLI PERFORMANCE HUMAINE EASY'] },
+  { name: 'Meteorology (Météorologie)', categories: ['EASA METEOROLOGIE', 'GLIGLI METEOROLOGIE HARD', 'GLIGLI METEOROLOGIE EASY'] },
+  { name: 'Navigation', categories: ['EASA NAVIGATION', 'GLIGLI NAVIGATION HARD', 'GLIGLI NAVIGATION EASY'] },
+  { name: 'Operational Procedures (Procédures opérationnelles)', categories: ['EASA PROCEDURES', 'GLIGLI PROCEDURES OPERATIONNELLES HARD', 'GLIGLI PROCEDURES OPERATIONNELLES EASY', 'PROCÉDURES OPÉRATIONNELLES'] },
+  { name: 'Principles of Flight (Principes du vol)', categories: ['EASA AERODYNAMIQUE', 'GLIGLI PRINCIPES DU VOL HARD', 'GLIGLI PRINCIPES DU VOL EASY', 'AERODYNAMIQUE PRINCIPES DU VOL'] },
+  { name: 'Communications', categories: ['PROCÉDURE RADIO', 'GLIGLI COMMUNICATIONS HARD', 'GLIGLI COMMUNICATIONS EASY'] }
+];
+
 // Replace curly apostrophes etc. with straight apostrophes for consistency
 function fixQuotes(str) {
   return str
