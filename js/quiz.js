@@ -658,6 +658,16 @@ function afficherQuiz() {
     return;
   }
 
+  // Suivi du temps réel par question (voir helpers.js _qt*) : initialiser le tracker
+  // idle-aware et figer MAINTENANT quelles questions sont "nouvelles" vs "déjà vues" —
+  // une réponse en cours de session écrase currentResponses[key], donc ce snapshot doit
+  // être pris avant toute réponse, pas au moment où l'utilisateur répond.
+  if (typeof _qtInit === 'function') _qtInit();
+  window._qtIsNewByIdx = currentQuestions.map(q =>
+    (typeof _isUnseen === 'function') ? _isUnseen(currentResponses[getKeyFor(q)]) : true);
+  window._qtLastTouchedIdx = null;
+  if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
+
   // Affichage par lots (pagination) : ne montrer que N questions à la fois pour ne pas
   // noyer l'utilisateur avec des sessions de centaines/milliers de questions (mode Objectif).
   const batchSize = Math.max(1, parseInt(localStorage.getItem('quizBatchSize')) || 5);
@@ -744,6 +754,22 @@ function afficherQuiz() {
       const qIdx = parseInt(m[1]);
       const q2 = currentQuestions[qIdx];
       if (!q2) return;
+
+      // Suivi du temps réel par question : le temps actif écoulé depuis la dernière
+      // réponse cochée (ou le début de la session/du lot pour la 1ère réponse) correspond
+      // au temps passé sur CETTE question — donc on l'enregistre ICI, au moment du clic,
+      // puis on repart de zéro pour la suivante. Reconsidérer la réponse déjà cochée de la
+      // MÊME question (changement d'avis) ne recompte rien de plus (chrono inchangé).
+      if (window._qtLastTouchedIdx !== qIdx) {
+        if (typeof _qtElapsedMs === 'function' && typeof _qtRecordSample === 'function') {
+          const sec = _qtElapsedMs() / 1000;
+          const isNew = window._qtIsNewByIdx ? window._qtIsNewByIdx[qIdx] : true;
+          _qtRecordSample(sec, isNew);
+        }
+        window._qtLastTouchedIdx = qIdx;
+        if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
+      }
+
       try {
         const saved = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}');
         saved[qIdx] = q2.choix[parseInt(radio.value)];
@@ -867,6 +893,13 @@ function _setupQuizPagination(totalBatches) {
 function _goToQuizBatch(newBatch) {
   const totalBatches = Math.ceil(currentQuestions.length / window._quizBatchSize);
   if (newBatch < 0 || newBatch >= totalBatches) return;
+  // Suivi du temps réel par question : repartir de zéro pour le nouveau lot (la réponse
+  // à la dernière question du lot précédent a déjà été enregistrée au moment du clic —
+  // voir le listener 'change' délégué — donc rien à récupérer ici, juste à réinitialiser
+  // pour ne pas compter le temps de défilement/lecture entre les lots dans la 1ère question
+  // du nouveau lot).
+  window._qtLastTouchedIdx = null;
+  if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
   const prevEl = document.querySelector(`.quiz-batch[data-batch="${window._quizCurrentBatch}"]`);
   if (prevEl) prevEl.style.display = 'none';
   const nextEl = document.querySelector(`.quiz-batch[data-batch="${newBatch}"]`);
