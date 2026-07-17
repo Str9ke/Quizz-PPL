@@ -629,6 +629,7 @@ async function initStats() {
     window._masteryResponses = data.responses || {};
     window._masteryNotes = data.notes || {};
     if (typeof _renderMasteryEstimator === 'function') _renderMasteryEstimator(groups);
+    if (typeof _renderSrForecast === 'function') _renderSrForecast(data.responses || {});
 
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
     const dailyHistory = data.dailyHistory || {};
@@ -2011,6 +2012,111 @@ async function _resetGroupFlaggedStats(groupName) {
     console.error('[resetGroupFlagged] Erreur:', e);
     alert('Erreur : ' + e.message);
   }
+}
+
+/**
+ * _computeSrForecast(responses, numDays) – Répartit les révisions déjà planifiées
+ * (nextReview) sur les `numDays` prochains jours civils (jour 0 = aujourd'hui, y compris
+ * tout ce qui est déjà en retard). Une question éligible mais jamais planifiée (nextReview
+ * absent) est due immédiatement, comme le fait déjà _isDueForReview() partout ailleurs dans
+ * l'app — même règle réutilisée ici, pas de nouvelle logique inventée. Les réussites/échecs
+ * passés sont déjà "digérés" dans ces dates par _computeSrEntry() (croissance/lapse) : pas
+ * besoin de re-simuler un taux de réussite futur, la planification actuelle EST la meilleure
+ * estimation compte tenu de l'historique réel de l'utilisateur.
+ */
+function _computeSrForecast(responses, numDays) {
+  const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : responses;
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
+
+  const buckets = [];
+  for (let i = 0; i <= numDays; i++) buckets.push(0);
+  let beyond = 0;
+  let totalEligible = 0;
+
+  Object.values(normResponses || {}).forEach(r => {
+    if (!r || r.suspended) return;
+    if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
+    totalEligible++;
+    const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
+    let diffDays = Math.floor((nr - todayStartMs) / dayMs);
+    if (diffDays < 0) diffDays = 0;
+    if (diffDays <= numDays) buckets[diffDays]++;
+    else beyond++;
+  });
+
+  return { buckets, beyond, totalEligible };
+}
+
+/**
+ * _renderSrForecast(responses) – Carte "Programme des prochains jours" sur stats.html :
+ * pour aujourd'hui + les 13 jours suivants, combien de révisions espacées seront dues
+ * (planification actuelle) et combien de nouvelles questions viendraient s'y ajouter au
+ * rythme configuré (getDailyNewTarget), avec une estimation de temps basée sur le rythme
+ * réel déjà mesuré (_qt*).
+ */
+function _renderSrForecast(responses) {
+  const cont = document.getElementById('srForecastContainer');
+  if (!cont) return;
+  const NUM_DAYS = 14;
+  const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS);
+  const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
+  const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
+    ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
+
+  const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  let rowsHtml = '';
+  for (let i = 0; i <= NUM_DAYS; i++) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + i);
+    const dueCount = buckets[i];
+    const total = dueCount + dailyNewTarget;
+    const estSec = dueCount * secPerReview + dailyNewTarget * secPerNew;
+    const estMin = Math.round(estSec / 60);
+    const dayLabel = i === 0 ? 'Aujourd\'hui' : (i === 1 ? 'Demain' : (dayNames[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1)));
+    const barMax = Math.max(1, ...buckets);
+    const barPct = Math.round((dueCount / barMax) * 100);
+    rowsHtml += `
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="flex:0 0 90px;${i === 0 ? 'font-weight:700;color:#f59e0b' : ''}">${dayLabel}</span>
+        <div style="flex:1;min-width:60px;background:rgba(255,255,255,.06);border-radius:4px;height:14px;position:relative;overflow:hidden">
+          <div style="height:100%;width:${barPct}%;background:${i === 0 ? '#f59e0b' : '#667eea'};border-radius:4px"></div>
+        </div>
+        <span style="flex:0 0 70px;text-align:right">📅 ${dueCount}${i === 0 && dueCount > 0 ? ' (dont retard)' : ''}</span>
+        <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">+${dailyNewTarget} nv.</span>
+        <span style="flex:0 0 50px;text-align:right;font-weight:700">${total}</span>
+        <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">~${estMin} min</span>
+      </div>`;
+  }
+
+  cont.innerHTML = `
+    <div class="home-card" id="srForecastCard">
+      <div class="home-card-header">
+        <span class="home-card-icon">📅</span>
+        <span class="home-card-title">Programme des prochains jours (répétition espacée)</span>
+      </div>
+      <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 8px">
+        Révisions dues chaque jour selon ta planification actuelle (déjà influencée par ton
+        historique de réussite/échec réel), plus ton objectif de nouvelles questions/jour
+        (${dailyNewTarget}, modifiable sur l'accueil). Temps estimé à partir de ton rythme réel mesuré.
+      </p>
+      <div style="display:flex;gap:8px;font-size:.75em;color:var(--text-secondary);padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px">
+        <span style="flex:0 0 90px">Jour</span>
+        <span style="flex:1;min-width:60px"></span>
+        <span style="flex:0 0 70px;text-align:right">Révisions</span>
+        <span style="flex:0 0 60px;text-align:right">Nouvelles</span>
+        <span style="flex:0 0 50px;text-align:right">Total</span>
+        <span style="flex:0 0 60px;text-align:right">Temps</span>
+      </div>
+      ${rowsHtml}
+      ${beyond > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:8px 0 0">+ ${beyond} révision(s) planifiée(s) au-delà de ${NUM_DAYS} jours.</p>` : ''}
+      <p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">${totalEligible} question(s) au total dans le cycle de répétition espacée.</p>
+    </div>
+  `;
 }
 
 /**
