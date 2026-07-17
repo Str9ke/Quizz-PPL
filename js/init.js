@@ -217,9 +217,17 @@ async function initIndex() {
   await updateModeCounts();
 
   // Mode par défaut : "Mixte" (nouvelles + révisions dues), pour que la répétition espacée
-  // soit réellement utilisée sans que l'utilisateur ait à y penser à chaque session.
+  // soit réellement utilisée sans que l'utilisateur ait à y penser à chaque session — SAUF
+  // si l'utilisateur a lui-même choisi un autre mode la dernière fois : on le restaure alors.
   const modeSelect = document.getElementById('mode');
-  if (modeSelect) modeSelect.value = 'mixte';
+  if (modeSelect) {
+    const lastModeValue = localStorage.getItem('lastModeSelectValue');
+    const isValidLastMode = lastModeValue && Array.from(modeSelect.options).some(o => o.value === lastModeValue);
+    modeSelect.value = isValidLastMode ? lastModeValue : 'mixte';
+  }
+  // Restaurer les cases marquées/importantes/avec notes telles qu'elles étaient
+  // à la dernière visite (elles remplacent alors le menu Mode ci-dessus).
+  if (typeof _restoreModeFilterCheckboxes === 'function') _restoreModeFilterCheckboxes();
 
   // Badge "Révisions du jour" sur la carte de configuration du quiz
   _updateRevisionsBadge();

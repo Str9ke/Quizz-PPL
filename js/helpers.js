@@ -469,6 +469,43 @@ function _syncModeFilterState() {
 }
 
 /**
+ * _onModeFilterCheckboxChange() – Appelé quand l'utilisateur coche/décoche une case
+ * marquées/importantes/avec notes à la main : mémorise son choix (localStorage) pour
+ * qu'il soit restauré à la prochaine visite, puis met à jour l'état visuel du menu Mode.
+ * NB: volontairement séparé de _syncModeFilterState() — les décochages programmatiques
+ * (ex. _startObjectifDuJour) ne doivent PAS écraser la configuration mémorisée.
+ */
+function _onModeFilterCheckboxChange() {
+  ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) localStorage.setItem(id, el.checked ? '1' : '0');
+  });
+  _syncModeFilterState();
+}
+
+/**
+ * _restoreModeFilterCheckboxes() – Restaure au chargement de la page les cases
+ * marquées/importantes/avec notes telles qu'elles étaient lors de la dernière visite.
+ */
+function _restoreModeFilterCheckboxes() {
+  ['filterMarqueesCheckbox', 'filterImportantesCheckbox', 'filterNotesCheckbox'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = localStorage.getItem(id) === '1';
+  });
+  _syncModeFilterState();
+}
+
+/**
+ * _saveModeSelectValue() – Mémorise la valeur choisie à la main dans le menu "Mode"
+ * (n'est PAS appelé lors d'une affectation programmatique comme dans _startObjectifDuJour,
+ * puisque modeSelect.value = ... ne déclenche pas l'évènement "change").
+ */
+function _saveModeSelectValue() {
+  const el = document.getElementById('mode');
+  if (el) localStorage.setItem('lastModeSelectValue', el.value);
+}
+
+/**
  * _resolveModeSelection() – Détermine le mode effectif à utiliser pour démarrer un quiz :
  * si au moins une case marquées/importantes/avec notes est cochée, combine-les en un
  * mode "combo:..." (union, cochables ensemble) ; sinon utilise la valeur du menu "Mode".

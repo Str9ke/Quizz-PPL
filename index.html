@@ -310,7 +310,7 @@
         </div>
         <div class="home-form-group">
           <label for="mode" class="home-label">Mode</label>
-          <select id="mode" class="home-select"></select>
+          <select id="mode" class="home-select" onchange="_saveModeSelectValue()"></select>
         </div>
         <div class="home-form-group">
           <label for="quizBatchSize" class="home-label">Affichage par page</label>
@@ -330,15 +330,15 @@
       <div class="home-options" id="modeFilterCheckboxes" style="border-top:1px dashed rgba(255,255,255,.12);margin-top:8px;padding-top:8px">
         <span style="font-size:.75em;color:var(--text-secondary,#aaa);width:100%">Combiner des filtres (remplace le Mode ci-dessus, cochables ensemble) :</span>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterMarqueesCheckbox" onchange="_syncModeFilterState()">
+          <input type="checkbox" id="filterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange()">
           <span>🔖 Marquées</span>
         </label>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterImportantesCheckbox" onchange="_syncModeFilterState()">
+          <input type="checkbox" id="filterImportantesCheckbox" onchange="_onModeFilterCheckboxChange()">
           <span>⭐ Importantes</span>
         </label>
         <label class="home-checkbox-label">
-          <input type="checkbox" id="filterNotesCheckbox" onchange="_syncModeFilterState()">
+          <input type="checkbox" id="filterNotesCheckbox" onchange="_onModeFilterCheckboxChange()">
           <span>📝 Avec notes</span>
         </label>
       </div>
@@ -401,11 +401,11 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260717a"></script>
-  <script src="js/helpers.js?v=20260717a"></script>
+  <script src="js/helpers.js?v=20260717b"></script>
   <script src="js/categories.js?v=20260717a"></script>
   <script src="js/stats.js?v=20260224i"></script>
   <script src="js/quiz.js?v=20260717a"></script>
-  <script src="js/init.js?v=20260717a"></script>
+  <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
 
   <!-- Sélecteur de voix TTS : population & test -->
