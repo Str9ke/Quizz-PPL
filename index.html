@@ -256,11 +256,11 @@
     <!-- Daily stats bar -->
     <div id="dailyStatsBar" style="display:none;"></div>
 
-    <!-- Objectif du jour : lancer une session en un clic (révisions dues + objectif de nouvelles) -->
+    <!-- Répétition espacée : lancer une session en un clic (révisions dues + objectif de nouvelles) -->
     <div class="home-card" style="border-color:rgba(245,158,11,.35)">
       <div class="home-card-header">
         <span class="home-card-icon">🚀</span>
-        <span class="home-card-title">Objectif du jour</span>
+        <span class="home-card-title">Répétition espacée</span>
       </div>
       <div id="objectifSummary" style="font-size:.85em;color:var(--text-secondary);margin-bottom:10px;">Chargement...</div>
       <div class="home-form-group" style="margin-bottom:12px">
@@ -275,15 +275,15 @@
         <span style="color:var(--text-secondary,#aaa);width:100%">Filtrer cette session (cochables ensemble) :</span>
         <label class="home-checkbox-label" style="margin:0">
           <input type="checkbox" id="objFilterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>🔖 Marquées</span>
+          <span>🔖 Marquées<span class="filter-count" id="objFilterMarqueesCount"></span></span>
         </label>
         <label class="home-checkbox-label" style="margin:0">
           <input type="checkbox" id="objFilterImportantesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>⭐ Importantes</span>
+          <span>⭐ Importantes<span class="filter-count" id="objFilterImportantesCount"></span></span>
         </label>
         <label class="home-checkbox-label" style="margin:0">
           <input type="checkbox" id="objFilterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>📝 Avec notes</span>
+          <span>📝 Avec notes<span class="filter-count" id="objFilterNotesCount"></span></span>
         </label>
       </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
@@ -346,15 +346,15 @@
         <span style="font-size:.75em;color:var(--text-secondary,#aaa);width:100%">Filtrer en plus du Mode ci-dessus (ex. Révisions du jour + Marquées), cochables ensemble :</span>
         <label class="home-checkbox-label">
           <input type="checkbox" id="filterMarqueesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>🔖 Marquées</span>
+          <span>🔖 Marquées<span class="filter-count" id="filterMarqueesCount"></span></span>
         </label>
         <label class="home-checkbox-label">
           <input type="checkbox" id="filterImportantesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>⭐ Importantes</span>
+          <span>⭐ Importantes<span class="filter-count" id="filterImportantesCount"></span></span>
         </label>
         <label class="home-checkbox-label">
           <input type="checkbox" id="filterNotesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
-          <span>📝 Avec notes</span>
+          <span>📝 Avec notes<span class="filter-count" id="filterNotesCount"></span></span>
         </label>
       </div>
       <button id="btnStart" class="home-btn-start" disabled onclick="demarrerQuiz()">
@@ -416,8 +416,8 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260717c"></script>
-  <script src="js/helpers.js?v=20260717e"></script>
-  <script src="js/categories.js?v=20260717e"></script>
+  <script src="js/helpers.js?v=20260717f"></script>
+  <script src="js/categories.js?v=20260717f"></script>
   <script src="js/stats.js?v=20260224i"></script>
   <script src="js/quiz.js?v=20260717d"></script>
   <script src="js/init.js?v=20260717b"></script>
