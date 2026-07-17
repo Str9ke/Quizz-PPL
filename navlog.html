@@ -9618,7 +9618,6 @@ document.addEventListener('paste',function(e){
 /* ===== ROUTE MAP ===== */
 var routeMap=null;
 var routeMapLayers=[];
-var _routeMapLastCoordsSig=null;
 var _currentRoutePolyline=null; /* référence pour mise à jour légère pendant un glisser (voir _mapLineGrabStartMouse/Touch) */
 var _currentRouteHitPolyline=null; /* polyline invisible élargie servant de zone de saisie tactile */
 
@@ -10061,22 +10060,9 @@ function updateRouteMap(){
     var legLabelMarker=L.marker([midLat2,midLon2],{icon:legLabelIcon,interactive:false}).addTo(routeMap);
     routeMapLayers.push(legLabelMarker);
   }
-  /* Recadrer sur l'ensemble de la route, SEULEMENT si les waypoints ont changé.
-     updateRouteMap() est appelée par recalcNavlog(), lui-même déclenché par plein
-     de champs sans rapport (vent, TAS, carburant...) : sans ce garde-fou, la carte
-     se recentrait de force à chaque recalcul, annulant le pan/zoom manuel de l'utilisateur
-     (ex: en glissant la carte juste après avoir modifié un champ ailleurs sur la page). */
-  var coordsSig=JSON.stringify(coords);
-  if(coordsSig!==_routeMapLastCoordsSig){
-    _routeMapLastCoordsSig=coordsSig;
-    try{
-      if(coords.length===1){
-        routeMap.setView(coords[0],11,{animate:false});
-      } else {
-        routeMap.fitBounds(L.latLngBounds(coords),{padding:[50,50],maxZoom:13,animate:false});
-      }
-    }catch(e){}
-  }
+  /* Pas de recadrage automatique ici, volontairement : ajouter/déplacer un point ne doit
+     JAMAIS bouger la vue (pan/zoom) que l'utilisateur a choisie — voir fitRouteMap() (bouton
+     "Recentrer") pour un recadrage manuel explicite sur toute la route. */
 }
 
 /* Recentrer manuellement la carte sur la route (bouton 'Recentrer') */
