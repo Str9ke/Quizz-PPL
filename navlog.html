@@ -2327,7 +2327,7 @@ var RUNWAY_DB = {
 };
 
 var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG','EBTY','EBBE','EBGB','EBMO','LFAV','LFQO','EBAW','EBOS','EBKT',
-  'EHAM','EHRD','EHEH','EHLE','EHBK','EDDK','EDDL','EDLN','EDLV','EDKA','ELLX','LFAT','LFAC','LFQB','LFSG','LFOB','LFSB','EGLC','EGKK','EGJJ'];
+  'EHAM','EHRD','EHEH','EHLE','EHBK','EHFS','EDDK','EDDL','EDLN','EDLV','EDKA','ELLX','LFAT','LFAC','LFQB','LFSG','LFOB','LFSB','EGLC','EGKK','EGJJ'];
 
 /* Nearby airport fallback map for METAR */
 var METAR_FALLBACK = {
@@ -2339,7 +2339,10 @@ var METAR_FALLBACK = {
   'EBFS':['EBCI','EBNM'],
   'EDKA':['EDDK','EDLN'],
   'EDLV':['EDDL','EDLN'],
-  'EHLE':['EHAM','EHRD']
+  'EHLE':['EHAM','EHRD'],
+  /* EHMZ (Midden-Zeeland) ne publie pas de METAR — repli sur EHFS (Vlissingen/KNMI), station
+     la plus proche (~12 km), elle-même utilisable directement via son bouton NL ci-dessus. */
+  'EHMZ':['EHFS']
 };
 
 var WX_FR = {
