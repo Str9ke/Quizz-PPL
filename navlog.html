@@ -10626,8 +10626,13 @@ function mbSelectAircraft(){
     html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
     html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }else{
-    html+='<tr><td>Pilotes avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="140" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
-    html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';;
+    /* Avant : "Pilotes avant" (une seule case pour pilote+passager avant combines) pretait
+       a confusion -- un pilote ajoutant un 3e occupant en place avant n'avait nulle part ou
+       l'entrer separement et pouvait croire que ca "ne prenait pas en compte" son passager.
+       Chaque place a maintenant sa propre case, sans ambiguite. */
+    html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="85" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
+    html+='<tr><td>Passager avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPaxFront" value="0" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxFrontMom">—</td></tr>';
+    html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }
   html+='<tr><td>Bagages zone 1</td><td>'+ac.bag1Arm.toFixed(2)+'</td><td><input type="number" id="mbBag1" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag1Mom">—</td></tr>';
   html+='<tr><td>Bagages zone 2</td><td>'+ac.bag2Arm.toFixed(2)+'</td><td><input type="number" id="mbBag2" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag2Mom">—</td></tr>';
@@ -10705,6 +10710,13 @@ function mbRecalc(){
   var pilot1=parseFloat(document.getElementById('mbPilot1').value)||0;
   var pilotMom=pilot1*ac.pilotArm;
   document.getElementById('mbPilotMom').textContent=pilotMom.toFixed(2);
+  var paxFrontMass=0, paxFrontMom=0;
+  var paxFrontEl=document.getElementById('mbPaxFront');
+  if(paxFrontEl){
+    paxFrontMass=parseFloat(paxFrontEl.value)||0;
+    paxFrontMom=paxFrontMass*ac.pilotArm;
+    var _pfmEl=document.getElementById('mbPaxFrontMom');if(_pfmEl) _pfmEl.textContent=paxFrontMom.toFixed(2);
+  }
   var paxMass=0, paxMom=0;
   var paxEl=document.getElementById('mbPax');
   if(paxEl){
@@ -10719,8 +10731,8 @@ function mbRecalc(){
   var bag2Mom=bag2*ac.bag2Arm;
   document.getElementById('mbBag2Mom').textContent=bag2Mom.toFixed(2);
   // Totals takeoff
-  var totalMass=ac.emptyMass+fuelKg+pilot1+paxMass+bag1+bag2;
-  var totalMom=ac.emptyMom+fuelMom+pilotMom+paxMom+bag1Mom+bag2Mom;
+  var totalMass=ac.emptyMass+fuelKg+pilot1+paxFrontMass+paxMass+bag1+bag2;
+  var totalMom=ac.emptyMom+fuelMom+pilotMom+paxFrontMom+paxMom+bag1Mom+bag2Mom;
   var totalArm=totalMass>0?totalMom/totalMass:0;
   document.getElementById('mbTotalMass').textContent=totalMass.toFixed(1);
   document.getElementById('mbTotalMom').textContent=totalMom.toFixed(2);
@@ -10824,6 +10836,7 @@ function getMBData(){
     flightDate:mbvs('mbFlightDate'),
     fuel:mbv('mbFuel'),
     pilot1:mbv('mbPilot1'),
+    paxFront:mbv('mbPaxFront'),
     pax:mbv('mbPax'),
     bag1:mbv('mbBag1'),
     bag2:mbv('mbBag2'),
@@ -10836,6 +10849,8 @@ function setMBData(d){
   if(d.flightDate) document.getElementById('mbFlightDate').value=d.flightDate;
   if(d.fuel!==undefined) document.getElementById('mbFuel').value=d.fuel;
   if(d.pilot1!==undefined) document.getElementById('mbPilot1').value=d.pilot1;
+  var paxFrontEl=document.getElementById('mbPaxFront');
+  if(paxFrontEl&&d.paxFront!==undefined) paxFrontEl.value=d.paxFront;
   var paxEl=document.getElementById('mbPax');
   if(paxEl&&d.pax!==undefined) paxEl.value=d.pax;
   if(d.bag1!==undefined) document.getElementById('mbBag1').value=d.bag1;
