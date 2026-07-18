@@ -415,6 +415,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 #routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px;overflow:hidden}
 .route-map-card .route-map-toolbar{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
+.route-map-card .route-map-legend{font-size:.72em;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap}
+.route-map-card .route-map-legend span{display:inline-flex;align-items:center;gap:4px}
+.route-map-card .route-map-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
 
 /* Mode plein écran de la carte de route (surtout utile sur mobile/Android, où la carte
    en carré 1/1 dans le flux normal de la page est trop petite pour être exploitable) :
@@ -744,6 +747,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div id="routeMapContainer"></div>
       <div class="route-map-toolbar">
         <div class="route-map-info" id="routeMapInfo">Ajoutez des waypoints pour voir la route</div>
+        <div class="route-map-legend" id="routeMapLegend" style="display:none"></div>
         <button class="navlog-btn primary" onclick="window.fitRouteMap()" title="Recentrer la carte sur la route">&#x2316; Recentrer</button>
         <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
         <button class="navlog-btn rm-fullscreen-btn" onclick="window.toggleRouteMapFullscreen()" title="Agrandir la carte en plein écran (pratique sur mobile)">&#x26F6; Plein écran</button>
@@ -10394,11 +10398,39 @@ function updateRouteMap(){
     return;
   }
   if(infoEl) infoEl.textContent=pts.length+' points \u2014 '+pts.map(function(p){return p.name;}).join(' \u2192 ');
-  /* Draw route polyline */
+  /* Draw route polyline (couleur par d\u00e9faut \u2014 navigation). Une polyline de survol par-dessus
+     (voir plus bas) reprend en couleur distincte les legs de circuit d\u00e9part/arriv\u00e9e, sans
+     toucher \u00e0 cette ligne de base : c'est elle que _mapLineGrabRefreshLines() met \u00e0 jour en
+     direct pendant un glisser (setLatLngs), donc la garder unique et continue \u00e9vite de casser
+     cette interaction. */
   var coords=pts.map(function(p){return [p.lat,p.lon];});
   var polyline=L.polyline(coords,{color:'#ff1493',weight:4,opacity:.9}).addTo(routeMap);
   routeMapLayers.push(polyline);
   _currentRoutePolyline=polyline;
+  /* Legs de circuit d\u00e9part/arriv\u00e9e : surlign\u00e9s dans une couleur distincte, par-dessus la ligne
+     de base, pour les distinguer visuellement des legs de navigation "r\u00e9els". */
+  var CIRCUIT_DEP_COLOR='#7c4dff', CIRCUIT_ARR_COLOR='#00bcd4';
+  var hasCircuitDepLeg=false, hasCircuitArrLeg=false;
+  for(var cl=0;cl<pts.length-1;cl++){
+    var clType=waypoints[pts[cl+1].idx]?waypoints[pts[cl+1].idx].ptType:null;
+    if(clType!=='circuitDep' && clType!=='circuitArr') continue;
+    var clColor=clType==='circuitDep'?CIRCUIT_DEP_COLOR:CIRCUIT_ARR_COLOR;
+    if(clType==='circuitDep') hasCircuitDepLeg=true; else hasCircuitArrLeg=true;
+    var clSeg=L.polyline([[pts[cl].lat,pts[cl].lon],[pts[cl+1].lat,pts[cl+1].lon]],{color:clColor,weight:4,opacity:.95}).addTo(routeMap);
+    routeMapLayers.push(clSeg);
+  }
+  var legendEl=document.getElementById('routeMapLegend');
+  if(legendEl){
+    if(hasCircuitDepLeg||hasCircuitArrLeg){
+      var legendHtml='';
+      if(hasCircuitDepLeg) legendHtml+='<span><i style="background:'+CIRCUIT_DEP_COLOR+'"></i>\u{1F6EB} Circuit d\u00e9part</span>';
+      if(hasCircuitArrLeg) legendHtml+='<span><i style="background:'+CIRCUIT_ARR_COLOR+'"></i>\u{1F6EC} Circuit arriv\u00e9e</span>';
+      legendEl.innerHTML=legendHtml;
+      legendEl.style.display='';
+    } else {
+      legendEl.style.display='none';
+    }
+  }
   /* WP markers with number badges */
   for(var j=0;j<pts.length;j++){
     var p=pts[j];
@@ -10483,7 +10515,9 @@ function updateRouteMap(){
     var offsetDeg=0.003;
     arrowLat+=Math.cos(perpRad)*offsetDeg;
     arrowLon+=Math.sin(perpRad)*offsetDeg;
-    var svgArrow='<svg width="28" height="28" viewBox="0 0 28 28"><polygon points="28,14 4,2 8,14 4,26" fill="#ff1493" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></svg>';
+    var arrowLegType=waypoints[b.idx]?waypoints[b.idx].ptType:null;
+    var arrowColor=arrowLegType==='circuitDep'?'#7c4dff':(arrowLegType==='circuitArr'?'#00bcd4':'#ff1493');
+    var svgArrow='<svg width="28" height="28" viewBox="0 0 28 28"><polygon points="28,14 4,2 8,14 4,26" fill="'+arrowColor+'" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></svg>';
     var arrowIcon=L.divIcon({
       className:'',
       html:svgArrow,
