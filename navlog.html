@@ -202,6 +202,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-card.etape-card{border-image:linear-gradient(180deg,#ff9500,#e65100) 1;box-shadow:0 4px 16px rgba(255,149,0,.18)}
 .wp-etape-btn{background:none;border:none;font-size:1em;cursor:pointer;padding:2px 4px;opacity:.45;transition:all .2s;flex-shrink:0;line-height:1}
 .wp-etape-btn.active{opacity:1}
+.wp-card.circuit-dep-card{border-image:linear-gradient(180deg,#7c4dff,#4527a0) 1;box-shadow:0 4px 16px rgba(124,77,255,.18)}
+.wp-card.circuit-arr-card{border-image:linear-gradient(180deg,#00bcd4,#006064) 1;box-shadow:0 4px 16px rgba(0,188,212,.18)}
+.wp-circuit-btn{background:none;border:none;font-size:1em;cursor:pointer;padding:2px 4px;opacity:.45;transition:all .2s;flex-shrink:0;line-height:1}
+.wp-circuit-btn.active{opacity:1}
+.wp-circuit-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0}
+.wp-circuit-tag.dep{background:rgba(124,77,255,.18);color:#b39ddb}
+.wp-circuit-tag.arr{background:rgba(0,188,212,.18);color:#4dd0e1}
 .wp-card:hover{box-shadow:0 6px 24px rgba(102,126,234,.15);border-color:rgba(102,126,234,.3)}
 .wp-card-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .wp-num-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;flex-shrink:0}
@@ -2546,18 +2553,24 @@ function renderFuelLog(){
   var contPct = parseFloat(document.getElementById('fuelContingency').value)||5;
 
   var html='<div style="background:rgba(102,126,234,.1);padding:10px;font-weight:700;display:flex;justify-content:space-between"><span>D\u00e9tail par \u00e9tape</span><span>Litres</span></div>';
-  
+
   /* Trip Fuel */
-  var tripTimeMin=0; 
+  var tripTimeMin=0;
   var totalDist=0;
   var tripFuel=0;
-  
+  /* Ventilation navigation / circuit départ / circuit arrivée : ces points de circuit
+     (wp.ptType) restent comptés dans tripFuel/tripTimeMin (calcul général, carburant total)
+     mais sont isolés ici pour être affichés à part, distincts de la navigation proprement dite. */
+  var navFuel=0, navTimeMin=0;
+  var circDepFuel=0, circDepTimeMin=0;
+  var circArrFuel=0, circArrTimeMin=0;
+
   /* waypoints[0] is start (dist=0), waypoints[1] is end of leg 1... */
   /* Loop from 1 to avoid processing the start point as a leg destination */
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
     var legData=wp._leg || {};
-    
+
     /* Leg distance check to avoid 0 nm confusion */
     if(wp.dist>0){
       totalDist+=wp.dist;
@@ -2567,11 +2580,15 @@ function renderFuelLog(){
       tripTimeMin+=t;
       var legFuel = legData.fuel || 0;
       tripFuel += legFuel;
+      var circTag='';
+      if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">\uD83D\uDEEB circuit départ</span>'; }
+      else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">\uD83D\uDEEC circuit arrivée</span>'; }
+      else { navFuel+=legFuel; navTimeMin+=t; }
       html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
-      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small></span>';
+      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small>'+circTag+'</span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
-      
+
       if(wp.isEtape) {
         html+='<div style="padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,183,77,0.1);display:flex;justify-content:space-between;align-items:center;color:#ffb74d;font-size:0.88em;font-style:italic;">';
         html+='<span>\uD83D\uDFE0 (Cumul jusqu\'à l\'étape '+escHTML(wp.name||'WP'+i)+')</span>';
@@ -2623,8 +2640,10 @@ function renderFuelLog(){
   /* Left Column: Fuel Breakdown */
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">ESTIMATION (Litres)</div>';
-  if(tripFuel>0) col1+=row('D\u00e9lestage (Trip)', tripFuel);
-  else col1+=row('D\u00e9lestage (Trip)', 0, 'var(--text-secondary)');
+  if(navFuel>0) col1+=row('D\u00e9lestage (Navigation)', navFuel);
+  else col1+=row('D\u00e9lestage (Navigation)', 0, 'var(--text-secondary)');
+  if(circDepFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part', circDepFuel, '#b39ddb');
+  if(circArrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e', circArrFuel, '#4dd0e1');
 
   col1+=row('Roulage (Taxi)', taxiFuel);
   if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
@@ -2649,9 +2668,11 @@ function renderFuelLog(){
 
   var col2='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col2+='<div style="font-weight:700;margin-bottom:12px;color:#ffa726;font-size:1.1em">TEMPS DE VOL</div>';
-  if(tripTimeMin>0) col2+=timeRow('Temps Vol (Trip)', tripTimeMin);
-  else col2+=timeRow('Temps Vol (Trip)', 0);
-  
+  if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
+  else col2+=timeRow('Temps Vol (Navigation)', 0);
+  if(circDepTimeMin>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part', circDepTimeMin);
+  if(circArrTimeMin>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e', circArrTimeMin);
+
   col2+=timeRow('Taxi D\u00e9part', taxiD);
   col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
   if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
@@ -5708,7 +5729,12 @@ function recalcNavlog(){
    Vue d'ensemble compacte de tout ce qui est encodé point par point (route, cap magnétique,
    distance, vitesse sol, ETE, ETA cumulé), pour repérer une incohérence sans avoir à dérouler
    toute la planche NavLog point par point. Recalculée à chaque recalcNavlog() — donc toujours
-   synchronisée avec ce qui est réellement encodé, pas une copie qui pourrait diverger. */
+   synchronisée avec ce qui est réellement encodé, pas une copie qui pourrait diverger.
+   Les points marqués "circuit départ/arrivée" (wp.ptType) sont volontairement exclus de ce
+   tableau et de son ETA cumulée : ils restent comptés dans le temps/carburant total (calcul
+   général) mais pas dans les points/temps de navigation proprement dits — la route/cap/ETE de
+   chaque ligne est donc recalculée directement d'un point de navigation affiché au suivant,
+   en sautant les points de circuit intermédiaires, plutôt que de réutiliser le leg chaîné. */
 function renderNavlogRecapTable(){
   var card=document.getElementById('navlogRecapCard');
   var cont=document.getElementById('navlogRecapContainer');
@@ -5717,12 +5743,22 @@ function renderNavlogRecapTable(){
   card.style.display='';
 
   var cfg=getConfig();
+  /* Points affichés : le départ, l'arrivée, et tout point de navigation (pas de circuit). */
+  var shownIdx=[];
+  for(var si=0;si<waypoints.length;si++){
+    var w=waypoints[si];
+    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+  }
+  var hiddenCount=waypoints.length-shownIdx.length;
+
   var rows='';
-  for(var i=0;i<waypoints.length;i++){
+  var cumMin=0;
+  for(var k=0;k<shownIdx.length;k++){
+    var i=shownIdx[k];
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
-    if(i===0){
+    if(k===0){
       rows+='<tr>'+
         '<td>'+(i+1)+'</td>'+
         '<td class="nl-recap-name">'+escHTML(name)+'</td>'+
@@ -5731,30 +5767,41 @@ function renderNavlogRecapTable(){
       '</tr>';
       continue;
     }
-    var leg=wp._leg||{};
-    var routeM=Math.round(((wp.route+cfg.dev)%360+360)%360);
+    var prevIdx=shownIdx[k-1];
+    var prev=waypoints[prevIdx];
+    var dist=0,routeTrue=0;
+    if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
+      dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
+    }
+    var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,alt);
+    cumMin+=leg.ete*60;
+    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
     var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
-    var etaStr=wp._eta?formatETA(wp._eta):'--:--';
+    var etaStr=cumMin?formatETA(cumMin):'--:--';
     rows+='<tr'+(wp.isEtape?' class="nl-recap-etape"':'')+'>'+
       '<td>'+(i+1)+'</td>'+
       '<td class="nl-recap-name">'+escHTML(name)+(wp.isEtape?' \u{1F7E0}':'')+'</td>'+
       '<td>'+alt+' ft</td>'+
       '<td>'+routeM+'°</td>'+
       '<td>'+hdgM+'°</td>'+
-      '<td>'+wp.dist+' NM</td>'+
+      '<td>'+dist+' NM</td>'+
       '<td>'+(leg.gs||0)+' kt</td>'+
       '<td>'+formatTime(leg.ete||0)+'</td>'+
       '<td>'+etaStr+'</td>'+
     '</tr>';
   }
+  var hiddenNote=hiddenCount>0
+    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant).</div>'
+    : '';
   cont.innerHTML=
-    '<div class="nl-card-title"><span class="icon">📋</span> Récapitulatif de la route</div>'+
+    '<div class="nl-card-title"><span class="icon">📋</span> Récapitulatif de la route (navigation)</div>'+
     '<div style="overflow-x:auto">'+
     '<table class="nl-recap-table">'+
       '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th>Cap</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA cumulé</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table>'+
-    '</div>';
+    '</div>'+hiddenNote;
 }
 window.renderNavlogRecapTable=renderNavlogRecapTable;
 
@@ -5965,7 +6012,8 @@ function renderNavlog(){
       html+='<div class="leg-strip" id="leg-wrap-'+i+'" style="display:none"><div class="leg-strip-content" id="leg-strip-'+i+'"></div></div>';
       html+='<button class="insert-wp-btn" onclick="window.insertWaypoint('+i+')" title="Ins\u00e9rer un waypoint">+</button>';
     }
-    html+='<div class="wp-card'+(wp.isEtape?' etape-card':'')+'" data-idx="'+i+'">';
+    var ptCardCls=wp.ptType==='circuitDep'?' circuit-dep-card':(wp.ptType==='circuitArr'?' circuit-arr-card':'');
+    html+='<div class="wp-card'+(wp.isEtape?' etape-card':'')+ptCardCls+'" data-idx="'+i+'">';
     html+='<div class="wp-card-header">';
     html+='<span class="wp-drag-handle" title="Glisser pour r\u00e9ordonner">\u2630</span>';
     html+='<div class="wp-num-badge">'+(i+1)+'</div>';
@@ -5980,9 +6028,14 @@ function renderNavlog(){
     }
     html+='</select>';
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
+    if(wp.ptType==='circuitDep') html+='<span class="wp-circuit-tag dep">\u{1F6EB} Circuit d\u00e9part</span>';
+    else if(wp.ptType==='circuitArr') html+='<span class="wp-circuit-tag arr">\u{1F6EC} Circuit arriv\u00e9e</span>';
     html+='<div class="wp-actions">';
     if(i>0 && i<waypoints.length-1){
       html+='<button class="wp-etape-btn'+(wp.isEtape?' active':'')+'" onclick="window.toggleEtape('+i+')" title="\u00c9tape interm\u00e9diaire (escale)">'+(wp.isEtape?'\uD83D\uDFE0':'\u2B55')+'</button>';
+      var circuitIcon=wp.ptType==='circuitDep'?'\u{1F6EB}':(wp.ptType==='circuitArr'?'\u{1F6EC}':'\u{1F9ED}');
+      var circuitTitle=wp.ptType==='circuitDep'?'Point du circuit de d\u00e9part (cliquer pour passer en circuit d\u2019arriv\u00e9e)':(wp.ptType==='circuitArr'?'Point du circuit d\u2019arriv\u00e9e (cliquer pour repasser en navigation)':'Point de navigation (cliquer pour marquer comme circuit de d\u00e9part)');
+      html+='<button class="wp-circuit-btn'+(wp.ptType?' active':'')+'" onclick="window.toggleCircuitType('+i+')" title="'+circuitTitle+'">'+circuitIcon+'</button>';
     }
     html+='<button class="wp-map-btn" onclick="window.openMapModal('+i+')" title="Choisir sur la carte">\u{1F5FA}\uFE0F</button>';
     if(waypoints.length>2 || i>0){
@@ -6150,6 +6203,24 @@ function toggleEtape(i){
   });
 }
 window.toggleEtape=toggleEtape;
+
+/* Cycle nav -> circuit départ -> circuit arrivée -> nav. Ces points restent dans le
+   calcul complet (temps de vol / carburant total) mais sont retirés du tableau
+   récapitulatif de navigation et comptabilisés à part dans le détail carburant,
+   pour ne pas fausser les temps/distances de la route de navigation elle-même. */
+function toggleCircuitType(i){
+  if(!waypoints[i]) return;
+  var cur=waypoints[i].ptType;
+  waypoints[i].ptType = !cur ? 'circuitDep' : (cur==='circuitDep' ? 'circuitArr' : undefined);
+  renderNavlog();
+  recalcNavlog();
+  updateRouteMap();
+  requestAnimationFrame(function(){
+    var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
+    if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
+  });
+}
+window.toggleCircuitType=toggleCircuitType;
 
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
