@@ -771,6 +771,7 @@ async function initStats() {
     // Stocker globalement pour les graphiques par catégorie
     window._sessionHistoryCache = sessionHistory;
     afficherSessionChart(sessionHistory);
+    _renderSessionCategoryDiagnostic(sessionHistory);
   } catch (error) {
     console.error("Erreur stats:", error);
     afficherStats([]);
@@ -1784,6 +1785,86 @@ function afficherSessionChart(sessionHistory) {
 
   html += `</div></div>`;
   chartCont.innerHTML = html;
+}
+
+/**
+ * _renderSessionCategoryDiagnostic() – Panneau de diagnostic en lecture seule : liste,
+ * pour chaque valeur de "category" réellement enregistrée dans sessionHistory, combien de
+ * sessions y sont rattachées. Sert à répondre à une question récurrente : "j'ai fait des
+ * sessions sur telle sous-catégorie, pourquoi son petit graphique dit 'Aucune session' ?" —
+ * chaque session est enregistrée sous le nom EXACT de la catégorie sélectionnée au moment où
+ * elle a été lancée (voir demarrerQuiz()/`selectedCategory`) ; si l'utilisateur lance surtout
+ * via "TOUTES"/"Mixte"/un groupe agrégé, ses sessions s'accumulent sous CETTE étiquette, pas
+ * sous chaque sous-catégorie individuellement — ce panneau rend ça visible sans DevTools.
+ */
+function _renderSessionCategoryDiagnostic(sessionHistory) {
+  let cont = document.getElementById('sessionCategoryDiagnosticContainer');
+  if (!cont) {
+    const sessionChartCont = document.getElementById('sessionChartContainer');
+    const dailyCont = document.getElementById('dailyChartContainer');
+    const statsCont = document.getElementById('statsContainer');
+    const ref = sessionChartCont || dailyCont || statsCont;
+    if (!ref) return;
+    cont = document.createElement('div');
+    cont.id = 'sessionCategoryDiagnosticContainer';
+    cont.className = 'home-card';
+    if (ref.nextSibling) ref.parentNode.insertBefore(cont, ref.nextSibling);
+    else ref.parentNode.appendChild(cont);
+  }
+
+  const sessions = sessionHistory || [];
+  if (!sessions.length) {
+    cont.innerHTML = `<div style="margin-bottom:6px"><strong>🔍 Sessions par catégorie (diagnostic)</strong></div>
+      <p style="color:var(--text-secondary);text-align:center;font-size:.85em">Aucune session enregistrée.</p>`;
+    return;
+  }
+
+  const byCat = {};
+  sessions.forEach(s => {
+    const cat = s.category || '(sans catégorie)';
+    if (!byCat[cat]) byCat[cat] = { count: 0, lastDate: null };
+    byCat[cat].count++;
+    const d = new Date(s.date);
+    if (!byCat[cat].lastDate || d > byCat[cat].lastDate) byCat[cat].lastDate = d;
+  });
+  const rows = Object.entries(byCat).sort((a, b) => b[1].count - a[1].count);
+
+  let html = `
+    <div style="margin-bottom:6px"><strong>🔍 Sessions par catégorie (diagnostic)</strong></div>
+    <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px">
+      Chaque session est enregistrée sous le nom de la catégorie sélectionnée au moment où tu l'as
+      lancée. Si tu lances surtout via "TOUTES"/"Mixte"/un groupe entier, tes sessions s'accumulent
+      sous cette étiquette-là — pas sous chaque sous-catégorie séparément, même si tu as bien
+      répondu à des questions de cette sous-catégorie dans la session.
+    </p>
+    <div style="max-height:260px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.82em">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.12);text-align:left">
+            <th style="padding:4px 6px">Catégorie enregistrée</th>
+            <th style="padding:4px 6px;text-align:right">Sessions</th>
+            <th style="padding:4px 6px;text-align:right">Dernière</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  rows.forEach(([cat, info]) => {
+    const dl = info.lastDate;
+    const dateLabel = dl ? (String(dl.getDate()).padStart(2, '0') + '/' + String(dl.getMonth() + 1).padStart(2, '0') + '/' + dl.getFullYear()) : '—';
+    html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+      <td style="padding:4px 6px">${_escapeHtmlStats(cat)}</td>
+      <td style="padding:4px 6px;text-align:right;font-weight:700">${info.count}</td>
+      <td style="padding:4px 6px;text-align:right;color:var(--text-secondary)">${dateLabel}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>
+    <p style="font-size:.78em;color:var(--text-secondary);margin:8px 0 0">${sessions.length} session(s) au total.</p>`;
+  cont.innerHTML = html;
+}
+
+function _escapeHtmlStats(str) {
+  if (!str) return '';
+  return str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** synchroniserStatistiques — Synchronise les stats avec Firestore */
