@@ -391,6 +391,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .map-modal-footer button{padding:8px 20px;font-size:.88em;font-weight:700;border-radius:20px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s}
 .map-modal-footer button:hover{opacity:.9}
 
+/* Route recap table (au-dessus de la carte) */
+#navlogRecapCard{max-width:700px;margin:14px auto}
+.nl-recap-table{width:100%;border-collapse:collapse;font-size:.82em;min-width:560px}
+.nl-recap-table th{text-align:left;padding:6px 8px;color:var(--text-secondary);font-weight:700;border-bottom:1px solid var(--border-color);white-space:nowrap}
+.nl-recap-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+.nl-recap-table td.nl-recap-name{font-weight:700;white-space:normal;min-width:110px}
+.nl-recap-table tr.nl-recap-etape td{background:rgba(255,167,38,.08)}
+.nl-recap-table tbody tr:hover td{background:rgba(102,126,234,.08)}
+
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
@@ -573,6 +582,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <div class="top-nav-bar">
     <a href="index.html?accueil=1" class="top-nav-link">&#x1F3E0; Accueil</a>
+    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; Briefing</a>
     <a href="quiz.html" class="top-nav-link">&#x1F3AF; Quiz</a>
     <a href="search.html" class="top-nav-link">&#x1F50D; Recherche</a>
     <a href="echecs.html" class="top-nav-link">&#x1F525; Plus rat&#xe9;es</a>
@@ -580,7 +590,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <a href="rates.html" class="top-nav-link">&#x1F4D6; R&#xe9;vision</a>
     <a href="historique.html" class="top-nav-link">&#x1F4C5; Historique</a>
     <a href="symboles.html" class="top-nav-link">&#x1F523; Symboles</a>
-    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; Briefing</a>
     <a href="radial.html" class="top-nav-link">&#x1F4E1; Radial</a>
     <a href="fiches.html" class="top-nav-link">&#x1F4DD; Fiches</a>
     <a href="urgences.html" class="top-nav-link">&#x1F6A8; Urgences</a>
@@ -714,6 +723,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div><div class="s-sub" id="sumReserveMode">&#x2600;&#xFE0F; Jour 30 min</div></div>
       <div class="summary-item" id="sumAltnItem" style="display:none"><div class="s-label">D&#xe9;gagement</div><div class="s-value" id="sumAltnFuel">0 L</div></div>
       <div class="summary-item"><div class="s-label">Carburant total (block fuel)</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
+    </div>
+
+    <!-- Route recap table -->
+    <div class="nl-card" id="navlogRecapCard" style="display:none">
+      <div id="navlogRecapContainer"></div>
     </div>
 
     <!-- Route map -->
@@ -5686,9 +5700,64 @@ function recalcNavlog(){
   updateLegStrips();
   suggestDossierName();
   updateRouteMap();
+  renderNavlogRecapTable();
   /* Altitude profile chart (defer to avoid blocking render loop) */
   setTimeout(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); },0);
 }
+
+/* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
+   Vue d'ensemble compacte de tout ce qui est encodé point par point (route, cap magnétique,
+   distance, vitesse sol, ETE, ETA cumulé), pour repérer une incohérence sans avoir à dérouler
+   toute la planche NavLog point par point. Recalculée à chaque recalcNavlog() — donc toujours
+   synchronisée avec ce qui est réellement encodé, pas une copie qui pourrait diverger. */
+function renderNavlogRecapTable(){
+  var card=document.getElementById('navlogRecapCard');
+  var cont=document.getElementById('navlogRecapContainer');
+  if(!card||!cont) return;
+  if(waypoints.length<2){ card.style.display='none'; return; }
+  card.style.display='';
+
+  var cfg=getConfig();
+  var rows='';
+  for(var i=0;i<waypoints.length;i++){
+    var wp=waypoints[i];
+    var name=wp.name||('WP'+(i+1));
+    var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
+    if(i===0){
+      rows+='<tr>'+
+        '<td>'+(i+1)+'</td>'+
+        '<td class="nl-recap-name">'+escHTML(name)+'</td>'+
+        '<td>'+alt+' ft</td>'+
+        '<td colspan="6" style="color:var(--text-secondary);font-style:italic">Départ</td>'+
+      '</tr>';
+      continue;
+    }
+    var leg=wp._leg||{};
+    var routeM=Math.round(((wp.route+cfg.dev)%360+360)%360);
+    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+    var etaStr=wp._eta?formatETA(wp._eta):'--:--';
+    rows+='<tr'+(wp.isEtape?' class="nl-recap-etape"':'')+'>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td class="nl-recap-name">'+escHTML(name)+(wp.isEtape?' \u{1F7E0}':'')+'</td>'+
+      '<td>'+alt+' ft</td>'+
+      '<td>'+routeM+'°</td>'+
+      '<td>'+hdgM+'°</td>'+
+      '<td>'+wp.dist+' NM</td>'+
+      '<td>'+(leg.gs||0)+' kt</td>'+
+      '<td>'+formatTime(leg.ete||0)+'</td>'+
+      '<td>'+etaStr+'</td>'+
+    '</tr>';
+  }
+  cont.innerHTML=
+    '<div class="nl-card-title"><span class="icon">📋</span> Récapitulatif de la route</div>'+
+    '<div style="overflow-x:auto">'+
+    '<table class="nl-recap-table">'+
+      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th>Cap</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA cumulé</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
+    '</div>';
+}
+window.renderNavlogRecapTable=renderNavlogRecapTable;
 
 /* ===== WIND TRIANGLE SVG PER LEG ===== */
 /* Draws a standard aeronautical velocity triangle:
@@ -6650,7 +6719,13 @@ function saveDossier(){
       skeyesSnapshot:typeof getSkeyesSnapshot==='function'?getSkeyesSnapshot():null,
       modelSnapshot:typeof getModelSnapshot==='function'?getModelSnapshot():null,
       cloudFiles:null,
-      screenshots:{}, iframeSnaps:_freezeIframes()
+      screenshots:{}, iframeSnaps:_freezeIframes(),
+      /* Vrai seulement une fois l'écriture Firestore confirmée réussie (voir _fbSaveDossier) —
+         tant que ce n'est pas le cas, syncDossiersFromCloud() ne doit JAMAIS purger ce dossier
+         localement même s'il n'apparaît pas encore côté cloud (upload en cours/échoué ≠ supprimé
+         sur un autre appareil). Sans cette distinction, un upload raté ou juste pas encore
+         propagé pouvait faire disparaître un dossier fraîchement sauvegardé dès le sync suivant. */
+      _cloudSynced:false
     };
     dossiers.push(dossier);
     setDossiers(dossiers);
@@ -6940,6 +7015,16 @@ function _fbSaveDossier(dossier){
   db.collection(_FB_COLLECTION).doc(syncCode+'__'+dossier.id)
     .set({ syncCode:syncCode, id:dossier.id, name:dossier.name,
            date:dossier.date, data:JSON.stringify(stripped) })
+    .then(function(){
+      /* Confirmation réussie : ce dossier peut désormais être purgé localement par
+         syncDossiersFromCloud() s'il disparaît du cloud (suppression sur un autre appareil).
+         Avant cette confirmation, le purger sur la seule absence côté cloud risquerait de
+         perdre la seule copie existante si l'upload a échoué ou n'a pas encore propagé. */
+      var current=getDossiers();
+      for(var i=0;i<current.length;i++){
+        if(current[i].id===dossier.id){ current[i]._cloudSynced=true; setDossiers(current); break; }
+      }
+    })
     .catch(function(e){ console.warn('Firebase save error',e); });
 }
 
@@ -6982,17 +7067,22 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
             opmetPdf:local[i].opmetPdf||null,
             notamSummary:local[i].notamSummary||[],
             /* cloudFiles from d (cloud) takes priority — has Storage URLs */
-            cloudFiles: d.cloudFiles || local[i].cloudFiles || null
+            cloudFiles: d.cloudFiles || local[i].cloudFiles || null,
+            _cloudSynced:true /* présent côté cloud = confirmé, quelle que soit son origine */
           });
           found=true; break;
         }
       }
-      if(!found) local.push(d);
+      if(!found){ d._cloudSynced=true; /* on vient de le recevoir du cloud, donc confirmé par définition */ local.push(d); }
     });
     // Supprimer les dossiers locaux qui ont été effacés sur un autre appareil :
-    // un dossier avec syncCode mais absent du cloud a été supprimé ailleurs.
+    // un dossier avec syncCode mais absent du cloud a été supprimé ailleurs — SAUF s'il n'a
+    // jamais été confirmé uploadé (_cloudSynced!==true) : dans ce cas son absence du cloud
+    // peut simplement signifier "upload pas encore terminé/échoué", pas "supprimé ailleurs".
+    // Le purger quand même risquerait de perdre la seule copie existante d'un dossier tout
+    // juste sauvegardé (c'était le bug à l'origine de dossiers disparaissant entre appareils).
     var cloudIds = new Set(cloudDossiers.map(function(d){ return d.id; }));
-    local = local.filter(function(d){ return cloudIds.has(d.id) || !d.syncCode; });
+    local = local.filter(function(d){ return cloudIds.has(d.id) || !d.syncCode || d._cloudSynced!==true; });
     setDossiers(local);
     renderDossierList();
     if(cb) cb(cloudDossiers.length);
