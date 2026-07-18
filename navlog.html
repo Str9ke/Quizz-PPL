@@ -6219,6 +6219,16 @@ window.toggleEtape=toggleEtape;
 function toggleCircuitType(i, scrollToCard){
   if(!waypoints[i]) return;
   var cur=waypoints[i].ptType;
+  /* Capturé AVANT renderNavlog() : sa propre compensation de scroll (basée sur la
+     variation de hauteur du board) lit offsetHeight juste après avoir remplacé le
+     innerHTML, avant que la mise en page du nouveau contenu (~4 cartes) ne soit
+     complètement retombée — elle sous-estime alors la hauteur réelle et peut
+     calculer un scroll cible négatif (donc ramené à 0 = saut en haut de page).
+     Depuis le bouton du tableau récapitulatif (scrollToCard=false, pas de rattrapage
+     "retour à la carte" ensuite pour masquer l'erreur comme pour les autres boutons),
+     on restaure donc nous-mêmes la position exacte d'avant l'appel plutôt que de
+     faire confiance à ce calcul. */
+  var _preservedScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   waypoints[i].ptType = !cur ? 'circuitDep' : (cur==='circuitDep' ? 'circuitArr' : undefined);
   renderNavlog();
   recalcNavlog();
@@ -6230,6 +6240,13 @@ function toggleCircuitType(i, scrollToCard){
     requestAnimationFrame(function(){
       var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
       if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
+    });
+  } else {
+    document.documentElement.scrollTop=_preservedScroll;
+    document.body.scrollTop=_preservedScroll;
+    requestAnimationFrame(function(){
+      document.documentElement.scrollTop=_preservedScroll;
+      document.body.scrollTop=_preservedScroll;
     });
   }
 }
