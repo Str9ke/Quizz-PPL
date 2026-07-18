@@ -406,6 +406,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table td.nl-recap-name{font-weight:700;white-space:normal;min-width:110px}
 .nl-recap-table tr.nl-recap-etape td{background:rgba(255,167,38,.08)}
 .nl-recap-table tbody tr:hover td{background:rgba(102,126,234,.08)}
+.nl-recap-type-btn{background:none;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);font-size:.85em;padding:3px 8px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.nl-recap-type-btn:hover{border-color:#7c4dff;color:#b39ddb;background:rgba(124,77,255,.1)}
 
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
@@ -5758,12 +5760,17 @@ function renderNavlogRecapTable(){
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var canType=(i>0 && i<waypoints.length-1);
+    var typeBtn=canType
+      ? '<button class="nl-recap-type-btn" onclick="window.toggleCircuitType('+i+',false)" title="Marquer ce point comme circuit départ/arrivée">\u{1F9ED} Nav</button>'
+      : '';
     if(k===0){
       rows+='<tr>'+
         '<td>'+(i+1)+'</td>'+
         '<td class="nl-recap-name">'+escHTML(name)+'</td>'+
         '<td>'+alt+' ft</td>'+
         '<td colspan="6" style="color:var(--text-secondary);font-style:italic">Départ</td>'+
+        '<td></td>'+
       '</tr>';
       continue;
     }
@@ -5789,16 +5796,17 @@ function renderNavlogRecapTable(){
       '<td>'+(leg.gs||0)+' kt</td>'+
       '<td>'+formatTime(leg.ete||0)+'</td>'+
       '<td>'+etaStr+'</td>'+
+      '<td>'+typeBtn+'</td>'+
     '</tr>';
   }
   var hiddenNote=hiddenCount>0
-    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant).</div>'
-    : '';
+    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Cliquez « Nav » sur un point ci-dessus pour le marquer comme circuit.</div>'
+    : '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
   cont.innerHTML=
     '<div class="nl-card-title"><span class="icon">📋</span> Récapitulatif de la route (navigation)</div>'+
     '<div style="overflow-x:auto">'+
     '<table class="nl-recap-table">'+
-      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th>Cap</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA cumulé</th></tr></thead>'+
+      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th>Cap</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA cumulé</th><th>Type</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table>'+
     '</div>'+hiddenNote;
@@ -6208,17 +6216,22 @@ window.toggleEtape=toggleEtape;
    calcul complet (temps de vol / carburant total) mais sont retirés du tableau
    récapitulatif de navigation et comptabilisés à part dans le détail carburant,
    pour ne pas fausser les temps/distances de la route de navigation elle-même. */
-function toggleCircuitType(i){
+function toggleCircuitType(i, scrollToCard){
   if(!waypoints[i]) return;
   var cur=waypoints[i].ptType;
   waypoints[i].ptType = !cur ? 'circuitDep' : (cur==='circuitDep' ? 'circuitArr' : undefined);
   renderNavlog();
   recalcNavlog();
   updateRouteMap();
-  requestAnimationFrame(function(){
-    var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
-    if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
-  });
+  /* Depuis le tableau récapitulatif (en haut de page), on ne veut pas être
+     brusquement renvoyé vers la carte des waypoints plus bas — seul le clic
+     depuis la carte du waypoint elle-même doit ramener la vue dessus. */
+  if(scrollToCard!==false){
+    requestAnimationFrame(function(){
+      var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
+      if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
+    });
+  }
 }
 window.toggleCircuitType=toggleCircuitType;
 
