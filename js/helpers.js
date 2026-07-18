@@ -423,6 +423,16 @@ function _isEligibleForSR(r) {
 /**
  * _isDueForReview() – Vérifie si une question est due pour révision.
  * Si nextReview n'est pas défini mais que la question est éligible, elle est due immédiatement.
+ *
+ * Comparaison par JOUR CIVIL, pas par horodatage exact : _computeSrEntry() calcule
+ * nextReview = Date.now() + N jours, ce qui conserve l'heure exacte de la dernière réponse
+ * (ex: étudié hier soir à 20h → nextReview = aujourd'hui 20h). Une comparaison stricte
+ * (nextReview <= now) laissait ces questions invisibles toute la journée jusqu'à ce que
+ * l'heure exacte repasse, alors que la carte "Programme des prochains jours" de stats.js
+ * (_computeSrForecast) les comptait déjà comme dues du jour — d'où un écart spectaculaire
+ * entre l'Accueil ("3 dues") et Stats ("2422 dues") pour les mêmes données. Convention
+ * standard des outils de répétition espacée (Anki etc.) : une carte devient disponible dès
+ * le début du jour prévu, pas seulement après l'heure exacte de sa dernière révision.
  */
 function _isDueForReview(r, now) {
   if (!r) return false;
@@ -433,7 +443,9 @@ function _isDueForReview(r, now) {
   if (typeof reviewMs === 'object' && reviewMs.seconds) {
     reviewMs = reviewMs.seconds * 1000;
   }
-  return reviewMs <= now;
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  return reviewMs <= endOfToday.getTime();
 }
 
 /**

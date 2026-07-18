@@ -839,9 +839,32 @@ function updateCategorySelect() {
 
 /**
  * categoryChanged() – Charge les questions selon la catégorie sélectionnée
+ *
+ * BUG CORRIGÉ : cette fonction ne mettait JAMAIS à jour la variable globale
+ * `selectedCategory` (elle ne touchait qu'une variable locale `selected`). Or
+ * updateModeCounts() calcule `normalizedSel = getNormalizedSelectedCategory(selectedCategory)`
+ * puis filtre `questions` par `q.categorie === normalizedSel` — donc après un premier
+ * changement manuel de catégorie, `selectedCategory` restait bloqué sur la catégorie
+ * précédente (ou celle restaurée par initIndex() au chargement de page) alors que `questions`
+ * contenait déjà les questions de la NOUVELLE catégorie choisie : le filtre ne trouvait plus
+ * aucune correspondance, `list` était vide, et toute la carte "Répétition espacée" (+ les
+ * compteurs de filtres) retombait à 0 — alors que "Progression globale" (displayHomeProgressBar,
+ * qui lit `questions` directement sans passer par `selectedCategory`) restait correcte. D'où
+ * l'écart observé entre les deux cartes sur une même catégorie.
+ *
+ * Jeton de génération (_categoryChangeToken) : protection complémentaire — chargerQuestions()/
+ * loadAllQuestions() modifient le tableau GLOBAL `questions`, partagé par updateModeCounts() et
+ * displayHomeProgressBar(). Sans garde, changer deux fois rapidement de catégorie (avant que le
+ * premier chargement ne soit fini) lance deux exécutions concurrentes de categoryChanged() ; la
+ * plus ANCIENNE peut se terminer APRÈS la plus récente et écraser `questions`/les compteurs
+ * avec les données de la mauvaise catégorie. Chaque appel prend un jeton ; si un appel plus
+ * récent a démarré entre-temps, celui-ci abandonne silencieusement avant de toucher au DOM.
  */
+let _categoryChangeToken = 0;
 async function categoryChanged() {
+  const myToken = ++_categoryChangeToken;
   const selected = document.getElementById("categorie").value;
+  selectedCategory = selected;
   // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
   const modeSelect = document.getElementById('mode');
   const previousMode = modeSelect ? modeSelect.value : 'mixte';
@@ -851,7 +874,10 @@ async function categoryChanged() {
   } else {
     await chargerQuestions(selected);
   }
+  if (myToken !== _categoryChangeToken) return; // un changement plus récent a pris le relais
+
   await updateModeCounts();
+  if (myToken !== _categoryChangeToken) return;
 
   // Restaurer le mode précédent (updateModeCounts recrée les options)
   if (modeSelect) modeSelect.value = previousMode;
