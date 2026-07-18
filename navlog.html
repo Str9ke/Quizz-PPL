@@ -7048,8 +7048,23 @@ function _fbLoadAllDossiers(syncCode, cb){
     }).catch(function(){ cb([]); });
 }
 
+/* Retente l'upload Firestore de tout dossier local jamais confirmé (_cloudSynced!==true) —
+   sans ça, un dossier dont l'envoi initial a échoué (réseau coupé, hors-ligne, quota…) reste
+   coincé sur son appareil d'origine pour toujours : notre garde-fou dans syncDossiersFromCloud()
+   empêche bien de le PERDRE, mais seul un nouvel essai d'upload peut le faire réellement
+   apparaître sur les autres appareils. Appelée à chaque sync (ouverture de l'onglet Dossiers,
+   bouton Synchroniser, détection d'un nouvel UID). */
+function _retryUnsyncedDossiers(){
+  var local=getDossiers();
+  local.forEach(function(d){
+    if(d.syncCode && d._cloudSynced!==true) _fbSaveDossier(d);
+  });
+}
+window._retryUnsyncedDossiers=_retryUnsyncedDossiers;
+
 function syncDossiersFromCloud(syncCodeOverride, cb){
   var syncCode=syncCodeOverride||_getSyncCode();
+  _retryUnsyncedDossiers();
   _fbLoadAllDossiers(syncCode, function(cloudDossiers){
     if(!cloudDossiers.length){ if(cb) cb(0); return; }
     var local=getDossiers();
