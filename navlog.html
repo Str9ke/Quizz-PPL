@@ -418,10 +418,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .route-map-card.rm-fullscreen .nl-card-title{flex:0 0 auto;padding:8px 12px;font-size:.85em}
 .route-map-card.rm-fullscreen #routeMapContainer{flex:1 1 auto;aspect-ratio:unset;height:auto;max-height:none;min-height:0}
 .route-map-card.rm-fullscreen .route-map-toolbar{flex:0 0 auto;padding:6px 10px}
-.route-map-card.rm-fullscreen .alt-profile-wrap{flex:0 0 auto;max-height:78px;overflow:hidden}
+.route-map-card.rm-fullscreen .alt-profile-wrap{flex:0 0 auto;max-height:130px;overflow:hidden}
 .route-map-card.rm-fullscreen .alt-profile-wrap svg{min-width:0}
-.route-map-card.rm-fullscreen #altProfileSubtitle,
-.route-map-card.rm-fullscreen .rm-alt-hint{display:none}
+.route-map-card.rm-fullscreen #altProfileSubtitle{display:none}
 .navlog-btn.rm-fullscreen-btn{background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700}
 .navlog-btn.rm-exit-fullscreen-btn{background:rgba(239,83,80,.15);border-color:#ef5350;color:#ef5350;font-weight:700;display:none}
 .route-map-card.rm-fullscreen .navlog-btn.rm-exit-fullscreen-btn{display:inline-flex}
@@ -9188,7 +9187,24 @@ function renderAltProfile(){
   maxAlt=Math.ceil((maxAlt+600)/500)*500;if(maxAlt<1000) maxAlt=1000;
   maxAltCache=maxAlt; /* exposé pour _altDragUpdateSvg */
 
-  var W=560,H=210,ml=54,mr=14,mt=20,mb=40;
+  /* En plein écran, le profil n'a qu'une bande ~2cm de haut sous la carte (voir CSS
+     .rm-fullscreen .alt-profile-wrap) et le SVG est étiré sans respecter les proportions
+     (preserveAspectRatio="none", voir _rmApplyFullscreenSvgStyle) pour remplir toute la
+     largeur — avec le viewBox 560×210 normal, cet étirement extrême écrasait verticalement
+     tout le texte (illisible, chevauchant, ex. les étiquettes d'espace aérien). On calcule
+     donc ici un viewBox dont les proportions collent à la largeur réelle du conteneur, pour
+     que l'étirement horizontal/vertical reste quasi neutre (pas de déformation), et on
+     retire les éléments non essentiels (titres d'axes, noms de points sous le graphique)
+     pour gagner la hauteur nécessaire dans une bande aussi courte. */
+  var isFS=!!window._rmFullscreen;
+  var W,H,ml,mr,mt,mb;
+  if(isFS){
+    var _wrapEl=document.querySelector('.route-map-card.rm-fullscreen .alt-profile-wrap');
+    W=Math.max(500,(_wrapEl&&_wrapEl.clientWidth)||window.innerWidth||800);
+    H=100;ml=32;mr=8;mt=6;mb=16;
+  } else {
+    W=560;H=210;ml=54;mr=14;mt=20;mb=40;
+  }
   var cw=W-ml-mr,ch=H-mt-mb;
   function xS(d){return ml+(d/totalDist)*cw;}
   function yS(a){return mt+ch-((a/maxAlt)*ch);}
@@ -9225,8 +9241,12 @@ function renderAltProfile(){
     xGrid+='<line x1="'+xx2+'" y1="'+mt+'" x2="'+xx2+'" y2="'+(mt+ch)+'" stroke="rgba(160,160,200,.12)" stroke-width="1"/>';
     xGrid+='<text x="'+xx2+'" y="'+(mt+ch+14)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.65)">'+Math.round(d2)+'</text>';
   }
-  xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
-  yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
+  /* Titres d'axes omis en plein écran : la bande est trop courte pour se le permettre en
+     plus des chiffres eux-mêmes, qui suffisent à lire le graphique. */
+  if(!isFS){
+    xGrid+='<text x="'+(ml+cw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)">Distance (NM)</text>';
+    yGrid+='<text x="10" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.55)" transform="rotate(-90,10,'+(mt+ch/2)+')">Alt (ft)</text>';
+  }
 
   /* Bandes d'espace aérien (mêmes données que l'onglet Altitudes, voir _recomputeAirspacesIfStale
      ci-dessus) — plus hautes en premier pour servir de fond, plus petites/spécifiques par-dessus. */
@@ -9274,7 +9294,9 @@ function renderAltProfile(){
     if(isDrag) wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="12" fill="transparent" cursor="ns-resize" class="alt-wp-hit" data-wpidx="'+i+'"/>';
     var dotColor=isL2||i===0?'#a78bfa':(isEtp?'#ff9500':'#667eea');
     wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="'+dotColor+'" stroke="#fff" stroke-width="1.5" style="pointer-events:none"/>';
-    wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
+    /* Nom du point sous le graphique omis en plein écran : pas la place, et le survol/glisser
+       (crosshair) donne déjà le point exact + son altitude sans avoir besoin des étiquettes fixes. */
+    if(!isFS) wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
     if(isDrag) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wA+'ft</text>';
     else if(isEtp) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="#ff9500" style="pointer-events:none">'+wA+'ft↓</text>';
     else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
@@ -10371,6 +10393,11 @@ window.toggleRouteMapFullscreen=function(){
      centrées) jusqu'au prochain pan/zoom manuel. Léger délai pour laisser le CSS
      s'appliquer avant la mesure. */
   setTimeout(function(){ if(routeMap) routeMap.invalidateSize(); },80);
+  /* Le profil d'altitude dépend de window._rmFullscreen ET de la largeur réelle de son
+     conteneur (voir renderAltProfile()) pour choisir un viewBox qui colle aux proportions
+     de la bande plein écran — sans ce re-rendu, l'ancien SVG (dimensionné pour la vue
+     normale) reste affiché, juste étiré, ce qui écrasait le texte de façon illisible. */
+  setTimeout(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); },90);
 };
 /* Bouton retour du téléphone / touche Échap : quitter le plein écran plutôt que de
    quitter la page ou perdre le contexte, comme le veut l'utilisateur ("sortir du mode
