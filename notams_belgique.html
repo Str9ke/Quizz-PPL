@@ -7,15 +7,41 @@
 <input id="notamSearch" onkeyup="filterNotams()" placeholder="Rechercher un mot clé (ex: EBCI, TRA, etc.)..." style="padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" type="text"/>
 </div>
 <script>
+                // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
+                // terme recherché en évidence dans ceux qui restaient affichés — sans retour
+                // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
+                // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
+                // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
+                // pas casser les liens/images imbriqués dans les paragraphes.
+                function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+                function _notamHighlightHtml(html, term) {
+                    var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
+                    var parts = html.split(/(<[^>]+>)/);
+                    for (var j = 0; j < parts.length; j++) {
+                        if (parts[j].charAt(0) !== '<') {
+                            parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                        }
+                    }
+                    return parts.join('');
+                }
                 function filterNotams() {
-                    var filter = document.getElementById('notamSearch').value.toUpperCase();
+                    var filter = document.getElementById('notamSearch').value.trim();
+                    var filterUpper = filter.toUpperCase();
                     var paragraphs = document.querySelectorAll('p');
                     for (var i = 0; i < paragraphs.length; i++) {
-                        var txt = paragraphs[i].innerText || paragraphs[i].textContent;
-                        if (txt.toUpperCase().indexOf(filter) > -1) {
-                            paragraphs[i].style.display = "";
+                        var p = paragraphs[i];
+                        if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
+                        if (!filter) {
+                            p.innerHTML = p.dataset.origHtml;
+                            p.style.display = "";
+                            continue;
+                        }
+                        var txt = p.innerText || p.textContent;
+                        if (txt.toUpperCase().indexOf(filterUpper) > -1) {
+                            p.style.display = "";
+                            p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
                         } else {
-                            paragraphs[i].style.display = "none";
+                            p.style.display = "none";
                         }
                     }
                 }
