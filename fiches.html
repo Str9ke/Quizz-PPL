@@ -193,6 +193,16 @@ const FICHES = [
 <li>Traînée induite ↓ quand vitesse ↑ ; traînée parasite ↑ quand vitesse ↑</li>
 <li>Traînée totale minimale quand traînée parasite = traînée induite</li>
 <li>Forme d'aile à traînée induite minimale : <b>elliptique</b></li>
+<li><b>Poids</b> = masse × g (Newtons) — ne pas confondre masse (kg) et poids (force)</li>
+<li><b>Charge alaire</b> = poids / surface alaire</li>
+<li><b>Foyer</b> : point d'application des variations de portance de l'aile seule (≠ centre de poussée = point d'application de la résultante totale)</li>
+<li>Facteur de charge n = <b>portance / poids</b> (poids apparent / poids réel) ; n = <b>1</b> au parking et en VRUH</li>
+<li>Montée : Traction = Traînée + <b>composante du poids parallèle à la trajectoire</b> → plus de puissance qu'en palier</li>
+<li>Descente moteur réduit / plané : composante du poids parallèle à la trajectoire <b>remplace</b> la traction et équilibre la traînée</li>
+<li>Cz dépend de : incidence, forme du profil, état de surface — <b>pas de la vitesse ni de la surface alaire</b></li>
+<li>Cx dépend de : incidence, forme du profil, état de surface — <b>pas directement de la vitesse</b> (celle-ci intervient via V² dans la formule de Rx)</li>
+<li>Allongement <b>faible</b> → traînée induite plus importante</li>
+<li>Traînée d'interférence : générée à l'<b>emplanture</b> (jonction aile-fuselage)</li>
 </ul>`},
 {t:'Profil d\'aile & écoulement', html:`
 <ul>
@@ -205,6 +215,10 @@ const FICHES = [
 <li><b>Générateurs de vortex</b> : ré-énergisent la couche limite</li>
 <li>Corde = bord d'attaque → bord de fuite</li>
 <li>Allongement = envergure / corde moyenne</li>
+<li><b>Point de séparation</b> : point où l'écoulement décolle de l'extrados, en aval du point de transition</li>
+<li>Couche limite <b>laminaire</b> : située entre le point de stagnation et le point de transition</li>
+<li>Couche limite <b>turbulente</b> : suit la cambrure du profil jusqu'à des incidences plus élevées que la laminaire (retarde le décrochage)</li>
+<li><b>Vrillage géométrique</b> (washout) : incidence décroissante de l'emplanture vers le saumon → conserve l'efficacité des ailerons aux grands angles</li>
 </ul>`},
 {t:'Incidence, assiette, pente', html:`
 <ul>
@@ -214,6 +228,7 @@ const FICHES = [
 <li class="formula">Assiette = Pente + Incidence</li>
 <li>Basse vitesse → grande incidence ; haute vitesse → petite incidence</li>
 <li>Manche avant/arrière → variation d'incidence</li>
+<li class="formula">Vz (ft/min) = Pente (%) × Vi (kt)</li>
 </ul>`},
 {t:'Finesse & polaire', html:`
 <ul>
@@ -224,6 +239,8 @@ const FICHES = [
 <li>Panne moteur → vitesse de finesse max (IAS)</li>
 <li>Vent de face en panne → vitesse > Vfinesse max</li>
 <li>Polaire : Cz en fonction de Cx ; α₂ = finesse max ; α₃ = puissance nécessaire min</li>
+<li>α₀ : incidence de <b>portance nulle</b> sur la polaire</li>
+<li>À la finesse max, la traînée ≈ <b>1/10</b> de la portance</li>
 </ul>`},
 {t:'Décrochage', html:`
 <ul>
@@ -237,6 +254,9 @@ const FICHES = [
 <li>Aile décroche d'abord à l'<b>emplanture</b> (vrillage préserve ailerons)</li>
 <li>Sous la pluie : Vs ↑ → majorer vitesse d'approche</li>
 <li>Sortie : diminuer incidence (pousser manche) + augmenter puissance</li>
+<li><b>Décrochage dynamique</b> (high speed stall) : dépassement brutal de l'incidence critique à vitesse supérieure à Vs, causé par une variation brutale d'assiette (ressource brusque) sous facteur de charge</li>
+<li>Lors d'une <b>ressource</b> : facteur de charge et Vs augmentent ensemble</li>
+<li>Deux avions à charges alaires différentes décrochent à la <b>même incidence</b> mais à des <b>vitesses différentes</b></li>
 </ul>`},
 {t:'Volets & dispositifs hypersustentateurs', html:`
 <ul>
@@ -246,6 +266,9 @@ const FICHES = [
 <li><b>Becs / fentes</b> : ↑ incidence de décrochage, moins de traînée que volets</li>
 <li>Volets au décollage : ↓ distance roulage MAIS ↓ taux de montée</li>
 <li>Remise de gaz full flaps : remettre moteur, rester pleins volets, puis rétracter</li>
+<li>Cz lisse ≈ <b>1</b> ; Cz becs + volets sortis ≈ <b>2</b> (ordre de grandeur)</li>
+<li>Usage prolongé des hypersustentateurs → ↑ traînée → ↑ puissance nécessaire → ↑ <b>consommation</b></li>
+<li>Volets <b>déconseillés</b> au décollage par temps turbulent</li>
 </ul>`},
 {t:'Virage & facteur de charge', html:`
 <table>
@@ -259,6 +282,8 @@ const FICHES = [
 <li>Virage rate one = 3°/s = 360° en 2 min</li>
 <li>Passage palier → virage à V constante : ↑ incidence + ↑ puissance</li>
 <li>Facteur charge catégorie normale : <b>+3,8 / −1,5</b> en lisse, <b>+2 / 0</b> volets sortis</li>
+<li>Facteur de charge positif max catégorie <b>acrobatique/voltige</b> : <b>+6</b></li>
+<li>Inclinaison d'un virage type « rate one » (3°/s) dépend de la <b>TAS</b></li>
 </ul>`},
 {t:'Stabilité & gouvernes', html:`
 <ul>
@@ -271,6 +296,11 @@ const FICHES = [
 <li><b>Lacet inverse</b> : traînée différentielle ailerons → ailerons différentiels le corrigent</li>
 <li><b>Roulis induit</b> : action pied → roulis même côté</li>
 <li>Compensateur (trim) : annule l'effort aux commandes</li>
+<li><b>Stabilité statique</b> : l'avion revient vers sa position initiale après une perturbation externe</li>
+<li>Empennage horizontal (hors config <b>T</b> / <b>V</b>) : reçoit le flux dévié vers le bas par l'aile (downwash) → son incidence est <b>plus faible</b> que celle de l'aile</li>
+<li>Équilibrage <b>aérodynamique</b> de la gouverne de direction : diminue les efforts aux commandes</li>
+<li>Équilibrage <b>statique</b> des gouvernes : évite le <b>flottement</b> (flutter) de la surface</li>
+<li><b>Lacet induit</b> : effet secondaire en lacet quand l'avion est stabilisé en virage, ailerons au neutre (≠ lacet inverse, qui survient pendant l'action sur les ailerons)</li>
 </ul>`},
 {t:'Centrage & effet de sol', html:`
 <ul>
@@ -279,6 +309,10 @@ const FICHES = [
 <li><b>Effet de sol</b> : près du sol → traînée induite ↓ → finesse ↑</li>
 <li>Atterrissage : distance ↑ (avion plane plus longtemps)</li>
 <li>Décollage : distance ↓</li>
+<li>CG en avant de la limite avant : contrôle en tangage <b>insuffisant</b> même à pleine gouverne</li>
+<li>CG en arrière de la limite arrière : risque d'<b>incapacité</b> à manœuvrer en tangage</li>
+<li>Déflexion de la gouverne de profondeur à la rotation décollage : <b>plus importante</b> si CG avant</li>
+<li>Effet de sol au décollage : permet de décoller à vitesse plus faible mais risque de rester en <b>second régime</b> en sortant de l'effet de sol (pleine puissance, montée/accélération impossibles)</li>
 </ul>`},
 {t:'Hélice & effets moteur', html:`
 <ul>
@@ -312,6 +346,11 @@ const FICHES = [
 </table>
 <ul>
 <li>Approche = <b>1,3 × Vs</b> ; toucher ≈ 1,1 × Vs</li>
+<li>Fortes turbulences : structure la plus sollicitée à <b>vitesse élevée</b> + faible charge alaire → ralentir (rester sous Va)</li>
+<li>Dépasser la <b>VNE</b> → risque de flottement (flutter) et dommages structuraux</li>
+<li>Rafale verticale (bas→haut) sur avion stable : ↑ incidence momentanée → moment piqueur ramène l'avion à l'assiette initiale</li>
+<li>Rafale de vent arrière soudaine : avant que la Vsol s'ajuste, l'<b>IAS et la portance chutent</b> temporairement (inertie de la masse)</li>
+<li>Vent fort / rafales au sol → majorer la vitesse d'approche (marge turbulence)</li>
 </ul>`},
 {t:'Spoilers, aérofreins & taxi', html:`
 <ul>
@@ -332,6 +371,17 @@ const FICHES = [
 </table>
 <ul>
 <li>Principe taxi vent de face : manche <b>dans le vent</b> ; vent arrière : manche <b>opposé au vent + en avant</b></li>
+</ul>`},
+{t:'Turbulence de sillage (wake turbulence)', html:`
+<ul>
+<li>Générée dès que la <b>portance</b> apparaît : débute à la rotation, cesse au poser de la <b>dernière roue</b></li>
+<li>Plus forte derrière un avion : <b>lourd, lent, configuration lisse</b> (sans volets)</li>
+<li>Facteurs d'intensité : masse, incidence, vitesse, allongement, configuration de l'aile</li>
+<li>Vortex marginaux : s'enroulent du <b>dessous vers le dessus</b> de l'aile (bout d'aile)</li>
+<li>D'autant plus dangereuse en <b>atmosphère calme</b> (persiste plus longtemps, pas dispersée par le vent)</li>
+<li>Décollage derrière un avion plus gros : décoller <b>après</b> son point de rotation, trajectoire <b>au-dessus et dans le vent</b> de sa trajectoire</li>
+<li>Atterrissage derrière un avion plus gros : se poser <b>après</b> son point de toucher des roues</li>
+<li>Réduite par : <b>winglets</b> et grand <b>allongement</b></li>
 </ul>`}
 ]},
 /* ────────────────── 2. CONNAISSANCE AÉRONEF ────────────────── */
@@ -345,6 +395,9 @@ const FICHES = [
 <li><b>Flutter</b> : oscillations gouvernes → contrepoids + ne pas dépasser VNE</li>
 <li>Facteur de charge n = Portance / Poids (= 1 en palier)</li>
 <li>Structure sandwich : 2 peaux + matériau léger → grande rigidité</li>
+<li>Limitations cellule (manuel de vol) : masse max, plage de centrage, facteur de charge, Vi max, <b>VA</b> en air turbulent</li>
+<li>Parking par vent fort : avion <b>face au vent</b>, roues calées, amarré, gouvernes bloquées</li>
+<li>Turbulence : efforts cellule maximaux si <b>Vp élevée + volets sortis + masse faible</b></li>
 </ul>`},
 {t:'Aile — Géométrie & efforts', html:`
 <table>
@@ -359,6 +412,8 @@ const FICHES = [
 <li>En vol : extrados en <b>compression</b>, intrados en <b>traction</b></li>
 <li><b>Longeron principal</b> : absorbe efforts de flexion</li>
 <li>Winglets : réduisent la traînée induite</li>
+<li><b>Calage</b> de l'aile : angle entre la corde et l'axe longitudinal du fuselage (≠ incidence = angle avec le vent relatif)</li>
+<li>Réservoirs pleins dans les ailes → <b>réduit</b> le moment de flexion à l'emplanture (poids compense la portance)</li>
 </ul>`},
 {t:'Moteur 4 temps', html:`
 <table>
@@ -373,6 +428,12 @@ const FICHES = [
 <li><b>Détonation</b> : octane trop faible, mélange pauvre + forte puissance</li>
 <li><b>Auto-allumage</b> : dépôts carbone, points chauds → peut persister après coupure</li>
 <li>Arrêt moteur → <b>mixture plein pauvre</b></li>
+<li>Point mort haut compression : <b>les 2 soupapes fermées</b></li>
+<li>Organes : piston → <b>bielle</b> → <b>vilebrequin</b> (mouvement rectiligne → rotatif) ; <b>segments</b> assurent l'étanchéité du piston</li>
+<li>Configurations cylindres : en ligne, <b>à plat</b> (opposés horizontalement, standard avions légers), en étoile (radial, meilleur refroidissement), en V</li>
+<li>Nombre de temps du cycle indépendant du nombre de cylindres</li>
+<li>Refroidissement principal : <b>par air</b> (ailettes) ; facteur clé = flux d'air hélice → critique à faible Vp/forte puissance (montée, roulage prolongé)</li>
+<li>Détonation aussi favorisée par : réchauffage carbu utilisé à forte puissance, dépôts de carbone, <b>MAP élevée + RPM faible</b></li>
 </ul>`},
 {t:'Carburation & givrage carbu', html:`
 <ul>
@@ -389,6 +450,10 @@ const FICHES = [
 <li>Effet sans givrage : RPM ↓ (normal) ; avec givrage : RPM ↑ (glace fond)</li>
 <li>Au décollage : réchauffage <b>coupé</b></li>
 <li>Avant descente moteur réduit : <b>toujours</b> activer réchauffage</li>
+<li>Venturi : chute de température ≈ <b>15°C</b></li>
+<li>Moteur à <b>injection</b> : pas de givrage carburateur possible (mais givrage du filtre à air oui)</li>
+<li>Réchauffage carbu prolongé au sol/environnement poussiéreux : air non filtré → risque d'endommager le moteur</li>
+<li>Correcteur altimétrique = manette de richesse (maintient le mélange constant avec l'altitude)</li>
 </ul>`},
 {t:'Carburant', html:`
 <table>
@@ -402,6 +467,10 @@ const FICHES = [
 <li>Aile haute → alimentation par gravité ; aile basse → pompe électrique</li>
 <li>Purge au point le plus bas ; eau = liquide incolore au fond</li>
 <li>Réservoirs presque vides → absorption humidité max</li>
+<li>Ravitaillement : pas de flamme/cigarette, <b>câble de mise à la masse</b> obligatoire</li>
+<li>Essence de couleur différente de celle prescrite (ex. rose vs bleu 100LL) : <span class="danger">ne pas utiliser ni mélanger</span></li>
+<li>Essence auto (normale) : plus détonante que l'AVGAS → à proscrire</li>
+<li>Robinet carburant sur OFF → arrêt moteur ; c'est la <b>1ʳᵉ action</b> en cas de feu moteur confirmé</li>
 </ul>`},
 {t:'Allumage — Double magnéto', html:`
 <ul>
@@ -410,6 +479,9 @@ const FICHES = [
 <li>Panne alternateur/batterie → <b>aucune incidence</b> sur le moteur</li>
 <li>Test magnétos : chute RPM normale → vérifier écart dans limites</li>
 <li>Magnétos sur OFF et moteur tourne → fil de masse cassé → <b>DANGER</b></li>
+<li>Chaque magnéto alimente <b>une bougie par cylindre</b> (l'autre bougie du même cylindre est sur l'autre magnéto)</li>
+<li>Bougies caractérisées par leur <b>indice thermique</b> (capacité à dissiper la chaleur)</li>
+<li>Lancement hélice à la main + une magnéto sur marche → <b>risque de démarrage</b> moteur (danger)</li>
 </ul>`},
 {t:'Hélice — Pas fixe & vitesse constante', html:`
 <ul>
@@ -422,6 +494,11 @@ const FICHES = [
 <li>↑ puissance : 1° ↑ RPM → 2° ↑ MAP</li>
 <li>↓ puissance : 1° ↓ MAP → 2° ↓ RPM</li>
 <li>Commande plein avant = plein petit pas = RPM max</li>
+<li>3 effets secondaires de l'hélice, même sens en rotation : <b>couple de renversement</b> (roulis), <b>souffle hélicoïdal</b> (lacet), effet gyroscopique</li>
+<li>Compensés par désaxage du moteur et/ou de la dérive (efficace pour un régime/vitesse donnés, typ. croisière)</li>
+<li>Tricycle avec axe hélice dans l'axe longitudinal : pas d'effet gyroscopique notable au cabré/piqué</li>
+<li>Descente moteur réduit : hélice « en moulinet » (entraînée par le vent relatif) → régime > ralenti sol</li>
+<li>Dégivrage hélice (IFR) : évite les fortes vibrations dues au déséquilibre de masse par givrage partiel des pales</li>
 </ul>`},
 {t:'Circuit électrique', html:`
 <ul>
@@ -431,6 +508,12 @@ const FICHES = [
 <li><b>Fusible</b> : fond → non réutilisable</li>
 <li>Panne alternateur → moteur <b>non affecté</b> → couper non-essentiels → écourter vol</li>
 <li>Surintensité : réenclencher 1× max ; si ressaute → ne PAS retenter</li>
+<li>Unités : tension = <b>volt</b>, puissance = <b>watt</b>, intensité = ampère ; loi d'Ohm U = R×I</li>
+<li>Capacité batterie en <b>Ah</b> (ex : 30 Ah = 10 A pendant 3h, ou 3 A pendant 10h)</li>
+<li>Démarreur = plus gros consommateur électrique au sol ; usage prolongé → <b>risque incendie</b></li>
+<li>Électrolyte (batterie au plomb) = liquide où baignent les plaques</li>
+<li><b>Déchargeurs statiques</b> (wicks, bord de fuite) : évacuent l'électricité statique en vol</li>
+<li>Magnétos = seul équipement <b>non</b> consommateur (productrices de courant) parmi les « servitudes »</li>
 </ul>`},
 {t:'Pitot-statique & instruments', html:`
 <table>
@@ -447,6 +530,10 @@ const FICHES = [
 <ul>
 <li>Codes couleur badin : <b>blanc</b> (VS0→VFE), <b>vert</b> (VS1→VNO), <b>jaune</b> (VNO→VNE), <b>rouge</b> (VNE)</li>
 <li>TAS ≈ IAS + <b>2% par 1000 ft</b></li>
+<li><b>CAS</b> (vitesse calibrée) = IAS corrigée des erreurs d'instrument/position ; différence souvent négligeable en aviation légère</li>
+<li><b>VA</b> (vitesse de manœuvre) et <b>VLE/VLO</b> (train) : limites structurales <b>non</b> codées par couleur sur le badin</li>
+<li>Pitot dégivré par <b>résistance électrique</b> ; un drain évacue l'eau de pluie</li>
+<li>Transpondeur mode C (fonction ALT) transmet l'<b>altitude-pression</b> (réf. 1013 hPa)</li>
 </ul>`},
 {t:'Altimétrie', html:`
 <table>
@@ -459,6 +546,9 @@ const FICHES = [
 <li>Gradient : <b>1 hPa ≈ 28 ft</b></li>
 <li>QNH affiché &gt; QNH réel → altimètre indique <b>trop haut</b> (danger)</li>
 <li>T° &lt; ISA → altitude vraie &lt; altitude indiquée (« du chaud vers le froid : on descend »)</li>
+<li><b>QFE</b> : pression réf. aérodrome → l'altimètre indique alors une <b>hauteur</b> (0 ft au seuil)</li>
+<li><b>QNE</b> : altitude-pression au-dessus de 1013,25 hPa (niveau de vol)</li>
+<li>Erreur d'<b>hystérésis</b> possible sur l'altimètre</li>
 </ul>`},
 {t:'Instruments gyroscopiques', html:`
 <ul>
@@ -467,6 +557,10 @@ const FICHES = [
 <li><b>Indicateur de virage</b> : taux + bille (souvent électrique)</li>
 <li>Taux standard = <b>3°/s</b> ; inclinaison ≈ 15% de Vp</li>
 <li><b>Bille centrée</b> = vol symétrique ; « le pied chasse la bille »</li>
+<li>Gyro pneumatique ≈ <b>12 000 tr/min</b> ; gyro électrique ≈ <b>40 000 tr/min</b></li>
+<li>Panne pompe à vide : indications encore exploitables ≈ <b>2 à 3 min</b></li>
+<li>Propriété du gyroscope : réagit à une force appliquée par un déplacement à <b>90°</b> de celle-ci (précession)</li>
+<li>Seuls instruments sur pompe à vide (avion léger classique) : horizon artificiel + conservateur de cap</li>
 </ul>`},
 {t:'Compas magnétique', html:`
 <ul>
@@ -474,6 +568,8 @@ const FICHES = [
 <li><b>Déviation</b> : masses magnétiques, varie selon l'orientation → table sous le compas</li>
 <li>Erreurs en : virages, accélérations, turbulences</li>
 <li>Lecture optimale : palier rectiligne stabilisé, sans accélération</li>
+<li>Perturbé par : masses <b>ferreuses</b>, objets aimantés, courant <b>continu</b> — PAS par les masses non ferreuses ni la déclinaison</li>
+<li>Hémisphère nord, virage à droite depuis le cap Nord : le compas indique d'abord (à tort) un virage vers l'<b>ouest</b></li>
 </ul>`},
 {t:'Structures, volets & commandes', html:`
 <ul>
@@ -493,6 +589,11 @@ const FICHES = [
 <ul>
 <li><b>Anti-balance tab</b> : augmente l'effort aux commandes (contraire du trim)</li>
 <li><b>Déport en corne</b> : surface gouverne devant l'axe charnière → réduit effort</li>
+<li>3 axes de rotation : <b>roulis</b> (longitudinal), <b>tangage</b> (latéral), <b>lacet</b> (vertical)</li>
+<li>Gouvernail (direction) : effet primaire = lacet, effet secondaire = <b>roulis induit</b> (même sens)</li>
+<li>Ailerons : effet secondaire = <b>lacet inverse</b> (aile montante = plus de portance donc plus de traînée)</li>
+<li>Virage stabilisé : action extérieure sur la commande de roulis nécessaire pour contrer le <b>roulis induit</b> (aile extérieure plus rapide → plus de portance)</li>
+<li>Roulage vent de travers : manche <b>orienté face au vent</b> (maintient l'aile au sol, limite l'effet girouette)</li>
 </ul>
 <table>
 <tr><th>Commande moteur</th><th>Couleur standard</th></tr>
@@ -520,6 +621,87 @@ const FICHES = [
 <li>T° huile excessive → réduire puissance, enrichir mélange</li>
 <li>Humidité ↑ → mélange <b>s'appauvrit</b> (air humide = moins dense)</li>
 <li>T° ambiante ↑ → mélange <b>s'enrichit</b> (carburant s'évapore davantage)</li>
+<li>Huiles <b>minérales</b> : rodage moteur (50 premières heures) ; huiles <b>dispersantes</b> : usage normal ensuite</li>
+<li>Grade huile = <b>viscosité</b> ; mélange possible entre marques si même type/catégorie</li>
+<li>Pression huile doit s'établir en <b>&lt; 30 s</b> après démarrage, sinon arrêter le moteur</li>
+<li>T° huile élevée + pression <b>basse</b> : fuite/manque d'huile → <b>atterrir</b> au plus vite</li>
+<li>T° huile élevée + pression <b>normale</b> : probable panne de l'indicateur → dérouter, faire vérifier</li>
+<li>Grand froid (&lt; -10°C) : pression huile élevée au démarrage puis baisse en chauffant (huile visqueuse à froid)</li>
+</ul>`},
+{t:'Instruments moteur — jauges & limitations', html:`
+<table>
+<tr><th>Paramètre</th><th>Jauge</th><th>Info clé</th></tr>
+<tr><td>EGT</td><td>Température gaz échappement</td><td>Pic = mélange optimal, puis réenrichir</td></tr>
+<tr><td>CHT (culasse)</td><td>Température cylindre</td><td>Prise sur le cylindre le moins bien refroidi</td></tr>
+<tr><td>Fuel flow</td><td>Débitmètre</td><td>Consommation instantanée (l/h ou gal/h)</td></tr>
+<tr><td>MAP</td><td>Pression d'admission</td><td>Indique la puissance sur hélice à calage variable</td></tr>
+<tr><td>Tachymètre (RPM)</td><td>Compte-tours</td><td>Indique la puissance sur hélice à calage fixe</td></tr>
+</table>
+<ul>
+<li><b>Totalisateur</b> : carburant consommé cumulé depuis la mise en route</li>
+<li>Moteur arrêté, au sol, niveau mer : MAP indique la <b>pression atmosphérique</b> locale (≈30 inHg std)</li>
+<li>Voltmètre : tension du réseau de bord ; Ampèremètre : charge/décharge de la batterie</li>
+<li>Sur injection : réglage mélange via débitmètre d'abord, affiné ensuite à l'EGT</li>
+</ul>`},
+{t:'Circuit carburant — composants', html:`
+<ul>
+<li><b>Pompe mécanique</b> (entraînée par le moteur) alimente en continu ; <b>pompe électrique de gavage</b> pour démarrage/secours</li>
+<li><b>Crépine</b> (filtre réservoir) : retient les impuretés en suspension</li>
+<li><b>Primer</b> : pompe auxiliaire d'amorçage facilitant le démarrage à froid</li>
+<li><b>Flotteur</b> du carburateur : maintient un niveau d'essence constant dans la cuve</li>
+<li><b>Gicleur</b> : pulvérise l'essence ; <b>papillon des gaz</b> : régule le débit de mélange admis aux cylindres</li>
+<li><b>Jaugeur</b> : indique la quantité restante par réservoir</li>
+<li>Carburant <b>inutilisable</b> : quantité non consommable en vol par construction (jauge doit indiquer zéro à ce niveau, norme CS23)</li>
+<li><span class="danger">Vapor lock</span> : bulle de vapeur d'essence → désamorçage du circuit par forte chaleur</li>
+</ul>`},
+{t:'Train d\'atterrissage & freins', html:`
+<ul>
+<li><b>Train classique</b> : 2 roues principales + roulette de queue orientable</li>
+<li><b>Train tricycle</b> : roue avant dirigée au sol via le <b>palonnier</b>, reliée à la gouverne de direction</li>
+<li><b>Voie</b> du train : distance entre les axes des roues principales</li>
+<li>Freins : présents <b>uniquement sur le train principal</b></li>
+<li>Freinage optimal : piste <b>en dur et sèche</b> (eau = pellicule → efficacité très réduite)</li>
+<li>Carénage de roue : diminue la traînée, augmente légèrement la masse</li>
+<li>Sortie du train en vol : <b>augmente la traînée</b> (aucun effet sur la portance)</li>
+</ul>`},
+{t:'Vitesses caractéristiques (V-speeds)', html:`
+<table>
+<tr><th>Vitesse</th><th>Signification</th><th>Repère badin</th></tr>
+<tr><td>VS0</td><td>Décrochage config atterrissage (pleins volets)</td><td>Début arc blanc</td></tr>
+<tr><td>VS1</td><td>Décrochage lisse</td><td>Début arc vert</td></tr>
+<tr><td>VFE</td><td>Vitesse max volets sortis</td><td>Fin arc blanc</td></tr>
+<tr><td>VNO</td><td>Max croisière normale (air calme au-delà)</td><td>Fin arc vert / début jaune</td></tr>
+<tr><td>VNE</td><td>À ne jamais dépasser</td><td>Trait rouge</td></tr>
+<tr><td>VA</td><td>Manœuvre max (limite structurale)</td><td><b>non</b> représentée par une couleur</td></tr>
+<tr><td>VLO</td><td>Manœuvre du train (sortie/rentrée)</td><td>non représentée</td></tr>
+<tr><td>VLE</td><td>Vol autorisé train sorti</td><td>non représentée</td></tr>
+</table>
+<ul>
+<li>Au-delà de VNE : risque de <span class="danger">flutter</span> → destruction structure, non garantie par le constructeur</li>
+</ul>`},
+{t:'Matériaux & structure — compléments', html:`
+<ul>
+<li><b>Limite élastique</b> : au-delà, déformation permanente → pièce à changer (elle ne reprend pas sa forme)</li>
+<li><b>Construction en grille</b> (treillis tubulaire) : non autoportante, sans revêtement structural</li>
+<li><b>Lisses</b> : raidisseurs longitudinaux du fuselage (rigidifient l'ensemble avec les couples)</li>
+<li>Fibre de carbone : matériau composite offrant la meilleure résistance</li>
+<li><b>Karman</b> : carénage aérodynamique de raccordement aile-fuselage</li>
+</ul>`},
+{t:'Empennages & configurations d\'aile — compléments', html:`
+<table>
+<tr><th>Config. aile</th><th>Particularité</th></tr>
+<tr><td>Haute</td><td>Alimentation par gravité ; visibilité vers le haut réduite en virage</td></tr>
+<tr><td>Basse</td><td>Meilleure visibilité sol/vol ; nécessite pompe électrique</td></tr>
+<tr><td>Médiane</td><td>Meilleure aéro haute vitesse ; longeron traverse le fuselage (réduit volume utile)</td></tr>
+<tr><td>Elliptique</td><td>Corde variable sur toute l'envergure</td></tr>
+</table>
+<ul>
+<li><b>Empennage en T</b> : hors du sillage turbulent des ailes (avantage), mais risque de deep stall</li>
+<li><b>Empennage dorsal</b> : extension bord d'attaque dérive → fuselage, améliore la stabilité à grand dérapage</li>
+<li><b>Élevons</b> (ailes delta) : combinent fonction ailerons + gouverne de profondeur</li>
+<li><b>Volet Fowler</b> : recule + augmente la courbure → forte hausse de portance (~double)</li>
+<li><b>Volet de courbure</b> classique : modifie le profil au bord de fuite</li>
+<li><b>Spoilers/aérofreins</b> : ↑ traînée, ↓ portance → perte d'altitude rapide sans survitesse</li>
 </ul>`}
 ]},
 /* ────────────────── 3. MÉTÉOROLOGIE ────────────────── */
@@ -534,6 +716,10 @@ const FICHES = [
 <li>Adiabatique sec : <b>1°C / 100 m</b> (3°C/1000 ft)</li>
 <li>Adiabatique saturé : ≈ <b>0,5°C / 100 m</b></li>
 <li>En montant : P ↓, T ↓, ρ ↓</li>
+<li>Composition de l'air : <b>78% azote</b>, <b>21% oxygène</b>, ~1% gaz rares/CO2</li>
+<li>Masse d'1 m³ d'air au niveau de la mer (ISA) : <b>1,225 kg</b></li>
+<li>Hauteur de la tropopause variable selon la latitude : ≈ <b>8 km aux pôles</b>, ≈ <b>15 km à l'équateur</b> (11 km en standard Europe)</li>
+<li>Écart à la température standard noté <b>ISA+n</b> / <b>ISA-n</b></li>
 </ul>`},
 {t:'Pression atmosphérique', html:`
 <ul>
@@ -543,6 +729,9 @@ const FICHES = [
 <li><b>Dépression</b> : convergence → ascendance → nuages</li>
 <li><b>Dorsale</b> : axe hautes pressions ; <b>Thalweg</b> : axe basses pressions</li>
 <li><b>Marais barométrique</b> : P ≈ constante, vents faibles et variables</li>
+<li><b>Convergence</b> : masses d'air se rapprochant → ascendance → formation de nuages ; <b>divergence</b> : masses d'air s'écartant</li>
+<li>Anticyclone en été : temps calme, dissipation des nuages, quelques Cu épars ; grand espacement des isobares → vents faibles/variables, systèmes éoliens locaux</li>
+<li>Anticyclone en hiver : vents calmes, zones étendues de <span class="danger">brouillard</span>/stratus élevé persistant</li>
 </ul>`},
 {t:'Température & humidité', html:`
 <ul>
@@ -552,12 +741,19 @@ const FICHES = [
 <li><b>Point de rosée</b> : T à laquelle air sature → condensation</li>
 <li>Faible écart T / point de rosée → risque brume/brouillard</li>
 <li>T ↓ → humidité relative ↑ (écart diminue)</li>
+<li>Eau atmosphérique : 3 états possibles — <b>liquide, solide, gazeux</b></li>
+<li>Condensation en haute troposphère → libération de <b>chaleur latente</b></li>
+<li>Couverture nuageuse → <b>diminue l'amplitude thermique</b> diurne (jour/nuit)</li>
 </ul>`},
 {t:'Stabilité & convection', html:`
 <ul>
 <li><b>Stable</b> : particule se refroidit + vite que l'ambiant → redescend → nuages stratiformes (pluie continue)</li>
 <li><b>Instable</b> : particule se refroidit − vite → monte → nuages cumuliformes (averses)</li>
 <li>Convection max en <b>fin d'après-midi</b> ; stoppée à la tropopause</li>
+<li>Atmosphère <b>conditionnellement instable</b> : cumulus imposants, averses isolées de pluie ou d'orages</li>
+<li>Dans un nuage (condensation en cours), le refroidissement ralentit à ≈ <b>0,4°C/100m</b> (vs 0,5-0,6°C/100m hors nuage)</li>
+<li>Sommet des cumulus souvent limité par une <b>couche d'inversion</b></li>
+<li>Convection stoppée par une masse d'air stable ou par la baisse de température en fin de journée</li>
 </ul>`},
 {t:'Vent', html:`
 <ul>
@@ -566,6 +762,12 @@ const FICHES = [
 <li>En altitude : // aux isobares ; près du sol : dévié ~<b>30°</b> vers basses pressions</li>
 <li>En altitude vs sol : + fort et tourne vers la droite (NH)</li>
 <li>Vent de face → basses pressions <b>à droite</b> (NH)</li>
+<li>Conversion usuelle : <b>1 m/s ≈ 2 kt</b></li>
+<li>Vent donné par un contrôleur référencé au <b>Nord vrai</b>, sauf au décollage/atterrissage (Nord magnétique piste)</li>
+<li>Sur les cartes de vent en altitude (&gt; 1500 m) : vent tangent aux <b>isohypses</b> (équivalent des isobares en altitude)</li>
+<li>Gradient de vent (cisaillement) dépend de la <b>vitesse du vent</b> et de la <b>rugosité du sol</b></li>
+<li>Gradient de vent arrière ressenti à l'atterrissage dépend : masse/surface alaire de l'aéronef, caractéristiques de la masse d'air, imperfections du sol, vitesse du vent</li>
+<li>En France, vers 12h UTC, ascendances thermiques préférentielles sur les versants exposés au <b>Sud</b></li>
 </ul>`},
 {t:'Vents locaux & effet de Foehn', html:`
 <table>
@@ -584,6 +786,9 @@ const FICHES = [
 <ul>
 <li><b>Foehn</b> : air humide monte (condense + pluie) → sous le vent : air sec et chaud</li>
 <li>Sous le vent : <b>altocumulus lenticulaires</b> + <b>rotors</b> (turbulences)</li>
+<li><b>Bora</b> : vent catabatique froid de secteur nord-est soufflant sur la mer Adriatique</li>
+<li><b>Mistral</b> : accélère en se resserrant dans la vallée du Rhône (effet Venturi) ; lié à une dépression sur l'Italie/l'est et un anticyclone sur l'Espagne/l'ouest</li>
+<li><b>Tramontane</b> : souffle aussi sur le Roussillon (en plus du Bas-Languedoc)</li>
 </ul>`},
 {t:'Nuages', html:`
 <table>
@@ -603,6 +808,9 @@ const FICHES = [
 <li><b>Nimbostratus</b> : pluie forte et continue</li>
 <li><b>Stratus</b> : très bas → dangereux VFR</li>
 <li>Plafond défini à partir de <b>BKN</b> (≥ 5 octas)</li>
+<li><b>Surdéveloppement</b> : développement vertical marqué d'un cumulus, avec averses de pluie</li>
+<li>Cumulus alignés en <b>rues de nuages</b> (bandes parallèles) : indiquent la direction du vent à leur altitude</li>
+<li><b>Stratocumulus</b> : forme aplatie, avec zones sombres</li>
 </ul>`},
 {t:'Fronts & perturbations', html:`
 <ul>
@@ -612,6 +820,12 @@ const FICHES = [
 <li><b>Traîne</b> : Cu, bonnes visibilités ; traîne active → Cb</li>
 <li><b>Occlusion</b> : front froid rattrape front chaud</li>
 <li>Perturbation : échelle pays-continent, durée <b>3–6 jours</b></li>
+<li><b>Occlusion</b> : l'air chaud (secteur chaud) est systématiquement soulevé ; caractère de <b>front chaud</b> si le froid postérieur grimpe sur le froid antérieur, sinon caractère de <b>front froid</b></li>
+<li>Front <b>stationnaire</b> : limite entre deux masses d'air sans déplacement horizontal</li>
+<li>Dépression de front polaire : se déplace globalement parallèlement aux isobares du secteur chaud</li>
+<li>Passage d'un front chaud actif : pluie durable, vent tournant du <b>Sud vers l'Ouest</b>, pression cesse de baisser, point de rosée en hausse</li>
+<li>Passage d'un front froid : pression baisse brièvement puis remonte ; vent tournant au <b>Nord-Ouest</b></li>
+<li>Creux (dépression) d'altitude : entrée d'air froid en haute troposphère → baisse du géopotentiel, favorise <b>averses et orages (Cb)</b></li>
 </ul>`},
 {t:'CB, orages, givrage', html:`
 <ul>
@@ -625,6 +839,16 @@ const FICHES = [
 <li><span class="danger">Givrage</span> : <b>0°C à −12°C</b> + gouttelettes surfondues</li>
 <li><b>Verglas</b> (glace claire) : le plus dangereux</li>
 <li>Pluie verglaçante : avant front chaud en hiver</li>
+<li>Cycle de vie d'un orage : <b>stade cumulus</b> (courants ascendants dominants) → <b>stade de maturité</b> (forts ascendants ET descendants, précipitations) → dissipation</li>
+<li>Conditions obligatoires orage thermique : atmosphère conditionnellement instable + <b>haute température</b> + <b>forte humidité</b> (basses couches)</li>
+<li>Cb purement convectif : isolé, bien discernable ; en plaine peut persister après le coucher du soleil puis se dissipe en cours de nuit</li>
+<li>Cb orographique : peut se former dès le <b>milieu de journée</b> (plus tôt que le Cb thermique de fin d'après-midi) si la masse d'air est instable</li>
+<li>Courants verticaux dans un Cb : typiquement <b>3000-4000 ft/min</b>, valeurs extrêmes observées jusqu'à <b>10 000-11 000 ft/min</b></li>
+<li>Passage d'un Cb : vent très irrégulier en direction (jusqu'à 180°) et rafales de <b>30 à 40 kt</b></li>
+<li><b>Grêle</b> : peut tomber même <b>sous l'isotherme 0°C</b> (formée en altitude dans le Cb, tombe une fois trop lourde)</li>
+<li><b>Grain</b> : violent coup de vent (pas nécessairement de pluie associée)</li>
+<li>Foudre : danger principal = <span class="danger">surchauffe/dommages aux parties exposées</span> ; effets possibles : peinture brûlée, perforation de cellule, éblouissement de l'équipage, dégâts radio/électriques ; l'habitacle agit comme une <b>cage de Faraday</b> (protège les occupants)</li>
+<li><b>Givre blanc</b> : petites gouttelettes/cristaux de glace sur les bords d'attaque ; <b>glace claire (verglas)</b> : grosses gouttelettes surfondues — la plus dangereuse (épaisse, alourdit et déforme le profil de l'aile)</li>
 </ul>`},
 {t:'Brouillard & visibilité', html:`
 <table>
@@ -637,6 +861,8 @@ const FICHES = [
 <ul>
 <li>Brouillard (FG) : visi &lt; <b>1 km</b> ; Brume (BR) : 1–5 km</li>
 <li>Lié à anticyclone et dorsale</li>
+<li>Brouillard matinal favorisé par : situation <b>anticyclonique</b>, forte humidité, vent faible, ciel <b>clair</b> la nuit (rayonnement)</li>
+<li>Brouillard d'évaporation : nécessite un <b>vent nul</b> ; peut se former après des précipitations orageuses sur un sol chaud et humide</li>
 </ul>`},
 {t:'Messages météo (METAR, TAF…)', html:`
 <table>
@@ -653,6 +879,14 @@ const FICHES = [
 <li><b>TEMPO</b> : fluctuation &lt; 1h ; <b>BECMG</b> : évolution régulière ; <b>NOSIG</b> : pas de changement 2h</li>
 <li>Distinguer METAR du TAF : le <b>QNH</b> n'est que dans le METAR</li>
 <li>WINTEM : petite barre = <b>5 kt</b>, grande = <b>10 kt</b>, triangle = <b>50 kt</b></li>
+<li>Visibilité METAR : <b>dominante</b> indiquée ; visibilité minimale (+ direction) ajoutée si &lt; 1500 m OU si &lt; 50% de la dominante ET &lt; 5000 m</li>
+<li>Direction du vent variable notée <b>dddVddd</b> si la variation dépasse <b>60°</b></li>
+<li>SIGMET : peut signaler des phénomènes <b>observés ET/OU prévus</b>, émis pour la FIR/UIR ; exemples de codes : <b>EMBD TS</b> (orages noyés dans la masse), <b>SQL TS</b> (orages en ligne de grains)</li>
+<li>CAVOK n'exclut pas la présence de <b>vent fort</b> (le vent n'est pas un critère du CAVOK)</li>
+<li>TEMSI EUROC : nouvelle carte toutes les <b>3h</b>, disponible <b>4h</b> avant son heure de validité ; symbolique commune avec la TEMSI France (avec quelques codes propres à la France)</li>
+<li>Dossier de vol complet Météo France : cartes <b>TEMSI</b>, cartes des vents à <b>950/850/700 hPa</b>, messages <b>TAF et METAR</b></li>
+<li>Image radar = zones de <b>précipitations</b> ; image satellite = couverture nuageuse et lignes de front ; carte du temps de surface = pression MSL réelle + centres de pression + fronts</li>
+<li>ATIS : observations (METAR/SPECI) + renseignements opérationnels (piste en service, niveau de transition) d'<b>un seul</b> aérodrome — jamais de TAF</li>
 </ul>`},
 {t:'Codes METAR AUTO, SPECI & divers', html:`
 <table>
@@ -673,6 +907,47 @@ const FICHES = [
 <li><b>Conduction</b> : mécanisme principal de chauffage des basses couches par le sol</li>
 <li><b>DZ</b> = bruine ; <b>RA</b> = pluie ; <b>SN</b> = neige ; <b>TS</b> = orage ; <b>FG</b> = brouillard</li>
 <li><b>Dossier de vol</b> Météo France : METAR, TAF, TEMSI, WINTEM, cartes SWL</li>
+<li><b>NSC</b> = No Significant Clouds (pas de nuages &lt; 5000 ft/MSA, pas de CB/TCU) — différent de NCD (capteur ne détecte aucun nuage)</li>
+<li><b>GR</b> = grêle ; <b>GS</b> = grésil ; <b>HZ</b> = brume sèche (peu sensible aux variations de température, contrairement au brouillard/brume)</li>
+<li><b>VC</b> = au voisinage ("in the vicinity") ; <b>RETS</b> = orages récents</li>
+<li>RVR (portée visuelle de piste) : ex. <b>R31/1000U</b> = piste 31, portée 1000 m, tendance <b>U</b> hausse / <b>D</b> baisse / <b>N</b> stable ; RVR variable ex. <b>R22/1100VP1500</b></li>
+<li>Température négative précédée de <b>M</b> dans le METAR (ex : M00) ; sur WINTEM, seules les valeurs positives portent le signe <b>+</b>, les négatives n'ont aucun signe</li>
+<li><b>SPECI</b> quasi disparu en France : tous les METAR y étant semi-horaires, il n'y a plus de diffusion de SPECI</li>
+</ul>`},
+{t:'Altimétrie (QNH / QFE / QNE)', html:`
+<table>
+<tr><th>Calage</th><th>Référence</th><th>Indication</th></tr>
+<tr><td>QNH</td><td>Pression ramenée au niveau de la mer</td><td>Altitude (au-dessus du MSL)</td></tr>
+<tr><td>QFE</td><td>Pression à l'altitude de l'aérodrome</td><td>Hauteur au-dessus du terrain (<b>0 ft au poser</b>)</td></tr>
+<tr><td>QNE</td><td><b>1013,25 hPa</b> (calage standard)</td><td>Niveau de vol (FL)</td></tr>
+</table>
+<ul>
+<li>Vérification altimètre au sol : régler le <b>QNH</b> puis comparer l'indication à l'altitude connue du terrain</li>
+<li>Vol en suivant une surface isobare (indication altimètre constante) : la trajectoire réelle dépend de la <b>température</b> de la masse d'air traversée</li>
+<li>Air plus <span class="danger">froid</span> que l'ISA → altitude vraie <b>inférieure</b> à l'altitude indiquée (danger au survol du relief) ; air plus chaud que l'ISA → altitude vraie supérieure</li>
+<li><b>Niveau de condensation</b> : altitude où une particule ascendante atteint la saturation → base du nuage</li>
+</ul>`},
+{t:'Masses d\'air & circulation générale', html:`
+<ul>
+<li>Caractère d'une masse d'air = <b>région d'origine</b> + <b>trajectoire</b> parcourue</li>
+<li>Europe centrale : influencée surtout par l'air <b>polaire</b> (froid) et l'air <b>tropical</b> (chaud), qui se rencontrent au <b>front polaire</b></li>
+<li>Air arrivant en hiver par la Russie continentale : <b>air polaire continental</b></li>
+<li>Vent de sud-ouest sur l'Europe de l'Ouest (venant de l'Atlantique) : advection <b>subtropicale maritime</b></li>
+<li>Anticyclones permanents étendus toute l'année : océans vers <b>30°N/S</b></li>
+<li>Entre <b>45°N et 60°N</b> : flux dominant d'<b>ouest</b> (explique les vents dominants d'ouest en Europe)</li>
+<li>Hémisphère Sud (ex. la Réunion) : circulation inversée, les dépressions tournent en <b>sens horaire</b></li>
+</ul>`},
+{t:'Turbulence & phénomènes de relief', html:`
+<ul>
+<li><b>Turbulence thermique</b> : due à la convection (échauffement inégal du sol) ; légère à modérée sous les cumulus</li>
+<li><b>Turbulence de frottement</b> (mécanique) : tourbillons dus à la rugosité du sol qui perturbent l'écoulement ; végétation/relief réduit fortement le vent près du sol</li>
+<li><b>Turbulence d'onde/rotor</b> : sous le vent d'un relief, modérée à sévère en présence de nuages rotor</li>
+<li>Seuil de danger en montagne : effets aérologiques dangereux dès que le vent en crête dépasse <b>20 kt</b></li>
+<li>Écoulement perturbé par un obstacle (relief, rideau d'arbres...) jusqu'à environ <b>1/3 de sa hauteur</b> au-dessus de lui</li>
+<li><b>Onde orographique</b> : se développe sur un relief allongé avec vent perpendiculaire fort ; peut culminer à une altitude au-dessus du relief ≈ <b>1/3 de la hauteur du relief</b> ; matérialisée par des <b>altocumulus lenticulaires</b> au sommet de l'onde</li>
+<li>Vent perpendiculaire à une crête : ascendances au vent, <b>rabattants</b> et turbulence sous le vent</li>
+<li><span class="danger">Cisaillement de vent</span> : changement rapide de direction et/ou vitesse (plan horizontal et/ou vertical) ; dangereux près des averses/orages et en approche de vallée avec vent fort perpendiculaire à la crête (variation possible de <b>180°</b> pendant la descente)</li>
+<li>Effet Venturi (ex. accélération du Mistral dans une vallée qui se resserre) : la vitesse augmente, la <b>pression et la température diminuent</b></li>
 </ul>`}
 ]},
 /* ────────────────── 4. NAVIGATION ────────────────── */
@@ -686,6 +961,9 @@ const FICHES = [
 <li>Méridiens = demi-grands cercles (indiquent Nord vrai)</li>
 <li>Seul l'<b>équateur</b> est un grand cercle parmi les parallèles</li>
 <li>Rotation Terre : <b>15°/h</b> → 1° = 4 min</li>
+<li>Coordonnées géographiques : latitude sur <b>2 chiffres</b> de degrés (00-90) ; longitude sur <b>3 chiffres</b> (000-180) ; minutes/secondes toujours sur 2 chiffres</li>
+<li>Pôle Nord géographique : 90°N, longitude conventionnelle <b>00°W</b> (tous les méridiens y convergent)</li>
+<li>Circonférence d'un parallèle <b>diminue</b> quand la latitude augmente (maximale à l'équateur, nulle aux pôles)</li>
 </ul>`},
 {t:'Distances & conversions', html:`
 <table>
@@ -706,6 +984,10 @@ const FICHES = [
 <ul>
 <li>Dérive max si vent <b>perpendiculaire</b> ; nulle si vent parallèle</li>
 <li>Vent de gauche → cap &lt; route</li>
+<li>Vent de <b>droite</b> → cap &gt; route (complète : vent de gauche → cap &lt; route)</li>
+<li class="formula">Chaîne complète : Rv − dérive = Cv &nbsp;|&nbsp; Cv − Dm = Cm &nbsp;|&nbsp; Cm − d = Cc</li>
+<li>Mnémo : « <b>R</b>etranchez <b>V</b>otre <b>D</b>érive <b>C</b>ela <b>V</b>ous <b>D</b>onnera <b>M</b>aintenant <b>C</b>haque mesure du <b>C</b>ap <b>C</b>ompas » (Rv Dérive Cv Dm Cm d Cc)</li>
+<li class="formula">Dérive (X) = composante de vent traversier (Vt) × facteur de base : X = Vt × Fb</li>
 </ul>`},
 {t:'Triangle des vitesses & facteur de base', html:`
 <table>
@@ -719,6 +1001,9 @@ const FICHES = [
 <li>Vs = Vp ± vent effectif (face − / arrière +)</li>
 <li class="formula">Facteur de base Fb = 60 / Vp &nbsp;&nbsp;|&nbsp;&nbsp; Temps = Distance × Fb</li>
 <li>Règle du soixantième : 1° = 1 NM après 60 NM</li>
+<li><b>Vc</b> (vitesse conventionnelle) = Vi corrigée des erreurs d'instrument/position ; écart Vi/Vc jugé négligeable en aviation légère</li>
+<li>Correction Vi→Vp précise : + <b>1% par 600 ft</b> d'altitude-pression, + <b>1% par 5°C</b> au-dessus de la température standard</li>
+<li>Température standard (ISA) : <b>15°C</b> au niveau de la mer, − <b>2°C par 1000 ft</b></li>
 </ul>`},
 {t:'Altimétrie (QNH, QFE, FL)', html:`
 <table>
@@ -735,7 +1020,17 @@ const FICHES = [
 <tr><th>Rm</th><th>FL</th></tr>
 <tr><td>000°–179°</td><td>Impair + 5 (35, 55, 75…)</td></tr>
 <tr><td>180°–359°</td><td>Pair + 5 (45, 65, 85…)</td></tr>
-</table>`},
+</table>
+<ul>
+<li>Altitude = altitude terrain + <b>hauteur</b> (lue au QFE) ; Hauteur = Altitude (QNH) − altitude terrain</li>
+<li>QFE toujours <b>&gt; QNH</b> si l'aérodrome est situé sous le niveau de la mer (cas rare hors France)</li>
+<li>1 hPa ≈ 28 ft dans les <b>basses couches</b> ; au-delà de quelques milliers de ft, décroissance non linéaire → utiliser plutôt <b>1 hPa ≈ 30 ft</b></li>
+<li>À FL constant, en passant d'une zone à QNH fort vers une zone à QNH faible → <b>altitude vraie diminue</b> (« high to low, look out below »)</li>
+<li>Niveaux de vol (FL) utilisables seulement <b>au-dessus de 3000 ft ASFC</b> (ou de l'altitude de transition) ; en dessous, toujours piloter en altitude QNH</li>
+<li>Marge réglementaire de franchissement d'obstacle : au moins <b>500 ft</b> au-dessus du point culminant, dans un couloir centré sur la route</li>
+<li>Altitude de transition par défaut en France : <b>5000 ft</b> (indiquée sur carte 1/1 000 000 si différente, ex. « TA:5500 »)</li>
+<li>Pression standard = <b>1013,25 hPa</b> ; un altimètre calé sur 1013,25 hPa indique une <b>altitude-pression</b></li>
+</ul>`},
 {t:'Cartes aéronautiques', html:`
 <table>
 <tr><th>Carte</th><th>1 cm =</th><th>Usage</th></tr>
@@ -747,18 +1042,27 @@ const FICHES = [
 <li><b>Mercator</b> : lignes droites = loxodromies</li>
 <li>Mesurer distance sans règle : reporter sur un <b>méridien</b></li>
 <li>Aérodrome barré X = désaffecté ; bleu = privé</li>
+<li>Échelles complémentaires : 1/100 000 → 1 cm = <b>1 km</b> ; 1/250 000 → 1 cm = <b>2,5 km</b></li>
+<li>Plus le <b>dénominateur</b> de l'échelle est petit, plus la carte est précise (mais couvre une zone plus réduite)</li>
+<li>Carte OACI 1/500 000 (édition ≥2013) : renseignements aéro jusqu'au <b>FL115 ou 3000 ft ASFC</b> (le plus élevé) ; carte 1/1 000 000 : jusqu'au FL195, points IFR = petits triangles</li>
+<li>Sur carte 1/1 000 000, les <b>obstacles</b> ne sont représentés que si leur hauteur dépasse <b>500 ft</b></li>
 </ul>`},
 {t:'Orthodromie & loxodromie', html:`
 <ul>
 <li><b>Orthodromie</b> = plus court chemin (grand cercle) → courbe sur Mercator, droite sur Lambert</li>
 <li><b>Loxodromie</b> = cap constant → droite sur Mercator, courbe sur Lambert</li>
 <li>Méridiens = orthodromies ; Parallèles (≠ équateur) = loxodromies</li>
+<li>Un parallèle (hors équateur) est une <b>loxodromie</b> (coupe tous les méridiens à 90°, cap vrai constant)</li>
+<li>Orthodromie = loxodromie uniquement si la route suit un <b>grand cercle</b> (méridien ou équateur)</li>
+<li>Sur carte Lambert, une droite tracée n'est en toute rigueur ni loxodromie ni orthodromie (écart négligeable sur courte distance) ; le long d'un méridien : droite = loxodromie = orthodromie</li>
 </ul>`},
 {t:'Heures & nuit aéronautique', html:`
 <ul>
 <li>France hiver : UTC + 1 ; été : UTC + 2</li>
 <li><b>Nuit aéro</b> : 30 min après coucher → 30 min avant lever du soleil</li>
 <li>Le soleil se couche plus tôt à l'Est</li>
+<li>Écart d'heure = différence de longitude (°) ÷ 15, ou × <b>4 min par degré</b> ; le Soleil se couche plus tôt à l'<b>Est</b></li>
+<li>Heure d'été en France : du dernier week-end de mars au dernier week-end d'octobre (UTC+2) ; heure d'hiver le reste de l'année (UTC+1)</li>
 </ul>`},
 {t:'Navigation estime & cheminement', html:`
 <ul>
@@ -767,6 +1071,10 @@ const FICHES = [
 <li>En pratique : estime contrôlée par cheminement (~15 min)</li>
 <li>Bons repères : voies ferrées, autoroutes, rivières, grandes villes</li>
 <li>Manche à air : chaque bande ≈ <b>5 kt</b> ; horizontale = &gt; <b>25 kt</b></li>
+<li><b>Relèvement</b> = angle Nord → direction d'un repère (référence Nord ; à distinguer du gisement, référencé au cap avion)</li>
+<li><b>Erreur systématique</b> = décaler volontairement sa route d'un angle connu pour savoir de quel côté se trouve le repère à l'arrivée</li>
+<li>Repères recommandés : montagne → sommets/flancs (pas fond de vallée) ; forêt → rivières, grandes routes, lignes HT (pas les chemins) ; agricole → voies ferrées, grandes villes (pas hameaux)</li>
+<li>GPS : temps de vol estimé (ETA) basé sur la <b>vitesse sol instantanée</b>, n'anticipe pas un changement de vent sur les tronçons suivants</li>
 </ul>`},
 {t:'Consommation & autonomie', html:`
 <ul>
@@ -774,6 +1082,8 @@ const FICHES = [
 <li>Réserve réglementaire : <b>30 min</b> (navigation) / <b>10 min</b> (local)</li>
 <li>Distance franchissable = distance max avec le carburant</li>
 <li>Rayon d'action = aller-retour max</li>
+<li><b>Délestage</b> = consommation de carburant sur une distance donnée</li>
+<li class="formula">Carburant total ≈ (roulage/intégration) + (temps de vol × conso horaire) + réserve réglementaire</li>
 </ul>`},
 {t:'Radionavigation VOR, ADF, DME, GPS', html:`
 <table>
@@ -788,6 +1098,22 @@ const FICHES = [
 <li>VOR CDI déviation complète = <b>10°</b></li>
 <li>Portée VOR : D = 1,23 × √H (H en ft, D en NM)</li>
 <li>GPS : min <b>4 satellites</b> pour position 3D ; <b>RAIM</b> = contrôle intégrité</li>
+<li>Ondes électromagnétiques : vitesse ≈ <b>300 000 km/s</b></li>
+<li>LF/MF (NDB) : propagation par onde de <b>sol</b> et onde de <b>ciel</b> ; VHF (VOR) : onde <b>spatiale</b> quasi-optique (portée = ligne de vue directe)</li>
+<li>Principe VOR : comparaison de <b>phase</b> de deux signaux</li>
+<li>Après centrage de l'aiguille (OBS) : en <b>FROM</b> → on lit le radial (QDR) ; en <b>TO</b> → on lit le QDM</li>
+<li>Interception d'un radial : angle classique de <b>30°</b> (jusqu'à 45° si loin de la station)</li>
+<li>DME = mesure de <b>temps</b> de propagation ; distance <b>oblique</b> (jamais horizontale), écart croissant à l'approche verticale de la station</li>
+<li>Effet de rivage (NDB) : erreur de gisement maximale à incidence rasante sur la côte, sous 6000 ft</li>
+<li>Portée NDB (LF/MF) meilleure de <b>jour</b> ; nuit et lever/coucher du soleil = ionisation, erreurs de gisement accrues (« effet de nuit »)</li>
+<li>ADF utilisable jour/nuit mais peu fiable par orage ou lever/coucher du soleil</li>
+<li><b>BFO</b> = touche pour écouter l'identification morse d'une balise NDB</li>
+<li>GPS : <b>3 satellites</b> minimum pour une position 2D, <b>4</b> pour position 3D + altitude ; précision dégradable par erreur d'horloge satellite</li>
+<li>GPS perturbé principalement par : panne d'horloge satellite, absence d'antenne déportée (pas par le relief, les nuages ou la vitesse de l'avion)</li>
+<li>Info <b>BRG</b> (bearing GPS) = relèvement vers le waypoint ; comparer BRG et <b>TRK</b> (route suivie) pour savoir de quel côté virer</li>
+<li>GPS portable non certifié = simple aide (non homologué), peut créer des interférences avec les équipements de bord</li>
+<li>Vol sans repère visuel sol/eau (VFR "on top") : VOR, radiocompas ou <b>GPS homologué</b> obligatoire à bord</li>
+<li>VOR-DME = symbole encadré + mention <b>(D)</b> dans le cartouche</li>
 </ul>`},
 {t:'Transpondeur', html:`
 <table>
@@ -801,6 +1127,9 @@ const FICHES = [
 <li>Mode C : transmet altitude pression (réf. 1013)</li>
 <li>Afficher 7000 + ALT dès déplacement au sol</li>
 <li>Chiffres : <b>0 à 7</b> uniquement</li>
+<li>Position <b>Stand-by</b> = sous tension, aucune émission de code ni d'altitude</li>
+<li>Fonction <b>IDENT</b> : à utiliser uniquement sur demande du contrôleur</li>
+<li>Transpondeur mode C <b>obligatoire</b> pour pénétrer un espace aérien de classe <b>D</b> en France</li>
 </ul>`},
 {t:'RMI, VDF & radar', html:`
 <ul>
@@ -818,6 +1147,11 @@ const FICHES = [
 <li><b>Radar primaire</b> : détecte écho réfléchi, donne position + distance, <b>PAS d'altitude</b></li>
 <li><b>Radar secondaire (SSR)</b> : interroge transpondeur → code + altitude (mode C/S)</li>
 <li>Mode S : transmission données + identification automatique</li>
+<li>Gisement compté <b>0°-360° dans le sens horaire</b> depuis l'axe avion (droite = positif) — piège classique : repère à 45° à gauche = gisement <b>315°</b></li>
+<li>Si la centrale de cap d'un RMI tombe en panne, le <b>gisement reste correct</b> quel que soit le cap affiché</li>
+<li>Radar primaire perturbé par : vol à <b>basse altitude</b>, relief, cumulonimbus, 2 avions proches l'un de l'autre ; portée meilleure si la cible vole <b>haut</b> (relief/rotondité Terre masquent les avions bas)</li>
+<li>Guidage radar (contact VHF obligatoire) : en <b>IFR</b>, le contrôleur assure séparation et franchissement d'obstacles (mode C requis) ; en <b>VFR</b>, il ne donne que des caps, le pilote reste responsable du franchissement d'obstacles</li>
+<li>Fréquence VDF = souvent la même que la fréquence tour</li>
 </ul>`},
 {t:'Terre, symboles cartes & NOTAM', html:`
 <ul>
@@ -841,6 +1175,48 @@ const FICHES = [
 <li>NOTAM consultables sur le <b>site du SIA</b> avant chaque vol</li>
 <li><b>Composante traversière</b> = Vvent × sin(angle vent/piste)</li>
 <li><b>Vent effectif</b> = Vvent × cos(angle vent/piste)</li>
+<li>Notation « CTR CAEN D 1500 » : classe D, plafond exprimé en <b>altitude</b> (QNH) — piège fréquent, ce n'est pas une hauteur au-dessus de l'aérodrome</li>
+<li>Notation « R xxx B 1500 ASFC » : zone réglementée, plafond 1500 ft <b>au-dessus du sol</b> ; signe <b>+</b> = plafond au-delà de la couverture carte (FL115/3000 ASFC)</li>
+<li>Une seule altitude/hauteur indiquée pour une zone = la zone commence <b>au sol</b>, le chiffre est le plafond</li>
+<li>Horaires d'activité d'une zone réglementée (R) : consulter le <b>complément aux cartes de radionavigation VFR</b> (ou AIP/SIA)</li>
+<li><b>WGS 84</b> = modélisation du globe compatible GPS, mentionnée en légende de carte</li>
+<li><b>SIV</b> = secteur d'information de vol</li>
+<li>Sigles VAC : <b>ASI</b> = aire à signaux ; <b>SDE</b> = seuil décalé</li>
+<li>Points de compte-rendu : triangle <b>noir</b> = obligatoire, triangle <b>blanc</b> = facultatif</li>
+<li>QFU préférentiel = numéro de piste <b>entouré d'un cercle</b> sur la carte VAC</li>
+<li><b>LDA</b> (Landing Distance Available) = distance d'atterrissage disponible, colonne dédiée sur la VAC</li>
+<li>Tour de piste hélico noté ex. « 900 (500) » = 900 ft AMSL, soit 500 ft <b>AAL</b></li>
+</ul>`},
+{t:'Compas magnétique, pôles & déviation', html:`
+<ul>
+<li>Pôle Nord <b>magnétique</b> ≠ pôle Nord géographique : décalé de plusieurs centaines de km, sa position <b>varie dans le temps</b> (pôle géographique fixe, axe de rotation Terre)</li>
+<li>Le QFU (numéro de piste) peut être <b>renuméroté</b> si la déclinaison magnétique locale évolue avec le temps</li>
+<li><b>Déviation compas</b> = angle entre Nord compas et Nord magnétique ; due aux masses métalliques/champs électriques de l'avion (perturbée par les équipements électroniques)</li>
+<li>Erreur maximale tolérée du compas : <b>10°</b> (jusqu'à 15° si la radio émet)</li>
+<li>Inclinaison (plongée) de l'aiguille du compas <b>minimale à l'équateur magnétique</b></li>
+<li><b>Isogone</b> = ligne reliant les points de même déclinaison magnétique ; <b>agonique</b> = ligne de déclinaison <b>nulle (0°)</b></li>
+<li>Déclinaison magnétique : varie de <b>0° à 180°</b>, Est (Nm à droite du Nv) ou Ouest (Nm à gauche)</li>
+<li>Maintenir un <b>cap compas constant</b> longtemps ≈ suivre une loxodromie (approximation PPL, vent nul)</li>
+</ul>`},
+{t:'Symboles graphiques des cartes VFR', html:`
+<table>
+<tr><th>Symbole</th><th>Signification</th></tr>
+<tr><td>Ligne noire à courts traits perpendiculaires</td><td>Voie ferrée (double trait = double voie)</td></tr>
+<tr><td>Ligne double bistre (brun clair)</td><td>Autoroute</td></tr>
+<tr><td>Ligne noire avec petits carrés aux extrémités</td><td>Téléphérique</td></tr>
+<tr><td>Ligne noire continue simple</td><td>Ligne à haute tension</td></tr>
+<tr><td>Trait rouge pointillé</td><td>Limite latérale d'une zone R</td></tr>
+<tr><td>Trait bleu clair / bleu foncé</td><td>Limite classe E / limite classe B-C-D</td></tr>
+<tr><td>Triangle rouge</td><td>Aérodrome avec approche IFR (terrain non contrôlé, AFIS)</td></tr>
+<tr><td>Cercle blanc sur fond rouge (sur une installation)</td><td>Survol interdit à moins de 1000 ft</td></tr>
+<tr><td>Trait continu + points rouges</td><td>Parc ou réserve naturelle étendue</td></tr>
+<tr><td>Petit trait noir isolé</td><td>Barrage</td></tr>
+<tr><td>Symbole bleu foncé (aérodrome)</td><td>Piste en dur, usage civil, souvent aérodrome privé</td></tr>
+<tr><td>Lettre A sous le nom d'un aérodrome</td><td>Altiport</td></tr>
+</table>
+<ul>
+<li>Nombres sous le nom d'un aérodrome (ex. « 411 / 123.0 ») = <b>altitude terrain</b> / fréquence TWR-AFIS-A/A</li>
+<li>Obstacle/antenne : nombre en <b>gras</b> = altitude du sommet ; nombre entre parenthèses = <b>hauteur</b> au-dessus du sol</li>
 </ul>`}
 ]},
 /* ────────────────── 5. RÉGLEMENTATION ────────────────── */
@@ -853,6 +1229,11 @@ const FICHES = [
 <li>Promulgue SARPS (Normes et Pratiques Recommandées) = Annexes</li>
 <li>Annexes clés : 1 = licences, 4 = cartes, 8 = navigabilité, 13 = enquêtes, 14 = aéroports</li>
 <li>En haute mer → règles <b>OACI</b></li>
+<li>Art. 10 : sauf autorisation, tout aéronef entrant/sortant d'un État doit passer par un <b>aérodrome douanier</b></li>
+<li>Art. 29 : documents à bord en navigation internationale : CDI, CDN, licences équipage, carnet de route, licence station radio, liste passagers, manifeste fret</li>
+<li>Art. 33 : reconnaissance mutuelle des licences/certificats entre États si leurs normes sont ≥ minima OACI</li>
+<li>Art. 36 : chaque État peut interdire/réglementer les <b>appareils photo</b> à bord au-dessus de son territoire</li>
+<li>Souveraineté d'un État sur son espace aérien = régions terrestres + eaux territoriales (jamais la haute mer)</li>
 </ul>`},
 {t:'Espaces aériens (A→G)', html:`
 <table>
@@ -868,6 +1249,9 @@ const FICHES = [
 <li><b>P</b> = interdite ; <b>D</b> = dangereuse ; <b>R</b> = réglementée</li>
 <li>Classe D hors horaires → rétrogradée en G</li>
 <li>CTR = zone contrôle (sol → limite sup.)</li>
+<li>Classe <b>B</b> : seule classe où le contrôle sépare aussi les vols <b>VFR entre eux</b></li>
+<li>Classe <b>C</b> : IFR séparés des IFR et des VFR ; entre VFR, seulement <b>information de trafic</b></li>
+<li>Classe <b>E</b> : espace contrôlé, mais clairance et contact radio non requis en VFR si <b>VMC</b> maintenues</li>
 </ul>`},
 {t:'Conditions VMC', html:`
 <table>
@@ -879,6 +1263,9 @@ const FICHES = [
 <ul>
 <li><b>Surface S</b> = max(3000 ft AMSL, 1000 ft ASFC)</li>
 <li><b>VFR spécial</b> (CTR seulement) : visi ≥ 1500 m, hors nuages, vue surface</li>
+<li>Sous la surface S, hors espace contrôlé : visi ≥ <b>1500 m</b> (ou 30 s de vol) si vitesse &lt; <b>140 kt</b> ; visi ≥ <b>5 km</b> si &gt; 140 kt</li>
+<li><b>Plafond</b> = base de la couche nuageuse la plus basse couvrant plus de la moitié du ciel sous 20 000 ft</li>
+<li>VFR spécial déclenché en CTR si visi &lt; <b>5 km</b> ou plafond &lt; <b>1500 ft</b> ; minimum absolu <b>1500 m</b> hors nuages et vue du sol ; inexistant de nuit</li>
 </ul>`},
 {t:'Hauteurs min. de survol', html:`
 <table>
@@ -888,7 +1275,13 @@ const FICHES = [
 <tr><td>Agglo &lt; 1200 m</td><td><b>500 m</b></td></tr>
 <tr><td>Ville 1200-3600 m</td><td><b>1000 m</b></td></tr>
 <tr><td>Grande ville &gt; 3600 m</td><td><b>1500 m</b></td></tr>
-</table>`},
+</table>
+<ul>
+<li>Les mêmes seuils s'appliquent aux <b>rassemblements de personnes/animaux</b> (plage, stade…) qu'aux agglomérations de largeur équivalente</li>
+<li>Distance minimale par rapport à tout <b>obstacle artificiel</b> (pylône, antenne, navire, véhicule) : <b>150 m (500 ft)</b></li>
+<li>Entraînement à l'atterrissage forcé (vol d'instruction) : hauteur ramenée à <b>50 m (150 ft)</b>, distance ≥ <b>150 m</b> maintenue en permanence</li>
+<li>Aéronef survolant un État étranger : applique la règle la <b>plus restrictive</b> entre règles françaises et règles locales</li>
+</ul>`},
 {t:'Circuit d\'aérodrome', html:`
 <ul>
 <li>Ordre : montée → vent traversier → <b>vent arrière</b> (1000 ft AAL) → base → finale</li>
@@ -905,6 +1298,11 @@ const FICHES = [
 <li>Dépassement : par la <b>droite</b></li>
 <li>Atterrissage : plus bas = prioritaire (mais pas pour doubler)</li>
 <li>En montagne : priorité à celui qui a la pente à sa <b>droite</b></li>
+<li><b>Dépassement</b> = approche par l'arrière avec angle &lt; <b>70°</b> par rapport au plan de symétrie ; toujours par la <b>droite</b>, le dépassé garde cap et altitude</li>
+<li>Aéronef remorquant (planeur, banderole) <b>prioritaire</b> sur les aéronefs motopropulsés</li>
+<li>À l'approche, l'aéronef le <b>plus haut</b> cède le passage au plus bas, qui ne peut s'en prévaloir pour le doubler</li>
+<li>Aéronef en <b>état d'urgence</b> déclaré : prioritaire sur tous à l'atterrissage</li>
+<li>Aéronef roulant au sol cède toujours le passage à ceux qui décollent ou atterrissent</li>
 </ul>`},
 {t:'Signaux lumineux', html:`
 <table>
@@ -927,6 +1325,17 @@ const FICHES = [
 <li><b>PAPI</b> : 2R + 2B = sur le plan ; plus de R = trop bas ; plus de B = trop haut</li>
 <li>QFU = orientation magnétique piste /10 arrondi</li>
 <li>Seuil décalé : atterrir après, décoller avant autorisé</li>
+<li><b>ARP</b> (Aerodrome Reference Point) = point de référence géométrique de l'aérodrome</li>
+<li>Altitude de référence aérodrome = altitude du point le <b>plus élevé</b> de l'aire d'atterrissage</li>
+<li><b>PCN</b> : indice de résistance du revêtement de piste</li>
+<li><b>TORA</b> = roulement dispo ; <b>TODA</b> = TORA + prolongement dégagé ; <b>ASDA</b> = TORA + prolongement d'arrêt ; <b>LDA</b> = distance d'atterrissage utilisable</li>
+<li>Aire de manœuvre = pistes + taxiways ; aire de trafic = parkings/avitaillement/entretien ; aire de mouvement = les deux réunies</li>
+<li>Indicatif OACI aérodrome = <b>4 lettres</b> (LF.. en France)</li>
+<li>Pistes parallèles : <b>L</b> (gauche) / <b>C</b> (centrale) / <b>R</b> (droite)</li>
+<li>Numéro de piste = orientation magnétique arrondie à la <b>dizaine</b> la plus proche (÷10)</li>
+<li>Manche à air : force et direction du vent <b>au sol</b></li>
+<li>Feux des véhicules de service = <b>jaunes</b> à éclats ; véhicules de sécurité (police/pompiers) = <b>bleus</b> à éclats</li>
+<li>Balisage des obstacles (antennes, pylônes) = <b>blanc et rouge</b></li>
 </ul>`},
 {t:'Plan de vol (FPL)', html:`
 <ul>
@@ -936,6 +1345,13 @@ const FICHES = [
 <li>Case 15 : TAS en N0090 ou K0180</li>
 <li>Validité FPL non contrôlé : <b>30 min</b> après EOBT</li>
 <li>Clôture : par pilote si terrain non contrôlé</li>
+<li>Case 9 (turbulence de sillage) : <b>L</b> (≤7t) / <b>M</b> (7-136t) / <b>H</b> (≥136t)</li>
+<li>Case 10 (équipement) : <b>S</b>=standard, <b>N</b>=néant, <b>G</b>=GPS, <b>V/O/F</b>=VHF/VOR/radiocompas</li>
+<li>Case 13/17 : <b>ZZZZ</b> = aérodrome sans indicatif OACI (nom en clair en case 18)</li>
+<li>Case 15 : niveau = <b>F</b>+3 chiffres (FL) ou <b>A</b>+3 chiffres (centaines de ft) ; vitesse = <b>N</b>+4 chiffres (kt, TAS)</li>
+<li>Case 16 (EET) : durée estimée du <b>décollage</b> jusqu'à la verticale de destination</li>
+<li>Modification de l'autonomie ou du nombre de personnes à bord = <b>annulation</b> du FPL et nouveau dépôt</li>
+<li>Activation du FPL : à l'heure du <b>décollage</b></li>
 </ul>`},
 {t:'Documents aéronef', html:`
 <ul>
@@ -945,6 +1361,12 @@ const FICHES = [
 <li><b>LSA</b> : licence station aéronef, validité illimitée</li>
 <li><b>Manuel de vol</b> : à bord pour tous les vols</li>
 <li><b>Carnet de route</b> : rempli par CdB ; livrets cellule/moteur au <b>sol</b></li>
+<li>Identification aéronef = marque de <b>nationalité</b> (F pour la France) + marque d'<b>immatriculation</b>, attribuées par l'État d'immatriculation</li>
+<li><b>Plaque d'identité</b> : résistante au feu, indique nationalité et immatriculation (identification post-accident)</li>
+<li><b>LSA</b> (licence station aéronef) : validité illimitée si aéronef certifié, <b>6 ans</b> si non certifié (ULM)</li>
+<li>Carnet de route : rempli au plus tard en <b>fin de journée</b> ou à chaque changement de CdB ; y figure l'<b>APRS</b> (approbation pour remise en service), signée par le mécanicien agréé</li>
+<li>Nationalité de l'aéronef = <b>État d'immatriculation</b>, indépendamment du lieu de construction ou du propriétaire</li>
+<li>Certificat d'assurance RC et carnet de route à bord de chaque vol (sauf vols locaux : peuvent rester au bureau de piste)</li>
 </ul>`},
 {t:'Licence PPL & qualifications', html:`
 <ul>
@@ -953,6 +1375,14 @@ const FICHES = [
 <li>Médical classe 2 : &lt; 42 ans → <b>5 ans</b> ; 42-49 → <b>2 ans</b> ; ≥ 50 → <b>1 an</b></li>
 <li>Expérience récente passagers : <b>3 décollages + 3 atterrissages / 90 jours</b></li>
 <li>SEP validité : <b>24 mois</b> ; prorogation : 12h vol dont 6h CdB + 12 dec/att + 1h FI</li>
+<li>Validité de l'examen théorique PPL : <b>24 mois</b> ; tous les modules doivent être réussis en ≤ <b>18 mois</b> sinon reprise complète</li>
+<li>Épreuve pratique à réussir dans les <b>24 mois</b> suivant le dernier module théorique</li>
+<li>Certificat provisoire (après réussite pratique) : valable <b>2 mois</b>, territoire national uniquement</li>
+<li>Qualification <b>IR</b> : validité <b>12 mois</b></li>
+<li>PPL/A multimoteur : ≥ <b>70 h CdB</b> exigées pour se présenter à l'épreuve pratique en multimoteur</li>
+<li>Heures sur un autre brevet (planeur, hélico…) prises en compte : max <b>10 %</b> du total CdB, plafond <b>10 h</b></li>
+<li>Instructeur habilité à former sur classe SEP : qualification <b>FI(A)</b></li>
+<li><b>Vol supervisé</b> = vol solo de l'élève sous la responsabilité de l'instructeur</li>
 </ul>`},
 {t:'Services ATS & divers', html:`
 <ul>
@@ -961,6 +1391,15 @@ const FICHES = [
 <li><b>Accident</b> = blessure grave/mortelle ou dommage important ; enquête <b>BEA</b> pour prévention</li>
 <li>Phases SAR : <b>INCERFA → ALERFA → DETRESFA</b></li>
 <li>Oxygène : max FL100 sans O₂ ; pilote &gt; 30 min FL100-130 ; tout le monde &gt; FL130</li>
+<li><b>FIS</b> = service d'information de vol ; <b>VOLMET</b> = météo diffusée en continu ; <b>AIREP</b> = compte-rendu en vol ; <b>SIV</b> = service d'info de vol sectorisé ; <b>AFIL</b> = FPL déposé en vol</li>
+<li>Fréquence par défaut si aérodrome sans fréquence publiée : <b>123,500 MHz</b></li>
+<li>Référence horaire aviation = <b>UTC</b></li>
+<li><b>PCL</b> (Pilot Controlled Lighting) : allumage du balisage piste par l'alternat radio, hors horaires de service</li>
+<li><b>AIRPROX</b> : compte rendu de risque d'abordage, annoncé sur fréquence puis rapport écrit après le vol</li>
+<li>Sanctions administratives possibles (ordre croissant) : avertissement, amende, retrait <b>temporaire</b> ou <b>définitif</b> des licences, emprisonnement</li>
+<li>3 catégories d'événements (Annexe 13 OACI) : <b>incident</b>, <b>incident grave</b>, <b>accident</b> ; objectif d'une enquête = <b>prévention</b>, jamais la recherche de faute</li>
+<li>Phase <b>ALERFA</b> en circuit d'aérodrome : déclenchée <b>5 min</b> après perte de contact confirmée</li>
+<li>FIR France métropolitaine : <b>5</b> régions (Paris, Brest, Bordeaux, Marseille, Reims)</li>
 </ul>`},
 {t:'VFR on top, MEP & réglementation avancée', html:`
 <ul>
@@ -991,6 +1430,92 @@ const FICHES = [
 <li><b>Signaleur (marshaller)</b> : guide au sol par gestes des bras</li>
 <li>Bras levés en V = <b>venez vers moi</b> ; bras croisés = <b>stop</b></li>
 <li>Bras droit tourné = <b>virez à droite</b> (du point de vue pilote)</li>
+</ul>`},
+{t:'AIP, NOTAM & information aéronautique', html:`
+<ul>
+<li><b>AIP</b> (Publication d'Information Aéronautique) en 3 parties : <b>GEN</b> (généralités), <b>ENR</b> (en-route : zones P/D/R, AWY), <b>AD</b> (aérodromes : horaires, carburant, secours)</li>
+<li><b>NOTAM</b> (avis aux aviateurs) : information urgente et temporaire (obstacle nouveau, piste fermée, aide radio HS…)</li>
+<li>Fermeture de piste programmée sur <b>1 an</b> : publiée uniquement à l'<b>AIP</b>, jamais en NOTAM</li>
+<li><b>SNOWTAM</b> : état d'enneigement de l'aire de mouvement, validité <b>24 h</b></li>
+<li><b>AIC</b> (circulaire d'information aéronautique) : information non urgente, absente des NOTAM et de l'AIP</li>
+<li><b>PIB</b> (Pre-flight Information Bulletin) : présentation synthétique des NOTAM avant le vol</li>
+<li>Carte <b>VAC</b> (Visual Approach Chart) : consignes particulières, RFFS, hotspots de l'aérodrome</li>
+<li><b>Hotspot</b> (carte VAC) : zone à risque de collision/incursion de piste, vigilance renforcée</li>
+</ul>`},
+{t:'Calage altimétrique & niveaux de vol', html:`
+<ul>
+<li><b>QNH</b> : pression réduite au niveau de la mer → l'altimètre indique l'<b>altitude</b></li>
+<li><b>QFE</b> : pression au niveau de l'aérodrome → l'altimètre indique la <b>hauteur</b>/aérodrome</li>
+<li><b>QNE</b> : lecture altimètre calé <b>1013,25 hPa</b> (= niveau de vol)</li>
+<li><b>Altitude de transition</b> : par défaut <b>5000 ft</b> (sauf indication carte 1/1M) ; en dessous = QNH</li>
+<li><b>Niveau de transition</b> : 1er niveau de vol utilisable, ≥ 1000 ft au-dessus de l'altitude de transition</li>
+<li><b>Couche de transition</b> = espace entre altitude et niveau de transition</li>
+<li>Montée : calage <b>QNH → 1013,25</b> en passant l'altitude de transition</li>
+<li>Descente : calage <b>1013,25 → QNH</b> en passant le niveau de transition</li>
+<li>Espace <b>non contrôlé</b> : calage libre en dessous de <b>3000 ft ASFC</b> (QNH régional), <b>1013,25</b> au-dessus</li>
+</ul>
+<table>
+<tr><th>Route magnétique</th><th>Niveaux IFR</th><th>Niveaux VFR</th></tr>
+<tr><td>000°–179°</td><td>Impairs (FL30,50,70…)</td><td>Impairs+5 (FL35,55,75…)</td></tr>
+<tr><td>180°–359°</td><td>Pairs (FL40,60,80…)</td><td>Pairs+5 (FL45,65,85…)</td></tr>
+</table>
+<ul>
+<li>VFR interdit au <b>FL195</b> (limite FIR/UIR) ; un VFR ne peut jamais utiliser un niveau IFR</li>
+<li>Espacement vertical IFR : <b>1000 ft</b> jusqu'au FL290, <b>2000 ft</b> au-dessus</li>
+</ul>`},
+{t:'Transpondeur, SSR & turbulence de sillage', html:`
+<table>
+<tr><th>Code</th><th>Signification</th></tr>
+<tr><td class="danger">7500</td><td>Détournement / capture illicite</td></tr>
+<tr><td class="danger">7600</td><td>Panne radio</td></tr>
+<tr><td class="danger">7700</td><td>Détresse</td></tr>
+</table>
+<ul>
+<li>Codes uniquement <b>0 à 7</b> par chiffre (jamais 8/9) → <b>4096</b> combinaisons</li>
+<li>Modes : <b>A</b> (identification), <b>C</b> (+ altitude), <b>S</b> (mode S, données étendues)</li>
+<li><b>SQUAWK IDENT</b> : intensifie l'écho sur l'écran radar du contrôleur</li>
+<li>Transpondeur mode A+C obligatoire : classes <b>B, C, D</b>, VFR spécial, vol de nuit non local, RMZ/TMZ</li>
+</ul>
+<table>
+<tr><th>Catégorie sillage</th><th>Masse max. décollage</th></tr>
+<tr><td><b>L</b> (light)</td><td>≤ 7 t</td></tr>
+<tr><td><b>M</b> (medium)</td><td>7 – 136 t</td></tr>
+<tr><td><b>H</b> (heavy)</td><td>≥ 136 t</td></tr>
+<tr><td><b>J</b> (super)</td><td>A380 uniquement</td></tr>
+</table>
+<ul>
+<li>Espacement décollage/atterrissage d'un <b>L</b> derrière un <b>H</b> : <b>2 à 3 min</b></li>
+</ul>`},
+{t:'Vol de nuit', html:`
+<ul>
+<li><b>Nuit aéronautique</b> = 30 min après le coucher du soleil → 30 min avant le lever</li>
+<li>Équipement obligatoire : feux de <b>position</b>, feu <b>anticollision</b>, phare(s) d'atterrissage</li>
+<li>Feux de position allumés dès <b>30 min avant le coucher</b> du soleil ; feu anticollision dès la mise en route</li>
+<li>Feu rouge = aile <b>gauche</b> (visible sous 110°) ; feu vert = aile droite ; feu blanc arrière (130°)</li>
+<li>Hauteur min. VFR de nuit en espace non contrôlé : <b>300 m (1000 ft)</b></li>
+<li>Minima météo voyage VFR de nuit : visi <b>5 km</b>, plafond &gt; 1500 ft, pas de nuages sous 1500 ft sur le trajet</li>
+<li><b>Le VFR spécial de nuit n'existe pas</b></li>
+<li>Qualification <b>vol de nuit</b> (ou IR) requise pour voler de nuit ; passagers de nuit : <b>3 décollages + 3 atterrissages de nuit dans les 3 mois</b> précédents</li>
+<li>FPL obligatoire pour tout voyage VFR de nuit (hors tour de piste local)</li>
+</ul>`},
+{t:'Interception en vol', html:`
+<ul>
+<li><b>« Suivez-moi »</b> : battement d'ailes de l'intercepteur puis virage lent vers la nouvelle route</li>
+<li><b>« Vous pouvez continuer »</b> : changement de cap brusque ≥ 90° avec montée, sans couper la trajectoire</li>
+<li><b>« Posez-vous »</b> : l'intercepteur sort son train et effectue un passage bas devant vous</li>
+<li>Pour refuser l'atterrissage imposé : survoler la piste à <b>1000 ft</b> en faisant clignoter les phares</li>
+<li>Accusé de réception d'un signal (interception ou détresse au sol) : <b>battement des ailes</b> de jour</li>
+</ul>`},
+{t:'Zones à statut particulier & espaces réservés', html:`
+<ul>
+<li><b>Zone D</b> (dangereuse) : pénétration libre, mais activités dangereuses possibles (tir, essais…)</li>
+<li><b>Zone R</b> (réglementée) : pas de règle fixe — parfois simple contact requis, parfois interdite si active</li>
+<li><b>Zone P</b> (interdite) : pénétration interdite sauf autorisation ; entrée involontaire → quitter et atterrir sur l'aérodrome le plus proche <b>hors zone</b></li>
+<li>VMC exigées dans une zone P/D/R = celles de l'<b>espace aérien</b> dans lequel elle se trouve (ce ne sont pas des classes d'espace)</li>
+<li><b>TSA</b> (zone de ségrégation temporaire) et <b>CBA</b> (idem transfrontalière) : usage exclusif réservé pendant une durée déterminée</li>
+<li><b>ZIT / ZRT</b> : zones interdites / réglementées <b>temporaires</b></li>
+<li><b>RMZ</b> (Radio Mandatory Zone) : veille radio permanente obligatoire</li>
+<li><b>TMZ</b> (Transponder Mandatory Zone) : transpondeur mode A/C ou S obligatoire</li>
 </ul>`}
 ]},
 /* ────────────────── 6. COMMUNICATIONS ────────────────── */
@@ -1008,6 +1533,10 @@ const FICHES = [
 <li>VHF communications : <b>118 – 136,975 MHz</b> ; espacement : <b>8,33 kHz</b></li>
 <li><b>121,500 MHz</b> = fréquence détresse</li>
 <li><b>123,500 MHz</b> = auto-info terrains sans fréquence</li>
+<li>VHF = ondes directes (portée optique) : meilleure réception en <b>haute altitude</b>, près de l'aérodrome</li>
+<li><b>HF</b> : ondes réfléchies par la couche <b>ionosphère</b> (longue distance)</li>
+<li>Vitesse de propagation des ondes électromagnétiques : environ <b>300 000 km/s</b></li>
+<li>Aérodrome non contrôlé <b>altiport/altisurface</b> sans fréquence publiée : utiliser <b>130,000 MHz</b> (au lieu de 123,500)</li>
 </ul>`},
 {t:'Indicatifs d\'appel', html:`
 <ul>
@@ -1015,6 +1544,10 @@ const FICHES = [
 <li>Abrégé = 1ère lettre + 2 dernières : F-BOQS → <b>F-QS</b></li>
 <li>Après que le <b>contrôleur</b> l'a utilisé en premier</li>
 <li>Tour = <b>Tower</b> ; Sol = <b>Ground</b> ; AFIS = <b>Radio</b> ; Info = <b>Info</b></li>
+<li>Un <b>ATCU</b> peut imposer un changement temporaire d'indicatif en cas de risque de confusion entre indicatifs similaires</li>
+<li>Indicatif abrégé alternatif : <b>nom du type d'avion + 2 dernières lettres</b> (ex : OO-ABC Cherokee → « Cherokee BC »)</li>
+<li>« Standby on 118.9 for Tower » = passer sur <b>118,9</b> et <b>attendre</b> que la tour rappelle (ne pas appeler soi-même)</li>
+<li>Collationnement d'une instruction fréquence/code : ne répéter que les <b>éléments chiffrés</b> (ex : « Squawk 4321, call Belga Radar on 129.325 » → « squawk 4321, 129.325 »)</li>
 </ul>`},
 {t:'Phraséologie standard', html:`
 <table>
@@ -1036,6 +1569,8 @@ const FICHES = [
 <li><b>Obligatoire</b> : calages alti, piste, clairances, codes transpondeur, cap, niveau</li>
 <li><b>Ne PAS collationner</b> : vent, météo, informations de trafic</li>
 <li>Échelle lisibilité : 1 (illisible) → 5 (parfait)</li>
+<li>« <b>How do you read?</b> » = demande de vérification de la lisibilité</li>
+<li>Collationner = le destinataire répète tout ou partie du message pour que l'émetteur vérifie la bonne réception</li>
 </ul>`},
 {t:'Détresse & urgence', html:`
 <table>
@@ -1047,6 +1582,12 @@ const FICHES = [
 <ul>
 <li>Émettre sur la <b>fréquence en cours</b> d'abord ; sinon <b>121,500 MHz</b></li>
 <li>Silence MAYDAY → silence radio total sur la fréquence</li>
+<li>Code transpondeur détresse : <b>7700</b></li>
+<li>Message « <b>pan pan medical</b> » précède un transport d'évacuation sanitaire protégé</li>
+<li>Fin du silence radio / trafic détresse : « <b>Distress traffic ended</b> » → reprise des communications normales</li>
+<li>Silence radio imposable par la station en détresse <b>ou</b> par la station aéronautique gérant la détresse</li>
+<li>Message détresse = <b>MAYDAY ×3</b> + indicatif station appelée + indicatif avion + nature détresse + position/niveau/cap + intentions</li>
+<li>Message urgence doit contenir : nature du problème, infos utiles, intentions, position, cap, altitude</li>
 </ul>`},
 {t:'Panne radio', html:`
 <table>
@@ -1055,9 +1596,16 @@ const FICHES = [
 <tr><td>Déjà en classe D</td><td>Atterrir le + proche, guetter signaux visuels</td></tr>
 <tr><td>Classe E</td><td>Poursuivre normalement</td></tr>
 <tr><td>Au sol, contrôlé</td><td><b>Ne pas décoller</b></td></tr>
+<tr><td>IFR, espace contrôlé, VMC</td><td>Poursuivre en VMC, atterrir à l'aérodrome le + proche</td></tr>
+<tr><td>IFR en route, après point de compte-rendu</td><td>Sélecter les niveaux du plan de vol déposé</td></tr>
+<tr><td>Arrivée, clairance intégration déjà reçue</td><td>Suivre la dernière clairance jusqu'à l'atterrissage, guetter signaux visuels</td></tr>
+<tr><td>Arrivée, clairance pas encore reçue</td><td>Ne pas s'intégrer (sauf urgence) ; passage vertical au-dessus du plus haut circuit puis intégration en observant signaux visuels</td></tr>
+<tr><td>Avant clairance CTR (VFR spécial)</td><td><b>Ne pas entrer</b></td></tr>
 </table>
 <ul>
 <li>Transpondeur : <b>7600</b></li>
+<li>Transpondeur en panne avant un vol <b>IFR</b> : obtenir la <b>permission de l'ATC</b> pour effectuer le vol</li>
+<li>Aérodrome approprié = aérodrome où les aéronefs sans radio sont autorisés à atterrir</li>
 </ul>`},
 {t:'Codes Q & énonciation', html:`
 <table>
@@ -1089,6 +1637,116 @@ const FICHES = [
 <li><b>VOLMET</b> : diffusion METAR sur VHF, fréquence trouvée sur <b>carte SIA radionavigation</b></li>
 <li>Énonciation heures : « dix zéro cinq » (toujours en UTC)</li>
 <li>Non contrôlé sans AFIS : auto-information sur <b>123,500 MHz</b></li>
+</ul>`},
+{t:'Priorité & catégories des messages', html:`
+<ul>
+<li>Ordre de priorité : <b>1 Détresse</b> → <b>2 Urgence</b> → <b>3 Radiogoniométrie</b> (ex : request QDM) → <b>4 Sécurité des vols</b> (toute instruction ATC : taxi, line up, cleared to land, turn left…) → <b>5 Météo</b> → <b>6 Régularité</b></li>
+<li>Message de <b>sécurité des vols</b> : concerne immédiatement un avion en vol ou se préparant à partir</li>
+<li>Message de <b>régularité</b> : maintenance d'installations essentielles à la sécurité/régularité (ex : pièces avion urgentes)</li>
+<li>Au sein d'une même catégorie, pas de hiérarchie entre messages (« taxi to runway » = même priorité que « line up and wait » ; « taxi to holding point » = même priorité que « cleared to land »)</li>
+<li>Appels simultanés de plusieurs aéronefs : l'ordre de réponse est choisi par la <b>station aéronautique</b></li>
+<li>Message personnel adressé à une station aéronautique (ex : réserver un taxi) = <b>message non autorisé</b></li>
+<li>Les messages de téléscripteur d'un briefing (ex : SKEYES) ne font <b>pas partie</b> du service mobile aéronautique</li>
+</ul>`},
+{t:'Transmission en aveugle & appels généraux', html:`
+<ul>
+<li><b>Transmitting blind</b> : utilisé quand on suppose que la station sol reçoit mais qu'aucun contact n'a pu être établi (toutes tentatives ayant échoué)</li>
+<li>Utilisable en <b>IFR et VFR</b>, quel que soit l'espace aérien, sur la <b>fréquence en cours d'utilisation</b></li>
+<li>L'expression « transmitting blind » n'est dite qu'<b>une seule fois</b>, en début de message</li>
+<li>« Transmitting blind due to receiver failure » doit être suivi d'une <b>répétition complète</b> du message</li>
+<li><b>Broadcast</b> = information non adressée à une station particulière</li>
+<li>Appel général ATC (« all stations ») qui ne vous concerne pas : <b>ne donner aucune réponse</b></li>
+</ul>`},
+{t:'Codes transpondeur', html:`
+<table>
+<tr><th>Code</th><th>Signification</th></tr>
+<tr><td>7000</td><td>VFR non contrôlé (par défaut)</td></tr>
+<tr><td>7500</td><td>Intervention illicite</td></tr>
+<tr><td>7600</td><td>Panne radio</td></tr>
+<tr><td>7700</td><td>Détresse</td></tr>
+</table>
+<ul>
+<li>« Squawk ident » = appuyer sur le bouton <b>IDENT</b></li>
+<li>« Recycle squawk [code] » = <b>re-sélectionner</b> le même code en mode A</li>
+<li>« Identified » = l'<b>identification radar</b> a été effectuée</li>
+<li>Transpondeur mode C + alticodeur transmet l'<b>altitude-pression</b> (référence 1013 hPa)</li>
+</ul>`},
+{t:'Vocabulaire radiotéléphonique complémentaire', html:`
+<table>
+<tr><th>Terme</th><th>Signification</th></tr>
+<tr><td>Acknowledge</td><td>Faites-moi savoir que vous avez reçu et compris</td></tr>
+<tr><td>Approved</td><td>Permission accordée pour l'action proposée</td></tr>
+<tr><td>Check</td><td>Vérifiez un système ou une procédure</td></tr>
+<tr><td>Correct</td><td>C'est exact</td></tr>
+<tr><td>Disregard</td><td>Considérez ce message comme non envoyé</td></tr>
+<tr><td>Monitor</td><td>Écoutez sur la fréquence indiquée</td></tr>
+<tr><td>Recleared</td><td>Un changement est apporté à votre dernière clairance</td></tr>
+<tr><td>Unable to comply</td><td>Ne peut pas exécuter l'instruction reçue</td></tr>
+<tr><td>Request</td><td>Utilisé par le pilote pour demander (ex : entrer en espace contrôlé)</td></tr>
+<tr><td>Speak slower</td><td>Parlez plus lentement</td></tr>
+<tr><td>Orbit right / left</td><td>Effectuez des 360° par la droite / gauche</td></tr>
+<tr><td>Going around</td><td>J'effectue une remise de gaz</td></tr>
+<tr><td>Runway vacated</td><td>Piste dégagée, annoncé après avoir quitté la piste</td></tr>
+</table>`},
+{t:'Énonciation — cas particuliers avancés', html:`
+<ul>
+<li>Épellation chiffre par chiffre en français : le chiffre <b>1 se prononce « unité »</b> (pas « un ») — ex : fréquence 121,055 en lisibilité faible → « unité deux unité décimale zéro cinq cinq »</li>
+<li>En anglais, le chiffre 9 se prononce <b>« niner »</b> — ex : 119,5 MHz → « one one niner decimal five »</li>
+<li>Bonne lisibilité : nombres énoncés « normalement » — ex : 10h50 → « dix cinquante » ; FL65 à 140 kt → « niveau six cinq, cent quarante nœuds »</li>
+<li>Mauvaise lisibilité : retour à l'énonciation chiffre par chiffre — ex : heure 1620 douteuse → « one six two zero » ; altitude 11 200 ft → « unité, unité, deux cents pieds »</li>
+<li>Les multiples de <b>cent et de mille</b> ne sont PAS épelés chiffre par chiffre — ex : 4500 ft → « four thousand five hundred » ; 13 500 ft → « one three thousand five hundred feet »</li>
+<li>Identifiants de piste : exception française, énoncés en nombre naturel si aucune confusion possible (piste 02/20 → « zéro deux / vingt »)</li>
+<li>Niveaux de vol : toujours précédés du mot <b>« niveau »</b> pour éviter la confusion avec une altitude</li>
+<li>Cap/relèvement &lt;100 : deux formes admises en français (« zéro cinq zéro » ou « zéro cinquante »)</li>
+<li>Code horaire trafic (« 2 heures », « 9 heures »…) toujours relatif au <b>cap de l'avion</b> (nez = 12h), pas à une orientation fixe</li>
+</ul>`},
+{t:'Abréviations & sigles courants', html:`
+<table>
+<tr><th>Sigle</th><th>Signification</th></tr>
+<tr><td>ATIS</td><td>Automatic Terminal Information Service</td></tr>
+<tr><td>AFIS</td><td>Aerodrome Flight Information Service</td></tr>
+<tr><td>AIS</td><td>Aeronautical Information Service</td></tr>
+<tr><td>FIS / SIV</td><td>Flight Information Service / Service d'Information de Vol</td></tr>
+<tr><td>FIR</td><td>Flight Information Region</td></tr>
+<tr><td>VDF / GONIO</td><td>Radiogoniométrie VHF (relèvement donné par un opérateur sol)</td></tr>
+<tr><td>H24</td><td>Service continu 24h/24</td></tr>
+<tr><td>HX</td><td>Horaires d'ouverture non spécifiés / irréguliers</td></tr>
+<tr><td>ABM</td><td>Abeam (par le travers)</td></tr>
+<tr><td>OBST</td><td>Obstacle</td></tr>
+</table>
+<ul>
+<li><b>VDF/GONIO</b> nécessite un opérateur radio qui donne un <b>QDM</b> à partir de l'émission de l'aéronef</li>
+<li><b>FIS/SIV</b> fournit : météo, trafic, activité des zones réglementées</li>
+</ul>`},
+{t:'ATIS, VOLMET & infos météo radio', html:`
+<ul>
+<li>Validité d'un message ATIS : <b>30 minutes</b></li>
+<li>Ordre de contact à l'arrivée (terrain avec tour + sol + ATIS) : <b>ATIS → Tour → Sol</b></li>
+<li>Prise en compte de l'ATIS collationnée par : « <b>Information [lettre]</b> » (ex : Information Golf)</li>
+<li>Diffusion ATIS possible sur fréquence VHF dédiée <b>ou sur une fréquence VOR</b></li>
+<li>Infos essentielles données à l'arrivée pour circuit à vue : <b>piste en service, QNH, météo aérodrome</b></li>
+<li>Visibilité transmise en <b>mètres si ≤ 5 km</b>, en <b>kilomètres si &gt; 5 km</b> (ex : 12 km → « one-zero kilometers or more »)</li>
+<li>Nébulosité METAR : <b>FEW</b> = 1-2/8 ; <b>SCT</b> = 3-4/8 ; <b>BKN</b> = 5-7/8</li>
+<li><b>RVR</b> (portée visuelle de piste) : donné en mètres, au point de toucher des roues et en fin de piste</li>
+<li>Coefficient de frottement piste (friction coefficient) : <b>20</b> = freinage faible ; <b>45</b> = freinage bon</li>
+<li><b>VOLMET</b> : diffusion régulière VHF, extraits METAR/SPECI/SIGMET d'une sélection d'aérodromes</li>
+<li>Infos obligatoirement transmises par l'ATS en VFR : activité aviaire au seuil de piste, activité d'une zone R, présence de CB (PAS la disponibilité AVGAS)</li>
+</ul>`},
+{t:'Phraséologie ATC — roulage, clairances & AFIS', html:`
+<ul>
+<li><b>Clairance conditionnelle</b> : autorisation liée à un autre trafic (ex : « Behind the landing Cessna, line up and wait behind »)</li>
+<li>« Autorisé à rouler pour piste X » = autorisation de traverser <b>toutes les voies de circulation</b>, mais <b>pas les pistes</b> coupant le cheminement (clairance séparée requise)</li>
+<li>« Clear for immediate take-off » = s'aligner et décoller <b>sans s'arrêter</b> sur la piste</li>
+<li>Sur aérodrome contrôlé, l'autorisation de décollage est donnée <b>au point d'attente</b></li>
+<li>Le mot « <b>autorisé</b> » n'est employé que par le <b>contrôleur</b>, uniquement pour <b>décollage/atterrissage</b></li>
+<li>Au roulage on dit « <b>maintenir</b> » une position ; « <b>stopper</b> » ne s'utilise que pour l'interruption d'un décollage</li>
+<li><b>AFIS n'est pas un contrôleur</b> : le pilote <b>annonce</b> ses actions (roulage, alignement) au lieu de les demander</li>
+<li>Sur fréquence d'auto-information partagée (123,500) : le <b>nom de l'aérodrome</b> doit être annoncé à chaque message</li>
+<li>Appel initial sur aérodrome non contrôlé : environ <b>5 minutes</b> avant l'arrivée à la verticale</li>
+<li>Terrain AFIS hors horaires d'ouverture : utiliser quand même la <b>fréquence AFIS publiée</b> (pas 123,500) pour l'auto-information</li>
+<li>Fréquence marquée « (s) » sur carte = fréquence <b>supplétive</b>, à utiliser en cas de brouillage de la fréquence principale</li>
+<li>« Dégagez rapidement » = instruction de quitter la piste rapidement</li>
+<li>Comptes rendus radio obligatoires sur aérodrome non contrôlé : <b>aligné avant décollage</b>, <b>étape de base</b>, <b>finale</b> (pas avant mise en route ni en montée initiale)</li>
 </ul>`}
 ]},
 /* ────────────────── 7. PERFORMANCE HUMAINE ────────────────── */
@@ -1104,6 +1762,15 @@ const FICHES = [
 <li>O₂ obligatoire tous au-dessus de <b>FL130</b></li>
 <li>Fumeur : +<b>5000 ft</b> d'altitude physiologique</li>
 <li>Cyanose (lèvres/ongles bleus) = signe d'hypoxie</li>
+<li>Composition de l'air (constante jusqu'aux altitudes des avions légers) : <b>azote 78%</b>, oxygène 21%, gaz rares ~<b>1%</b>, CO₂ ~<b>0,03%</b></li>
+<li>Pression atmosphérique = <b>moitié</b> de la valeur MSL (1013 hPa) vers <b>18 000 ft</b></li>
+<li>Seuils physiologiques (indicatifs, distincts du seuil réglementaire O₂) : le corps commence à réagir dès <b>~7000 ft</b> ; incapacité à compenser complètement dès <b>~12 000 ft</b></li>
+<li>Sensibilité à l'hypoxie dépend de : pression atmosphérique, <b>vitesse de sa baisse</b>, santé individuelle — PAS du taux d'O₂ dans l'air (constant), PAS de la ventilation cabine</li>
+<li>Signes précurseurs : <b>somnolence</b>, rétrécissement du champ visuel, maux de tête, ↑ rythme cardiaque (PAS d'élargissement du champ visuel ni d'amélioration des capacités intellectuelles)</li>
+<li><b>Hypoxie anémique</b> (hypémique) : sang incapable de transporter l'O₂ (ex : intoxication au CO) même si l'air est normal</li>
+<li>Distracteur classique : la <b>plongée sous-marine n'est PAS</b> un facteur de risque d'hypoxie (c'est un facteur de risque d'accident de décompression, sujet distinct)</li>
+<li>En altitude, l'organisme compense par ↑ fréquence respiratoire + ↑ fréquence cardiaque</li>
+<li>Passager pris de malaise soudain en croisière : ajuster la <b>température cabine</b> et ventiler pour éviter toute accumulation excessive</li>
 </ul>`},
 {t:'Barotraumatismes', html:`
 <table>
@@ -1115,11 +1782,16 @@ const FICHES = [
 <ul>
 <li><b>Trompe d'Eustache</b> : équilibre pressions oreille</li>
 <li>Rhume → voler le plus <b>bas</b> possible</li>
+<li>Manœuvre de <b>Valsalva</b> : pincer les narines + souffler → augmente la pression dans l'oreille moyenne via la trompe d'Eustache pour équilibrer</li>
+<li>Douleur d'oreille en descente : réduire la <b>Vz</b> (idéalement ≤ <b>700 ft/min</b>) + avaler sa salive / bâiller</li>
 </ul>`},
 {t:'Accélérations G', html:`
 <ul>
 <li><b>G positifs</b> (ressource/virage) : sang vers le bas → <b>voile noir → perte de conscience 5 G</b></li>
 <li><b>G négatifs</b> : sang vers la tête → <b>voile rouge → perte de conscience 3 G</b></li>
+<li><b>Grey-out</b> (voile gris) : stade progressif précédant le voile noir, dû aux G positifs</li>
+<li><b>Red-out</b> : sensation de « vision rouge » lors d'accélérations G négatives</li>
+<li>Effets des accélérations sur le corps dépendent de : <b>intensité</b>, <b>durée</b>, <b>vitesse d'installation</b></li>
 </ul>`},
 {t:'Alcool, médicaments, tabac, CO', html:`
 <ul>
@@ -1141,13 +1813,22 @@ const FICHES = [
 <tr><td>Plus petite</td><td>→ trop haut</td><td>Approche trop <b>basse</b></td></tr>
 <tr><td>Plus grande</td><td>→ trop bas</td><td>Approche trop <b>haute</b></td></tr>
 <tr><td>Montante</td><td>→ plus courte</td><td>Trop haute → descend sous plan</td></tr>
-</table>`},
+</table>
+<ul>
+<li>Approche par faible luminosité / de nuit → risque de <b>surestimer sa hauteur</b> → plan d'approche trop faible (effet « trou noir »)</li>
+<li>Objets peu éclairés (nuit) → paraissent <b>plus éloignés</b> qu'ils ne le sont réellement</li>
+<li>Illusions visuelles principalement causées par une <b>mauvaise interprétation du cerveau</b></li>
+<li>De nuit, la <b>perception du relief diminue</b></li>
+</ul>`},
 {t:'Stress & mémoire', html:`
 <ul>
 <li>Courbe stress-performance : U inversé → stress modéré = optimal</li>
 <li>Phases : <b>Alarme → Résistance → Épuisement</b></li>
 <li>Stress intense → régression des acquis</li>
 <li>MCT : ~ <b>7 éléments</b>, durée <b>10–20 s</b> ; MLT : illimitée</li>
+<li>Stress/anxiété affectent : <b>jugement</b>, attention, mémoire, concentration, réactivité</li>
+<li>Phase d'alarme (stress sévère) : <b>rétrécissement du champ visuel</b> + dilatation des pupilles + immobilité du regard</li>
+<li>MCT : accès <b>immédiat</b> ; MLT : accès plus lent, nécessite souvent un <b>stimulus</b> pour réactiver le souvenir</li>
 </ul>`},
 {t:'Hyperventilation & fatigue', html:`
 <ul>
@@ -1168,6 +1849,13 @@ const FICHES = [
 <ul>
 <li>Majorité des accidents : <b>défaillance humaine</b></li>
 <li>Plongée bouteilles → attendre <b>24h</b> avant de voler</li>
+<li>Gestion du risque = 4 stratégies : <b>éviter, réduire, transférer, accepter</b></li>
+<li>Processus de décision : perception → évaluation des options → <b>analyse de risque</b> → décision</li>
+<li>Une bonne décision tient compte du <b>savoir-faire</b> disponible ET du temps restant</li>
+<li>Meilleure prévention du stress en vol : rester dans son <b>domaine de savoir-faire</b> maîtrisé</li>
+<li>Attitudes dangereuses souvent combinées : <b>macho + invulnérabilité</b></li>
+<li>Biais d'expectation (voir ce qu'on s'attend à voir) → source d'erreur humaine</li>
+<li><b>Anticipation</b> = préparer un maximum d'éléments à l'avance → + de ressources dispo si situation chargée</li>
 </ul>`},
 {t:'Anatomie, sang & vision détaillée', html:`
 <table>
@@ -1206,6 +1894,37 @@ const FICHES = [
 <li><b>Plongée apnée</b> : moins risqué que bouteilles mais effets possibles ; <b>bouteilles → 24h</b></li>
 <li><b>Mal des transports</b> : fixer l'horizon, ventiler, éviter mouvements tête brusques</li>
 <li><b>Ozone</b> : couche stratosphère protège UV ; irritant si concentré</li>
+<li><b>Erreur latente</b> : erreur non détectée pendant longtemps dans le système (à distinguer de l'erreur active/immédiate)</li>
+<li><b>Biais de confirmation</b> : préférence pour chercher des arguments confirmant son propre modèle mental</li>
+<li><b>Conscience de la situation</b> (situational awareness) : surveillance continue de la situation de vol actuelle</li>
+<li>Modèle de communication : l'usage d'un <b>code commun</b> entre émetteur/récepteur est assuré par la phraséologie radio</li>
+<li>Le stress peut aussi être déclenché par un <b>évènement heureux</b> (pas uniquement négatif)</li>
+<li>Pratiquer un <b>sport régulièrement</b> → réduit la sensibilité aux effets néfastes du stress</li>
+</ul>`},
+{t:'Charge de travail, automatismes & expérience', html:`
+<ul>
+<li><b>Schémas mentaux</b> (automatismes) : actions routinières demandant peu d'attention → libèrent des ressources cognitives ; pilote expert ≈ <b>80%</b> de ses actions en schémas</li>
+<li>Fonctionnement automatique : normal chez le pilote, mais non surveillé par l'attention → source d'<b>erreurs de routine</b></li>
+<li>Excès de confiance : le taux d'accidents <b>augmente</b> après les premières heures d'expérience (rigueur du débutant perdue, sagesse pas encore acquise), puis redescend avec l'expérience</li>
+<li>Tolérance individuelle à la charge de travail dépend de : état de santé, connaissances/expérience/savoir-faire, niveau de stress, état de fatigue</li>
+<li>Accumulation de tâches dans un <b>temps limité</b> → pénalise la performance (une seule tâche complexe gérable à la fois)</li>
+</ul>`},
+{t:'Illusions vestibulaires (approfondi)', html:`
+<ul>
+<li>Oreille interne (canaux semi-circulaires) = organe de l'équilibre ; détecte <b>accélérations</b> et mouvements angulaires — PAS les vitesses stabilisées (même à 250 kt en ligne droite, rien n'est perçu)</li>
+<li>Orientation spatiale : contributeurs = <b>yeux + oreille interne</b> (PAS l'estomac, PAS le nez)</li>
+<li><b>Illusion somatogravique</b> : accélération en palier → sensation de cabré/montée ; décélération → sensation de piqué/descente</li>
+<li><b>Illusion de Coriolis</b> : mouvement de tête pendant un virage → vertige violent</li>
+<li>Illusion post-rotatoire (type « graveyard spiral ») : ailes remises à plat après une rotation prolongée → sensation de <b>tourner en sens inverse</b></li>
+<li>Mal de l'air (mal des transports) : conflit oreille interne (accélérations inhabituelles) / vue ; aggravé par chaleur, appréhension, repas trop lourd ou trop léger</li>
+</ul>`},
+{t:'Physiologie complémentaire', html:`
+<ul>
+<li><b>Alvéoles pulmonaires</b> : lieu des échanges gazeux (O₂ air→sang ; CO₂ sang→air)</li>
+<li><b>Sons aigus</b> plus nocifs que les sons graves pour l'oreille interne (cellules ciliées), à court et long terme</li>
+<li><b>Hypothermie</b> : baisse anormale de la température interne du corps</li>
+<li>Diabète : facteur de risque = <b>surpoids</b></li>
+<li><b>Réflexe</b> : réaction involontaire et stéréotypée d'un organisme à la stimulation d'un récepteur</li>
 </ul>`}
 ]},
 /* ────────────────── 8. PERFORMANCES VOL & MASSE/CENTRAGE ────────────────── */
@@ -1219,6 +1938,12 @@ const FICHES = [
 <li>Facteurs : altitude, vent, surface, température, masse, pente</li>
 <li>Court : masse ↓, vent de face, piste dure, pente descente, T° basse</li>
 <li>Long : masse ↑, vent arrière/nul, herbe, pente montée, T° élevée, altitude élevée</li>
+<li><b>Effet de sol</b> : diminue la traînée induite près du sol → <b>diminue</b> la distance de décollage, <b>augmente</b> la distance d'atterrissage (l'avion « flotte » plus longtemps)</li>
+<li>Nature de piste (herbe/dur) : affecte uniquement le <b>roulement</b>, pas la pente de montée après décollage</li>
+<li>Condition la + favorable au décollage court : piste <b>descendante</b>, en <b>dur</b>, masse faible, vent de face</li>
+<li>Condition la + pénalisante : piste <b>montante</b>, en <b>herbe</b></li>
+<li>Gradient de vent arrière survenant au décollage : vitesse air <b>diminue</b>, pente de montée <b>diminue</b></li>
+<li>Rafale de vent de face survenant en vol stabilisé : portance et vitesse air <b>augmentent</b> transitoirement (inverse pour rafale de vent arrière)</li>
 </ul>`},
 {t:'Influence du vent', html:`
 <table>
@@ -1236,6 +1961,8 @@ const FICHES = [
 <li>Panne moteur → vitesse de <b>finesse max</b></li>
 <li>Avec vent de face → vitesse <b>supérieure</b></li>
 <li>Vitesse approche = <b>1,3 × Vs</b></li>
+<li class="formula">Vario (ft/min) = Vitesse sol (kt) × Pente de descente (%)</li>
+<li>Règle pratique : <b>1 NM ≈ 6000 ft</b> (pour estimer la distance de plané max = hauteur × finesse)</li>
 </ul>`},
 {t:'Masse & centrage', html:`
 <ul>
@@ -1247,6 +1974,15 @@ const FICHES = [
 <li>CG trop avant → profondeur insuffisante pour rotation</li>
 <li>CG trop arrière → avion incontrôlable</li>
 <li>Bagages/fret : toujours <b>arrimés</b></li>
+<li>CG mesuré le long de l'<b>axe longitudinal</b> ; sa position est <b>variable</b> selon le chargement</li>
+<li>Le poids total agit toujours verticalement à travers le <b>CG</b>, en vol comme au sol</li>
+<li>Stabilité longitudinale = position du CG par rapport au <b>foyer aérodynamique (point neutre)</b>, assurée par l'empennage horizontal ; le CG doit rester en <b>avant du foyer</b></li>
+<li>Limite avant de centrage fixée par le <b>débattement à cabrer</b> de la gouverne de profondeur (rotation/arrondi) ; limite arrière fixée par la stabilité minimale acceptable</li>
+<li>Avion à train tricycle : CG normalement situé <b>entre la roulette avant et le train principal</b></li>
+<li>Rentrée du train avant (roue se déplaçant vers l'arrière) → CG se déplace vers l'<b>arrière</b></li>
+<li>Consommation de carburant en vol : le CG se déplace en s'<b>éloignant</b> de la position du réservoir</li>
+<li>Devis correct mais CG très avant → avion <b>très stable, peu maniable</b> ; CG très arrière → <b>très instable, très maniable</b></li>
+<li>Pour une masse donnée, il existe un centrage avant maxi <b>et</b> un centrage arrière maxi ; à forte masse, la limite avant peut <b>reculer</b></li>
 </ul>`},
 {t:'Carburant & réserves', html:`
 <table>
@@ -1259,12 +1995,19 @@ const FICHES = [
 <li>Réserve navigation : <b>30 min</b> ; local : <b>10 min</b></li>
 <li>Autonomie = carburant / consommation horaire</li>
 <li>Distance franchissable max → vitesse de finesse max</li>
+<li>Réserve finale <b>vol de nuit</b> : <b>45 min</b> (croisière économique)</li>
+<li class="formula">Masse carburant (kg) = Volume (l) × 0,72</li>
+<li class="formula">Carburant total requis = Roulage + Voyage (trip) + Contingence (≈5% du trip) + Dégagement + Réserve finale</li>
+<li class="formula">Débit maxi acceptable = (Carburant utilisable restant − Réserve) / Temps de vol restant</li>
+<li>1 lb = <b>453 g</b> ; kg × <b>2,205</b> = lb</li>
+<li>Si masse au parking &gt; masse max au décollage : le carburant brûlé pendant le <b>roulage</b> doit ramener l'avion à la masse maxi avant l'alignement piste</li>
 </ul>`},
 {t:'Pluie & aquaplanage', html:`
 <ul>
 <li>Pluie → Vs ↑ → <b>majorer</b> vitesse approche</li>
 <li>Aquaplanage : freiner modérément, contrôle aérodynamique</li>
 <li>Herbe mouillée → distances ↑ partout</li>
+<li>Pluie : <b>Cx</b> (traînée) augmente, <b>Cz</b> (portance) diminue (ruissellement sur le profil de l'aile)</li>
 </ul>`},
 {t:'Masses détaillées & méthode de calcul', html:`
 <table>
@@ -1284,6 +2027,98 @@ const FICHES = [
 <li>Vx et Vy IAS : quasiment constantes avec l'altitude ; confluent au <b>plafond pratique</b></li>
 <li><b>Altitude pression</b> = altitude lue calage 1013 ; <b>altitude densité</b> = altitude pression corrigée T°</li>
 <li><b>Visite prévol</b> : obligation CdB, vérifier état avion + documents + carburant + centrage</li>
+<li>Poids à vide et CG à vide déterminés initialement par <b>pesée</b> ; consignés sur la <b>fiche de pesée</b> (jointe au certificat de navigabilité)</li>
+<li>Masse à vide de base inclut aussi : huile moteur/unités auxiliaires, extincteurs, pyrotechnie, équipement d'oxygène de secours, équipements électroniques additionnels standards</li>
+<li>Masse réelle au décollage = masse à vide en ordre d'exploitation + carburant au décollage + charge marchande</li>
+<li>Documents requis pour le devis masse & centrage : manuel de vol, fiche de pesée, carnet de route, poids passagers/bagages, quantité de carburant</li>
+</ul>`},
+{t:'Distances déclarées de piste', html:`
+<table>
+<tr><th>Sigle</th><th>Signification</th></tr>
+<tr><td><b>TORA</b></td><td>Take-Off Run Available — distance de roulement au décollage disponible</td></tr>
+<tr><td><b>TODA</b></td><td>Take-Off Distance Available — TORA + prolongement dégagé (clearway)</td></tr>
+<tr><td><b>ASDA</b></td><td>Accelerate-Stop Distance Available — TORA + prolongement d'arrêt (stopway)</td></tr>
+<tr><td><b>LDA</b></td><td>Landing Distance Available — distance d'atterrissage disponible</td></tr>
+</table>
+<ul>
+<li>Valeurs publiées sur la <b>carte VAC</b> de chaque aérodrome, par QFU</li>
+<li>Toujours vérifier : distance <b>requise</b> (calculée, avec marge) ≤ distance <b>disponible</b> (déclarée)</li>
+</ul>`},
+{t:'Datum, bras de levier & moment', html:`
+<ul>
+<li><b>Datum (point de référence)</b> : point fixe déterminé par le constructeur (nez, cloison pare-feu ou plan hélice selon l'avion), origine de tous les bras de levier et moments</li>
+<li class="formula">Bras de levier = Moment / Masse</li>
+<li>Position du CG exprimable en distance au datum, ou en <b>% de la Corde Aérodynamique Moyenne (CAM/MAC)</b></li>
+<li>Moment total <b>supérieur</b> au moment maxi admis (masse &lt; MTOW) → CG trop en <b>arrière</b> ; moment <b>trop petit</b> → CG trop en <b>avant</b></li>
+<li>Zone de centrage identifiée par sa distance au point de référence = <b>« position »</b></li>
+<li>Sur Cessna 150, la référence des moments est la <b>planche de bord (nez de l'avion)</b></li>
+</ul>`},
+{t:'Vitesses caractéristiques (badin)', html:`
+<table>
+<tr><th>Vitesse</th><th>Définition</th></tr>
+<tr><td><b>VS1</b></td><td>Décrochage configuration lisse (volets rentrés) — début arc vert</td></tr>
+<tr><td><b>VS0</b></td><td>Décrochage configuration atterrissage (volets sortis) — début arc blanc</td></tr>
+<tr><td><b>VFE</b></td><td>Vitesse maxi volets sortis — fin arc blanc</td></tr>
+<tr><td><b>VNO</b></td><td>Vitesse maxi utilisation normale — fin arc vert</td></tr>
+<tr><td><b>VNE</b></td><td>Vitesse à ne jamais dépasser — trait rouge radial, fin arc jaune</td></tr>
+<tr><td><b>VA</b></td><td>Vitesse de manœuvre — braquage maxi des gouvernes sans dommage structural</td></tr>
+</table>
+<ul>
+<li>Vitesse de montée à pente max (Vx) toujours <b>inférieure</b> à Vy (écart type ≈ <b>10 kt</b> sur avion-école)</li>
+</ul>`},
+{t:'Volets & performances', html:`
+<ul>
+<li>Décollage : braquage volets habituel ≈ <b>10-15°</b>, plus faible qu'à l'atterrissage</li>
+<li>Volets ↑ au décollage : Vs ↓ → distance de roulement <b>diminue</b>, mais finesse ↓ → angle/pente de montée après envol <b>diminue</b></li>
+<li>Braquage excessif au décollage : gain sur le roulement négligeable (traînée trop forte), pente de montée après envol très faible → certains manuels préconisent le décollage <b>sans volets</b></li>
+<li>Volets déconseillés si recherche d'une <b>pente de montée forte</b> après décollage (obstacle sur trajectoire)</li>
+<li>Atterrissage : volets ↑ → Vs ↓ → vitesse d'approche (1,3 Vs) ↓ → distance d'atterrissage <b>diminue</b></li>
+<li>Décollage à 10° vs 20° de volets : moins de volets → distance décollage plus <b>longue</b> mais pente de montée plus <b>forte</b> (arbitrage distance/pente)</li>
+</ul>`},
+{t:'Densité de l\'air, altitude & température', html:`
+<ul>
+<li>Air chaud ou altitude ↑ → densité de l'air ↓ → <b>puissance moteur réduite</b> (moteurs atmosphériques)</li>
+<li>Air froid → densité ↑ → puissance moteur <b>plus élevée</b> que d'habitude</li>
+<li>Altitude-pression ↑ → distance de décollage <b>augmente</b>, Vx et Vy (meilleur angle et meilleur taux) <b>diminuent tous les deux</b></li>
+<li>Vitesse <b>indiquée</b> de rotation/décollage inchangée avec l'altitude, mais vitesse <b>vraie</b> correspondante plus élevée → roulement plus long</li>
+<li>« Altitude-densité qui augmente » = <b>densité qui diminue</b> → performances dégradées</li>
+<li>À VI constante en montée, la TAS <b>augmente</b> avec l'altitude</li>
+<li>En altitude, appauvrir le mélange avant le décollage (recommandation manuel de vol)</li>
+</ul>`},
+{t:'Autonomie, rayon d\'action & distance franchissable', html:`
+<table>
+<tr><th>Terme</th><th>Définition</th></tr>
+<tr><td><b>Autonomie</b></td><td>Durée de vol maxi possible avec un carburant donné</td></tr>
+<tr><td><b>Distance franchissable</b></td><td>Distance maxi parcourue (aller simple) avec un carburant donné</td></tr>
+<tr><td><b>Rayon d'action</b></td><td>Distance atteignable avec retour possible sans ravitailler ≈ distance franchissable / 2</td></tr>
+<tr><td><b>Délestage</b></td><td>Quantité de carburant nécessaire pour un vol donné</td></tr>
+</table>
+<ul>
+<li class="formula">Autonomie = Carburant utilisable / Consommation horaire</li>
+<li class="formula">Distance franchissable = Autonomie × Vitesse sol</li>
+<li>Rayon d'action maxi et distance franchissable maxi obtenus à la vitesse de <b>finesse max</b> (régime de croisière <b>économique</b>)</li>
+<li>Optimisation de la distance franchissable : vent de face → voler <b>plus vite</b> que la finesse max ; vent arrière fort → voler <b>légèrement plus lentement</b></li>
+</ul>`},
+{t:'Lecture des abaques de performance', html:`
+<ul>
+<li>Entrées typiques d'un abaque : <b>OAT</b>, <b>altitude pression</b>, <b>masse</b>, <b>vent</b>, <b>% puissance</b></li>
+<li>Sorties : distance décollage/atterrissage, <b>TAS</b>, débit carburant (FF), taux de montée, carburant/distance de montée</li>
+<li>Méthode générale : entrer par la <b>température</b> → rejoindre la courbe d'<b>altitude pression</b> → reporter horizontalement → appliquer les <b>facteurs correctifs</b> successifs (masse, vent, surface de piste) → lire le résultat</li>
+<li>Abaque masse & centrage (enveloppe) : reporter <b>masse totale</b> (axe vertical) et <b>moment total</b> (axe horizontal) → le point doit tomber <b>à l'intérieur</b> du polygone d'enveloppe</li>
+<li>Abaque en <b>% de CAM/MAC</b> : centrage lu par intersection masse/moment en suivant les lignes obliques</li>
+</ul>`},
+{t:'Composantes de vent — calcul', html:`
+<table>
+<tr><th>Angle vent/QFU</th><th>Composante face/arrière</th><th>Composante travers</th></tr>
+<tr><td>0°</td><td>100%</td><td>0%</td></tr>
+<tr><td>30°</td><td>≈ 87%</td><td>≈ 50%</td></tr>
+<tr><td>45°</td><td>≈ 70%</td><td>≈ 70%</td></tr>
+<tr><td>60°</td><td>≈ 50%</td><td>≈ 87%</td></tr>
+<tr><td>90°</td><td>0%</td><td>100%</td></tr>
+</table>
+<ul>
+<li>Angle = différence entre direction du vent et QFU de piste (QFU ×10° = orientation magnétique)</li>
+<li>Composante arrière si l'angle entre vent et axe piste (dans le prolongement) dépasse <b>90°</b></li>
 </ul>`}
 ]},
 /* ────────────────── 9. PROCÉDURES OPÉRATIONNELLES ────────────────── */
@@ -1296,6 +2131,15 @@ const FICHES = [
 <li>Équipement min vol local : anémomètre, altimètre, compas</li>
 <li>Vol de nuit : radio VHF + lampe de poche</li>
 <li>Livret cellule : <b>jamais à bord</b></li>
+<li>Annexe 6 OACI : régit les opérations <b>commerciales internationales</b> (section I) et l'<b>aviation générale internationale</b> (section II)</li>
+<li>Carburant emporté : doit permettre le vol en sécurité + réserve (météo, retards prévus)</li>
+<li>Aérodrome de dégagement (diversion) en route : utilisable en cas d'urgence pendant la phase « en route »</li>
+<li>Élève pilote solo campagne : <b>carnet de vol</b> + carte d'identité + certificat médical obligatoires à bord</li>
+<li>Limitations d'emploi de l'aéronef : trouvées dans le <b>manuel de vol</b> + la <b>fiche de pesée</b></li>
+<li>Oxygène obligatoire : plus de <b>30 min entre 10 000 et 13 000 ft</b> ; en permanence <b>au-dessus de 13 000 ft</b></li>
+<li>Sans réserve d'oxygène, plafond max utilisable : <b>FL100 / 10 000 ft</b> (≈3000 m)</li>
+<li>Enfant de moins de 2 ans : peut être tenu dans les bras d'un adulte avec un système de retenue</li>
+<li>Avitaillement en carburant : relier une <b>prise de terre</b> à une partie métallique de l'aéronef (décharge l'électricité statique, évite l'étincelle)</li>
 </ul>`},
 {t:'Urgences & SAR', html:`
 <ul>
@@ -1310,6 +2154,7 @@ const FICHES = [
 <li>Givrage hélice → vibrations sévères, projection glace</li>
 <li>Givrage carbu : T° <b>-5 à +20°C</b> + humidité → réchauffage carbu</li>
 <li>Détection (pas fixe) : baisse RPM progressive</li>
+<li>Réchauffage carbu à activer aussi en <b>croisière</b> par temps froid + forte humidité, et avant décollage après un long point fixe dans ces conditions</li>
 </ul>`},
 {t:'Turbulence de sillage', html:`
 <ul>
@@ -1318,6 +2163,10 @@ const FICHES = [
 <li>Hélicoptère ≈ gros porteur</li>
 <li>Atterrir après gros → toucher <b>après</b> son point de toucher</li>
 <li>Roulage derrière avion de ligne : distance min <b>200 m</b></li>
+<li>Origine : <b>tourbillons marginaux</b> (compensation de pression en bout d'aile)</li>
+<li>Dérive latéralement <b>sous le vent</b>, poussée par la composante de travers — ex. piste 34, vent du 020° → turbulence part vers la <b>gauche</b></li>
+<li>Léger vent de travers au décollage d'un avion lourd : la turbulence peut stagner <b>sur/près de la piste</b></li>
+<li>Turbulence d'un hélicoptère : risque de <b>perte de contrôle</b> pouvant aller jusqu'à l'accident</li>
 </ul>`},
 {t:'Feu & urgences', html:`
 <ul>
@@ -1332,6 +2181,7 @@ const FICHES = [
 <li>Piste en forte pente : atterrir <b>pente montante</b> même avec vent arrière</li>
 <li>Approche non stabilisée → <b>remise de gaz</b></li>
 <li>Freins chauds → approcher de <b>côté</b></li>
+<li>Freins surchauffés : les pneus peuvent <b>éclater</b> (sens radial ou de rotation)</li>
 </ul>`},
 {t:'Réduction du bruit', html:`
 <ul>
@@ -1339,6 +2189,12 @@ const FICHES = [
 <li>Réduire : passer au <b>grand pas</b> (↓ RPM)</li>
 <li>Éviter virages basse altitude au-dessus villages en montée</li>
 <li>Sortir traînées le plus <b>tard</b> possible</li>
+<li><b>Noise Preferential Runway</b> : piste privilégiée pour limiter les nuisances ; <b>Low Noise Runway</b> : piste générant le moins de bruit</li>
+<li>Masse excédant les normes acoustiques au décollage : autorisé si la low noise runway est utilisée, ou si le CDB juge le respect de la norme dangereux pour la sécurité</li>
+<li>Contrôleur impose un décollage vent arrière : le pilote <b>peut refuser</b> et demander à décoller face au vent</li>
+<li>Bruit perçu au sol : fonction de la <b>distance</b>, augmente avec le <b>régime moteur</b>, minimal en configuration <b>lisse</b></li>
+<li>Minimiser le bruit en approche : approche haute, puissance minimum, sortie du train/volets <b>tardive</b>, éviter tout changement de config/puissance au-dessus d'une zone sensible</li>
+<li>Départs à proximité des villages : les contourner, à altitude suffisante</li>
 </ul>`},
 {t:'Survol de l\'eau & montagne', html:`
 <table>
@@ -1543,7 +2399,7 @@ function buildContent() {
   $content.innerHTML = '';
   if (!activeCat) {
     // Show welcome
-    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">S&#xe9;lectionnez une cat&#xe9;gorie ci-dessus</h3><p style="color:var(--text-secondary)">9 cat&#xe9;gories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches m&#xe9;mo couvrant ~80% des questions du quiz.<br>Chaque fiche est synth&#xe9;tique et organis&#xe9;e par th&#xe8;me.<br>Utilisez la recherche pour trouver un sujet pr&#xe9;cis.</p></div>';
+    $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">S&#xe9;lectionnez une cat&#xe9;gorie ci-dessus</h3><p style="color:var(--text-secondary)">9 cat&#xe9;gories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches m&#xe9;mo couvrant ~90% des questions du quiz.<br>Chaque fiche est synth&#xe9;tique et organis&#xe9;e par th&#xe8;me.<br>Utilisez la recherche pour trouver un sujet pr&#xe9;cis.</p></div>';
     /* Hide TTS player when no category selected */
     var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='none';
     if(typeof _ttsStop==='function')_ttsStop('tts-fiches');
