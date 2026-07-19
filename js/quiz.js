@@ -428,6 +428,54 @@ function toggleSuspendQuestion(questionIdx, button) {
 }
 
 /**
+ * adjustSrFrequency() – Ajuste manuellement la fréquence de répétition espacée d'une question,
+ * indépendamment de la prochaine réponse donnée. "easier" repousse la prochaine révision plus
+ * loin dans le temps (question jugée facile par l'utilisateur → on la montre moins souvent) ;
+ * "harder" la rapproche (question jugée difficile → on la montre plus souvent). Ne modifie que
+ * srInterval/nextReview — laisse status/failCount/successCount/etc. intacts pour ne pas fausser
+ * les statistiques de réussite déjà calculées par _computeSrEntry().
+ */
+function adjustSrFrequency(questionIdx, button, direction) {
+  const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
+  if (!uid) {
+    alert("Vous devez être connecté pour ajuster la fréquence de révision.");
+    return;
+  }
+  const question = currentQuestions[questionIdx];
+  if (!question) {
+    console.error("Question introuvable dans la catégorie sélectionnée.");
+    return;
+  }
+  const key = getKeyFor(question);
+  const prev = currentResponses[key] || {};
+  const prevInterval = prev.srInterval || 1;
+  const newInterval = direction === 'easier'
+    ? Math.min(365, Math.max(7, Math.round(prevInterval * 2)))
+    : Math.max(1, Math.round(prevInterval / 3));
+  const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
+  const entry = { ...prev, srInterval: newInterval, nextReview: nextReviewMs };
+  const payload = { responses: { [key]: entry } };
+
+  const applyLocally = () => {
+    currentResponses[key] = entry;
+    const original = button.textContent;
+    button.textContent = (direction === 'easier' ? '✅ Revoir dans ' : '🔴 Revoir dans ') + newInterval + ' j';
+    button.disabled = true;
+    setTimeout(() => { button.textContent = original; button.disabled = false; }, 1800);
+    updateModeCounts();
+  };
+
+  db.collection('quizProgress').doc(uid)
+    .set(payload, { merge: true })
+    .then(applyLocally)
+    .catch(async () => {
+      console.warn('[offline] adjustSrFrequency fallback');
+      await saveToggleWithOfflineFallback(uid, key, payload);
+      applyLocally();
+    });
+}
+
+/**
  * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
 function afficherBoutonsMarquer() {
@@ -473,6 +521,22 @@ function afficherBoutonsMarquer() {
     btnSuspend.title = "Cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
     btnSuspend.onclick = () => toggleSuspendQuestion(idx, btnSuspend);
     row.appendChild(btnSuspend);
+
+    // Boutons de répétition espacée manuelle : ajuster la fréquence sans attendre la
+    // prochaine réponse (utile pour signaler tout de suite "c'était facile" / "c'était dur").
+    const btnEasier = document.createElement('button');
+    btnEasier.textContent = "📉 Moins souvent";
+    btnEasier.className = "unimportant-button";
+    btnEasier.title = "Repousser la prochaine révision de cette question (jugée facile)";
+    btnEasier.onclick = () => adjustSrFrequency(idx, btnEasier, 'easier');
+    row.appendChild(btnEasier);
+
+    const btnHarder = document.createElement('button');
+    btnHarder.textContent = "🔁 Plus souvent";
+    btnHarder.className = "delete-button";
+    btnHarder.title = "Rapprocher la prochaine révision de cette question (jugée difficile)";
+    btnHarder.onclick = () => adjustSrFrequency(idx, btnHarder, 'harder');
+    row.appendChild(btnHarder);
 
     block.appendChild(row);
   });

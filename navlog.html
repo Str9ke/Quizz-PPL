@@ -1586,6 +1586,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <option value="OO-FCE">Cessna F-172M &mdash; OO-FCE</option>
         </select>
         <span id="perfAircraftDesc" style="font-size:.82em;color:var(--text-secondary)">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</span>
+        <button onclick="var d=document.getElementById('acDiffCard');d.style.display=d.style.display==='none'?'block':'none';" class="navlog-btn" style="white-space:nowrap;padding:6px 12px;font-size:0.8em">&#x1F4CB; Fiche comparative C150/C172</button>
+      </div>
+
+      <!-- Fiche comparative rapide C150 vs C172 : rappel des différences à chaque changement d'avion -->
+      <div id="acDiffCard" style="display:none;margin-bottom:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;font-size:.85em">
+        <div id="acDiffCardBody"></div>
+        <p style="font-size:.78em;color:var(--text-secondary);margin-top:8px">Source&nbsp;: m&eacute;mo d'utilisation officiel de l'A&eacute;roclub Mons-Borinage &mdash; <a href="https://www.aeroclub-mons-borinage.be/wp-content/uploads/2020/09/MEMO-OO-FCE-C150.pdf" target="_blank" rel="noopener" style="color:#667eea">MEMO-OO-FCE-C150.pdf</a></p>
       </div>
 
       <div style="margin-bottom:10px">
@@ -1619,7 +1626,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
       </div>
 
-      <!-- Crosswind visual diagram (filled by perfFromMetar) -->
+      <!-- Vent manuel (direction + vitesse) : décompose face/travers pour la piste sélectionnée -->
+      <div style="margin-bottom:14px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="config-item" style="margin-bottom:0">
+          <label for="perfWindDirManual">Vent manuel — direction (&deg;)</label>
+          <input type="number" id="perfWindDirManual" value="" min="0" max="360" step="1" placeholder="ex: 270">
+        </div>
+        <div class="config-item" style="margin-bottom:0">
+          <label for="perfWindSpdManual">Vent manuel — vitesse (kt)</label>
+          <input type="number" id="perfWindSpdManual" value="" min="0" max="80" step="1" placeholder="ex: 15">
+        </div>
+        <button onclick="window.perfApplyManualWind()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F9ED; Appliquer vent manuel</button>
+      </div>
+
+      <!-- Crosswind visual diagram (filled by perfFromMetar or perfApplyManualWind) -->
       <div id="perfCrosswindDiagram" style="margin-bottom:12px"></div>
 
       <!-- Results -->
@@ -5441,7 +5461,14 @@ function loadGametWindWidget(){
       validLabel = 'valide '+validMatch[2]+':'+validMatch[3]+' → '+validMatch[5]+':'+validMatch[6]+' UTC (J'+validMatch[1]+')';
     }
 
-    var levelRe = /<span class="wx-alt">(\d+)\s*FT<\/span>\s*<span class="wx-wind">(\d{3})\/(\d{2,3})KT<\/span>\s*<span class="wx-temp">([A-Z]{2})(\d{2})<\/span>/g;
+    /* Le GAMET brut insère parfois du texte entre les niveaux (plage horaire de validité
+       du sous-groupe, qualificatif OFFSHORE/COAST, etc.) entre le span d'altitude et les
+       spans vent/température du même niveau — l'ancien \s* strict ratait alors ce niveau
+       silencieusement. On tolère maintenant un écart borné (texte quelconque, non-greedy)
+       pour retrouver les spans vent/température les plus proches, quel que soit ce qui les sépare. */
+    /* Le vent GAMET est parfois donné en plage ("15-20KT") plutôt qu'en valeur unique —
+       le groupe vitesse doit donc accepter un tiret + une seconde valeur optionnelle. */
+    var levelRe = /<span class="wx-alt">(\d+)\s*FT<\/span>[\s\S]{0,80}?<span class="wx-wind">(\d{3})\/(\d{2,3}(?:-\d{2,3})?)KT<\/span>[\s\S]{0,80}?<span class="wx-temp">([A-Z]{2})(\d{2})<\/span>/g;
     var levels = [];
     var m;
     while((m = levelRe.exec(block)) !== null){
@@ -10781,30 +10808,34 @@ window.updateRouteMap=updateRouteMap;
    ======================================================== */
 var MB_DATA = {
   'OO-MQA': {
-    type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, density:0.72,
+    type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
   'OO-WAC': {
-    type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, density:0.72,
+    type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
   'OO-WEO': {
-    type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, density:0.72,
+    type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:517.82, emptyArm:0.8382, emptyMom:434.04,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
     has2seats:true, weighDate:'12/06/2014',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
   'OO-FCE': {
-    type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, density:0.72,
+    type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, fuelTotal:159, density:0.72,
     emptyMass:665.87, emptyArm:0.99345, emptyMom:661.51,
     fuelArm:1.22, pilotArm:0.94, paxArm:1.06, bag1Arm:2.41, bag2Arm:3.12,
+    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15,
     has2seats:false, weighDate:'13/04/2012',
     envelope:[{m:675,mom:605},{m:890,mom:780},{m:1043,mom:1020},{m:1043,mom:1260},{m:675,mom:810}]
   }
@@ -10829,7 +10860,7 @@ function mbSelectAircraft(){
   var _syncAc=MB_DATA[sel];
   if(_syncAc){
     var _fl=document.getElementById('fuelAircraftLabel');if(_fl) _fl.textContent=_syncAc.type+' \u2014 '+sel;
-    var _tl=document.getElementById('fuelTankLabel');if(_tl) _tl.textContent='R\u00e9servoir utilisable\u00a0: '+_syncAc.fuelUsable+' L';
+    var _tl=document.getElementById('fuelTankLabel');if(_tl) _tl.textContent='R\u00e9servoir total\u00a0: '+(_syncAc.fuelTotal||_syncAc.fuelUsable)+' L ('+((_syncAc.fuelTotal||_syncAc.fuelUsable)*_syncAc.density).toFixed(1)+' kg) \u2014 utilisable\u00a0: '+_syncAc.fuelUsable+' L ('+(_syncAc.fuelUsable*_syncAc.density).toFixed(1)+' kg)';
     var _pl=document.getElementById('perfAircraftLabel');if(_pl) _pl.textContent=_syncAc.type+' \u2014 '+sel;
     var _pd=document.getElementById('perfAircraftDesc');if(_pd) _pd.textContent='Bas\u00e9 sur le manuel de vol \u2014 Masse max '+(sel==='OO-FCE'?1043:726)+' kg';
   }
@@ -10849,7 +10880,7 @@ function mbSelectAircraft(){
        l'entrer separement et pouvait croire que ca "ne prenait pas en compte" son passager.
        Chaque place a maintenant sa propre case, sans ambiguite. */
     html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="85" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
-    html+='<tr><td>Passager avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPaxFront" value="0" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxFrontMom">—</td></tr>';
+    html+='<tr><td>Passager avant</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPaxFront" value="80" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxFrontMom">—</td></tr>';
     html+='<tr><td>Passagers arri\u00e8re</td><td>'+ac.paxArm.toFixed(2)+'</td><td><input type="number" id="mbPax" value="0" min="0" max="300" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
   }
   html+='<tr><td>Bagages zone 1</td><td>'+ac.bag1Arm.toFixed(2)+'</td><td><input type="number" id="mbBag1" value="0" min="0" max="50" onchange="window.mbRecalc()"> kg</td><td id="mbBag1Mom">—</td></tr>';
@@ -10861,9 +10892,41 @@ window.mbSelectAircraft=mbSelectAircraft;
 
 /* Sync aircraft selector across Masse&Centrage, Perf and Fuel tabs.
    keepCruise=true : ne pas écraser TAS/conso (utilisé lors du chargement d'un dossier) */
+/* Fiche comparative rapide C150 vs C172, construite à partir du mémo officiel
+   d'utilisation Aéroclub Mons-Borinage — rappelle les différences clés à chaque
+   changement d'avion (limitations, distances, carburant, vitesses). */
+var AC_DIFF_TABLE = [
+  {label:'Puissance',            c150:'100 cv',                c172:'150 cv'},
+  {label:'Masse max décollage/atterrissage', c150:'726 kg',     c172:'1043 kg'},
+  {label:'Vent travers décollage',  c150:'20 kt',               c172:'20 kt'},
+  {label:'Vent travers atterrissage', c150:'15 kt',             c172:'15 kt'},
+  {label:'VFE (volet appr / att)',  c150:'85 kt / 85 kt',       c172:'86 kt / 86 kt'},
+  {label:'VNE',                     c150:'141 kt',              c172:'158 kt'},
+  {label:'Va (masse max)',          c150:'97 kt',               c172:'96 kt'},
+  {label:'Carburant total / utilisable', c150:'98 L / 85 L',    c172:'159 L / 144 L'},
+  {label:'Conso croisière 65% / 75%', c150:'19 L/h / 21 L/h',   c172:'28 L/h / 30 L/h'},
+  {label:'Huile (type / quantité)', c150:'XPD 100, 4-6 quarts', c172:'XPD 100, 6-8 quarts'},
+  {label:'Décollage roulement (2500\', masse max)', c150:'304 m', c172:'365 m'},
+  {label:'Décollage passage 15m',   c150:'556 m',               c172:'670 m'},
+  {label:'Atterrissage (+50% = V0)', c150:'365 m (547 m)',      c172:'440 m (660 m)'}
+];
+function renderAircraftDiffCard(reg){
+  var body=document.getElementById('acDiffCardBody');
+  if(!body) return;
+  var is172=reg==='OO-FCE';
+  var html='<table class="perf-table"><tr><th>Caractéristique</th><th'+(is172?'':' style="color:#4fc3f7;font-weight:700"')+'>Cessna 150 (100cv)</th><th'+(is172?' style="color:#4fc3f7;font-weight:700"':'')+'>Cessna 172 (150cv, OO-FCE)</th></tr>';
+  AC_DIFF_TABLE.forEach(function(r){
+    html+='<tr><td>'+r.label+'</td><td'+(is172?'':' style="font-weight:700"')+'>'+r.c150+'</td><td'+(is172?' style="font-weight:700"':'')+'>'+r.c172+'</td></tr>';
+  });
+  html+='</table>';
+  body.innerHTML=html;
+}
+window.renderAircraftDiffCard=renderAircraftDiffCard;
+
 function syncAircraftSelection(reg, keepCruise){
   window._perfAircraft=reg;
   localStorage.setItem('perfAircraft',reg);
+  renderAircraftDiffCard(reg);
   // Sync all three selectors
   var mbSel=document.getElementById('mbAircraft');if(mbSel) mbSel.value=reg;
   var pSel=document.getElementById('perfAircraft');if(pSel) pSel.value=reg;
@@ -11080,26 +11143,33 @@ function setMBData(d){
 /* ========================================================
    PERFORMANCE MODULE (Cessna F-150L)
    ======================================================== */
-/* Takeoff distance data: [alt_ft, temp_C, groundRoll_m, over15m_m] */
+/* Takeoff distance data: [alt_ft, temp_C, groundRoll_m, over15m_m]
+   Calibré sur le mémo officiel d'utilisation OO-WAC/OO-WEO (Aéroclub Mons-Borinage,
+   www.aeroclub-mons-borinage.be/wp-content/uploads/2020/09/MEMO-OO-FCE-C150.pdf) :
+   à 2500 ft / ISA+20°C / masse max, roulement 304 m et passage 15 m à 556 m —
+   la table de base (0/8109 ratio sur over15) a été mise à l'échelle pour reproduire
+   exactement ce point de référence officiel ; les autres altitudes restent
+   extrapolées proportionnellement (pas de point officiel à ces altitudes). */
 var PERF_TO = [
-  {alt:0,    temp:15, roll:224, over15:422},
-  {alt:2500, temp:10, roll:277, over15:605},
-  {alt:5000, temp:5,  roll:340, over15:744},
-  {alt:7500, temp:0,  roll:414, over15:0}  // extrapolated
+  {alt:0,    temp:15, roll:217, over15:342},
+  {alt:2500, temp:10, roll:268, over15:491},
+  {alt:5000, temp:5,  roll:330, over15:603},
+  {alt:7500, temp:0,  roll:401, over15:0}  // extrapolated
 ];
-/* Wind correction: per 10kt headwind, reduce distances */
+/* Wind correction: per 10kt headwind, reduce distances (mise à l'échelle idem base) */
 var PERF_TO_WIND = [
-  {alt:0,    temp:15, w10:{roll:152,over15:315}, w20:{roll:93,over15:222}},
-  {alt:2500, temp:10, w10:{roll:192,over15:381}, w20:{roll:120,over15:271}},
-  {alt:5000, temp:5,  w10:{roll:238,over15:460}, w20:{roll:154,over15:332}},
-  {alt:7500, temp:0,  w10:{roll:296,over15:572}, w20:{roll:195,over15:419}}
+  {alt:0,    temp:15, w10:{roll:147,over15:256}, w20:{roll:90,over15:180}},
+  {alt:2500, temp:10, w10:{roll:186,over15:309}, w20:{roll:116,over15:220}},
+  {alt:5000, temp:5,  w10:{roll:231,over15:373}, w20:{roll:149,over15:269}},
+  {alt:7500, temp:0,  w10:{roll:287,over15:464}, w20:{roll:189,over15:340}}
 ];
-/* Landing data */
+/* Landing data — mémo officiel : atterrissage 365 m à 2500 ft/ISA+20°/masse max
+   (over15 mis à l'échelle sur cette référence ; roll non documenté, inchangé) */
 var PERF_LD = [
-  {alt:0,    temp:15, roll:136, over15:328},
-  {alt:2500, temp:10, roll:143, over15:346},
-  {alt:5000, temp:5,  roll:151, over15:364},
-  {alt:7500, temp:0,  roll:158, over15:383}
+  {alt:0,    temp:15, roll:136, over15:305},
+  {alt:2500, temp:10, roll:143, over15:322},
+  {alt:5000, temp:5,  roll:151, over15:339},
+  {alt:7500, temp:0,  roll:158, over15:357}
 ];
 /* Max climb rate */
 var PERF_CLIMB = [
@@ -11152,24 +11222,31 @@ var CRUISE_DATA = [
   ]}
 ];
 
-/* ===== Cessna F-172M (OO-FCE) — Lycoming O-360-A4M 150 HP — Manuel de vol ACMB ===== */
+/* ===== Cessna F-172M (OO-FCE) — Lycoming O-360-A4M 150 HP — Manuel de vol ACMB =====
+   Calibré sur le mémo officiel d'utilisation OO-FCE (Aéroclub Mons-Borinage,
+   www.aeroclub-mons-borinage.be/wp-content/uploads/2020/09/MEMO-OO-FCE-C150.pdf) :
+   à 2500 ft / ISA+15°C / masse max, roulement 365 m et passage 15 m à 670 m —
+   table mise à l'échelle (roll ×1,047, over15 ×1,052) pour reproduire exactement
+   ce point de référence officiel ; autres altitudes extrapolées proportionnellement. */
 var PERF_TO_172 = [
-  {alt:0,    temp:15, roll:275, over15:500},
-  {alt:2500, temp:10, roll:317, over15:579},
-  {alt:5000, temp:5,  roll:366, over15:670},
-  {alt:7500, temp:0,  roll:423, over15:777}
+  {alt:0,    temp:15, roll:288, over15:526},
+  {alt:2500, temp:10, roll:332, over15:609},
+  {alt:5000, temp:5,  roll:383, over15:705},
+  {alt:7500, temp:0,  roll:443, over15:817}
 ];
 var PERF_TO_WIND_172 = [
-  {alt:0,    temp:15, w10:{roll:193,over15:350}, w20:{roll:119,over15:245}},
-  {alt:2500, temp:10, w10:{roll:222,over15:405}, w20:{roll:137,over15:285}},
-  {alt:5000, temp:5,  w10:{roll:256,over15:470}, w20:{roll:158,over15:335}},
-  {alt:7500, temp:0,  w10:{roll:296,over15:545}, w20:{roll:184,over15:393}}
+  {alt:0,    temp:15, w10:{roll:202,over15:368}, w20:{roll:125,over15:258}},
+  {alt:2500, temp:10, w10:{roll:232,over15:426}, w20:{roll:143,over15:300}},
+  {alt:5000, temp:5,  w10:{roll:268,over15:494}, w20:{roll:165,over15:352}},
+  {alt:7500, temp:0,  w10:{roll:310,over15:573}, w20:{roll:193,over15:413}}
 ];
+/* Landing — mémo officiel : atterrissage 440 m à 2500 ft/ISA+15°/masse max
+   (over15 mis à l'échelle ×0,964 sur cette référence ; roll non documenté, inchangé) */
 var PERF_LD_172 = [
-  {alt:0,    temp:15, roll:183, over15:397},
-  {alt:2500, temp:10, roll:193, over15:415},
-  {alt:5000, temp:5,  roll:204, over15:436},
-  {alt:7500, temp:0,  roll:215, over15:458}
+  {alt:0,    temp:15, roll:183, over15:383},
+  {alt:2500, temp:10, roll:193, over15:400},
+  {alt:5000, temp:5,  roll:204, over15:420},
+  {alt:7500, temp:0,  roll:215, over15:442}
 ];
 var PERF_CLIMB_172 = [
   {alt:0,    temp:15, rateMs:3.91, rateFpm:770, vi_kmh:120, fuelLh:37.0},
@@ -11209,6 +11286,7 @@ var CRUISE_DATA_172 = [
   ]}
 ];
 window._perfAircraft = localStorage.getItem('perfAircraft') || 'OO-MQA';
+if(typeof renderAircraftDiffCard==='function') renderAircraftDiffCard(window._perfAircraft);
 
 function perfCalc(){
   var acReg=window._perfAircraft||'OO-MQA';
@@ -11260,7 +11338,13 @@ function perfCalc(){
   var clRate=cl.rateFpm;
   // Temp correction for climb (approx -1% per °C above ISA)
   if(isaDev>0) clRate*=(1-isaDev*0.01);
+  var acLimits=MB_DATA[acReg]||{};
   var html='';
+  if(acLimits.vneKt){
+    html+='<div class="perf-calc-detail" style="margin-bottom:8px">';
+    html+='\u26A0\uFE0F <b>Limitations '+acType+'</b>&nbsp;: VNE <b>'+acLimits.vneKt+' kt</b> \u00B7 VFE <b>'+acLimits.vfeApprKt+' kt</b> \u00B7 Va (masse max) <b>'+acLimits.vaKt+' kt</b> \u00B7 Vent travers d\u00E9collage <b>'+acLimits.xwindTOKt+' kt</b> / atterrissage <b>'+acLimits.xwindLDGKt+' kt</b>';
+    html+='</div>';
+  }
   html+='<div class="perf-calc-detail">';
   html+='\uD83D\uDCCF <b>Altitude pression</b> = '+elev+' + ((1013 \u2212 '+qnh+') \u00D7 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
   html+='\uD83C\uDF21\uFE0F <b>ISA \u00E0 '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'\u00B0C \u2192 \u00E9cart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'\u00B0C</b>';
@@ -11278,7 +11362,25 @@ function perfCalc(){
   html+='</div><div style="margin:10px 0">';
   html+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">\uD83D\uDEEC Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
   html+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">\uD83D\uDEEC Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
-  html+='</div><div style="margin:10px 0">';
+  var ldOverMargin=ldOver*1.5;
+  html+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">\uD83D\uDEEC Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
+  html+='</div>';
+  // Runway sufficiency check against RUNWAY_DB (distances officielles piste)
+  var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && waypoints[0] && waypoints[0].icao && RUNWAY_DB[waypoints[0].icao]) ? waypoints[0].icao : null);
+  var rwys=(RUNWAY_DB&&rwyIcaoCalc)?RUNWAY_DB[rwyIcaoCalc]:null;
+  if(rwys && rwys.length){
+    html+='<div class="perf-section"><h4>\uD83D\uDEEB Pistes disponibles \u2014 '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
+    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>D\u00E9collage requis</th><th>Atterrissage requis (+50%)</th></tr>';
+    rwys.forEach(function(r){
+      var toOk = toOver>0 && r.len>=toOver;
+      var ldOk = ldOverMargin>0 && r.len>=ldOverMargin;
+      html+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
+      html+='<td style="color:'+(toOk?'#4caf50':'#ef5350')+'">'+(toOk?'\u2705':'\u26A0\uFE0F')+' '+toOver.toFixed(0)+' m</td>';
+      html+='<td style="color:'+(ldOk?'#4caf50':'#ef5350')+'">'+(ldOk?'\u2705':'\u26A0\uFE0F')+' '+ldOverMargin.toFixed(0)+' m</td></tr>';
+    });
+    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par a\u00E9rodrome).</p></div>';
+  }
+  html+='<div style="margin:10px 0">';
   html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">\u2B06\uFE0F Taux mont\u00E9e max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h / '+Math.round(cl.vi_kmh*0.53996)+' kt)</div>';
   html+='</div>';
   // Takeoff table
@@ -11471,13 +11573,15 @@ function perfFromMetar(){
 
     /* Runway suggestion: prefer departure, fall back to METAR source */
     var rwyIcao = (RUNWAY_DB && RUNWAY_DB[depIcao]) ? depIcao : usedIcao;
+    window._perfRwyIcao = rwyIcao;
     var bestRwy = (RUNWAY_DB && RUNWAY_DB[rwyIcao]) ? suggestRunway(rwyIcao, wm.dir, wm.spd) : null;
 
     if(bestRwy){
       document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
-      var xwColor = bestRwy.xw <= 10 ? '#4caf50' : bestRwy.xw <= 15 ? '#ffa726' : '#ef5350';
+      var xwLimit = ((MB_DATA && MB_DATA[window._perfAircraft]) || {}).xwindLDGKt || 15;
+      var xwColor = bestRwy.xw <= xwLimit*0.67 ? '#4caf50' : bestRwy.xw <= xwLimit ? '#ffa726' : '#ef5350';
       infoLines.push('&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'\u00b0) \u2014 Face\u00a0: <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers\u00a0: <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>');
-      diagHtml = buildCrosswindDiagram(wm.dir, wm.spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw);
+      diagHtml = buildCrosswindDiagram(wm.dir, wm.spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw, xwLimit);
     } else {
       document.getElementById('perfWind').value = wm.spd;
       infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+rwyIcao+' \u2014 vent appliqu\u00e9\u00a0: '+wm.spd+' kt</span>');
@@ -11496,13 +11600,62 @@ function perfFromMetar(){
 }
 window.perfFromMetar=perfFromMetar;
 
+/* Vent manuel (direction + vitesse) saisi par l'utilisateur : décompose face/travers
+   pour la piste du terrain de départ (ou de la station METAR sélectionnée) et alimente
+   perfCalc() exactement comme le ferait un METAR — ainsi le vent personnalisé se
+   répercute bien sur les distances de décollage/atterrissage et le reste des perfs. */
+function perfApplyManualWind(){
+  var dir = parseFloat(document.getElementById('perfWindDirManual').value);
+  var spd = parseFloat(document.getElementById('perfWindSpdManual').value);
+  if(isNaN(spd) || spd < 0) spd = 0;
+  var infoEl = document.getElementById('perfCrosswindInfo');
+  var diagEl = document.getElementById('perfCrosswindDiagram');
+
+  if(isNaN(dir)){
+    /* Pas de direction connue : traiter comme vent de face pur (comportement historique) */
+    document.getElementById('perfWind').value = spd;
+    if(infoEl) infoEl.innerHTML = '&#x1f9ed; Vent manuel (sans direction)&nbsp;: <b>'+spd+' kt</b> appliqu&eacute; comme vent de face.';
+    if(diagEl) diagEl.innerHTML = '';
+    perfCalc();
+    return;
+  }
+
+  var depIcao = (typeof waypoints !== 'undefined' && waypoints[0] && waypoints[0].icao) || '';
+  var metarSel = document.getElementById('perfMetarSelect');
+  var selIcao = metarSel ? metarSel.value : '';
+  var rwyIcao = (RUNWAY_DB && RUNWAY_DB[depIcao]) ? depIcao : ((RUNWAY_DB && RUNWAY_DB[selIcao]) ? selIcao : null);
+  window._perfRwyIcao = rwyIcao;
+  var xwLimit = ((MB_DATA && MB_DATA[window._perfAircraft]) || {}).xwindLDGKt || 15;
+
+  if(!rwyIcao){
+    document.getElementById('perfWind').value = spd;
+    if(infoEl) infoEl.innerHTML = '<span style="color:#ffa726">&#x26a0;&#xfe0f; Piste inconnue pour d&eacute;composer le vent manuel '+dir+'&deg;/'+spd+' kt &mdash; appliqu&eacute; comme vent de face.</span>';
+    if(diagEl) diagEl.innerHTML = '';
+    perfCalc();
+    return;
+  }
+
+  var bestRwy = suggestRunway(rwyIcao, dir, spd);
+  if(bestRwy){
+    document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
+    var xwColor = bestRwy.xw <= xwLimit*0.67 ? '#4caf50' : bestRwy.xw <= xwLimit ? '#ffa726' : '#ef5350';
+    if(infoEl) infoEl.innerHTML = '&#x1f9ed; Vent manuel&nbsp;: <b>'+dir+'&deg; / '+spd+' kt</b><br>&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'&deg;) &mdash; Face&nbsp;: <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers&nbsp;: <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>';
+    if(diagEl) diagEl.innerHTML = buildCrosswindDiagram(dir, spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw, xwLimit);
+  } else {
+    document.getElementById('perfWind').value = spd;
+  }
+  perfCalc();
+}
+window.perfApplyManualWind = perfApplyManualWind;
+
 /* ===== CROSSWIND DECOMPOSITION DIAGRAM =====
    Runway drawn vertically (heading = up). Wind vector decomposed into:
    - HW (headwind, cyan, along runway axis)
    - XW (crosswind, colour-coded, horizontal)
    All three vectors form a right triangle.                                     */
-function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
+function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw, xwLimit){
   if(!windSpd || windSpd <= 0) return '';
+  xwLimit = xwLimit || 15;
   var W=260, H=215, cx=130, cy=107;
   /* Angle of wind relative to runway (runway = 0 = up in diagram) */
   var relDeg = ((windDir - rwyHdg) % 360 + 360) % 360;
@@ -11516,7 +11669,7 @@ function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
   var hwEndY = (cy - hw * scale).toFixed(1);           /* up = headwind  */
   var xwSign = Math.sin(relRad) >= 0 ? 1 : -1;
   var xwEndX = (cx + xwSign * xw * scale).toFixed(1);  /* horizontal XW  */
-  var xwColor = xw <= 10 ? '#4caf50' : xw <= 15 ? '#ffa726' : '#ef5350';
+  var xwColor = xw <= xwLimit*0.67 ? '#4caf50' : xw <= xwLimit ? '#ffa726' : '#ef5350';
   var rwyNum  = Math.round(rwyHdg / 10) % 36 || 36;
   var rwyOpp  = (rwyNum + 18) % 36 || 36;
 
@@ -11563,9 +11716,9 @@ function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw){
   }
 
   /* Status bar */
-  var status = xw <= 10 ? '\u2705 Acceptable (lim. Cessna 150 : 15 kt)'
-              : xw <= 15 ? '\u26a0\ufe0f Attention \u2014 limite 15 kt'
-              : '\u26a0\ufe0f D\u00e9pass\u00e9 \u2014 limite 15 kt';
+  var status = xw <= xwLimit*0.67 ? '\u2705 Acceptable (limite atterrissage : '+xwLimit+' kt)'
+              : xw <= xwLimit ? '\u26a0\ufe0f Attention \u2014 limite '+xwLimit+' kt'
+              : '\u26a0\ufe0f D\u00e9pass\u00e9 \u2014 limite '+xwLimit+' kt';
   s += '<text x="'+W/2+'" y="'+(H-5)+'" fill="'+xwColor+'" font-size="9.5" text-anchor="middle">'+status+'</text>';
   s += '</svg>';
   return s;
