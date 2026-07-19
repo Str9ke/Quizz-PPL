@@ -468,6 +468,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .summary-panel{flex-direction:column;align-items:center}
   .dossier-card .d-header{flex-wrap:wrap}
   #routeMapContainer{min-height:unset;max-height:85vw}
+  /* Sans ce wrap, la ligne d'outils (infos route + légende + 4 boutons, aucun retour à la
+     ligne) écrasait le texte d'infos (flex:1) dans une colonne minuscule sur mobile — il se
+     retrouvait à un mot par ligne sur des dizaines de lignes, gonflant la hauteur de la
+     barre d'outils au point de réduire la carte elle-même à une mince bande illisible. */
+  .route-map-card .route-map-toolbar{flex-wrap:wrap;justify-content:flex-start}
+  .route-map-card .route-map-info,.route-map-card .route-map-legend{flex:1 1 100%;min-width:100%}
+  .route-map-card .route-map-toolbar .navlog-btn{flex:0 0 auto;width:-webkit-fit-content;width:fit-content}
+  .route-map-card.rm-fullscreen .route-map-toolbar{max-height:35vh;overflow-y:auto}
   .navlog-tab{font-size:.7em;padding:10px 8px}
   .leg-triangle-col{display:none}
   .leg-container{gap:4px}
@@ -9401,8 +9409,15 @@ function renderAltProfile(){
     cumD3+=ld3; /* toujours incrémenter, même si poignée masquée */
   }
 
-  /* Waypoint markers + labels — drag sur cercles intérieurs */
-  var wpMk='',cumD2=0;
+  /* Waypoint markers + labels — drag sur cercles intérieurs.
+     Les points restent TOUJOURS affichés (petit cercle), mais leurs étiquettes texte
+     (altitude au-dessus, nom sous le graphique) sont omises quand elles tomberaient à moins
+     de MIN_LABEL_PX de la précédente sur le même axe — sans ça, une route avec plusieurs
+     points très rapprochés (ex: circuit d'aérodrome) empile des "2300ft" les uns sur les
+     autres en un amas illisible, comme pour les étiquettes de leg sur la carte (même idée,
+     appliquée ici à l'axe horizontal du graphique plutôt qu'à la projection Leaflet). */
+  var MIN_LABEL_PX=26;
+  var wpMk='',cumD2=0,_lastAltLabelX=-Infinity,_lastNameLabelX=-Infinity;
   for(var i=0;i<waypoints.length;i++){
     if(i>0) cumD2+=(waypoints[i].dist||0);
     var isL2=i===waypoints.length-1;
@@ -9416,10 +9431,16 @@ function renderAltProfile(){
     wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="4.5" fill="'+dotColor+'" stroke="#fff" stroke-width="1.5" style="pointer-events:none"/>';
     /* Nom du point sous le graphique omis en plein écran : pas la place, et le survol/glisser
        (crosshair) donne déjà le point exact + son altitude sans avoir besoin des étiquettes fixes. */
-    if(!isFS) wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
-    if(isDrag) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wA+'ft</text>';
-    else if(isEtp) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="#ff9500" style="pointer-events:none">'+wA+'ft↓</text>';
-    else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
+    if(!isFS && (i===0||i===waypoints.length-1||wx-_lastNameLabelX>MIN_LABEL_PX)){
+      wpMk+='<text x="'+wx+'" y="'+(mt+ch+28)+'" text-anchor="middle" font-size="8" fill="#a78bfa">'+escHTML(waypoints[i].name||('WP'+i))+'</text>';
+      _lastNameLabelX=wx;
+    }
+    if(i===0||i===waypoints.length-1||wx-_lastAltLabelX>MIN_LABEL_PX){
+      if(isDrag) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" style="pointer-events:none">'+wA+'ft</text>';
+      else if(isEtp) wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="#ff9500" style="pointer-events:none">'+wA+'ft↓</text>';
+      else wpMk+='<text x="'+wx+'" y="'+(wy-9)+'" text-anchor="middle" font-size="9" fill="rgba(160,160,200,.7)" style="pointer-events:none">'+wA+'ft</text>';
+      _lastAltLabelX=wx;
+    }
   }
 
   /* Terrain layer : données brutes de l'API, sans patch artificiel */
@@ -9504,6 +9525,7 @@ var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
 var _altTerrainRouteSig=null; /* signature de route (_currentRouteSig) pour laquelle _altTerrainCache est valide */
 var _altTerrainFetching=false; /* évite un double appel réseau si les deux graphiques (Navlog + Altitudes) le déclenchent au même moment */
 var _altTerrainFetchSig=null; /* signature de route au moment où le fetch en cours a démarré */
+var _altTerrainRetryCount=0; /* voir la relance automatique dans _fetchAltTerrain() */
 
 /* BUG CRITIQUE corrigé : _altTerrainCache n'était invalidé QUE lors du chargement d'un vol
    sauvegardé — modifier la route en place (changer la destination, glisser un waypoint,
@@ -9516,6 +9538,7 @@ function _invalidateTerrainCacheIfStale(){
   if(_altTerrainCache && _altTerrainRouteSig!==sig){
     _altTerrainCache=null;
     _altTerrainRouteSig=null;
+    _altTerrainRetryCount=0; /* nouvelle route = nouveau budget de tentatives */
   }
   return sig;
 }
@@ -9582,6 +9605,7 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
     }
     _altTerrainCache=_smoothTerrainOutliers(elevs);
     _altTerrainRouteSig=_fetchStartSig;
+    _altTerrainRetryCount=0;
     renderAltProfile();
     /* Le graphique de l'onglet Altitudes réutilise le même cache terrain —
        le rafraîchir aussi s'il existe (tab ouverte ou pas, ça ne coûte rien) */
@@ -9612,6 +9636,19 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
         })
         .catch(function(){
           _altTerrainFetching=false;
+          /* BUG corrigé : quand les deux fournisseurs échouaient (réseau mobile capricieux,
+             API temporairement indisponible…), le cache restait vide indéfiniment — rien ne
+             relançait le fetch tant que l'utilisateur n'ouvrait pas par hasard un autre écran
+             (ex: l'onglet Altitudes) qui, lui, retentait le même appel. Le relief semblait donc
+             "ne jamais charger sur le Navlog" alors qu'il suffisait de relancer. On retente
+             maintenant automatiquement (délai croissant), jusqu'à 3 fois, avant d'abandonner. */
+          _altTerrainRetryCount++;
+          if(_altTerrainRetryCount<=3 && _fetchStartSig===_currentRouteSig()){
+            setTimeout(function(){
+              if(!_altTerrainCache) renderAltProfile();
+            }, 3000*_altTerrainRetryCount);
+            return;
+          }
           var layer2=document.getElementById('terrainLayer');
           if(layer2) layer2.innerHTML='';
           var layer3=document.getElementById('alt2TerrainLoading');
