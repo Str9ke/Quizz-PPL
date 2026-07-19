@@ -8,6 +8,95 @@ import json
 import re
 
 
+def _dms_to_deg(token):
+    """Convertit '510539N' -> 51.094167 ou '0042341E' -> 4.394722 (degrés décimaux signés)."""
+    m = re.match(r'(\d{2,3})(\d{2})(\d{2})([NSEW])', token)
+    if not m:
+        return None
+    deg, mn, sec, hemi = m.groups()
+    val = int(deg) + int(mn) / 60 + int(sec) / 3600
+    if hemi in ('S', 'W'):
+        val = -val
+    return round(val, 6)
+
+
+_COORD_PAIR_RE = re.compile(r'(\d{6}N)\s+(\d{7}E)')
+# Le rayon apparaît dans les deux ordres selon la formulation du NOTAM :
+# "RADIUS 01NM" (le plus courant) ou "2NM RADIUS" (ex. "ARC OF CIRCLE, 2NM RADIUS").
+# La virgule décimale ("1,5NM") est normalisée en point avant conversion.
+_RADIUS_NM_RE = re.compile(r'RADIUS[,\s]+([\d]+[.,]?[\d]*)\s*NM|([\d]+[.,]?[\d]*)\s*NM\s+RADIUS', re.I)
+_RADIUS_M_RE = re.compile(r'RADIUS\s+(\d+)\s*M\b', re.I)
+_WARNING_BLOCK_RE = re.compile(
+    r'FROM:\s*(\d{2} \w{3} \d{4} \d{2}:\d{2})\s*TILL:\s*(\d{2} \w{3} \d{4} \d{2}:\d{2})\s*'
+    r'(?:SCHEDULE:\s*(.+?)\n)?'
+    r'(.*?)'
+    r'Lower limit:\s*([\w./ ]+?)\s+Upper limit:\s*([\w./ ]+?)\s+([A-Z]\d{4}/\d{2})',
+    re.S
+)
+
+
+def _extract_warning_coords(text):
+    pairs = []
+    for m in _COORD_PAIR_RE.finditer(text):
+        lat, lon = _dms_to_deg(m.group(1)), _dms_to_deg(m.group(2))
+        if lat is not None and lon is not None:
+            pairs.append([lat, lon])
+    return pairs
+
+
+def _classify_warning_geometry(text):
+    """Reconstruit au mieux la géométrie d'un avis (cercle, polygone, polygone à arc,
+    point seul, ou 'unlocated' si aucune coordonnée n'est donnée dans le texte — ex.
+    un nom de club/terrain sans lat/lon, non plaçable sur une carte sans référentiel externe).
+    Les polygones à arc ("AN ARC OF CIRCLE ... TRACED CLOCKWISE TO ...") sont volontairement
+    simplifiés en tracé polygonal reliant les sommets listés (suffisant pour une alerte
+    visuelle, pas une distance de séparation réglementaire précise)."""
+    coords = _extract_warning_coords(text)
+    if not coords:
+        return {'type': 'unlocated'}
+
+    is_arc = bool(re.search(r'ARC OF CIRCLE', text, re.I))
+    radius_m_match = _RADIUS_NM_RE.search(text)
+    radius_nm = None
+    if radius_m_match:
+        raw = (radius_m_match.group(1) or radius_m_match.group(2)).replace(',', '.')
+        radius_nm = float(raw)
+    radius_m_only = _RADIUS_M_RE.search(text)
+    radius_m_only = int(radius_m_only.group(1)) if radius_m_only else None
+
+    if is_arc:
+        return {'type': 'polygon_arc', 'vertices': coords, 'arcRadiusNm': radius_nm}
+    if len(coords) == 1:
+        if radius_nm:
+            return {'type': 'circle', 'center': coords[0], 'radiusNm': radius_nm}
+        if radius_m_only:
+            return {'type': 'circle', 'center': coords[0], 'radiusNm': round(radius_m_only / 1852, 4)}
+        return {'type': 'point', 'center': coords[0]}
+    return {'type': 'polygon', 'vertices': coords}
+
+
+def parse_daily_warnings(raw_text):
+    """Découpe le texte brut du PIB 'WARNINGS' en une liste d'avis structurés, chacun avec
+    sa géométrie reconstruite au mieux pour affichage sur une mini-carte côté client."""
+    warnings = []
+    for m in _WARNING_BLOCK_RE.finditer(raw_text):
+        frm, till, schedule, body, lower, upper, ref = m.groups()
+        body = ' '.join(body.split())
+        if not body:
+            continue
+        warnings.append({
+            'ref': ref,
+            'from': frm,
+            'till': till,
+            'schedule': (schedule or '').strip() or None,
+            'text': body,
+            'lower': lower.strip(),
+            'upper': upper.strip(),
+            'geometry': _classify_warning_geometry(body),
+        })
+    return warnings
+
+
 def convert_pdf_to_html(pdf_path, html_path, img_prefix):
     """Convert a PDF file to HTML with cropped PNG images."""
     doc = fitz.open(pdf_path)
@@ -990,8 +1079,25 @@ def main():
 
         with open("daily_warnings.pdf", "wb") as f:
             f.write(daily_response.content)
-            
+
         convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
+
+        # Extraction structurée (JSON) des avis, en plus des images de la page — utilisée
+        # par navlog.html pour afficher une bannière d'alerte automatique et situer chaque
+        # zone sur une mini-carte, sans devoir faire relire le PDF/les images par l'utilisateur.
+        try:
+            warn_doc = fitz.open("daily_warnings.pdf")
+            full_text = "\n".join(page.get_text("text") for page in warn_doc)
+            warnings_list = parse_daily_warnings(full_text)
+            with open("daily_warnings.json", "w", encoding="utf-8") as f:
+                json.dump({
+                    "generated": daily_response.headers.get("Date"),
+                    "count": len(warnings_list),
+                    "warnings": warnings_list,
+                }, f, ensure_ascii=False, indent=2)
+            print(f"--- Extracted {len(warnings_list)} structured daily warnings ---")
+        except Exception as e:
+            print(f"Error parsing daily warnings text: {e}")
     except Exception as e:
         print(f"Error fetching daily warnings: {e}")
 

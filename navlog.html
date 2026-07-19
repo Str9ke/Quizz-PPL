@@ -643,6 +643,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <!-- ==================== TAB 1: NAVIGATION ==================== -->
   <div id="tab-nav" class="navlog-tab-content active">
 
+    <!-- Avis du jour (Daily Warnings SKEYES) : bannière d'alerte automatique -->
+    <div class="nl-card" id="dailyWarningsCard" style="display:none">
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">&#x26A0;&#xFE0F;</span> Avis du jour <span id="dwCountLabel" style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:6px"></span></span>
+        <button onclick="var b=document.getElementById('dwAllList');b.style.display=b.style.display==='none'?'block':'none';" class="navlog-btn" style="font-size:.75em;padding:5px 12px">Tout afficher</button>
+      </div>
+      <div id="dwRouteMatches"></div>
+      <div id="dwAllList" style="display:none;margin-top:8px"></div>
+      <div id="dwMapPopup" style="display:none;margin-top:10px"></div>
+    </div>
+
     <!-- Vent en altitude (GAMET) -->
     <div class="nl-card" id="gametWindCard" style="display:none">
       <div class="nl-card-title"><span class="icon">&#x1F4A8;</span> Vent en altitude (GAMET) <span id="gametValidLabel" style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:6px"></span></div>
@@ -5496,6 +5507,166 @@ function loadGametWindWidget(){
 }
 window.loadGametWindWidget=loadGametWindWidget;
 
+/* ===== AVIS DU JOUR (DAILY WARNINGS SKEYES) =====
+   Charge daily_warnings.json (généré par fetch_notams.py à partir du PIB SKEYES,
+   régénéré automatiquement par le workflow update_notams.yml), affiche une bannière
+   d'alerte avec les avis actifs aujourd'hui, priorité aux zones proches de la route
+   chargée, et une mini-carte à la demande pour chaque avis situable (avec coordonnées). */
+var _MONTHS_FR={JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+function _parseWarningDate(str){
+  var m=/(\d{2}) (\w{3}) (\d{4}) (\d{2}):(\d{2})/.exec(str||'');
+  if(!m) return null;
+  var mon=_MONTHS_FR[m[2].toUpperCase()];
+  if(mon===undefined) return null;
+  return new Date(Date.UTC(parseInt(m[3],10),mon,parseInt(m[1],10),parseInt(m[4],10),parseInt(m[5],10)));
+}
+function _isWarningActiveNow(w){
+  var from=_parseWarningDate(w.from), till=_parseWarningDate(w.till);
+  if(!from||!till) return false;
+  var now=new Date();
+  return now>=from && now<=till;
+}
+var _dailyWarningsData=null;
+function loadDailyWarnings(){
+  fetch('daily_warnings.json').then(function(r){ return r.ok?r.json():null; }).then(function(data){
+    if(!data||!data.warnings) return;
+    _dailyWarningsData=data;
+    renderDailyWarnings();
+  }).catch(function(){ /* daily_warnings.json indisponible (offline) : bannière reste masquée */ });
+}
+window.loadDailyWarnings=loadDailyWarnings;
+
+function _warningGeomCenter(geom){
+  if(!geom) return null;
+  if(geom.type==='circle'||geom.type==='point') return geom.center;
+  if(geom.vertices && geom.vertices.length){
+    var sx=0,sy=0;
+    geom.vertices.forEach(function(v){ sx+=v[0]; sy+=v[1]; });
+    return [sx/geom.vertices.length, sy/geom.vertices.length];
+  }
+  return null;
+}
+
+function renderDailyWarnings(){
+  var card=document.getElementById('dailyWarningsCard');
+  var routeBox=document.getElementById('dwRouteMatches');
+  var allBox=document.getElementById('dwAllList');
+  var countLbl=document.getElementById('dwCountLabel');
+  if(!card||!_dailyWarningsData) return;
+
+  var active=_dailyWarningsData.warnings.filter(_isWarningActiveNow);
+  if(!active.length){ card.style.display='none'; return; }
+
+  // Proximité à la route chargée (si des waypoints avec coordonnées existent)
+  var routeWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){ return w.lat!==null&&w.lon!==null; });
+  var ROUTE_THRESHOLD_NM=15;
+  active.forEach(function(w){
+    var c=_warningGeomCenter(w.geometry);
+    w._nearestNm=null;
+    if(c&&routeWps.length){
+      var best=Infinity;
+      routeWps.forEach(function(wp){
+        var d=haversine(c[0],c[1],wp.lat,wp.lon);
+        if(d<best) best=d;
+      });
+      w._nearestNm=best;
+    }
+  });
+
+  var nearRoute=active.filter(function(w){ return w._nearestNm!==null&&w._nearestNm<=ROUTE_THRESHOLD_NM; })
+                       .sort(function(a,b){ return a._nearestNm-b._nearestNm; });
+  var others=active.filter(function(w){ return !(w._nearestNm!==null&&w._nearestNm<=ROUTE_THRESHOLD_NM); });
+
+  countLbl.textContent=active.length+' actif'+(active.length>1?'s':'')+" aujourd'hui"+(nearRoute.length?' · '+nearRoute.length+' proche'+(nearRoute.length>1?'s':'')+' de la route':'');
+
+  function warningRow(w,urgent){
+    var titleMatch=/'([^']+)'/.exec(w.text);
+    var title=titleMatch?titleMatch[1]:w.text.slice(0,60);
+    var hasMap=w.geometry&&w.geometry.type!=='unlocated';
+    var proxTxt=(w._nearestNm!==null)?(' · '+w._nearestNm.toFixed(1)+' NM de la route'):'';
+    return '<div style="border-left:3px solid '+(urgent?'#ef5350':'#667eea')+';padding:6px 10px;margin-bottom:6px;background:rgba(255,255,255,0.03);border-radius:0 8px 8px 0">'
+      +'<div style="font-weight:700;font-size:.85em">'+(urgent?'⚠️ ':'')+escHTML(title)+'</div>'
+      +'<div style="font-size:.76em;color:var(--text-secondary);margin-top:2px">'+w.lower+'–'+w.upper+' · '+w.from+' → '+w.till+proxTxt+' · <span style="font-family:monospace">'+w.ref+'</span></div>'
+      +(hasMap?'<button onclick="window.toggleWarningMap(\''+w.ref+'\')" class="navlog-btn" style="font-size:.72em;padding:3px 10px;margin-top:4px">🗺️ Voir sur la carte</button>':'')
+      +'</div>';
+  }
+
+  routeBox.innerHTML=nearRoute.map(function(w){ return warningRow(w,true); }).join('');
+  allBox.innerHTML=others.map(function(w){ return warningRow(w,false); }).join('')||'<p style="font-size:.8em;color:var(--text-secondary)">Aucun autre avis actif.</p>';
+  card.style.display='';
+}
+
+window.renderDailyWarnings=renderDailyWarnings;
+
+function toggleWarningMap(ref){
+  var pop=document.getElementById('dwMapPopup');
+  if(!pop||!_dailyWarningsData) return;
+  var w=_dailyWarningsData.warnings.find(function(x){ return x.ref===ref; });
+  if(!w) return;
+  if(pop.dataset.ref===ref&&pop.style.display!=='none'){
+    pop.style.display='none'; pop.dataset.ref=''; return;
+  }
+  pop.innerHTML=renderWarningMapSVG(w);
+  pop.dataset.ref=ref;
+  pop.style.display='';
+  pop.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+window.toggleWarningMap=toggleWarningMap;
+
+/* Carte locale (projection équirectangulaire) d'un avis, centrée sur son centre/centroïde,
+   avec les waypoints de la route affichés à proximité pour donner le contexte géographique. */
+function renderWarningMapSVG(w){
+  var geom=w.geometry;
+  var center=_warningGeomCenter(geom);
+  if(!center) return '<p style="font-size:.8em;color:var(--text-secondary)">Coordonnées non disponibles pour cet avis.</p>';
+  var W=520,H=380,cx=260,cy=190;
+  var maxExtentNm=2;
+  if(geom.type==='circle') maxExtentNm=geom.radiusNm||2;
+  else if(geom.vertices){
+    geom.vertices.forEach(function(v){
+      var d=haversine(center[0],center[1],v[0],v[1]);
+      if(d>maxExtentNm) maxExtentNm=d;
+    });
+  }
+  var scale=Math.max(12,Math.min(70,140/(maxExtentNm||2)));
+  var cosLat=Math.cos(center[0]*Math.PI/180);
+  function toPx(lat,lon){
+    var xNm=(lon-center[1])*cosLat*60, yNm=(lat-center[0])*60;
+    return [cx+xNm*scale, cy-yNm*scale];
+  }
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:520px;display:block;margin:0 auto;background:rgba(0,0,0,.25);border-radius:10px">';
+  svg+='<line x1="'+cx+'" y1="10" x2="'+cx+'" y2="'+(H-10)+'" stroke="rgba(255,255,255,.08)"/><line x1="10" y1="'+cy+'" x2="'+(W-10)+'" y2="'+cy+'" stroke="rgba(255,255,255,.08)"/>';
+  svg+='<text x="'+(cx+4)+'" y="20" font-size="9" fill="#888">N</text>';
+
+  if(geom.type==='circle'){
+    var r=geom.radiusNm*scale;
+    svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="rgba(239,83,80,.14)" stroke="#ef5350" stroke-width="2"/>';
+  }else if(geom.vertices){
+    var pts=geom.vertices.map(function(v){ var p=toPx(v[0],v[1]); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+    svg+='<polygon points="'+pts+'" fill="rgba(232,172,77,.14)" stroke="#e8ac4d" stroke-width="2"/>';
+  }
+  var cpx=toPx(center[0],center[1]);
+  svg+='<circle cx="'+cpx[0]+'" cy="'+cpx[1]+'" r="3" fill="#fff"/>';
+
+  var routeWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(wp){ return wp.lat!==null&&wp.lon!==null; });
+  routeWps.forEach(function(wp){
+    var d=haversine(center[0],center[1],wp.lat,wp.lon);
+    if(d<=maxExtentNm*2.5){
+      var p=toPx(wp.lat,wp.lon);
+      if(p[0]>=0&&p[0]<=W&&p[1]>=0&&p[1]<=H){
+        svg+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#4fc3f7" stroke="#fff" stroke-width="1"/>';
+        svg+='<text x="'+(p[0]+7)+'" y="'+(p[1]+3)+'" font-size="9" fill="#4fc3f7">'+escHTML(wp.name||'')+'</text>';
+      }
+    }
+  });
+
+  svg+='<text x="10" y="'+(H-10)+'" font-size="9" fill="#888">'+(geom.radiusNm?'Rayon '+geom.radiusNm+' NM':'')+'</text>';
+  svg+='</svg>';
+  var caption='<div style="font-size:.76em;color:var(--text-secondary);margin-top:6px">'+escHTML(w.text)+'</div>';
+  return svg+caption;
+}
+window.renderWarningMapSVG=renderWarningMapSVG;
+
 /* ===== RESERVE TOGGLE ===== */
 function toggleReserve(){
   reserveMode=reserveMode==='day'?'night':'day';
@@ -5770,6 +5941,9 @@ function recalcNavlog(){
   renderNavlogRecapTable();
   /* Altitude profile chart (defer to avoid blocking render loop) */
   setTimeout(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); },0);
+  /* Re-classer les avis du jour "proche de la route" si la route a changé (données déjà
+     chargées, pas de nouveau fetch — juste un nouveau calcul de distance) */
+  if(_dailyWarningsData && typeof renderDailyWarnings==='function') renderDailyWarnings();
 }
 
 /* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
@@ -10699,6 +10873,7 @@ function init(){
   initTheme();
   initWxButtons();
   loadGametWindWidget();
+  loadDailyWarnings();
   /* Default: vol local */
   waypoints=[
     {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
