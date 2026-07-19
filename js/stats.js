@@ -629,7 +629,12 @@ async function initStats() {
     window._masteryResponses = data.responses || {};
     window._masteryNotes = data.notes || {};
     if (typeof _renderMasteryEstimator === 'function') _renderMasteryEstimator(groups);
-    if (typeof _renderSrForecast === 'function') _renderSrForecast(data.responses || {});
+    // Restreint le "Programme des prochains jours" aux questions réellement chargées — voir
+    // le commentaire de _computeSrForecast() (sinon des réponses orphelines d'anciennes
+    // questions supprimées/renommées gonflaient artificiellement le compteur "Aujourd'hui"
+    // par rapport à l'Accueil, qui lui ne compte que les questions du bank actuel).
+    const validSrKeys = new Set(questions.map(q => getKeyFor(q)));
+    if (typeof _renderSrForecast === 'function') _renderSrForecast(data.responses || {}, validSrKeys);
     if (typeof _renderReadinessDashboard === 'function') _renderReadinessDashboard(groupsData);
 
     // Utiliser l'historique quotidien déjà chargé dans data (évite un 2e appel Firestore qui peut timeout)
@@ -2168,7 +2173,7 @@ function _renderReadinessDashboard(groupsData) {
 }
 
 /**
- * _computeSrForecast(responses, numDays) – Répartit les révisions déjà planifiées
+ * _computeSrForecast(responses, numDays, validKeys) – Répartit les révisions déjà planifiées
  * (nextReview) sur les `numDays` prochains jours civils (jour 0 = aujourd'hui, y compris
  * tout ce qui est déjà en retard). Une question éligible mais jamais planifiée (nextReview
  * absent) est due immédiatement, comme le fait déjà _isDueForReview() partout ailleurs dans
@@ -2176,8 +2181,17 @@ function _renderReadinessDashboard(groupsData) {
  * passés sont déjà "digérés" dans ces dates par _computeSrEntry() (croissance/lapse) : pas
  * besoin de re-simuler un taux de réussite futur, la planification actuelle EST la meilleure
  * estimation compte tenu de l'historique réel de l'utilisateur.
+ *
+ * BUG corrigé : cette fonction comptait TOUTES les entrées du document Firestore `responses`,
+ * y compris celles dont la clé ne correspond plus à AUCUNE question actuellement chargée
+ * (restes d'anciennes questions supprimées/renommées/dédupliquées au fil des mises à jour du
+ * question bank). L'Accueil (updateModeCounts(), categories.js), lui, ne compte que les
+ * réponses rattachées à une question RÉELLEMENT présente dans la liste courante — d'où un
+ * écart entre les deux pages (ex: 19 sur l'Accueil vs 46 sur Stats) alors que les deux lisent
+ * pourtant les mêmes données Firestore. `validKeys`, quand fourni, restreint le décompte aux
+ * mêmes clés que l'Accueil, pour que les deux pages affichent exactement le même nombre.
  */
-function _computeSrForecast(responses, numDays) {
+function _computeSrForecast(responses, numDays, validKeys) {
   const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : responses;
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -2190,8 +2204,9 @@ function _computeSrForecast(responses, numDays) {
   let beyond = 0;
   let totalEligible = 0;
 
-  Object.values(normResponses || {}).forEach(r => {
+  Object.entries(normResponses || {}).forEach(([key, r]) => {
     if (!r || r.suspended) return;
+    if (validKeys && !validKeys.has(key)) return;
     if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
     totalEligible++;
     const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
@@ -2205,17 +2220,18 @@ function _computeSrForecast(responses, numDays) {
 }
 
 /**
- * _renderSrForecast(responses) – Carte "Programme des prochains jours" sur stats.html :
- * pour aujourd'hui + les 13 jours suivants, combien de révisions espacées seront dues
- * (planification actuelle) et combien de nouvelles questions viendraient s'y ajouter au
+ * _renderSrForecast(responses, validKeys) – Carte "Programme des prochains jours" sur
+ * stats.html : pour aujourd'hui + les 13 jours suivants, combien de révisions espacées seront
+ * dues (planification actuelle) et combien de nouvelles questions viendraient s'y ajouter au
  * rythme configuré (getDailyNewTarget), avec une estimation de temps basée sur le rythme
- * réel déjà mesuré (_qt*).
+ * réel déjà mesuré (_qt*). `validKeys` (Set) restreint le décompte aux questions actuellement
+ * chargées — voir _computeSrForecast().
  */
-function _renderSrForecast(responses) {
+function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
   const NUM_DAYS = 14;
-  const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS);
+  const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
