@@ -779,6 +779,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="navlog-btn primary" onclick="window.fitRouteMap()" title="Recentrer la carte sur la route">&#x2316; Recentrer</button>
         <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
         <button class="navlog-btn rm-fullscreen-btn" onclick="window.toggleRouteMapFullscreen()" title="Agrandir la carte en plein écran (pratique sur mobile)">&#x26F6; Plein écran</button>
+        <button class="navlog-btn" id="dwMapToggleBtn" onclick="window.toggleDailyWarningsOnMap()" title="Afficher/masquer les zones des avis du jour sur la carte">&#x26A0;&#xFE0F; Zones du jour</button>
       </div>
       <div class="nl-card-title" style="margin-top:10px"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span> <span class="rm-alt-hint" style="font-size:.7em;font-weight:400;color:var(--text-secondary)">— glisse (souris ou doigt) pour te situer sur la carte</span></div>
       <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
@@ -5596,6 +5597,8 @@ function renderDailyWarnings(){
   routeBox.innerHTML=nearRoute.map(function(w){ return warningRow(w,true); }).join('');
   allBox.innerHTML=others.map(function(w){ return warningRow(w,false); }).join('')||'<p style="font-size:.8em;color:var(--text-secondary)">Aucun autre avis actif.</p>';
   card.style.display='';
+
+  if(typeof _dwMapVisible!=='undefined' && _dwMapVisible && typeof _renderDailyWarningsOnRouteMap==='function') _renderDailyWarningsOnRouteMap();
 }
 
 window.renderDailyWarnings=renderDailyWarnings;
@@ -5676,6 +5679,51 @@ function renderWarningLeafletMap(w){
   setTimeout(function(){ map.invalidateSize(); },100);
 }
 window.renderWarningLeafletMap=renderWarningLeafletMap;
+
+/* ===== Bouton carte : afficher/masquer TOUTES les zones des avis du jour sur la carte
+   de route principale (routeMap), en overlay superposé au tracé — pour voir d'un coup
+   d'œil si la route traverse une des zones actives, pas seulement les proches (déjà
+   listées dans la bannière) mais toutes, avec un popup au clic pour le détail. */
+var _dwMapLayerGroup=null;
+var _dwMapVisible=false;
+function toggleDailyWarningsOnMap(){
+  if(typeof routeMap==='undefined'||!routeMap) return;
+  _dwMapVisible=!_dwMapVisible;
+  var btn=document.getElementById('dwMapToggleBtn');
+  if(_dwMapVisible){
+    _renderDailyWarningsOnRouteMap();
+    if(btn){ btn.style.background='linear-gradient(135deg,#ef5350,#e53935)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+  } else {
+    if(_dwMapLayerGroup){ routeMap.removeLayer(_dwMapLayerGroup); _dwMapLayerGroup=null; }
+    if(btn){ btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  }
+}
+window.toggleDailyWarningsOnMap=toggleDailyWarningsOnMap;
+
+function _renderDailyWarningsOnRouteMap(){
+  if(typeof routeMap==='undefined'||!routeMap||!_dailyWarningsData||typeof L==='undefined') return;
+  if(_dwMapLayerGroup){ routeMap.removeLayer(_dwMapLayerGroup); _dwMapLayerGroup=null; }
+  var active=_dailyWarningsData.warnings.filter(_isWarningActiveNow);
+  var group=L.layerGroup();
+  active.forEach(function(w){
+    var geom=w.geometry;
+    if(!geom||geom.type==='unlocated') return;
+    var titleMatch=/'([^']+)'/.exec(w.text);
+    var title=titleMatch?titleMatch[1]:w.text.slice(0,50);
+    var popupHtml='<b>'+escHTML(title)+'</b><br>'+escHTML(w.lower||'')+'–'+escHTML(w.upper||'')
+      +'<br>'+escHTML(w.from||'')+' → '+escHTML(w.till||'')
+      +'<br><span style="font-family:monospace;font-size:.85em">'+escHTML(w.ref)+'</span>';
+    var layer=null;
+    if(geom.type==='circle'){
+      layer=L.circle([geom.center[0],geom.center[1]],{radius:(geom.radiusNm||1)*1852,color:'#ef5350',weight:2,fillColor:'#ef5350',fillOpacity:.16,dashArray:'5,5'});
+    } else if(geom.vertices&&geom.vertices.length>=3){
+      layer=L.polygon(geom.vertices.map(function(v){ return [v[0],v[1]]; }),{color:'#ef5350',weight:2,fillColor:'#ef5350',fillOpacity:.16,dashArray:'5,5'});
+    }
+    if(layer){ layer.bindPopup(popupHtml); group.addLayer(layer); }
+  });
+  group.addTo(routeMap);
+  _dwMapLayerGroup=group;
+}
 
 /* Carte locale (projection équirectangulaire) d'un avis, centrée sur son centre/centroïde,
    avec les waypoints de la route affichés à proximité pour donner le contexte géographique. */
@@ -8767,6 +8815,53 @@ function _currentRouteSig(){
   }));
 }
 
+/* ===== Volumes des avis du jour sur le profil d'altitude =====
+   Même principe que _computeAirspaceCrossings() (OpenAIP) mais pour les zones des avis
+   du jour (daily_warnings.json) : on calcule où la route horizontale traverse chaque
+   zone active, pour dessiner son plancher/plafond réel sur le profil — jusqu'ici ces
+   avis n'étaient listés qu'en texte (bannière + carte au clic), jamais reliés à
+   l'altitude planifiée du vol. */
+var _routeDailyWarnings=[];
+function _warningLimitToFt(str){
+  if(!str) return 0;
+  var s=str.toString().toUpperCase();
+  if(/^(GND|SFC)$/.test(s.trim())) return 0;
+  var m=/(\d+)\s*FT/.exec(s);
+  return m?parseInt(m[1],10):0;
+}
+function _computeDailyWarningCrossings(){
+  if(typeof _dailyWarningsData==='undefined'||!_dailyWarningsData||!_dailyWarningsData.warnings) return [];
+  var samples=_routeSamplePoints();
+  if(!samples.length) return [];
+  var active=_dailyWarningsData.warnings.filter(_isWarningActiveNow);
+  var results=[];
+  active.forEach(function(w){
+    var geom=w.geometry;
+    if(!geom||geom.type==='unlocated') return;
+    var lowerFt=_warningLimitToFt(w.lower), upperFt=_warningLimitToFt(w.upper);
+    var titleMatch=/'([^']+)'/.exec(w.text);
+    var name=(titleMatch?titleMatch[1]:w.text.slice(0,40))+' ('+w.ref+')';
+
+    var inside=false, entryDist=null, runs=[];
+    samples.forEach(function(pt){
+      var isIn=false;
+      if(geom.type==='circle'){
+        isIn = haversine(pt.lat,pt.lon,geom.center[0],geom.center[1]) <= (geom.radiusNm||0);
+      } else if(geom.vertices && geom.vertices.length>=3){
+        /* vertices en [lat,lon] (pas GeoJSON [lon,lat]) — on inverse pour réutiliser
+           _pointInPolygonLL() telle quelle. */
+        isIn = _pointInPolygonLL(pt.lat, pt.lon, geom.vertices.map(function(v){ return [v[1],v[0]]; }));
+      }
+      if(isIn && !inside){ inside=true; entryDist=pt.dist; }
+      if(!isIn && inside){ inside=false; runs.push({entryDist:entryDist, exitDist:pt.dist}); }
+    });
+    if(inside && samples.length) runs.push({entryDist:entryDist, exitDist:samples[samples.length-1].dist});
+
+    if(runs.length) results.push({name:name, ref:w.ref, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
+  });
+  return results;
+}
+
 function _computeAirspaceCrossings(items){
   var samples=_routeSamplePoints();
   var results=[];
@@ -9120,6 +9215,7 @@ function renderAltitudesProfile(){
 
   _invalidateTerrainCacheIfStale();
   _recomputeAirspacesIfStale();
+  if(typeof _computeDailyWarningCrossings==='function') _routeDailyWarnings=_computeDailyWarningCrossings();
   var traj=_altitudesTrajectory();
   var totalDist=traj.totalDist, wpAlts=traj.wpAlts, cumDists=traj.cumDists;
   if(totalDist<=0){ container.innerHTML='<p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Route incomplète.</p>'; return; }
@@ -9185,6 +9281,20 @@ function renderAltitudesProfile(){
       if(bw>36 && bh>15) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+12)+'" text-anchor="middle" font-size="9" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
     });
   });
+
+  /* Volumes des avis du jour (daily_warnings.json), par-dessus les espaces aériens —
+     rouge pointillé pour rester net même par-dessus une grande bande d'espace aérien. */
+  if(typeof _routeDailyWarnings!=='undefined'&&_routeDailyWarnings.length){
+    _routeDailyWarnings.forEach(function(w){
+      w.crossings.forEach(function(c){
+        var x1=xS(c.entryDist), x2=xS(c.exitDist);
+        var yTop=yS(Math.min(w.upperFt||maxAlt,maxAlt)), yBot=yS(Math.max(w.lowerFt||0,0));
+        var bw=x2-x1, bh=yBot-yTop;
+        bandsHtml+='<rect x="'+x1+'" y="'+yTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="#ef5350" fill-opacity="0.22" stroke="#ef5350" stroke-width="1.4" stroke-dasharray="4,3"/>';
+        if(bw>34 && bh>15) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+12)+'" text-anchor="middle" font-size="9" fill="#ef5350" font-weight="700">⚠ AVIS</text>';
+      });
+    });
+  }
 
   /* Chemin invisible et épais superposé à toute la trajectoire : permet de
      saisir la ligne n'importe où (pas seulement sur un waypoint précis) pour
@@ -9278,10 +9388,16 @@ function renderAltitudesProfile(){
           if(d>=c.entryDist && d<=c.exitDist && alt>=(a.lowerFt||0) && alt<=(a.upperFt||maxAlt)) hits.push(a);
         });
       });
+      if(typeof _routeDailyWarnings!=='undefined') _routeDailyWarnings.forEach(function(w){
+        w.crossings.forEach(function(c){
+          if(d>=c.entryDist && d<=c.exitDist && alt>=(w.lowerFt||0) && alt<=(w.upperFt||maxAlt)) hits.push({name:w.name, classLabel:'⚠ AVIS', lowerFt:w.lowerFt, upperFt:w.upperFt, _warning:true});
+        });
+      });
       if(!hits.length){ tooltipEl.style.display='none'; return; }
       tooltipEl.innerHTML=hits.map(function(a){
         var upperLabel=(a.upperFt>=60000)?'UNL':((a.upperFt||0)+' ft');
-        return '<div style="margin-bottom:4px"><b style="color:'+_airspaceBandColor(a.classLabel)+'">'+escHTML(a.classLabel)+'</b> '+escHTML(a.name)+
+        var col=a._warning?'#ef5350':_airspaceBandColor(a.classLabel);
+        return '<div style="margin-bottom:4px"><b style="color:'+col+'">'+escHTML(a.classLabel)+'</b> '+escHTML(a.name)+
           '<br><span style="opacity:.75">'+(a.lowerFt||0)+'–'+upperLabel+'</span></div>';
       }).join('');
       tooltipEl.style.display='block';
@@ -9550,9 +9666,11 @@ function renderAltProfile(){
      avant, ce profil du Navlog ne montrait jamais les volumes d'espace aérien, même une fois
      chargés et visibles dans l'onglet Altitudes. */
   if(typeof _recomputeAirspacesIfStale==='function') _recomputeAirspacesIfStale();
+  if(typeof _computeDailyWarningCrossings==='function') _routeDailyWarnings=_computeDailyWarningCrossings();
 
   var sub=document.getElementById('altProfileSubtitle');
-  if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM'+((typeof _routeAirspaces!=='undefined'&&_routeAirspaces.length)?' · '+_routeAirspaces.length+' espace(s) aérien(s)':'');
+  if(sub) sub.textContent=Math.round(totalDist*10)/10+' NM'+((typeof _routeAirspaces!=='undefined'&&_routeAirspaces.length)?' · '+_routeAirspaces.length+' espace(s) aérien(s)':'')
+    +((typeof _routeDailyWarnings!=='undefined'&&_routeDailyWarnings.length)?' · ⚠️ '+_routeDailyWarnings.length+' avis du jour':'');
 
   /* Helper : élévation terrain interpolée à une distance donnée */
   function _terrainAtDist(d){
@@ -9660,6 +9778,22 @@ function renderAltProfile(){
         var bw=bx2-bx1,bh=byBot-byTop;
         bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
         if(bw>30 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+      });
+    });
+  }
+
+  /* Volumes des avis du jour (daily_warnings.json), tracés PAR-DESSUS les espaces aériens
+     — le rouge pointillé les distingue nettement d'un espace aérien classique, et c'est
+     l'info la plus "chaude"/temporaire du profil, donc elle doit rester visible même si
+     elle chevauche une bande d'espace aérien plus grande en dessous. */
+  if(typeof _routeDailyWarnings!=='undefined'&&_routeDailyWarnings.length){
+    _routeDailyWarnings.forEach(function(w){
+      w.crossings.forEach(function(c){
+        var bx1=xS(c.entryDist),bx2=xS(c.exitDist);
+        var byTop=yS(Math.min(w.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(w.lowerFt||0,0));
+        var bw=bx2-bx1,bh=byBot-byTop;
+        bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="#ef5350" fill-opacity="0.22" stroke="#ef5350" stroke-width="1.4" stroke-dasharray="4,3"/>';
+        if(bw>26 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="#ef5350" font-weight="700">⚠ AVIS</text>';
       });
     });
   }
