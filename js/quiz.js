@@ -319,9 +319,10 @@ function toggleMarquerQuestion(questionIdx, button) {
     .then(() => {
       // update in-memory
       currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
-      // update button text/style
-      button.textContent = newMarked ? "Supprimer" : "Marquer";
-      button.className   = newMarked ? "delete-button" : "mark-button";
+      // update button icon/title/style
+      button.textContent = newMarked ? "🗑️" : "🔖";
+      button.title       = newMarked ? "Supprimer le marquage" : "Marquer cette question";
+      button.className   = (newMarked ? "delete-button" : "mark-button") + " qa-icon-btn";
       // refresh counts and global marked counter
       updateModeCounts();
       updateMarkedCount();
@@ -331,8 +332,9 @@ function toggleMarquerQuestion(questionIdx, button) {
       await saveToggleWithOfflineFallback(uid, key, payload);
       // update in-memory anyway
       currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
-      button.textContent = newMarked ? "Supprimer" : "Marquer";
-      button.className   = newMarked ? "delete-button" : "mark-button";
+      button.textContent = newMarked ? "🗑️" : "🔖";
+      button.title       = newMarked ? "Supprimer le marquage" : "Marquer cette question";
+      button.className   = (newMarked ? "delete-button" : "mark-button") + " qa-icon-btn";
       updateModeCounts();
       updateMarkedCount();
     });
@@ -365,8 +367,9 @@ function toggleImportantQuestion(questionIdx, button) {
     .set(payload, { merge: true })
     .then(() => {
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
-      button.textContent = newImportant ? "Retirer Important" : "Important";
-      button.className   = newImportant ? "unimportant-button" : "important-button";
+      button.textContent = newImportant ? "⭐" : "☆";
+      button.title       = newImportant ? "Retirer Important" : "Marquer comme important";
+      button.className   = (newImportant ? "delete-button" : "mark-button") + " qa-icon-btn";
       updateModeCounts();
       updateMarkedCount();
     })
@@ -374,8 +377,9 @@ function toggleImportantQuestion(questionIdx, button) {
       console.warn('[offline] toggleImportant fallback');
       await saveToggleWithOfflineFallback(uid, key, payload);
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
-      button.textContent = newImportant ? "Retirer Important" : "Important";
-      button.className   = newImportant ? "unimportant-button" : "important-button";
+      button.textContent = newImportant ? "⭐" : "☆";
+      button.title       = newImportant ? "Retirer Important" : "Marquer comme important";
+      button.className   = (newImportant ? "delete-button" : "mark-button") + " qa-icon-btn";
       updateModeCounts();
       updateMarkedCount();
     });
@@ -413,16 +417,22 @@ function toggleSuspendQuestion(questionIdx, button) {
     .set(payload, { merge: true })
     .then(() => {
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
-      button.textContent = newSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
-      button.className   = newSuspended ? "unimportant-button" : "delete-button";
+      button.textContent = newSuspended ? "↩️" : "🚫";
+      button.title       = newSuspended
+        ? "Revoir à nouveau (réactiver cette question)"
+        : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
+      button.className   = (newSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
       updateModeCounts();
     })
     .catch(async (err) => {
       console.warn('[offline] toggleSuspend fallback');
       await saveToggleWithOfflineFallback(uid, key, payload);
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
-      button.textContent = newSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
-      button.className   = newSuspended ? "unimportant-button" : "delete-button";
+      button.textContent = newSuspended ? "↩️" : "🚫";
+      button.title       = newSuspended
+        ? "Revoir à nouveau (réactiver cette question)"
+        : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
+      button.className   = (newSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
       updateModeCounts();
     });
 }
@@ -435,6 +445,23 @@ function toggleSuspendQuestion(questionIdx, button) {
  * srInterval/nextReview — laisse status/failCount/successCount/etc. intacts pour ne pas fausser
  * les statistiques de réussite déjà calculées par _computeSrEntry().
  */
+/**
+ * _flashQaFeedback() – Bulle de confirmation flottante et temporaire au-dessus d'un bouton
+ * icône de la barre d'actions. Utilisée à la place d'un changement de texte DANS le bouton
+ * (qui casserait la taille fixe des boutons icône compacts — voir .qa-icon-btn).
+ */
+function _flashQaFeedback(button, text) {
+  const bubble = document.createElement('div');
+  bubble.className = 'qa-flash-toast';
+  bubble.textContent = text;
+  document.body.appendChild(bubble);
+  const rect = button.getBoundingClientRect();
+  bubble.style.left = Math.max(4, rect.left + rect.width / 2) + 'px';
+  bubble.style.top = (rect.top - 8) + 'px';
+  setTimeout(() => bubble.classList.add('qa-flash-toast-hide'), 1300);
+  setTimeout(() => bubble.remove(), 1650);
+}
+
 function adjustSrFrequency(questionIdx, button, direction) {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
@@ -458,10 +485,7 @@ function adjustSrFrequency(questionIdx, button, direction) {
 
   const applyLocally = () => {
     currentResponses[key] = entry;
-    const original = button.textContent;
-    button.textContent = (direction === 'easier' ? '✅ Revoir dans ' : '🔴 Revoir dans ') + newInterval + ' j';
-    button.disabled = true;
-    setTimeout(() => { button.textContent = original; button.disabled = false; }, 1800);
+    _flashQaFeedback(button, (direction === 'easier' ? '✅ ' : '🔴 ') + 'Revoir dans ' + newInterval + ' j');
     updateModeCounts();
   };
 
@@ -496,45 +520,50 @@ function afficherBoutonsMarquer() {
     row.className = 'question-actions-row';
 
     const btn = document.createElement('button');
-    btn.textContent = isMarked ? "Supprimer" : "Marquer";
-    btn.className   = isMarked ? "delete-button" : "mark-button";
+    btn.textContent = isMarked ? "🗑️" : "🔖";
+    btn.title       = isMarked ? "Supprimer le marquage" : "Marquer cette question";
+    btn.className   = (isMarked ? "delete-button" : "mark-button") + " qa-icon-btn";
     btn.onclick     = () => toggleMarquerQuestion(idx, btn);
     row.appendChild(btn);
 
     const btnImp = document.createElement('button');
-    btnImp.textContent = isImportant ? "Retirer Important" : "Important";
-    btnImp.className   = isImportant ? "delete-button" : "mark-button";
+    btnImp.textContent = isImportant ? "⭐" : "☆";
+    btnImp.title       = isImportant ? "Retirer Important" : "Marquer comme important";
+    btnImp.className   = (isImportant ? "delete-button" : "mark-button") + " qa-icon-btn";
     btnImp.onclick     = () => toggleImportantQuestion(idx, btnImp);
     row.appendChild(btnImp);
 
     // Bouton Ma note (dans la même ligne)
     const btnNote = document.createElement('button');
-    btnNote.className = 'note-toggle-btn';
-    btnNote.textContent = '📝 Ma note';
+    btnNote.className = 'note-toggle-btn qa-icon-btn';
+    btnNote.textContent = '📝';
+    btnNote.title = 'Ma note personnelle';
     btnNote.onclick = () => _toggleNoteEditor(key, btnNote);
     row.appendChild(btnNote);
 
     // Bouton "Ne plus revoir" (suspend) : sort la question de toute sélection automatique
     const btnSuspend = document.createElement('button');
-    btnSuspend.textContent = isSuspended ? "↩️ Revoir à nouveau" : "🚫 Ne plus revoir";
-    btnSuspend.className   = isSuspended ? "unimportant-button" : "delete-button";
-    btnSuspend.title = "Cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
+    btnSuspend.textContent = isSuspended ? "↩️" : "🚫";
+    btnSuspend.className   = (isSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
+    btnSuspend.title = isSuspended
+      ? "Revoir à nouveau (réactiver cette question)"
+      : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
     btnSuspend.onclick = () => toggleSuspendQuestion(idx, btnSuspend);
     row.appendChild(btnSuspend);
 
     // Boutons de répétition espacée manuelle : ajuster la fréquence sans attendre la
     // prochaine réponse (utile pour signaler tout de suite "c'était facile" / "c'était dur").
     const btnEasier = document.createElement('button');
-    btnEasier.textContent = "📉 Moins souvent";
-    btnEasier.className = "unimportant-button";
-    btnEasier.title = "Repousser la prochaine révision de cette question (jugée facile)";
+    btnEasier.textContent = "📉";
+    btnEasier.className = "unimportant-button qa-icon-btn";
+    btnEasier.title = "Moins souvent — repousser la prochaine révision de cette question (jugée facile)";
     btnEasier.onclick = () => adjustSrFrequency(idx, btnEasier, 'easier');
     row.appendChild(btnEasier);
 
     const btnHarder = document.createElement('button');
-    btnHarder.textContent = "🔁 Plus souvent";
-    btnHarder.className = "delete-button";
-    btnHarder.title = "Rapprocher la prochaine révision de cette question (jugée difficile)";
+    btnHarder.textContent = "🔁";
+    btnHarder.className = "delete-button qa-icon-btn";
+    btnHarder.title = "Plus souvent — rapprocher la prochaine révision de cette question (jugée difficile)";
     btnHarder.onclick = () => adjustSrFrequency(idx, btnHarder, 'harder');
     row.appendChild(btnHarder);
 
@@ -1318,8 +1347,9 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
         questionBlock.appendChild(row);
       }
       const btn = document.createElement('button');
-      btn.className = 'note-toggle-btn';
-      btn.textContent = '📝 Ma note';
+      btn.className = 'note-toggle-btn qa-icon-btn';
+      btn.textContent = '📝';
+      btn.title = 'Ma note personnelle';
       btn.onclick = () => _toggleNoteEditor(key2, btn);
       row.appendChild(btn);
       // Charger et afficher la note existante
@@ -1456,9 +1486,11 @@ async function validerReponses() {
     const rc = document.getElementById('resultContainer');
     if (rc) {
         rc.style.display = "block";
+        const scorePct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
         rc.innerHTML = `
             Vous avez <strong>${correctCount}</strong> bonnes réponses
-            sur <strong>${answeredCount}</strong> répondue${answeredCount > 1 ? 's' : ''}.
+            sur <strong>${answeredCount}</strong> répondue${answeredCount > 1 ? 's' : ''}
+            ${answeredCount > 0 ? `(<strong>${scorePct}%</strong>)` : ''}.
             ${skippedCount > 0 ? `<br><small style="color:var(--text-secondary)">(${skippedCount} question${skippedCount > 1 ? 's' : ''} non répondue${skippedCount > 1 ? 's' : ''} — non comptée${skippedCount > 1 ? 's' : ''}, ${skippedCount > 1 ? 'elles restent' : 'elle reste'} à voir)</small>` : ''}
             ${timingHtml}
         `;

@@ -835,9 +835,53 @@ body.light .explication-block {
 .question-actions-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   margin-top: 10px;
+}
+/* Barre d'actions compacte : icônes seules (bulle-titre pour le libellé complet) au lieu de
+   boutons pleine largeur empilés — l'ancienne présentation (6 boutons texte, chacun sur toute
+   la largeur de l'écran en mobile via la règle globale `button{width:100%}`) prenait une hauteur
+   d'écran considérable par question, rendant le défilement d'une liste de questions pénible. */
+.qa-icon-btn {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 10px;
+  font-size: 1.05em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .question-actions-row button {
+    width: 38px !important;
+    min-width: 38px !important;
+    margin: 0 !important;
+  }
+}
+.qa-flash-toast {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: rgba(20, 20, 30, 0.95);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.qa-flash-toast-hide {
+  opacity: 0;
 }
 .personal-note-display {
   margin-top: 0;
