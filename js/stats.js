@@ -2102,23 +2102,75 @@ async function _resetGroupFlaggedStats(groupName) {
 }
 
 /**
+ * _readinessCategoryPool(catVal) – Classe une valeur de catégorie (telle qu'utilisée dans
+ * EASA_SUBJECTS/categories.js) dans l'un des 4 "pools" de banque de questions : EASA, GLIGLI
+ * (Hard), GLIGLI (Easy), ou AUTRES (catégories historiques/legacy, ni EASA ni GLIGLI — ex.
+ * "RÉGLEMENTATION", "INSTRUMENTATION"). Utilisé par le filtre de banque du tableau de bord
+ * "Suis-je prêt ?".
+ */
+function _readinessCategoryPool(catVal) {
+  if (catVal.indexOf('EASA') === 0) return 'EASA';
+  if (catVal.indexOf('GLIGLI') === 0 && /HARD$/.test(catVal)) return 'GLIGLI_HARD';
+  if (catVal.indexOf('GLIGLI') === 0 && /EASY$/.test(catVal)) return 'GLIGLI_EASY';
+  return 'AUTRES';
+}
+
+const READINESS_POOL_LABELS = {
+  TOUTES: 'Toutes les questions',
+  GLIGLI_HARD: 'GLIGLI Hard uniquement',
+  GLIGLI_EASY: 'GLIGLI Easy uniquement',
+  GLIGLI_BOTH: 'GLIGLI Hard + Easy',
+  EASA: 'EASA uniquement'
+};
+
+/**
+ * setReadinessPoolFilter(mode) – Change le pool de banque de questions utilisé par le tableau
+ * de bord "Suis-je prêt ?" (bouton/select dans la carte), persisté pour la prochaine visite.
+ */
+function setReadinessPoolFilter(mode) {
+  if (!READINESS_POOL_LABELS[mode]) return;
+  localStorage.setItem('readinessPoolFilter', mode);
+  if (window._readinessGroupsData) _renderReadinessDashboard(window._readinessGroupsData);
+}
+window.setReadinessPoolFilter = setReadinessPoolFilter;
+
+/**
  * _renderReadinessDashboard(groupsData) – Carte "Suis-je prêt ?" : regroupe les stats déjà
  * calculées par catégorie (groupsData, voir initStats()) selon les 9 matières officielles de
  * l'examen théorique PPL(A) (EASA_SUBJECTS, définies une seule fois dans helpers.js). Utile
  * car à l'examen réel, CHAQUE matière doit individuellement atteindre le seuil de réussite —
  * une moyenne globale flatteuse peut cacher une matière précise en dessous du seuil.
+ *
+ * Un sélecteur permet de restreindre le calcul à un pool de banque de questions précis
+ * (toutes / GLIGLI Hard / GLIGLI Easy / GLIGLI Hard+Easy / EASA uniquement) — utile car les
+ * 3 banques (legacy, GLIGLI, EASA) n'ont pas le même niveau de difficulté ni la même
+ * couverture du syllabus, et un pourcentage "toutes confondues" peut masquer une faiblesse
+ * spécifique à la banque EASA (la plus proche de l'examen réel).
  */
 function _renderReadinessDashboard(groupsData) {
   const cont = document.getElementById('readinessDashboardContainer');
   if (!cont || typeof EASA_SUBJECTS === 'undefined') return;
+  window._readinessGroupsData = groupsData;
+
+  const poolMode = localStorage.getItem('readinessPoolFilter') || 'TOUTES';
 
   const catByValue = {};
   (groupsData || []).forEach(g => g.categories.forEach(c => { catByValue[c.value] = c; }));
 
   const PASS_THRESHOLD = 75; // seuil indicatif (généralement admis pour l'examen PPL EASA)
   const rows = EASA_SUBJECTS.map(subj => {
+    const filteredCats = poolMode === 'TOUTES'
+      ? subj.categories
+      : subj.categories.filter(catVal => {
+          const pool = _readinessCategoryPool(catVal);
+          if (poolMode === 'GLIGLI_BOTH') return pool === 'GLIGLI_HARD' || pool === 'GLIGLI_EASY';
+          return pool === poolMode;
+        });
+
+    if (!filteredCats.length) return { name: subj.name, na: true };
+
     let reussie = 0, ratee = 0, nonvue = 0, found = 0;
-    subj.categories.forEach(catVal => {
+    filteredCats.forEach(catVal => {
       const c = catByValue[catVal];
       if (!c) return;
       found++;
@@ -2128,7 +2180,10 @@ function _renderReadinessDashboard(groupsData) {
     const total = reussie + ratee + nonvue;
     const pct = total ? Math.round((reussie * 100) / total) : 0;
     return { name: subj.name, reussie, ratee, nonvue, total, pct, found };
-  }).sort((a, b) => a.pct - b.pct); // matières les plus faibles en premier
+  });
+  // Matières les plus faibles en premier ; celles sans question dans le pool choisi (N/A) à la
+  // fin, à part — ce ne sont pas "à risque", juste hors périmètre du filtre actuel.
+  const rowsSorted = rows.filter(r => !r.na).sort((a, b) => a.pct - b.pct).concat(rows.filter(r => r.na));
 
   function readinessColor(pct) {
     if (pct >= PASS_THRESHOLD) return '#4caf50';
@@ -2136,7 +2191,14 @@ function _renderReadinessDashboard(groupsData) {
     return '#f44336';
   }
 
-  const rowsHtml = rows.map(r => `
+  const rowsHtml = rowsSorted.map(r => r.na ? `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05);opacity:.55">
+      <span style="flex:0 0 auto;font-size:1.1em">➖</span>
+      <span style="flex:1;min-width:140px">${r.name}</span>
+      <span style="flex:1;min-width:60px;font-style:italic">Aucune question dans ce pool</span>
+      <span style="flex:0 0 46px;text-align:right">—</span>
+      <span style="flex:0 0 60px;text-align:right">—</span>
+    </div>` : `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05)">
       <span style="flex:0 0 auto;font-size:1.1em">${r.pct >= PASS_THRESHOLD ? '✅' : (r.pct >= 50 ? '⚠️' : '🔴')}</span>
       <span style="flex:1;min-width:140px">${r.name}</span>
@@ -2147,7 +2209,13 @@ function _renderReadinessDashboard(groupsData) {
       <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">${r.reussie}/${r.total}</span>
     </div>`).join('');
 
-  const nbAtRisk = rows.filter(r => r.pct < PASS_THRESHOLD).length;
+  const scored = rows.filter(r => !r.na);
+  const nbAtRisk = scored.filter(r => r.pct < PASS_THRESHOLD).length;
+  const nbNa = rows.length - scored.length;
+
+  const poolOptionsHtml = Object.keys(READINESS_POOL_LABELS).map(key =>
+    `<option value="${key}"${key === poolMode ? ' selected' : ''}>${READINESS_POOL_LABELS[key]}</option>`
+  ).join('');
 
   cont.innerHTML = `
     <div class="home-card" id="readinessDashboardCard">
@@ -2161,9 +2229,16 @@ function _renderReadinessDashboard(groupsData) {
         ${PASS_THRESHOLD}% (à ajuster mentalement selon le seuil exact en vigueur pour ton
         examen — non garanti ici).
       </p>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 10px;font-size:.82em">
+        <label for="readinessPoolSelect" style="color:var(--text-secondary);flex:0 0 auto">Banque de questions :</label>
+        <select id="readinessPoolSelect" onchange="setReadinessPoolFilter(this.value)" style="flex:1 1 160px;min-width:160px;padding:4px 6px;border-radius:6px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border)">
+          ${poolOptionsHtml}
+        </select>
+      </div>
       ${rowsHtml}
       <p style="font-size:.8em;margin:10px 0 0;${nbAtRisk ? 'color:#ff9800' : 'color:#4caf50'}">
         ${nbAtRisk ? `⚠️ ${nbAtRisk} matière${nbAtRisk > 1 ? 's' : ''} sous le seuil indicatif.` : '✅ Toutes les matières sont au-dessus du seuil indicatif.'}
+        ${nbNa ? ` (${nbNa} matière${nbNa > 1 ? 's' : ''} sans question dans ce pool, non comptée${nbNa > 1 ? 's' : ''}.)` : ''}
       </p>
       <div style="text-align:center;margin-top:10px">
         <a href="epreuve.html" class="stats-btn" style="display:inline-block;text-decoration:none;background:#667eea;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600">📝 Passer un examen blanc</a>
