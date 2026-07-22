@@ -48,6 +48,38 @@ jobs:
           # au passage la mise à jour des NOTAMs/OPMET/cartes météo, pas seulement des avis du
           # jour. .gitignore exclut déjà tout ce qui ne doit pas être suivi (_debug_*, etc.).
           git add -A
-          git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET" || echo "No changes to commit"
-          git pull --rebase
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET"
+
+          # Cause RÉELLE et récurrente (depuis des semaines) des échecs "! [rejected] main -> main
+          # (fetch first)" : actions/checkout@v4 fait un clone SHALLOW (fetch-depth=1 par défaut),
+          # donc un `git pull --rebase` classique (sans --depth) doit re-télécharger tout
+          # l'historique complet pour "un-shallow" le dépôt — et cet historique est énorme ici car
+          # chaque exécution (toutes les ~3h) committe des dizaines de Mo d'images météo binaires.
+          # Ce fetch complet prenait 10 à 13 MINUTES (constaté dans les logs), une fenêtre pendant
+          # laquelle un autre push sur main (dev actif, ou l'exécution planifiée suivante) atteint
+          # presque à coup sûr le dépôt en premier → push rejeté, sans aucune tentative de
+          # nouvelle synchronisation ensuite.
+          # Solution testée localement (voir scratchpad) : ne récupérer QUE le dernier commit de
+          # main à chaque tentative (fetch --depth=1, quasi instantané même sur un gros dépôt car
+          # ça ne redemande jamais tout l'historique), puis `git rebase` par-dessus — un vrai
+          # rebase (pas un reset --soft/--mixed, qui perdrait silencieusement les fichiers ajoutés
+          # par les commits concurrents : testé et confirmé bogué) fonctionne correctement même
+          # entre deux historiques shallow "sans ancêtre commun visible localement", grâce à la
+          # détection par patch-id de Git (il retrouve/laisse tomber les commits déjà en amont et
+          # rejoue proprement le reste).
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth=1 origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "Push réussi (tentative $attempt)."
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "Push rejeté (tentative $attempt) — nouvelle synchronisation…"
+            sleep 5
+          done
+          echo "::error::Échec du push après plusieurs tentatives."
+          exit 1
