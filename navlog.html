@@ -6175,8 +6175,9 @@ function renderNavlogRecapTable(){
     var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
     /* Ligne LEG : décalée visuellement (indentation + fond distinct, voir CSS
        .nl-recap-leg-row) pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE
-       les deux points", et non comme une propriété de l'un ou l'autre point. */
-    rows+='<tr class="nl-recap-leg-row">'+
+       les deux points", et non comme une propriété de l'un ou l'autre point. Survol → surlignage
+       du leg correspondant sur la carte (voir _highlightRecapLeg / _clearRecapLegHighlight). */
+    rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
       '<td></td>'+
       '<td class="nl-recap-leg-arrow">\u21B3 vers point '+(k+2)+'</td>'+
       '<td colspan="4">'+routeM+'°T route &middot; '+hdgM+'°M cap &middot; '+dist+' NM &middot; '+(leg.gs||0)+' kt GS &middot; '+formatTime(leg.ete||0)+' ETE</td>'+
@@ -10658,6 +10659,26 @@ var routeMap=null;
 var routeMapLayers=[];
 var _currentRoutePolyline=null; /* référence pour mise à jour légère pendant un glisser (voir _mapLineGrabStartMouse/Touch) */
 var _currentRouteHitPolyline=null; /* polyline invisible élargie servant de zone de saisie tactile */
+var _recapLegHighlightLayer=null; /* surlignage du leg survolé dans le tableau récapitulatif (voir _highlightRecapLeg) — hors routeMapLayers pour ne pas être recréé/effacé à chaque updateRouteMap() pendant un survol */
+
+/* Survol d'une ligne LEG du tableau récapitulatif → surlignage jaune du segment
+   correspondant sur la carte, pour repérer visuellement de quel bout de route il s'agit
+   sans avoir à comparer les noms de points un par un. */
+function _highlightRecapLeg(fromIdx,toIdx){
+  if(!routeMap||typeof L==='undefined') return;
+  var a=waypoints[fromIdx],b=waypoints[toIdx];
+  if(!a||!b||a.lat===null||a.lon===null||b.lat===null||b.lon===null) return;
+  _clearRecapLegHighlight();
+  _recapLegHighlightLayer=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:'#ffee58',weight:10,opacity:.6,lineCap:'round',interactive:false}).addTo(routeMap);
+  if(_recapLegHighlightLayer.bringToFront) _recapLegHighlightLayer.bringToFront();
+}
+window._highlightRecapLeg=_highlightRecapLeg;
+
+function _clearRecapLegHighlight(){
+  if(_recapLegHighlightLayer && routeMap){ routeMap.removeLayer(_recapLegHighlightLayer); }
+  _recapLegHighlightLayer=null;
+}
+window._clearRecapLegHighlight=_clearRecapLegHighlight;
 
 /* Étiquettes cap/ETE/distance par leg : gérées à part de routeMapLayers pour pouvoir les
    masquer/réafficher sur chaque zoomend sans reconstruire toute la carte (voir updateRouteMap
@@ -11028,6 +11049,7 @@ function updateRouteMap(){
     routeMap.removeLayer(routeMapLayers[i]);
   }
   routeMapLayers=[];
+  _clearRecapLegHighlight(); /* pas dans routeMapLayers, donc pas nettoyé par la boucle ci-dessus */
   /* Collect configured WPs */
   var pts=[];
   for(var w=0;w<waypoints.length;w++){
