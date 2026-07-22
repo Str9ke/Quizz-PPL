@@ -551,9 +551,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 }
 
 /* Accessibility: non-color status indicators */
-.perf-result-box.green::before{content:'\u2705 '}
-.perf-result-box.orange::before{content:'\u26A0\uFE0F '}
-.perf-result-box.red::before{content:'\u274C '}
+.perf-result-box.green::before{content:'\002705 '}
+.perf-result-box.orange::before{content:'\0026A0\00FE0F '}
+.perf-result-box.red::before{content:'\00274C '}
 /* Wind Triangle Styles */
 .leg-container { display: flex; align-items: center; gap: 12px; }
 .leg-alt-slider-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; margin-right: 8px; }
@@ -1634,6 +1634,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <p style="font-size:.78em;color:var(--text-secondary);margin-top:8px">Source&nbsp;: m&eacute;mo d'utilisation officiel de l'A&eacute;roclub Mons-Borinage &mdash; <a href="https://www.aeroclub-mons-borinage.be/wp-content/uploads/2020/09/MEMO-OO-FCE-C150.pdf" target="_blank" rel="noopener" style="color:#667eea">MEMO-OO-FCE-C150.pdf</a></p>
       </div>
 
+      <!-- Décollage : conditions de l'aérodrome de DÉPART (1er waypoint) -->
+      <div class="nl-card-title" style="font-size:.95em;margin-top:6px">&#x1F6EB; D&eacute;collage <span id="perfDepIcaoLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
       <div style="margin-bottom:10px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <select id="perfMetarSelect" style="flex:1;min-width:180px;padding:6px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em" onchange="window.perfFromMetar()">
@@ -1680,6 +1682,54 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
       <!-- Crosswind visual diagram (filled by perfFromMetar or perfApplyManualWind) -->
       <div id="perfCrosswindDiagram" style="margin-bottom:12px"></div>
+
+      <!-- Atterrissage : conditions de l'aérodrome d'ARRIVÉE (dernier waypoint) — auparavant les
+           distances d'atterrissage étaient calculées avec les conditions de DÉPART, ce qui est
+           faux dès que l'arrivée est un aérodrome différent (altitude/QNH/vent différents). -->
+      <div class="nl-card-title" style="font-size:.95em;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-color)">&#x1F6EC; Atterrissage <span id="perfArrIcaoLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <select id="perfMetarSelectLd" style="flex:1;min-width:180px;padding:6px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em" onchange="window.perfFromMetarLanding()">
+            <option value="">-- Station auto (arriv&eacute;e) --</option>
+          </select>
+          <button onclick="window.updatePerfMetarListLanding();window.perfFromMetarLanding()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F327;&#xFE0F; Appliquer METAR</button>
+          <button onclick="window.refreshAllMetars()" class="navlog-btn" style="white-space:nowrap;padding:8px 14px;font-size:0.85em;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et recharge tous les METARs">&#x1F504; Actualiser</button>
+        </div>
+        <div id="perfCrosswindInfoLd" style="font-size:0.85em;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;line-height:1.8">S&eacute;lectionnez une station ou cliquez &laquo;&nbsp;Appliquer METAR&nbsp;&raquo; pour remplir automatiquement.</div>
+      </div>
+
+      <div class="config-grid" style="margin-bottom:14px">
+        <div class="config-item">
+          <label for="perfElevLd">&#xe9;l&#xe9;vation terrain (ft)</label>
+          <input type="number" id="perfElevLd" value="67" min="0" max="10000" step="1" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfTempLd">Temp&#xe9;rature (&#xb0;C)</label>
+          <input type="number" id="perfTempLd" value="15" min="-40" max="50" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfQNHLd">QNH (hPa)</label>
+          <input type="number" id="perfQNHLd" value="1013" min="950" max="1060" onchange="window.perfCalc()">
+        </div>
+        <div class="config-item">
+          <label for="perfWindLd">Vent face (kt)</label>
+          <input type="number" id="perfWindLd" value="0" min="0" max="40" onchange="window.perfCalc()">
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="config-item" style="margin-bottom:0">
+          <label for="perfWindDirManualLd">Vent manuel — direction (&deg;)</label>
+          <input type="number" id="perfWindDirManualLd" value="" min="0" max="360" step="1" placeholder="ex: 270">
+        </div>
+        <div class="config-item" style="margin-bottom:0">
+          <label for="perfWindSpdManualLd">Vent manuel — vitesse (kt)</label>
+          <input type="number" id="perfWindSpdManualLd" value="" min="0" max="80" step="1" placeholder="ex: 15">
+        </div>
+        <button onclick="window.perfApplyManualWindLanding()" class="navlog-btn primary" style="white-space:nowrap;padding:8px 14px;font-size:0.85em">&#x1F9ED; Appliquer vent manuel</button>
+      </div>
+
+      <div id="perfCrosswindDiagramLd" style="margin-bottom:12px"></div>
 
       <!-- Results -->
       <div id="perfResults"></div>
@@ -2598,8 +2648,10 @@ function switchTab(id){
   }
   if(id==='perf'){
     window.perfCalc();
-    /* Auto-remplir vent/temp si un METAR est déjà disponible */
+    /* Auto-remplir vent/temp si un METAR est déjà disponible — départ (décollage) ET arrivée
+       (atterrissage), les deux aérodromes pouvant avoir des conditions différentes. */
     setTimeout(function(){ if(typeof perfFromMetar==='function') perfFromMetar(); }, 150);
+    setTimeout(function(){ if(typeof perfFromMetarLanding==='function') perfFromMetarLanding(); }, 150);
     /* Initialiser les calculateurs avancés */
     if(typeof advDriftCalc==='function') advDriftCalc();
     if(typeof advPNRCalc==='function')   advPNRCalc();
@@ -4239,6 +4291,20 @@ function colorizeMetar(raw){
 }
 
 /* Parse METAR timestamp and return age HTML (Belgium = UTC+1 winter / UTC+2 summer) */
+/* Âge du METAR en minutes (extrait de metarAgeHtml pour être réutilisable ailleurs, notamment
+   pour déclencher une actualisation automatique quand un METAR trop vieux est utilisé sans
+   que l'utilisateur s'en rende compte — voir perfFromMetar/perfFromMetarLanding). */
+function _metarAgeMinutes(raw){
+  if(!raw) return null;
+  var m=raw.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+  if(!m) return null;
+  var day=parseInt(m[1]),hour=parseInt(m[2]),min=parseInt(m[3]);
+  var now=new Date();
+  var metarUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),day,hour,min,0));
+  if(metarUtc>now) metarUtc.setUTCMonth(metarUtc.getUTCMonth()-1);
+  return Math.floor((now.getTime()-metarUtc.getTime())/60000);
+}
+
 function metarAgeHtml(raw){
   if(!raw) return '';
   var m=raw.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
@@ -4975,6 +5041,7 @@ function renderWeatherBlock(icao){
 function _autoPerfIfActive(){
   if(typeof _activeTab!=='undefined' && _activeTab==='perf' && typeof perfFromMetar==='function'){
     setTimeout(perfFromMetar, 80);
+    if(typeof perfFromMetarLanding==='function') setTimeout(perfFromMetarLanding, 80);
   }
 }
 
@@ -11953,17 +12020,38 @@ function perfCalc(){
   var acType=(MB_DATA[acReg]||{}).type||(is172?'Cessna F-172M':'Cessna F-150M');
   var acMtow=is172?1043:726;
   // Update perf tab labels
-  var _al=document.getElementById('perfAircraftLabel');if(_al) _al.textContent=acType+' \u2014 '+acReg;
-  var _ad=document.getElementById('perfAircraftDesc');if(_ad) _ad.textContent='Bas\u00e9 sur le manuel de vol \u2014 Masse max '+acMtow+' kg';
+  var _al=document.getElementById('perfAircraftLabel');if(_al) _al.textContent=acType+' — '+acReg;
+  var _ad=document.getElementById('perfAircraftDesc');if(_ad) _ad.textContent='Basé sur le manuel de vol — Masse max '+acMtow+' kg';
+
+  /* Étiquettes départ/arrivée des deux sections décollage/atterrissage — toujours
+     synchronisées avec la route encodée, même avant tout chargement météo. */
+  var depIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  var arrIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  var _depLbl=document.getElementById('perfDepIcaoLabel'); if(_depLbl) _depLbl.textContent=depIcaoLbl?('— '+depIcaoLbl):'';
+  var _arrLbl=document.getElementById('perfArrIcaoLabel'); if(_arrLbl) _arrLbl.textContent=arrIcaoLbl?('— '+arrIcaoLbl):'';
+
   var elev=parseFloat(document.getElementById('perfElev').value)||0;
   var temp=parseFloat(document.getElementById('perfTemp').value)||15;
   var qnh=parseFloat(document.getElementById('perfQNH').value)||1013;
   var wind=parseFloat(document.getElementById('perfWind').value)||0;
-  // Pressure altitude
+  /* Atterrissage : conditions de l'aérodrome d'ARRIVÉE, pas de départ — un vol nav atterrit
+     rarement là où il a décollé, et l'altitude/QNH/vent peuvent y être très différents. */
+  var elevLdEl=document.getElementById('perfElevLd'), tempLdEl=document.getElementById('perfTempLd'),
+      qnhLdEl=document.getElementById('perfQNHLd'), windLdEl=document.getElementById('perfWindLd');
+  var elevLd=elevLdEl?(parseFloat(elevLdEl.value)||0):elev;
+  var tempLd=tempLdEl?(parseFloat(tempLdEl.value)||15):temp;
+  var qnhLd=qnhLdEl?(parseFloat(qnhLdEl.value)||1013):qnh;
+  var windLd=windLdEl?(parseFloat(windLdEl.value)||0):wind;
+
+  // Pressure altitude — décollage (départ)
   var pressAlt=elev+((1013-qnh)*28);
-  // ISA deviation
   var isaTemp=15-(pressAlt/1000)*2;
   var isaDev=temp-isaTemp;
+  // Pressure altitude — atterrissage (arrivée)
+  var pressAltLd=elevLd+((1013-qnhLd)*28);
+  var isaTempLd=15-(pressAltLd/1000)*2;
+  var isaDevLd=tempLd-isaTempLd;
+
   // Interpolate takeoff
   var to=interpPerf(_TO,pressAlt);
   // Temperature correction: +10% per 15°C above standard
@@ -11977,13 +12065,15 @@ function perfCalc(){
     toRoll=toW.roll*tempFactor;
     toOver=toW.over15*tempFactor;
   }
-  // Landing
-  var ld=interpPerf(_LD,pressAlt);
-  var ldRoll=ld.roll*tempFactor;
-  var ldOver=ld.over15*tempFactor;
+  // Landing — altitude pression, écart ISA et vent de l'ARRIVÉE
+  var tempFactorLd=1+(isaDevLd/15)*0.1;
+  if(tempFactorLd<0.85) tempFactorLd=0.85;
+  var ld=interpPerf(_LD,pressAltLd);
+  var ldRoll=ld.roll*tempFactorLd;
+  var ldOver=ld.over15*tempFactorLd;
   // Wind correction for landing: -10% per 7.5kt headwind
-  if(wind>0){
-    var wFactor=1-(wind/7.5)*0.1;
+  if(windLd>0){
+    var wFactor=1-(windLd/7.5)*0.1;
     if(wFactor<0.5) wFactor=0.5;
     ldRoll*=wFactor;
     ldOver*=wFactor;
@@ -11997,66 +12087,86 @@ function perfCalc(){
   var html='';
   if(acLimits.vneKt){
     html+='<div class="perf-calc-detail" style="margin-bottom:8px">';
-    html+='\u26A0\uFE0F <b>Limitations '+acType+'</b>&nbsp;: VNE <b>'+acLimits.vneKt+' kt</b> \u00B7 VFE <b>'+acLimits.vfeApprKt+' kt</b> \u00B7 Va (masse max) <b>'+acLimits.vaKt+' kt</b> \u00B7 Vent travers d\u00E9collage <b>'+acLimits.xwindTOKt+' kt</b> / atterrissage <b>'+acLimits.xwindLDGKt+' kt</b>';
+    html+='⚠️ <b>Limitations '+acType+'</b>&nbsp;: VNE <b>'+acLimits.vneKt+' kt</b> · VFE <b>'+acLimits.vfeApprKt+' kt</b> · Va (masse max) <b>'+acLimits.vaKt+' kt</b> · Vent travers décollage <b>'+acLimits.xwindTOKt+' kt</b> / atterrissage <b>'+acLimits.xwindLDGKt+' kt</b>';
     html+='</div>';
   }
   html+='<div class="perf-calc-detail">';
-  html+='\uD83D\uDCCF <b>Altitude pression</b> = '+elev+' + ((1013 \u2212 '+qnh+') \u00D7 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
-  html+='\uD83C\uDF21\uFE0F <b>ISA \u00E0 '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'\u00B0C \u2192 \u00E9cart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'\u00B0C</b>';
+  html+='🛫 <b>Décollage — altitude pression</b> = '+elev+' + ((1013 − '+qnh+') × 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
+  html+='🌡️ <b>ISA à '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'°C → écart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'°C</b>';
   if(isaDev>0) html+=' (correction +'+((isaDev/15)*10).toFixed(0)+'% distances)';
-  // Density altitude
+  // Density altitude (décollage)
   var densAlt=pressAlt+(120*(temp-isaTemp));
-  html+='<br>\uD83C\uDFD4\uFE0F <b>Altitude densit\u00E9</b> = <b>'+densAlt.toFixed(0)+' ft</b>';
-  if(densAlt>4000) html+=' <span style="color:#f44336;font-weight:700">\u26A0\uFE0F Performances d\u00E9grad\u00E9es !</span>';
-  else if(densAlt>3000) html+=' <span style="color:#fb8c00;font-weight:700">\u26A0\uFE0F Attention performances</span>';
+  html+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAlt.toFixed(0)+' ft</b>';
+  if(densAlt>4000) html+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
+  else if(densAlt>3000) html+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
+  html+='</div>';
+  html+='<div class="perf-calc-detail" style="margin-top:8px">';
+  html+='🛬 <b>Atterrissage — altitude pression</b> = '+elevLd+' + ((1013 − '+qnhLd+') × 28) = <b>'+pressAltLd.toFixed(0)+' ft</b><br>';
+  html+='🌡️ <b>ISA à '+pressAltLd.toFixed(0)+' ft</b> = '+(isaTempLd).toFixed(1)+'°C → écart = <b>'+(isaDevLd>=0?'+':'')+isaDevLd.toFixed(1)+'°C</b>';
+  if(isaDevLd>0) html+=' (correction +'+((isaDevLd/15)*10).toFixed(0)+'% distances)';
+  var densAltLd=pressAltLd+(120*(tempLd-isaTempLd));
+  html+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAltLd.toFixed(0)+' ft</b>';
+  if(densAltLd>4000) html+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
+  else if(densAltLd>3000) html+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
   html+='</div>';
   // Results boxes
   html+='<div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(toRoll<300?'green':toRoll<450?'orange':'red')+'">\uD83D\uDEEB D\u00E9collage roulement : <b>'+toRoll.toFixed(0)+' m</b></div>';
-  html+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">\uD83D\uDEEB D\u00E9collage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(toRoll<300?'green':toRoll<450?'orange':'red')+'">🛫 Décollage roulement : <b>'+toRoll.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">🛫 Décollage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
   html+='</div><div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">\uD83D\uDEEC Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
-  html+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">\uD83D\uDEEC Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">🛬 Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">🛬 Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
   var ldOverMargin=ldOver*1.5;
-  html+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">\uD83D\uDEEC Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
+  html+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">🛬 Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
   html+='</div>';
-  // Runway sufficiency check against RUNWAY_DB (distances officielles piste)
-  var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && waypoints[0] && waypoints[0].icao && RUNWAY_DB[waypoints[0].icao]) ? waypoints[0].icao : null);
+  // Runway sufficiency check against RUNWAY_DB — DÉPART (décollage) et ARRIVÉE (atterrissage)
+  // sont vérifiés séparément, chacun sur la piste de son propre aérodrome.
+  var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && waypoints[0] && waypoints[0].name && RUNWAY_DB[waypoints[0].name.trim().toUpperCase()]) ? waypoints[0].name.trim().toUpperCase() : null);
   var rwys=(RUNWAY_DB&&rwyIcaoCalc)?RUNWAY_DB[rwyIcaoCalc]:null;
   if(rwys && rwys.length){
-    html+='<div class="perf-section"><h4>\uD83D\uDEEB Pistes disponibles \u2014 '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
-    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>D\u00E9collage requis</th><th>Atterrissage requis (+50%)</th></tr>';
+    html+='<div class="perf-section"><h4>🛫 Pistes disponibles — décollage — '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
+    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Décollage requis</th></tr>';
     rwys.forEach(function(r){
       var toOk = toOver>0 && r.len>=toOver;
+      html+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
+      html+='<td style="color:'+(toOk?'#4caf50':'#ef5350')+'">'+(toOk?'✅':'⚠️')+' '+toOver.toFixed(0)+' m</td></tr>';
+    });
+    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
+  }
+  var rwyIcaoCalcLd = window._perfRwyIcaoLd || ((typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[waypoints.length-1].name && RUNWAY_DB[waypoints[waypoints.length-1].name.trim().toUpperCase()]) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : null);
+  var rwysLd=(RUNWAY_DB&&rwyIcaoCalcLd)?RUNWAY_DB[rwyIcaoCalcLd]:null;
+  if(rwysLd && rwysLd.length){
+    html+='<div class="perf-section"><h4>🛬 Pistes disponibles — atterrissage — '+rwyIcaoCalcLd+(AIRPORT_NAMES[rwyIcaoCalcLd]?' ('+AIRPORT_NAMES[rwyIcaoCalcLd]+')':'')+'</h4>';
+    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Atterrissage requis (+50%)</th></tr>';
+    rwysLd.forEach(function(r){
       var ldOk = ldOverMargin>0 && r.len>=ldOverMargin;
       html+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
-      html+='<td style="color:'+(toOk?'#4caf50':'#ef5350')+'">'+(toOk?'\u2705':'\u26A0\uFE0F')+' '+toOver.toFixed(0)+' m</td>';
-      html+='<td style="color:'+(ldOk?'#4caf50':'#ef5350')+'">'+(ldOk?'\u2705':'\u26A0\uFE0F')+' '+ldOverMargin.toFixed(0)+' m</td></tr>';
+      html+='<td style="color:'+(ldOk?'#4caf50':'#ef5350')+'">'+(ldOk?'✅':'⚠️')+' '+ldOverMargin.toFixed(0)+' m</td></tr>';
     });
-    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par a\u00E9rodrome).</p></div>';
+    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
   }
   html+='<div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">\u2B06\uFE0F Taux mont\u00E9e max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h / '+Math.round(cl.vi_kmh*0.53996)+' kt)</div>';
+  html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">⬆️ Taux montée max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h / '+Math.round(cl.vi_kmh*0.53996)+' kt)</div>';
   html+='</div>';
   // Takeoff table
-  html+='<div class="perf-section"><h4>\uD83D\uDEEB Distance de d\u00E9collage (volets rentr\u00E9s, piste en dur, masse max '+acMtow+' kg)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  html+='<div class="perf-section"><h4>🛫 Distance de décollage (volets rentrés, piste en dur, masse max '+acMtow+' kg)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
   _TO.forEach(function(r){
     var hi=Math.abs(r.alt-pressAlt)<1300;
-    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'\u2014')+'</td></tr>';
+    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'—')+'</td></tr>';
   });
-  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Augmenter de 10% par tranche de 15\u00B0C au-dessus de la temp standard.</p></div>';
-  // Landing table
-  html+='<div class="perf-section"><h4>\uD83D\uDEEC Roulement \u00E0 l\'atterrissage (volets baiss\u00E9s, piste en dur, gaz r\u00E9duits)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (\u00B0C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
+  // Landing table — surlignage basé sur l'altitude pression de l'ARRIVÉE
+  html+='<div class="perf-section"><h4>🛬 Roulement à l\'atterrissage (volets baissés, piste en dur, gaz réduits)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
   _LD.forEach(function(r){
-    var hi=Math.abs(r.alt-pressAlt)<1300;
+    var hi=Math.abs(r.alt-pressAltLd)<1300;
     html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+r.over15+'</td></tr>';
   });
-  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Diminuer de 10% par tranche de 7,5 kt de vent debout. Augmenter de 10% par tranche de 15\u00B0C au-dessus de la temp standard.</p></div>';
+  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Diminuer de 10% par tranche de 7,5 kt de vent debout. Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
   // Climb table
-  html+='<div class="perf-section"><h4>\u2B06\uFE0F Taux de mont\u00E9e maximum (volets rentr\u00E9s, plein gaz)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (\u00B0C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th><th>VI (kt)</th></tr>';
+  html+='<div class="perf-section"><h4>⬆️ Taux de montée maximum (volets rentrés, plein gaz)</h4>';
+  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (°C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th><th>VI (kt)</th></tr>';
   _CL.forEach(function(r){
     var hi=Math.abs(r.alt-pressAlt)<3000;
     html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.rateFpm+'</td><td>'+r.rateMs.toFixed(2)+'</td><td>'+r.vi_kmh+'</td><td>'+Math.round(r.vi_kmh*0.53996)+'</td></tr>';
@@ -12139,151 +12249,233 @@ function interpClimb(data,alt){
   return data[data.length-1];
 }
 
-function updatePerfMetarList(){
-  var sel=document.getElementById('perfMetarSelect');
+/* Liste TOUTES les stations connues de l'app (WX_AIRPORTS), pas seulement celles déjà chargées
+   dans wxCache — avant, une station jamais consultée cette session n'apparaissait simplement
+   pas dans la liste, même si elle publie un METAR et serait la plus pertinente. Choisir une
+   station non encore chargée déclenche son chargement (voir perfFromMetar/Landing). Les
+   stations déjà en cache sont marquées 📡 pour qu'on distingue en un coup d'œil ce qui est déjà
+   disponible de ce qui nécessitera un chargement au clic. */
+function updatePerfMetarList(selectId){
+  var sel=document.getElementById(selectId||'perfMetarSelect');
   if(!sel) return;
   var current=sel.value;
   while(sel.options.length>1) sel.remove(1);
-  var sorted=Object.keys(wxCache).filter(function(k){return wxCache[k]&&wxCache[k].metar;}).sort();
+  var sorted=WX_AIRPORTS.slice().sort();
   sorted.forEach(function(icao){
     var opt=document.createElement('option');
     opt.value=icao;
-    opt.textContent=icao+(AIRPORT_NAMES[icao]?' — '+AIRPORT_NAMES[icao]:'');
+    var loaded=wxCache[icao]&&wxCache[icao].metar;
+    opt.textContent=(loaded?'📡 ':'')+icao+(AIRPORT_NAMES[icao]?' — '+AIRPORT_NAMES[icao]:'');
     if(icao===current) opt.selected=true;
     sel.appendChild(opt);
   });
 }
 window.updatePerfMetarList=updatePerfMetarList;
 
-function perfFromMetar(){
-  updatePerfMetarList();
-  /* 1 — Departure ICAO from first waypoint */
-  var depIcao = (waypoints.length > 0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+function updatePerfMetarListLanding(){
+  updatePerfMetarList('perfMetarSelectLd');
+}
+window.updatePerfMetarListLanding=updatePerfMetarListLanding;
 
-  /* 2 — Candidate list: dep → METAR_FALLBACK entries */
-  var candidates = depIcao ? [depIcao] : [];
-  if(depIcao && METAR_FALLBACK[depIcao]) candidates = candidates.concat(METAR_FALLBACK[depIcao]);
-  var usedIcao = null;
-  var wasManualSel = false;
-  /* Manual select override */
-  var _psel=document.getElementById('perfMetarSelect');
-  if(_psel && _psel.value && wxCache[_psel.value] && wxCache[_psel.value].metar){ usedIcao=_psel.value; wasManualSel=true; }
-  if(!usedIcao) for(var ci = 0; ci < candidates.length; ci++){
-    var cc = candidates[ci];
-    if(cc && wxCache[cc] && wxCache[cc].metar){ usedIcao = cc; break; }
-  }
+/* Stations déjà auto-actualisées une fois cette session suite à une détection de METAR trop
+   vieux (voir _perfMetarApply) — évite de re-déclencher un rechargement à CHAQUE rendu pour une
+   station qui ne publie simplement pas souvent (pas un bug, juste peu de trafic), tout en
+   corrigeant automatiquement le cas d'un METAR resté en cache depuis très longtemps. */
+var _perfStaleRefreshedIcaos = {};
 
-  /* 3 — Still nothing: find nearest loaded METAR from wxCache */
-  if(!usedIcao){
-    var depCoords = AIRPORT_COORDS[depIcao] || {lat:50.45, lon:3.82};
-    var minD = 9999;
-    for(var ac in wxCache){
-      if(!wxCache[ac].metar || !AIRPORT_COORDS[ac]) continue;
-      var dLat = AIRPORT_COORDS[ac].lat - depCoords.lat;
-      var dLon = AIRPORT_COORDS[ac].lon - depCoords.lon;
-      var dd = Math.sqrt(dLat*dLat + dLon*dLon);
-      if(dd < minD){ minD = dd; usedIcao = ac; }
+/* Cœur commun décollage/atterrissage : résout quel METAR utiliser pour un aérodrome donné
+   (l'aérodrome lui-même, sinon son repli déclaré dans METAR_FALLBACK, sinon la VRAIE station la
+   plus proche parmi TOUTES les stations connues — pas seulement celles déjà chargées cette
+   session), le charge activement si besoin (au lieu de silencieusement se contenter de ce qui
+   est déjà en cache), l'actualise automatiquement s'il est trop vieux, puis remplit les champs
+   élévation/temp/QNH/vent + piste suggérée + diagramme pour le jeu d'IDs fourni. */
+function _perfMetarApply(cfg){
+  updatePerfMetarList(cfg.selectId);
+  var anchorIcao = cfg.anchorIcao;
+  var infoEl = document.getElementById(cfg.infoId);
+
+  var candidates = anchorIcao ? [anchorIcao] : [];
+  if(anchorIcao && METAR_FALLBACK[anchorIcao]) candidates = candidates.concat(METAR_FALLBACK[anchorIcao]);
+
+  var usedIcao = null, wasManualSel = false;
+  var psel = document.getElementById(cfg.selectId);
+  if(psel && psel.value){
+    if(wxCache[psel.value] && wxCache[psel.value].metar){ usedIcao = psel.value; wasManualSel = true; }
+    else if(wxCache[psel.value]===undefined){
+      /* Station choisie dans la liste mais jamais consultée cette session : la charger — on
+         sera rappelé automatiquement (_autoPerfIfActive) une fois le METAR disponible. */
+      loadWeather(psel.value);
+      if(infoEl) infoEl.innerHTML = '<span style="color:#ffa726">⏳ Chargement METAR '+psel.value+'…</span>';
+      return;
     }
   }
 
-  /* 4 — Nothing at all: trigger a METAR load and retry in 2 s */
+  if(!usedIcao) for(var ci=0; ci<candidates.length; ci++){
+    var cc = candidates[ci];
+    if(cc && wxCache[cc] && wxCache[cc].metar){ usedIcao = cc; break; }
+  }
+  /* Station de l'aérodrome jamais essayée cette session alors qu'un repli plus lointain a été
+     utilisé : la charger en tâche de fond (meilleure source si elle existe), sans bloquer
+     l'affichage courant qui reste sur le repli en attendant. */
+  if(usedIcao && anchorIcao && wxCache[anchorIcao]===undefined) loadWeather(anchorIcao);
+
+  /* Rien en cache parmi l'aérodrome + ses replis déclarés : plutôt que de se contenter de
+     "n'importe quelle station déjà chargée" (potentiellement bien plus loin que la vraie plus
+     proche), calculer la VRAIE plus proche parmi TOUTES les stations connues et la charger. */
   if(!usedIcao){
-    var tryIcao = depIcao || 'EBCV';
-    loadWeather(tryIcao);
-    document.getElementById('perfCrosswindInfo').innerHTML = '<span style="color:#ffa726">&#x23f3; Chargement METAR '+tryIcao+'&hellip;</span>';
-    setTimeout(function(){ perfFromMetar(); }, 2000);
+    var anchorCoords = AIRPORT_COORDS[anchorIcao] || {lat:50.45, lon:3.82};
+    var nearestIcao = null, minD = Infinity;
+    WX_AIRPORTS.forEach(function(ac){
+      if(!AIRPORT_COORDS[ac]) return;
+      var dLat = AIRPORT_COORDS[ac].lat - anchorCoords.lat;
+      var dLon = AIRPORT_COORDS[ac].lon - anchorCoords.lon;
+      var dd = Math.sqrt(dLat*dLat + dLon*dLon);
+      if(dd < minD){ minD = dd; nearestIcao = ac; }
+    });
+    if(nearestIcao && wxCache[nearestIcao] && wxCache[nearestIcao].metar){
+      usedIcao = nearestIcao;
+    } else if(nearestIcao && wxCache[nearestIcao]===undefined){
+      loadWeather(nearestIcao);
+    }
+    /* Repli d'affichage temporaire pendant le chargement, pour ne pas laisser l'écran vide */
+    if(!usedIcao){
+      var minD2 = 9999;
+      for(var ac2 in wxCache){
+        if(!wxCache[ac2].metar || !AIRPORT_COORDS[ac2]) continue;
+        var dLat2 = AIRPORT_COORDS[ac2].lat - anchorCoords.lat, dLon2 = AIRPORT_COORDS[ac2].lon - anchorCoords.lon;
+        var dd2 = Math.sqrt(dLat2*dLat2 + dLon2*dLon2);
+        if(dd2 < minD2){ minD2 = dd2; usedIcao = ac2; }
+      }
+    }
+  }
+
+  /* Toujours rien : déclencher un chargement et réessayer dans 2 s */
+  if(!usedIcao){
+    var tryIcao = anchorIcao || 'EBCV';
+    if(wxCache[tryIcao]===undefined) loadWeather(tryIcao);
+    if(infoEl) infoEl.innerHTML = '<span style="color:#ffa726">⏳ Chargement METAR '+tryIcao+'…</span>';
+    setTimeout(function(){ _perfMetarApply(cfg); }, 2000);
     return;
   }
 
   var raw = wxCache[usedIcao].metar;
-  var isNearby = (usedIcao !== depIcao);
+  var isNearby = (usedIcao !== anchorIcao);
+
+  /* Actualisation automatique si le METAR est plus vieux que le cycle normal de publication
+     (~30-60 min) : mieux vaut re-charger discrètement en fond que de laisser l'utilisateur
+     baser ses calculs sur des conditions vieilles de plusieurs heures, voire jours, sans qu'il
+     s'en rende compte. Une seule tentative par station et par session pour ne pas marteler une
+     station qui publie simplement peu souvent. */
+  var ageMin = _metarAgeMinutes(raw);
+  if(ageMin!==null && ageMin>90 && !_perfStaleRefreshedIcaos[usedIcao]){
+    _perfStaleRefreshedIcaos[usedIcao] = true;
+    delete wxCache[usedIcao];
+    loadWeather(usedIcao);
+  }
 
   /* Parse temperature */
   var tm = raw.match(/(M?\d{2})\/(M?\d{2})/);
-  if(tm) document.getElementById('perfTemp').value = parseInt(tm[1].replace('M','-'));
+  if(tm) document.getElementById(cfg.tempId).value = parseInt(tm[1].replace('M','-'));
   /* Parse QNH */
   var qm = raw.match(/Q(\d{4})/);
-  if(qm) document.getElementById('perfQNH').value = parseInt(qm[1]);
-  /* Elevation: if user manually selected an airport use its elevation; otherwise prefer departure */
-  if(wasManualSel && AIRPORT_ELEV[usedIcao]) document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
-  else if(AIRPORT_ELEV[depIcao])             document.getElementById('perfElev').value = AIRPORT_ELEV[depIcao];
-  else if(AIRPORT_ELEV[usedIcao])            document.getElementById('perfElev').value = AIRPORT_ELEV[usedIcao];
+  if(qm) document.getElementById(cfg.qnhId).value = parseInt(qm[1]);
+  /* Elevation: if user manually selected an airport use its elevation; otherwise prefer the anchor airport */
+  if(wasManualSel && AIRPORT_ELEV[usedIcao]) document.getElementById(cfg.elevId).value = AIRPORT_ELEV[usedIcao];
+  else if(AIRPORT_ELEV[anchorIcao])          document.getElementById(cfg.elevId).value = AIRPORT_ELEV[anchorIcao];
+  else if(AIRPORT_ELEV[usedIcao])            document.getElementById(cfg.elevId).value = AIRPORT_ELEV[usedIcao];
 
   /* Wind + crosswind */
   var wm = parseWindFromMetar(raw);
   var infoLines = [];
   var diagHtml = '';
 
-  /* METAR source confirm */
   if(isNearby){
-    infoLines.push('&#x26a0;&#xfe0f; Pas de METAR charg\u00e9 pour <b>'+depIcao+'</b> \u2014 utilis\u00e9\u00a0: <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' ('+AIRPORT_NAMES[usedIcao]+')':''));
+    infoLines.push('&#x26a0;&#xfe0f; Pas de METAR chargé pour <b>'+anchorIcao+'</b> — utilisé : <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' ('+AIRPORT_NAMES[usedIcao]+')':''));
   } else {
-    infoLines.push('&#x1f4e1; METAR\u00a0: <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' \u2014 '+AIRPORT_NAMES[usedIcao]:''));
+    infoLines.push('&#x1f4e1; METAR : <b>'+usedIcao+'</b>'+(AIRPORT_NAMES[usedIcao]?' — '+AIRPORT_NAMES[usedIcao]:''));
   }
   infoLines.push(metarAgeHtml(raw)||'');
 
   if(wm){
-    var windStr = (wm.dir >= 0 ? wm.dir+'\u00b0' : 'VRB') + ' / ' + wm.spd + ' kt' + (wm.gust ? ' rafales ' + wm.gust + ' kt' : '');
-    infoLines.push('&#x1f4a8; Vent utilis\u00e9\u00a0: <b>'+windStr+'</b>');
+    var windStr = (wm.dir >= 0 ? wm.dir+'°' : 'VRB') + ' / ' + wm.spd + ' kt' + (wm.gust ? ' rafales ' + wm.gust + ' kt' : '');
+    infoLines.push('&#x1f4a8; Vent utilisé : <b>'+windStr+'</b>');
 
-    /* Runway suggestion: prefer departure, fall back to METAR source */
-    var rwyIcao = (RUNWAY_DB && RUNWAY_DB[depIcao]) ? depIcao : usedIcao;
-    window._perfRwyIcao = rwyIcao;
+    var rwyIcao = (RUNWAY_DB && RUNWAY_DB[anchorIcao]) ? anchorIcao : usedIcao;
+    window[cfg.rwyKey] = rwyIcao;
     var bestRwy = (RUNWAY_DB && RUNWAY_DB[rwyIcao]) ? suggestRunway(rwyIcao, wm.dir, wm.spd) : null;
 
     if(bestRwy){
-      document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
+      document.getElementById(cfg.windId).value = Math.max(0, bestRwy.hw);
       var xwLimit = ((MB_DATA && MB_DATA[window._perfAircraft]) || {}).xwindLDGKt || 15;
       var xwColor = bestRwy.xw <= xwLimit*0.67 ? '#4caf50' : bestRwy.xw <= xwLimit ? '#ffa726' : '#ef5350';
-      infoLines.push('&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'\u00b0) \u2014 Face\u00a0: <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers\u00a0: <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>');
+      infoLines.push('&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'°) — Face : <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers : <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>');
       diagHtml = buildCrosswindDiagram(wm.dir, wm.spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw, xwLimit);
     } else {
-      document.getElementById('perfWind').value = wm.spd;
-      infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+rwyIcao+' \u2014 vent appliqu\u00e9\u00a0: '+wm.spd+' kt</span>');
+      document.getElementById(cfg.windId).value = wm.spd;
+      infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+rwyIcao+' — vent appliqué : '+wm.spd+' kt</span>');
     }
   } else {
-    document.getElementById('perfWind').value = 0;
-    infoLines.push('Vent calme / non d\u00e9tect\u00e9');
+    document.getElementById(cfg.windId).value = 0;
+    infoLines.push('Vent calme / non détecté');
   }
 
-  var infoEl = document.getElementById('perfCrosswindInfo');
   if(infoEl) infoEl.innerHTML = infoLines.join('<br>');
-  var diagEl = document.getElementById('perfCrosswindDiagram');
+  var diagEl = document.getElementById(cfg.diagId);
   if(diagEl) diagEl.innerHTML = diagHtml;
 
   perfCalc();
 }
+
+function perfFromMetar(){
+  var depIcao = (waypoints.length > 0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  _perfMetarApply({
+    anchorIcao: depIcao, selectId: 'perfMetarSelect',
+    tempId: 'perfTemp', qnhId: 'perfQNH', elevId: 'perfElev', windId: 'perfWind',
+    infoId: 'perfCrosswindInfo', diagId: 'perfCrosswindDiagram', rwyKey: '_perfRwyIcao'
+  });
+}
 window.perfFromMetar=perfFromMetar;
 
+/* Atterrissage : mêmes règles mais ancrées sur l'aérodrome d'ARRIVÉE (dernier waypoint), pour
+   ne plus calculer la distance d'atterrissage avec les conditions de départ. */
+function perfFromMetarLanding(){
+  var arrIcao = (waypoints.length > 0 && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  _perfMetarApply({
+    anchorIcao: arrIcao, selectId: 'perfMetarSelectLd',
+    tempId: 'perfTempLd', qnhId: 'perfQNHLd', elevId: 'perfElevLd', windId: 'perfWindLd',
+    infoId: 'perfCrosswindInfoLd', diagId: 'perfCrosswindDiagramLd', rwyKey: '_perfRwyIcaoLd'
+  });
+}
+window.perfFromMetarLanding=perfFromMetarLanding;
+
 /* Vent manuel (direction + vitesse) saisi par l'utilisateur : décompose face/travers
-   pour la piste du terrain de départ (ou de la station METAR sélectionnée) et alimente
+   pour la piste de l'aérodrome ancre (ou de la station METAR sélectionnée) et alimente
    perfCalc() exactement comme le ferait un METAR — ainsi le vent personnalisé se
    répercute bien sur les distances de décollage/atterrissage et le reste des perfs. */
-function perfApplyManualWind(){
-  var dir = parseFloat(document.getElementById('perfWindDirManual').value);
-  var spd = parseFloat(document.getElementById('perfWindSpdManual').value);
+function _perfApplyManualWindCore(cfg){
+  var dir = parseFloat(document.getElementById(cfg.dirId).value);
+  var spd = parseFloat(document.getElementById(cfg.spdId).value);
   if(isNaN(spd) || spd < 0) spd = 0;
-  var infoEl = document.getElementById('perfCrosswindInfo');
-  var diagEl = document.getElementById('perfCrosswindDiagram');
+  var infoEl = document.getElementById(cfg.infoId);
+  var diagEl = document.getElementById(cfg.diagId);
 
   if(isNaN(dir)){
     /* Pas de direction connue : traiter comme vent de face pur (comportement historique) */
-    document.getElementById('perfWind').value = spd;
+    document.getElementById(cfg.windId).value = spd;
     if(infoEl) infoEl.innerHTML = '&#x1f9ed; Vent manuel (sans direction)&nbsp;: <b>'+spd+' kt</b> appliqu&eacute; comme vent de face.';
     if(diagEl) diagEl.innerHTML = '';
     perfCalc();
     return;
   }
 
-  var depIcao = (typeof waypoints !== 'undefined' && waypoints[0] && waypoints[0].icao) || '';
-  var metarSel = document.getElementById('perfMetarSelect');
+  var metarSel = document.getElementById(cfg.selectId);
   var selIcao = metarSel ? metarSel.value : '';
-  var rwyIcao = (RUNWAY_DB && RUNWAY_DB[depIcao]) ? depIcao : ((RUNWAY_DB && RUNWAY_DB[selIcao]) ? selIcao : null);
-  window._perfRwyIcao = rwyIcao;
+  var rwyIcao = (RUNWAY_DB && RUNWAY_DB[cfg.anchorIcao]) ? cfg.anchorIcao : ((RUNWAY_DB && RUNWAY_DB[selIcao]) ? selIcao : null);
+  window[cfg.rwyKey] = rwyIcao;
   var xwLimit = ((MB_DATA && MB_DATA[window._perfAircraft]) || {}).xwindLDGKt || 15;
 
   if(!rwyIcao){
-    document.getElementById('perfWind').value = spd;
+    document.getElementById(cfg.windId).value = spd;
     if(infoEl) infoEl.innerHTML = '<span style="color:#ffa726">&#x26a0;&#xfe0f; Piste inconnue pour d&eacute;composer le vent manuel '+dir+'&deg;/'+spd+' kt &mdash; appliqu&eacute; comme vent de face.</span>';
     if(diagEl) diagEl.innerHTML = '';
     perfCalc();
@@ -12292,16 +12484,35 @@ function perfApplyManualWind(){
 
   var bestRwy = suggestRunway(rwyIcao, dir, spd);
   if(bestRwy){
-    document.getElementById('perfWind').value = Math.max(0, bestRwy.hw);
+    document.getElementById(cfg.windId).value = Math.max(0, bestRwy.hw);
     var xwColor = bestRwy.xw <= xwLimit*0.67 ? '#4caf50' : bestRwy.xw <= xwLimit ? '#ffa726' : '#ef5350';
     if(infoEl) infoEl.innerHTML = '&#x1f9ed; Vent manuel&nbsp;: <b>'+dir+'&deg; / '+spd+' kt</b><br>&#x1f6eb; Piste <b>'+bestRwy.rwy+'</b> ('+bestRwy.hdg+'&deg;) &mdash; Face&nbsp;: <b style="color:#00e5ff">'+bestRwy.hw+' kt</b> | Travers&nbsp;: <b style="color:'+xwColor+'">'+bestRwy.xw+' kt</b>';
     if(diagEl) diagEl.innerHTML = buildCrosswindDiagram(dir, spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw, xwLimit);
   } else {
-    document.getElementById('perfWind').value = spd;
+    document.getElementById(cfg.windId).value = spd;
   }
   perfCalc();
 }
+
+function perfApplyManualWind(){
+  var depIcao = (typeof waypoints !== 'undefined' && waypoints[0] && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  _perfApplyManualWindCore({
+    dirId:'perfWindDirManual', spdId:'perfWindSpdManual', windId:'perfWind',
+    infoId:'perfCrosswindInfo', diagId:'perfCrosswindDiagram',
+    selectId:'perfMetarSelect', anchorIcao:depIcao, rwyKey:'_perfRwyIcao'
+  });
+}
 window.perfApplyManualWind = perfApplyManualWind;
+
+function perfApplyManualWindLanding(){
+  var arrIcao = (typeof waypoints !== 'undefined' && waypoints.length>0 && waypoints[waypoints.length-1] && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  _perfApplyManualWindCore({
+    dirId:'perfWindDirManualLd', spdId:'perfWindSpdManualLd', windId:'perfWindLd',
+    infoId:'perfCrosswindInfoLd', diagId:'perfCrosswindDiagramLd',
+    selectId:'perfMetarSelectLd', anchorIcao:arrIcao, rwyKey:'_perfRwyIcaoLd'
+  });
+}
+window.perfApplyManualWindLanding = perfApplyManualWindLanding;
 
 /* ===== CROSSWIND DECOMPOSITION DIAGRAM =====
    Runway drawn vertically (heading = up). Wind vector decomposed into:
