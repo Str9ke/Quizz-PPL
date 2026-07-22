@@ -1684,6 +1684,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- Crosswind visual diagram (filled by perfFromMetar or perfApplyManualWind) -->
       <div id="perfCrosswindDiagram" style="margin-bottom:12px"></div>
 
+      <!-- Résultats DÉCOLLAGE : placés ici, immédiatement sous la section Décollage, plutôt
+           qu'un seul bloc combiné en bas de page — sinon les distances de décollage semblent
+           visuellement appartenir à la section Atterrissage juste au-dessus d'elles. -->
+      <div id="perfResults"></div>
+
       <!-- Atterrissage : conditions de l'aérodrome d'ARRIVÉE (dernier waypoint) — auparavant les
            distances d'atterrissage étaient calculées avec les conditions de DÉPART, ce qui est
            faux dès que l'arrivée est un aérodrome différent (altitude/QNH/vent différents). -->
@@ -1732,8 +1737,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
       <div id="perfCrosswindDiagramLd" style="margin-bottom:12px"></div>
 
-      <!-- Results -->
-      <div id="perfResults"></div>
+      <!-- Résultats ATTERRISSAGE : sous leur propre section, symétrique à perfResults -->
+      <div id="perfResultsLd"></div>
     </div>
 
     <!-- Cruise Performance -->
@@ -12130,101 +12135,109 @@ function perfCalc(){
     ldRoll*=wFactor;
     ldOver*=wFactor;
   }
-  // Climb rate
+  var ldOverMargin=ldOver*1.5;
+  // Climb rate (departure-phase performance)
   var cl=interpClimb(_CL,pressAlt);
   var clRate=cl.rateFpm;
   // Temp correction for climb (approx -1% per °C above ISA)
   if(isaDev>0) clRate*=(1-isaDev*0.01);
   var acLimits=MB_DATA[acReg]||{};
-  var html='';
+
+  /* ===== DÉCOLLAGE : tout ce qui suit va dans #perfResults, sous la section Décollage ===== */
+  var htmlTO='';
   if(acLimits.vneKt){
-    html+='<div class="perf-calc-detail" style="margin-bottom:8px">';
-    html+='⚠️ <b>Limitations '+acType+'</b>&nbsp;: VNE <b>'+acLimits.vneKt+' kt</b> · VFE <b>'+acLimits.vfeApprKt+' kt</b> · Va (masse max) <b>'+acLimits.vaKt+' kt</b> · Vent travers décollage <b>'+acLimits.xwindTOKt+' kt</b> / atterrissage <b>'+acLimits.xwindLDGKt+' kt</b>';
-    html+='</div>';
+    htmlTO+='<div class="perf-calc-detail" style="margin-bottom:8px">';
+    htmlTO+='⚠️ <b>Limitations '+acType+'</b>&nbsp;: VNE <b>'+acLimits.vneKt+' kt</b> · VFE <b>'+acLimits.vfeApprKt+' kt</b> · Va (masse max) <b>'+acLimits.vaKt+' kt</b> · Vent travers décollage <b>'+acLimits.xwindTOKt+' kt</b> / atterrissage <b>'+acLimits.xwindLDGKt+' kt</b>';
+    htmlTO+='</div>';
   }
-  html+='<div class="perf-calc-detail">';
-  html+='🛫 <b>Décollage — altitude pression</b> = '+elev+' + ((1013 − '+qnh+') × 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
-  html+='🌡️ <b>ISA à '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'°C → écart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'°C</b>';
-  if(isaDev>0) html+=' (correction +'+((isaDev/15)*10).toFixed(0)+'% distances)';
-  // Density altitude (décollage)
+  htmlTO+='<div class="perf-calc-detail">';
+  htmlTO+='🛫 <b>Altitude pression</b> = '+elev+' + ((1013 − '+qnh+') × 28) = <b>'+pressAlt.toFixed(0)+' ft</b><br>';
+  htmlTO+='🌡️ <b>ISA à '+pressAlt.toFixed(0)+' ft</b> = '+(isaTemp).toFixed(1)+'°C → écart = <b>'+(isaDev>=0?'+':'')+isaDev.toFixed(1)+'°C</b>';
+  if(isaDev>0) htmlTO+=' (correction +'+((isaDev/15)*10).toFixed(0)+'% distances)';
   var densAlt=pressAlt+(120*(temp-isaTemp));
-  html+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAlt.toFixed(0)+' ft</b>';
-  if(densAlt>4000) html+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
-  else if(densAlt>3000) html+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
-  html+='</div>';
-  html+='<div class="perf-calc-detail" style="margin-top:8px">';
-  html+='🛬 <b>Atterrissage — altitude pression</b> = '+elevLd+' + ((1013 − '+qnhLd+') × 28) = <b>'+pressAltLd.toFixed(0)+' ft</b><br>';
-  html+='🌡️ <b>ISA à '+pressAltLd.toFixed(0)+' ft</b> = '+(isaTempLd).toFixed(1)+'°C → écart = <b>'+(isaDevLd>=0?'+':'')+isaDevLd.toFixed(1)+'°C</b>';
-  if(isaDevLd>0) html+=' (correction +'+((isaDevLd/15)*10).toFixed(0)+'% distances)';
-  var densAltLd=pressAltLd+(120*(tempLd-isaTempLd));
-  html+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAltLd.toFixed(0)+' ft</b>';
-  if(densAltLd>4000) html+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
-  else if(densAltLd>3000) html+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
-  html+='</div>';
-  // Results boxes
-  html+='<div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(toRoll<300?'green':toRoll<450?'orange':'red')+'">🛫 Décollage roulement : <b>'+toRoll.toFixed(0)+' m</b></div>';
-  html+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">🛫 Décollage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
-  html+='</div><div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">🛬 Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
-  html+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">🛬 Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
-  var ldOverMargin=ldOver*1.5;
-  html+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">🛬 Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
-  html+='</div>';
-  // Runway sufficiency check against RUNWAY_DB — DÉPART (décollage) et ARRIVÉE (atterrissage)
-  // sont vérifiés séparément, chacun sur la piste de son propre aérodrome.
+  htmlTO+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAlt.toFixed(0)+' ft</b>';
+  if(densAlt>4000) htmlTO+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
+  else if(densAlt>3000) htmlTO+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
+  htmlTO+='</div>';
+  htmlTO+='<div style="margin:10px 0">';
+  htmlTO+='<div class="perf-result-box '+(toRoll<300?'green':toRoll<450?'orange':'red')+'">🛫 Décollage roulement : <b>'+toRoll.toFixed(0)+' m</b></div>';
+  htmlTO+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">🛫 Décollage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
+  htmlTO+='</div>';
+  // Runway sufficiency check against RUNWAY_DB — piste de l'aérodrome de DÉPART
   var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && waypoints[0] && waypoints[0].name && RUNWAY_DB[waypoints[0].name.trim().toUpperCase()]) ? waypoints[0].name.trim().toUpperCase() : null);
   var rwys=(RUNWAY_DB&&rwyIcaoCalc)?RUNWAY_DB[rwyIcaoCalc]:null;
   if(rwys && rwys.length){
-    html+='<div class="perf-section"><h4>🛫 Pistes disponibles — décollage — '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
-    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Décollage requis</th></tr>';
+    htmlTO+='<div class="perf-section"><h4>🛫 Pistes disponibles — '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
+    htmlTO+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Décollage requis</th></tr>';
     rwys.forEach(function(r){
       var toOk = toOver>0 && r.len>=toOver;
-      html+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
-      html+='<td style="color:'+(toOk?'#4caf50':'#ef5350')+'">'+(toOk?'✅':'⚠️')+' '+toOver.toFixed(0)+' m</td></tr>';
+      htmlTO+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
+      htmlTO+='<td style="color:'+(toOk?'#4caf50':'#ef5350')+'">'+(toOk?'✅':'⚠️')+' '+toOver.toFixed(0)+' m</td></tr>';
     });
-    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
+    htmlTO+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
+  } else if(rwyIcaoCalc){
+    htmlTO+='<p style="font-size:.78em;color:var(--text-secondary);font-style:italic">Aucune donnée de piste connue pour '+rwyIcaoCalc+' (base RUNWAY_DB incomplète pour ce terrain).</p>';
   }
+  // Climb rate/table (performance de départ, après décollage)
+  htmlTO+='<div style="margin:10px 0">';
+  htmlTO+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">⬆️ Taux montée max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h / '+Math.round(cl.vi_kmh*0.53996)+' kt)</div>';
+  htmlTO+='</div>';
+  htmlTO+='<div class="perf-section"><h4>🛫 Distance de décollage (volets rentrés, piste en dur, masse max '+acMtow+' kg)</h4>';
+  htmlTO+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  _TO.forEach(function(r){
+    var hi=Math.abs(r.alt-pressAlt)<1300;
+    htmlTO+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'—')+'</td></tr>';
+  });
+  htmlTO+='</table><p style="font-size:.75em;color:var(--text-secondary)">Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
+  htmlTO+='<div class="perf-section"><h4>⬆️ Taux de montée maximum (volets rentrés, plein gaz)</h4>';
+  htmlTO+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (°C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th><th>VI (kt)</th></tr>';
+  _CL.forEach(function(r){
+    var hi=Math.abs(r.alt-pressAlt)<3000;
+    htmlTO+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.rateFpm+'</td><td>'+r.rateMs.toFixed(2)+'</td><td>'+r.vi_kmh+'</td><td>'+Math.round(r.vi_kmh*0.53996)+'</td></tr>';
+  });
+  htmlTO+='</table></div>';
+  document.getElementById('perfResults').innerHTML=htmlTO;
+
+  /* ===== ATTERRISSAGE : tout ce qui suit va dans #perfResultsLd, sous la section Atterrissage ===== */
+  var htmlLD='';
+  htmlLD+='<div class="perf-calc-detail">';
+  htmlLD+='🛬 <b>Altitude pression</b> = '+elevLd+' + ((1013 − '+qnhLd+') × 28) = <b>'+pressAltLd.toFixed(0)+' ft</b><br>';
+  htmlLD+='🌡️ <b>ISA à '+pressAltLd.toFixed(0)+' ft</b> = '+(isaTempLd).toFixed(1)+'°C → écart = <b>'+(isaDevLd>=0?'+':'')+isaDevLd.toFixed(1)+'°C</b>';
+  if(isaDevLd>0) htmlLD+=' (correction +'+((isaDevLd/15)*10).toFixed(0)+'% distances)';
+  var densAltLd=pressAltLd+(120*(tempLd-isaTempLd));
+  htmlLD+='<br>🏔️ <b>Altitude densité</b> = <b>'+densAltLd.toFixed(0)+' ft</b>';
+  if(densAltLd>4000) htmlLD+=' <span style="color:#f44336;font-weight:700">⚠️ Performances dégradées !</span>';
+  else if(densAltLd>3000) htmlLD+=' <span style="color:#fb8c00;font-weight:700">⚠️ Attention performances</span>';
+  htmlLD+='</div>';
+  htmlLD+='<div style="margin:10px 0">';
+  htmlLD+='<div class="perf-result-box '+(ldRoll<200?'green':ldRoll<300?'orange':'red')+'">🛬 Atterrissage roulement : <b>'+ldRoll.toFixed(0)+' m</b></div>';
+  htmlLD+='<div class="perf-result-box '+(ldOver<400?'green':ldOver<500?'orange':'red')+'">🛬 Atterrissage passage 15m : <b>'+ldOver.toFixed(0)+' m</b></div>';
+  htmlLD+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">🛬 Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
+  htmlLD+='</div>';
+  // Runway sufficiency check against RUNWAY_DB — piste de l'aérodrome d'ARRIVÉE
   var rwyIcaoCalcLd = window._perfRwyIcaoLd || ((typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[waypoints.length-1].name && RUNWAY_DB[waypoints[waypoints.length-1].name.trim().toUpperCase()]) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : null);
   var rwysLd=(RUNWAY_DB&&rwyIcaoCalcLd)?RUNWAY_DB[rwyIcaoCalcLd]:null;
   if(rwysLd && rwysLd.length){
-    html+='<div class="perf-section"><h4>🛬 Pistes disponibles — atterrissage — '+rwyIcaoCalcLd+(AIRPORT_NAMES[rwyIcaoCalcLd]?' ('+AIRPORT_NAMES[rwyIcaoCalcLd]+')':'')+'</h4>';
-    html+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Atterrissage requis (+50%)</th></tr>';
+    htmlLD+='<div class="perf-section"><h4>🛬 Pistes disponibles — '+rwyIcaoCalcLd+(AIRPORT_NAMES[rwyIcaoCalcLd]?' ('+AIRPORT_NAMES[rwyIcaoCalcLd]+')':'')+'</h4>';
+    htmlLD+='<table class="perf-table"><tr><th>Piste</th><th>Longueur (m)</th><th>Surface</th><th>Atterrissage requis (+50%)</th></tr>';
     rwysLd.forEach(function(r){
       var ldOk = ldOverMargin>0 && r.len>=ldOverMargin;
-      html+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
-      html+='<td style="color:'+(ldOk?'#4caf50':'#ef5350')+'">'+(ldOk?'✅':'⚠️')+' '+ldOverMargin.toFixed(0)+' m</td></tr>';
+      htmlLD+='<tr><td>'+r.rwy+'</td><td>'+r.len+'</td><td>'+(r.sfc==='asphalt'?'dur':'herbe')+'</td>';
+      htmlLD+='<td style="color:'+(ldOk?'#4caf50':'#ef5350')+'">'+(ldOk?'✅':'⚠️')+' '+ldOverMargin.toFixed(0)+' m</td></tr>';
     });
-    html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
+    htmlLD+='</table><p style="font-size:.75em;color:var(--text-secondary)">Longueurs de piste issues de la base RUNWAY_DB (source officielle SIA/AIP par aérodrome).</p></div>';
+  } else if(rwyIcaoCalcLd){
+    htmlLD+='<p style="font-size:.78em;color:var(--text-secondary);font-style:italic">Aucune donnée de piste connue pour '+rwyIcaoCalcLd+' (base RUNWAY_DB incomplète pour ce terrain).</p>';
   }
-  html+='<div style="margin:10px 0">';
-  html+='<div class="perf-result-box '+(clRate>400?'green':clRate>200?'orange':'red')+'">⬆️ Taux montée max : <b>'+clRate.toFixed(0)+' ft/min</b> (VI '+cl.vi_kmh.toFixed(0)+' km/h / '+Math.round(cl.vi_kmh*0.53996)+' kt)</div>';
-  html+='</div>';
-  // Takeoff table
-  html+='<div class="perf-section"><h4>🛫 Distance de décollage (volets rentrés, piste en dur, masse max '+acMtow+' kg)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
-  _TO.forEach(function(r){
-    var hi=Math.abs(r.alt-pressAlt)<1300;
-    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+(r.over15||'—')+'</td></tr>';
-  });
-  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
-  // Landing table — surlignage basé sur l'altitude pression de l'ARRIVÉE
-  html+='<div class="perf-section"><h4>🛬 Roulement à l\'atterrissage (volets baissés, piste en dur, gaz réduits)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
+  htmlLD+='<div class="perf-section"><h4>🛬 Roulement à l\'atterrissage (volets baissés, piste en dur, gaz réduits)</h4>';
+  htmlLD+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp std (°C)</th><th>Roulement (m)</th><th>Passage 15m (m)</th></tr>';
   _LD.forEach(function(r){
     var hi=Math.abs(r.alt-pressAltLd)<1300;
-    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+r.over15+'</td></tr>';
+    htmlLD+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.roll+'</td><td>'+r.over15+'</td></tr>';
   });
-  html+='</table><p style="font-size:.75em;color:var(--text-secondary)">Diminuer de 10% par tranche de 7,5 kt de vent debout. Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
-  // Climb table
-  html+='<div class="perf-section"><h4>⬆️ Taux de montée maximum (volets rentrés, plein gaz)</h4>';
-  html+='<table class="perf-table"><tr><th>Altitude (ft)</th><th>Temp (°C)</th><th>Taux (ft/min)</th><th>Taux (m/s)</th><th>VI (km/h)</th><th>VI (kt)</th></tr>';
-  _CL.forEach(function(r){
-    var hi=Math.abs(r.alt-pressAlt)<3000;
-    html+='<tr'+(hi?' class="perf-highlight"':'')+'><td>'+r.alt+'</td><td>'+r.temp+'</td><td>'+r.rateFpm+'</td><td>'+r.rateMs.toFixed(2)+'</td><td>'+r.vi_kmh+'</td><td>'+Math.round(r.vi_kmh*0.53996)+'</td></tr>';
-  });
-  html+='</table></div>';
-  document.getElementById('perfResults').innerHTML=html;
+  htmlLD+='</table><p style="font-size:.75em;color:var(--text-secondary)">Diminuer de 10% par tranche de 7,5 kt de vent debout. Augmenter de 10% par tranche de 15°C au-dessus de la temp standard.</p></div>';
+  document.getElementById('perfResultsLd').innerHTML=htmlLD;
+
   // Build cruise table
   buildCruiseTable();
 }
