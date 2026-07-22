@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v66v';
+const CACHE_NAME = 'quiz-ppl-v66w';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -174,6 +174,30 @@ self.addEventListener('fetch', event => {
             : new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
         });
       })
+    );
+    return;
+  }
+
+  // Pages HTML régénérées automatiquement toutes les ~3h par le workflow GitHub Actions
+  // (NOTAMs, avis du jour, OPMET) — affichées via <iframe src="opmet.html"> etc. SANS
+  // paramètre de version dans navlog.html. En cache-first classique, l'iframe affichait
+  // silencieusement une donnée météo vieille de plusieurs heures tant que l'utilisateur
+  // n'avait pas explicitement rechargé APRÈS qu'un premier passage en tâche de fond ait
+  // rafraîchi le cache — inacceptable pour des METAR/TAF/NOTAM utilisés en préparation de
+  // vol. Même traitement network-first que les JSON de questions, mais avec repli sur le
+  // cache existant (pas de contenu vide) si hors-ligne.
+  const isAutoFetchedWx = /\/(opmet|notams_belgique|daily_warnings)\.html$/.test(url.pathname);
+  if (isAutoFetchedWx && navigator.onLine) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          const cleanUrl = new URL(event.request.url);
+          cleanUrl.search = '';
+          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request, { ignoreSearch: true }))
     );
     return;
   }
