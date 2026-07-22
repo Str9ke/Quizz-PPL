@@ -338,6 +338,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .iframe-card iframe{width:100%;border:none;display:block}
 .iframe-blocked-msg{padding:16px;text-align:center;font-size:.82em;color:var(--text-secondary);background:rgba(102,126,234,.04);border-radius:8px;margin:8px 16px}
 .iframe-blocked-msg a{color:#667eea;font-weight:600}
+.iframe-snap-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 16px 8px;padding:7px 12px;background:rgba(240,173,78,.12);border:1px solid rgba(240,173,78,.5);border-radius:8px;font-size:.8em;color:#e0ad4e}
+.iframe-snap-banner button{background:#e0ad4e;color:#1a1a2e;border:none;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
 
 /* ===== Tab 3: Dossiers ===== */
 .dossier-save-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
@@ -404,10 +406,20 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table th{text-align:left;padding:6px 8px;color:var(--text-secondary);font-weight:700;border-bottom:1px solid var(--border-color);white-space:nowrap}
 .nl-recap-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
 .nl-recap-table td.nl-recap-name{font-weight:700;white-space:normal;min-width:110px}
-.nl-recap-table tr.nl-recap-etape td{background:rgba(255,167,38,.08)}
+.nl-recap-table tr.nl-recap-point-row.nl-recap-etape td{background:rgba(255,167,38,.08)}
 .nl-recap-table tbody tr:hover td{background:rgba(102,126,234,.08)}
 .nl-recap-type-btn{background:none;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);font-size:.85em;padding:3px 8px;cursor:pointer;white-space:nowrap;transition:all .2s}
 .nl-recap-type-btn:hover{border-color:#7c4dff;color:#b39ddb;background:rgba(124,77,255,.1)}
+.nl-recap-name-input{background:transparent;border:1px solid transparent;border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 6px;width:100%;min-width:100px;transition:border-color .2s,background .2s}
+.nl-recap-name-input:hover{border-color:var(--border-color)}
+.nl-recap-name-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
+.nl-recap-num{text-align:center;color:var(--text-secondary)}
+.nl-recap-role{color:var(--text-secondary);font-style:italic;font-size:.92em}
+/* Ligne LEG : décalée visuellement (indentation + fond distinct + italique) pour ne jamais se
+   confondre avec une ligne POINT — elle documente ce qui se passe ENTRE les deux points
+   encadrants, pas une propriété de l'un des deux. */
+.nl-recap-table tr.nl-recap-leg-row td{background:rgba(255,255,255,.025);color:var(--text-secondary);font-style:italic;font-size:.92em;border-bottom:1px dashed rgba(255,255,255,.08)}
+.nl-recap-leg-arrow{padding-left:18px !important}
 
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
@@ -651,6 +663,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span><span class="icon">&#x26A0;&#xFE0F;</span> Avis du jour <span id="dwCountLabel" style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:6px"></span></span>
         <button onclick="var b=document.getElementById('dwAllList');b.style.display=b.style.display==='none'?'block':'none';" class="navlog-btn" style="font-size:.75em;padding:5px 12px">Tout afficher</button>
       </div>
+      <div id="dwFetchedLabel" style="font-size:.72em;color:var(--text-secondary);margin:-4px 0 8px"></div>
       <div id="dwRouteMatches"></div>
       <div id="dwAllList" style="display:none;margin-top:8px"></div>
       <div id="dwMapPopup" style="display:none;margin-top:10px"></div>
@@ -740,14 +753,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       </div>
     </div>
 
-    <!-- NavLog board (gamified) -->
-    <div class="nl-card">
-      <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> NavLog</div>
-      <div class="navlog-board" id="navlogBoard"></div>
-      <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
-      <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
-    </div>
-
     <!-- Summary panel -->
     <div class="summary-panel" id="summaryPanel">
       <div class="summary-item"><div class="s-label">Distance totale</div><div class="s-value" id="sumDist">0 NM</div></div>
@@ -784,6 +789,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="nl-card-title" style="margin-top:10px"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span> <span class="rm-alt-hint" style="font-size:.7em;font-weight:400;color:var(--text-secondary)">— glisse (souris ou doigt) pour te situer sur la carte</span></div>
       <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
     </div>
+
+    <!-- NavLog board (gamified) -->
+    <div class="nl-card">
+      <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> NavLog</div>
+      <div class="navlog-board" id="navlogBoard"></div>
+      <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
+      <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
+    </div>
+
   </div>
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
@@ -792,6 +806,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card" style="margin-bottom:14px">
         <div class="map-card-title">&#x1F916; NOTAM Summary Automatique</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">NOTAMs r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes via GitHub Actions.</p>
+        <div id="autoNotamFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
         <div class="iframe-card" style="height:400px; overflow:hidden; display:flex; flex-direction:column;">
           <iframe id="autoNotamFrame" src="notams_belgique.html" style="flex:1; width:100%; border:none; background:#fff;" loading="lazy"></iframe>
         </div>
@@ -808,6 +823,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div class="map-card" style="margin-bottom:14px">
           <div class="map-card-title">&#x1F916; Daily Warnings Automatique</div>
           <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">Daily Warnings r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes.</p>
+          <div id="autoDailyWarnFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
 
           <div class="iframe-card">
             <iframe id="autoDailyWarnFrame" src="daily_warnings.html" style="width:100%; border:none; background:#fff;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
@@ -1482,6 +1498,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="map-card" style="margin-bottom:14px;">
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">METAR, TAF, SIGMET, GAMET/AIRMET r&#xe9;cup&#xe9;r&#xe9;s automatiquement depuis Skeyes (EBSG, Belgique &amp; Luxembourg).</p>
+        <div id="autoOpmetFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
           <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
         <div class="map-card-actions">
           <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
@@ -5582,6 +5599,28 @@ function renderDailyWarnings(){
 
   countLbl.textContent=active.length+' actif'+(active.length>1?'s':'')+" aujourd'hui"+(nearRoute.length?' · '+nearRoute.length+' proche'+(nearRoute.length>1?'s':'')+' de la route':'');
 
+  /* Confirmation explicite de la date/heure de récupération — demandée par l'utilisateur pour
+     pouvoir vérifier la fraîcheur des avis sans deviner. Alerte visuelle si ça dépasse la
+     fréquence normale de rafraîchissement (~3h, voir update_notams.yml) : signe que
+     l'automatisation a peut-être un souci plutôt que de faire confiance aveuglément. */
+  var fetchedEl=document.getElementById('dwFetchedLabel');
+  if(fetchedEl){
+    if(_dailyWarningsData.generated){
+      var genDate=new Date(_dailyWarningsData.generated);
+      if(!isNaN(genDate.getTime())){
+        var ageMin=Math.round((Date.now()-genDate.getTime())/60000);
+        var ageTxt=ageMin<60?(ageMin+' min'):(Math.round(ageMin/60*10)/10+' h');
+        var stale=ageMin>240; /* >4h : au-delà du cycle normal de ~3h */
+        fetchedEl.innerHTML=(stale?'&#x26A0;&#xFE0F; ':'&#x1F4E1; ')+'Récupéré le '+genDate.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})+' (il y a '+ageTxt+')'+(stale?' — vérifier que la mise à jour automatique fonctionne':'');
+        fetchedEl.style.color=stale?'#ef5350':'var(--text-secondary)';
+      } else {
+        fetchedEl.textContent='';
+      }
+    } else {
+      fetchedEl.textContent='';
+    }
+  }
+
   function warningRow(w,urgent){
     var titleMatch=/'([^']+)'/.exec(w.text);
     var title=titleMatch?titleMatch[1]:w.text.slice(0,60);
@@ -6084,6 +6123,10 @@ function renderNavlogRecapTable(){
   }
   var hiddenCount=waypoints.length-shownIdx.length;
 
+  /* Numérotation SÉQUENTIELLE d'affichage (1..N sur les points réellement montrés), plutôt que
+     l'index brut dans le tableau waypoints complet (qui incluait les points de circuit masqués
+     et sautait donc des numéros, ex: 1, 6, 7... 18) — le départ est ainsi toujours le n°1 et
+     l'arrivée toujours le dernier numéro. */
   var rows='';
   var cumMin=0;
   for(var k=0;k<shownIdx.length;k++){
@@ -6095,54 +6138,115 @@ function renderNavlogRecapTable(){
     var typeBtn=canType
       ? '<button class="nl-recap-type-btn" onclick="window.toggleCircuitType('+i+',false)" title="Marquer ce point comme circuit départ/arrivée">\u{1F9ED} Nav</button>'
       : '';
-    if(k===0){
-      rows+='<tr>'+
-        '<td>'+(i+1)+'</td>'+
-        '<td class="nl-recap-name">'+escHTML(name)+'</td>'+
-        '<td>'+alt+' ft</td>'+
-        '<td colspan="6" style="color:var(--text-secondary);font-style:italic">Départ</td>'+
-        '<td></td>'+
-      '</tr>';
-      continue;
-    }
-    var prevIdx=shownIdx[k-1];
-    var prev=waypoints[prevIdx];
-    var dist=0,routeTrue=0;
-    if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
-      dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-      routeTrue=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-    }
-    var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,alt);
-    cumMin+=leg.ete*60;
-    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
-    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
-    var etaStr=cumMin?formatETA(cumMin):'--:--';
-    rows+='<tr'+(wp.isEtape?' class="nl-recap-etape"':'')+'>'+
-      '<td>'+(i+1)+'</td>'+
-      '<td class="nl-recap-name">'+escHTML(name)+(wp.isEtape?' \u{1F7E0}':'')+'</td>'+
+    var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
+    var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
+    /* Ligne POINT : identité du waypoint (numéro séquentiel, nom éditable, altitude, ETA
+       d'arrivée à CE point). Aucune donnée de leg ici — voir la ligne LEG juste après. */
+    rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
+      '<td class="nl-recap-num">'+(k+1)+'</td>'+
+      '<td class="nl-recap-name">'+
+        '<input class="nl-recap-name-input" data-idx="'+i+'" value="'+escHTML(name)+'" '+
+          'oninput="window._syncWaypointName('+i+',this.value,this)" '+
+          'title="Renommer ce point">'+
+        (wp.isEtape?' \u{1F7E0}':'')+
+      '</td>'+
       '<td>'+alt+' ft</td>'+
-      '<td>'+routeM+'°</td>'+
-      '<td>'+hdgM+'°</td>'+
-      '<td>'+dist+' NM</td>'+
-      '<td>'+(leg.gs||0)+' kt</td>'+
-      '<td>'+formatTime(leg.ete||0)+'</td>'+
+      '<td class="nl-recap-role">'+roleLabel+'</td>'+
       '<td>'+etaStr+'</td>'+
       '<td>'+typeBtn+'</td>'+
     '</tr>';
+
+    if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
+
+    var nextI=shownIdx[k+1];
+    var next=waypoints[nextI];
+    var dist=0,routeTrue=0;
+    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
+      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+    }
+    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
+    cumMin+=leg.ete*60;
+    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
+    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+    /* Ligne LEG : décalée visuellement (indentation + fond distinct, voir CSS
+       .nl-recap-leg-row) pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE
+       les deux points", et non comme une propriété de l'un ou l'autre point. */
+    rows+='<tr class="nl-recap-leg-row">'+
+      '<td></td>'+
+      '<td class="nl-recap-leg-arrow">\u21B3 vers point '+(k+2)+'</td>'+
+      '<td colspan="4">'+routeM+'°T route &middot; '+hdgM+'°M cap &middot; '+dist+' NM &middot; '+(leg.gs||0)+' kt GS &middot; '+formatTime(leg.ete||0)+' ETE</td>'+
+    '</tr>';
   }
   var hiddenNote=hiddenCount>0
-    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Cliquez « Nav » sur un point ci-dessus pour le marquer comme circuit.</div>'
-    : '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
+    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Cliquez « Nav » sur un point ci-dessus pour le marquer comme circuit.</div>'
+    : '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
   cont.innerHTML=
-    '<div class="nl-card-title"><span class="icon">📋</span> Récapitulatif de la route (navigation)</div>'+
+    '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
+      '<span><span class="icon">📋</span> Récapitulatif de la route (navigation)</span>'+
+      '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer (A5)</button>'+
+    '</div>'+
     '<div style="overflow-x:auto">'+
-    '<table class="nl-recap-table">'+
-      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th>Cap</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA cumulé</th><th>Type</th></tr></thead>'+
+    '<table class="nl-recap-table" id="navlogRecapTableEl">'+
+      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th colspan="2">Rôle / ETA</th><th>Type</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table>'+
     '</div>'+hiddenNote;
 }
 window.renderNavlogRecapTable=renderNavlogRecapTable;
+
+/* Renomme un waypoint depuis N'IMPORTE LEQUEL des deux endroits où son nom est éditable
+   (l'input de la planche NavLog plus bas, OU l'input du tableau récapitulatif ci-dessus) et
+   synchronise l'AUTRE sans le re-rendre entièrement — un re-rendu complet de l'input en cours
+   de frappe lui ferait perdre le focus/curseur à chaque frappe. */
+function _syncWaypointName(idx,newName,sourceEl){
+  if(!waypoints[idx]) return;
+  waypoints[idx].name=newName;
+  document.querySelectorAll('.wp-name-input[data-idx="'+idx+'"], .nl-recap-name-input[data-idx="'+idx+'"]').forEach(function(el){
+    if(el!==sourceEl && el.value!==newName) el.value=newName;
+  });
+  if(typeof updateRouteMap==='function') updateRouteMap();
+  suggestDossierName();
+}
+window._syncWaypointName=_syncWaypointName;
+
+/* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
+   window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page
+   Navlog avec ses onglets/cartes) et forcer explicitement le format A5. */
+function printNavlogRecapTable(){
+  var tbl=document.getElementById('navlogRecapTableEl');
+  if(!tbl){ alert('Tableau récapitulatif indisponible.'); return; }
+  var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' \u2192 '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
+  /* Table imprimée à partir des VALEURS actuelles des inputs (pas juste l'attribut value HTML
+     d'origine) pour refléter un renommage tout juste tapé, même avant que le debounce de
+     sauvegarde n'ait tourné. */
+  var printHtml=tbl.outerHTML.replace(/<input([^>]*)>/g,function(m,attrs){
+    var idxMatch=/data-idx="(\d+)"/.exec(attrs);
+    var idx=idxMatch?parseInt(idxMatch[1]):null;
+    var val=(idx!==null&&waypoints[idx])?waypoints[idx].name:'';
+    return '<span>'+escHTML(val)+'</span>';
+  });
+  var w=window.open('','_blank');
+  if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Récapitulatif route — '+escHTML(routeName)+'</title>'+
+    '<style>'+
+    '@page{size:A5;margin:10mm}'+
+    'body{font-family:Arial,sans-serif;margin:0;padding:0}'+
+    'h1{font-size:14px;margin:0 0 8px}'+
+    'table{width:100%;height:100%;border-collapse:collapse;font-size:11px}'+
+    'th,td{border:1px solid #333;padding:4px 6px;text-align:left}'+
+    'th{background:#eee}'+
+    '.nl-recap-leg-row td{background:#f6f6f6;font-style:italic;color:#555}'+
+    '.nl-recap-num,.nl-recap-role{white-space:nowrap}'+
+    '</style></head><body>'+
+    '<h1>Récapitulatif de route — '+escHTML(routeName)+'</h1>'+
+    printHtml+
+    '</body></html>');
+  w.document.close();
+  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },400);
+}
+window.printNavlogRecapTable=printNavlogRecapTable;
 
 /* ===== WIND TRIANGLE SVG PER LEG ===== */
 /* Draws a standard aeronautical velocity triangle:
@@ -6438,6 +6542,14 @@ function renderNavlog(){
             var lastInput=document.querySelector('.wp-name-input[data-idx="'+lastIdx+'"]');
             if(lastInput) lastInput.value=input.value;
             recalcNavlog();
+          } else if(typeof renderNavlogRecapTable==='function'){
+            /* Un renommage seul ne change ni distance ni route : pas besoin d'un recalcNavlog()
+               complet, juste rafraîchir le tableau récapitulatif (et la carte, qui affiche aussi
+               les noms) pour qu'ils restent synchronisés avec ce qui vient d'être tapé — avant,
+               seul le cas "retour au point de départ" ci-dessus déclenchait un rafraîchissement,
+               un renommage normal n'apparaissait donc jamais dans le tableau du dessus. */
+            renderNavlogRecapTable();
+            if(typeof updateRouteMap==='function') updateRouteMap();
           }
           suggestDossierName();
         },500);
@@ -7110,6 +7222,33 @@ function _freezeIframes() {
   });
   return snaps;
 }
+
+/* Charger un dossier archivé remplace le NOTAM/OPMET/Avis-du-jour EN DIRECT par l'instantané
+   figé au moment de la sauvegarde (voir _freezeIframes) — voulu pour un dossier ancien
+   (garder la trace exacte de ce qui a été briefé pour CE vol-là), mais totalement silencieux
+   auparavant : rien n'indiquait que ces cartes ne montraient plus les données du jour, ce qui
+   pouvait ressembler à des données "effacées". Bannière visible + bouton pour revenir aux
+   données en direct sans recharger toute la page. */
+var IFRAME_LIVE_SRC={autoNotamFrame:'notams_belgique.html',autoDailyWarnFrame:'daily_warnings.html',autoOpmetFrame:'opmet.html'};
+function _showIframeSnapshotBanner(fid,dossierDateISO){
+  var el=document.getElementById(fid+'SnapBanner');
+  if(!el) return;
+  var dateLabel='';
+  try{ dateLabel=new Date(dossierDateISO).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}); }catch(e){}
+  el.innerHTML='<span>&#x1F4CB; Instantané archivé'+(dateLabel?(' du '+dateLabel):'')+' — ce n\'est PAS la donnée du jour.</span>'
+    +'<button onclick="window._restoreIframeLive(\''+fid+'\')">&#x1F504; Revenir aux données en direct</button>';
+  el.style.display='';
+}
+function _restoreIframeLive(fid){
+  var fr=document.getElementById(fid);
+  var banner=document.getElementById(fid+'SnapBanner');
+  if(fr){
+    fr.removeAttribute('srcdoc');
+    fr.src=(IFRAME_LIVE_SRC[fid]||'')+'?t='+Date.now();
+  }
+  if(banner){ banner.style.display='none'; banner.innerHTML=''; }
+}
+window._restoreIframeLive=_restoreIframeLive;
 
 function saveDossier(){
   var nameInput=document.getElementById('dossierName');
@@ -7798,20 +7937,24 @@ function loadDossier(id, _freshCloudFiles){
     renderNotamSummary();
   }
   
-  /* Restore iframe snapshots if available in the saved dossier */
+  /* Restore iframe snapshots if available in the saved dossier — voir _showIframeSnapshotBanner
+     pour l'avertissement affiché à l'utilisateur : ceci REMPLACE le NOTAM/OPMET/Avis-du-jour EN
+     DIRECT par l'instantané figé à la sauvegarde du dossier, intentionnel pour un archive mais
+     qui doit rester visible/réversible, pas silencieux. */
   if(d.iframeSnaps) {
     Object.keys(d.iframeSnaps).forEach(function(fid) {
       try {
         var fr = document.getElementById(fid);
         if(fr && d.iframeSnaps[fid]) {
           fr.removeAttribute('src'); // stop it from loading live
-          // Inject base href so that external resources (if any) still work correctly 
+          // Inject base href so that external resources (if any) still work correctly
           // though our images are base64 inlined:
           var injected = d.iframeSnaps[fid];
           if(injected.indexOf('<base ') === -1) {
             injected = injected.replace('<head>', '<head><base href="https://str9ke.github.io/Quizz-PPL/">');
           }
           fr.srcdoc = injected;
+          _showIframeSnapshotBanner(fid, d.date);
         }
       } catch(e) { console.error("Restore iframe error:", e); }
     });
@@ -10861,7 +11004,10 @@ function updateRouteMap(){
     if(infoEl) infoEl.textContent='Ajoutez des waypoints pour voir la route';
     return;
   }
-  if(infoEl) infoEl.textContent=pts.length+' points \u2014 '+pts.map(function(p){return p.name;}).join(' \u2192 ');
+  /* Ne plus lister chaque nom de point ici : c'est redondant avec le tableau r\u00e9capitulatif
+     juste au-dessus (qui a d\u00e9j\u00e0 tous les points, dans l'ordre, avec bien plus de d\u00e9tail) \u2014 \u00e7a
+     ne faisait qu'occuper de l'espace entre la carte et le profil d'altitude pour rien. */
+  if(infoEl) infoEl.textContent=pts.length+' point'+(pts.length>1?'s':'')+' sur la route';
   /* Draw route polyline (couleur par d\u00e9faut \u2014 navigation). Une polyline de survol par-dessus
      (voir plus bas) reprend en couleur distincte les legs de circuit d\u00e9part/arriv\u00e9e, sans
      toucher \u00e0 cette ligne de base : c'est elle que _mapLineGrabRefreshLines() met \u00e0 jour en
