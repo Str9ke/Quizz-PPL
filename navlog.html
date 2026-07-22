@@ -423,6 +423,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
    encadrants, pas une propriété de l'un des deux. */
 .nl-recap-table tr.nl-recap-leg-row td{background:rgba(255,255,255,.025);color:var(--text-secondary);font-style:italic;font-size:.92em;border-bottom:1px dashed rgba(255,255,255,.08)}
 .nl-recap-leg-arrow{padding-left:18px !important}
+.nl-recap-hidden-note{margin-top:8px}
+.nl-recap-hidden-item{position:relative;display:inline-block;margin:0 6px 6px 0}
+.nl-recap-circuit-submenu{position:absolute;top:100%;left:0;z-index:5;margin:4px 0 0 0;min-width:max-content}
 
 /* Route map */
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
@@ -6183,9 +6186,35 @@ function renderNavlogRecapTable(){
       '<td colspan="4">'+routeM+'°T route &middot; '+hdgM+'°M cap &middot; '+dist+' NM &middot; '+(leg.gs||0)+' kt GS &middot; '+formatTime(leg.ete||0)+' ETE</td>'+
     '</tr>';
   }
-  var hiddenNote=hiddenCount>0
-    ? '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' ici — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Cliquez « Nav » sur un point ci-dessus pour le marquer comme circuit.</div>'
-    : '<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
+  var hiddenNote;
+  if(hiddenCount>0){
+    /* Points de circuit masqués du tableau : lister chacun avec son propre tag cliquable
+       (même sous-menu de retrait que sur la planche NavLog plus bas, voir toggleCircuitSubmenu /
+       removeCircuitType) directement ICI, dans le tableau récapitulatif — pour ne pas avoir à
+       redescendre sur la planche juste pour retirer un point du circuit. Clé de sous-menu
+       préfixée "recap-" pour ne pas entrer en collision d'id avec celui de la carte NavLog. */
+    var hiddenItems='';
+    for(var hi=0;hi<waypoints.length;hi++){
+      var hw=waypoints[hi];
+      if(!hw.ptType) continue;
+      var hIsDep=(hw.ptType==='circuitDep');
+      var hName=hw.name||('WP'+(hi+1));
+      hiddenItems+='<span class="nl-recap-hidden-item">'+
+        '<button class="wp-circuit-tag '+(hIsDep?'dep':'arr')+'" onclick="window.toggleCircuitSubmenu(\'recap-'+hi+'\')" title="Options">'+
+          (hIsDep?'\u{1F6EB}':'\u{1F6EC}')+' '+escHTML(hName)+' — '+(hIsDep?'Circuit départ':'Circuit arrivée')+' ▾'+
+        '</button>'+
+        '<span class="wp-circuit-submenu nl-recap-circuit-submenu" id="circuit-submenu-recap-'+hi+'" style="display:none">'+
+          '<button class="wp-circuit-remove-btn" onclick="window.removeCircuitType('+hi+')">↩️ Retirer du circuit (repasser en navigation)</button>'+
+        '</span>'+
+      '</span>';
+    }
+    hiddenNote='<div class="nl-recap-hidden-note">'+
+      '<div style="font-size:.78em;color:var(--text-secondary);font-style:italic;margin-bottom:4px">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' dans le tableau ci-dessus — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant) :</div>'+
+      hiddenItems+
+    '</div>';
+  } else {
+    hiddenNote='<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
+  }
   cont.innerHTML=
     '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
       '<span><span class="icon">📋</span> Récapitulatif de la route (navigation)</span>'+
