@@ -10490,11 +10490,20 @@ var _currentRouteHitPolyline=null; /* polyline invisible élargie servant de zon
    reste dispo ailleurs (tableau récapitulatif, carte du waypoint) tant qu'on n'a pas zoomé
    assez localement pour la lire. */
 var routeMapLegLabelLayers=[];
-var ROUTE_MAP_LEG_LABEL_MIN_PX=70; /* largeur d'étiquette ~120px avant rotation ; en dessous, ça se chevauche */
+/* Seuil relevé (était 70px) : à 70px les étiquettes voisines (chacune ~120px de large avant
+   rotation) se chevauchaient dès qu'un tronçon de la route enchaînait plusieurs legs assez
+   courts à la suite (ex: une ligne droite avec des waypoints intermédiaires rapprochés) — le
+   critère "ce leg est assez long pour SA PROPRE étiquette" ne dit rien sur la distance aux
+   étiquettes voisines le long du même axe. Un seuil plus haut, combiné à la vérification de
+   proximité inter-étiquettes ci-dessous, garantit de vraies droites bien lisibles dézoomé, le
+   détail texte n'apparaissant qu'une fois suffisamment zoomé pour que ça ne se chevauche plus. */
+var ROUTE_MAP_LEG_LABEL_MIN_PX=130;
+var ROUTE_MAP_LEG_LABEL_MIN_GAP_PX=100; /* distance mini entre 2 étiquettes déjà placées */
 function _renderRouteLegLabels(){
   if(!routeMap) return;
   for(var li=0;li<routeMapLegLabelLayers.length;li++) routeMap.removeLayer(routeMapLegLabelLayers[li]);
   routeMapLegLabelLayers=[];
+  var placedPx=[]; /* positions écran des étiquettes déjà posées dans cette passe */
   var pts=[];
   for(var w=0;w<waypoints.length;w++){
     if(waypoints[w].lat!==null && waypoints[w].lon!==null){
@@ -10509,6 +10518,13 @@ function _renderRouteLegLabels(){
     var pxB=routeMap.latLngToContainerPoint([lb.lat,lb.lon]);
     var pxLen=Math.hypot(pxB.x-pxA.x,pxB.y-pxA.y);
     if(pxLen<ROUTE_MAP_LEG_LABEL_MIN_PX) continue;
+    var midPx={x:(pxA.x+pxB.x)/2,y:(pxA.y+pxB.y)/2};
+    var tooClose=false;
+    for(var pp=0;pp<placedPx.length;pp++){
+      if(Math.hypot(midPx.x-placedPx[pp].x,midPx.y-placedPx[pp].y)<ROUTE_MAP_LEG_LABEL_MIN_GAP_PX){ tooClose=true; break; }
+    }
+    if(tooClose) continue;
+    placedPx.push(midPx);
     var hdg=Math.round(wp2._leg.hdgTrue!==undefined?wp2._leg.hdgTrue:(wp2.route||0));
     var eteMin=Math.round((wp2._leg.ete||0)*60);
     var legDist=Math.round((wp2.dist||0)*10)/10;
