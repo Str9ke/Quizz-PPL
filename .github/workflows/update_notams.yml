@@ -41,17 +41,13 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add notams_belgique.html || true
-          git add daily_warnings.pdf || true
-          git add daily_warnings.html || true
-          git add daily_warnings_page_*.png || true
-          git add temsi_*.pdf temsi_*.html temsi_*.png temsi_*_manifest.json || true
-          git add wintem_*.pdf wintem_*.html wintem_*.png wintem_*_manifest.json || true
-          git add opmet.html || true
-          git add opmet.pdf || true
-          git add opmet_page_*.png || true
-          git add skeyes_* || true
-          git add skeyes_images.json || true
+          # git add -A (plutôt qu'une liste de motifs fixes) : la liste précédente ne couvrait
+          # pas daily_warnings.json (ajouté par fetch_notams.py après coup), ce qui laissait ce
+          # fichier modifié-non-indexé après le commit et faisait échouer `git pull --rebase`
+          # ("You have unstaged changes") sur TOUTES les exécutions depuis son ajout — bloquant
+          # au passage la mise à jour des NOTAMs/OPMET/cartes météo, pas seulement des avis du
+          # jour. .gitignore exclut déjà tout ce qui ne doit pas être suivi (_debug_*, etc.).
+          git add -A
           git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET" || echo "No changes to commit"
           git pull --rebase
           git push
