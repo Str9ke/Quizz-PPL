@@ -209,9 +209,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-circuit-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;border:none;cursor:pointer;font-family:inherit}
 .wp-circuit-tag.dep{background:rgba(124,77,255,.18);color:#b39ddb}
 .wp-circuit-tag.arr{background:rgba(0,188,212,.18);color:#4dd0e1}
-.wp-circuit-submenu{margin:6px 0 0 42px;padding:6px;background:rgba(255,255,255,.03);border:1px dashed var(--border-color);border-radius:8px}
-.wp-circuit-remove-btn{background:none;border:1px solid var(--border-color);border-radius:6px;color:var(--text-secondary);font-size:.78em;padding:5px 10px;cursor:pointer;transition:all .2s}
+.wp-unconfigured-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;background:rgba(239,83,80,.18);color:#ef8a85;cursor:help}
+.wp-circuit-submenu{margin:6px 0 0 42px;padding:6px;background:rgba(255,255,255,.03);border:1px dashed var(--border-color);border-radius:8px;flex-direction:column;gap:6px;align-items:flex-start}
+.wp-circuit-remove-btn,.wp-circuit-switch-btn{background:none;border:1px solid var(--border-color);border-radius:6px;color:var(--text-secondary);font-size:.78em;padding:5px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .wp-circuit-remove-btn:hover{border-color:#ef5350;color:#ef5350;background:rgba(239,83,80,.08)}
+.wp-circuit-switch-btn:hover{border-color:#667eea;color:#8fa0f5;background:rgba(102,126,234,.1)}
 .wp-card:hover{box-shadow:0 6px 24px rgba(102,126,234,.15);border-color:rgba(102,126,234,.3)}
 .wp-card-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .wp-num-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;flex-shrink:0}
@@ -6145,6 +6147,12 @@ function renderNavlogRecapTable(){
       ? '<button class="nl-recap-type-btn" onclick="window.toggleCircuitType('+i+',false)" title="Marquer ce point comme circuit départ/arrivée">\u{1F9ED} Nav</button>'
       : '';
     var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
+    /* Même signal que sur la planche NavLog (voir wp-unconfigured-tag) : un départ/arrivée
+       sans coordonnées produit un leg fantôme silencieux (calcLeg utilise wp.dist/route même
+       sans coordonnées) — le rendre visible ici aussi, tout en haut de page. */
+    if((k===0||k===shownIdx.length-1) && wp.lat===null && wp.lon===null){
+      roleLabel+=(roleLabel?' ':'')+'<span class="wp-unconfigured-tag" title="Ce point n’a pas de coordonnées : choisissez un aérodrome, sinon supprimez-le pour éviter un leg fantôme.">⚠️ non configuré</span>';
+    }
     var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
     /* Ligne POINT : identité du waypoint (numéro séquentiel, nom éditable, altitude, ETA
        d'arrivée à CE point). Aucune donnée de leg ici — voir la ligne LEG juste après. */
@@ -6204,6 +6212,7 @@ function renderNavlogRecapTable(){
           (hIsDep?'\u{1F6EB}':'\u{1F6EC}')+' '+escHTML(hName)+' — '+(hIsDep?'Circuit départ':'Circuit arrivée')+' ▾'+
         '</button>'+
         '<span class="wp-circuit-submenu nl-recap-circuit-submenu" id="circuit-submenu-recap-'+hi+'" style="display:none">'+
+          '<button class="wp-circuit-switch-btn" onclick="window.switchCircuitType('+hi+')">\u{1F504} Basculer vers '+(hIsDep?'Circuit arrivée':'Circuit départ')+'</button>'+
           '<button class="wp-circuit-remove-btn" onclick="window.removeCircuitType('+hi+')">↩️ Retirer du circuit (repasser en navigation)</button>'+
         '</span>'+
       '</span>';
@@ -6504,6 +6513,14 @@ function renderNavlog(){
     }
     html+='</select>';
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
+    /* D\u00e9part/arriv\u00e9e sans coordonn\u00e9es : forc\u00e9ment visible (index 0 ou dernier) m\u00eame en cas de
+       r\u00e9ordonnancement par glisser-d\u00e9poser, pour \u00e9viter qu'un point rest\u00e9 non configur\u00e9 (ex :
+       le point-mod\u00e8le "Zone locale" du vol local jamais rempli) ne produise silencieusement un
+       leg fant\u00f4me en bout de route \u2014 voir aussi calcLeg qui utilise wp.dist/route m\u00eame sans
+       coordonn\u00e9es (saisie manuelle distance/route valide pour un vrai leg, mais trompeuse ici). */
+    if((i===0||i===waypoints.length-1) && wp.lat===null && wp.lon===null){
+      html+='<span class="wp-unconfigured-tag" title="Ce point de d\u00e9part/arriv\u00e9e n\u2019a pas de coordonn\u00e9es : choisissez un a\u00e9rodrome ou saisissez une position, sinon supprimez-le.">\u26a0\ufe0f Point non configur\u00e9</span>';
+    }
     if(wp.ptType==='circuitDep') html+='<button class="wp-circuit-tag dep" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EB} Circuit d\u00e9part \u25be</button>';
     else if(wp.ptType==='circuitArr') html+='<button class="wp-circuit-tag arr" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EC} Circuit arriv\u00e9e \u25be</button>';
     html+='<div class="wp-actions">';
@@ -6521,9 +6538,11 @@ function renderNavlog(){
     html+='</div>';
     if(wp.ptType){
       /* Sous-menu masqué par défaut (ouvert/fermé via toggleCircuitSubmenu, cliqué sur le tag
-         ci-dessus) : un bouton de retrait explicite, plutôt que de devoir cliquer 2 fois sur
-         l'icône cyclique (dép → arr → nav) pour repasser un point en navigation normale. */
+         ci-dessus) : bouton pour basculer directement dép⇄arr (sans repasser par "nav"), et
+         bouton de retrait explicite — plutôt que de devoir cliquer 1 ou 2 fois sur l'icône
+         cyclique (dép → arr → nav) pour corriger/annuler un point de circuit. */
       html+='<div class="wp-circuit-submenu" id="circuit-submenu-'+i+'" style="display:none">';
+      html+='<button class="wp-circuit-switch-btn" onclick="window.switchCircuitType('+i+')">\u{1F504} Basculer vers '+(wp.ptType==='circuitDep'?'Circuit arrivée':'Circuit départ')+'</button>';
       html+='<button class="wp-circuit-remove-btn" onclick="window.removeCircuitType('+i+')">↩️ Retirer du circuit (repasser en navigation)</button>';
       html+='</div>';
     }
@@ -6760,6 +6779,20 @@ function removeCircuitType(i){
   updateRouteMap();
 }
 window.removeCircuitType=removeCircuitType;
+
+/* Bascule directement Circuit départ ⇄ Circuit arrivée (sans repasser par "nav"). Ajouté suite à
+   un cas réel où des points marqués par erreur "Circuit départ" en fin de route (alors qu'il
+   s'agissait du circuit d'arrivée) ne pouvaient être corrigés qu'en cliquant 2 fois sur l'icône
+   cyclique de la planche NavLog, en bas de page — action directe demandée depuis le même
+   sous-menu que le retrait. */
+function switchCircuitType(i){
+  if(!waypoints[i]||!waypoints[i].ptType) return;
+  waypoints[i].ptType=(waypoints[i].ptType==='circuitDep')?'circuitArr':'circuitDep';
+  renderNavlog();
+  recalcNavlog();
+  updateRouteMap();
+}
+window.switchCircuitType=switchCircuitType;
 
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
