@@ -6244,8 +6244,12 @@ function renderNavlogRecapTable(){
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var canType=(i>0 && i<waypoints.length-1);
+    /* Choix direct départ/arrivée en un clic (plutôt qu'un seul bouton "Nav" qui force toujours
+       "départ" en premier) — évite d'avoir à corriger ensuite via le sous-menu, en particulier
+       quand plusieurs points de circuit partagent le même nom d'aérodrome. */
     var typeBtn=canType
-      ? '<button class="nl-recap-type-btn" onclick="window.toggleCircuitType('+i+',false)" title="Marquer ce point comme circuit départ/arrivée">\u{1F9ED} Nav</button>'
+      ? '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitDep\',false)" title="Marquer ce point comme circuit départ">\u{1F6EB} Dép</button>'+
+        '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitArr\',false)" title="Marquer ce point comme circuit arrivée">\u{1F6EC} Arr</button>'
       : '';
     var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
     /* Même signal que sur la planche NavLog (voir wp-unconfigured-tag) : un départ/arrivée
@@ -6310,9 +6314,12 @@ function renderNavlogRecapTable(){
       if(!hw.ptType) continue;
       var hIsDep=(hw.ptType==='circuitDep');
       var hName=hw.name||('WP'+(hi+1));
+      /* Numéro de position (= badge numéroté de sa carte NavLog) : plusieurs points de circuit
+         partagent souvent le même nom d'aérodrome (ex. 5× "EHMZ") et étaient sinon impossibles
+         à distinguer les uns des autres dans cette liste. */
       hiddenItems+='<span class="nl-recap-hidden-item">'+
         '<button class="wp-circuit-tag '+(hIsDep?'dep':'arr')+'" onclick="window.toggleCircuitSubmenu(\'recap-'+hi+'\')" title="Options">'+
-          (hIsDep?'\u{1F6EB}':'\u{1F6EC}')+' '+escHTML(hName)+' — '+(hIsDep?'Circuit départ':'Circuit arrivée')+' ▾'+
+          (hIsDep?'\u{1F6EB}':'\u{1F6EC}')+' #'+(hi+1)+' '+escHTML(hName)+' — '+(hIsDep?'Circuit départ':'Circuit arrivée')+' ▾'+
         '</button>'+
         '<span class="wp-circuit-submenu nl-recap-circuit-submenu" id="circuit-submenu-recap-'+hi+'" style="display:none">'+
           '<button class="wp-circuit-switch-btn" onclick="window.switchCircuitType('+hi+')">\u{1F504} Basculer vers '+(hIsDep?'Circuit arrivée':'Circuit départ')+'</button>'+
@@ -6321,11 +6328,11 @@ function renderNavlogRecapTable(){
       '</span>';
     }
     hiddenNote='<div class="nl-recap-hidden-note">'+
-      '<div style="font-size:.78em;color:var(--text-secondary);font-style:italic;margin-bottom:4px">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' dans le tableau ci-dessus — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant) :</div>'+
+      '<div style="font-size:.78em;color:var(--text-secondary);font-style:italic;margin-bottom:4px">\u{1F6EB}\u{1F6EC} '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' dans le tableau ci-dessus — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Le numéro (#N) correspond à la carte de ce point sur la planche NavLog plus bas :</div>'+
       hiddenItems+
     '</div>';
   } else {
-    hiddenNote='<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
+    hiddenNote='<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « 🛫 Dép » ou « 🛬 Arr » sur un point pour le marquer comme circuit de départ ou d\'arrivée (et le retirer de ce tableau).</div>';
   }
   /* Alerte franchissement de frontière : un plan de vol OACI est généralement requis dès que la
      route touche plusieurs pays, même sans y atterrir (voir _detectBorderCrossing). Lien direct
@@ -6868,6 +6875,33 @@ function toggleCircuitType(i, scrollToCard){
   }
 }
 window.toggleCircuitType=toggleCircuitType;
+
+/* Marque directement un point comme circuit départ OU arrivée (choix explicite en un clic),
+   plutôt que de forcer "départ" en premier (cycle nav→dép→arr de toggleCircuitType) et exiger
+   une correction ultérieure — utile en particulier quand plusieurs points de circuit portent le
+   même nom d'aérodrome et ne se distinguent que par leur rôle départ/arrivée. */
+function setCircuitType(i, type, scrollToCard){
+  if(!waypoints[i]) return;
+  var _preservedScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+  waypoints[i].ptType = type;
+  renderNavlog();
+  recalcNavlog();
+  updateRouteMap();
+  if(scrollToCard!==false){
+    requestAnimationFrame(function(){
+      var card=document.querySelector('.wp-card[data-idx="'+i+'"]');
+      if(card){ var top=card.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:top-72,behavior:'smooth'}); }
+    });
+  } else {
+    document.documentElement.scrollTop=_preservedScroll;
+    document.body.scrollTop=_preservedScroll;
+    requestAnimationFrame(function(){
+      document.documentElement.scrollTop=_preservedScroll;
+      document.body.scrollTop=_preservedScroll;
+    });
+  }
+}
+window.setCircuitType=setCircuitType;
 
 /* Ouvre/ferme le sous-menu de retrait affiché sous le tag "Circuit départ/arrivée" d'une
    carte NavLog. Un seul sous-menu ouvert à la fois pour rester lisible. Manipule le DOM
