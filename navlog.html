@@ -209,7 +209,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-circuit-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;border:none;cursor:pointer;font-family:inherit}
 .wp-circuit-tag.dep{background:rgba(124,77,255,.18);color:#b39ddb}
 .wp-circuit-tag.arr{background:rgba(0,188,212,.18);color:#4dd0e1}
-.wp-unconfigured-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;background:rgba(239,83,80,.18);color:#ef8a85;cursor:help}
+.wp-unconfigured-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;background:rgba(239,83,80,.18);color:#ef8a85;border:none;cursor:pointer;font-family:inherit;transition:background .2s}
+.wp-unconfigured-tag:hover{background:rgba(239,83,80,.32)}
 .wp-circuit-submenu{margin:6px 0 0 42px;padding:6px;background:rgba(255,255,255,.03);border:1px dashed var(--border-color);border-radius:8px;flex-direction:column;gap:6px;align-items:flex-start}
 .wp-circuit-remove-btn,.wp-circuit-switch-btn{background:none;border:1px solid var(--border-color);border-radius:6px;color:var(--text-secondary);font-size:.78em;padding:5px 10px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .wp-circuit-remove-btn:hover{border-color:#ef5350;color:#ef5350;background:rgba(239,83,80,.08)}
@@ -2492,6 +2493,13 @@ var METAR_FALLBACK = {
   /* EHMZ (Midden-Zeeland) ne publie pas de METAR — repli sur EHFS (Vlissingen/KNMI), station
      la plus proche (~12 km), elle-même utilisable directement via son bouton NL ci-dessus. */
   'EHMZ':['EHFS']
+};
+
+/* Préfixe ICAO (2 lettres) → pays, pour détecter un franchissement de frontière le long de la
+   route (voir _detectBorderCrossing) et rappeler qu'un plan de vol OACI est requis dans ce cas —
+   couvre les pays des aérodromes connus de l'app (AIRPORT_COORDS/RUNWAY_DB). */
+var ICAO_COUNTRY_PREFIX = {
+  'EB':'Belgique','EH':'Pays-Bas','ED':'Allemagne','EL':'Luxembourg','LF':'France','EG':'Royaume-Uni'
 };
 
 var WX_FR = {
@@ -6182,6 +6190,27 @@ function recalcNavlog(){
    général) mais pas dans les points/temps de navigation proprement dits — la route/cap/ETE de
    chaque ligne est donc recalculée directement d'un point de navigation affiché au suivant,
    en sautant les points de circuit intermédiaires, plutôt que de réutiliser le leg chaîné. */
+/* Détecte un franchissement de frontière le long de la route : parcourt tous les waypoints
+   (pas seulement départ/arrivée — une route peut ressortir dans un autre pays sans y atterrir,
+   ex. un aller-retour Belgique→Pays-Bas→Belgique) et relève les pays distincts reconnus via
+   ICAO_COUNTRY_PREFIX. Un vol dont la route touche plus d'un pays nécessite généralement le
+   dépôt d'un plan de vol (voir onglet FPL). */
+function _detectBorderCrossing(){
+  var countries = {};
+  for(var i=0;i<waypoints.length;i++){
+    var nm = waypoints[i].name;
+    if(!nm) continue;
+    nm = nm.trim().toUpperCase();
+    var m = /^([A-Z]{2})[A-Z]{2}$/.exec(nm);
+    if(!m) continue;
+    var country = ICAO_COUNTRY_PREFIX[m[1]];
+    if(country) countries[country] = true;
+  }
+  var list = Object.keys(countries);
+  return { crosses: list.length>1, countries: list };
+}
+window._detectBorderCrossing = _detectBorderCrossing;
+
 function renderNavlogRecapTable(){
   var card=document.getElementById('navlogRecapCard');
   var cont=document.getElementById('navlogRecapContainer');
@@ -6218,7 +6247,9 @@ function renderNavlogRecapTable(){
        sans coordonnées produit un leg fantôme silencieux (calcLeg utilise wp.dist/route même
        sans coordonnées) — le rendre visible ici aussi, tout en haut de page. */
     if((k===0||k===shownIdx.length-1) && wp.lat===null && wp.lon===null){
-      roleLabel+=(roleLabel?' ':'')+'<span class="wp-unconfigured-tag" title="Ce point n’a pas de coordonnées : choisissez un aérodrome, sinon supprimez-le pour éviter un leg fantôme.">⚠️ non configuré</span>';
+      /* Bouton, pas juste un badge d'alerte : demandé explicitement pour pouvoir supprimer ce
+         point directement d'ici, sans redescendre chercher le petit "×" de sa carte NavLog. */
+      roleLabel+=(roleLabel?' ':'')+'<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
     var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
     /* Ligne POINT : identité du waypoint (numéro séquentiel, nom éditable, altitude, ETA
@@ -6291,11 +6322,22 @@ function renderNavlogRecapTable(){
   } else {
     hiddenNote='<div style="font-size:.78em;color:var(--text-secondary);margin-top:6px;font-style:italic">Cliquez « Nav » sur un point pour le marquer comme circuit de départ/arrivée (et le retirer de ce tableau).</div>';
   }
+  /* Alerte franchissement de frontière : un plan de vol OACI est généralement requis dès que la
+     route touche plusieurs pays, même sans y atterrir (voir _detectBorderCrossing). Lien direct
+     vers l'onglet FPL (déjà pré-rempli automatiquement depuis cette même route). */
+  var borderCheck = _detectBorderCrossing();
+  var borderBanner = borderCheck.crosses
+    ? '<div style="margin-bottom:10px;padding:8px 12px;border-radius:8px;background:rgba(255,167,38,.12);border:1px solid rgba(255,167,38,.5);font-size:.85em;color:#ffb74d;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
+        '<span>🌍 Route internationale (' + borderCheck.countries.join(' → ') + ') — un <b>plan de vol OACI (FPL)</b> est généralement requis.</span>'+
+        '<button class="navlog-btn" style="font-size:.85em;padding:5px 12px;flex-shrink:0" onclick="window.switchTab(\'fpl\')">✈️ Aller à l\'onglet FPL</button>'+
+      '</div>'
+    : '';
   cont.innerHTML=
     '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
       '<span><span class="icon">📋</span> Récapitulatif de la route (navigation)</span>'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer (A5)</button>'+
     '</div>'+
+    borderBanner+
     '<div style="overflow-x:auto">'+
     '<table class="nl-recap-table" id="navlogRecapTableEl">'+
       '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th colspan="2">Rôle / ETA</th><th>Type</th></tr></thead>'+
@@ -6586,7 +6628,7 @@ function renderNavlog(){
        leg fant\u00f4me en bout de route \u2014 voir aussi calcLeg qui utilise wp.dist/route m\u00eame sans
        coordonn\u00e9es (saisie manuelle distance/route valide pour un vrai leg, mais trompeuse ici). */
     if((i===0||i===waypoints.length-1) && wp.lat===null && wp.lon===null){
-      html+='<span class="wp-unconfigured-tag" title="Ce point de d\u00e9part/arriv\u00e9e n\u2019a pas de coordonn\u00e9es : choisissez un a\u00e9rodrome ou saisissez une position, sinon supprimez-le.">\u26a0\ufe0f Point non configur\u00e9</span>';
+      html+='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point de d\u00e9part/arriv\u00e9e n\u2019a pas de coordonn\u00e9es : cliquer pour le supprimer (ou choisissez un a\u00e9rodrome / saisissez une position ci-dessous).">\u26a0\ufe0f Point non configur\u00e9 \u2014 supprimer \u2715</button>';
     }
     if(wp.ptType==='circuitDep') html+='<button class="wp-circuit-tag dep" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EB} Circuit d\u00e9part \u25be</button>';
     else if(wp.ptType==='circuitArr') html+='<button class="wp-circuit-tag arr" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EC} Circuit arriv\u00e9e \u25be</button>';
@@ -6873,6 +6915,16 @@ function removeWaypoint(i){
   });
 }
 window.removeWaypoint=removeWaypoint;
+
+/* Suppression avec confirmation depuis le tag "⚠️ non configuré" (tableau récapitulatif et
+   planche NavLog) — un point de départ/arrivée sans coordonnées, cliqué par erreur, effacerait
+   la route sans avertissement si on utilisait removeWaypoint() nu. */
+function removeUnconfiguredWaypoint(i){
+  if(!waypoints[i]) return;
+  if(!confirm('Supprimer ce point non configuré ("'+(waypoints[i].name||'sans nom')+'") ?')) return;
+  removeWaypoint(i);
+}
+window.removeUnconfiguredWaypoint=removeUnconfiguredWaypoint;
 
 /* ===== DRAG & DROP REORDER (unified Pointer Events — mouse/touch/pen) ===== */
 function initDragDrop(board){
