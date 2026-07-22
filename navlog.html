@@ -6135,13 +6135,22 @@ function recalcNavlog(){
   var cumulativeMin=0;
   
   var totalDist=0,totalTime=0,totalFuel=0;
+  /* Distance/route recalculés depuis le DERNIER point à coordonnées connues, pas forcément
+     waypoints[i-1] — un point intercalé sans coordonnées (ex. inséré puis jamais placé)
+     bloquait sinon le recalcul du point suivant (wp.dist restait figé, souvent à 0), alors
+     que la carte (updateRouteMap), elle, saute déjà les points sans coordonnées pour tracer
+     et étiqueter ses segments. Résultat concret rapporté : des legs de circuit avec une vraie
+     distance visible sur la carte (ex. 1.6 NM) mais comptabilisés comme nuls dans le devis
+     carburant, qui n'utilise que wp.dist. */
+  var lastValidLat=(waypoints[0]&&waypoints[0].lat!==null)?waypoints[0].lat:null;
+  var lastValidLon=(waypoints[0]&&waypoints[0].lon!==null)?waypoints[0].lon:null;
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
-    var prev=waypoints[i-1];
-    if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
-      wp.dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-      wp.route=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
+    if(lastValidLat!==null&&lastValidLon!==null&&wp.lat!==null&&wp.lon!==null){
+      wp.dist=Math.round(haversine(lastValidLat,lastValidLon,wp.lat,wp.lon)*10)/10;
+      wp.route=Math.round(trueBearing(lastValidLat,lastValidLon,wp.lat,wp.lon)*10)/10;
     }
+    if(wp.lat!==null&&wp.lon!==null){ lastValidLat=wp.lat; lastValidLon=wp.lon; }
     var legAlt = wp.altitude || (parseInt(_v('cfgAlt'))||2300);
     var leg=calcLeg(wp.dist,wp.route,cfg,wp.legWind,legAlt);
     wp._leg=leg;
