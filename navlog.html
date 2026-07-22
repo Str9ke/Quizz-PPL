@@ -206,9 +206,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wp-card.circuit-arr-card{border-image:linear-gradient(180deg,#00bcd4,#006064) 1;box-shadow:0 4px 16px rgba(0,188,212,.18)}
 .wp-circuit-btn{background:none;border:none;font-size:1em;cursor:pointer;padding:2px 4px;opacity:.45;transition:all .2s;flex-shrink:0;line-height:1}
 .wp-circuit-btn.active{opacity:1}
-.wp-circuit-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0}
+.wp-circuit-tag{font-size:.68em;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:2px;white-space:nowrap;flex-shrink:0;border:none;cursor:pointer;font-family:inherit}
 .wp-circuit-tag.dep{background:rgba(124,77,255,.18);color:#b39ddb}
 .wp-circuit-tag.arr{background:rgba(0,188,212,.18);color:#4dd0e1}
+.wp-circuit-submenu{margin:6px 0 0 42px;padding:6px;background:rgba(255,255,255,.03);border:1px dashed var(--border-color);border-radius:8px}
+.wp-circuit-remove-btn{background:none;border:1px solid var(--border-color);border-radius:6px;color:var(--text-secondary);font-size:.78em;padding:5px 10px;cursor:pointer;transition:all .2s}
+.wp-circuit-remove-btn:hover{border-color:#ef5350;color:#ef5350;background:rgba(239,83,80,.08)}
 .wp-card:hover{box-shadow:0 6px 24px rgba(102,126,234,.15);border-color:rgba(102,126,234,.3)}
 .wp-card-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .wp-num-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;flex-shrink:0}
@@ -6471,8 +6474,8 @@ function renderNavlog(){
     }
     html+='</select>';
     html+='<input type="text" class="wp-name-input" value="'+escHTML(wp.name)+'" data-idx="'+i+'" placeholder="Nom du waypoint">';
-    if(wp.ptType==='circuitDep') html+='<span class="wp-circuit-tag dep">\u{1F6EB} Circuit d\u00e9part</span>';
-    else if(wp.ptType==='circuitArr') html+='<span class="wp-circuit-tag arr">\u{1F6EC} Circuit arriv\u00e9e</span>';
+    if(wp.ptType==='circuitDep') html+='<button class="wp-circuit-tag dep" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EB} Circuit d\u00e9part \u25be</button>';
+    else if(wp.ptType==='circuitArr') html+='<button class="wp-circuit-tag arr" onclick="window.toggleCircuitSubmenu('+i+')" title="Options">\u{1F6EC} Circuit arriv\u00e9e \u25be</button>';
     html+='<div class="wp-actions">';
     if(i>0 && i<waypoints.length-1){
       html+='<button class="wp-etape-btn'+(wp.isEtape?' active':'')+'" onclick="window.toggleEtape('+i+')" title="\u00c9tape interm\u00e9diaire (escale)">'+(wp.isEtape?'\uD83D\uDFE0':'\u2B55')+'</button>';
@@ -6486,6 +6489,14 @@ function renderNavlog(){
     }
     html+='</div>';
     html+='</div>';
+    if(wp.ptType){
+      /* Sous-menu masqué par défaut (ouvert/fermé via toggleCircuitSubmenu, cliqué sur le tag
+         ci-dessus) : un bouton de retrait explicite, plutôt que de devoir cliquer 2 fois sur
+         l'icône cyclique (dép → arr → nav) pour repasser un point en navigation normale. */
+      html+='<div class="wp-circuit-submenu" id="circuit-submenu-'+i+'" style="display:none">';
+      html+='<button class="wp-circuit-remove-btn" onclick="window.removeCircuitType('+i+')">↩️ Retirer du circuit (repasser en navigation)</button>';
+      html+='</div>';
+    }
     html+='<div class="wp-coords" style="margin-left:42px;margin-top:4px">';
     html+='<input type="text" value="'+(wp.lat!==null?wp.lat.toFixed(4):'')+'" placeholder="Lat" data-idx="'+i+'" data-coord="lat" onchange="window.setCoord('+i+',\'lat\',this.value)">';
     html+='<input type="text" value="'+(wp.lon!==null?wp.lon.toFixed(4):'')+'" placeholder="Lon" data-idx="'+i+'" data-coord="lon" onchange="window.setCoord('+i+',\'lon\',this.value)">';
@@ -6694,6 +6705,31 @@ function toggleCircuitType(i, scrollToCard){
   }
 }
 window.toggleCircuitType=toggleCircuitType;
+
+/* Ouvre/ferme le sous-menu de retrait affiché sous le tag "Circuit départ/arrivée" d'une
+   carte NavLog. Un seul sous-menu ouvert à la fois pour rester lisible. Manipule le DOM
+   directement (pas de re-render) pour ne pas perturber un éventuel champ en cours d'édition
+   ailleurs sur la planche. */
+function toggleCircuitSubmenu(i){
+  var el=document.getElementById('circuit-submenu-'+i);
+  if(!el) return;
+  var willOpen=(el.style.display==='none'||!el.style.display);
+  document.querySelectorAll('.wp-circuit-submenu').forEach(function(s){ if(s!==el) s.style.display='none'; });
+  el.style.display=willOpen?'flex':'none';
+}
+window.toggleCircuitSubmenu=toggleCircuitSubmenu;
+
+/* Retire explicitement un point du circuit départ/arrivée (repasse en point de navigation
+   normal), sans passer par le cycle nav→dép→arr→nav du bouton icône — action directe demandée
+   depuis le sous-menu plutôt que de devoir cliquer 2 fois sur l'icône cyclique. */
+function removeCircuitType(i){
+  if(!waypoints[i]) return;
+  waypoints[i].ptType=undefined;
+  renderNavlog();
+  recalcNavlog();
+  updateRouteMap();
+}
+window.removeCircuitType=removeCircuitType;
 
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
