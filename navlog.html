@@ -492,7 +492,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
 #routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px;overflow:hidden}
-.route-map-card .route-map-toolbar{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
+.route-map-card .route-map-toolbar{padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
 .route-map-card .route-map-legend{font-size:.72em;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap}
 .route-map-card .route-map-legend span{display:inline-flex;align-items:center;gap:4px}
@@ -2920,6 +2920,14 @@ function renderFuelLog(){
      étape (donc quel aérodrome) chaque circuit appartenait. */
   var isEtapesFuelLog=(typeof flightType!=='undefined' && flightType==='etapes');
   var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0, stageLegNum=0;
+  /* Détail circuit départ/arrivée PAR étape (pas juste un total global) — sinon un vol à
+     2+ étapes, chacune avec son propre circuit départ/arrivée, agrégeait tout en un seul
+     nombre "Circuit départ"/"Circuit arrivée" sans dire quelle étape y contribuait. */
+  var circByStage={};
+  function _recordStageCircTotals(){
+    if(curStageNum===null) return;
+    circByStage[curStageNum]={depFuel:stageCircDepFuel,depTime:stageCircDepTimeMin,arrFuel:stageCircArrFuel,arrTime:stageCircArrTimeMin};
+  }
   function _legStage(prevWp,wp){
     if(!prevWp._stages||!wp._stages) return null;
     for(var a=0;a<prevWp._stages.length;a++){ if(wp._stages.indexOf(prevWp._stages[a])>=0) return prevWp._stages[a]; }
@@ -2947,6 +2955,7 @@ function renderFuelLog(){
         var thisLegStage=_legStage(waypoints[i-1],wp);
         if(thisLegStage!==null && thisLegStage!==curStageNum){
           _closeStageSubtotal();
+          _recordStageCircTotals();
           curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0; stageLegNum=0;
           var stageDepWp=waypoints[i-1], stageArrIdxForLabel=i;
           /* Dernier point qui appartient ENCORE à cette étape (pas le premier qui n'y
@@ -2994,6 +3003,7 @@ function renderFuelLog(){
     }
   }
   _closeStageSubtotal();
+  _recordStageCircTotals();
 
   /* If no meaningful route, show placeholder */
   if(totalDist===0 && tripTimeMin===0){
@@ -3035,12 +3045,23 @@ function renderFuelLog(){
   var enduranceMin = (fuelBurn > 0) ? (totalBlockFuel / fuelBurn) * 60 : 0;
 
   /* Left Column: Fuel Breakdown */
+  var stageNums=Object.keys(circByStage).map(Number).sort(function(a,b){return a-b;});
+  var splitCircByStage=isEtapesFuelLog && stageNums.length>1;
+
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
-  col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">ESTIMATION (Litres)</div>';
+  col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
   if(navFuel>0) col1+=row('D\u00e9lestage (Navigation)', navFuel);
   else col1+=row('D\u00e9lestage (Navigation)', 0, 'var(--text-secondary)');
-  if(circDepFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part', circDepFuel, '#b39ddb');
-  if(circArrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e', circArrFuel, '#4dd0e1');
+  if(splitCircByStage){
+    stageNums.forEach(function(sn){
+      var st=circByStage[sn];
+      if(st.depFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part \u2014 \u00c9tape '+sn, st.depFuel, '#b39ddb');
+      if(st.arrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e \u2014 \u00c9tape '+sn, st.arrFuel, '#4dd0e1');
+    });
+  } else {
+    if(circDepFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part', circDepFuel, '#b39ddb');
+    if(circArrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e', circArrFuel, '#4dd0e1');
+  }
 
   col1+=row('Roulage (Taxi)', taxiFuel);
   if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
@@ -3067,8 +3088,16 @@ function renderFuelLog(){
   col2+='<div style="font-weight:700;margin-bottom:12px;color:#ffa726;font-size:1.1em">TEMPS DE VOL</div>';
   if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
   else col2+=timeRow('Temps Vol (Navigation)', 0);
-  if(circDepTimeMin>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part', circDepTimeMin);
-  if(circArrTimeMin>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e', circArrTimeMin);
+  if(splitCircByStage){
+    stageNums.forEach(function(sn){
+      var st=circByStage[sn];
+      if(st.depTime>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part \u2014 \u00c9tape '+sn, st.depTime);
+      if(st.arrTime>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e \u2014 \u00c9tape '+sn, st.arrTime);
+    });
+  } else {
+    if(circDepTimeMin>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part', circDepTimeMin);
+    if(circArrTimeMin>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e', circArrTimeMin);
+  }
 
   col2+=timeRow('Taxi D\u00e9part', taxiD);
   col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
@@ -6861,6 +6890,7 @@ function _perfPrintWindInfo(dirId,spdId,rwyKey){
 function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,perfTakeoffWind,perfLandingWind){
   var rows='';
   var cumMin=0,cumDist=0,cumFuel=0;
+  var legNum=0; /* numérote les LEGS (pas les waypoints) — même logique que le tableau à l'écran */
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
     var wp=waypoints[i];
@@ -6876,7 +6906,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     else if(k===segIdx.length-1 && windBadgeLast && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
 
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
-      '<td class="c-num">'+(k+1)+'</td>'+
+      '<td class="c-num"></td>'+
       '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+windBadge+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
       '<td class="dim">—</td>'+
@@ -6916,9 +6946,10 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     var fuelTxt=blank?'':((leg.fuel||0)+' L');
     var legEtaStr=blank?'':(cumMin?formatETA(cumMin):'—');
     var nextAltTxt=blank?'':nextAlt;
+    legNum++;
 
     rows+='<tr class="leg-row">'+
-      '<td class="c-num"></td>'+
+      '<td class="c-num">'+legNum+'</td>'+
       '<td class="c-name leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
       '<td>'+nextAltTxt+'</td>'+
       '<td>'+routeT+'</td>'+
@@ -7060,7 +7091,7 @@ function printNavlogRecapTable(blank){
         '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
         '<col class="c-wind"><col class="c-wca"><col class="c-cap"><col class="c-dist"><col class="c-gs">'+
         '<col class="c-ete"><col class="c-eta"><col class="c-fuel"><col class="c-comment"></colgroup>'+
-        '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
+        '<thead><tr><th>Leg</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
         '<th class="cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Carb.</th><th>Commentaires</th></tr></thead>'+
         '<tbody>'+res.rows+totRow+'</tbody>'+
       '</table>'+
@@ -8250,6 +8281,36 @@ function _resetEtapesSelection(){
 }
 window._resetEtapesSelection=_resetEtapesSelection;
 
+/* Fusionne les points ADJACENTS quasi identiques (même nom, ou à moins de 0.3 NM l'un de
+   l'autre) — utilisé après composition d'un vol à étapes pour éliminer les points fantômes
+   qui créent une "leg" quasi nulle entre deux points du même aérodrome. Priorité au ptType
+   du point conservé s'il en a un ; sinon récupère celui du point fusionné. */
+function _dedupeAdjacentWaypoints(arr){
+  var out=[];
+  for(var i=0;i<arr.length;i++){
+    var w=arr[i];
+    if(out.length){
+      var prev=out[out.length-1];
+      var sameName=!!(w.name && (prev.name||'').trim().toUpperCase()===(w.name||'').trim().toUpperCase());
+      var veryClose=false;
+      if(!sameName && prev.lat!=null && prev.lon!=null && w.lat!=null && w.lon!=null){
+        veryClose = haversine(prev.lat,prev.lon,w.lat,w.lon) < 0.3;
+      }
+      if(sameName || veryClose){
+        if(!prev.ptType && w.ptType) prev.ptType=w.ptType;
+        if(w.isEtape) prev.isEtape=true;
+        if(w._stages && w._stages.length){
+          prev._stages = prev._stages || [];
+          w._stages.forEach(function(s){ if(prev._stages.indexOf(s)<0) prev._stages.push(s); });
+        }
+        continue; /* w fusionné dans prev, pas ajouté à out */
+      }
+    }
+    out.push(w);
+  }
+  return out;
+}
+
 function _composeEtapes(){
   if(_etapesSelection.length<2){
     _toast('⚠️ Sélectionnez au moins 2 dossiers, dans l\'ordre de vol','error',3200);
@@ -8316,6 +8377,14 @@ function _composeEtapes(){
     combined=combined.concat(wps);
   });
   if(combined.length && combined[0]) combined[0]._stages=[1];
+  /* Filet de sécurité en plus de la fusion de jonction ci-dessus (par nom exact) : un dossier
+     sauvegardé peut contenir DEUX points quasi identiques du même aérodrome (ex: le point de
+     nav "EHMZ" et un point de circuit arrivée "EHMZ" resté juste à côté, non fusionné à
+     l'époque) — ça créait une leg fantôme de quelques dixièmes de NM, visuellement une ligne
+     de tableau vide entre les deux. On fusionne ici tout point adjacent au nom identique OU à
+     moins de 0.3 NM d'un point déjà là — dans TOUT le vol composé, pas seulement aux jonctions
+     entre étapes. */
+  combined=_dedupeAdjacentWaypoints(combined);
 
   waypoints=combined;
   flightType='etapes';
@@ -11887,10 +11956,16 @@ var routeMapLegLabelLayers=[];
    détail texte n'apparaissant qu'une fois suffisamment zoomé pour que ça ne se chevauche plus. */
 var ROUTE_MAP_LEG_LABEL_MIN_PX=130;
 var ROUTE_MAP_LEG_LABEL_MIN_GAP_PX=100; /* distance mini entre 2 étiquettes déjà placées */
+/* Zoom minimum pour afficher : (a) les étiquettes texte cap/ETE/distance sur les legs et
+   (b) les noms de waypoint sous les marqueurs et les flèches de circuit dép/arr. En dessous,
+   la vue d'ensemble reste épurée — seules les flèches des legs de nav "principaux" restent
+   visibles, avec leur numéro de leg à la place du triangle plein. */
+var ROUTE_MAP_ZOOM_DETAIL=10;
 function _renderRouteLegLabels(){
   if(!routeMap) return;
   for(var li=0;li<routeMapLegLabelLayers.length;li++) routeMap.removeLayer(routeMapLegLabelLayers[li]);
   routeMapLegLabelLayers=[];
+  if(routeMap.getZoom()<ROUTE_MAP_ZOOM_DETAIL) return; /* dézoomé : pas d'étiquettes texte, voir ROUTE_MAP_ZOOM_DETAIL */
   var placedPx=[]; /* positions écran des étiquettes déjà posées dans cette passe */
   var pts=[];
   for(var w=0;w<waypoints.length;w++){
@@ -11939,6 +12014,13 @@ function initRouteMap(){
   var container=document.getElementById('routeMapContainer');
   if(!container) return;
   routeMap=L.map('routeMapContainer',{zoomControl:true,attributionControl:false,keyboard:false}).setView([50.4589,3.8181],9);
+  /* Pane dédiée aux timetics, avec un z-index plus élevé que markerPane (600 par défaut) :
+     sans ça les timetics (tracés en polyline, donc dans overlayPane, z-index 400) restaient
+     TOUJOURS sous les flèches/marqueurs de waypoint (markerPane) quel que soit l'ordre
+     d'ajout — Leaflet empile par pane, pas par ordre d'ajout. */
+  routeMap.createPane('timeticsPane');
+  routeMap.getPane('timeticsPane').style.zIndex=650;
+  routeMap.getPane('timeticsPane').style.pointerEvents='none';
   /* Empêcher tout scroll causé par focus() sur le conteneur Leaflet.
      Leaflet appelle container.focus() dans son gestionnaire interne même avec keyboard:false.
      On surcharge focus() pour toujours passer preventScroll:true. */
@@ -12424,7 +12506,7 @@ function updateRouteMap(){
       var tkLon=pts[tk].lon+(pts[tk+1].lon-pts[tk].lon)*tkFrac;
       var tkA=destPoint(tkLat,tkLon,tkPerp,TICK_HALF_NM);
       var tkB=destPoint(tkLat,tkLon,(tkPerp+180)%360,TICK_HALF_NM);
-      var tkMark=L.polyline([[tkA.lat,tkA.lon],[tkB.lat,tkB.lon]],{color:'#2196f3',weight:3,opacity:.95}).addTo(routeMap);
+      var tkMark=L.polyline([[tkA.lat,tkA.lon],[tkB.lat,tkB.lon]],{color:'#2196f3',weight:3,opacity:.95,pane:'timeticsPane'}).addTo(routeMap);
       routeMapLayers.push(tkMark);
       hasTimetics=true;
     }
@@ -12443,19 +12525,24 @@ function updateRouteMap(){
       legendEl.style.display='none';
     }
   }
-  /* WP markers with number badges */
+  /* WP markers with number badges. Dézoomé (< ROUTE_MAP_ZOOM_DETAIL) : plus de nom sous
+     l'icône — sur une vue d'ensemble avec beaucoup de points, ces étiquettes se chevauchaient
+     en un amas illisible ; le nom reste consultable dans le tableau récapitulatif juste
+     au-dessus, ou en zoomant. */
+  var _mapZoomedOut=routeMap.getZoom()<ROUTE_MAP_ZOOM_DETAIL;
   for(var j=0;j<pts.length;j++){
     var p=pts[j];
     var isFirst=(j===0),isLast=(j===pts.length-1);
     var isEtape=(!isFirst&&!isLast&&waypoints[p.idx]&&waypoints[p.idx].isEtape);
     var color=isFirst?'#4caf50':(isLast?'#f44336':(isEtape?'#ff9500':'#667eea'));
     var emoji=isFirst?'\u{1F6EB}':(isLast?'\u{1F6EC}':(isEtape?'\uD83D\uDFE0':'\u{1F4CD}'));
+    var nameLabelHtml=_mapZoomedOut?'':'<span style="font-size:10px;font-weight:800;color:'+color+';background:rgba(0,0,0,.7);padding:1px 5px;border-radius:6px;white-space:nowrap">'+p.name+'</span>';
     var marker=L.marker([p.lat,p.lon],{
       draggable: true,
       title: 'Glissez pour déplacer, cliquez pour supprimer',
       icon:L.divIcon({
         className:'',
-        html:'<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:18px;cursor:pointer;">'+emoji+'</span><span style="font-size:10px;font-weight:800;color:'+color+';background:rgba(0,0,0,.7);padding:1px 5px;border-radius:6px;white-space:nowrap">'+p.name+'</span></div>',
+        html:'<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:18px;cursor:pointer;">'+emoji+'</span>'+nameLabelHtml+'</div>',
         iconSize:[60,36],
         iconAnchor:[30,18]
       })
@@ -12518,10 +12605,31 @@ function updateRouteMap(){
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips.
      Cliquables : ouvrent un petit menu (popup Leaflet) pour configurer ce leg en
      circuit départ/arrivée/normal directement depuis la carte, sans redescendre au
-     tableau récapitulatif — voir window._mapLegSetType(). */
+     tableau récapitulatif — voir window._mapLegSetType().
+     Dézoomé (< ROUTE_MAP_ZOOM_DETAIL) : les flèches de circuit dép/arr (courtes, groupées
+     près de l'aérodrome) sont masquées — elles finissaient collées les unes aux autres en un
+     amas illisible sur une vue d'ensemble. Seules les flèches des legs de nav "principaux"
+     restent, avec leur numéro de leg (même numérotation qu'au tableau Navlog : redémarre à 1
+     par étape) affiché à la place du triangle plein. */
+  var mapLegNum=0, mapLegStage=null;
+  function _mapLegStageOf(aWp,bWp){
+    if(!aWp._stages||!bWp._stages) return null;
+    for(var si=0;si<aWp._stages.length;si++){ if(bWp._stages.indexOf(aWp._stages[si])>=0) return aWp._stages[si]; }
+    return bWp._stages[0];
+  }
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
     var brg=trueBearing(a.lat,a.lon,b.lat,b.lon);
+    var arrowLegType=waypoints[b.idx]?waypoints[b.idx].ptType:null;
+    var isCircuitLeg=(arrowLegType==='circuitDep'||arrowLegType==='circuitArr');
+    if(_mapZoomedOut && isCircuitLeg) continue; /* flèches de circuit masquées dézoomé */
+    var legNumBadge=null;
+    if(!isCircuitLeg){
+      var legStageNow=_mapLegStageOf(waypoints[a.idx],waypoints[b.idx]);
+      if(legStageNow!==mapLegStage){ mapLegStage=legStageNow; mapLegNum=0; }
+      mapLegNum++;
+      if(_mapZoomedOut) legNumBadge=mapLegNum;
+    }
     /* Place arrow at 40% of leg to avoid midpoint overlap with return leg */
     var frac=0.4;
     var arrowLat=a.lat+(b.lat-a.lat)*frac;
@@ -12531,11 +12639,12 @@ function updateRouteMap(){
     var offsetDeg=0.003;
     arrowLat+=Math.cos(perpRad)*offsetDeg;
     arrowLon+=Math.sin(perpRad)*offsetDeg;
-    var arrowLegType=waypoints[b.idx]?waypoints[b.idx].ptType:null;
     var arrowColor=arrowLegType==='circuitDep'?'#7c4dff':(arrowLegType==='circuitArr'?'#00bcd4':'#ff1493');
     /* Halo transparent autour de la flèche : zone de clic plus grande que le triangle
        visible seul (important au doigt sur mobile), sans changer le rendu visuel. */
-    var svgArrow='<svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#000" opacity="0.001"/><g transform="translate(6,6)"><polygon points="28,14 4,2 8,14 4,26" fill="'+arrowColor+'" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></g></svg>';
+    var arrowShape='<polygon points="28,14 4,2 8,14 4,26" fill="'+arrowColor+'" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/>';
+    var legNumLabel=(legNumBadge!==null)?('<text x="14" y="18" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="#000" stroke-width="2.5" paint-order="stroke" style="font-family:inherit">'+legNumBadge+'</text>') : '';
+    var svgArrow='<svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#000" opacity="0.001"/><g transform="translate(6,6)">'+arrowShape+legNumLabel+'</g></svg>';
     var arrowIcon=L.divIcon({
       className:'',
       html:svgArrow,
@@ -13781,7 +13890,13 @@ function _perfMetarApply(cfg){
     infoLines.push('&#x1f4a8; Vent utilisé : <b>'+windStr+'</b>');
 
     var rwyIcao = (RUNWAY_DB && RUNWAY_DB[anchorIcao]) ? anchorIcao : usedIcao;
-    window[cfg.rwyKey] = rwyIcao;
+    /* Ne mémoriser rwyIcao QUE s'il correspond au véritable aérodrome de l'étape (anchorIcao) :
+       sinon, après un repli météo sur une station voisine sans rapport avec la piste réelle
+       (ex: pas de METAR pour l'aérodrome d'arrivée → repli sur une station à 30 NM), le tableau
+       "Pistes disponibles" restait bloqué sur cette station de repli au lieu de re-résoudre vers
+       le bon aérodrome dès qu'il redevenait résolvable — la piste "apparaissait puis
+       disparaissait" selon l'ordre d'arrivée des METAR chargés en tâche de fond. */
+    if(rwyIcao===anchorIcao) window[cfg.rwyKey] = rwyIcao;
     var bestRwy = (RUNWAY_DB && RUNWAY_DB[rwyIcao]) ? suggestRunway(rwyIcao, wm.dir, wm.spd) : null;
 
     if(bestRwy){
