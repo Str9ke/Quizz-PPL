@@ -520,6 +520,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .rm-measure-popup .leaflet-popup-tip{background:#1a1a2e}
 .rm-measure-box{font-size:.85em}
 .rm-measure-dist{font-weight:800;font-size:1.05em;margin-bottom:6px}
+.rm-measure-brg{font-size:.88em;color:#ccc;margin-bottom:6px}
 .rm-measure-label{display:block;font-size:.85em;color:#ccc;margin-bottom:6px}
 .rm-measure-label input{width:52px;margin:0 3px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;padding:2px 4px}
 .rm-measure-alt{font-weight:700;color:#ffca28;margin-bottom:6px}
@@ -790,6 +791,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
        sauvegardée dans le dossier à la météo fraîchement récupérée. -->
   <div class="global-refresh-bar" id="globalRefreshBar">
     <button class="global-refresh-btn" id="globalRefreshBtn" onclick="window.refreshAllWeatherData()">&#x1F504; Tout actualiser (METAR &middot; NOTAM &middot; M&#xe9;t&#xe9;o)</button>
+    <button class="global-refresh-btn" id="globalClearWsBtn" style="background:rgba(239,83,80,.14);border-color:#ef5350;color:#ef5350" onclick="window.clearWorkspace()" title="Vide complètement l'espace de travail (NavLog, météo, NOTAMs, cartes...)">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
     <span class="global-refresh-time" id="globalRefreshTime"></span>
     <div class="wx-snapshot-toggle" id="wxSnapshotToggle" style="display:none">
       <button class="wx-snap-btn" id="wxSnapBtnAvant" onclick="window._setWxViewMode('avant')">&#x1F4CB; Avant (dossier)</button>
@@ -968,7 +970,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div id="caracteristiquesBody" style="display:none">
       <div class="navlog-board" id="navlogBoard"></div>
       <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
-      <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
       </div>
     </div>
 
@@ -3047,6 +3048,14 @@ function renderFuelLog(){
   /* Left Column: Fuel Breakdown */
   var stageNums=Object.keys(circByStage).map(Number).sort(function(a,b){return a-b;});
   var splitCircByStage=isEtapesFuelLog && stageNums.length>1;
+  /* Roulage (taxi) PAR étape : un vol à N étapes a N décollages et N atterrissages, donc N
+     taxis départ et N taxis arrivée (l'escale intermédiaire compte double : roulage arrivée
+     de l'étape qui se termine + roulage départ de celle qui commence) — auparavant regroupé
+     en un seul "Taxi Départ"/"Taxi Arrivée" global (vraie première/dernière piste) plus un
+     "Étapes taxi (×N)" agrégé pour les escales, sans dire à quelle étape chacune appartenait.
+     Le total en litres/minutes ne change pas, seul l'affichage est ventilé par étape. */
+  var totalStageCount=isEtapesFuelLog?(window._etapesStageCount||1):1;
+  var splitTaxiByStage=isEtapesFuelLog && totalStageCount>1;
 
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
@@ -3063,8 +3072,15 @@ function renderFuelLog(){
     if(circArrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e', circArrFuel, '#4dd0e1');
   }
 
-  col1+=row('Roulage (Taxi)', taxiFuel);
-  if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
+  if(splitTaxiByStage){
+    for(var tfN=1;tfN<=totalStageCount;tfN++){
+      col1+=row('Roulage d\u00e9part \u2014 \u00c9tape '+tfN, (taxiD/60)*fuelBurn);
+      col1+=row('Roulage arriv\u00e9e \u2014 \u00c9tape '+tfN, (taxiA/60)*fuelBurn);
+    }
+  } else {
+    col1+=row('Roulage (Taxi)', taxiFuel);
+    if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
+  }
   col1+=row('Marge ('+contPct+'%)', contFuel);
   col1+=row('R\u00e9serve ('+resMin+' min)', resFuel);
   if(altnFuel>0) col1+=row('D\u00e9gagement ('+altnDist+' NM)', altnFuel, '#f87171');
@@ -3099,9 +3115,16 @@ function renderFuelLog(){
     if(circArrTimeMin>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e', circArrTimeMin);
   }
 
-  col2+=timeRow('Taxi D\u00e9part', taxiD);
-  col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
-  if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
+  if(splitTaxiByStage){
+    for(var ttN=1;ttN<=totalStageCount;ttN++){
+      col2+=timeRow('Taxi D\u00e9part \u2014 \u00c9tape '+ttN, taxiD);
+      col2+=timeRow('Taxi Arriv\u00e9e \u2014 \u00c9tape '+ttN, taxiA);
+    }
+  } else {
+    col2+=timeRow('Taxi D\u00e9part', taxiD);
+    col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
+    if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
+  }
   col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
   col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:800;font-size:1.2em;color:#ffa726">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
   col2+='</div></div>';
@@ -6559,6 +6582,7 @@ function recalcNavlog(){
   /* Re-classer les avis du jour "proche de la route" si la route a changé (données déjà
      chargées, pas de nouveau fetch — juste un nouveau calcul de distance) */
   if(_dailyWarningsData && typeof renderDailyWarnings==='function') renderDailyWarnings();
+  _scheduleAutosave();
 }
 
 /* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
@@ -8490,6 +8514,97 @@ function _restoreIframeLive(fid){
   if(banner){ banner.style.display='none'; banner.innerHTML=''; }
 }
 window._restoreIframeLive=_restoreIframeLive;
+
+/* ===== SAUVEGARDE AUTOMATIQUE DE L'ESPACE DE TRAVAIL =====
+   Contrairement aux dossiers (sauvegarde explicite, avec captures d'écran, cloud sync,
+   etc.), ceci est une trace LÉGÈRE et SILENCIEUSE du travail en cours, écrite à chaque
+   recalcul de la route (voir la fin de recalcNavlog) — pour que quitter la page (ex.
+   retour à l'Accueil) puis revenir ne fasse plus tout perdre. Restaurée automatiquement
+   au chargement, à la toute fin de init(), pour prendre le pas sur les valeurs par défaut. */
+var NAVLOG_AUTOSAVE_KEY='navlog_autosave_v1';
+var _autosaveTimer=null;
+function _scheduleAutosave(){
+  if(_autosaveTimer) clearTimeout(_autosaveTimer);
+  _autosaveTimer=setTimeout(_doAutosave,1000);
+}
+function _doAutosave(){
+  try{
+    if(!waypoints||waypoints.length===0){ localStorage.removeItem(NAVLOG_AUTOSAVE_KEY); return; }
+    var snap={
+      config:getConfig(),
+      waypoints:JSON.parse(JSON.stringify(waypoints)),
+      wxCache:(wxCache&&Object.keys(wxCache).length)?JSON.parse(JSON.stringify(wxCache)):{},
+      reserveMode:reserveMode,
+      flightType:flightType,
+      etapesStageCount:window._etapesStageCount||0,
+      savedAt:Date.now()
+    };
+    localStorage.setItem(NAVLOG_AUTOSAVE_KEY,JSON.stringify(snap));
+  }catch(e){ /* quota dépassé ou route non sérialisable : sauvegarde auto best-effort, on ignore */ }
+}
+/* Restauration silencieuse au chargement — mêmes champs que loadDossier (config, waypoints,
+   wxCache, flightType, reserveMode), sans tout le reste propre aux dossiers explicites
+   (cloud, captures d'écran, checklist...) qui n'a pas de sens pour un simple filet de
+   sécurité anti-perte. Appelée en tout dernier dans init(), APRÈS que syncAircraftSelection
+   ait appliqué les valeurs par défaut de l'avion — sinon celui-ci écraserait ensuite le
+   TAS/conso restaurés (même piège que loadDossier, voir son commentaire "Re-apply saved
+   cruise values AFTER sync"). */
+function _restoreAutosaveIfAny(){
+  var raw;
+  try{ raw=localStorage.getItem(NAVLOG_AUTOSAVE_KEY); }catch(e){ return; }
+  if(!raw) return;
+  var snap;
+  try{ snap=JSON.parse(raw); }catch(e){ return; }
+  if(!snap||!snap.waypoints||!snap.waypoints.length||!snap.config) return;
+  var cfg=snap.config;
+  var setVal=function(id,v){ var el=document.getElementById(id); if(el&&v!==undefined&&v!==null) el.value=v; };
+  setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
+  setVal('cfgWindDir',cfg.windDir); setVal('cfgWindSpd',cfg.windSpd);
+  setVal('cfgWindDirSlider',cfg.windDir); setVal('cfgWindSpdSlider',Math.min(cfg.windSpd||0,50));
+  setVal('cfgDev',cfg.dev);
+  if(cfg.depTime) setVal('cfgDepTime',cfg.depTime);
+  if(cfg.taxiMin!==undefined) setVal('cfgTaxi',cfg.taxiMin);
+  if(cfg.landingMin!==undefined) setVal('cfgLanding',cfg.landingMin);
+  if(cfg.alt){ setVal('cfgAlt',cfg.alt); setVal('cfgAltSlider',cfg.alt); }
+  if(cfg.fuelBurn!==undefined) setVal('fuelBurn',cfg.fuelBurn);
+  if(cfg.fuelTaxiD!==undefined) setVal('fuelTaxiD',cfg.fuelTaxiD);
+  if(cfg.fuelTaxiA!==undefined) setVal('fuelTaxiA',cfg.fuelTaxiA);
+  if(cfg.fuelResType) setVal('fuelResType',cfg.fuelResType);
+  if(cfg.fuelContingency!==undefined) setVal('fuelContingency',cfg.fuelContingency);
+  if(cfg.fuelExtra!==undefined) setVal('fuelExtra',cfg.fuelExtra);
+  if(cfg.fuelAltnDist!==undefined) setVal('fuelAltnDist',cfg.fuelAltnDist);
+  if(cfg.perfAircraft) syncAircraftSelection(cfg.perfAircraft,true);
+  setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
+  if(cfg.fuelBurn!==undefined) setVal('fuelBurn',cfg.fuelBurn);
+
+  reserveMode=snap.reserveMode||'day';
+  var _rbtn=document.getElementById('reserveBtn');
+  if(_rbtn){
+    if(reserveMode==='day'){ _rbtn.textContent='☀️ Jour 30min'; _rbtn.className='reserve-toggle day'; }
+    else{ _rbtn.textContent='🌙 Nuit 45min'; _rbtn.className='reserve-toggle night'; }
+  }
+  if(snap.flightType){
+    flightType=snap.flightType;
+    var ftBtns=document.querySelectorAll('.flight-type-btn');
+    if(ftBtns.length){
+      ftBtns[0].classList.toggle('active',flightType==='local');
+      ftBtns[1].classList.toggle('active',flightType==='nav');
+      if(ftBtns[2]) ftBtns[2].classList.toggle('active',flightType==='etapes');
+    }
+    var _composerCard=document.getElementById('etapesComposerCard');
+    if(_composerCard) _composerCard.style.display=(flightType==='etapes')?'':'none';
+  }
+  waypoints=snap.waypoints;
+  window._etapesStageCount=snap.etapesStageCount||0;
+  wxCache=snap.wxCache||{};
+  window._perfRwyIcao=null;
+  window._perfRwyIcaoLd=null;
+  window._perfStage=undefined;
+  renderNavlog();
+  recalcNavlog();
+  if(typeof _renderMapStageFilter==='function') _renderMapStageFilter();
+  if(typeof _toast==='function') _toast('📂 Espace de travail restauré (dernière session)','',3200);
+}
 
 function saveDossier(){
   var nameInput=document.getElementById('dossierName');
@@ -12368,9 +12483,11 @@ function _measureAltText(distNM, glide){
   return '\u{1FA82} Alt. mini conseillée pour rejoindre le rivage&nbsp;: <b>'+altFt.toLocaleString('fr-FR')+' ft</b>';
 }
 
-function _measurePopupHtml(distNM, glide){
+function _measurePopupHtml(distNM, glide, brgTrue){
+  var brgTxt=(brgTrue!==undefined && brgTrue!==null)?('<div class="rm-measure-brg">\u{1F9ED} Route vraie : <b>'+Math.round(brgTrue)+'°T</b></div>'):'';
   return '<div class="rm-measure-box">'+
     '<div class="rm-measure-dist">\u{1F4CF} '+distNM.toFixed(2)+' NM ('+(distNM*1.852).toFixed(1)+' km)</div>'+
+    brgTxt+
     '<label class="rm-measure-label">Finesse avion (plané) <input type="number" id="rmMeasureGlide" value="'+glide+'" min="3" max="30" step="0.5" oninput="window._measureRecalc()"> : 1</label>'+
     '<div class="rm-measure-alt" id="rmMeasureAlt">'+_measureAltText(distNM,glide)+'</div>'+
     '<div class="rm-measure-note">Calcul géométrique (moitié de la traversée × finesse), au pire point (milieu) — vérifie/ajuste selon vent, POH et jugement opérationnel : ce n’est pas une règle figée.</div>'+
@@ -12399,6 +12516,7 @@ function _measureMapClick(latlng){
   }
   var a=_measurePoints[0], b=_measurePoints[1];
   var distNM=haversine(a.lat,a.lon,b.lat,b.lon);
+  var brgTrue=trueBearing(a.lat,a.lon,b.lat,b.lon);
   _measureLastDistNM=distNM;
   var line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:'#ffca28',weight:3,dashArray:'6,6',opacity:.95,interactive:false}).addTo(routeMap);
   _measureLayers.push(line);
@@ -12406,7 +12524,7 @@ function _measureMapClick(latlng){
   var glide=_glideRatioDefault();
   var popup=L.popup({closeButton:true,minWidth:220,className:'rm-measure-popup',autoClose:false,closeOnClick:false})
     .setLatLng([midLat,midLon])
-    .setContent(_measurePopupHtml(distNM,glide))
+    .setContent(_measurePopupHtml(distNM,glide,brgTrue))
     .openOn(routeMap);
   _measureLayers.push(popup);
   _measureSetHint('\u{1F4CF} Mode mesure : '+distNM.toFixed(1)+' NM — cliquez pour une nouvelle mesure');
@@ -12746,7 +12864,13 @@ function init(){
     {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
   ];
   renderNavlog();
-  initRouteMap();
+  /* Isolé en try/catch : une carte Leaflet qui échoue à charger (CDN lent/bloqué, réseau
+     capricieux) ne doit PAS empêcher tout le reste de init() de s'exécuter — sans ça, une
+     simple hiccup réseau sur la carte cassait aussi silencieusement la restauration des
+     captures météo, images, résumé NOTAM, avion sélectionné, altitude par défaut, et la
+     restauration de session (voir _restoreAutosaveIfAny plus bas), qui n'ont pourtant aucun
+     rapport avec la carte. */
+  try{ initRouteMap(); }catch(e){ console.error('initRouteMap a échoué (carte indisponible) :',e); }
   recalcNavlog();
   renderDossierList();
   _renderSyncCodeUI();
@@ -12788,6 +12912,9 @@ function init(){
   // (mbSelectAircraft was called inside syncAircraftSelection)
   var _savedAlt=localStorage.getItem('navlogCfgAlt');
   if(_savedAlt){var _caEl=document.getElementById('cfgAlt');if(_caEl)_caEl.value=_savedAlt;var _casEl=document.getElementById('cfgAltSlider');if(_casEl)_casEl.value=_savedAlt;}
+  /* Restaure la dernière session en cours (voir _scheduleAutosave dans recalcNavlog) — en
+     tout dernier, pour prendre le pas sur les valeurs par défaut posées juste au-dessus. */
+  _restoreAutosaveIfAny();
   /* Scroll so the tab bar sits at the top of the viewport */
   setTimeout(function(){
     var _tabs=document.getElementById('navlogTabs');
@@ -13886,7 +14013,12 @@ function _perfMetarApply(cfg){
       diagHtml = buildCrosswindDiagram(wm.dir, wm.spd, bestRwy.hdg, bestRwy.hw, bestRwy.xw, xwLimit);
     } else {
       document.getElementById(cfg.windId).value = wm.spd;
-      infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+rwyIcao+' — vent appliqué : '+wm.spd+' kt</span>');
+      /* Toujours nommer le VRAI aérodrome (anchorIcao) ici, pas rwyIcao — sinon quand la
+         piste manque pour l'aérodrome réel, le message pointait vers la station météo de
+         repli (ex: "Piste inconnue pour EBAW") au lieu de dire clairement pour QUEL
+         aérodrome la donnée manque (EHMZ), ce qui laissait croire à tort qu'EBAW était
+         pertinent pour la piste alors qu'il ne sert qu'à fournir le vent. */
+      infoLines.push('<span style="color:#ffa726">Piste inconnue pour '+anchorIcao+(isNearby?' (vent emprunté à '+usedIcao+')':'')+' — vent appliqué\u00a0: '+wm.spd+' kt</span>');
     }
   } else {
     document.getElementById(cfg.windId).value = 0;
