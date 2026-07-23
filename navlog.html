@@ -2933,7 +2933,7 @@ function renderFuelLog(){
       else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>'; }
       else { navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t; }
       html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
-      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small>'+circTag+'</span>';
+      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM'+(legData.gs?' &middot; GS '+legData.gs+' kt':'')+'</small>'+circTag+'</span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
 
