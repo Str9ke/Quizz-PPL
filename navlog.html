@@ -6709,6 +6709,20 @@ function _computeStageSegments(shownIdx){
   return segments;
 }
 
+/* Vrai si le point d'arrivée à l'index 'fieldIdx' (aérodrome de destination, sans ptType) est
+   immédiatement PRÉCÉDÉ dans le tableau complet des waypoints par un ou plusieurs points de
+   "circuit arrivée". Dans ce cas, tracer un leg de navigation "dernier point → aérodrome" en
+   ligne droite serait trompeur : ce leg saute par-dessus les points de circuit masqués et donne
+   l'illusion d'un "direct piste" (le fameux "leg fantôme"). On l'utilise pour NE PAS dessiner ce
+   leg et présenter l'arrivée comme atteinte "via le circuit d'arrivée". */
+function _arrivalViaCircuit(fieldIdx){
+  if(fieldIdx===undefined || fieldIdx<=0) return false;
+  var f=waypoints[fieldIdx];
+  if(!f || f.ptType) return false; /* le point d'arrivée lui-même doit être l'aérodrome, pas un point de circuit */
+  var prev=waypoints[fieldIdx-1];
+  return !!(prev && prev.ptType==='circuitArr');
+}
+
 /* Construit UNE table HTML (thead+tbody complets, avec tous les contrôles interactifs :
    renommage, altitude éditable, commentaires, boutons Dép/Arr) pour UN segment de points —
    utilisé pour chaque étape séparément quand le vol en a plusieurs (temps/numérotation propres
@@ -6732,6 +6746,8 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
         '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitArr\',false)" title="Marquer ce point comme circuit arrivée">🛬 Arr</button>'
       : '';
     var roleLabel=k===0?'Départ':(k===segIdx.length-1?'Arrivée':'');
+    var isArrivalViaCircuit=(k===segIdx.length-1)&&_arrivalViaCircuit(i);
+    var viaCircuitTag=isArrivalViaCircuit?' <span class="nl-recap-role-tag" style="background:rgba(0,188,212,.2);color:#4dd0e1" title="Arrivée atteinte par le circuit d\'arrivée (voir la section « Circuits de départ/arrivée » ci-dessous) — pas de leg direct vers la piste">🛬 via circuit</span>':'';
     var unconfWarning='';
     if((k===0||k===segIdx.length-1) && wp.lat===null && wp.lon===null){
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
@@ -6753,6 +6769,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
           'title="Renommer ce point">'+
         (wp.isEtape?' 🟠':'')+
         (roleLabel?' <span class="nl-recap-role-tag">'+roleLabel+'</span>':'')+
+        viaCircuitTag+
         unconfWarning+
       '</td>'+
       '<td>'+altCellHtml+'</td>'+
@@ -6769,6 +6786,12 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
 
     var nextI=segIdx[k+1];
+    /* Dernier leg menant à un aérodrome d'arrivée précédé de ses points de circuit arrivée :
+       ne PAS dessiner ce leg (il sauterait par-dessus les points de circuit masqués et
+       simulerait un "direct piste" — le leg fantôme signalé). L'arrivée est déjà marquée
+       « 🛬 via circuit » sur la ligne du point d'arrivée. */
+    if(k+1===segIdx.length-1 && _arrivalViaCircuit(nextI)) continue;
+
     var next=waypoints[nextI];
     var nextName=next.name||('WP'+(nextI+1));
     var dist=0,routeTrue=0;
@@ -7010,6 +7033,8 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var roleLabel=k===0?'Départ':(k===segIdx.length-1?'Arrivée':'');
+    var isArrivalViaCircuit=(k===segIdx.length-1)&&_arrivalViaCircuit(i);
+    var viaCircuitTag=isArrivalViaCircuit?' <span class="tag" style="background:#00838f">via circuit</span>':'';
     var isDep=(k===0);
     var altCell=blank?'':(isDep?alt:'—');
     var etaCell=blank?'':(isDep?'00:00:00':'—');
@@ -7020,7 +7045,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
 
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num"></td>'+
-      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+windBadge+'</td>'+
+      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+viaCircuitTag+windBadge+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
@@ -7037,6 +7062,10 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
 
     var nextI=segIdx[k+1];
+    /* Même suppression du leg fantôme "direct piste" qu'à l'écran (voir _arrivalViaCircuit) :
+       pas de leg tracé vers un aérodrome d'arrivée précédé de ses points de circuit arrivée. */
+    if(k+1===segIdx.length-1 && _arrivalViaCircuit(nextI)) continue;
+
     var next=waypoints[nextI];
     var nextName=next.name||('WP'+(nextI+1));
     var dist=0,routeTrue=0;
@@ -7886,10 +7915,24 @@ function _cycleLegType(i){
 }
 window._cycleLegType=_cycleLegType;
 
+/* Une route se termine TOUJOURS par un aérodrome d'arrivée, jamais par un point de circuit
+   arrivée (qui, par définition, précède l'atterrissage). Si une suppression laisse la route se
+   terminer sur un ou plusieurs points de circuit arrivée (ex: l'utilisateur supprime l'aérodrome
+   de destination), on reconvertit cette traîne en points de navigation normaux : ils
+   redeviennent visibles dans le tableau, plutôt que de rester masqués et de recréer un leg
+   fantôme « dernier point → circuit » sautant par-dessus eux. */
+function _normalizeTrailingCircuitArr(){
+  for(var j=waypoints.length-1;j>=0;j--){
+    if(waypoints[j] && waypoints[j].ptType==='circuitArr'){ waypoints[j].ptType=undefined; }
+    else break;
+  }
+}
+
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
   if(waypoints.length<=2 && i===0) return;
   waypoints.splice(i,1);
+  _normalizeTrailingCircuitArr();
   renderNavlog();
   recalcNavlog();
   requestAnimationFrame(function(){
