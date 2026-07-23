@@ -786,7 +786,12 @@ function afficherQuiz() {
 
   // Affichage par lots (pagination) : ne montrer que N questions à la fois pour ne pas
   // noyer l'utilisateur avec des sessions de centaines/milliers de questions (mode Objectif).
-  const batchSize = Math.max(1, parseInt(localStorage.getItem('quizBatchSize')) || 5);
+  // En mode "Révisions" (répétition espacée), pas de pagination : ce sont des sessions
+  // courtes (questions dues du jour), l'utilisateur ne veut pas de boutons Suivant/Précédent
+  // à cliquer, juste répondre à la suite jusqu'à Valider.
+  const batchSize = (modeQuiz === 'revisions')
+    ? currentQuestions.length
+    : Math.max(1, parseInt(localStorage.getItem('quizBatchSize')) || 5);
   const totalBatches = Math.ceil(currentQuestions.length / batchSize);
   window._quizBatchSize = batchSize;
 
