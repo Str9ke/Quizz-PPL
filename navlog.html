@@ -7910,10 +7910,21 @@ function removeUnconfiguredWaypoint(i){
 window.removeUnconfiguredWaypoint=removeUnconfiguredWaypoint;
 
 /* Suppression directement depuis la petite croix "✕" du tableau NavLog (planche Point) —
-   même confirmation que removeUnconfiguredWaypoint, pour un point déjà configuré cette fois. */
+   même confirmation que removeUnconfiguredWaypoint, pour un point déjà configuré cette fois.
+   Message enrichi (position dans la route + voisins + avertissement si point de jonction
+   d'étape ou de circuit) : un simple nom ("EBSG") ne suffisait pas à distinguer LEQUEL des
+   nombreux points homonymes (plusieurs points de circuit s'appellent tous "EBSG") allait être
+   supprimé, menant à des suppressions accidentelles du mauvais point. */
 function _removeRecapWaypoint(i){
   if(!waypoints[i]) return;
-  if(!confirm('Supprimer le point "'+(waypoints[i].name||'sans nom')+'" ?')) return;
+  var wp=waypoints[i];
+  var prevName=waypoints[i-1]?(waypoints[i-1].name||'point '+i):null;
+  var nextName=waypoints[i+1]?(waypoints[i+1].name||'point '+(i+2)):null;
+  var msg='Supprimer le point #'+(i+1)+' sur '+waypoints.length+' — "'+(wp.name||'sans nom')+'"';
+  if(prevName||nextName) msg+=' (entre '+(prevName||'—')+' et '+(nextName||'—')+')';
+  if(wp.isEtape) msg+='\n\n⚠️ Ce point est une JONCTION D\'ÉTAPE (départ/arrivée d\'une étape) — le supprimer peut désynchroniser la composition du vol à étapes.';
+  if(wp.ptType) msg+='\n\n⚠️ Ce point fait partie d\'un CIRCUIT ('+(wp.ptType==='circuitDep'?'départ':'arrivée')+') — le supprimer peut modifier le tracé du circuit affiché sur la carte.';
+  if(!confirm(msg)) return;
   removeWaypoint(i);
 }
 window._removeRecapWaypoint=_removeRecapWaypoint;
