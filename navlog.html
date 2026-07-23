@@ -6541,10 +6541,32 @@ window._syncWaypointName=_syncWaypointName;
    route/cap/distance/GS/ETE en colonnes séparées — utile en vol pour lire le cap (surligné en
    jaune, la valeur qu'on suit réellement à la manette) sans avoir à le repérer au milieu d'une
    phrase — et ajouter une colonne "Commentaires" vierge à annoter à la main pendant le vol. */
+/* Vent RÉEL configuré dans l'onglet Perf pour le décollage/atterrissage (piste, donc au sol) —
+   distinct du vent de croisière (cfg.windDir/windSpd) qui sert au calcul des legs. Le vent
+   manuel saisi dans l'onglet Perf (s'il existe) est prioritaire, sinon on retrouve le vent du
+   METAR utilisé pour ce calcul (même station que celle mémorisée par _perfMetarApply). */
+function _perfPrintWindInfo(dirId,spdId,rwyKey){
+  var dirEl=document.getElementById(dirId), spdEl=document.getElementById(spdId);
+  var dir=dirEl?parseFloat(dirEl.value):NaN, spd=spdEl?parseFloat(spdEl.value):NaN;
+  if(!isNaN(dir) && !isNaN(spd)) return {dir:dir,spd:spd};
+  var icao=window[rwyKey];
+  if(icao && wxCache[icao] && wxCache[icao].metar){
+    var wm=parseWindFromMetar(wxCache[icao].metar);
+    if(wm && wm.dir>=0) return {dir:wm.dir,spd:wm.spd};
+  }
+  return null;
+}
+
 function printNavlogRecapTable(){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
   var cfg=getConfig();
+  /* Vent piste au décollage/atterrissage tel que configuré dans l'onglet Perf — peut être
+     différent du vent de croisière (vent de référence, cfg.windDir/windSpd) utilisé pour le
+     calcul des legs : c'est normal, le vent au sol à un aérodrome et le vent en route ne sont
+     pas censés être identiques. */
+  var perfTakeoffWind=_perfPrintWindInfo('perfWindDirManual','perfWindSpdManual','_perfRwyIcao');
+  var perfLandingWind=_perfPrintWindInfo('perfWindDirManualLd','perfWindSpdManualLd','_perfRwyIcaoLd');
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
@@ -6590,9 +6612,17 @@ function printNavlogRecapTable(){
     }
     var etaStr=k===0?'00:00:00':(cumMin?formatETA(cumMin):'—');
 
+    /* Vent piste (décollage/atterrissage, onglet Perf) affiché en petite étiquette à côté du
+       nom du point de départ/arrivée — distinct de la colonne Vent, qui reste le vent de
+       croisière utilisé pour le calcul du leg (le vent au sol et le vent en route ne sont pas
+       censés être identiques). */
+    var windBadge='';
+    if(k===0 && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
+    else if(k===shownIdx.length-1 && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
+
     rows+='<tr class="'+(k%2?'alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num">'+(k+1)+'</td>'+
-      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+'</td>'+
+      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+windBadge+'</td>'+
       '<td class="c-alt">'+alt+'</td>'+
       '<td class="'+(k>0?'':'dim')+'">'+routeT+'</td>'+
       '<td class="'+(k>0?'':'dim')+'">'+windTxt+'</td>'+
@@ -6680,7 +6710,12 @@ function printNavlogRecapTable(){
        voir le choix de police/padding ci-dessus, calibré sur le nombre de lignes pour tenir sur
        une seule page quel que soit le format. */
     '@page{margin:10mm}'+
-    '*{box-sizing:border-box}'+
+    /* Beaucoup de navigateurs (Chrome mobile/Android inclus) n'impriment PAS les couleurs de
+       fond par défaut ("économie d'encre") sauf demande explicite — sans ça, le surlignage
+       jaune du cap magnétique (et le fond sombre de l'en-tête, le total requis en jaune, etc.)
+       disparaissait purement et simplement à l'impression réelle malgré un rendu correct à
+       l'écran. */
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'+
     'body{margin:0;padding:0;font-family:Arial,sans-serif;color:#111}'+
     'h1{font-size:'+prof.h1+'px;margin:0 0 3px}'+
     '.sub{font-size:'+prof.sub+'px;color:#555;margin:0 0 6px}'+
@@ -6701,6 +6736,7 @@ function printNavlogRecapTable(){
     '.dim{color:#bbb}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
     'td.c-name .tag{font-size:'+(prof.f-2)+'px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
+    'td.c-name .tag.windtag{background:#1565c0;white-space:normal;display:block;width:fit-content;max-width:100%;margin-top:2px;font-size:'+Math.max(6,prof.f-4)+'px}'+
     'tr.pt-key td{font-weight:700}'+
     '.c-comment{background:#fff}'+
     'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
