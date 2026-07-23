@@ -521,8 +521,35 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
      à cette taille de police), avec le gap de la barre agrandi d'autant — une longue liste
      verticale à énorme espacement au lieu d'un groupe compact. Grille fixe à 3 colonnes, icône
      et libellé empilés, police et coins réduits : tient sur 3-4 lignes serrées au lieu de 10. */
-  .meteo-subtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px}
   .meteo-subtab{padding:7px 3px;font-size:.66em;line-height:1.2;white-space:normal;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px;border-radius:8px}
+  /* Tableau récapitulatif de route : le min-width:560px + white-space:nowrap forçaient un
+     défilement horizontal sur mobile, poussant les colonnes Rôle/ETA/Type hors écran (coupées,
+     ex. "Rôl") et tronquant le résumé de chaque leg (ex. "105°T route · 96") au lieu de
+     l'afficher en entier. Table transformée en liste de lignes empilées façon "carte" : chaque
+     point sur 2 lignes courtes (numéro+nom puis alt/rôle/ETA/type), chaque leg sur ses propres
+     lignes avec son résumé qui retourne à la ligne normalement — plus rien n'est coupé ni ne
+     nécessite de défiler pour être lu. */
+  .nl-recap-table{min-width:unset}
+  .nl-recap-table thead{display:none}
+  .nl-recap-table tr.nl-recap-point-row,.nl-recap-table tr.nl-recap-leg-row{display:flex;flex-wrap:wrap;width:100%;box-sizing:border-box}
+  .nl-recap-table tr.nl-recap-point-row{align-items:center;gap:2px 8px;padding:7px 4px}
+  .nl-recap-table tr.nl-recap-leg-row{align-items:baseline;gap:2px 6px;padding:4px 4px 4px 6px}
+  .nl-recap-table tr.nl-recap-point-row td,.nl-recap-table tr.nl-recap-leg-row td{display:block;padding:0;border:none;white-space:normal;word-break:break-word;font-size:.85em}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-num{order:1;font-weight:700;color:var(--text-secondary);flex:0 0 auto}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-name{order:2;flex:1 1 auto;min-width:70px}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-alt{order:3;flex:0 0 auto;font-size:.78em;color:var(--text-secondary)}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-role{order:4;flex:0 0 auto}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-eta{order:5;flex:0 0 auto;font-size:.78em;color:var(--text-secondary)}
+  .nl-recap-table tr.nl-recap-point-row td.nl-recap-type{order:6;flex:1 0 100%}
+  .nl-recap-table tr.nl-recap-leg-row td:first-child{display:none}
+  .nl-recap-table .nl-recap-leg-arrow{padding-left:0!important;flex:0 0 auto;font-size:.8em}
+  .nl-recap-table td.nl-recap-type{display:flex;flex-wrap:wrap;gap:4px}
+  /* style.css impose une règle globale mobile "button{width:100%;margin:.5rem 0}" pensée pour
+     les gros boutons d'action du quiz — elle s'appliquait aussi à ces petites puces/boutons
+     du récapitulatif (Dép/Arr, tags de circuit, sous-menu), qui se retrouvaient chacun étalés
+     sur toute la largeur et empilés verticalement au lieu de rester compacts et côte à côte. */
+  .nl-recap-type-btn,.wp-circuit-tag,.wp-unconfigured-tag,.wp-circuit-switch-btn,.wp-circuit-remove-btn{width:auto;margin:0}
+  .nl-recap-hidden-item{display:inline-flex;flex-wrap:wrap}
 }
 
 /* Subtab scroll indicators */
@@ -6287,10 +6314,10 @@ function renderNavlogRecapTable(){
           'title="Renommer ce point">'+
         (wp.isEtape?' \u{1F7E0}':'')+
       '</td>'+
-      '<td>'+alt+' ft</td>'+
+      '<td class="nl-recap-alt">'+alt+' ft</td>'+
       '<td class="nl-recap-role">'+roleLabel+'</td>'+
-      '<td>'+etaStr+'</td>'+
-      '<td>'+typeBtn+'</td>'+
+      '<td class="nl-recap-eta">'+etaStr+'</td>'+
+      '<td class="nl-recap-type">'+typeBtn+'</td>'+
     '</tr>';
 
     if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
