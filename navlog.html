@@ -516,6 +516,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .wp-coords input{width:calc(50% - 4px)!important;box-sizing:border-box;min-width:0}
   .navlog-board{overflow-x:hidden}
   #frontsVideo{width:100%!important}
+  /* Sous-onglets météo (TEMSI/WINTEM, OPMET, Radar...) : en flex+wrap classique, chaque bouton
+     finissait seul sur sa ligne sur mobile (icône+libellé trop larges pour en tenir 2 par ligne
+     à cette taille de police), avec le gap de la barre agrandi d'autant — une longue liste
+     verticale à énorme espacement au lieu d'un groupe compact. Grille fixe à 3 colonnes, icône
+     et libellé empilés, police et coins réduits : tient sur 3-4 lignes serrées au lieu de 10. */
+  .meteo-subtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px}
+  .meteo-subtab{padding:7px 3px;font-size:.66em;line-height:1.2;white-space:normal;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px;border-radius:8px}
 }
 
 /* Subtab scroll indicators */
