@@ -459,7 +459,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table tr.nl-recap-leg-row td.nl-recap-name{background:var(--bg-container)}
 .nl-recap-table tr.nl-recap-leg-row:hover td{background:rgba(21,101,192,.2)}
 .nl-recap-table tr.nl-recap-leg-row:hover td.nl-recap-name{background:var(--bg-container)}
-.nl-recap-table td.nl-recap-leg-arrow{padding-left:14px;color:#5b8def;font-weight:700;font-style:normal;white-space:nowrap}
+.nl-recap-table td.nl-recap-leg-arrow{padding-left:14px;color:#5b8def;font-weight:700;font-style:normal;white-space:normal}
+.nl-recap-leg-num{display:inline-block;font-size:.72em;font-weight:800;background:#1565c0;color:#fff;border-radius:8px;padding:1px 6px;margin-right:5px;vertical-align:middle}
+.nl-recap-stage-title{font-weight:800;font-size:.92em;margin:14px 0 6px;padding:6px 10px;border-radius:8px;background:rgba(102,126,234,.16);color:#8fa0f5}
+.nl-recap-stage-title:first-child{margin-top:0}
 .nl-recap-table tr.nl-recap-leg-row td.nl-recap-cap{font-style:normal}
 .nl-recap-cap{background:rgba(255,229,0,.16)!important;font-weight:700;color:#ffe066}
 .nl-recap-dim{color:var(--text-secondary);opacity:.4}
@@ -800,14 +803,21 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       </div>
     </div>
 
-    <!-- Vol à étapes : composeur de dossiers -->
+    <!-- Vol à étapes : composeur de dossiers — repliable, et repli automatique une fois le vol
+         composé (voir la fin de _composeEtapes) pour ne pas encombrer l'écran une fois qu'on n'en
+         a plus besoin, tout en restant réouvrable au besoin (ex. pour ajouter une étape). -->
     <div class="nl-card" id="etapesComposerCard" style="display:none">
-      <div class="nl-card-title"><span class="icon">&#x1F9ED;</span> Composer le vol &#xe0; &#xe9;tapes depuis des dossiers enregistr&#xe9;s</div>
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="window._toggleEtapesComposer()">
+        <span><span class="icon">&#x1F9ED;</span> Composer le vol &#xe0; &#xe9;tapes depuis des dossiers enregistr&#xe9;s</span>
+        <span id="etapesComposerToggleLabel" style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">&#x25BE; Masquer</span>
+      </div>
+      <div id="etapesComposerBody">
       <div style="font-size:.82em;color:var(--text-secondary);margin-bottom:8px">S&#xe9;lectionnez les dossiers &#xe0; enchaîner, dans l'ordre de vol souhait&#xe9; (cliquez dans l'ordre). Le vent de croisi&#xe8;re configur&#xe9; ci-dessous s'appliquera &#xe0; toutes les &#xe9;tapes. Un rafra&#xee;chissement m&#xe9;t&#xe9;o/NOTAM sera lanc&#xe9; apr&#xe8;s composition pour garder les infos les plus &#xe0; jour.</div>
       <div id="etapesDossierList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="navlog-btn" onclick="window._composeEtapes()">&#x2705; Composer le vol &#xe0; &#xe9;tapes</button>
         <button class="navlog-btn" style="background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window._resetEtapesSelection()">&#x21BA; R&#xe9;initialiser la s&#xe9;lection</button>
+      </div>
       </div>
     </div>
 
@@ -2878,7 +2888,7 @@ function renderFuelLog(){
      de legs et un unique total "circuit départ"/"circuit arrivée" agrégé, sans dire à quelle
      étape (donc quel aérodrome) chaque circuit appartenait. */
   var isEtapesFuelLog=(typeof flightType!=='undefined' && flightType==='etapes');
-  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0;
+  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0, stageLegNum=0;
   function _legStage(prevWp,wp){
     if(!prevWp._stages||!wp._stages) return null;
     for(var a=0;a<prevWp._stages.length;a++){ if(wp._stages.indexOf(prevWp._stages[a])>=0) return prevWp._stages[a]; }
@@ -2906,7 +2916,7 @@ function renderFuelLog(){
         var thisLegStage=_legStage(waypoints[i-1],wp);
         if(thisLegStage!==null && thisLegStage!==curStageNum){
           _closeStageSubtotal();
-          curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0;
+          curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0; stageLegNum=0;
           var stageDepWp=waypoints[i-1], stageArrIdxForLabel=i;
           /* Dernier point qui appartient ENCORE à cette étape (pas le premier qui n'y
              appartient plus) — sinon l'étiquette d'arrivée de l'étape 1 affichait par erreur
@@ -2928,12 +2938,19 @@ function renderFuelLog(){
       tripTimeMin+=t;
       var legFuel = legData.fuel || 0;
       tripFuel += legFuel;
+      stageLegNum++;
       var circTag='';
       if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t; circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">🛫 circuit départ</span>'; }
       else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>'; }
       else { navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t; }
-      html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
-      html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM'+(legData.gs?' &middot; GS '+legData.gs+' kt':'')+'</small>'+circTag+'</span>';
+      /* Numéro de LEG (pas de waypoint) — redémarre à 1 à chaque étape pour un vol à étapes,
+         reste l'index global pour un vol classique. Ligne cliquable : bascule normal → circuit
+         départ → circuit arrivée → normal à chaque clic, en réutilisant EXACTEMENT le même
+         setCircuitType/removeCircuitType que le tableau Navlog et la carte, pour que tous les
+         calculs du site restent cohérents quel que soit l'endroit où on a changé le type. */
+      var legDisplayNum=isEtapesFuelLog?stageLegNum:i;
+      html+='<div class="fuel-leg-row" style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="window._cycleLegType('+i+')" title="Cliquer pour basculer normal → circuit départ → circuit arrivée → normal">';
+      html+='<span>Leg '+legDisplayNum+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM'+(legData.gs?' &middot; GS '+legData.gs+' kt':'')+'</small>'+circTag+'</span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
 
@@ -4385,7 +4402,10 @@ function setFlightType(type){
   var composerCard=document.getElementById('etapesComposerCard');
   if(composerCard){
     composerCard.style.display=(type==='etapes')?'':'none';
-    if(type==='etapes') _renderEtapesDossierList();
+    if(type==='etapes'){
+      _renderEtapesDossierList();
+      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(true); /* déplié par défaut */
+    }
   }
   /* Preserve existing waypoints if they have data */
   var hasData=false;
@@ -6512,67 +6532,57 @@ function _detectBorderCrossing(){
 }
 window._detectBorderCrossing = _detectBorderCrossing;
 
-function renderNavlogRecapTable(){
-  var card=document.getElementById('navlogRecapCard');
-  var cont=document.getElementById('navlogRecapContainer');
-  if(!card||!cont) return;
-  if(waypoints.length<2){ card.style.display='none'; return; }
-  card.style.display='';
-
-  var cfg=getConfig();
-  /* Points affichés : le départ, l'arrivée, et tout point de navigation (pas de circuit). */
-  var shownIdx=[];
-  for(var si=0;si<waypoints.length;si++){
-    var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+/* Découpe une liste de points affichés (shownIdx) en segments par étape, à la jonction entre
+   deux étapes (point dont _stages contient PLUSIEURS numéros — voir _composeEtapes). Un vol
+   classique (pas d'étapes) donne toujours UN seul segment = shownIdx entier, comportement
+   inchangé. Partagé entre le tableau à l'écran, l'impression et (indirectement) le détail
+   carburant, pour ne pas tripler cette logique. */
+function _computeStageSegments(shownIdx){
+  var stageBreaks=[];
+  for(var bi=1;bi<shownIdx.length-1;bi++){
+    var bwp=waypoints[shownIdx[bi]];
+    if(bwp._stages && bwp._stages.length>1) stageBreaks.push(bi);
   }
-  var hiddenCount=waypoints.length-shownIdx.length;
+  var segments=[];
+  if(!stageBreaks.length){
+    segments.push(shownIdx.slice());
+  } else {
+    var prevBreak=0;
+    stageBreaks.forEach(function(bi){ segments.push(shownIdx.slice(prevBreak,bi+1)); prevBreak=bi; });
+    segments.push(shownIdx.slice(prevBreak));
+  }
+  return segments;
+}
 
-  /* Une ligne POINT (identité) + une ligne LEG distincte, en retrait, entre chaque paire de
-     points — comme sur le tableau imprimé. La version à ligne unique fusionnée compactait bien
-     mais ne rendait pas évident que route/cap/dist/GS/ETE concernent le TRAJET ENTRE deux
-     points, pas le point lui-même. La ligne leg reste un vrai tableau (cellules alignées sur
-     les mêmes colonnes) mais visuellement décalée (fond teinté, flèche en retrait, liseré de
-     couleur) pour se lire sans ambiguïté comme "ce qui se passe entre les deux points".
-     Numérotation SÉQUENTIELLE (1..N sur les points réellement montrés), pas l'index brut dans
-     waypoints (qui incluait les points de circuit masqués et sautait des numéros). */
+/* Construit UNE table HTML (thead+tbody complets, avec tous les contrôles interactifs :
+   renommage, altitude éditable, commentaires, boutons Dép/Arr) pour UN segment de points —
+   utilisé pour chaque étape séparément quand le vol en a plusieurs (temps/numérotation propres
+   à ce segment), ou une seule fois pour la route entière sinon. */
+function _buildOnscreenSegmentTable(segIdx,tableIdx){
+  var cfg=getConfig();
   var rows='';
   var cumMin=0;
-  for(var k=0;k<shownIdx.length;k++){
-    var i=shownIdx[k];
+  var legNum=0;
+  for(var k=0;k<segIdx.length;k++){
+    var i=segIdx[k];
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var canType=(i>0 && i<waypoints.length-1);
-    /* Choix direct départ/arrivée en un clic (plutôt qu'un seul bouton "Nav" qui force toujours
-       "départ" en premier) — évite d'avoir à corriger ensuite via le sous-menu, en particulier
-       quand plusieurs points de circuit partagent le même nom d'aérodrome. */
     var typeBtn=canType
       ? '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitDep\',false)" title="Marquer ce point comme circuit départ">🛫 Dép</button>'+
         '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitArr\',false)" title="Marquer ce point comme circuit arrivée">🛬 Arr</button>'
       : '';
-    var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
-    /* Même signal que sur la planche NavLog (voir wp-unconfigured-tag) : un départ/arrivée
-       sans coordonnées produit un leg fantôme silencieux (calcLeg utilise wp.dist/route même
-       sans coordonnées) — le rendre visible ici aussi, tout en haut de page. */
+    var roleLabel=k===0?'Départ':(k===segIdx.length-1?'Arrivée':'');
     var unconfWarning='';
-    if((k===0||k===shownIdx.length-1) && wp.lat===null && wp.lon===null){
-      /* Bouton, pas juste un badge d'alerte : demandé explicitement pour pouvoir supprimer ce
-         point directement d'ici, sans redescendre chercher le petit "×" de sa carte NavLog. */
+    if((k===0||k===segIdx.length-1) && wp.lat===null && wp.lon===null){
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
-    /* Altitude et ETA rejoignent maintenant le reste des caractéristiques du trajet (route/cap/
-       dist/GS/ETE) sur la ligne LEG qui MÈNE à ce point, plutôt que de rester isolées sur la
-       ligne d'identité — cohérent avec le principe "tout ce qui décrit le trajet est sur la
-       même ligne". Seul le départ (aucun leg ne mène à lui) garde son altitude et son heure
-       (00:00, triviale) sur sa propre ligne. L'altitude y est éditable : la modifier met à jour
-       waypoints[i].altitude et redéclenche le calcul partout où il est utilisé pour ce segment
-       (carburant, profil altitude, carte). */
     var isDep=(k===0);
     var altCellHtml=isDep
       ? '<input class="nl-recap-alt-input" type="number" step="100" value="'+alt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude à ce point (éditable)">'
-      : '';
-    var etaCellHtml=isDep?'00:00':'';
+      : '<span class="nl-recap-dim">—</span>';
+    var etaCellHtml=isDep?'00:00':'<span class="nl-recap-dim">—</span>';
     var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
 
     rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
@@ -6597,9 +6607,9 @@ function renderNavlogRecapTable(){
       '<td class="nl-recap-type">'+typeBtn+'</td>'+
     '</tr>';
 
-    if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
+    if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
 
-    var nextI=shownIdx[k+1];
+    var nextI=segIdx[k+1];
     var next=waypoints[nextI];
     var nextName=next.name||('WP'+(nextI+1));
     var dist=0,routeTrue=0;
@@ -6610,6 +6620,7 @@ function renderNavlogRecapTable(){
     var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
     var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
     cumMin+=leg.ete*60;
+    legNum++;
     var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
     var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
     var routeT=routeM+'°';
@@ -6621,10 +6632,12 @@ function renderNavlogRecapTable(){
 
     var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(next._legComment||'')+'" data-idx="'+nextI+'" data-field="leg" onchange="window._setRecapComment('+nextI+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
 
-    /* Survol de la ligne leg → surlignage du segment correspondant sur la carte (voir
-       _highlightRecapLeg / _clearRecapLegHighlight). */
+    /* Flèche explicite ENTRE les deux points du leg (nom départ → nom arrivée), plutôt que
+       juste "vers X" — pour que ce soit sans ambiguïté quel tronçon cette ligne décrit, en
+       particulier une fois plusieurs tableaux séparés par étape. Numéro de LEG (pas de point)
+       affiché ici, propre à ce segment (redémarre à 1 à chaque étape). */
     rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
-      '<td class="nl-recap-name nl-recap-leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
+      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> '+escHTML(name)+' → '+escHTML(nextName)+'</td>'+
       '<td><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+nextI+'" onchange="window._setRecapAlt('+nextI+',this.value)" title="Altitude pour ce segment (éditable)"></td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
@@ -6636,6 +6649,47 @@ function renderNavlogRecapTable(){
       '<td></td>'+
     '</tr>';
   }
+  var depName=(waypoints[segIdx[0]]&&waypoints[segIdx[0]].name)||'?';
+  var arrName=(waypoints[segIdx[segIdx.length-1]]&&waypoints[segIdx[segIdx.length-1]].name)||'?';
+  var titleHtml=(tableIdx!==null)
+    ? '<div class="nl-recap-stage-title">🧭 Étape '+(tableIdx+1)+' — '+escHTML(depName)+' → '+escHTML(arrName)+'</div>'
+    : '';
+  return titleHtml+
+    '<div class="nl-recap-table-wrap">'+
+    '<table class="nl-recap-table" id="navlogRecapTableEl'+(tableIdx!==null?tableIdx:'')+'">'+
+      '<thead><tr><th>Point</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Commentaires</th><th>Actions</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
+    '</div>';
+}
+
+function renderNavlogRecapTable(){
+  var card=document.getElementById('navlogRecapCard');
+  var cont=document.getElementById('navlogRecapContainer');
+  if(!card||!cont) return;
+  if(waypoints.length<2){ card.style.display='none'; return; }
+  card.style.display='';
+
+  /* Points affichés : le départ, l'arrivée, et tout point de navigation (pas de circuit). */
+  var shownIdx=[];
+  for(var si=0;si<waypoints.length;si++){
+    var w=waypoints[si];
+    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+  }
+  var hiddenCount=waypoints.length-shownIdx.length;
+
+  /* Vol à étapes : un tableau SÉPARÉ par étape (numérotation de points ET de legs propre à
+     chaque étape, ETE/ETA repartant de 00:00) plutôt qu'un seul tableau continu sur toute la
+     route — sinon les temps cumulés d'une étape lointaine n'avaient plus de sens à lire en vol
+     pendant l'étape en cours. Un vol classique (une seule étape) garde un unique tableau, sans
+     titre d'étape (comportement inchangé). */
+  var segments=_computeStageSegments(shownIdx);
+  var multiTable=segments.length>1;
+  var tablesHtml='';
+  segments.forEach(function(segIdx,segI){
+    tablesHtml+=_buildOnscreenSegmentTable(segIdx, multiTable?segI:null);
+  });
+
   var hiddenNote;
   if(hiddenCount>0){
     /* Points de circuit masqués du tableau : lister chacun avec son propre tag cliquable
@@ -6649,9 +6703,6 @@ function renderNavlogRecapTable(){
       if(!hw.ptType) continue;
       var hIsDep=(hw.ptType==='circuitDep');
       var hName=hw.name||('WP'+(hi+1));
-      /* Numéro de position (= badge numéroté de sa carte NavLog) : plusieurs points de circuit
-         partagent souvent le même nom d'aérodrome (ex. 5× "EHMZ") et étaient sinon impossibles
-         à distinguer les uns des autres dans cette liste. */
       hiddenItems+='<span class="nl-recap-hidden-item">'+
         '<button class="wp-circuit-tag '+(hIsDep?'dep':'arr')+'" onclick="window.toggleCircuitSubmenu(\'recap-'+hi+'\')" title="Options">'+
           (hIsDep?'🛫':'🛬')+' #'+(hi+1)+' '+escHTML(hName)+' — '+(hIsDep?'Circuit départ':'Circuit arrivée')+' ▾'+
@@ -6663,7 +6714,8 @@ function renderNavlogRecapTable(){
       '</span>';
     }
     hiddenNote='<div class="nl-recap-hidden-note">'+
-      '<div style="font-size:.78em;color:var(--text-secondary);font-style:italic;margin-bottom:4px">🛫🛬 '+hiddenCount+' point'+(hiddenCount>1?'s':'')+' de circuit (départ/arrivée) non affiché'+(hiddenCount>1?'s':'')+' dans le tableau ci-dessus — comptabilisé'+(hiddenCount>1?'s':'')+' à part dans le carburant/temps (onglet Carburant). Le numéro (#N) correspond à la carte de ce point sur la planche NavLog plus bas :</div>'+
+      '<div style="font-size:.85em;font-weight:700;margin-bottom:2px">🛫🛬 Circuits de départ/arrivée ('+hiddenCount+' point'+(hiddenCount>1?'s':'')+')</div>'+
+      '<div style="font-size:.78em;color:var(--text-secondary);margin-bottom:6px">Ces points ne comptent pas comme navigation “ point à point ” — ils sont groupés ici, comptés à part dans le carburant/temps (onglet Carburant), et retirés du tableau ci-dessus. Cliquez un badge pour le basculer départ↔arrivée ou le retirer du circuit (retour en navigation normale). Le numéro #N renvoie à sa carte sur la planche « Caractéristiques » plus bas.</div>'+
       hiddenItems+
     '</div>';
   } else {
@@ -6684,16 +6736,12 @@ function renderNavlogRecapTable(){
       '<span><span class="icon">📋</span> Navlog</span>'+
       '<span style="display:flex;gap:6px;flex-wrap:wrap">'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer</button>'+
-      '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px;background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window.printNavlogRecapTable(true)" title="Imprimer une feuille vierge (points + cap uniquement) à remplir à la main en vol">📝 Imprimer vierge</button>'+
+      '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px;background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window.printNavlogRecapTable(true)" title="Imprimer une feuille vierge à remplir à la main en vol">📝 Imprimer vierge</button>'+
       '</span>'+
     '</div>'+
     borderBanner+
-    '<div class="nl-recap-table-wrap">'+
-    '<table class="nl-recap-table" id="navlogRecapTableEl">'+
-      '<thead><tr><th>Point</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Commentaires</th><th>Actions</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody>'+
-    '</table>'+
-    '</div>'+hiddenNote;
+    tablesHtml+
+    hiddenNote;
 }
 window.renderNavlogRecapTable=renderNavlogRecapTable;
 
@@ -6873,25 +6921,13 @@ function printNavlogRecapTable(blank){
     if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
   }
 
-  /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes est
-     un point dont _stages contient PLUSIEURS numéros d'étape (partagé, voir le filtre carte
-     "Étape 1/2/.../Toutes"). Chaque jonction sépare deux FEUILLES imprimées distinctes — un
-     trajet à plusieurs escales sur une seule feuille devenait illisible (police minuscule) et
-     ne correspond de toute façon pas à ce qu'on veut en main pendant CETTE étape précise. Pour
-     un vol classique (pas d'étapes), aucune jonction : un seul segment = comportement inchangé. */
-  var stageBreaks=[];
-  for(var bi=1;bi<shownIdx.length-1;bi++){
-    var bwp=waypoints[shownIdx[bi]];
-    if(bwp._stages && bwp._stages.length>1) stageBreaks.push(bi);
-  }
-  var segments=[];
-  if(!stageBreaks.length){
-    segments.push(shownIdx.slice());
-  } else {
-    var prevBreak=0;
-    stageBreaks.forEach(function(bi){ segments.push(shownIdx.slice(prevBreak,bi+1)); prevBreak=bi; });
-    segments.push(shownIdx.slice(prevBreak));
-  }
+  /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes
+     sépare deux FEUILLES imprimées distinctes — un trajet à plusieurs escales sur une seule
+     feuille devenait illisible (police minuscule) et ne correspond de toute façon pas à ce
+     qu'on veut en main pendant CETTE étape précise. Pour un vol classique (pas d'étapes), un
+     seul segment = comportement inchangé. (Découpage partagé avec le tableau à l'écran, voir
+     _computeStageSegments.) */
+  var segments=_computeStageSegments(shownIdx);
   var multiSheet=segments.length>1;
 
   /* Bilan carburant GLOBAL (vol complet, une seule réserve/marge/dégagement calculés sur la
@@ -6922,22 +6958,28 @@ function printNavlogRecapTable(blank){
       '<td></td>'+
     '</tr>';
 
+    /* Vierge = TOUT écrit à la main, y compris avion/date/TAS/vent/etc du bandeau d'en-tête —
+       seuls les libellés (labels) restent imprimés, aucune valeur préremplie nulle part sur
+       la feuille. */
     var infoBlock=
       '<div class="info-grid">'+
-        '<div><b>Avion</b><br>'+escHTML(acReg)+'</div>'+
-        '<div><b>Date</b><br>'+todayStr+'</div>'+
-        '<div><b>Départ prévu</b><br>'+(isFirstSeg?escHTML(cfg.depTime||'—'):'—')+'</div>'+
-        '<div><b>TAS</b><br>'+cfg.tas+' kt</div>'+
-        '<div><b>Alt. croisière</b><br>'+cfg.alt+' ft</div>'+
-        '<div><b>Déclinaison</b><br>'+(cfg.dev>=0?'+':'')+cfg.dev+'°</div>'+
-        '<div><b>Vent réf.</b><br>'+cfg.windDir+'°/'+cfg.windSpd+' kt</div>'+
-        '<div><b>Conso croisière</b><br>'+cfg.fuelBurn+' L/h</div>'+
+        '<div><b>Avion</b><br>'+(blank?'':escHTML(acReg))+'</div>'+
+        '<div><b>Date</b><br>'+(blank?'':todayStr)+'</div>'+
+        '<div><b>Départ prévu</b><br>'+(blank?'':(isFirstSeg?escHTML(cfg.depTime||'—'):'—'))+'</div>'+
+        '<div><b>TAS</b><br>'+(blank?'':cfg.tas+' kt')+'</div>'+
+        '<div><b>Alt. croisière</b><br>'+(blank?'':cfg.alt+' ft')+'</div>'+
+        '<div><b>Déclinaison</b><br>'+(blank?'':(cfg.dev>=0?'+':'')+cfg.dev+'°')+'</div>'+
+        '<div><b>Vent réf.</b><br>'+(blank?'':cfg.windDir+'°/'+cfg.windSpd+' kt')+'</div>'+
+        '<div><b>Conso croisière</b><br>'+(blank?'':cfg.fuelBurn+' L/h')+'</div>'+
       '</div>';
 
     /* Bandeau de bas de page : le "Trip" est propre à CETTE étape (ce que cette feuille fait
        vraiment brûler), le reste (roulage/marge/réserve/dégagement/total requis) reprend le
        bilan GLOBAL du vol complet — identique sur toutes les feuilles — pour garder sous les
-       yeux, à chaque étape, le carburant total qu'il faut avoir à bord jusqu'à l'arrivée finale. */
+       yeux, à chaque étape, le carburant total qu'il faut avoir à bord jusqu'à l'arrivée finale.
+       En vierge, les % / minutes de la marge et de la réserve restent affichés (ce sont des
+       PARAMÈTRES de calcul, pas un résultat) mais leur valeur en litres est vidée comme le
+       reste. */
     var fuelBlock=
       '<div class="fuel-grid">'+
         '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?'':(Math.round(res.cumFuel*10)/10)+' L')+'</div>'+
@@ -6953,10 +6995,14 @@ function printNavlogRecapTable(blank){
        FEUILLE (pas de la route entière) — pour qu'une étape courte reste grande et lisible même
        si une autre étape du même vol est longue. Voir la note historique plus bas sur pourquoi
        ce n'est pas basé sur une mesure de hauteur de page (vh/flex peu fiable à l'impression
-       réelle Android). */
+       réelle Android). En VIERGE, on ne rétrécit plus pour tenir sur une page : le but est
+       d'avoir la place d'écrire à la main, quitte à déborder sur 2 pages pour une longue route
+       — contrairement à la version imprimée normale (juste à consulter), où tenir sur une
+       seule page prime. */
     var totalRows=segIdx.length+(segIdx.length-1)+1;
     var prof;
-    if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
+    if(blank) prof={f:11.5,p:'8px 6px',lp:'6px 6px',h1:14,sub:8.5,info:8.5,infoLbl:7.5};
+    else if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
     else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
     else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:6.7,infoLbl:5.8};
     else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:5.9,infoLbl:5.1};
@@ -7405,6 +7451,16 @@ function _toggleCaracteristiques(){
 }
 window._toggleCaracteristiques=_toggleCaracteristiques;
 
+function _toggleEtapesComposer(force){
+  var body=document.getElementById('etapesComposerBody');
+  var label=document.getElementById('etapesComposerToggleLabel');
+  if(!body) return;
+  var willShow=(typeof force==='boolean')?force:(body.style.display==='none');
+  body.style.display=willShow?'':'none';
+  if(label) label.innerHTML=willShow?'&#x25BE; Masquer':'&#x25B8; Afficher';
+}
+window._toggleEtapesComposer=_toggleEtapesComposer;
+
 function setWpIcon(i,iconId){
   waypoints[i].icon=iconId;
   renderNavlog();
@@ -7614,6 +7670,21 @@ function switchCircuitType(i){
   });
 }
 window.switchCircuitType=switchCircuitType;
+
+/* Cycle normal → circuit départ → circuit arrivée → normal en un clic sur une ligne de leg
+   (onglet Carbu) — réutilise exactement setCircuitType/removeCircuitType (les mêmes fonctions
+   que le tableau Navlog et, pour la carte, le futur menu contextuel de leg), donc tous les
+   calculs du site (carte, tableau Navlog, M&CG, Perf, carburant) restent cohérents quel que
+   soit l'endroit d'où le changement a été fait. */
+function _cycleLegType(i){
+  if(!waypoints[i]) return;
+  var cur=waypoints[i].ptType;
+  if(cur==='circuitDep') window.setCircuitType(i,'circuitArr',false);
+  else if(cur==='circuitArr') window.removeCircuitType(i);
+  else window.setCircuitType(i,'circuitDep',false);
+  if(typeof renderFuelLog==='function') renderFuelLog();
+}
+window._cycleLegType=_cycleLegType;
 
 function removeWaypoint(i){
   if(waypoints.length<=1) return;
@@ -8222,6 +8293,10 @@ function _composeEtapes(){
   renderNavlog();
   recalcNavlog();
   _renderMapStageFilter();
+  /* Repli automatique : le composeur a fait son travail, pas besoin de garder la liste des
+     dossiers à l'écran en permanence — réouvrable via son en-tête si on veut ajouter/changer
+     une étape. */
+  if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(false);
   _toast('✅ Vol à '+chosen.length+' étapes composé — actualisation météo/NOTAM en cours…','',3500);
   if(typeof window.refreshAllWeatherData==='function'){
     setTimeout(function(){ window.refreshAllWeatherData(); },300);
@@ -13665,77 +13740,89 @@ function perfApplyManualWindLanding(){
 window.perfApplyManualWindLanding = perfApplyManualWindLanding;
 
 /* ===== CROSSWIND DECOMPOSITION DIAGRAM =====
-   Runway drawn vertically (heading = up). Wind vector decomposed into:
+   Nord en haut, comme une carte : la piste est dessinée à son cap réel
+   (toXY utilise la convention (cap-90°) partagée avec runwaySVG/windArrowSVG).
+   Wind vector decomposed into:
    - HW (headwind, cyan, along runway axis)
-   - XW (crosswind, colour-coded, horizontal)
+   - XW (crosswind, colour-coded, perpendicular to runway)
    All three vectors form a right triangle.                                     */
 function buildCrosswindDiagram(windDir, windSpd, rwyHdg, hw, xw, xwLimit){
   if(!windSpd || windSpd <= 0) return '';
   xwLimit = xwLimit || 15;
-  var W=260, H=215, cx=130, cy=107;
-  /* Angle of wind relative to runway (runway = 0 = up in diagram) */
-  var relDeg = ((windDir - rwyHdg) % 360 + 360) % 360;
-  if(relDeg > 180) relDeg -= 360;            /* clamp -180..+180 */
-  var relRad = relDeg * Math.PI / 180;
+  var W=260, H=232, cx=130, cy=120;
   var scale  = Math.min(58 / windSpd, 4.5);
-  /* Tail of wind vector (where wind comes FROM in diagram) */
-  var wTX = (cx + Math.sin(relRad) * windSpd * scale).toFixed(1);
-  var wTY = (cy - Math.cos(relRad) * windSpd * scale).toFixed(1);
-  /* Component endpoints — form a right triangle with (cx,cy) */
-  var hwEndY = (cy - hw * scale).toFixed(1);           /* up = headwind  */
-  var xwSign = Math.sin(relRad) >= 0 ? 1 : -1;
-  var xwEndX = (cx + xwSign * xw * scale).toFixed(1);  /* horizontal XW  */
-  var xwColor = xw <= xwLimit*0.67 ? '#4caf50' : xw <= xwLimit ? '#ffa726' : '#ef5350';
   var rwyNum  = Math.round(rwyHdg / 10) % 36 || 36;
   var rwyOpp  = (rwyNum + 18) % 36 || 36;
+  var xwColor = xw <= xwLimit*0.67 ? '#4caf50' : xw <= xwLimit ? '#ffa726' : '#ef5350';
+
+  /* Nord en haut (comme une carte) : piste ET vent dessinés à leur VRAI cap compas — même
+     convention angle-90° que runwaySVG/windArrowSVG ailleurs dans ce fichier — au lieu de
+     toujours dessiner la piste verticale ("vers le haut" = arbitraire, ne correspondait à
+     rien de réel à l'écran). La décomposition face/travers garde EXACTEMENT le même calcul
+     qu'avant (même triangle rectangle), seulement tournée avec la piste. */
+  function toXY(bearingDeg, r){
+    var a=(bearingDeg-90)*Math.PI/180;
+    return [cx+Math.cos(a)*r, cy+Math.sin(a)*r];
+  }
+  var rwyEnd1=toXY(rwyHdg,62), rwyEnd2=toXY(rwyHdg+180,62);
+  var rwyLbl1=toXY(rwyHdg,78), rwyLbl2=toXY(rwyHdg+180,78);
+  var relDeg=((windDir-rwyHdg)%360+360)%360; if(relDeg>180) relDeg-=360;
+  var windTail=toXY(windDir, Math.min(Math.abs(windSpd)*scale,95));
+  /* hw garde le même signe/sens que dans l'ancien calcul : positif = vers rwyHdg, négatif =
+     vers rwyHdg+180 (le côté "face au vent" est déjà décidé par l'appelant, pas redevine ici). */
+  var hwEnd=toXY(hw>=0?rwyHdg:(rwyHdg+180)%360, Math.abs(hw)*scale);
+  var xwSign = Math.sin(relDeg*Math.PI/180) >= 0 ? 1 : -1;
+  var xwEnd=toXY((rwyHdg + (xwSign>=0?90:270))%360, xw*scale);
 
   var s = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;margin:6px auto">';
   s += '<rect width="'+W+'" height="'+H+'" rx="10" fill="rgba(0,0,0,0.45)"/>';
-  s += '<text x="'+W/2+'" y="14" fill="#aaa" font-size="10" text-anchor="middle" font-family="sans-serif">';
+  s += '<text x="'+(W/2)+'" y="16" fill="#aaa" font-size="10" text-anchor="middle" font-family="sans-serif">';
   s += 'Vent '+windDir+'\u00b0 / '+windSpd+' kt \u2014 Piste '+rwyHdg+'\u00b0</text>';
 
-  /* Runway strip (vertical) */
-  s += '<rect x="'+(cx-9)+'" y="'+(cy-72)+'" width="18" height="144" rx="3" fill="rgba(255,255,255,0.09)" stroke="#666" stroke-width="1"/>';
-  for(var dy = cy-63; dy < cy+63; dy += 15)
-    s += '<rect x="'+(cx-1.5)+'" y="'+dy+'" width="3" height="9" fill="#fff" opacity="0.35"/>';
-  s += '<text x="'+cx+'" y="'+(cy-80)+'" fill="#888" font-size="9" text-anchor="middle">'+('0'+rwyNum).slice(-2)+'</text>';
-  s += '<text x="'+cx+'" y="'+(cy+92)+'" fill="#888" font-size="9" text-anchor="middle">'+('0'+rwyOpp).slice(-2)+'</text>';
+  /* Repère Nord fixe (jamais tourné, toujours en haut) */
+  s += '<line x1="18" y1="40" x2="18" y2="17" stroke="#888" stroke-width="1.5" marker-end="url(#cwAN)"/>';
+  s += '<text x="18" y="13" fill="#888" font-size="9" text-anchor="middle" font-weight="bold">N</text>';
 
-  /* Arrow markers */
   s += '<defs>'
     +'<marker id="cwAW" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#ff9800"/></marker>'
     +'<marker id="cwAH" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#00e5ff"/></marker>'
     +'<marker id="cwAX" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="'+xwColor+'"/></marker>'
+    +'<marker id="cwAN" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#888"/></marker>'
     +'</defs>';
 
+  /* Piste, à son vrai cap */
+  s += '<line x1="'+rwyEnd1[0].toFixed(1)+'" y1="'+rwyEnd1[1].toFixed(1)+'" x2="'+rwyEnd2[0].toFixed(1)+'" y2="'+rwyEnd2[1].toFixed(1)+'" stroke="rgba(255,255,255,0.16)" stroke-width="15" stroke-linecap="round"/>';
+  s += '<line x1="'+rwyEnd1[0].toFixed(1)+'" y1="'+rwyEnd1[1].toFixed(1)+'" x2="'+rwyEnd2[0].toFixed(1)+'" y2="'+rwyEnd2[1].toFixed(1)+'" stroke="#666" stroke-width="1" stroke-dasharray="6,5"/>';
+  s += '<text x="'+rwyLbl1[0].toFixed(1)+'" y="'+rwyLbl1[1].toFixed(1)+'" fill="#999" font-size="9" text-anchor="middle" dominant-baseline="middle">'+('0'+rwyNum).slice(-2)+'</text>';
+  s += '<text x="'+rwyLbl2[0].toFixed(1)+'" y="'+rwyLbl2[1].toFixed(1)+'" fill="#999" font-size="9" text-anchor="middle" dominant-baseline="middle">'+('0'+rwyOpp).slice(-2)+'</text>';
+
   /* Dashed right-angle guide lines */
-  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+cx+'" y2="'+wTY+'" stroke="#333" stroke-width="1" stroke-dasharray="4,3"/>';
-  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+wTX+'" y2="'+cy+'" stroke="#333" stroke-width="1" stroke-dasharray="4,3"/>';
+  s += '<line x1="'+windTail[0].toFixed(1)+'" y1="'+windTail[1].toFixed(1)+'" x2="'+hwEnd[0].toFixed(1)+'" y2="'+hwEnd[1].toFixed(1)+'" stroke="#333" stroke-width="1" stroke-dasharray="4,3"/>';
 
   /* Wind vector: tail to center */
-  s += '<line x1="'+wTX+'" y1="'+wTY+'" x2="'+cx+'" y2="'+cy+'" stroke="#ff9800" stroke-width="2.5" marker-end="url(#cwAW)"/>';
+  s += '<line x1="'+windTail[0].toFixed(1)+'" y1="'+windTail[1].toFixed(1)+'" x2="'+cx+'" y2="'+cy+'" stroke="#ff9800" stroke-width="2.5" marker-end="url(#cwAW)"/>';
 
-  /* HW arrow (along runway, upward = headwind opposing takeoff) */
+  /* HW arrow (le long de l'axe piste) */
   if(Math.abs(hw) > 0.3){
-    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+hwEndY+'" stroke="#00e5ff" stroke-width="2" marker-end="url(#cwAH)"/>';
-    var hwLY = ((cy + parseFloat(hwEndY)) / 2).toFixed(1);
-    s += '<text x="'+(cx+7)+'" y="'+hwLY+'" fill="#00e5ff" font-size="10" font-weight="bold" font-family="sans-serif">Face '+hw+' kt</text>';
+    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+hwEnd[0].toFixed(1)+'" y2="'+hwEnd[1].toFixed(1)+'" stroke="#00e5ff" stroke-width="2" marker-end="url(#cwAH)"/>';
+    var hwLX=((cx+hwEnd[0])/2+8).toFixed(1), hwLY=((cy+hwEnd[1])/2).toFixed(1);
+    s += '<text x="'+hwLX+'" y="'+hwLY+'" fill="#00e5ff" font-size="10" font-weight="bold" font-family="sans-serif">Face '+Math.abs(hw)+' kt</text>';
   } else {
     s += '<text x="'+(cx+7)+'" y="'+cy+'" fill="#00e5ff" font-size="9" font-family="sans-serif">Face \u22480</text>';
   }
 
-  /* XW arrow (horizontal, perpendicular to runway) */
+  /* XW arrow (perpendiculaire à la piste) */
   if(xw > 0.3){
-    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+xwEndX+'" y2="'+cy+'" stroke="'+xwColor+'" stroke-width="2" marker-end="url(#cwAX)"/>';
-    var xwLX = ((cx + parseFloat(xwEndX)) / 2).toFixed(1);
-    s += '<text x="'+xwLX+'" y="'+(cy-6)+'" fill="'+xwColor+'" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">Travers '+xw+' kt</text>';
+    s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+xwEnd[0].toFixed(1)+'" y2="'+xwEnd[1].toFixed(1)+'" stroke="'+xwColor+'" stroke-width="2" marker-end="url(#cwAX)"/>';
+    var xwLX=((cx+xwEnd[0])/2).toFixed(1), xwLY=((cy+xwEnd[1])/2-6).toFixed(1);
+    s += '<text x="'+xwLX+'" y="'+xwLY+'" fill="'+xwColor+'" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">Travers '+xw+' kt</text>';
   }
 
   /* Status bar */
   var status = xw <= xwLimit*0.67 ? '\u2705 Acceptable (limite atterrissage : '+xwLimit+' kt)'
               : xw <= xwLimit ? '\u26a0\ufe0f Attention \u2014 limite '+xwLimit+' kt'
               : '\u26a0\ufe0f D\u00e9pass\u00e9 \u2014 limite '+xwLimit+' kt';
-  s += '<text x="'+W/2+'" y="'+(H-5)+'" fill="'+xwColor+'" font-size="9.5" text-anchor="middle">'+status+'</text>';
+  s += '<text x="'+(W/2)+'" y="'+(H-6)+'" fill="'+xwColor+'" font-size="9.5" text-anchor="middle">'+status+'</text>';
   s += '</svg>';
   return s;
 }
