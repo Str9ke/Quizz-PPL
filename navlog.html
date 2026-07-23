@@ -6420,34 +6420,106 @@ window._syncWaypointName=_syncWaypointName;
 /* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
    window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page
    Navlog avec ses onglets/cartes) et forcer explicitement le format A5. */
+/* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
+   window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page
+   Navlog avec ses onglets/cartes) et forcer explicitement le format A5.
+   Construit sa PROPRE table (plutôt que cloner le DOM affiché à l'écran) pour pouvoir détailler
+   route/cap/distance/GS/ETE en colonnes séparées — utile en vol pour lire le cap (surligné en
+   jaune, la valeur qu'on suit réellement à la manette) sans avoir à le repérer au milieu d'une
+   phrase — et ajouter une colonne "Commentaires" vierge à annoter à la main pendant le vol. */
 function printNavlogRecapTable(){
-  var tbl=document.getElementById('navlogRecapTableEl');
-  if(!tbl){ alert('Tableau récapitulatif indisponible.'); return; }
-  var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' \u2192 '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
-  /* Table imprimée à partir des VALEURS actuelles des inputs (pas juste l'attribut value HTML
-     d'origine) pour refléter un renommage tout juste tapé, même avant que le debounce de
-     sauvegarde n'ait tourné. */
-  var printHtml=tbl.outerHTML.replace(/<input([^>]*)>/g,function(m,attrs){
-    var idxMatch=/data-idx="(\d+)"/.exec(attrs);
-    var idx=idxMatch?parseInt(idxMatch[1]):null;
-    var val=(idx!==null&&waypoints[idx])?waypoints[idx].name:'';
-    return '<span>'+escHTML(val)+'</span>';
-  });
+  if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
+  var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
+  var cfg=getConfig();
+  var shownIdx=[];
+  for(var si=0;si<waypoints.length;si++){
+    var w=waypoints[si];
+    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+  }
+
+  var rows='';
+  var cumMin=0;
+  for(var k=0;k<shownIdx.length;k++){
+    var i=shownIdx[k];
+    var wp=waypoints[i];
+    var name=wp.name||('WP'+(i+1));
+    var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
+    var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
+    rows+='<tr class="pt-row">'+
+      '<td class="c-num">'+(k+1)+'</td>'+
+      '<td class="c-name">'+escHTML(name)+'</td>'+
+      '<td>'+alt+'</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="cap dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="c-role">'+roleLabel+(roleLabel&&etaStr!=='--:--'?' · ':'')+(etaStr!=='--:--'?etaStr:'')+'</td>'+
+      '<td class="c-comment"></td>'+
+    '</tr>';
+
+    if(k===shownIdx.length-1) break;
+
+    var nextI=shownIdx[k+1];
+    var next=waypoints[nextI];
+    var dist=0,routeTrue=0;
+    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
+      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+    }
+    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
+    cumMin+=leg.ete*60;
+    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
+    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+    rows+='<tr class="leg-row">'+
+      '<td class="c-num"></td>'+
+      '<td class="c-name">↳ vers '+(k+2)+'</td>'+
+      '<td></td>'+
+      '<td>'+routeM+'°</td>'+
+      '<td class="cap">'+hdgM+'°</td>'+
+      '<td>'+dist+' NM</td>'+
+      '<td>'+(leg.gs||0)+' kt</td>'+
+      '<td>'+formatTime(leg.ete||0)+'</td>'+
+      '<td></td>'+
+      '<td class="c-comment"></td>'+
+    '</tr>';
+  }
+
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Récapitulatif route — '+escHTML(routeName)+'</title>'+
     '<style>'+
-    '@page{size:A5;margin:10mm}'+
+    /* Paysage : les colonnes détaillées (route/cap/dist/GS/ETE + commentaires) ont besoin de
+       largeur ; on compense la hauteur réduite avec une police et un espacement resserrés. */
+    '@page{size:A5 landscape;margin:7mm}'+
+    '*{box-sizing:border-box}'+
     'body{font-family:Arial,sans-serif;margin:0;padding:0}'+
-    'h1{font-size:14px;margin:0 0 8px}'+
-    'table{width:100%;height:100%;border-collapse:collapse;font-size:11px}'+
-    'th,td{border:1px solid #333;padding:4px 6px;text-align:left}'+
-    'th{background:#eee}'+
-    '.nl-recap-leg-row td{background:#f6f6f6;font-style:italic;color:#555}'+
-    '.nl-recap-num,.nl-recap-role{white-space:nowrap}'+
+    'h1{font-size:12px;margin:0 0 4px}'+
+    'table{width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed}'+
+    'th,td{border:1px solid #333;padding:2px 3px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}'+
+    'th{background:#eee;font-size:8px}'+
+    'col.c-num{width:3.5%}col.c-name{width:15%}col.c-alt{width:6%}col.c-route{width:8%}'+
+    'col.c-cap{width:8%}col.c-dist{width:8%}col.c-gs{width:7%}col.c-ete{width:8%}'+
+    'col.c-role{width:14%}col.c-comment{width:22.5%}'+
+    '.leg-row td{background:#f6f6f6;font-style:italic;color:#555}'+
+    '.dim{color:#bbb}'+
+    'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
+    '.pt-row td{font-weight:700}'+
+    '.pt-row td.dim,.pt-row td.c-role{font-weight:400}'+
+    '.c-comment{background:#fff}'+
+    'tr{page-break-inside:avoid}'+
     '</style></head><body>'+
     '<h1>Récapitulatif de route — '+escHTML(routeName)+'</h1>'+
-    printHtml+
+    '<table>'+
+      '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
+      '<col class="c-cap"><col class="c-dist"><col class="c-gs"><col class="c-ete"><col class="c-role">'+
+      '<col class="c-comment"></colgroup>'+
+      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th class="cap">Cap M</th>'+
+      '<th>Dist</th><th>GS</th><th>ETE</th><th>Rôle/ETA</th><th>Commentaires</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
     '</body></html>');
   w.document.close();
   setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },400);
