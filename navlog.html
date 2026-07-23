@@ -472,8 +472,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-type-btn:hover{border-color:#7c4dff;color:#b39ddb;background:rgba(124,77,255,.1)}
 .nl-recap-del-btn{background:none;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);font-size:.85em;padding:3px 7px;cursor:pointer;white-space:nowrap;transition:all .2s;margin-left:4px}
 .nl-recap-del-btn:hover{border-color:#f44336;color:#f44336;background:rgba(244,67,54,.1)}
-.nl-recap-table td.nl-recap-alt-change{background:rgba(244,67,54,.22)}
-.nl-recap-alt-arrow{color:#f44336;font-weight:800;font-size:1em;margin-left:2px}
+.nl-recap-table tr.nl-recap-leg-row td.nl-recap-alt-change,
+.nl-recap-table tr.nl-recap-leg-row:hover td.nl-recap-alt-change{background:rgba(244,67,54,.38)!important;color:#fff!important;font-style:normal}
+.nl-recap-alt-arrow{color:#fff;font-weight:800;font-size:1em;margin-left:2px}
 .nl-recap-name-input{background:transparent;border:1px solid transparent;border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 4px;width:auto;min-width:34px;max-width:78px;transition:border-color .2s,background .2s}
 .nl-recap-name-input:hover{border-color:var(--border-color)}
 .nl-recap-name-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
@@ -6717,6 +6718,9 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
   var rows='';
   var cumMin=0;
   var legNum=0;
+  /* Altitude de référence pour détecter un changement : celle du point de départ du segment,
+     mise à jour à chaque leg (voir plus bas). */
+  var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
     var wp=waypoints[i];
@@ -6787,20 +6791,17 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
 
     var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(next._legComment||'')+'" data-idx="'+nextI+'" data-field="leg" onchange="window._setRecapComment('+nextI+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
 
-    /* Alerte de changement d'altitude : compare l'altitude de CE leg à celle du leg SUIVANT
-       (le leg d'après, pas le point d'après) — si elles diffèrent, une flèche (↑ montée /
-       ↓ descente à prévoir) et un surlignage rouge de la cellule signalent qu'il faut ajuster
-       l'altitude au prochain segment, visible en un coup d'œil sans avoir à comparer les deux
-       lignes manuellement. */
+    /* Alerte de changement d'altitude : compare l'altitude de CE leg à celle du leg PRÉCÉDENT
+       (ou à l'altitude de départ pour le tout premier leg) — c'est CE leg qui doit monter/
+       descendre pour atteindre la nouvelle altitude au waypoint où il arrive, donc la flèche et
+       le surlignage rouge doivent être sur ce leg-ci (celui qui précède le waypoint concerné),
+       pas sur le leg suivant. */
     var altChangeHtml='', altCellClass='';
-    if(k+2<=segIdx.length-1){
-      var afterNextWp=waypoints[segIdx[k+2]];
-      var followingAlt=afterNextWp.altitude||(parseInt(_v('cfgAlt'))||2300);
-      if(followingAlt!==nextAlt){
-        altCellClass=' nl-recap-alt-change';
-        altChangeHtml=' <span class="nl-recap-alt-arrow" title="Altitude différente au prochain leg ('+followingAlt+' ft)">'+(followingAlt>nextAlt?'▲':'▼')+'</span>';
-      }
+    if(nextAlt!==prevLegAlt){
+      altCellClass=' nl-recap-alt-change';
+      altChangeHtml=' <span class="nl-recap-alt-arrow" title="Changement d\'altitude sur ce leg (précédent: '+prevLegAlt+' ft)">'+(nextAlt>prevLegAlt?'▲':'▼')+'</span>';
     }
+    prevLegAlt=nextAlt;
 
     /* Flèche explicite ENTRE les deux points du leg (nom départ → nom arrivée), plutôt que
        juste "vers X" — pour que ce soit sans ambiguïté quel tronçon cette ligne décrit, en
@@ -7002,6 +7003,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
   var rows='';
   var cumMin=0,cumDist=0,cumFuel=0;
   var legNum=0; /* numérote les LEGS (pas les waypoints) — même logique que le tableau à l'écran */
+  var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
     var wp=waypoints[i];
@@ -7060,16 +7062,15 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     legNum++;
 
     /* Même alerte de changement d'altitude que le tableau à l'écran (voir
-       _buildOnscreenSegmentTable) : comparer l'altitude de CE leg à celle du leg suivant. */
+       _buildOnscreenSegmentTable) : comparer l'altitude de CE leg à celle du leg PRÉCÉDENT — la
+       flèche doit être sur le leg qui monte/descend vers le waypoint où l'altitude change, pas
+       sur le leg suivant. */
     var altChangeTxt='', altCellCls='';
-    if(!blank && k+2<=segIdx.length-1){
-      var afterNextWp=waypoints[segIdx[k+2]];
-      var followingAlt=afterNextWp.altitude||(parseInt(_v('cfgAlt'))||2300);
-      if(followingAlt!==nextAlt){
-        altCellCls=' class="alt-change"';
-        altChangeTxt=' <span class="alt-arrow">'+(followingAlt>nextAlt?'▲':'▼')+'</span>';
-      }
+    if(!blank && nextAlt!==prevLegAlt){
+      altCellCls=' class="alt-change"';
+      altChangeTxt=' <span class="alt-arrow">'+(nextAlt>prevLegAlt?'▲':'▼')+'</span>';
     }
+    prevLegAlt=nextAlt;
 
     rows+='<tr class="leg-row">'+
       '<td class="c-num">'+legNum+'</td>'+
