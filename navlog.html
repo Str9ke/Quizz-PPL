@@ -454,6 +454,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-name-input{background:transparent;border:1px solid transparent;border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 4px;width:auto;min-width:34px;max-width:78px;transition:border-color .2s,background .2s}
 .nl-recap-name-input:hover{border-color:var(--border-color)}
 .nl-recap-name-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
+.nl-recap-alt-input{background:transparent;border:1px solid var(--border-color);border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 2px;width:56px;text-align:center;transition:border-color .2s,background .2s}
+.nl-recap-alt-input:hover{border-color:#667eea}
+.nl-recap-alt-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
 .nl-recap-hidden-note{margin-top:8px}
 /* Ancienne version en position:absolute : le sous-menu ne réservait aucune place dans le flux
    et flottait par-dessus le texte/les tags suivants (superposition illisible). Le sous-menu
@@ -6415,7 +6418,18 @@ function renderNavlogRecapTable(){
          point directement d'ici, sans redescendre chercher le petit "×" de sa carte NavLog. */
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
-    var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
+    /* Altitude et ETA rejoignent maintenant le reste des caractéristiques du trajet (route/cap/
+       dist/GS/ETE) sur la ligne LEG qui MÈNE à ce point, plutôt que de rester isolées sur la
+       ligne d'identité — cohérent avec le principe "tout ce qui décrit le trajet est sur la
+       même ligne". Seul le départ (aucun leg ne mène à lui) garde son altitude et son heure
+       (00:00, triviale) sur sa propre ligne. L'altitude y est éditable : la modifier met à jour
+       waypoints[i].altitude et redéclenche le calcul partout où il est utilisé pour ce segment
+       (carburant, profil altitude, carte). */
+    var isDep=(k===0);
+    var altCellHtml=isDep
+      ? '<input class="nl-recap-alt-input" type="number" step="100" value="'+alt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude à ce point (éditable)">'
+      : '';
+    var etaCellHtml=isDep?'00:00':'';
 
     rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
       '<td class="nl-recap-name">'+
@@ -6428,13 +6442,13 @@ function renderNavlogRecapTable(){
         (roleLabel?' <span class="nl-recap-role-tag">'+roleLabel+'</span>':'')+
         unconfWarning+
       '</td>'+
-      '<td>'+alt+' ft</td>'+
+      '<td>'+altCellHtml+'</td>'+
       '<td class="nl-recap-dim">—</td>'+
       '<td class="nl-recap-dim">—</td>'+
       '<td class="nl-recap-dim">—</td>'+
       '<td class="nl-recap-dim">—</td>'+
       '<td class="nl-recap-dim">—</td>'+
-      '<td>'+etaStr+'</td>'+
+      '<td>'+etaCellHtml+'</td>'+
       '<td class="nl-recap-type">'+typeBtn+'</td>'+
     '</tr>';
 
@@ -6458,18 +6472,19 @@ function renderNavlogRecapTable(){
     var distTxt=dist+' NM';
     var gsTxt=(leg.gs||0)+' kt';
     var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
+    var legEtaStr=cumMin?formatETA(cumMin):'--:--';
 
     /* Survol de la ligne leg → surlignage du segment correspondant sur la carte (voir
        _highlightRecapLeg / _clearRecapLegHighlight). */
     rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
       '<td class="nl-recap-name nl-recap-leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
-      '<td></td>'+
+      '<td><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+nextI+'" onchange="window._setRecapAlt('+nextI+',this.value)" title="Altitude pour ce segment (éditable)"></td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
       '<td>'+distTxt+'</td>'+
       '<td>'+gsTxt+'</td>'+
       '<td>'+eteTxt+'</td>'+
-      '<td></td>'+
+      '<td>'+legEtaStr+'</td>'+
       '<td></td>'+
     '</tr>';
   }
@@ -6552,6 +6567,23 @@ function _syncWaypointName(idx,newName,sourceEl){
 }
 window._syncWaypointName=_syncWaypointName;
 
+/* Altitude modifiée directement depuis le tableau récapitulatif (ligne leg ou ligne départ) :
+   waypoints[idx].altitude est la SOURCE UNIQUE utilisée partout (calcul du leg suivant, profil
+   d'altitude, conso carburant par palier — voir getFuelBurnForLeg) — la mettre à jour ici la
+   répercute automatiquement partout où elle sert pour ce segment, sans champ dupliqué à
+   resynchroniser. _altOverride évite qu'un "Appliquer à tous" depuis la config n'écrase ensuite
+   silencieusement une altitude choisie exprès pour ce point. */
+function _setRecapAlt(idx,val){
+  if(!waypoints[idx]) return;
+  var n=parseInt(val);
+  if(isNaN(n)||n<0) return;
+  waypoints[idx].altitude=n;
+  waypoints[idx]._altOverride=true;
+  if(typeof renderNavlog==='function') renderNavlog();
+  recalcNavlog(); /* recalcule aussi la carte et ce tableau (voir fin de recalcNavlog) */
+}
+window._setRecapAlt=_setRecapAlt;
+
 /* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
    window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page
    Navlog avec ses onglets/cartes) et forcer explicitement le format A5. */
@@ -6608,7 +6640,12 @@ function printNavlogRecapTable(){
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
-    var etaStr=k===0?'00:00:00':(cumMin?formatETA(cumMin):'—');
+    /* Altitude et ETA rejoignent le reste des caractéristiques du trajet sur la ligne LEG qui
+       mène à ce point (voir plus bas), au lieu de rester isolées sur la ligne d'identité. Seul
+       le départ (aucun leg ne mène à lui) garde les siennes sur sa propre ligne. */
+    var isDep=(k===0);
+    var altCell=isDep?alt:'—';
+    var etaCell=isDep?'00:00:00':'—';
 
     /* Vent piste (décollage/atterrissage, onglet Perf) affiché en petite étiquette à côté du
        nom du point de départ/arrivée — distinct de la colonne Vent, qui reste le vent de
@@ -6621,7 +6658,7 @@ function printNavlogRecapTable(){
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num">'+(k+1)+'</td>'+
       '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+windBadge+'</td>'+
-      '<td class="c-alt">'+alt+'</td>'+
+      '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
@@ -6629,7 +6666,7 @@ function printNavlogRecapTable(){
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
-      '<td class="c-eta">'+etaStr+'</td>'+
+      '<td class="'+(isDep?'':'dim')+'">'+etaCell+'</td>'+
       '<td class="dim">—</td>'+
       '<td class="c-comment"></td>'+
     '</tr>';
@@ -6657,11 +6694,12 @@ function printNavlogRecapTable(){
     var gsTxt=(leg.gs||0)+' kt';
     var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
     var fuelTxt=(leg.fuel||0)+' L';
+    var legEtaStr=cumMin?formatETA(cumMin):'—';
 
     rows+='<tr class="leg-row">'+
       '<td class="c-num"></td>'+
       '<td class="c-name leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
-      '<td class="c-alt"></td>'+
+      '<td>'+nextAlt+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td>'+windTxt+'</td>'+
       '<td>'+wca+'</td>'+
@@ -6669,7 +6707,7 @@ function printNavlogRecapTable(){
       '<td>'+distTxt+'</td>'+
       '<td>'+gsTxt+'</td>'+
       '<td>'+eteTxt+'</td>'+
-      '<td class="c-eta"></td>'+
+      '<td>'+legEtaStr+'</td>'+
       '<td>'+fuelTxt+'</td>'+
       '<td class="c-comment"></td>'+
     '</tr>';
