@@ -550,6 +550,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
      sur toute la largeur et empilés verticalement au lieu de rester compacts et côte à côte. */
   .nl-recap-type-btn,.wp-circuit-tag,.wp-unconfigured-tag,.wp-circuit-switch-btn,.wp-circuit-remove-btn{width:auto;margin:0}
   .nl-recap-hidden-item{display:inline-flex;flex-wrap:wrap}
+  /* Même bug que ci-dessus (règle globale mobile button{width:100%}) : touchait aussi la barre
+     d'onglets principale (Navlog/Météo/NOTAMs/...), le sélecteur Vol Local/Vol Nav, les flèches
+     du carrousel photo/skeyes, les petits boutons d'action des cartes waypoint, le toggle
+     jour/nuit et les boutons AeroWeb/notes — tous étalés en pleine largeur et empilés au lieu de
+     rester compacts, créant l'impression d'énormes espaces vides entre les onglets. */
+  .navlog-tab,.flight-type-btn,.model-nav button,.skeyes-nav button,.map-card-actions button,
+  .wp-etape-btn,.wp-remove-btn,.wp-map-btn,.wp-circuit-btn,.reserve-toggle,
+  .aeroweb-nav-btn,.aeroweb-toggle-btn,.note-tb-btn{width:auto;margin:0}
 }
 
 /* Subtab scroll indicators */
@@ -6437,89 +6445,161 @@ function printNavlogRecapTable(){
     if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
   }
 
+  /* Une ligne PAR POINT (au lieu d'une ligne point + une ligne leg séparée) : chaque ligne
+     porte à la fois l'identité du point ET les données du trajet qui y MÈNE (route/vent/dérive/
+     cap/distance/GS/ETE/carburant), comme sur une vraie fiche de navigation papier. Évite
+     l'alternance ligne-pleine / ligne-à-moitié-vide (tirets partout) que l'ancienne présentation
+     produisait et qui donnait l'impression de "pas un vrai tableau". */
   var rows='';
-  var cumMin=0;
+  var cumMin=0,cumDist=0,cumFuel=0;
   for(var k=0;k<shownIdx.length;k++){
     var i=shownIdx[k];
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
-    var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
-    rows+='<tr class="pt-row">'+
-      '<td class="c-num">'+(k+1)+'</td>'+
-      '<td class="c-name">'+escHTML(name)+'</td>'+
-      '<td>'+alt+'</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="cap dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="c-role">'+roleLabel+(roleLabel&&etaStr!=='--:--'?' · ':'')+(etaStr!=='--:--'?etaStr:'')+'</td>'+
-      '<td class="c-comment"></td>'+
-    '</tr>';
 
-    if(k===shownIdx.length-1) break;
-
-    var nextI=shownIdx[k+1];
-    var next=waypoints[nextI];
-    var dist=0,routeTrue=0;
-    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
-      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
-      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+    var routeT='—',windTxt='—',wca='—',hdgMTxt='—',distTxt='—',gsTxt='—',eteTxt='—',fuelTxt='—',hdgClass='dim';
+    if(k>0){
+      var prevI=shownIdx[k-1];
+      var prev=waypoints[prevI];
+      var dist=0,routeTrue=0;
+      if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
+        dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
+        routeTrue=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
+      }
+      var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,alt);
+      cumMin+=leg.ete*60; cumDist+=dist; cumFuel+=(leg.fuel||0);
+      var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
+      var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+      routeT=routeM+'°';
+      windTxt=Math.round(leg.wDir||0)+'°/'+Math.round(leg.wSpd||0)+'kt';
+      wca=(leg.wca>=0?'+':'')+Math.round(leg.wca||0)+'°';
+      hdgMTxt=hdgM+'°';
+      hdgClass='cap';
+      distTxt=dist+' NM';
+      gsTxt=(leg.gs||0)+' kt';
+      eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
+      fuelTxt=(leg.fuel||0)+' L';
     }
-    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
-    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
-    cumMin+=leg.ete*60;
-    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
-    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
-    rows+='<tr class="leg-row">'+
-      '<td class="c-num"></td>'+
-      '<td class="c-name">↳ vers '+(k+2)+'</td>'+
-      '<td></td>'+
-      '<td>'+routeM+'°</td>'+
-      '<td class="cap">'+hdgM+'°</td>'+
-      '<td>'+dist+' NM</td>'+
-      '<td>'+(leg.gs||0)+' kt</td>'+
-      '<td>'+formatTime(leg.ete||0)+'</td>'+
-      '<td></td>'+
+    var etaStr=k===0?'00:00:00':(cumMin?formatETA(cumMin):'—');
+
+    rows+='<tr class="'+(k%2?'alt':'')+(roleLabel?' pt-key':'')+'">'+
+      '<td class="c-num">'+(k+1)+'</td>'+
+      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+'</td>'+
+      '<td class="c-alt">'+alt+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+routeT+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+windTxt+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+wca+'</td>'+
+      '<td class="'+hdgClass+'">'+hdgMTxt+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+distTxt+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+gsTxt+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+eteTxt+'</td>'+
+      '<td class="c-eta">'+etaStr+'</td>'+
+      '<td class="'+(k>0?'':'dim')+'">'+fuelTxt+'</td>'+
       '<td class="c-comment"></td>'+
     '</tr>';
   }
+
+  /* Ligne de totaux : distance/temps/carburant cumulés sur toute la route, pour ne pas avoir
+     à ressortir une calculatrice une fois en l'air. */
+  var totRow='<tr class="tot-row">'+
+    '<td colspan="7">TOTAL ROUTE</td>'+
+    '<td>'+(Math.round(cumDist*10)/10)+' NM</td>'+
+    '<td></td>'+
+    '<td>'+formatTime(cumMin/60).replace(/^0:/,'')+'</td>'+
+    '<td></td>'+
+    '<td>'+(Math.round(cumFuel*10)/10)+' L</td>'+
+    '<td></td>'+
+  '</tr>';
+
+  var fb=computeFullFuelBreakdown(cumFuel);
+  var acReg=cfg.perfAircraft||'—';
+  var depIcao=waypoints[0]&&waypoints[0].name||'—';
+  var arrIcao=waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'—';
+  var todayStr=new Date().toLocaleDateString('fr-FR');
+
+  /* Bandeau d'en-tête façon "fiche de vol" : immatriculation, date, heure de départ prévue,
+     TAS/altitude/déclinaison utilisées pour le calcul — remplit le haut de page et donne le
+     contexte de vol sans avoir à revenir sur l'écran. */
+  var infoBlock=
+    '<div class="info-grid">'+
+      '<div><b>Avion</b><br>'+escHTML(acReg)+'</div>'+
+      '<div><b>Date</b><br>'+todayStr+'</div>'+
+      '<div><b>Départ prévu</b><br>'+escHTML(cfg.depTime||'—')+'</div>'+
+      '<div><b>TAS</b><br>'+cfg.tas+' kt</div>'+
+      '<div><b>Alt. croisière</b><br>'+cfg.alt+' ft</div>'+
+      '<div><b>Déclinaison</b><br>'+(cfg.dev>=0?'+':'')+cfg.dev+'°</div>'+
+      '<div><b>Vent réf.</b><br>'+cfg.windDir+'°/'+cfg.windSpd+' kt</div>'+
+      '<div><b>Conso croisière</b><br>'+cfg.fuelBurn+' L/h</div>'+
+    '</div>';
+
+  /* Bandeau de bas de page : bilan carburant complet (roulage/marge/réserve/dégagement) —
+     mêmes chiffres que l'onglet Carbu, pour avoir la décision go/no-go carburant sur la
+     même feuille que la route, sans avoir à imprimer un second document. */
+  var fuelBlock=
+    '<div class="fuel-grid">'+
+      '<div><b>Trip</b><br>'+(Math.round(fb.tripFuel*10)/10)+' L</div>'+
+      '<div><b>Roulage</b><br>'+(Math.round(fb.taxiFuel*10)/10)+' L</div>'+
+      '<div><b>Marge ('+fb.contPct+'%)</b><br>'+(Math.round(fb.contFuel*10)/10)+' L</div>'+
+      '<div><b>Réserve ('+fb.resMin+' min)</b><br>'+(Math.round(fb.resFuel*10)/10)+' L</div>'+
+      (fb.altnFuel>0?'<div><b>Dégagement</b><br>'+(Math.round(fb.altnFuel*10)/10)+' L</div>':'')+
+      (fb.extraFuel>0?'<div><b>Suppl.</b><br>'+(Math.round(fb.extraFuel*10)/10)+' L</div>':'')+
+      '<div class="fuel-total"><b>TOTAL REQUIS</b><br>'+(Math.round(fb.total*10)/10)+' L</div>'+
+    '</div>';
 
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Récapitulatif route — '+escHTML(routeName)+'</title>'+
     '<style>'+
-    /* Paysage : les colonnes détaillées (route/cap/dist/GS/ETE + commentaires) ont besoin de
-       largeur ; on compense la hauteur réduite avec une police et un espacement resserrés. */
-    '@page{size:A5 landscape;margin:7mm}'+
+    /* Paysage : les colonnes détaillées (route/vent/dérive/cap/dist/GS/ETE/ETA/carburant +
+       commentaires) ont besoin de largeur ; on compense la hauteur réduite avec une police et
+       un espacement resserrés, et on remplit le bas de page avec les bandeaux info/carburant
+       plutôt que de laisser un grand vide sous le tableau. */
+    '@page{size:A5 landscape;margin:6mm}'+
     '*{box-sizing:border-box}'+
-    'body{font-family:Arial,sans-serif;margin:0;padding:0}'+
-    'h1{font-size:12px;margin:0 0 4px}'+
-    'table{width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed}'+
-    'th,td{border:1px solid #333;padding:2px 3px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}'+
-    'th{background:#eee;font-size:8px}'+
-    'col.c-num{width:3.5%}col.c-name{width:15%}col.c-alt{width:6%}col.c-route{width:8%}'+
-    'col.c-cap{width:8%}col.c-dist{width:8%}col.c-gs{width:7%}col.c-ete{width:8%}'+
-    'col.c-role{width:14%}col.c-comment{width:22.5%}'+
-    '.leg-row td{background:#f6f6f6;font-style:italic;color:#555}'+
+    'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111}'+
+    'h1{font-size:12.5px;margin:0 0 3px}'+
+    '.sub{font-size:8px;color:#555;margin:0 0 5px}'+
+    '.info-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:0;border:1.4px solid #333;margin-bottom:5px}'+
+    '.info-grid div{border-right:1px solid #333;padding:3px 4px;font-size:8px}'+
+    '.info-grid div:last-child{border-right:none}'+
+    '.info-grid b{display:block;font-size:7px;text-transform:uppercase;color:#555;font-weight:700}'+
+    'table{width:100%;border-collapse:collapse;font-size:8.6px;table-layout:fixed}'+
+    'th,td{border:1px solid #333;padding:2.5px 3px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}'+
+    'td.c-name{text-align:left}'+
+    'th{background:#333;color:#fff;font-size:7.6px;text-transform:uppercase}'+
+    'col.c-num{width:3%}col.c-name{width:14%}col.c-alt{width:5.5%}col.c-route{width:6%}'+
+    'col.c-wind{width:8%}col.c-wca{width:6%}col.c-cap{width:6.5%}col.c-dist{width:6%}'+
+    'col.c-gs{width:5.5%}col.c-ete{width:6%}col.c-eta{width:7%}col.c-fuel{width:6%}col.c-comment{width:20.5%}'+
+    'tbody tr.alt{background:#f2f2f2}'+
     '.dim{color:#bbb}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
-    '.pt-row td{font-weight:700}'+
-    '.pt-row td.dim,.pt-row td.c-role{font-weight:400}'+
+    'td.c-name .tag{font-size:7px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px}'+
+    'tr.pt-key td{font-weight:700}'+
     '.c-comment{background:#fff}'+
+    'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
+    'tr.tot-row td:first-child{text-align:left}'+
     'tr{page-break-inside:avoid}'+
+    '.fuel-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:1.4px solid #333;margin-top:5px}'+
+    '.fuel-grid div{border-right:1px solid #333;padding:3px 4px;font-size:8px}'+
+    '.fuel-grid div:last-child{border-right:none}'+
+    '.fuel-grid b{display:block;font-size:7px;text-transform:uppercase;color:#555;font-weight:700}'+
+    '.fuel-grid .fuel-total{background:#ffe500}'+
+    '.fuel-grid .fuel-total b{color:#111}'+
     '</style></head><body>'+
-    '<h1>Récapitulatif de route — '+escHTML(routeName)+'</h1>'+
+    '<h1>Récapitulatif de route — '+escHTML(depIcao)+' → '+escHTML(arrIcao)+'</h1>'+
+    '<p class="sub">Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette</p>'+
+    infoBlock+
     '<table>'+
       '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
-      '<col class="c-cap"><col class="c-dist"><col class="c-gs"><col class="c-ete"><col class="c-role">'+
-      '<col class="c-comment"></colgroup>'+
-      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route</th><th class="cap">Cap M</th>'+
-      '<th>Dist</th><th>GS</th><th>ETE</th><th>Rôle/ETA</th><th>Commentaires</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody>'+
+      '<col class="c-wind"><col class="c-wca"><col class="c-cap"><col class="c-dist"><col class="c-gs">'+
+      '<col class="c-ete"><col class="c-eta"><col class="c-fuel"><col class="c-comment"></colgroup>'+
+      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
+      '<th class="cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Carb.</th><th>Commentaires</th></tr></thead>'+
+      '<tbody>'+rows+totRow+'</tbody>'+
     '</table>'+
+    fuelBlock+
     '</body></html>');
   w.document.close();
   setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },400);
