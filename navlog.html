@@ -2806,6 +2806,12 @@ function switchTab(id){
   }else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
   
   if(id==='checklist') initChecklist();
+  /* Reprendre le champ Carburant du M&CG sur le devis Carbu à chaque retour sur l'onglet
+     (voir _mbFuelManualChange) — annule aussi une éventuelle édition manuelle en attente. */
+  if(id==='masse'){
+    if(typeof _mbFuelRevertTimer!=='undefined' && _mbFuelRevertTimer){ clearTimeout(_mbFuelRevertTimer); _mbFuelRevertTimer=null; }
+    if(typeof _mbFuelSyncNow==='function') _mbFuelSyncNow();
+  }
   if(id==='fuel') window.renderFuelLog();
   if(id==='fpl') window.renderFPL();
 
@@ -2920,14 +2926,25 @@ function renderFuelLog(){
      de legs et un unique total "circuit départ"/"circuit arrivée" agrégé, sans dire à quelle
      étape (donc quel aérodrome) chaque circuit appartenait. */
   var isEtapesFuelLog=(typeof flightType!=='undefined' && flightType==='etapes');
-  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0, stageLegNum=0;
-  /* Détail circuit départ/arrivée PAR étape (pas juste un total global) — sinon un vol à
-     2+ étapes, chacune avec son propre circuit départ/arrivée, agrégeait tout en un seul
-     nombre "Circuit départ"/"Circuit arrivée" sans dire quelle étape y contribuait. */
-  var circByStage={};
-  function _recordStageCircTotals(){
+  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0;
+  /* Numérotation des legs de NAVIGATION uniquement (pas les legs de circuit dép/arr) — reste
+     cohérente avec le tableau Navlog à l'écran, qui ne numérote QUE les legs de nav (les
+     points de circuit y sont masqués, groupés à part). Redémarre à 1 par étape en vol à
+     étapes (comme le Navlog) ; compteur global sinon. Les legs de circuit départ/arrivée
+     n'affichent plus de numéro du tout (juste "Début"/"Fin"), pour ne pas laisser croire à
+     une numérotation qui n'a pas de sens équivalent sur le tableau Navlog. */
+  var navLegGlobalNum=0, stageNavLegNum=0;
+  /* Détail PAR étape (nav + circuit départ/arrivée) — sinon un vol à 2+ étapes agrégeait tout
+     en un seul total "Délestage"/"Circuit départ"/"Circuit arrivée" sans dire quelle étape y
+     contribuait. */
+  var stageTotals={};
+  function _recordStageTotals(){
     if(curStageNum===null) return;
-    circByStage[curStageNum]={depFuel:stageCircDepFuel,depTime:stageCircDepTimeMin,arrFuel:stageCircArrFuel,arrTime:stageCircArrTimeMin};
+    stageTotals[curStageNum]={
+      navFuel:stageNavFuel, navTime:stageNavTimeMin,
+      depFuel:stageCircDepFuel, depTime:stageCircDepTimeMin,
+      arrFuel:stageCircArrFuel, arrTime:stageCircArrTimeMin
+    };
   }
   function _legStage(prevWp,wp){
     if(!prevWp._stages||!wp._stages) return null;
@@ -2956,8 +2973,8 @@ function renderFuelLog(){
         var thisLegStage=_legStage(waypoints[i-1],wp);
         if(thisLegStage!==null && thisLegStage!==curStageNum){
           _closeStageSubtotal();
-          _recordStageCircTotals();
-          curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0; stageLegNum=0;
+          _recordStageTotals();
+          curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0; stageNavLegNum=0;
           var stageDepWp=waypoints[i-1], stageArrIdxForLabel=i;
           /* Dernier point qui appartient ENCORE à cette étape (pas le premier qui n'y
              appartient plus) — sinon l'étiquette d'arrivée de l'étape 1 affichait par erreur
@@ -2979,19 +2996,26 @@ function renderFuelLog(){
       tripTimeMin+=t;
       var legFuel = legData.fuel || 0;
       tripFuel += legFuel;
-      stageLegNum++;
-      var circTag='';
-      if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t; circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">🛫 circuit départ</span>'; }
-      else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>'; }
-      else { navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t; }
-      /* Numéro de LEG (pas de waypoint) — redémarre à 1 à chaque étape pour un vol à étapes,
-         reste l'index global pour un vol classique. Ligne cliquable : bascule normal → circuit
-         départ → circuit arrivée → normal à chaque clic, en réutilisant EXACTEMENT le même
-         setCircuitType/removeCircuitType que le tableau Navlog et la carte, pour que tous les
-         calculs du site restent cohérents quel que soit l'endroit où on a changé le type. */
-      var legDisplayNum=isEtapesFuelLog?stageLegNum:i;
+      var circTag='', legLabel;
+      if(wp.ptType==='circuitDep'){
+        circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t;
+        circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">🛫 circuit départ</span>';
+        legLabel='Début';
+      } else if(wp.ptType==='circuitArr'){
+        circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t;
+        circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>';
+        legLabel='Fin';
+      } else {
+        navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t;
+        navLegGlobalNum++; stageNavLegNum++;
+        legLabel='Leg '+(isEtapesFuelLog?stageNavLegNum:navLegGlobalNum);
+      }
+      /* Ligne cliquable : bascule normal → circuit départ → circuit arrivée → normal à chaque
+         clic, en réutilisant EXACTEMENT le même setCircuitType/removeCircuitType que le
+         tableau Navlog et la carte, pour que tous les calculs du site restent cohérents quel
+         que soit l'endroit où on a changé le type. */
       html+='<div class="fuel-leg-row" style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="window._cycleLegType('+i+')" title="Cliquer pour basculer normal → circuit départ → circuit arrivée → normal">';
-      html+='<span>Leg '+legDisplayNum+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM'+(legData.gs?' &middot; GS '+legData.gs+' kt':'')+'</small>'+circTag+'</span>';
+      html+='<span>'+legLabel+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM'+(legData.gs?' &middot; GS '+legData.gs+' kt':'')+'</small>'+circTag+'</span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
 
@@ -3004,7 +3028,7 @@ function renderFuelLog(){
     }
   }
   _closeStageSubtotal();
-  _recordStageCircTotals();
+  _recordStageTotals();
 
   /* If no meaningful route, show placeholder */
   if(totalDist===0 && tripTimeMin===0){
@@ -3046,47 +3070,43 @@ function renderFuelLog(){
   var enduranceMin = (fuelBurn > 0) ? (totalBlockFuel / fuelBurn) * 60 : 0;
 
   /* Left Column: Fuel Breakdown */
-  var stageNums=Object.keys(circByStage).map(Number).sort(function(a,b){return a-b;});
-  var splitCircByStage=isEtapesFuelLog && stageNums.length>1;
+  var stageNums=Object.keys(stageTotals).map(Number).sort(function(a,b){return a-b;});
+  var splitByStage=isEtapesFuelLog && stageNums.length>1;
   /* Roulage (taxi) PAR étape : un vol à N étapes a N décollages et N atterrissages, donc N
      taxis départ et N taxis arrivée (l'escale intermédiaire compte double : roulage arrivée
-     de l'étape qui se termine + roulage départ de celle qui commence) — auparavant regroupé
-     en un seul "Taxi Départ"/"Taxi Arrivée" global (vraie première/dernière piste) plus un
-     "Étapes taxi (×N)" agrégé pour les escales, sans dire à quelle étape chacune appartenait.
-     Le total en litres/minutes ne change pas, seul l'affichage est ventilé par étape. */
-  var totalStageCount=isEtapesFuelLog?(window._etapesStageCount||1):1;
-  var splitTaxiByStage=isEtapesFuelLog && totalStageCount>1;
+     de l'étape qui se termine + roulage départ de celle qui commence). Le total en
+     litres/minutes ne change pas, seul l'affichage est ventilé par étape. */
 
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
-  if(navFuel>0) col1+=row('D\u00e9lestage (Navigation)', navFuel);
-  else col1+=row('D\u00e9lestage (Navigation)', 0, 'var(--text-secondary)');
-  if(splitCircByStage){
+  if(splitByStage){
     stageNums.forEach(function(sn){
-      var st=circByStage[sn];
-      if(st.depFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part \u2014 \u00c9tape '+sn, st.depFuel, '#b39ddb');
-      if(st.arrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e \u2014 \u00c9tape '+sn, st.arrFuel, '#4dd0e1');
+      var st=stageTotals[sn];
+      col1+=row('Délestage (Navigation) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
+      if(st.depFuel>0) col1+=row('🛫 Circuit départ — Étape '+sn, st.depFuel, '#b39ddb');
+      if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
+      col1+=row('Roulage départ — Étape '+sn, (taxiD/60)*fuelBurn);
+      col1+=row('Roulage arrivée — Étape '+sn, (taxiA/60)*fuelBurn);
     });
   } else {
-    if(circDepFuel>0) col1+=row('\ud83d\udeeb Circuit d\u00e9part', circDepFuel, '#b39ddb');
-    if(circArrFuel>0) col1+=row('\ud83d\udeec Circuit arriv\u00e9e', circArrFuel, '#4dd0e1');
-  }
-
-  if(splitTaxiByStage){
-    for(var tfN=1;tfN<=totalStageCount;tfN++){
-      col1+=row('Roulage d\u00e9part \u2014 \u00c9tape '+tfN, (taxiD/60)*fuelBurn);
-      col1+=row('Roulage arriv\u00e9e \u2014 \u00c9tape '+tfN, (taxiA/60)*fuelBurn);
-    }
-  } else {
+    if(navFuel>0) col1+=row('Délestage (Navigation)', navFuel);
+    else col1+=row('Délestage (Navigation)', 0, 'var(--text-secondary)');
+    if(circDepFuel>0) col1+=row('🛫 Circuit départ', circDepFuel, '#b39ddb');
+    if(circArrFuel>0) col1+=row('🛬 Circuit arrivée', circArrFuel, '#4dd0e1');
     col1+=row('Roulage (Taxi)', taxiFuel);
-    if(etapeCount>0) col1+=row('\u00c9tapes taxi (\u00d7'+etapeCount+')', etapeFuel, '#ff9500');
+    if(etapeCount>0) col1+=row('Étapes taxi (×'+etapeCount+')', etapeFuel, '#ff9500');
   }
   col1+=row('Marge ('+contPct+'%)', contFuel);
-  col1+=row('R\u00e9serve ('+resMin+' min)', resFuel);
-  if(altnFuel>0) col1+=row('D\u00e9gagement ('+altnDist+' NM)', altnFuel, '#f87171');
-  col1+=row('Suppl\u00e9mentaire', extraFuel);
+  col1+=row('Réserve ('+resMin+' min)', resFuel);
+  if(altnFuel>0) col1+=row('Dégagement ('+altnDist+' NM)', altnFuel, '#f87171');
+  /* Champ éditable en direct dans le résumé (pas seulement dans la config au-dessus) : litres
+     supplémentaires à ajouter au total requis (ex: déjà dans le réservoir, marge perso...). */
+  col1+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">'+
+    '<span style="color:var(--text-secondary)" title="Litres supplémentaires ajoutés au total requis (ex: déjà dans le réservoir, marge personnelle...)">Supplémentaire</span>'+
+    '<span><input type="number" id="fuelExtraInline" value="'+extraFuel+'" min="0" max="100" step="0.1" onchange="document.getElementById(\'fuelExtra\').value=this.value;window.renderFuelLog()" style="width:56px;padding:3px 6px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right;font-weight:600"> L</span>'+
+  '</div>';
   col1+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">';
-  col1+='<div><span style="font-weight:700;font-size:1em">BLOCK FUEL</span><div style="font-size:.78em;color:#4caf50;margin-top:2px">\u2261 '+formatTime(enduranceMin/60)+' d\u2019autonomie</div></div>';
+  col1+='<div><span style="font-weight:700;font-size:1em">BLOCK FUEL</span><div style="font-size:.78em;color:#4caf50;margin-top:2px">≡ '+formatTime(enduranceMin/60)+' d\u2019autonomie</div></div>';
   col1+='<span style="font-weight:800;font-size:1.4em;color:#4caf50">'+totalBlockFuel.toFixed(1)+' L</span>';
   col1+='</div></div>';
   
@@ -3102,28 +3122,23 @@ function renderFuelLog(){
 
   var col2='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col2+='<div style="font-weight:700;margin-bottom:12px;color:#ffa726;font-size:1.1em">TEMPS DE VOL</div>';
-  if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
-  else col2+=timeRow('Temps Vol (Navigation)', 0);
-  if(splitCircByStage){
+  if(splitByStage){
     stageNums.forEach(function(sn){
-      var st=circByStage[sn];
-      if(st.depTime>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part \u2014 \u00c9tape '+sn, st.depTime);
-      if(st.arrTime>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e \u2014 \u00c9tape '+sn, st.arrTime);
+      var st=stageTotals[sn];
+      col2+=timeRow('Temps Vol (Navigation) — Étape '+sn, st.navTime);
+      if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
+      if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
+      col2+=timeRow('Taxi Départ — Étape '+sn, taxiD);
+      col2+=timeRow('Taxi Arrivée — Étape '+sn, taxiA);
     });
   } else {
-    if(circDepTimeMin>0) col2+=timeRow('\ud83d\udeeb Circuit d\u00e9part', circDepTimeMin);
-    if(circArrTimeMin>0) col2+=timeRow('\ud83d\udeec Circuit arriv\u00e9e', circArrTimeMin);
-  }
-
-  if(splitTaxiByStage){
-    for(var ttN=1;ttN<=totalStageCount;ttN++){
-      col2+=timeRow('Taxi D\u00e9part \u2014 \u00c9tape '+ttN, taxiD);
-      col2+=timeRow('Taxi Arriv\u00e9e \u2014 \u00c9tape '+ttN, taxiA);
-    }
-  } else {
-    col2+=timeRow('Taxi D\u00e9part', taxiD);
-    col2+=timeRow('Taxi Arriv\u00e9e', taxiA);
-    if(etapeCount>0) col2+=timeRow('\u00c9tapes (\u00d7'+etapeCount+')', etapeTimeMin);
+    if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
+    else col2+=timeRow('Temps Vol (Navigation)', 0);
+    if(circDepTimeMin>0) col2+=timeRow('🛫 Circuit départ', circDepTimeMin);
+    if(circArrTimeMin>0) col2+=timeRow('🛬 Circuit arrivée', circArrTimeMin);
+    col2+=timeRow('Taxi Départ', taxiD);
+    col2+=timeRow('Taxi Arrivée', taxiA);
+    if(etapeCount>0) col2+=timeRow('Étapes (×'+etapeCount+')', etapeTimeMin);
   }
   col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
   col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:800;font-size:1.2em;color:#ffa726">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
@@ -6425,6 +6440,29 @@ function computeFullFuelBreakdown(tripFuelL){
 }
 window.computeFullFuelBreakdown=computeFullFuelBreakdown;
 
+/* Calcule le BLOCK FUEL total (litres) tel que déterminé par l'onglet Carbu, pour que
+   d'autres onglets (M&CG) puissent s'y synchroniser — SANS appeler renderFuelLog() (qui
+   rappelle recalcNavlog() en tête, et provoquerait donc une récursion puisque cette fonction
+   est elle-même invoquée depuis la fin de recalcNavlog). Même formule que renderFuelLog :
+   somme du carburant de chaque leg + taxi supplémentaire aux escales intermédiaires, passés
+   à computeFullFuelBreakdown (source unique déjà utilisée par le Sommaire et le FPL). */
+function _computeCarbuBlockFuelL(){
+  var fuelBurnVal = parseFloat(_v('fuelBurn'))||parseFloat(_v('cfgFuel'))||20;
+  var taxiD = parseFloat(_v('fuelTaxiD'))||0;
+  var taxiA = parseFloat(_v('fuelTaxiA'))||0;
+  var tripFuel=0;
+  for(var i=1;i<waypoints.length;i++){
+    var wp=waypoints[i];
+    if(wp.dist>0 && wp._leg) tripFuel+=(wp._leg.fuel||0);
+  }
+  var etapeFuel=0;
+  for(var ei=1;ei<waypoints.length-1;ei++){
+    if(waypoints[ei]&&waypoints[ei].isEtape) etapeFuel+=((taxiD+taxiA)/60)*fuelBurnVal;
+  }
+  var bf=computeFullFuelBreakdown(tripFuel);
+  return bf.total+etapeFuel;
+}
+
 function getFuelBurnForLeg(alt, tas, defaultBurn){
   if(!alt || alt < 2500) return defaultBurn;
 
@@ -6583,6 +6621,7 @@ function recalcNavlog(){
      chargées, pas de nouveau fetch — juste un nouveau calcul de distance) */
   if(_dailyWarningsData && typeof renderDailyWarnings==='function') renderDailyWarnings();
   _scheduleAutosave();
+  window._lastComputedBlockFuelL=_computeCarbuBlockFuelL();
 }
 
 /* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
@@ -13040,8 +13079,13 @@ function mbSelectAircraft(){
   document.getElementById('mbDateLabel').textContent='Pes\u00e9e du '+ac.weighDate;
   var body=document.getElementById('mbBody');
   var html='';
+  /* Quantit\u00e9 de carburant PAR D\u00c9FAUT = le BLOCK FUEL d\u00e9j\u00e0 calcul\u00e9 par l'onglet Carbu (au lieu
+     d'une valeur fixe arbitraire de 78 L, sans rapport avec le devis r\u00e9el) \u2014 sinon les litres
+     affich\u00e9s en M&CG et en Carbu \u00e9taient incoh\u00e9rents entre eux. Reste \u00e9ditable \u00e0 la vol\u00e9e
+     (bouton Max ou saisie manuelle), voir window._mbFuelManualChange/_mbFuelSyncNow. */
+  var _mbDefaultFuel=(window._lastComputedBlockFuelL!==undefined)?Math.min(ac.fuelUsable,Math.round(window._lastComputedBlockFuelL*10)/10):78;
   html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
-  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="78" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window.mbRecalc()"> L <button onclick="document.getElementById(\'mbFuel\').value='+ac.fuelUsable+';window.mbRecalc()" style="padding:2px 7px;font-size:.75em;border-radius:5px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-weight:600;margin-left:4px" title="Remplir au maximum ('+ac.fuelUsable+' L)">Max</button> &rarr; <span id="mbFuelKg">'+(78*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div></td><td id="mbFuelMom">'+(78*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
+  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+_mbDefaultFuel+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window._mbFuelManualChange()"> L <button onclick="document.getElementById(\'mbFuel\').value='+ac.fuelUsable+';window._mbFuelManualChange()" style="padding:2px 7px;font-size:.75em;border-radius:5px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-weight:600;margin-left:4px" title="Remplir au maximum ('+ac.fuelUsable+' L)">Max</button> &rarr; <span id="mbFuelKg">'+(_mbDefaultFuel*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div><div id="mbFuelSyncHint" style="font-size:.72em;color:var(--text-secondary);margin-top:2px">\u{1F517} Synchronis\u00e9 avec Carbu ('+_mbDefaultFuel.toFixed(1)+' L)</div></td><td id="mbFuelMom">'+(_mbDefaultFuel*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
   if(ac.has2seats){
     html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
     html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
@@ -13218,6 +13262,38 @@ function mbRecalc(){
   _renderMbStages(ac,totalMass,totalMom);
 }
 window.mbRecalc=mbRecalc;
+
+/* Resynchronise le champ Carburant du M&CG sur le BLOCK FUEL actuellement calculé par
+   l'onglet Carbu — appelé au premier passage sur l'onglet, et automatiquement après une
+   édition manuelle (voir _mbFuelManualChange) une fois le délai de grâce écoulé. */
+var _mbFuelRevertTimer=null;
+function _mbFuelSyncNow(){
+  var el=document.getElementById('mbFuel');
+  var ac=MB_DATA[document.getElementById('mbAircraft').value];
+  if(!el||!ac) return;
+  var val=(window._lastComputedBlockFuelL!==undefined)?Math.round(window._lastComputedBlockFuelL*10)/10:(parseFloat(el.value)||0);
+  if(val>ac.fuelUsable) val=ac.fuelUsable;
+  el.value=val;
+  mbRecalc();
+  var hint=document.getElementById('mbFuelSyncHint');
+  if(hint) hint.innerHTML='\u{1F517} Synchronisé avec Carbu ('+val.toFixed(1)+' L)';
+}
+window._mbFuelSyncNow=_mbFuelSyncNow;
+
+/* Édition manuelle du champ Carburant (saisie ou bouton Max) : on respecte la valeur choisie
+   quelques secondes (simuler un cas particulier, ex. ne pas prendre le plein), puis on
+   revient automatiquement au devis Carbu — sans ça, les litres du M&CG pouvaient dériver
+   indéfiniment loin de ce que l'onglet Carbu calcule réellement, sans que le pilote s'en
+   rende compte plus tard dans sa préparation. Revient aussi immédiatement si on quitte puis
+   revient sur l'onglet M&CG (voir switchTab). */
+function _mbFuelManualChange(){
+  mbRecalc();
+  var hint=document.getElementById('mbFuelSyncHint');
+  if(hint) hint.innerHTML='✏️ Valeur manuelle — revient au calcul Carbu dans quelques secondes';
+  if(_mbFuelRevertTimer) clearTimeout(_mbFuelRevertTimer);
+  _mbFuelRevertTimer=setTimeout(_mbFuelSyncNow,6000);
+}
+window._mbFuelManualChange=_mbFuelManualChange;
 
 /* Vol à étapes : un bloc masse & centrage complet par étape (décollage → atterrissage),
    enchaînés automatiquement — la masse d'atterrissage d'une étape devient la masse de
