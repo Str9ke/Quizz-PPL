@@ -8281,36 +8281,6 @@ function _resetEtapesSelection(){
 }
 window._resetEtapesSelection=_resetEtapesSelection;
 
-/* Fusionne les points ADJACENTS quasi identiques (même nom, ou à moins de 0.3 NM l'un de
-   l'autre) — utilisé après composition d'un vol à étapes pour éliminer les points fantômes
-   qui créent une "leg" quasi nulle entre deux points du même aérodrome. Priorité au ptType
-   du point conservé s'il en a un ; sinon récupère celui du point fusionné. */
-function _dedupeAdjacentWaypoints(arr){
-  var out=[];
-  for(var i=0;i<arr.length;i++){
-    var w=arr[i];
-    if(out.length){
-      var prev=out[out.length-1];
-      var sameName=!!(w.name && (prev.name||'').trim().toUpperCase()===(w.name||'').trim().toUpperCase());
-      var veryClose=false;
-      if(!sameName && prev.lat!=null && prev.lon!=null && w.lat!=null && w.lon!=null){
-        veryClose = haversine(prev.lat,prev.lon,w.lat,w.lon) < 0.3;
-      }
-      if(sameName || veryClose){
-        if(!prev.ptType && w.ptType) prev.ptType=w.ptType;
-        if(w.isEtape) prev.isEtape=true;
-        if(w._stages && w._stages.length){
-          prev._stages = prev._stages || [];
-          w._stages.forEach(function(s){ if(prev._stages.indexOf(s)<0) prev._stages.push(s); });
-        }
-        continue; /* w fusionné dans prev, pas ajouté à out */
-      }
-    }
-    out.push(w);
-  }
-  return out;
-}
-
 function _composeEtapes(){
   if(_etapesSelection.length<2){
     _toast('⚠️ Sélectionnez au moins 2 dossiers, dans l\'ordre de vol','error',3200);
@@ -8377,14 +8347,6 @@ function _composeEtapes(){
     combined=combined.concat(wps);
   });
   if(combined.length && combined[0]) combined[0]._stages=[1];
-  /* Filet de sécurité en plus de la fusion de jonction ci-dessus (par nom exact) : un dossier
-     sauvegardé peut contenir DEUX points quasi identiques du même aérodrome (ex: le point de
-     nav "EHMZ" et un point de circuit arrivée "EHMZ" resté juste à côté, non fusionné à
-     l'époque) — ça créait une leg fantôme de quelques dixièmes de NM, visuellement une ligne
-     de tableau vide entre les deux. On fusionne ici tout point adjacent au nom identique OU à
-     moins de 0.3 NM d'un point déjà là — dans TOUT le vol composé, pas seulement aux jonctions
-     entre étapes. */
-  combined=_dedupeAdjacentWaypoints(combined);
 
   waypoints=combined;
   flightType='etapes';
