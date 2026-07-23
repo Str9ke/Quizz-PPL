@@ -2692,6 +2692,18 @@ function trueBearing(lat1,lon1,lat2,lon2){
   return (rad2deg(Math.atan2(y,x))+360)%360;
 }
 
+/* Point de destination à distNM NM depuis (lat1,lon1) au cap bearingDeg (formule sphérique
+   standard, même rayon terrestre que haversine) — utilisé pour dessiner les petits traits
+   perpendiculaires des repères de temps (timetics) sur la carte de route. */
+function destPoint(lat1,lon1,bearingDeg,distNM){
+  var R=3440.065;
+  var d=distNM/R, brng=deg2rad(bearingDeg);
+  var lat1r=deg2rad(lat1), lon1r=deg2rad(lon1);
+  var lat2r=Math.asin(Math.sin(lat1r)*Math.cos(d)+Math.cos(lat1r)*Math.sin(d)*Math.cos(brng));
+  var lon2r=lon1r+Math.atan2(Math.sin(brng)*Math.sin(d)*Math.cos(lat1r), Math.cos(d)-Math.sin(lat1r)*Math.sin(lat2r));
+  return {lat:rad2deg(lat2r), lon:rad2deg(lon2r)};
+}
+
 function formatTime(hours){
   if(isNaN(hours)||hours<0) return '0:00:00';
   var h=Math.floor(hours),m=Math.floor((hours-h)*60);
@@ -12178,12 +12190,42 @@ function updateRouteMap(){
     var clSeg=L.polyline([[pts[cl].lat,pts[cl].lon],[pts[cl+1].lat,pts[cl+1].lon]],{color:clColor,weight:4,opacity:.95}).addTo(routeMap);
     routeMapLayers.push(clSeg);
   }
+  /* Timetics : petit trait bleu perpendiculaire à la route, un tous les 3 minutes de vol
+     RÉELLES depuis le début de CE leg (pas une distance fixe) — calculées à partir de la
+     vraie vitesse sol (wp._leg.gs, déjà calculée avec vent + TAS configurés par calcLeg dans
+     recalcNavlog). Un leg trop court (<3 min à sa vitesse sol) n'a logiquement aucun repère ;
+     un long leg en a plusieurs. Position le long du leg interpolée linéairement en lat/lon
+     (comme le trace déjà la polyline Leaflet elle-même, pas en grand cercle) pour que chaque
+     repère tombe exactement SUR le trait affiché, pas légèrement à côté. */
+  var TICK_INTERVAL_MIN=3, TICK_HALF_NM=0.35, hasTimetics=false;
+  for(var tk=0;tk<pts.length-1;tk++){
+    var tkWp=waypoints[pts[tk+1].idx];
+    var tkLeg=tkWp&&tkWp._leg;
+    var tkDist=tkWp?tkWp.dist:0;
+    if(!tkLeg||!tkLeg.gs||!tkDist||tkDist<=0) continue;
+    var tkIntervalNM=tkLeg.gs*(TICK_INTERVAL_MIN/60);
+    if(tkIntervalNM<=0) continue;
+    var tkBearing=trueBearing(pts[tk].lat,pts[tk].lon,pts[tk+1].lat,pts[tk+1].lon);
+    var tkPerp=(tkBearing+90)%360;
+    for(var tkN=1;tkN*tkIntervalNM<tkDist;tkN++){
+      var tkFrac=(tkN*tkIntervalNM)/tkDist;
+      var tkLat=pts[tk].lat+(pts[tk+1].lat-pts[tk].lat)*tkFrac;
+      var tkLon=pts[tk].lon+(pts[tk+1].lon-pts[tk].lon)*tkFrac;
+      var tkA=destPoint(tkLat,tkLon,tkPerp,TICK_HALF_NM);
+      var tkB=destPoint(tkLat,tkLon,(tkPerp+180)%360,TICK_HALF_NM);
+      var tkMark=L.polyline([[tkA.lat,tkA.lon],[tkB.lat,tkB.lon]],{color:'#2196f3',weight:3,opacity:.95}).addTo(routeMap);
+      routeMapLayers.push(tkMark);
+      hasTimetics=true;
+    }
+  }
+
   var legendEl=document.getElementById('routeMapLegend');
   if(legendEl){
-    if(hasCircuitDepLeg||hasCircuitArrLeg){
+    if(hasCircuitDepLeg||hasCircuitArrLeg||hasTimetics){
       var legendHtml='';
       if(hasCircuitDepLeg) legendHtml+='<span><i style="background:'+CIRCUIT_DEP_COLOR+'"></i>\u{1F6EB} Circuit d\u00e9part</span>';
       if(hasCircuitArrLeg) legendHtml+='<span><i style="background:'+CIRCUIT_ARR_COLOR+'"></i>\u{1F6EC} Circuit arriv\u00e9e</span>';
+      if(hasTimetics) legendHtml+='<span><i style="background:#2196f3"></i>\u23F1\uFE0F Rep\u00e8re 3 min</span>';
       legendEl.innerHTML=legendHtml;
       legendEl.style.display='';
     } else {
