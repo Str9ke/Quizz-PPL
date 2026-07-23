@@ -99,8 +99,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .wx-airport-btn{width:auto;flex:0 0 auto;margin:0;padding:6px 12px;font-size:.8em;font-weight:600;border-radius:16px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s}
 .wx-airport-btn.active{background:#667eea;color:#fff;border-color:transparent}
 .wx-airport-btn.loaded{border-color:#667eea}
-.wx-block{margin-bottom:12px;padding:12px;background:var(--bg-question);border-radius:10px;border:1px solid var(--border-color)}
-.wx-block-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.wx-block{margin-bottom:8px;padding:9px 10px;background:var(--bg-question);border-radius:10px;border:1px solid var(--border-color)}
+.wx-block-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;row-gap:3px}
+/* Panneau météo condensé : les blocs par aérodrome (METAR/TAF/vent/piste) prenaient beaucoup de
+   hauteur écran (gros padding, ligne de vent en pleine hauteur, sections toujours dépliées) —
+   resserré sans retirer d'info : le TAF reste repliable (<details>), juste plus compact. */
+.wx-wind-bar{padding:5px 10px!important;margin:4px 0!important;gap:8px!important}
+.wx-decoded{padding:6px 8px!important;margin-top:4px!important;line-height:1.35!important;font-size:.85em!important}
+.rwy-suggest{padding:6px 10px!important;margin-top:5px!important}
+.runway-svg-wrap{margin:2px 6px!important}
 
 /* VFR badge */
 .vfr-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75em;font-weight:700;color:#fff;text-transform:uppercase}
@@ -434,6 +441,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table td.nl-recap-name,.nl-recap-table th:first-child{position:sticky;left:0;z-index:2;background:var(--bg-container)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td.nl-recap-name{background:rgba(255,167,38,.16)}
 .nl-recap-table tbody tr.nl-recap-point-row:hover td.nl-recap-name{background:rgba(102,126,234,.16)}
+/* La ligne POINT n'a de vraies données que dans la cellule Nom (Route/Vent/Cap/Dist/GS/ETE ne
+   s'appliquent pas à un point isolé, juste des tirets) — elle prenait pourtant la même hauteur
+   que la ligne LEG, pleine de données, ce qui coupait le nombre de legs visibles à l'écran en
+   deux pour rien. Padding vertical réduit au minimum sur cette ligne (le décalage visuel avec
+   la ligne leg reste géré par la couleur de fond + le liseré, pas par la hauteur). */
+.nl-recap-table tr.nl-recap-point-row td{padding-top:2px;padding-bottom:2px}
+.nl-recap-table tr.nl-recap-point-row td.nl-recap-name{padding-top:3px;padding-bottom:3px}
+.nl-recap-table td.nl-recap-type{width:1%;white-space:nowrap;padding-left:4px;padding-right:4px}
+.nl-recap-table td.nl-recap-type .nl-recap-type-btn{padding:2px 6px;font-size:.76em}
 /* Ligne LEG : décalée visuellement (fond teinté + flèche en retrait + liseré bleu à gauche)
    pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE les deux points"
    encadrants, jamais comme une propriété de l'un des deux — tout en restant un vrai tableau
@@ -500,7 +516,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .navlog-btn.rm-fullscreen-btn{background:rgba(102,126,234,.15);border-color:#667eea;color:#667eea;font-weight:700}
 .rm-close-btn{display:none;position:absolute;top:10px;right:10px;z-index:20;width:38px;height:38px;border-radius:50%;align-items:center;justify-content:center;background:rgba(10,10,20,.72);border:1px solid rgba(255,255,255,.28);color:#fff;font-size:1.05em;cursor:pointer;line-height:1}
 .rm-close-btn:hover{background:rgba(239,83,80,.55);border-color:#ef5350}
-.route-map-card.rm-fullscreen .rm-close-btn{display:flex}
+/* z-index très élevé + décalage par la safe-area (encoche/barre de statut) : en plein écran,
+   Leaflet pose ses propres panneaux/contrôles (z-index jusqu'à 1000) au-dessus du conteneur
+   carte — un z-index de 20 pouvait finir masqué ou tout près du bord physique de l'écran sur
+   certains téléphones, rendant le bouton de sortie invisible/inatteignable. */
+.route-map-card.rm-fullscreen .rm-close-btn{display:flex;z-index:99999;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));width:44px;height:44px;font-size:1.3em;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 /* Navlog action buttons */
 .navlog-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;font-size:.82em;font-weight:600;border-radius:12px;cursor:pointer;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all .2s;white-space:nowrap;vertical-align:middle;line-height:1.2}
 .navlog-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.06)}
@@ -896,12 +916,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
     </div>
 
-    <!-- NavLog board (gamified) -->
+    <!-- Caractéristiques (ex "NavLog") : édition détaillée point par point — repliée par
+         défaut, ce n'est plus la vue principale (voir le tableau "Navlog" imprimable
+         au-dessus), juste un outil de configuration qu'on ouvre au besoin. -->
     <div class="nl-card">
-      <div class="nl-card-title"><span class="icon">&#x1F5FA;&#xFE0F;</span> NavLog</div>
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="window._toggleCaracteristiques()">
+        <span><span class="icon">&#x1F5FA;&#xFE0F;</span> Caract&#xe9;ristiques</span>
+        <span id="caracteristiquesToggleLabel" style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">&#x25B8; Afficher</span>
+      </div>
+      <div id="caracteristiquesBody" style="display:none">
       <div class="navlog-board" id="navlogBoard"></div>
       <button class="add-wp-btn" onclick="window.addWaypoint()">+ Ajouter un waypoint</button>
       <button class="clear-ws-btn" onclick="window.clearWorkspace()">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
+      </div>
     </div>
 
   </div>
@@ -1682,6 +1709,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <label style="font-size:.85em;color:var(--text-secondary);font-weight:600">Date du vol :</label>
         <input type="date" id="mbFlightDate" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em;margin-left:6px">
       </div>
+      <div class="mb-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
       <table class="mb-table" id="mbTable">
         <thead>
           <tr><th>Poste</th><th>Bras (m)</th><th>Masse (kg)</th><th>Moment (m&middot;kg)</th></tr>
@@ -1692,25 +1720,19 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <tr class="mb-total" id="mbLandRow"><td><b>TOTAL Atterrissage</b></td><td id="mbLandArm">—</td><td id="mbLandMass">—</td><td id="mbLandMom">—</td></tr>
         </tfoot>
       </table>
-      <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      </div>
+      <div id="mbDelestageRow" style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <div>
           <label style="font-size:.82em;color:var(--text-secondary)">D&#xe9;lestage pr&#xe9;vu (L) :</label>
           <input type="number" id="mbDelestage" value="20" min="0" max="200" step="1" onchange="window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
         </div>
       </div>
 
-      <!-- Vol à étapes : recalcul du décollage à l'étape suivante, à partir du carburant
-           RÉELLEMENT consommé (calculé) pendant l'étape précédente (ou les étapes précédentes
-           s'il y en a plusieurs) — la masse d'atterrissage à l'étape = masse de décollage pour
-           la suite du vol (même charge utile, moins le carburant brûlé). -->
-      <div id="mbEtapeCard" style="display:none;margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(102,126,234,.08);border:1px solid rgba(102,126,234,.35)">
-        <div style="font-size:.85em;font-weight:700;margin-bottom:6px">&#x1F9ED; Vol &#xe0; &#xe9;tapes &#x2014; d&#xe9;collage &#xe0; l'&#xe9;tape suivante</div>
-        <div style="font-size:.78em;color:var(--text-secondary);margin-bottom:8px">Choisissez le point d'&#xe9;tape franchi : le carburant r&#xe9;ellement calcul&#xe9; jusque-l&#xe0; (cumul depuis le d&#xe9;part) remplace le d&#xe9;lestage ci-dessus, et la ligne "TOTAL Atterrissage" devient la masse/centrage de d&#xe9;collage pour la suite du vol.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="mbEtapeSelect" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em"></select>
-          <button class="navlog-btn" style="font-size:.8em;padding:5px 12px" onclick="window._mbApplyEtapeFuel()">&#x2705; Appliquer ce carburant</button>
-        </div>
-      </div>
+      <!-- Vol à étapes : un bloc masse & centrage complet par étape (décollage → atterrissage),
+           enchaînés automatiquement à partir du carburant RÉELLEMENT calculé par le navlog pour
+           chaque tronçon (pas de saisie manuelle) — voir _renderMbStages(). Remplace le tableau
+           unique Décollage/Atterrissage ci-dessus quand un vol à étapes est actif. -->
+      <div id="mbStagesContainer" style="display:none;margin-top:10px"></div>
 
       <!-- Status -->
       <div id="mbStatus" style="margin-top:12px;padding:10px 14px;border-radius:10px;font-size:.88em;font-weight:600"></div>
@@ -1738,6 +1760,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span id="perfAircraftDesc" style="font-size:.82em;color:var(--text-secondary)">Bas&#xe9; sur le manuel de vol &mdash; Masse max 726 kg</span>
         <button onclick="var d=document.getElementById('acDiffCard');d.style.display=d.style.display==='none'?'block':'none';" class="navlog-btn" style="white-space:nowrap;padding:6px 12px;font-size:0.8em">&#x1F4CB; Fiche comparative C150/C172</button>
       </div>
+
+      <!-- Vol à étapes : chaque étape a son propre décollage ET atterrissage réels — ce
+           sélecteur change quel tronçon les sections Décollage/Atterrissage ci-dessous
+           calculent (masqué pour un vol classique, une seule paire dép/arr). -->
+      <select id="perfStageSelect" style="display:none;margin-bottom:12px;padding:6px 12px;border-radius:8px;border:1px solid #667eea;background:rgba(102,126,234,.1);color:var(--input-text);font-size:.88em;font-weight:600" onchange="window._setPerfStage(this.value)"></select>
 
       <!-- Fiche comparative rapide C150 vs C172 : rappel des différences à chaque changement d'avion -->
       <div id="acDiffCard" style="display:none;margin-bottom:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;font-size:.85em">
@@ -2029,8 +2056,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span>ft</span>
       </div>
       <div id="altitudesStatus" style="font-size:.82em;color:var(--text-secondary);margin:4px 0 10px"></div>
-      <div id="altitudesProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonn&#xe9;es, puis clique sur "Charger les espaces a&#xe9;riens".</p></div>
-      <div id="altitudesCrossingsList" style="margin-top:14px"></div>
+      <div id="altitudesProfileContainer" style="overflow-x:auto;-webkit-overflow-scrolling:touch"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configure au moins 2 waypoints avec coordonn&#xe9;es, puis clique sur "Charger les espaces a&#xe9;riens".</p></div>
+      <div id="altitudesCrossingsList" style="margin-top:14px;overflow-x:auto;-webkit-overflow-scrolling:touch"></div>
       <div style="margin-top:16px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,.08);font-size:.76em;color:var(--text-secondary);line-height:1.6">
         <b style="color:#f59e0b">&#x26A0;&#xFE0F; Premi&#xe8;re version</b> &#x2014; le croisement horizontal (la route passe-t-elle dans la zone ?) ET le croisement vertical (ton altitude planifi&#xe9;e est-elle dans le plancher/plafond &#xe0; cet endroit ?) sont maintenant filtr&#xe9;s automatiquement dans la liste ci-dessus. Le graphique, lui, continue d'afficher toutes les zones crois&#xe9;es horizontalement (m&#xeame hors altitude) pour garder le contexte visuel. Approximation par &#xe9;chantillonnage le long de la route, pas une donn&#xe9;e certifi&#xe9;e : ne remplace pas la carte VFR/AIP officielle pour la pr&#xe9;paration r&#xe9;glementaire du vol.
       </div>
@@ -2727,7 +2754,6 @@ function switchTab(id){
   if(id==='checklist') initChecklist();
   if(id==='fuel') window.renderFuelLog();
   if(id==='fpl') window.renderFPL();
-  if(id==='masse' && typeof _renderMbEtapeSelector==='function') _renderMbEtapeSelector();
 
   /* Lazy-load NOTAMs iframes on first visit */
   if(id==='notam' && !window._notamLoaded){
@@ -2748,7 +2774,14 @@ function switchTab(id){
       if(!_meteoSubLoaded[subId]) switchMeteoSub(subId);
     }
   }
-  if(id==='masse') window.mbInit();
+  if(id==='masse'){
+    window.mbInit();
+    /* mbInit() ne s'exécute qu'une fois (mbInited) — mais les étapes/le carburant par
+       tronçon peuvent avoir changé depuis (nouvelle composition de dossiers, navlog
+       recalculé) : reforcer un recalcul à chaque ouverture d'onglet pour que les blocs par
+       étape restent à jour. */
+    if(typeof mbRecalc==='function') mbRecalc();
+  }
   if(id==='altitudes'){
     if(typeof renderAltitudesProfile==='function') renderAltitudesProfile();
     /* La liste dépend de l'altitude planifiée : la rafraîchir à chaque ouverture
@@ -2764,6 +2797,14 @@ function switchTab(id){
   /* Refresh route map size whenever nav tab is shown (Leaflet needs this after hidden/resize) */
   if(id==='nav' && typeof routeMap!=='undefined' && routeMap){
     setTimeout(function(){ routeMap.invalidateSize(); }, 80);
+  }
+  /* Chargement automatique des espaces aériens dès l'onglet Navlog (pas seulement en visitant
+     l'onglet Altitudes) — sinon le profil d'altitude affichait ses bandes d'espace aérien
+     seulement après un détour par l'onglet Altitudes puis retour, ce qui ressemblait à un bug
+     de chargement. */
+  if(id==='nav' && typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+    var _navWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){return w.lat!==null&&w.lon!==null;});
+    if(_navWps.length>=2) loadRouteAirspaces().then(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); }).catch(function(){});
   }
   if(id==='nav' && typeof renderAltProfile==='function'){
     /* Reprend les espaces aériens chargés entre-temps depuis l'onglet Altitudes — sans ça,
@@ -2820,6 +2861,27 @@ function renderFuelLog(){
   var circDepFuel=0, circDepTimeMin=0;
   var circArrFuel=0, circArrTimeMin=0;
 
+  /* Vol à étapes : détaille chaque étape séparément (en-tête + sous-total propre, décollage ET
+     atterrissage/circuits inclus) — sans ça, un vol à plusieurs étapes n'affichait qu'une liste
+     de legs et un unique total "circuit départ"/"circuit arrivée" agrégé, sans dire à quelle
+     étape (donc quel aérodrome) chaque circuit appartenait. */
+  var isEtapesFuelLog=(typeof flightType!=='undefined' && flightType==='etapes');
+  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0;
+  function _legStage(prevWp,wp){
+    if(!prevWp._stages||!wp._stages) return null;
+    for(var a=0;a<prevWp._stages.length;a++){ if(wp._stages.indexOf(prevWp._stages[a])>=0) return prevWp._stages[a]; }
+    return wp._stages[0];
+  }
+  function _closeStageSubtotal(){
+    if(curStageNum===null || !isEtapesFuelLog) return;
+    var stageFuel=stageNavFuel+stageCircDepFuel+stageCircArrFuel;
+    var stageTimeMin=stageNavTimeMin+stageCircDepTimeMin+stageCircArrTimeMin;
+    html+='<div style="padding:6px 10px;margin-bottom:6px;background:rgba(102,126,234,.14);border-radius:0 0 8px 8px;display:flex;justify-content:space-between;align-items:center;font-size:.85em;font-weight:700;color:#8fa0f5">'+
+      '<span>Σ Sous-total étape '+curStageNum+' ('+(Math.round(stageDist*10)/10)+' NM — '+formatTime(stageTimeMin/60)+')</span>'+
+      '<span>'+stageFuel.toFixed(1)+' L</span>'+
+    '</div>';
+  }
+
   /* waypoints[0] is start (dist=0), waypoints[1] is end of leg 1... */
   /* Loop from 1 to avoid processing the start point as a leg destination */
   for(var i=1;i<waypoints.length;i++){
@@ -2828,6 +2890,25 @@ function renderFuelLog(){
 
     /* Leg distance check to avoid 0 nm confusion */
     if(wp.dist>0){
+      if(isEtapesFuelLog){
+        var thisLegStage=_legStage(waypoints[i-1],wp);
+        if(thisLegStage!==null && thisLegStage!==curStageNum){
+          _closeStageSubtotal();
+          curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0;
+          var stageDepWp=waypoints[i-1], stageArrIdxForLabel=i;
+          /* Dernier point qui appartient ENCORE à cette étape (pas le premier qui n'y
+             appartient plus) — sinon l'étiquette d'arrivée de l'étape 1 affichait par erreur
+             l'arrivée FINALE du vol (dernier point de la dernière étape) au lieu de son propre
+             point de jonction. */
+          for(var la=i;la<waypoints.length;la++){
+            if(waypoints[la]._stages && waypoints[la]._stages.indexOf(thisLegStage)>=0) stageArrIdxForLabel=la;
+            else break;
+          }
+          var stageArrWp=waypoints[Math.min(stageArrIdxForLabel,waypoints.length-1)];
+          html+='<div style="padding:7px 10px;margin-top:8px;background:rgba(102,126,234,.2);border-radius:8px 8px 0 0;font-weight:800;font-size:.88em;color:#8fa0f5">🧭 ÉTAPE '+thisLegStage+' — '+escHTML((stageDepWp&&stageDepWp.name)||'?')+' → '+escHTML((stageArrWp&&stageArrWp.name)||'?')+'</div>';
+        }
+        stageDist+=wp.dist;
+      }
       totalDist+=wp.dist;
       /* ETE comes from _leg object calculated in recalcNavlog */
       var eteVal = (legData.ete !== undefined && !isNaN(legData.ete)) ? legData.ete : 0;
@@ -2836,9 +2917,9 @@ function renderFuelLog(){
       var legFuel = legData.fuel || 0;
       tripFuel += legFuel;
       var circTag='';
-      if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">\uD83D\uDEEB circuit départ</span>'; }
-      else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">\uD83D\uDEEC circuit arrivée</span>'; }
-      else { navFuel+=legFuel; navTimeMin+=t; }
+      if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t; circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">🛫 circuit départ</span>'; }
+      else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t; circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>'; }
+      else { navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t; }
       html+='<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center">';
       html+='<span>Leg '+i+' ('+formatTime(eteVal)+') <small style="color:#aaa">'+wp.dist+' NM</small>'+circTag+'</span>';
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
@@ -2846,12 +2927,13 @@ function renderFuelLog(){
 
       if(wp.isEtape) {
         html+='<div style="padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,183,77,0.1);display:flex;justify-content:space-between;align-items:center;color:#ffb74d;font-size:0.88em;font-style:italic;">';
-        html+='<span>\uD83D\uDFE0 (Cumul jusqu\'à l\'étape '+escHTML(wp.name||'WP'+i)+')</span>';
-        html+='<span>('+formatTime(tripTimeMin/60)+' \u2014 '+tripFuel.toFixed(1)+' L)</span>';
+        html+='<span>🟠 (Cumul jusqu\'à l\'étape '+escHTML(wp.name||'WP'+i)+')</span>';
+        html+='<span>('+formatTime(tripTimeMin/60)+' — '+tripFuel.toFixed(1)+' L)</span>';
         html+='</div>';
       }
     }
   }
+  _closeStageSubtotal();
 
   /* If no meaningful route, show placeholder */
   if(totalDist===0 && tripTimeMin===0){
@@ -6374,6 +6456,12 @@ function recalcNavlog(){
   suggestDossierName();
   updateRouteMap();
   renderNavlogRecapTable();
+  /* Chargement automatique des espaces aériens dès que la route a ≥2 points, sans attendre un
+     détour par l'onglet Altitudes (_altitudesAutoLoadDone évite tout refetch une fois fait). */
+  if(typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+    var _rnWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
+    if(_rnWps.length>=2) loadRouteAirspaces().then(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); }).catch(function(){});
+  }
   /* Altitude profile chart (defer to avoid blocking render loop) */
   setTimeout(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); },0);
   /* Re-classer les avis du jour "proche de la route" si la route a changé (données déjà
@@ -6581,7 +6669,7 @@ function renderNavlogRecapTable(){
     : '';
   cont.innerHTML=
     '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
-      '<span><span class="icon">📋</span> Récapitulatif de la route (navigation)</span>'+
+      '<span><span class="icon">📋</span> Navlog</span>'+
       '<span style="display:flex;gap:6px;flex-wrap:wrap">'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer</button>'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px;background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window.printNavlogRecapTable(true)" title="Imprimer une feuille vierge (points + cap uniquement) à remplir à la main en vol">📝 Imprimer vierge</button>'+
@@ -6675,50 +6763,26 @@ function _perfPrintWindInfo(dirId,spdId,rwyKey){
 /* blank=true : imprime la même mise en page (mêmes points, mêmes colonnes) mais avec toutes les
    valeurs CALCULÉES vidées — l'utilisateur les remplit à la main en vol (méthode papier classique),
    ne garde que ce qui n'est pas un calcul (nom des points, rôle départ/arrivée). */
-function printNavlogRecapTable(blank){
-  if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
-  var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
-  var cfg=getConfig();
-  /* Vent piste au décollage/atterrissage tel que configuré dans l'onglet Perf — peut être
-     différent du vent de croisière (vent de référence, cfg.windDir/windSpd) utilisé pour le
-     calcul des legs : c'est normal, le vent au sol à un aérodrome et le vent en route ne sont
-     pas censés être identiques. */
-  var perfTakeoffWind=blank?null:_perfPrintWindInfo('perfWindDirManual','perfWindSpdManual','_perfRwyIcao');
-  var perfLandingWind=blank?null:_perfPrintWindInfo('perfWindDirManualLd','perfWindSpdManualLd','_perfRwyIcaoLd');
-  var shownIdx=[];
-  for(var si=0;si<waypoints.length;si++){
-    var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
-  }
-
-  /* Une ligne POINT (identité) + une ligne LEG distincte, en retrait, entre chaque paire de
-     points : la version à ligne unique fusionnée faisait dire que ce n'était "pas clair" que
-     route/vent/cap/distance/GS/ETE concernent le TRAJET ENTRE deux points, pas le point
-     lui-même. La ligne leg reste un vrai tableau (cellules alignées sur les mêmes colonnes,
-     pas du texte en prose) mais visuellement décalée : fond teinté, flèche indentée, liseré de
-     couleur — pour qu'on comprenne d'un coup d'œil qu'elle "connecte" les deux points encadrants. */
+/* Construit les lignes (point+leg) et les totaux pour UN segment de points (segIdx) — utilisé
+   soit pour la route entière (vol normal), soit pour UNE étape (vol à étapes, voir découpage
+   par jonction plus bas). windBadgeFirst/windBadgeLast limitent l'étiquette de vent piste
+   Perf aux VRAIS départ/arrivée globaux, pas à chaque bord de segment interne. */
+function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,perfTakeoffWind,perfLandingWind){
   var rows='';
   var cumMin=0,cumDist=0,cumFuel=0;
-  for(var k=0;k<shownIdx.length;k++){
-    var i=shownIdx[k];
+  for(var k=0;k<segIdx.length;k++){
+    var i=segIdx[k];
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
-    var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
-    /* Altitude et ETA rejoignent le reste des caractéristiques du trajet sur la ligne LEG qui
-       mène à ce point (voir plus bas), au lieu de rester isolées sur la ligne d'identité. Seul
-       le départ (aucun leg ne mène à lui) garde les siennes sur sa propre ligne. */
+    var roleLabel=k===0?'Départ':(k===segIdx.length-1?'Arrivée':'');
     var isDep=(k===0);
     var altCell=blank?'':(isDep?alt:'—');
     var etaCell=blank?'':(isDep?'00:00:00':'—');
 
-    /* Vent piste (décollage/atterrissage, onglet Perf) affiché en petite étiquette à côté du
-       nom du point de départ/arrivée — distinct de la colonne Vent, qui reste le vent de
-       croisière utilisé pour le calcul du leg (le vent au sol et le vent en route ne sont pas
-       censés être identiques). */
     var windBadge='';
-    if(k===0 && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
-    else if(k===shownIdx.length-1 && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
+    if(k===0 && windBadgeFirst && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
+    else if(k===segIdx.length-1 && windBadgeLast && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
 
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num">'+(k+1)+'</td>'+
@@ -6736,9 +6800,9 @@ function printNavlogRecapTable(blank){
       '<td class="c-comment">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
     '</tr>';
 
-    if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
+    if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
 
-    var nextI=shownIdx[k+1];
+    var nextI=segIdx[k+1];
     var next=waypoints[nextI];
     var nextName=next.name||('WP'+(nextI+1));
     var dist=0,routeTrue=0;
@@ -6778,68 +6842,142 @@ function printNavlogRecapTable(blank){
       '<td class="c-comment">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
     '</tr>';
   }
+  return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel};
+}
 
-  /* Ligne de totaux : distance/temps/carburant cumulés sur toute la route, pour ne pas avoir
-     à ressortir une calculatrice une fois en l'air. */
-  var totRow='<tr class="tot-row">'+
-    '<td colspan="7">TOTAL ROUTE</td>'+
-    '<td>'+(blank?'':(Math.round(cumDist*10)/10)+' NM')+'</td>'+
-    '<td></td>'+
-    '<td>'+(blank?'':formatTime(cumMin/60).replace(/^0:/,''))+'</td>'+
-    '<td></td>'+
-    '<td>'+(blank?'':(Math.round(cumFuel*10)/10)+' L')+'</td>'+
-    '<td></td>'+
-  '</tr>';
+function printNavlogRecapTable(blank){
+  if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
+  var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
+  var cfg=getConfig();
+  /* Vent piste au décollage/atterrissage tel que configuré dans l'onglet Perf — peut être
+     différent du vent de croisière (vent de référence, cfg.windDir/windSpd) utilisé pour le
+     calcul des legs : c'est normal, le vent au sol à un aérodrome et le vent en route ne sont
+     pas censés être identiques. */
+  var perfTakeoffWind=blank?null:_perfPrintWindInfo('perfWindDirManual','perfWindSpdManual','_perfRwyIcao');
+  var perfLandingWind=blank?null:_perfPrintWindInfo('perfWindDirManualLd','perfWindSpdManualLd','_perfRwyIcaoLd');
+  var shownIdx=[];
+  for(var si=0;si<waypoints.length;si++){
+    var w=waypoints[si];
+    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+  }
 
-  var fb=computeFullFuelBreakdown(cumFuel);
+  /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes est
+     un point dont _stages contient PLUSIEURS numéros d'étape (partagé, voir le filtre carte
+     "Étape 1/2/.../Toutes"). Chaque jonction sépare deux FEUILLES imprimées distinctes — un
+     trajet à plusieurs escales sur une seule feuille devenait illisible (police minuscule) et
+     ne correspond de toute façon pas à ce qu'on veut en main pendant CETTE étape précise. Pour
+     un vol classique (pas d'étapes), aucune jonction : un seul segment = comportement inchangé. */
+  var stageBreaks=[];
+  for(var bi=1;bi<shownIdx.length-1;bi++){
+    var bwp=waypoints[shownIdx[bi]];
+    if(bwp._stages && bwp._stages.length>1) stageBreaks.push(bi);
+  }
+  var segments=[];
+  if(!stageBreaks.length){
+    segments.push(shownIdx.slice());
+  } else {
+    var prevBreak=0;
+    stageBreaks.forEach(function(bi){ segments.push(shownIdx.slice(prevBreak,bi+1)); prevBreak=bi; });
+    segments.push(shownIdx.slice(prevBreak));
+  }
+  var multiSheet=segments.length>1;
+
+  /* Bilan carburant GLOBAL (vol complet, une seule réserve/marge/dégagement calculés sur la
+     totalité du trajet, jamais par étape — voir la règle "pas 2x la réserve de 30 min" pour un
+     vol à étapes) : réutilisé tel quel sur CHAQUE feuille, à côté du "Trip" propre à l'étape de
+     cette feuille. */
+  var globalRes=_buildRecapSegmentRows(shownIdx,cfg,blank,true,true,perfTakeoffWind,perfLandingWind);
+  var fbGlobal=computeFullFuelBreakdown(globalRes.cumFuel);
   var acReg=cfg.perfAircraft||'—';
   var depIcao=waypoints[0]&&waypoints[0].name||'—';
   var arrIcao=waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'—';
   var todayStr=new Date().toLocaleDateString('fr-FR');
 
-  /* Bandeau d'en-tête façon "fiche de vol" : immatriculation, date, heure de départ prévue,
-     TAS/altitude/déclinaison utilisées pour le calcul — remplit le haut de page et donne le
-     contexte de vol sans avoir à revenir sur l'écran. */
-  var infoBlock=
-    '<div class="info-grid">'+
-      '<div><b>Avion</b><br>'+escHTML(acReg)+'</div>'+
-      '<div><b>Date</b><br>'+todayStr+'</div>'+
-      '<div><b>Départ prévu</b><br>'+escHTML(cfg.depTime||'—')+'</div>'+
-      '<div><b>TAS</b><br>'+cfg.tas+' kt</div>'+
-      '<div><b>Alt. croisière</b><br>'+cfg.alt+' ft</div>'+
-      '<div><b>Déclinaison</b><br>'+(cfg.dev>=0?'+':'')+cfg.dev+'°</div>'+
-      '<div><b>Vent réf.</b><br>'+cfg.windDir+'°/'+cfg.windSpd+' kt</div>'+
-      '<div><b>Conso croisière</b><br>'+cfg.fuelBurn+' L/h</div>'+
-    '</div>';
+  var sheetsHtml='';
+  segments.forEach(function(segIdx,segI){
+    var isFirstSeg=(segI===0), isLastSeg=(segI===segments.length-1);
+    var res=multiSheet?_buildRecapSegmentRows(segIdx,cfg,blank,isFirstSeg,isLastSeg,perfTakeoffWind,perfLandingWind):globalRes;
+    var segDepIcao=waypoints[segIdx[0]]&&waypoints[segIdx[0]].name||'—';
+    var segArrIcao=waypoints[segIdx[segIdx.length-1]]&&waypoints[segIdx[segIdx.length-1]].name||'—';
 
-  /* Bandeau de bas de page : bilan carburant complet (roulage/marge/réserve/dégagement) —
-     mêmes chiffres que l'onglet Carbu, pour avoir la décision go/no-go carburant sur la
-     même feuille que la route, sans avoir à imprimer un second document. */
-  var fuelBlock=
-    '<div class="fuel-grid">'+
-      '<div><b>Trip</b><br>'+(blank?'':(Math.round(fb.tripFuel*10)/10)+' L')+'</div>'+
-      '<div><b>Roulage</b><br>'+(blank?'':(Math.round(fb.taxiFuel*10)/10)+' L')+'</div>'+
-      '<div><b>Marge ('+fb.contPct+'%)</b><br>'+(blank?'':(Math.round(fb.contFuel*10)/10)+' L')+'</div>'+
-      '<div><b>Réserve ('+fb.resMin+' min)</b><br>'+(blank?'':(Math.round(fb.resFuel*10)/10)+' L')+'</div>'+
-      (fb.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?'':(Math.round(fb.altnFuel*10)/10)+' L')+'</div>':'')+
-      (fb.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?'':(Math.round(fb.extraFuel*10)/10)+' L')+'</div>':'')+
-      '<div class="fuel-total"><b>TOTAL REQUIS</b><br>'+(blank?'':(Math.round(fb.total*10)/10)+' L')+'</div>'+
-    '</div>';
+    var totRow='<tr class="tot-row">'+
+      '<td colspan="7">TOTAL '+(multiSheet?'ÉTAPE '+(segI+1):'ROUTE')+'</td>'+
+      '<td>'+(blank?'':(Math.round(res.cumDist*10)/10)+' NM')+'</td>'+
+      '<td></td>'+
+      '<td>'+(blank?'':formatTime(res.cumMin/60).replace(/^0:/,''))+'</td>'+
+      '<td></td>'+
+      '<td>'+(blank?'':(Math.round(res.cumFuel*10)/10)+' L')+'</td>'+
+      '<td></td>'+
+    '</tr>';
 
-  /* Taille de police déterminée AVANT impression, à partir du nombre de lignes — pas d'après une
-     mesure de hauteur de page (via vh/flex/height:100%) : sur le pipeline d'impression Android
-     réel, cette mesure s'est avérée peu fiable et a produit des lignes bien plus hautes que
-     prévu, faisant déborder le tableau sur une 2e feuille. Compte maintenant les lignes POINT +
-     les lignes LEG (plus fines, voir prof.lp) séparément. Calibré pour tenir sur UNE SEULE page
-     même au format le plus petit raisonnable (A5 portrait) — donc a fortiori sur A4. */
-  var totalRows=shownIdx.length+(shownIdx.length-1)+1;
-  var prof;
-  if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
-  else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
-  else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:6.7,infoLbl:5.8};
-  else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:5.9,infoLbl:5.1};
-  else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:5.2,infoLbl:4.5};
-  else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:5,infoLbl:4.4};
+    var infoBlock=
+      '<div class="info-grid">'+
+        '<div><b>Avion</b><br>'+escHTML(acReg)+'</div>'+
+        '<div><b>Date</b><br>'+todayStr+'</div>'+
+        '<div><b>Départ prévu</b><br>'+(isFirstSeg?escHTML(cfg.depTime||'—'):'—')+'</div>'+
+        '<div><b>TAS</b><br>'+cfg.tas+' kt</div>'+
+        '<div><b>Alt. croisière</b><br>'+cfg.alt+' ft</div>'+
+        '<div><b>Déclinaison</b><br>'+(cfg.dev>=0?'+':'')+cfg.dev+'°</div>'+
+        '<div><b>Vent réf.</b><br>'+cfg.windDir+'°/'+cfg.windSpd+' kt</div>'+
+        '<div><b>Conso croisière</b><br>'+cfg.fuelBurn+' L/h</div>'+
+      '</div>';
+
+    /* Bandeau de bas de page : le "Trip" est propre à CETTE étape (ce que cette feuille fait
+       vraiment brûler), le reste (roulage/marge/réserve/dégagement/total requis) reprend le
+       bilan GLOBAL du vol complet — identique sur toutes les feuilles — pour garder sous les
+       yeux, à chaque étape, le carburant total qu'il faut avoir à bord jusqu'à l'arrivée finale. */
+    var fuelBlock=
+      '<div class="fuel-grid">'+
+        '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?'':(Math.round(res.cumFuel*10)/10)+' L')+'</div>'+
+        '<div><b>Roulage</b><br>'+(blank?'':(Math.round(fbGlobal.taxiFuel*10)/10)+' L')+'</div>'+
+        '<div><b>Marge ('+fbGlobal.contPct+'%)</b><br>'+(blank?'':(Math.round(fbGlobal.contFuel*10)/10)+' L')+'</div>'+
+        '<div><b>Réserve ('+fbGlobal.resMin+' min)</b><br>'+(blank?'':(Math.round(fbGlobal.resFuel*10)/10)+' L')+'</div>'+
+        (fbGlobal.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?'':(Math.round(fbGlobal.altnFuel*10)/10)+' L')+'</div>':'')+
+        (fbGlobal.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?'':(Math.round(fbGlobal.extraFuel*10)/10)+' L')+'</div>':'')+
+        '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?'':(Math.round(fbGlobal.total*10)/10)+' L')+'</div>'+
+      '</div>';
+
+    /* Taille de police déterminée AVANT impression, à partir du nombre de lignes DE CETTE
+       FEUILLE (pas de la route entière) — pour qu'une étape courte reste grande et lisible même
+       si une autre étape du même vol est longue. Voir la note historique plus bas sur pourquoi
+       ce n'est pas basé sur une mesure de hauteur de page (vh/flex peu fiable à l'impression
+       réelle Android). */
+    var totalRows=segIdx.length+(segIdx.length-1)+1;
+    var prof;
+    if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
+    else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
+    else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:6.7,infoLbl:5.8};
+    else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:5.9,infoLbl:5.1};
+    else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:5.2,infoLbl:4.5};
+    else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:5,infoLbl:4.4};
+
+    sheetsHtml+='<section class="sheet"'+(isLastSeg?'':' style="page-break-after:always"')+' style="font-size:'+prof.f+'px">'+
+      '<style>'+
+        'h1{font-size:'+prof.h1+'px;margin:0 0 3px}'+
+        '.sub{font-size:'+prof.sub+'px;color:#555;margin:0 0 6px}'+
+        '.info-grid div,.fuel-grid div{font-size:'+prof.info+'px}'+
+        '.info-grid b,.fuel-grid b{font-size:'+prof.infoLbl+'px}'+
+        'table{font-size:'+prof.f+'px}'+
+        'th,td{padding:'+prof.p+'}'+
+        'tr.leg-row td{padding:'+prof.lp+'}'+
+        'th{font-size:'+Math.max(6,Math.round(prof.f*0.62*10)/10)+'px}'+
+        'td.c-name .tag{font-size:'+(prof.f-2)+'px}'+
+        'td.c-name .tag.windtag{font-size:'+Math.max(6,prof.f-4)+'px}'+
+      '</style>'+
+      '<h1>'+(blank?'Tableau vierge (à remplir à la main) — ':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — '))+escHTML(segDepIcao)+' → '+escHTML(segArrIcao)+'</h1>'+
+      '<p class="sub">'+(blank?'Feuille vierge générée le '+todayStr+' — points et cap listés, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':''))+'</p>'+
+      infoBlock+
+      '<table>'+
+        '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
+        '<col class="c-wind"><col class="c-wca"><col class="c-cap"><col class="c-dist"><col class="c-gs">'+
+        '<col class="c-ete"><col class="c-eta"><col class="c-fuel"><col class="c-comment"></colgroup>'+
+        '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
+        '<th class="cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Carb.</th><th>Commentaires</th></tr></thead>'+
+        '<tbody>'+res.rows+totRow+'</tbody>'+
+      '</table>'+
+      fuelBlock+
+    '</section>';
+  });
 
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
@@ -6857,32 +6995,30 @@ function printNavlogRecapTable(blank){
        l'écran. */
     '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'+
     'body{margin:0;padding:0;font-family:Arial,sans-serif;color:#111}'+
-    'h1{font-size:'+prof.h1+'px;margin:0 0 3px}'+
-    '.sub{font-size:'+prof.sub+'px;color:#555;margin:0 0 6px}'+
     '.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-bottom:6px}'+
-    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px;font-size:'+prof.info+'px}'+
+    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px}'+
     '.info-grid div:nth-child(4n){border-right:none}'+
     '.info-grid div:nth-last-child(-n+4){border-bottom:none}'+
-    '.info-grid b{display:block;font-size:'+prof.infoLbl+'px;text-transform:uppercase;color:#555;font-weight:700}'+
-    'table{width:100%;border-collapse:collapse;font-size:'+prof.f+'px;table-layout:fixed}'+
-    'th,td{border:1px solid #333;padding:'+prof.p+';text-align:center;overflow:hidden;white-space:nowrap}'+
+    '.info-grid b{display:block;text-transform:uppercase;color:#555;font-weight:700}'+
+    'table{width:100%;border-collapse:collapse;table-layout:fixed}'+
+    'th,td{border:1px solid #333;text-align:center;overflow:hidden;white-space:nowrap}'+
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
-    'th{background:#333;color:#fff;font-size:'+Math.max(6,Math.round(prof.f*0.62*10)/10)+'px;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
+    'th{background:#333;color:#fff;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
     'col.c-num{width:4%}col.c-name{width:14%}col.c-alt{width:6%}col.c-route{width:6%}'+
     'col.c-wind{width:8%}col.c-wca{width:5%}col.c-cap{width:7%}col.c-dist{width:8%}'+
     'col.c-gs{width:6%}col.c-ete{width:7%}col.c-eta{width:8%}col.c-fuel{width:7%}col.c-comment{width:14%}'+
     'tbody tr.pt-row.alt td{background:#f2f2f2}'+
     '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
-    'td.c-name .tag{font-size:'+(prof.f-2)+'px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
-    'td.c-name .tag.windtag{background:#1565c0;white-space:normal;display:block;width:fit-content;max-width:100%;margin-top:2px;font-size:'+Math.max(6,prof.f-4)+'px}'+
+    'td.c-name .tag{font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
+    'td.c-name .tag.windtag{background:#1565c0;white-space:normal;display:block;width:fit-content;max-width:100%;margin-top:2px}'+
     'tr.pt-key td{font-weight:700}'+
     /* Ligne LEG : décalée visuellement (fond teinté + flèche en retrait + liseré bleu à gauche)
        pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE les deux points"
        encadrants, jamais comme une propriété de l'un des deux — tout en restant un vrai tableau
        (cellules alignées sur les mêmes colonnes que les lignes point, pas de texte en prose). */
-    'tr.leg-row td{background:#eaf1fb;padding:'+prof.lp+';font-style:italic;color:#333}'+
+    'tr.leg-row td{background:#eaf1fb;font-style:italic;color:#333}'+
     'tr.leg-row td:first-child{border-left:3px solid #1565c0}'+
     'tr.leg-row td.leg-arrow{padding-left:10px;color:#1565c0;font-weight:700;font-style:normal}'+
     'tr.leg-row td.cap{font-style:normal}'+
@@ -6891,25 +7027,15 @@ function printNavlogRecapTable(blank){
     'tr.tot-row td:first-child{text-align:left}'+
     'tr{page-break-inside:avoid}'+
     '.fuel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-top:6px}'+
-    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px;font-size:'+prof.info+'px}'+
+    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px}'+
     '.fuel-grid div:nth-child(4n){border-right:none}'+
     '.fuel-grid div:nth-last-child(-n+4){border-bottom:none}'+
-    '.fuel-grid b{display:block;font-size:'+prof.infoLbl+'px;text-transform:uppercase;color:#555;font-weight:700}'+
+    '.fuel-grid b{display:block;text-transform:uppercase;color:#555;font-weight:700}'+
     '.fuel-grid .fuel-total{background:#ffe500}'+
     '.fuel-grid .fuel-total b{color:#111}'+
+    '.sheet{page-break-inside:avoid}'+
     '</style></head><body>'+
-    '<h1>'+(blank?'Tableau vierge (à remplir à la main) — ':'Récapitulatif de route — ')+escHTML(depIcao)+' → '+escHTML(arrIcao)+'</h1>'+
-    '<p class="sub">'+(blank?'Feuille vierge générée le '+todayStr+' — points et cap listés, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants')+'</p>'+
-    infoBlock+
-    '<table>'+
-      '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
-      '<col class="c-wind"><col class="c-wca"><col class="c-cap"><col class="c-dist"><col class="c-gs">'+
-      '<col class="c-ete"><col class="c-eta"><col class="c-fuel"><col class="c-comment"></colgroup>'+
-      '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
-      '<th class="cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Carb.</th><th>Commentaires</th></tr></thead>'+
-      '<tbody>'+rows+totRow+'</tbody>'+
-    '</table>'+
-    fuelBlock+
+    sheetsHtml+
     '<script>setTimeout(function(){try{window.focus();window.print();}catch(e){}},150);</'+'script>'+
     '</body></html>');
   w.document.close();
@@ -7254,6 +7380,19 @@ function toggleTypeRow(i){
 }
 window.toggleTypeRow=toggleTypeRow;
 
+/* Section "Caractéristiques" (édition détaillée point par point, ex "NavLog") repliée par
+   défaut — le tableau récapitulatif "Navlog" au-dessus est maintenant la vue principale à
+   consulter/imprimer, ceci n'est plus qu'un outil de configuration ouvert au besoin. */
+function _toggleCaracteristiques(){
+  var body=document.getElementById('caracteristiquesBody');
+  var label=document.getElementById('caracteristiquesToggleLabel');
+  if(!body) return;
+  var willShow=(body.style.display==='none');
+  body.style.display=willShow?'':'none';
+  if(label) label.innerHTML=willShow?'&#x25BE; Masquer':'&#x25B8; Afficher';
+}
+window._toggleCaracteristiques=_toggleCaracteristiques;
+
 function setWpIcon(i,iconId){
   waypoints[i].icon=iconId;
   renderNavlog();
@@ -7567,6 +7706,10 @@ function clearWorkspace(){
   if(ftBtns[2]) ftBtns[2].classList.remove('active');
   var _composerCard=document.getElementById('etapesComposerCard');
   if(_composerCard) _composerCard.style.display='none';
+  window._etapesStageCount=0;
+  window._perfRwyIcao=null;
+  window._perfRwyIcaoLd=null;
+  window._perfStage=undefined;
   wxCache={};
   window._dossierWxSnapshot=null;
   window._freshWxSnapshot=null;
@@ -8059,6 +8202,11 @@ function _composeEtapes(){
 
   window._etapesStageCount=chosen.length;
   window._mapFittedOnce=false;
+  /* Nouvelle composition = nouvelle route : ne pas garder la piste/étape Perf sélectionnée
+     pour la composition précédente. */
+  window._perfRwyIcao=null;
+  window._perfRwyIcaoLd=null;
+  window._perfStage=undefined;
   renderNavlog();
   recalcNavlog();
   _renderMapStageFilter();
@@ -8772,7 +8920,14 @@ function loadDossier(id, _freshCloudFiles){
       if(waypoints[_si]._stages) _maxStage=Math.max(_maxStage,Math.max.apply(null,waypoints[_si]._stages));
     }
     window._etapesStageCount=_maxStage||0;
+  } else {
+    window._etapesStageCount=0;
   }
+  /* Reset des références piste/étape Perf : sinon un vol à étapes chargé après un autre
+     dossier pouvait garder la piste ou l'étape sélectionnée du dossier précédent. */
+  window._perfRwyIcao=null;
+  window._perfRwyIcaoLd=null;
+  window._perfStage=undefined;
   wxCache=d.wxCache||{};
   /* Instantané "Avant" pour le bascule Avant/Après de la barre d'actualisation globale — capturé
      tel quel depuis le dossier, avant tout rafraîchissement. */
@@ -10398,7 +10553,7 @@ function renderAltitudesProfile(){
      recalculer à chaque pixel de déplacement de la souris). */
   _altitudes2Geom={ml:ml,mr:mr,mt:mt,mb:mb,W:W,H:H,cw:cw,ch:ch,minAlt:minAlt,maxAlt:maxAlt,totalDist:totalDist};
 
-  container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'
+  container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:680px;overflow:visible;display:block;touch-action:pan-x">'
     + '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.22)" rx="3"/>'
     + yGrid + xGrid + bandsHtml
     + (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')
@@ -10938,7 +11093,13 @@ function renderAltProfile(){
     terrainPath+=' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
   }
 
-  container.innerHTML='<svg id="altSvg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:none">'+
+  /* touch-action:pan-x (pas "none") : le SVG a une largeur fixe (min-width:380px) qui peut
+     dépasser un écran étroit — sans laisser le navigateur gérer nativement le balayage
+     horizontal, le geste était entièrement capté par le JS du crosshair (voir plus bas) et
+     .alt-profile-wrap{overflow-x:auto} restait inerte au doigt malgré la barre de scroll
+     native. pan-x laisse le navigateur scroller horizontalement au balayage tout en gardant
+     le suivi vertical du crosshair (axe libre) et le glisser-déposer d'altitude (vertical). */
+  container.innerHTML='<svg id="altSvg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:380px;overflow:visible;display:block;touch-action:pan-x">'+
     /* Overlay au fond — sous les hit zones — pour capter les mousemove sur la zone vide */
     '<rect id="altOverlay" x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="transparent" style="cursor:crosshair"/>'+
     '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.28)" rx="3" style="pointer-events:none"/>'+
@@ -12567,52 +12728,87 @@ function mbRecalc(){
   st.style.border='1px solid '+((massOk&&cgInEnv)?'rgba(76,175,80,.3)':'rgba(244,67,54,.3)');
   // Draw chart
   drawMBChart(ac,totalMass,totalMom,landMass,landMom);
+  _renderMbStages(ac,totalMass,totalMom);
 }
 window.mbRecalc=mbRecalc;
 
-/* Vol à étapes : liste les points marqués "étape" (isEtape) dans le navlog en cours, avec le
-   carburant RÉELLEMENT calculé jusque-là (wp._cumFuel, cumul continu depuis le départ — voir
-   recalcNavlog). Fonctionne pour N étapes : chaque point d'étape a son propre cumul, donc
-   choisir la dernière étape franchie donne automatiquement "tout ce qui a été consommé avant",
-   qu'il y ait eu une ou plusieurs étapes intermédiaires. */
-function _renderMbEtapeSelector(){
-  var card=document.getElementById('mbEtapeCard');
-  var sel=document.getElementById('mbEtapeSelect');
-  if(!card||!sel) return;
+/* Vol à étapes : un bloc masse & centrage complet par étape (décollage → atterrissage),
+   enchaînés automatiquement — la masse d'atterrissage d'une étape devient la masse de
+   décollage de la suivante (même charge utile, moins le carburant RÉELLEMENT calculé pour ce
+   tronçon, via wp._cumFuel — voir recalcNavlog). Remplace le réglage manuel "délestage" +
+   sélecteur d'étape utilisés pour un vol classique : ici tout est déjà connu par le navlog,
+   aucune saisie requise. Fonctionne pour N étapes (2, 3, ou plus). */
+function _renderMbStages(ac,totalMass,totalMom){
+  var cont=document.getElementById('mbStagesContainer');
+  var delRow=document.getElementById('mbDelestageRow');
+  var totRow=document.getElementById('mbTotalRow');
+  var landRow=document.getElementById('mbLandRow');
+  if(!cont) return;
   var pts=[];
   if(typeof waypoints!=='undefined' && waypoints){
-    for(var i=0;i<waypoints.length;i++){
-      if(waypoints[i] && waypoints[i].isEtape) pts.push({idx:i,wp:waypoints[i]});
-    }
+    for(var i=0;i<waypoints.length;i++){ if(waypoints[i] && waypoints[i].isEtape) pts.push(waypoints[i]); }
   }
-  if(!pts.length || flightType!=='etapes'){
-    card.style.display='none';
+  var isEtapesFlight=(typeof flightType!=='undefined' && flightType==='etapes' && pts.length>0);
+  if(!isEtapesFlight){
+    cont.style.display='none';
+    if(delRow) delRow.style.display='';
+    if(totRow) totRow.style.display='';
+    if(landRow) landRow.style.display='';
     return;
   }
-  card.style.display='';
-  sel.innerHTML=pts.map(function(p){
-    var fuel=p.wp._cumFuel!==undefined?p.wp._cumFuel:'?';
-    return '<option value="'+p.idx+'">'+escHTML(p.wp.name||('WP'+(p.idx+1)))+' — '+fuel+' L consommés depuis le départ</option>';
-  }).join('');
-}
-window._renderMbEtapeSelector=_renderMbEtapeSelector;
+  /* Vol classique masqué : le tableau à blocs ci-dessous remplace Décollage/Atterrissage +
+     délestage, qui n'ont plus de sens pour un vol à étapes (le carburant brûlé par étape est
+     calculé, pas deviné). */
+  if(delRow) delRow.style.display='none';
+  if(totRow) totRow.style.display='none';
+  if(landRow) landRow.style.display='none';
+  cont.style.display='';
 
-function _mbApplyEtapeFuel(){
-  var sel=document.getElementById('mbEtapeSelect');
-  if(!sel||!sel.value) return;
-  var wp=waypoints[parseInt(sel.value)];
-  if(!wp || wp._cumFuel===undefined){
-    _toast('⚠️ Recalculez le navlog (onglet Navigation) avant d\'appliquer ce carburant','error',3200);
-    return;
+  var depName=(waypoints[0]&&waypoints[0].name)||'Départ';
+  var arrName=(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name)||'Arrivée';
+  var totalTripFuel=waypoints[waypoints.length-1]&&waypoints[waypoints.length-1]._cumFuel!==undefined
+    ? waypoints[waypoints.length-1]._cumFuel : null;
+  var checkpoints=[{name:depName,cumFuel:0}];
+  pts.forEach(function(wp){ checkpoints.push({name:wp.name||'Étape',cumFuel:wp._cumFuel!==undefined?wp._cumFuel:null}); });
+  checkpoints.push({name:arrName,cumFuel:totalTripFuel});
+
+  var html='';
+  var curMass=totalMass, curMom=totalMom;
+  var missingFuel=false;
+  for(var s=0;s<checkpoints.length-1;s++){
+    var cpA=checkpoints[s], cpB=checkpoints[s+1];
+    var fuelBurnedL=(cpA.cumFuel!==null && cpB.cumFuel!==null) ? Math.max(0,cpB.cumFuel-cpA.cumFuel) : null;
+    if(fuelBurnedL===null) missingFuel=true;
+    var fuelBurnedKg=(fuelBurnedL||0)*ac.density;
+    var toMass=curMass, toMom=curMom;
+    var toArm=toMass>0?toMom/toMass:0;
+    var ldMass=toMass-fuelBurnedKg;
+    var ldMom=toMom-fuelBurnedKg*ac.fuelArm;
+    var ldArm=ldMass>0?ldMom/ldMass:0;
+    var toMassOk=toMass<=ac.mtow, toCgOk=pointInEnvelope(toMass,toMom,ac.envelope);
+    var ldCgOk=pointInEnvelope(ldMass,ldMom,ac.envelope);
+    html+='<div style="margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(102,126,234,.06);border:1px solid var(--border-color)">'+
+      '<div style="font-weight:700;font-size:.88em;margin-bottom:6px">🧭 Étape '+(s+1)+' — '+escHTML(cpA.name)+' → '+escHTML(cpB.name)+'</div>'+
+      '<div class="mb-table-wrap" style="overflow-x:auto">'+
+      '<table class="mb-table"><thead><tr><th>Poste</th><th>Bras (m)</th><th>Masse (kg)</th><th>Moment (m·kg)</th></tr></thead><tbody>'+
+        '<tr class="mb-total"><td><b>Décollage '+escHTML(cpA.name)+'</b></td><td>'+toArm.toFixed(4)+'</td><td>'+toMass.toFixed(1)+'</td><td>'+toMom.toFixed(2)+'</td></tr>'+
+        '<tr class="mb-total"><td><b>Atterrissage '+escHTML(cpB.name)+'</b></td><td>'+ldArm.toFixed(4)+'</td><td>'+ldMass.toFixed(1)+'</td><td>'+ldMom.toFixed(2)+'</td></tr>'+
+      '</tbody></table></div>'+
+      '<div style="font-size:.82em;margin-top:6px;color:var(--text-secondary)">⛽ Carburant brûlé cette étape : '+
+        (fuelBurnedL===null?'<b style="color:#ffb74d">inconnu — recalculez le navlog</b>':'<b>'+(Math.round(fuelBurnedL*10)/10)+' L</b> ('+fuelBurnedKg.toFixed(1)+' kg)')+
+      '</div>'+
+      '<div style="font-size:.82em;margin-top:4px;line-height:1.6">'+
+        (toMassOk?'<span class="mb-ok">✅ Masse décollage ≤ MTOW ('+ac.mtow+' kg)</span>':'<span class="mb-danger">❌ Masse décollage '+toMass.toFixed(0)+' kg dépasse MTOW '+ac.mtow+' kg !</span>')+'<br>'+
+        (toCgOk?'<span class="mb-ok">✅ CG décollage dans l\'enveloppe</span>':'<span class="mb-danger">❌ CG décollage HORS enveloppe !</span>')+'<br>'+
+        (ldCgOk?'<span class="mb-ok">✅ CG atterrissage dans l\'enveloppe</span>':'<span class="mb-warn">⚠️ CG atterrissage hors enveloppe</span>')+
+      '</div>'+
+    '</div>';
+    curMass=ldMass; curMom=ldMom;
   }
-  var delEl=document.getElementById('mbDelestage');
-  if(delEl) delEl.value=wp._cumFuel;
-  var landLabel=document.querySelector('#mbLandRow td b');
-  if(landLabel) landLabel.textContent='TOTAL Décollage étape suivante';
-  mbRecalc();
-  _toast('✅ Délestage réglé sur '+wp._cumFuel+' L (consommé jusqu\'à '+(wp.name||'ce point')+')','',3200);
+  if(missingFuel) html='<div style="margin-bottom:10px;padding:8px 12px;border-radius:8px;background:rgba(255,167,38,.12);border:1px solid rgba(255,167,38,.5);font-size:.82em;color:#ffb74d">⚠️ Carburant par étape indisponible pour un ou plusieurs tronçons — ouvrez l\'onglet Navigation pour forcer un recalcul complet du navlog, puis revenez ici.</div>'+html;
+  cont.innerHTML=html;
 }
-window._mbApplyEtapeFuel=_mbApplyEtapeFuel;
+window._renderMbStages=_renderMbStages;
 
 function pointInEnvelope(mass,mom,env){
   // Ray casting
@@ -12855,7 +13051,66 @@ var CRUISE_DATA_172 = [
 window._perfAircraft = localStorage.getItem('perfAircraft') || 'OO-MQA';
 if(typeof renderAircraftDiffCard==='function') renderAircraftDiffCard(window._perfAircraft);
 
+/* Vol à étapes : chaque point isEtape est un VRAI décollage/atterrissage intermédiaire, pas
+   seulement le départ/arrivée globaux (waypoints[0]/[last]) — sans ceci, l'onglet Perf ne
+   calculait jamais les performances des atterrissages/décollages intermédiaires d'un vol à
+   plusieurs étapes. _perfStage (1-based, undefined = route entière) sélectionne quelle étape
+   sert de départ/arrivée pour TOUT l'onglet (décollage ET atterrissage). */
+function _perfStageCheckpoints(){
+  var cps=[0];
+  if(typeof waypoints!=='undefined' && waypoints){
+    for(var i=1;i<waypoints.length-1;i++){ if(waypoints[i]&&waypoints[i].isEtape) cps.push(i); }
+  }
+  cps.push(waypoints.length-1);
+  return cps;
+}
+function _perfDepWp(){
+  var cps=_perfStageCheckpoints();
+  var s=window._perfStage;
+  if(s && cps.length>2 && cps[s-1]!==undefined && waypoints[cps[s-1]]) return waypoints[cps[s-1]];
+  return waypoints[0];
+}
+function _perfArrWp(){
+  var cps=_perfStageCheckpoints();
+  var s=window._perfStage;
+  if(s && cps.length>2 && cps[s]!==undefined && waypoints[cps[s]]) return waypoints[cps[s]];
+  return waypoints[waypoints.length-1];
+}
+function _renderPerfStageSelector(){
+  var sel=document.getElementById('perfStageSelect');
+  if(!sel) return;
+  var cps=_perfStageCheckpoints();
+  if(typeof flightType==='undefined' || flightType!=='etapes' || cps.length<=2){
+    sel.style.display='none';
+    window._perfStage=undefined;
+    return;
+  }
+  sel.style.display='';
+  var opts='';
+  for(var s=1;s<cps.length;s++){
+    var dn=(waypoints[cps[s-1]]&&waypoints[cps[s-1]].name)||('WP'+(cps[s-1]+1));
+    var an=(waypoints[cps[s]]&&waypoints[cps[s]].name)||('WP'+(cps[s]+1));
+    opts+='<option value="'+s+'">Étape '+s+' — '+escHTML(dn)+' → '+escHTML(an)+'</option>';
+  }
+  sel.innerHTML=opts;
+  if(!window._perfStage || window._perfStage>cps.length-1) window._perfStage=1;
+  sel.value=window._perfStage;
+}
+window._renderPerfStageSelector=_renderPerfStageSelector;
+function _setPerfStage(val){
+  window._perfStage=parseInt(val)||1;
+  /* Repartir d'une détection fraîche de piste/METAR pour la nouvelle étape plutôt que de
+     garder celles de l'étape précédente. */
+  window._perfRwyIcao=null;
+  window._perfRwyIcaoLd=null;
+  perfCalc();
+  if(typeof perfFromMetar==='function') perfFromMetar();
+  if(typeof perfFromMetarLanding==='function') perfFromMetarLanding();
+}
+window._setPerfStage=_setPerfStage;
+
 function perfCalc(){
+  _renderPerfStageSelector();
   var acReg=window._perfAircraft||'OO-MQA';
   var is172=acReg==='OO-FCE';
   var _TO  =is172?PERF_TO_172      :PERF_TO;
@@ -12870,8 +13125,8 @@ function perfCalc(){
 
   /* Étiquettes départ/arrivée des deux sections décollage/atterrissage — toujours
      synchronisées avec la route encodée, même avant tout chargement météo. */
-  var depIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
-  var arrIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  var depIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && _perfDepWp() && _perfDepWp().name) ? _perfDepWp().name.trim().toUpperCase() : '';
+  var arrIcaoLbl = (typeof waypoints!=='undefined' && waypoints.length>0 && _perfArrWp() && _perfArrWp().name) ? _perfArrWp().name.trim().toUpperCase() : '';
   var _depLbl=document.getElementById('perfDepIcaoLabel'); if(_depLbl) _depLbl.textContent=depIcaoLbl?('— '+depIcaoLbl):'';
   var _arrLbl=document.getElementById('perfArrIcaoLabel'); if(_arrLbl) _arrLbl.textContent=arrIcaoLbl?('— '+arrIcaoLbl):'';
 
@@ -12952,7 +13207,7 @@ function perfCalc(){
   htmlTO+='<div class="perf-result-box '+(toOver<500?'green':toOver<700?'orange':'red')+'">🛫 Décollage passage 15m : <b>'+toOver.toFixed(0)+' m</b></div>';
   htmlTO+='</div>';
   // Runway sufficiency check against RUNWAY_DB — piste de l'aérodrome de DÉPART
-  var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && waypoints[0] && waypoints[0].name && RUNWAY_DB[waypoints[0].name.trim().toUpperCase()]) ? waypoints[0].name.trim().toUpperCase() : null);
+  var rwyIcaoCalc = window._perfRwyIcao || ((typeof waypoints!=='undefined' && _perfDepWp() && _perfDepWp().name && RUNWAY_DB[_perfDepWp().name.trim().toUpperCase()]) ? _perfDepWp().name.trim().toUpperCase() : null);
   var rwys=(RUNWAY_DB&&rwyIcaoCalc)?RUNWAY_DB[rwyIcaoCalc]:null;
   if(rwys && rwys.length){
     htmlTO+='<div class="perf-section"><h4>🛫 Pistes disponibles — '+rwyIcaoCalc+(AIRPORT_NAMES[rwyIcaoCalc]?' ('+AIRPORT_NAMES[rwyIcaoCalc]+')':'')+'</h4>';
@@ -13003,7 +13258,7 @@ function perfCalc(){
   htmlLD+='<div class="perf-result-box '+(ldOverMargin<600?'green':ldOverMargin<750?'orange':'red')+'">🛬 Atterrissage passage 15m + marge 50% (V0) : <b>'+ldOverMargin.toFixed(0)+' m</b></div>';
   htmlLD+='</div>';
   // Runway sufficiency check against RUNWAY_DB — piste de l'aérodrome d'ARRIVÉE
-  var rwyIcaoCalcLd = window._perfRwyIcaoLd || ((typeof waypoints!=='undefined' && waypoints.length>0 && waypoints[waypoints.length-1].name && RUNWAY_DB[waypoints[waypoints.length-1].name.trim().toUpperCase()]) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : null);
+  var rwyIcaoCalcLd = window._perfRwyIcaoLd || ((typeof waypoints!=='undefined' && waypoints.length>0 && _perfArrWp() && _perfArrWp().name && RUNWAY_DB[_perfArrWp().name.trim().toUpperCase()]) ? _perfArrWp().name.trim().toUpperCase() : null);
   var rwysLd=(RUNWAY_DB&&rwyIcaoCalcLd)?RUNWAY_DB[rwyIcaoCalcLd]:null;
   if(rwysLd && rwysLd.length){
     htmlLD+='<div class="perf-section"><h4>🛬 Pistes disponibles — '+rwyIcaoCalcLd+(AIRPORT_NAMES[rwyIcaoCalcLd]?' ('+AIRPORT_NAMES[rwyIcaoCalcLd]+')':'')+'</h4>';
@@ -13280,7 +13535,7 @@ function _perfMetarApply(cfg){
 }
 
 function perfFromMetar(){
-  var depIcao = (waypoints.length > 0 && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  var depIcao = (waypoints.length > 0 && _perfDepWp() && _perfDepWp().name) ? _perfDepWp().name.trim().toUpperCase() : '';
   _perfMetarApply({
     anchorIcao: depIcao, selectId: 'perfMetarSelect',
     tempId: 'perfTemp', qnhId: 'perfQNH', elevId: 'perfElev', windId: 'perfWind',
@@ -13292,7 +13547,7 @@ window.perfFromMetar=perfFromMetar;
 /* Atterrissage : mêmes règles mais ancrées sur l'aérodrome d'ARRIVÉE (dernier waypoint), pour
    ne plus calculer la distance d'atterrissage avec les conditions de départ. */
 function perfFromMetarLanding(){
-  var arrIcao = (waypoints.length > 0 && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  var arrIcao = (waypoints.length > 0 && _perfArrWp() && _perfArrWp().name) ? _perfArrWp().name.trim().toUpperCase() : '';
   _perfMetarApply({
     anchorIcao: arrIcao, selectId: 'perfMetarSelectLd',
     tempId: 'perfTempLd', qnhId: 'perfQNHLd', elevId: 'perfElevLd', windId: 'perfWindLd',
@@ -13348,7 +13603,7 @@ function _perfApplyManualWindCore(cfg){
 }
 
 function perfApplyManualWind(){
-  var depIcao = (typeof waypoints !== 'undefined' && waypoints[0] && waypoints[0].name) ? waypoints[0].name.trim().toUpperCase() : '';
+  var depIcao = (typeof waypoints !== 'undefined' && _perfDepWp() && _perfDepWp().name) ? _perfDepWp().name.trim().toUpperCase() : '';
   _perfApplyManualWindCore({
     dirId:'perfWindDirManual', spdId:'perfWindSpdManual', windId:'perfWind',
     infoId:'perfCrosswindInfo', diagId:'perfCrosswindDiagram',
@@ -13358,7 +13613,7 @@ function perfApplyManualWind(){
 window.perfApplyManualWind = perfApplyManualWind;
 
 function perfApplyManualWindLanding(){
-  var arrIcao = (typeof waypoints !== 'undefined' && waypoints.length>0 && waypoints[waypoints.length-1] && waypoints[waypoints.length-1].name) ? waypoints[waypoints.length-1].name.trim().toUpperCase() : '';
+  var arrIcao = (typeof waypoints !== 'undefined' && waypoints.length>0 && _perfArrWp() && _perfArrWp().name) ? _perfArrWp().name.trim().toUpperCase() : '';
   _perfApplyManualWindCore({
     dirId:'perfWindDirManualLd', spdId:'perfWindSpdManualLd', windId:'perfWindLd',
     infoId:'perfCrosswindInfoLd', diagId:'perfCrosswindDiagramLd',
