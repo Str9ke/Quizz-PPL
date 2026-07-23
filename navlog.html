@@ -6654,77 +6654,79 @@ function printNavlogRecapTable(){
       '<div class="fuel-total"><b>TOTAL REQUIS</b><br>'+(Math.round(fb.total*10)/10)+' L</div>'+
     '</div>';
 
+  /* Taille de police déterminée AVANT impression, à partir du nombre de lignes — pas d'après une
+     mesure de hauteur de page (via vh/flex/height:100%) : sur le pipeline d'impression Android
+     réel, cette mesure s'est avérée peu fiable et a produit des lignes bien plus hautes que
+     prévu, faisant déborder le tableau (total + bilan carburant) sur une 2e feuille. Les paliers
+     ci-dessous sont calibrés pour tenir sur UNE SEULE page même au format le plus petit
+     raisonnable (A5 portrait) — donc a fortiori sur A4. Peu de points → police/lignes plus
+     grandes (remplit mieux la page) ; beaucoup de points → police réduite en conséquence, pour
+     ne jamais risquer un débordement plutôt que de viser un remplissage exact. */
+  var totalRows=shownIdx.length+1;
+  var prof;
+  if(totalRows<=5) prof={f:13,p:'6px 5px',h1:15,sub:9,info:9,infoLbl:7.6};
+  else if(totalRows<=8) prof={f:11,p:'5px 4px',h1:14,sub:8.5,info:8.5,infoLbl:7.2};
+  else if(totalRows<=11) prof={f:9.2,p:'3.5px 4px',h1:13,sub:8,info:8,infoLbl:6.8};
+  else if(totalRows<=15) prof={f:8,p:'2.8px 3px',h1:12,sub:7.5,info:7.3,infoLbl:6.3};
+  else if(totalRows<=20) prof={f:7.2,p:'2.2px 3px',h1:11,sub:7,info:6.8,infoLbl:6};
+  else prof={f:6.5,p:'1.8px 2px',h1:10,sub:6.5,info:6.3,infoLbl:5.6};
+
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Récapitulatif route — '+escHTML(routeName)+'</title>'+
     '<style>'+
-    /* Ni le popup de test, ni "@page{size:...}", ne garantissent le format de papier
-       réellement utilisé : sur mobile (Android notamment), la boîte de dialogue d'impression
-       du système peut proposer/imposer A4 même si on demande A5, et notre contenu ne
-       remplissait alors qu'une fraction de la feuille réelle. On ne force donc plus de format
-       — le contenu s'étire pour occuper TOUTE la page quel que soit le papier choisi, via une
-       colonne flex (tableau en "flex:1;height:100%" pour que les lignes se répartissent sur la
-       hauteur restante — mécanisme standard CSS de répartition des lignes d'un tableau plus
-       haut que son contenu naturel). */
-    '@page{margin:12mm}'+
+    /* Pas de "size" forcé (A5 ignoré par certains pipelines d'impression mobiles) : le contenu
+       s'adapte au papier réellement utilisé grâce à des tailles NATURELLES (pas étirées) —
+       voir le choix de police/padding ci-dessus, calibré sur le nombre de lignes pour tenir sur
+       une seule page quel que soit le format. */
+    '@page{margin:10mm}'+
     '*{box-sizing:border-box}'+
-    'html,body{height:100%;margin:0;padding:0}'+
-    'body{display:flex;flex-direction:column;min-height:100vh;font-family:Arial,sans-serif;color:#111}'+
-    'h1{font-size:14px;margin:0 0 3px;flex:0 0 auto}'+
-    '.sub{font-size:8.5px;color:#555;margin:0 0 6px;flex:0 0 auto}'+
-    '.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-bottom:6px;flex:0 0 auto}'+
-    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:4px 5px;font-size:8.5px}'+
+    'body{margin:0;padding:0;font-family:Arial,sans-serif;color:#111}'+
+    'h1{font-size:'+prof.h1+'px;margin:0 0 3px}'+
+    '.sub{font-size:'+prof.sub+'px;color:#555;margin:0 0 6px}'+
+    '.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-bottom:6px}'+
+    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px;font-size:'+prof.info+'px}'+
     '.info-grid div:nth-child(4n){border-right:none}'+
     '.info-grid div:nth-last-child(-n+4){border-bottom:none}'+
-    '.info-grid b{display:block;font-size:7.2px;text-transform:uppercase;color:#555;font-weight:700}'+
-    '.table-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}'+
-    'table{flex:1 1 auto;height:100%;width:100%;border-collapse:collapse;font-size:9px;table-layout:fixed}'+
-    'th,td{border:1px solid #333;padding:3px 4px;text-align:center;overflow:hidden;white-space:nowrap}'+
+    '.info-grid b{display:block;font-size:'+prof.infoLbl+'px;text-transform:uppercase;color:#555;font-weight:700}'+
+    'table{width:100%;border-collapse:collapse;font-size:'+prof.f+'px;table-layout:fixed}'+
+    'th,td{border:1px solid #333;padding:'+prof.p+';text-align:center;overflow:hidden;white-space:nowrap}'+
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
-    'th{background:#333;color:#fff;font-size:7.6px;text-transform:uppercase}'+
+    'th{background:#333;color:#fff;font-size:'+(prof.f-1.2)+'px;text-transform:uppercase}'+
     'col.c-num{width:4%}col.c-name{width:12%}col.c-alt{width:6%}col.c-route{width:6%}'+
     'col.c-wind{width:8%}col.c-wca{width:5%}col.c-cap{width:7%}col.c-dist{width:8%}'+
     'col.c-gs{width:6%}col.c-ete{width:8%}col.c-eta{width:9%}col.c-fuel{width:8%}col.c-comment{width:13%}'+
     'tbody tr.alt{background:#f2f2f2}'+
     '.dim{color:#bbb}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
-    'td.c-name .tag{font-size:7px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
+    'td.c-name .tag{font-size:'+(prof.f-2)+'px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
     'tr.pt-key td{font-weight:700}'+
     '.c-comment{background:#fff}'+
     'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
     'tr.tot-row td:first-child{text-align:left}'+
     'tr{page-break-inside:avoid}'+
-    '.fuel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-top:6px;flex:0 0 auto}'+
-    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:4px 5px;font-size:8.5px}'+
+    '.fuel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-top:6px}'+
+    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px;font-size:'+prof.info+'px}'+
     '.fuel-grid div:nth-child(4n){border-right:none}'+
     '.fuel-grid div:nth-last-child(-n+4){border-bottom:none}'+
-    '.fuel-grid b{display:block;font-size:7.2px;text-transform:uppercase;color:#555;font-weight:700}'+
+    '.fuel-grid b{display:block;font-size:'+prof.infoLbl+'px;text-transform:uppercase;color:#555;font-weight:700}'+
     '.fuel-grid .fuel-total{background:#ffe500}'+
     '.fuel-grid .fuel-total b{color:#111}'+
     '</style></head><body>'+
     '<h1>Récapitulatif de route — '+escHTML(depIcao)+' → '+escHTML(arrIcao)+'</h1>'+
     '<p class="sub">Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette</p>'+
     infoBlock+
-    '<div class="table-wrap"><table>'+
+    '<table>'+
       '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
       '<col class="c-wind"><col class="c-wca"><col class="c-cap"><col class="c-dist"><col class="c-gs">'+
       '<col class="c-ete"><col class="c-eta"><col class="c-fuel"><col class="c-comment"></colgroup>'+
       '<thead><tr><th>#</th><th>Point</th><th>Alt</th><th>Route T</th><th>Vent</th><th>Dérive</th>'+
       '<th class="cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Carb.</th><th>Commentaires</th></tr></thead>'+
       '<tbody>'+rows+totRow+'</tbody>'+
-    '</table></div>'+
+    '</table>'+
     fuelBlock+
-    /* Police ajustée grossièrement au nombre de lignes (pas à une taille de papier supposée,
-       qu'on ne peut plus fiabiliser depuis ce script) — le tableau lui-même se charge de
-       remplir toute la hauteur restante via CSS (voir table{flex:1;height:100%} ci-dessus). */
-    '<script>(function(){'+
-      'var n=document.querySelectorAll("tbody tr").length;'+
-      'var fontPx=n<=5?10.5:(n<=8?9.5:(n<=12?8.6:(n<=17?7.8:7)));'+
-      'var tbl=document.querySelector("table");'+
-      'if(tbl) tbl.style.fontSize=fontPx+"px";'+
-      'setTimeout(function(){try{window.focus();window.print();}catch(e){}},150);'+
-    '})();</'+'script>'+
+    '<script>setTimeout(function(){try{window.focus();window.print();}catch(e){}},150);</'+'script>'+
     '</body></html>');
   w.document.close();
 }
