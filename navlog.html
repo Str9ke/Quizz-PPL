@@ -429,13 +429,22 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table th,.nl-recap-table td{border:1px solid var(--border-color);padding:7px 9px;text-align:center;white-space:nowrap}
 .nl-recap-table thead th{background:rgba(102,126,234,.14);color:var(--text-secondary);font-weight:700;font-size:.74em;text-transform:uppercase;letter-spacing:.02em}
 .nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;min-width:82px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 4px}
-.nl-recap-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}
-.nl-recap-table tbody tr:hover td{background:rgba(102,126,234,.1)}
+.nl-recap-table tbody tr.nl-recap-point-row:hover td{background:rgba(102,126,234,.1)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td{background:rgba(255,167,38,.1)}
 .nl-recap-table td.nl-recap-name,.nl-recap-table th:first-child{position:sticky;left:0;z-index:2;background:var(--bg-container)}
-.nl-recap-table tbody tr:nth-child(even) td.nl-recap-name{background:var(--bg-container)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td.nl-recap-name{background:rgba(255,167,38,.16)}
-.nl-recap-table tbody tr:hover td.nl-recap-name{background:rgba(102,126,234,.16)}
+.nl-recap-table tbody tr.nl-recap-point-row:hover td.nl-recap-name{background:rgba(102,126,234,.16)}
+/* Ligne LEG : décalée visuellement (fond teinté + flèche en retrait + liseré bleu à gauche)
+   pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE les deux points"
+   encadrants, jamais comme une propriété de l'un des deux — tout en restant un vrai tableau
+   (cellules alignées sur les mêmes colonnes que les lignes point, pas de texte en prose). */
+.nl-recap-table tr.nl-recap-leg-row td{background:rgba(21,101,192,.12);font-style:italic;color:var(--text-secondary);padding-top:4px;padding-bottom:4px;border-left:3px solid #1565c0}
+.nl-recap-table tr.nl-recap-leg-row td:not(:first-child){border-left:1px solid var(--border-color)}
+.nl-recap-table tr.nl-recap-leg-row td.nl-recap-name{background:var(--bg-container)}
+.nl-recap-table tr.nl-recap-leg-row:hover td{background:rgba(21,101,192,.2)}
+.nl-recap-table tr.nl-recap-leg-row:hover td.nl-recap-name{background:var(--bg-container)}
+.nl-recap-table td.nl-recap-leg-arrow{padding-left:14px;color:#5b8def;font-weight:700;font-style:normal;white-space:nowrap}
+.nl-recap-table tr.nl-recap-leg-row td.nl-recap-cap{font-style:normal}
 .nl-recap-cap{background:rgba(255,229,0,.16)!important;font-weight:700;color:#ffe066}
 .nl-recap-dim{color:var(--text-secondary);opacity:.4}
 .nl-recap-num-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(102,126,234,.22);color:#8fa0f5;font-size:.72em;font-weight:800;flex-shrink:0}
@@ -6373,11 +6382,14 @@ function renderNavlogRecapTable(){
   }
   var hiddenCount=waypoints.length-shownIdx.length;
 
-  /* Une ligne PAR POINT (identité + trajet qui y mène fondus ensemble, comme le tableau
-     imprimé) plutôt que deux lignes point/leg séparées : rendu en vraie grille à bordures
-     (voir CSS .nl-recap-table) — la version "cartes" empilées ne se lisait plus comme un
-     tableau. Numérotation SÉQUENTIELLE (1..N sur les points réellement montrés), pas l'index
-     brut dans waypoints (qui incluait les points de circuit masqués et sautait des numéros). */
+  /* Une ligne POINT (identité) + une ligne LEG distincte, en retrait, entre chaque paire de
+     points — comme sur le tableau imprimé. La version à ligne unique fusionnée compactait bien
+     mais ne rendait pas évident que route/cap/dist/GS/ETE concernent le TRAJET ENTRE deux
+     points, pas le point lui-même. La ligne leg reste un vrai tableau (cellules alignées sur
+     les mêmes colonnes) mais visuellement décalée (fond teinté, flèche en retrait, liseré de
+     couleur) pour se lire sans ambiguïté comme "ce qui se passe entre les deux points".
+     Numérotation SÉQUENTIELLE (1..N sur les points réellement montrés), pas l'index brut dans
+     waypoints (qui incluait les points de circuit masqués et sautait des numéros). */
   var rows='';
   var cumMin=0;
   for(var k=0;k<shownIdx.length;k++){
@@ -6403,35 +6415,9 @@ function renderNavlogRecapTable(){
          point directement d'ici, sans redescendre chercher le petit "×" de sa carte NavLog. */
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
-
-    /* Données du trajet qui MÈNE à ce point (route/cap/dist/GS/ETE) — vides ("—") pour le
-       départ, qui n'a pas de leg entrant. Survol de la ligne → surlignage du leg correspondant
-       sur la carte (voir _highlightRecapLeg / _clearRecapLegHighlight), comme avant sur la
-       ligne leg séparée. */
-    var routeT='—',distTxt='—',gsTxt='—',eteTxt='—',hdgMTxt='—',hdgClass='nl-recap-dim',legHoverAttrs='';
-    if(k>0){
-      var prevI=shownIdx[k-1];
-      var prev=waypoints[prevI];
-      var dist=0,routeTrue=0;
-      if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
-        dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-        routeTrue=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-      }
-      var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,alt);
-      cumMin+=leg.ete*60;
-      var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
-      var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
-      routeT=routeM+'°';
-      hdgMTxt=hdgM+'°';
-      hdgClass='nl-recap-cap';
-      distTxt=dist+' NM';
-      gsTxt=(leg.gs||0)+' kt';
-      eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
-      legHoverAttrs=' onmouseenter="window._highlightRecapLeg('+prevI+','+i+')" onmouseleave="window._clearRecapLegHighlight()"';
-    }
     var etaStr=k===0?'--:--':(cumMin?formatETA(cumMin):'--:--');
 
-    rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'"'+legHoverAttrs+'>'+
+    rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
       '<td class="nl-recap-name">'+
         '<span class="nl-recap-num-badge">'+(k+1)+'</span>'+
         '<input class="nl-recap-name-input" data-idx="'+i+'" value="'+escHTML(name)+'" '+
@@ -6443,13 +6429,48 @@ function renderNavlogRecapTable(){
         unconfWarning+
       '</td>'+
       '<td>'+alt+' ft</td>'+
-      '<td class="'+(k>0?'':'nl-recap-dim')+'">'+routeT+'</td>'+
-      '<td class="'+hdgClass+'">'+hdgMTxt+'</td>'+
-      '<td class="'+(k>0?'':'nl-recap-dim')+'">'+distTxt+'</td>'+
-      '<td class="'+(k>0?'':'nl-recap-dim')+'">'+gsTxt+'</td>'+
-      '<td class="'+(k>0?'':'nl-recap-dim')+'">'+eteTxt+'</td>'+
+      '<td class="nl-recap-dim">—</td>'+
+      '<td class="nl-recap-dim">—</td>'+
+      '<td class="nl-recap-dim">—</td>'+
+      '<td class="nl-recap-dim">—</td>'+
+      '<td class="nl-recap-dim">—</td>'+
       '<td>'+etaStr+'</td>'+
       '<td class="nl-recap-type">'+typeBtn+'</td>'+
+    '</tr>';
+
+    if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
+
+    var nextI=shownIdx[k+1];
+    var next=waypoints[nextI];
+    var nextName=next.name||('WP'+(nextI+1));
+    var dist=0,routeTrue=0;
+    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
+      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+    }
+    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
+    cumMin+=leg.ete*60;
+    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
+    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+    var routeT=routeM+'°';
+    var hdgMTxt=hdgM+'°';
+    var distTxt=dist+' NM';
+    var gsTxt=(leg.gs||0)+' kt';
+    var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
+
+    /* Survol de la ligne leg → surlignage du segment correspondant sur la carte (voir
+       _highlightRecapLeg / _clearRecapLegHighlight). */
+    rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
+      '<td class="nl-recap-name nl-recap-leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
+      '<td></td>'+
+      '<td>'+routeT+'</td>'+
+      '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
+      '<td>'+distTxt+'</td>'+
+      '<td>'+gsTxt+'</td>'+
+      '<td>'+eteTxt+'</td>'+
+      '<td></td>'+
+      '<td></td>'+
     '</tr>';
   }
   var hiddenNote;
@@ -6498,7 +6519,7 @@ function renderNavlogRecapTable(){
   cont.innerHTML=
     '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
       '<span><span class="icon">📋</span> Récapitulatif de la route (navigation)</span>'+
-      '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer (A5)</button>'+
+      '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer</button>'+
     '</div>'+
     borderBanner+
     '<div class="nl-recap-table-wrap">'+
@@ -6573,11 +6594,12 @@ function printNavlogRecapTable(){
     if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
   }
 
-  /* Une ligne PAR POINT (au lieu d'une ligne point + une ligne leg séparée) : chaque ligne
-     porte à la fois l'identité du point ET les données du trajet qui y MÈNE (route/vent/dérive/
-     cap/distance/GS/ETE/carburant), comme sur une vraie fiche de navigation papier. Évite
-     l'alternance ligne-pleine / ligne-à-moitié-vide (tirets partout) que l'ancienne présentation
-     produisait et qui donnait l'impression de "pas un vrai tableau". */
+  /* Une ligne POINT (identité) + une ligne LEG distincte, en retrait, entre chaque paire de
+     points : la version à ligne unique fusionnée faisait dire que ce n'était "pas clair" que
+     route/vent/cap/distance/GS/ETE concernent le TRAJET ENTRE deux points, pas le point
+     lui-même. La ligne leg reste un vrai tableau (cellules alignées sur les mêmes colonnes,
+     pas du texte en prose) mais visuellement décalée : fond teinté, flèche indentée, liseré de
+     couleur — pour qu'on comprenne d'un coup d'œil qu'elle "connecte" les deux points encadrants. */
   var rows='';
   var cumMin=0,cumDist=0,cumFuel=0;
   for(var k=0;k<shownIdx.length;k++){
@@ -6586,30 +6608,6 @@ function printNavlogRecapTable(){
     var name=wp.name||('WP'+(i+1));
     var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var roleLabel=k===0?'Départ':(k===shownIdx.length-1?'Arrivée':'');
-
-    var routeT='—',windTxt='—',wca='—',hdgMTxt='—',distTxt='—',gsTxt='—',eteTxt='—',fuelTxt='—',hdgClass='dim';
-    if(k>0){
-      var prevI=shownIdx[k-1];
-      var prev=waypoints[prevI];
-      var dist=0,routeTrue=0;
-      if(prev.lat!==null&&prev.lon!==null&&wp.lat!==null&&wp.lon!==null){
-        dist=Math.round(haversine(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-        routeTrue=Math.round(trueBearing(prev.lat,prev.lon,wp.lat,wp.lon)*10)/10;
-      }
-      var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,alt);
-      cumMin+=leg.ete*60; cumDist+=dist; cumFuel+=(leg.fuel||0);
-      var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
-      var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
-      routeT=routeM+'°';
-      windTxt=Math.round(leg.wDir||0)+'°/'+Math.round(leg.wSpd||0)+'kt';
-      wca=(leg.wca>=0?'+':'')+Math.round(leg.wca||0)+'°';
-      hdgMTxt=hdgM+'°';
-      hdgClass='cap';
-      distTxt=dist+' NM';
-      gsTxt=(leg.gs||0)+' kt';
-      eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
-      fuelTxt=(leg.fuel||0)+' L';
-    }
     var etaStr=k===0?'00:00:00':(cumMin?formatETA(cumMin):'—');
 
     /* Vent piste (décollage/atterrissage, onglet Perf) affiché en petite étiquette à côté du
@@ -6620,19 +6618,59 @@ function printNavlogRecapTable(){
     if(k===0 && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
     else if(k===shownIdx.length-1 && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
 
-    rows+='<tr class="'+(k%2?'alt':'')+(roleLabel?' pt-key':'')+'">'+
+    rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num">'+(k+1)+'</td>'+
       '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+windBadge+'</td>'+
       '<td class="c-alt">'+alt+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+routeT+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+windTxt+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+wca+'</td>'+
-      '<td class="'+hdgClass+'">'+hdgMTxt+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+distTxt+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+gsTxt+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+eteTxt+'</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="dim">—</td>'+
       '<td class="c-eta">'+etaStr+'</td>'+
-      '<td class="'+(k>0?'':'dim')+'">'+fuelTxt+'</td>'+
+      '<td class="dim">—</td>'+
+      '<td class="c-comment"></td>'+
+    '</tr>';
+
+    if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
+
+    var nextI=shownIdx[k+1];
+    var next=waypoints[nextI];
+    var nextName=next.name||('WP'+(nextI+1));
+    var dist=0,routeTrue=0;
+    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
+      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+    }
+    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
+    cumMin+=leg.ete*60; cumDist+=dist; cumFuel+=(leg.fuel||0);
+    var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
+    var hdgM=Math.round(((leg.hdgMag||0)%360+360)%360);
+    var routeT=routeM+'°';
+    var windTxt=Math.round(leg.wDir||0)+'°/'+Math.round(leg.wSpd||0)+'kt';
+    var wca=(leg.wca>=0?'+':'')+Math.round(leg.wca||0)+'°';
+    var hdgMTxt=hdgM+'°';
+    var distTxt=dist+' NM';
+    var gsTxt=(leg.gs||0)+' kt';
+    var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
+    var fuelTxt=(leg.fuel||0)+' L';
+
+    rows+='<tr class="leg-row">'+
+      '<td class="c-num"></td>'+
+      '<td class="c-name leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
+      '<td class="c-alt"></td>'+
+      '<td>'+routeT+'</td>'+
+      '<td>'+windTxt+'</td>'+
+      '<td>'+wca+'</td>'+
+      '<td class="cap">'+hdgMTxt+'</td>'+
+      '<td>'+distTxt+'</td>'+
+      '<td>'+gsTxt+'</td>'+
+      '<td>'+eteTxt+'</td>'+
+      '<td class="c-eta"></td>'+
+      '<td>'+fuelTxt+'</td>'+
       '<td class="c-comment"></td>'+
     '</tr>';
   }
@@ -6687,19 +6725,17 @@ function printNavlogRecapTable(){
   /* Taille de police déterminée AVANT impression, à partir du nombre de lignes — pas d'après une
      mesure de hauteur de page (via vh/flex/height:100%) : sur le pipeline d'impression Android
      réel, cette mesure s'est avérée peu fiable et a produit des lignes bien plus hautes que
-     prévu, faisant déborder le tableau (total + bilan carburant) sur une 2e feuille. Les paliers
-     ci-dessous sont calibrés pour tenir sur UNE SEULE page même au format le plus petit
-     raisonnable (A5 portrait) — donc a fortiori sur A4. Peu de points → police/lignes plus
-     grandes (remplit mieux la page) ; beaucoup de points → police réduite en conséquence, pour
-     ne jamais risquer un débordement plutôt que de viser un remplissage exact. */
-  var totalRows=shownIdx.length+1;
+     prévu, faisant déborder le tableau sur une 2e feuille. Compte maintenant les lignes POINT +
+     les lignes LEG (plus fines, voir prof.lp) séparément. Calibré pour tenir sur UNE SEULE page
+     même au format le plus petit raisonnable (A5 portrait) — donc a fortiori sur A4. */
+  var totalRows=shownIdx.length+(shownIdx.length-1)+1;
   var prof;
-  if(totalRows<=5) prof={f:21,p:'12px 10px',h1:20,sub:11.5,info:11.5,infoLbl:10};
-  else if(totalRows<=8) prof={f:16,p:'8px 6px',h1:15.5,sub:9.5,info:9.5,infoLbl:8.2};
-  else if(totalRows<=11) prof={f:15,p:'7.5px 5.5px',h1:16,sub:10,info:10,infoLbl:8.3};
-  else if(totalRows<=15) prof={f:12.5,p:'5.5px 5px',h1:13,sub:8.6,info:8.6,infoLbl:7.4};
-  else if(totalRows<=20) prof={f:10.5,p:'4px 3.5px',h1:11.5,sub:8,info:8,infoLbl:6.6};
-  else prof={f:8.7,p:'3px 3px',h1:10.3,sub:7,info:7,infoLbl:6.1};
+  if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
+  else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
+  else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:6.7,infoLbl:5.8};
+  else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:5.9,infoLbl:5.1};
+  else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:5.2,infoLbl:4.5};
+  else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:5,infoLbl:4.4};
 
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
@@ -6729,15 +6765,23 @@ function printNavlogRecapTable(){
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
     'th{background:#333;color:#fff;font-size:'+Math.max(6,Math.round(prof.f*0.62*10)/10)+'px;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
-    'col.c-num{width:4%}col.c-name{width:12%}col.c-alt{width:6%}col.c-route{width:6%}'+
+    'col.c-num{width:4%}col.c-name{width:14%}col.c-alt{width:6%}col.c-route{width:6%}'+
     'col.c-wind{width:8%}col.c-wca{width:5%}col.c-cap{width:7%}col.c-dist{width:8%}'+
-    'col.c-gs{width:6%}col.c-ete{width:8%}col.c-eta{width:9%}col.c-fuel{width:8%}col.c-comment{width:13%}'+
-    'tbody tr.alt{background:#f2f2f2}'+
-    '.dim{color:#bbb}'+
+    'col.c-gs{width:6%}col.c-ete{width:7%}col.c-eta{width:8%}col.c-fuel{width:7%}col.c-comment{width:14%}'+
+    'tbody tr.pt-row.alt td{background:#f2f2f2}'+
+    '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
     'td.c-name .tag{font-size:'+(prof.f-2)+'px;font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
     'td.c-name .tag.windtag{background:#1565c0;white-space:normal;display:block;width:fit-content;max-width:100%;margin-top:2px;font-size:'+Math.max(6,prof.f-4)+'px}'+
     'tr.pt-key td{font-weight:700}'+
+    /* Ligne LEG : décalée visuellement (fond teinté + flèche en retrait + liseré bleu à gauche)
+       pour qu'elle se lise sans ambiguïté comme "ce qui se passe ENTRE les deux points"
+       encadrants, jamais comme une propriété de l'un des deux — tout en restant un vrai tableau
+       (cellules alignées sur les mêmes colonnes que les lignes point, pas de texte en prose). */
+    'tr.leg-row td{background:#eaf1fb;padding:'+prof.lp+';font-style:italic;color:#333}'+
+    'tr.leg-row td:first-child{border-left:3px solid #1565c0}'+
+    'tr.leg-row td.leg-arrow{padding-left:10px;color:#1565c0;font-weight:700;font-style:normal}'+
+    'tr.leg-row td.cap{font-style:normal}'+
     '.c-comment{background:#fff}'+
     'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
     'tr.tot-row td:first-child{text-align:left}'+
@@ -6751,7 +6795,7 @@ function printNavlogRecapTable(){
     '.fuel-grid .fuel-total b{color:#111}'+
     '</style></head><body>'+
     '<h1>Récapitulatif de route — '+escHTML(depIcao)+' → '+escHTML(arrIcao)+'</h1>'+
-    '<p class="sub">Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette</p>'+
+    '<p class="sub">Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants</p>'+
     infoBlock+
     '<table>'+
       '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
