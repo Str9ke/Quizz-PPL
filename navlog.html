@@ -498,6 +498,33 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .route-map-card .route-map-legend span{display:inline-flex;align-items:center;gap:4px}
 .route-map-card .route-map-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
 
+/* Menu contextuel de leg (clic sur la flèche de direction sur la carte) — popup Leaflet
+   custom pour configurer directement circuit départ/arrivée/normal sans redescendre au
+   tableau récapitulatif. */
+.rm-leg-menu-popup .leaflet-popup-content-wrapper{background:#1a1a2e;color:#fff;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.rm-leg-menu-popup .leaflet-popup-tip{background:#1a1a2e}
+.rm-leg-menu-popup .leaflet-popup-content{margin:10px 12px}
+.rm-leg-menu{display:flex;flex-direction:column;gap:5px}
+.rm-leg-menu-title{font-size:.78em;font-weight:700;color:var(--text-secondary,#aaa);margin-bottom:2px;white-space:nowrap}
+.rm-leg-menu-btn{font-size:.82em;font-weight:600;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;text-align:left;white-space:nowrap}
+.rm-leg-menu-btn:hover{background:rgba(255,255,255,.14)}
+.rm-leg-menu-btn.active{background:#667eea;border-color:#667eea}
+
+/* Mode mesure (survol de bras de mer) : case à cocher dans la barre d'outils, bandeau
+   d'aide sous la carte, et contenu du popup de mesure (distance + finesse éditable +
+   altitude mini conseillée). */
+.rm-measure-toggle{display:inline-flex;align-items:center;gap:5px;font-size:.78em;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);white-space:nowrap}
+.rm-measure-toggle input{cursor:pointer}
+.rm-measure-hint{font-size:.75em;font-weight:600;color:#ffca28;background:rgba(255,202,40,.12);border:1px solid rgba(255,202,40,.35);border-radius:8px;padding:6px 10px;margin:6px 0}
+.rm-measure-popup .leaflet-popup-content-wrapper{background:#1a1a2e;color:#fff;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.rm-measure-popup .leaflet-popup-tip{background:#1a1a2e}
+.rm-measure-box{font-size:.85em}
+.rm-measure-dist{font-weight:800;font-size:1.05em;margin-bottom:6px}
+.rm-measure-label{display:block;font-size:.85em;color:#ccc;margin-bottom:6px}
+.rm-measure-label input{width:52px;margin:0 3px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;padding:2px 4px}
+.rm-measure-alt{font-weight:700;color:#ffca28;margin-bottom:6px}
+.rm-measure-note{font-size:.72em;color:var(--text-secondary,#999);line-height:1.35}
+
 /* Mode plein écran de la carte de route (surtout utile sur mobile/Android, où la carte
    en carré 1/1 dans le flux normal de la page est trop petite pour être exploitable) :
    la carte prend tout l'écran, avec juste une bande ~2cm en bas pour le profil
@@ -921,7 +948,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
         <button class="navlog-btn rm-fullscreen-btn" onclick="window.toggleRouteMapFullscreen()" title="Agrandir la carte en plein écran (pratique sur mobile)">&#x26F6; Plein écran</button>
         <button class="navlog-btn" id="dwMapToggleBtn" onclick="window.toggleDailyWarningsOnMap()" title="Afficher/masquer les zones des avis du jour sur la carte">&#x26A0;&#xFE0F; Zones du jour</button>
+        <label class="rm-measure-toggle" title="Cliquez 2 points sur la carte (hors navigation) pour mesurer une distance et estimer l'altitude mini pour rejoindre le rivage au-dessus d'un bras de mer">
+          <input type="checkbox" id="rmMeasureCheckbox" onchange="window.toggleMeasureMode(this)"> &#x1F4CF; Mode mesure
+        </label>
       </div>
+      <div id="routeMapMeasureHint" class="rm-measure-hint" style="display:none"></div>
       <div class="nl-card-title" style="margin-top:10px"><span class="icon">&#x1F4C8;</span> Profil d'altitude <span style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:4px" id="altProfileSubtitle"></span> <span class="rm-alt-hint" style="font-size:.7em;font-weight:400;color:var(--text-secondary)">— glisse (souris ou doigt) pour te situer sur la carte</span></div>
       <div class="alt-profile-wrap"><div id="altProfileContainer"><p style="color:var(--text-secondary);font-size:.82em;text-align:center;padding:16px 0">Configurez au moins 2 waypoints avec coordonnées pour afficher le profil.</p></div></div>
     </div>
@@ -7671,6 +7702,16 @@ function switchCircuitType(i){
 }
 window.switchCircuitType=switchCircuitType;
 
+/* Menu contextuel de la carte (clic sur la flèche d'un leg) : applique directement le
+   type choisi et referme le popup — réutilise setCircuitType/removeCircuitType, donc
+   la carte, le tableau Navlog, M&CG, Perf et le carburant restent cohérents. */
+window._mapLegSetType=function(idx,type){
+  if(!waypoints[idx]) return;
+  if(typeof routeMap!=='undefined' && routeMap) routeMap.closePopup();
+  if(type) window.setCircuitType(idx,type,false);
+  else window.removeCircuitType(idx);
+};
+
 /* Cycle normal → circuit départ → circuit arrivée → normal en un clic sur une ligne de leg
    (onglet Carbu) — réutilise exactement setCircuitType/removeCircuitType (les mêmes fonctions
    que le tableau Navlog et, pour la carte, le futur menu contextuel de leg), donc tous les
@@ -11940,6 +11981,9 @@ function initRouteMap(){
   routeMap.on('zoomend', _renderRouteLegLabels);
 
   routeMap.on('click', function(e){
+    /* Mode mesure (case à cocher "📏 Mode mesure") : un clic ici ne doit PAS ajouter de
+       waypoint à la nav — voir _measureMapClick() plus bas, dédié au survol de bras de mer. */
+    if(window._measureModeActive){ _measureMapClick(e.latlng); return; }
     var coord = e.latlng;
     var name = 'WP' + (waypoints.length + 1);
     var newWp = {name: name, lat: coord.lat, lon: coord.lng, icon: '', dist: 0, route: 0};
@@ -12121,6 +12165,7 @@ function _mapLineGrabLiveUpdate(newIdx,lat,lon){
   _mapLineGrabRefreshLines();
 }
 function _mapLineGrabStartMouse(e){
+  if(window._measureModeActive) return;
   L.DomEvent.stopPropagation(e);
   var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng);
   if(newIdx<0) return;
@@ -12154,6 +12199,7 @@ function _mapLineGrabStartMouse(e){
   document.addEventListener('mouseup',onUp,{capture:true});
 }
 function _mapLineGrabStartTouch(ev){
+  if(window._measureModeActive) return;
   if(!ev.touches||!ev.touches.length) return;
   ev.preventDefault();
   /* Empêcher Leaflet de démarrer en parallèle un pan de la carte avec le même toucher */
@@ -12214,6 +12260,96 @@ function _setMapStageFilter(val){
   updateRouteMap();
 }
 window._setMapStageFilter=_setMapStageFilter;
+
+/* ===== MODE MESURE (survol de bras de mer) =====
+   Case à cocher dans la barre d'outils de la carte : une fois active, 2 clics sur la
+   carte posent 2 points INDÉPENDANTS de la navigation (jamais ajoutés à `waypoints`,
+   donc jamais sauvegardés dans un dossier ni comptés dans un leg) et affichent la
+   distance entre eux + une altitude minimale conseillée pour rejoindre le rivage le
+   plus proche en cas de panne moteur au pire endroit de la traversée (le milieu),
+   à partir de la finesse (ratio de plané) de l'avion. C'est un calcul géométrique
+   d'aide à la décision, pas une règle réglementaire figée — la finesse est éditable
+   dans le popup pour que le pilote la corrige selon son manuel de vol. */
+window._measureModeActive=false;
+var _measurePoints=[];
+var _measureLayers=[];
+var _measureLastDistNM=0;
+
+function _measureClearLayers(){
+  for(var i=0;i<_measureLayers.length;i++){
+    if(routeMap) routeMap.removeLayer(_measureLayers[i]);
+  }
+  _measureLayers=[];
+}
+
+function _measureSetHint(text){
+  var hint=document.getElementById('routeMapMeasureHint');
+  if(hint) hint.textContent=text;
+}
+
+window.toggleMeasureMode=function(cb){
+  window._measureModeActive = cb ? !!cb.checked : !window._measureModeActive;
+  _measurePoints=[];
+  _measureClearLayers();
+  var hint=document.getElementById('routeMapMeasureHint');
+  if(hint) hint.style.display=window._measureModeActive?'':'none';
+  if(window._measureModeActive) _measureSetHint('\u{1F4CF} Mode mesure : cliquez 2 points sur la carte (hors navigation) — 1er point cliqué');
+};
+
+function _glideRatioDefault(){
+  var ac=(typeof MB_DATA!=='undefined' && window._perfAircraft) ? MB_DATA[window._perfAircraft] : null;
+  return (ac && ac.glideRatio) ? ac.glideRatio : 9;
+}
+
+function _measureAltText(distNM, glide){
+  var half=distNM/2;
+  var altFt=Math.ceil((half*6076.12/glide)/100)*100;
+  return '\u{1FA82} Alt. mini conseillée pour rejoindre le rivage&nbsp;: <b>'+altFt.toLocaleString('fr-FR')+' ft</b>';
+}
+
+function _measurePopupHtml(distNM, glide){
+  return '<div class="rm-measure-box">'+
+    '<div class="rm-measure-dist">\u{1F4CF} '+distNM.toFixed(2)+' NM ('+(distNM*1.852).toFixed(1)+' km)</div>'+
+    '<label class="rm-measure-label">Finesse avion (plané) <input type="number" id="rmMeasureGlide" value="'+glide+'" min="3" max="30" step="0.5" oninput="window._measureRecalc()"> : 1</label>'+
+    '<div class="rm-measure-alt" id="rmMeasureAlt">'+_measureAltText(distNM,glide)+'</div>'+
+    '<div class="rm-measure-note">Calcul géométrique (moitié de la traversée × finesse), au pire point (milieu) — vérifie/ajuste selon vent, POH et jugement opérationnel : ce n’est pas une règle figée.</div>'+
+  '</div>';
+}
+
+window._measureRecalc=function(){
+  var input=document.getElementById('rmMeasureGlide');
+  if(!input || !_measureLastDistNM) return;
+  var glide=parseFloat(input.value)||_glideRatioDefault();
+  var altEl=document.getElementById('rmMeasureAlt');
+  if(altEl) altEl.innerHTML=_measureAltText(_measureLastDistNM, glide);
+};
+
+function _measureMapClick(latlng){
+  if(_measurePoints.length>=2){
+    _measurePoints=[];
+    _measureClearLayers();
+  }
+  _measurePoints.push({lat:latlng.lat,lon:latlng.lng});
+  var dot=L.circleMarker([latlng.lat,latlng.lng],{radius:6,color:'#ffca28',weight:2,fillColor:'#ffca28',fillOpacity:.9,interactive:false}).addTo(routeMap);
+  _measureLayers.push(dot);
+  if(_measurePoints.length===1){
+    _measureSetHint('\u{1F4CF} Mode mesure : cliquez le 2e point (rivage opposé)');
+    return;
+  }
+  var a=_measurePoints[0], b=_measurePoints[1];
+  var distNM=haversine(a.lat,a.lon,b.lat,b.lon);
+  _measureLastDistNM=distNM;
+  var line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:'#ffca28',weight:3,dashArray:'6,6',opacity:.95,interactive:false}).addTo(routeMap);
+  _measureLayers.push(line);
+  var midLat=(a.lat+b.lat)/2, midLon=(a.lon+b.lon)/2;
+  var glide=_glideRatioDefault();
+  var popup=L.popup({closeButton:true,minWidth:220,className:'rm-measure-popup',autoClose:false,closeOnClick:false})
+    .setLatLng([midLat,midLon])
+    .setContent(_measurePopupHtml(distNM,glide))
+    .openOn(routeMap);
+  _measureLayers.push(popup);
+  _measureSetHint('\u{1F4CF} Mode mesure : '+distNM.toFixed(1)+' NM — cliquez pour une nouvelle mesure');
+}
 
 function updateRouteMap(){
   if(!routeMap) return;
@@ -12339,6 +12475,7 @@ function updateRouteMap(){
         });
       });
       marker.on('click', function(){
+        if(window._measureModeActive) return;
         if(confirm('Supprimer ce waypoint ?')) {
           waypoints.splice(idx, 1);
           renderNavlog();
@@ -12378,7 +12515,10 @@ function updateRouteMap(){
     if(d!==null) _altProfileSetCrosshair(d);
   });
   hitLine.on('mouseout',_altProfileHideCrosshair);
-  /* Draw direction arrows along each leg — offset to avoid overlap on round trips */
+  /* Draw direction arrows along each leg — offset to avoid overlap on round trips.
+     Cliquables : ouvrent un petit menu (popup Leaflet) pour configurer ce leg en
+     circuit départ/arrivée/normal directement depuis la carte, sans redescendre au
+     tableau récapitulatif — voir window._mapLegSetType(). */
   for(var k=0;k<pts.length-1;k++){
     var a=pts[k],b=pts[k+1];
     var brg=trueBearing(a.lat,a.lon,b.lat,b.lon);
@@ -12393,14 +12533,25 @@ function updateRouteMap(){
     arrowLon+=Math.sin(perpRad)*offsetDeg;
     var arrowLegType=waypoints[b.idx]?waypoints[b.idx].ptType:null;
     var arrowColor=arrowLegType==='circuitDep'?'#7c4dff':(arrowLegType==='circuitArr'?'#00bcd4':'#ff1493');
-    var svgArrow='<svg width="28" height="28" viewBox="0 0 28 28"><polygon points="28,14 4,2 8,14 4,26" fill="'+arrowColor+'" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></svg>';
+    /* Halo transparent autour de la flèche : zone de clic plus grande que le triangle
+       visible seul (important au doigt sur mobile), sans changer le rendu visuel. */
+    var svgArrow='<svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#000" opacity="0.001"/><g transform="translate(6,6)"><polygon points="28,14 4,2 8,14 4,26" fill="'+arrowColor+'" stroke="#fff" stroke-width="1" transform="rotate('+(brg-90)+' 14 14)"/></g></svg>';
     var arrowIcon=L.divIcon({
       className:'',
       html:svgArrow,
-      iconSize:[28,28],
-      iconAnchor:[14,14]
+      iconSize:[40,40],
+      iconAnchor:[20,20]
     });
-    var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:false}).addTo(routeMap);
+    var arrowMarker=L.marker([arrowLat,arrowLon],{icon:arrowIcon,interactive:true,keyboard:false,title:'Cliquer pour configurer ce leg'}).addTo(routeMap);
+    (function(legIdx, curType){
+      var menuHtml='<div class="rm-leg-menu">'+
+        '<div class="rm-leg-menu-title">'+escHTML(waypoints[legIdx]?(waypoints[legIdx].name||'Leg'):'Leg')+'</div>'+
+        '<button class="rm-leg-menu-btn'+(curType==='circuitDep'?' active':'')+'" onclick="window._mapLegSetType('+legIdx+',\'circuitDep\')">\u{1F6EB} Circuit départ</button>'+
+        '<button class="rm-leg-menu-btn'+(curType==='circuitArr'?' active':'')+'" onclick="window._mapLegSetType('+legIdx+',\'circuitArr\')">\u{1F6EC} Circuit arrivée</button>'+
+        '<button class="rm-leg-menu-btn'+(!curType?' active':'')+'" onclick="window._mapLegSetType('+legIdx+',null)">➔ Leg normal</button>'+
+      '</div>';
+      arrowMarker.bindPopup(menuHtml,{closeButton:true,minWidth:150,className:'rm-leg-menu-popup'});
+    })(b.idx, arrowLegType);
     routeMapLayers.push(arrowMarker);
   }
   /* Leg info labels (cap/ETE/distance) : voir _renderRouteLegLabels() plus bas — extraites
@@ -12607,12 +12758,16 @@ window.updateRouteMap=updateRouteMap;
 /* ========================================================
    MASS & BALANCE MODULE
    ======================================================== */
+/* glideRatio (finesse en plané, ex 9 = 9 ft parcourus pour 1 ft perdu) : valeur usuelle
+   typique par type d'avion, utilisée comme valeur PAR DÉFAUT (éditable) dans le popup du
+   mode mesure de la carte — à confirmer/corriger par le pilote depuis le manuel de vol
+   réel de l'appareil avant tout usage opérationnel. */
 var MB_DATA = {
   'OO-MQA': {
     type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -12620,7 +12775,7 @@ var MB_DATA = {
     type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -12628,7 +12783,7 @@ var MB_DATA = {
     type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:517.82, emptyArm:0.8382, emptyMom:434.04,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
     has2seats:true, weighDate:'12/06/2014',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -12636,7 +12791,7 @@ var MB_DATA = {
     type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, fuelTotal:159, density:0.72,
     emptyMass:665.87, emptyArm:0.99345, emptyMom:661.51,
     fuelArm:1.22, pilotArm:0.94, paxArm:1.06, bag1Arm:2.41, bag2Arm:3.12,
-    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15,
+    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15, glideRatio:9,
     has2seats:false, weighDate:'13/04/2012',
     envelope:[{m:675,mom:605},{m:890,mom:780},{m:1043,mom:1020},{m:1043,mom:1260},{m:675,mom:810}]
   }
