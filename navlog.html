@@ -457,6 +457,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-alt-input{background:transparent;border:1px solid var(--border-color);border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 2px;width:56px;text-align:center;transition:border-color .2s,background .2s}
 .nl-recap-alt-input:hover{border-color:#667eea}
 .nl-recap-alt-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
+.nl-recap-comment-input{background:transparent;border:1px solid var(--border-color);border-radius:6px;color:inherit;font:inherit;padding:3px 6px;width:100%;min-width:70px;box-sizing:border-box;transition:border-color .2s,background .2s}
+.nl-recap-comment-input:hover{border-color:#667eea}
+.nl-recap-comment-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
+.nl-recap-table td.nl-recap-comment{min-width:90px}
 .nl-recap-hidden-note{margin-top:8px}
 /* Ancienne version en position:absolute : le sous-menu ne réservait aucune place dans le flux
    et flottait par-dessus le texte/les tags suivants (superposition illisible). Le sous-menu
@@ -6469,6 +6473,7 @@ function renderNavlogRecapTable(){
       ? '<input class="nl-recap-alt-input" type="number" step="100" value="'+alt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude à ce point (éditable)">'
       : '';
     var etaCellHtml=isDep?'00:00':'';
+    var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
 
     rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
       '<td class="nl-recap-name">'+
@@ -6488,6 +6493,7 @@ function renderNavlogRecapTable(){
       '<td class="nl-recap-dim">—</td>'+
       '<td class="nl-recap-dim">—</td>'+
       '<td>'+etaCellHtml+'</td>'+
+      '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
       '<td class="nl-recap-type">'+typeBtn+'</td>'+
     '</tr>';
 
@@ -6513,6 +6519,8 @@ function renderNavlogRecapTable(){
     var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
     var legEtaStr=cumMin?formatETA(cumMin):'--:--';
 
+    var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(next._legComment||'')+'" data-idx="'+nextI+'" data-field="leg" onchange="window._setRecapComment('+nextI+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
+
     /* Survol de la ligne leg → surlignage du segment correspondant sur la carte (voir
        _highlightRecapLeg / _clearRecapLegHighlight). */
     rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
@@ -6524,6 +6532,7 @@ function renderNavlogRecapTable(){
       '<td>'+gsTxt+'</td>'+
       '<td>'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
+      '<td class="nl-recap-comment">'+legCommentHtml+'</td>'+
       '<td></td>'+
     '</tr>';
   }
@@ -6581,7 +6590,7 @@ function renderNavlogRecapTable(){
     borderBanner+
     '<div class="nl-recap-table-wrap">'+
     '<table class="nl-recap-table" id="navlogRecapTableEl">'+
-      '<thead><tr><th>Point</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Actions</th></tr></thead>'+
+      '<thead><tr><th>Point</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Commentaires</th><th>Actions</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table>'+
     '</div>'+hiddenNote;
@@ -6625,6 +6634,17 @@ function _setRecapAlt(idx,val){
   recalcNavlog(); /* recalcule aussi la carte et ce tableau (voir fin de recalcNavlog) */
 }
 window._setRecapAlt=_setRecapAlt;
+
+/* Note libre par point (_ptComment) ou par segment (_legComment, stockée comme l'altitude sur
+   le point d'ARRIVÉE du leg) — un simple champ texte à remplir directement dans le tableau,
+   sans passer par l'impression papier. Un recalcul complet n'est pas nécessaire (ça ne change
+   ni distance ni route), juste garder la valeur en mémoire sur le waypoint. */
+function _setRecapComment(idx,field,val){
+  if(!waypoints[idx]) return;
+  if(field==='leg') waypoints[idx]._legComment=val;
+  else waypoints[idx]._ptComment=val;
+}
+window._setRecapComment=_setRecapComment;
 
 /* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
    window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page
@@ -6713,7 +6733,7 @@ function printNavlogRecapTable(blank){
       '<td class="dim">—</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+etaCell+'</td>'+
       '<td class="dim">—</td>'+
-      '<td class="c-comment"></td>'+
+      '<td class="c-comment">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
     '</tr>';
 
     if(k===shownIdx.length-1) break; /* pas de leg après le dernier point */
@@ -6755,7 +6775,7 @@ function printNavlogRecapTable(blank){
       '<td>'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td>'+fuelTxt+'</td>'+
-      '<td class="c-comment"></td>'+
+      '<td class="c-comment">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
     '</tr>';
   }
 
