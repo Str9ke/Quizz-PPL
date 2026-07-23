@@ -3085,21 +3085,25 @@ function renderFuelLog(){
 
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
+  /* Ordre CHRONOLOGIQUE d'un vol réel (demandé explicitement à 2 reprises) : roulage départ,
+     circuit départ, navigation, circuit arrivée, roulage arrivée — pas un regroupement par
+     catégorie (nav d'abord, taxis à la fin) qui ne correspond à aucun déroulé réel de vol. */
   if(splitByStage){
     stageNums.forEach(function(sn){
       var st=stageTotals[sn];
-      col1+=row('Délestage (Navigation) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
-      if(st.depFuel>0) col1+=row('🛫 Circuit départ — Étape '+sn, st.depFuel, '#b39ddb');
-      if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
       col1+=row('Roulage départ — Étape '+sn, (taxiD/60)*fuelBurn);
+      if(st.depFuel>0) col1+=row('🛫 Circuit départ — Étape '+sn, st.depFuel, '#b39ddb');
+      col1+=row('Délestage (Navigation) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
+      if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
       col1+=row('Roulage arrivée — Étape '+sn, (taxiA/60)*fuelBurn);
     });
   } else {
+    col1+=row('Roulage départ (Taxi)', (taxiD/60)*fuelBurn);
+    if(circDepFuel>0) col1+=row('🛫 Circuit départ', circDepFuel, '#b39ddb');
     if(navFuel>0) col1+=row('Délestage (Navigation)', navFuel);
     else col1+=row('Délestage (Navigation)', 0, 'var(--text-secondary)');
-    if(circDepFuel>0) col1+=row('🛫 Circuit départ', circDepFuel, '#b39ddb');
     if(circArrFuel>0) col1+=row('🛬 Circuit arrivée', circArrFuel, '#4dd0e1');
-    col1+=row('Roulage (Taxi)', taxiFuel);
+    col1+=row('Roulage arrivée (Taxi)', (taxiA/60)*fuelBurn);
     if(etapeCount>0) col1+=row('Étapes taxi (×'+etapeCount+')', etapeFuel, '#ff9500');
   }
   col1+=row('Marge ('+contPct+'%)', contFuel);
@@ -3131,18 +3135,18 @@ function renderFuelLog(){
   if(splitByStage){
     stageNums.forEach(function(sn){
       var st=stageTotals[sn];
-      col2+=timeRow('Temps Vol (Navigation) — Étape '+sn, st.navTime);
-      if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
-      if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
       col2+=timeRow('Taxi Départ — Étape '+sn, taxiD);
+      if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
+      col2+=timeRow('Temps Vol (Navigation) — Étape '+sn, st.navTime);
+      if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
       col2+=timeRow('Taxi Arrivée — Étape '+sn, taxiA);
     });
   } else {
+    col2+=timeRow('Taxi Départ', taxiD);
+    if(circDepTimeMin>0) col2+=timeRow('🛫 Circuit départ', circDepTimeMin);
     if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
     else col2+=timeRow('Temps Vol (Navigation)', 0);
-    if(circDepTimeMin>0) col2+=timeRow('🛫 Circuit départ', circDepTimeMin);
     if(circArrTimeMin>0) col2+=timeRow('🛬 Circuit arrivée', circArrTimeMin);
-    col2+=timeRow('Taxi Départ', taxiD);
     col2+=timeRow('Taxi Arrivée', taxiA);
     if(etapeCount>0) col2+=timeRow('Étapes (×'+etapeCount+')', etapeTimeMin);
   }
@@ -6876,6 +6880,7 @@ function renderNavlogRecapTable(){
         '<span class="wp-circuit-submenu nl-recap-circuit-submenu" id="circuit-submenu-recap-'+hi+'" style="display:none">'+
           '<button class="wp-circuit-switch-btn" onclick="window.switchCircuitType('+hi+')">🔄 Basculer vers '+(hIsDep?'Circuit arrivée':'Circuit départ')+'</button>'+
           '<button class="wp-circuit-remove-btn" onclick="window.removeCircuitType('+hi+')">↩️ Retirer du circuit (repasser en navigation)</button>'+
+          '<button class="wp-circuit-remove-btn" style="color:#f44336" onclick="window._removeRecapWaypoint('+hi+')">✕ Supprimer ce point (définitif)</button>'+
         '</span>'+
       '</span>';
     }
@@ -7054,10 +7059,22 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     var nextAltTxt=blank?'':nextAlt;
     legNum++;
 
+    /* Même alerte de changement d'altitude que le tableau à l'écran (voir
+       _buildOnscreenSegmentTable) : comparer l'altitude de CE leg à celle du leg suivant. */
+    var altChangeTxt='', altCellCls='';
+    if(!blank && k+2<=segIdx.length-1){
+      var afterNextWp=waypoints[segIdx[k+2]];
+      var followingAlt=afterNextWp.altitude||(parseInt(_v('cfgAlt'))||2300);
+      if(followingAlt!==nextAlt){
+        altCellCls=' class="alt-change"';
+        altChangeTxt=' <span class="alt-arrow">'+(followingAlt>nextAlt?'▲':'▼')+'</span>';
+      }
+    }
+
     rows+='<tr class="leg-row">'+
       '<td class="c-num">'+legNum+'</td>'+
       '<td class="c-name leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
-      '<td>'+nextAltTxt+'</td>'+
+      '<td'+altCellCls+'>'+nextAltTxt+altChangeTxt+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td>'+windTxt+'</td>'+
       '<td>'+wca+'</td>'+
@@ -7239,6 +7256,8 @@ function printNavlogRecapTable(blank){
     'tbody tr.pt-row.alt td{background:#f2f2f2}'+
     '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
+    'td.alt-change{background:#ffcdd2!important;font-weight:700;color:#000}'+
+    '.alt-arrow{color:#c62828;font-weight:800}'+
     'td.c-name .tag{font-weight:700;background:#333;color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px;white-space:nowrap;display:inline-block}'+
     'td.c-name .tag.windtag{background:#1565c0;white-space:normal;display:block;width:fit-content;max-width:100%;margin-top:2px}'+
     'tr.pt-key td{font-weight:700}'+
@@ -12815,8 +12834,14 @@ function updateRouteMap(){
     if(_mapZoomedOut && isCircuitLeg) continue; /* flèches de circuit masquées dézoomé */
     var legNumBadge=null;
     if(!isCircuitLeg){
+      /* Ne réinitialiser le compteur QUE sur un changement d'étape confirmé des deux côtés
+         (legStageNow non-null) — sinon un point sans métadonnée _stages (ex: ajouté par
+         glisser-déposer sur une carte avant ce correctif, ou tout point qui n'a jamais transité
+         par _composeEtapes) déclenchait un reset à tort, faisant repartir la numérotation de la
+         carte à 1 au lieu de continuer celle du tableau Navlog (même logique de tolérance que
+         _computeStageSegments). */
       var legStageNow=_mapLegStageOf(waypoints[a.idx],waypoints[b.idx]);
-      if(legStageNow!==mapLegStage){ mapLegStage=legStageNow; mapLegNum=0; }
+      if(legStageNow!==null && legStageNow!==mapLegStage){ mapLegStage=legStageNow; mapLegNum=0; }
       mapLegNum++;
       legNumBadge=mapLegNum;
     }
