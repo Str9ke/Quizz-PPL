@@ -470,6 +470,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-role-tag{display:inline-block;font-size:.66em;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(102,126,234,.2);color:#8fa0f5;vertical-align:middle}
 .nl-recap-type-btn{background:none;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);font-size:.85em;padding:3px 8px;cursor:pointer;white-space:nowrap;transition:all .2s}
 .nl-recap-type-btn:hover{border-color:#7c4dff;color:#b39ddb;background:rgba(124,77,255,.1)}
+.nl-recap-del-btn{background:none;border:1px solid var(--border-color);border-radius:7px;color:var(--text-secondary);font-size:.85em;padding:3px 7px;cursor:pointer;white-space:nowrap;transition:all .2s;margin-left:4px}
+.nl-recap-del-btn:hover{border-color:#f44336;color:#f44336;background:rgba(244,67,54,.1)}
+.nl-recap-table td.nl-recap-alt-change{background:rgba(244,67,54,.22)}
+.nl-recap-alt-arrow{color:#f44336;font-weight:800;font-size:1em;margin-left:2px}
 .nl-recap-name-input{background:transparent;border:1px solid transparent;border-radius:6px;color:inherit;font:inherit;font-weight:700;padding:3px 4px;width:auto;min-width:34px;max-width:78px;transition:border-color .2s,background .2s}
 .nl-recap-name-input:hover{border-color:var(--border-color)}
 .nl-recap-name-input:focus{border-color:#667eea;background:rgba(102,126,234,.08);outline:none}
@@ -2570,7 +2574,8 @@ var AIRPORT_COORDS = {
   'EHEH':{lat:51.4501,lon:5.3744},
   'EHLE':{lat:52.4603,lon:5.5272},
   'EHBK':{lat:50.9116,lon:5.7706},
-  'EHMZ':{lat:51.5050,lon:3.7290},
+  'EHMZ':{lat:51.5122,lon:3.7311},
+  'EHFS':{lat:51.4413,lon:3.5959},
   /* Germany */
   'EDDK':{lat:50.8659,lon:7.1427},
   'EDDL':{lat:51.2895,lon:6.7668},
@@ -2602,7 +2607,7 @@ var AIRPORT_NAMES = {
   'EBMB':'Melsbroek','EBST':'Sint-Truiden','EBDT':'Schaffen/Diest','EBUL':'Ursel',
   'EBWE':'Weelde','EBZR':'Oostmalle/Zoersel','EBFN':'Koksijde',
   'LFAY':'Amiens-Glisy','LFQT':'Merville-Calonne',
-  'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen','EHMZ':'Midden-Zeeland',
+  'EHAM':'Amsterdam Schiphol','EHRD':'Rotterdam','EHEH':'Eindhoven','EHLE':'Lelystad','EHBK':'Maastricht-Aachen','EHMZ':'Midden-Zeeland','EHFS':'Vlissingen (KNMI)',
   'EDDK':'K\u00f6ln/Bonn','EDDL':'D\u00fcsseldorf','EDLN':'M\u00f6nchengladbach','EDLV':'Niederrhein','EDKA':'Aachen-Merzbr\u00fcck',
   'ELLX':'Luxembourg-Findel',
   'LFAT':'Le Touquet','LFAC':'Calais-Dunkerque','LFQB':'Laon-Chambry','LFSG':'\'Epinal-Mirecourt','LFOB':'Beauvais-Till\u00e9','LFSB':'B\u00e2le-Mulhouse',
@@ -2614,7 +2619,7 @@ var AIRPORT_ELEV = {
   'LFQJ':447,'LFQQ':157,'EBCF':955,'EBSP':1542,'EBFS':928,'EBLG':659,
   'EBTY':171,'EBBE':370,'EBGB':66,'EBMO':64,'LFAV':177,'LFQO':167,
   'EBAW':39,'EBOS':13,'EBKT':64,
-  'EHAM':-11,'EHRD':-15,'EHEH':74,'EHLE':-13,'EHBK':375,
+  'EHAM':-11,'EHRD':-15,'EHEH':74,'EHLE':-13,'EHBK':375,'EHMZ':6,'EHFS':33,
   'EDDK':302,'EDDL':147,'EDLN':125,'EDLV':106,'EDKA':623,
   'ELLX':1234,
   'LFAT':36,'LFAC':12,'LFQB':256,'LFSG':1084,'LFOB':359,'LFSB':885,
@@ -2639,6 +2644,7 @@ var RUNWAY_DB = {
   'EHEH':[{rwy:'04/22',hdg:39,len:3000,sfc:'asphalt'},{rwy:'21/03',hdg:213,len:2400,sfc:'asphalt'}],
   'EHLE':[{rwy:'05/23',hdg:50,len:1800,sfc:'asphalt'}],
   'EHBK':[{rwy:'03/21',hdg:35,len:2500,sfc:'asphalt'}],
+  'EHMZ':[{rwy:'09/27',hdg:87,len:1000,sfc:'grass'}],
   /* Germany */
   'EDDK':[{rwy:'06/24',hdg:59,len:3815,sfc:'asphalt'},{rwy:'14R/32L',hdg:138,len:1863,sfc:'asphalt'},{rwy:'14L/32R',hdg:138,len:3960,sfc:'asphalt'}],
   'EDDL':[{rwy:'05R/23L',hdg:47,len:3000,sfc:'asphalt'},{rwy:'05L/23R',hdg:47,len:2700,sfc:'asphalt'}],
@@ -6682,6 +6688,12 @@ function _computeStageSegments(shownIdx){
       segStart=i-1;
       continue;
     }
+    /* Pas de métadonnée _stages d'un côté ou de l'autre (vol classique hors "composer étapes",
+       ou point ajouté par un chemin qui n'a pas hérité de _stages) : jamais de coupure — sans
+       ce garde-fou, un vol normal à 2 aérodromes se retrouvait éclaté en tables "Étape 1"/
+       "Étape 2" fantômes (une par point) puisque _stages n'est renseigné QUE par
+       _composeEtapes(). */
+    if(prevStages.length===0 || curStages.length===0) continue;
     var overlap=false;
     for(var oi=0;oi<prevStages.length;oi++){ if(curStages.indexOf(prevStages[oi])>=0){ overlap=true; break; } }
     if(overlap) continue;
@@ -6716,6 +6728,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     if((k===0||k===segIdx.length-1) && wp.lat===null && wp.lon===null){
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
+    var delBtn='<button class="nl-recap-del-btn" onclick="window._removeRecapWaypoint('+i+')" title="Supprimer ce point">✕</button>';
     var isDep=(k===0);
     var altCellHtml=isDep
       ? '<input class="nl-recap-alt-input" type="number" step="100" value="'+alt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude à ce point (éditable)">'
@@ -6742,7 +6755,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td class="nl-recap-dim">—</td>'+
       '<td>'+etaCellHtml+'</td>'+
       '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
-      '<td class="nl-recap-type">'+typeBtn+'</td>'+
+      '<td class="nl-recap-type">'+typeBtn+delBtn+'</td>'+
     '</tr>';
 
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
@@ -6770,13 +6783,28 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
 
     var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(next._legComment||'')+'" data-idx="'+nextI+'" data-field="leg" onchange="window._setRecapComment('+nextI+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
 
+    /* Alerte de changement d'altitude : compare l'altitude de CE leg à celle du leg SUIVANT
+       (le leg d'après, pas le point d'après) — si elles diffèrent, une flèche (↑ montée /
+       ↓ descente à prévoir) et un surlignage rouge de la cellule signalent qu'il faut ajuster
+       l'altitude au prochain segment, visible en un coup d'œil sans avoir à comparer les deux
+       lignes manuellement. */
+    var altChangeHtml='', altCellClass='';
+    if(k+2<=segIdx.length-1){
+      var afterNextWp=waypoints[segIdx[k+2]];
+      var followingAlt=afterNextWp.altitude||(parseInt(_v('cfgAlt'))||2300);
+      if(followingAlt!==nextAlt){
+        altCellClass=' nl-recap-alt-change';
+        altChangeHtml=' <span class="nl-recap-alt-arrow" title="Altitude différente au prochain leg ('+followingAlt+' ft)">'+(followingAlt>nextAlt?'▲':'▼')+'</span>';
+      }
+    }
+
     /* Flèche explicite ENTRE les deux points du leg (nom départ → nom arrivée), plutôt que
        juste "vers X" — pour que ce soit sans ambiguïté quel tronçon cette ligne décrit, en
        particulier une fois plusieurs tableaux séparés par étape. Numéro de LEG (pas de point)
        affiché ici, propre à ce segment (redémarre à 1 à chaque étape). */
     rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
       '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> '+escHTML(name)+' → '+escHTML(nextName)+'</td>'+
-      '<td><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+nextI+'" onchange="window._setRecapAlt('+nextI+',this.value)" title="Altitude pour ce segment (éditable)"></td>'+
+      '<td class="'+altCellClass.trim()+'"><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+nextI+'" onchange="window._setRecapAlt('+nextI+',this.value)" title="Altitude pour ce segment (éditable)">'+altChangeHtml+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
       '<td>'+distTxt+'</td>'+
@@ -6812,7 +6840,7 @@ function renderNavlogRecapTable(){
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+    if(si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) shownIdx.push(si);
   }
   var hiddenCount=waypoints.length-shownIdx.length;
 
@@ -7058,7 +7086,7 @@ function printNavlogRecapTable(blank){
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||(!w.ptType)) shownIdx.push(si);
+    if(si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) shownIdx.push(si);
   }
 
   /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes
@@ -7860,6 +7888,15 @@ function removeUnconfiguredWaypoint(i){
   removeWaypoint(i);
 }
 window.removeUnconfiguredWaypoint=removeUnconfiguredWaypoint;
+
+/* Suppression directement depuis la petite croix "✕" du tableau NavLog (planche Point) —
+   même confirmation que removeUnconfiguredWaypoint, pour un point déjà configuré cette fois. */
+function _removeRecapWaypoint(i){
+  if(!waypoints[i]) return;
+  if(!confirm('Supprimer le point "'+(waypoints[i].name||'sans nom')+'" ?')) return;
+  removeWaypoint(i);
+}
+window._removeRecapWaypoint=_removeRecapWaypoint;
 
 /* ===== DRAG & DROP REORDER (unified Pointer Events — mouse/touch/pen) ===== */
 function initDragDrop(board){
@@ -12309,6 +12346,23 @@ function _mapLineGrabCore(lat,lon){
   if(freshPts.length<2) return -1;
   var insertAfterIdx=_mapNearestLegInsertIdx(lat,lon,freshPts);
   var newWp={name:'',lat:lat,lon:lon,icon:'',dist:0,route:0};
+  /* Hériter la/les étape(s) (_stages) du leg dans lequel ce point est inséré, sinon un point
+     ajouté en glissant sur la carte n'appartenait à AUCUNE étape (_stages undefined) : pour
+     _computeStageSegments (tableau Navlog) et le comptage carburant/temps par étape (Carbu), ça
+     ressemblait à une rupture d'étape en plein milieu d'un vol continu — un point ajouté au
+     milieu de l'étape 2 cassait l'étape 2 en 2-3 tableaux fantômes ("Étape 3 — ? → ?") au lieu
+     de rester un simple point de navigation supplémentaire. On prend l'INTERSECTION des étapes
+     des deux extrémités du leg d'origine (le cas courant où les deux valent la même étape), avec
+     repli sur l'union si jamais elles ne se recoupent pas. */
+  var _gbBefore=waypoints[insertAfterIdx], _gbAfter=waypoints[insertAfterIdx+1];
+  var _gbStages=null;
+  if(_gbBefore && _gbBefore._stages && _gbAfter && _gbAfter._stages){
+    _gbStages=_gbBefore._stages.filter(function(s){return _gbAfter._stages.indexOf(s)>=0;});
+  }
+  if(!_gbStages || !_gbStages.length){
+    _gbStages=(_gbBefore&&_gbBefore._stages)?_gbBefore._stages:((_gbAfter&&_gbAfter._stages)?_gbAfter._stages:null);
+  }
+  if(_gbStages) newWp._stages=_gbStages.slice();
   var newIdx=insertAfterIdx+1;
   waypoints.splice(newIdx,0,newWp);
   /* SURTOUT PAS de renderNavlog/recalcNavlog ici (pendant le geste) :
@@ -12744,9 +12798,9 @@ function updateRouteMap(){
      tableau récapitulatif — voir window._mapLegSetType().
      Dézoomé (< ROUTE_MAP_ZOOM_DETAIL) : les flèches de circuit dép/arr (courtes, groupées
      près de l'aérodrome) sont masquées — elles finissaient collées les unes aux autres en un
-     amas illisible sur une vue d'ensemble. Seules les flèches des legs de nav "principaux"
-     restent, avec leur numéro de leg (même numérotation qu'au tableau Navlog : redémarre à 1
-     par étape) affiché à la place du triangle plein. */
+     amas illisible sur une vue d'ensemble. Les flèches des legs de nav "principaux" affichent
+     TOUJOURS leur numéro de leg (même numérotation qu'au tableau Navlog : redémarre à 1 par
+     étape), quel que soit le niveau de zoom. */
   var mapLegNum=0, mapLegStage=null;
   function _mapLegStageOf(aWp,bWp){
     if(!aWp._stages||!bWp._stages) return null;
@@ -12764,7 +12818,7 @@ function updateRouteMap(){
       var legStageNow=_mapLegStageOf(waypoints[a.idx],waypoints[b.idx]);
       if(legStageNow!==mapLegStage){ mapLegStage=legStageNow; mapLegNum=0; }
       mapLegNum++;
-      if(_mapZoomedOut) legNumBadge=mapLegNum;
+      legNumBadge=mapLegNum;
     }
     /* Place arrow at 40% of leg to avoid midpoint overlap with return leg */
     var frac=0.4;
@@ -13964,6 +14018,14 @@ function _perfMetarApply(cfg){
   updatePerfMetarList(cfg.selectId);
   var anchorIcao = cfg.anchorIcao;
   var infoEl = document.getElementById(cfg.infoId);
+
+  /* Pré-remplissage IMMÉDIAT de l'élévation depuis AIRPORT_ELEV, sans attendre un METAR : un
+     aérodrome qui ne publie pas de METAR (ex: EHMZ, sans repli exploitable si EHFS est lent/hors
+     ligne) laissait le champ élévation bloqué sur sa valeur précédente — celle d'un tout autre
+     aérodrome visité juste avant (ou le "67" par défaut du HTML) — ce qui faussait silencieusement
+     tous les calculs de performance sans que rien ne le signale. */
+  var elevEl0 = document.getElementById(cfg.elevId);
+  if(elevEl0 && anchorIcao && AIRPORT_ELEV[anchorIcao]!==undefined) elevEl0.value = AIRPORT_ELEV[anchorIcao];
 
   var candidates = anchorIcao ? [anchorIcao] : [];
   if(anchorIcao && METAR_FALLBACK[anchorIcao]) candidates = candidates.concat(METAR_FALLBACK[anchorIcao]);
