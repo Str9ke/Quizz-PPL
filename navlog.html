@@ -443,7 +443,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
    traits. */
 .nl-recap-table tbody td{border-top:none;border-bottom:none}
 .nl-recap-table thead th{background:rgba(102,126,234,.14);color:var(--text-secondary);font-weight:700;font-size:.74em;text-transform:uppercase;letter-spacing:.02em}
-.nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;min-width:82px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 4px}
+.nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;overflow-wrap:normal;word-break:keep-all;min-width:82px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 4px}
+/* Nom du point de DÉPART affiché sur la ligne leg (ex: "Leg 1 EBSG → EBCI") : texte brut sans
+   protection anti-coupure, dans une colonne étroite en position:sticky — sur petit écran, un
+   navigateur pouvait finir par couper le mot lettre par lettre (chaque caractère sur sa propre
+   ligne) plutôt que de le laisser simplement dépasser ou passer entier à la ligne suivante.
+   white-space:nowrap le rend insécable : soit il tient entier sur sa ligne, soit il passe entier
+   à la ligne suivante comme un seul bloc flex — jamais de découpe lettre par lettre. */
+.nl-recap-prevname{white-space:nowrap}
 .nl-recap-table tbody tr.nl-recap-point-row:hover td{background:rgba(102,126,234,.1)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td{background:rgba(255,167,38,.1)}
 .nl-recap-table td.nl-recap-name,.nl-recap-table th:first-child{position:sticky;left:0;z-index:2;background:var(--bg-container)}
@@ -5142,14 +5149,22 @@ function updateWindRose(){
       svgEl.style.cursor='crosshair';
       svgEl.onclick=function(e){
         var rect=svgEl.getBoundingClientRect();
-        var x=e.clientX-rect.left-cx;
-        var y=e.clientY-rect.top-cy;
+        var scaleX=rect.width?(sz/rect.width):1, scaleY=rect.height?(sz/rect.height):1;
+        var x=(e.clientX-rect.left)*scaleX-cx;
+        var y=(e.clientY-rect.top)*scaleY-cy;
         var angle=Math.atan2(x,-y)*180/Math.PI;
         if(angle<0) angle+=360;
         angle=Math.round(angle/5)*5;
         if(angle>=360) angle=0;
+        /* Distance au centre → vitesse (0 au centre, 50kt au bord extérieur) : le clic configure
+           maintenant direction ET vitesse en un seul geste, au lieu de la seule direction — la
+           vitesse restait sinon à retaper à la main juste à côté. */
+        var dist=Math.sqrt(x*x+y*y);
+        var spd=Math.round(Math.min(dist/outerR,1)*50/5)*5;
         document.getElementById('cfgWindDir').value=angle;
         document.getElementById('cfgWindDirSlider').value=angle;
+        document.getElementById('cfgWindSpd').value=spd;
+        document.getElementById('cfgWindSpdSlider').value=Math.min(spd,50);
         updateWindRose();
         recalcNavlog();
       };
@@ -6038,18 +6053,72 @@ function loadGametWindWidget(){
     var card = document.getElementById('gametWindCard');
     var label = document.getElementById('gametValidLabel');
     if(!row || !card) return;
-    row.innerHTML = levels.map(function(l){
-      return '<div style="background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px;padding:8px 12px;text-align:center;min-width:88px">'
-        + '<div style="font-weight:700;font-size:.85em;color:#4fc3f7">'+l.alt+' ft</div>'
-        + '<div style="font-size:.82em;margin-top:2px">'+l.dir+'°/'+l.spd+'kt</div>'
-        + '<div style="font-size:.78em;color:var(--text-secondary)">'+l.temp+'</div>'
-        + '</div>';
-    }).join('');
+    _renderGametWindRow();
     if(label) label.textContent = validLabel;
     card.style.display = '';
+
+    /* Vent de référence pas encore configuré (0/0, valeur par défaut) : on applique
+       automatiquement le niveau GAMET le plus proche de 2000ft aux calculs, plutôt que de
+       laisser un vent nul par défaut alors qu'une vraie prévision est disponible. Un vent déjà
+       configuré (restauré d'un dossier/autosave, ou déjà choisi par l'utilisateur) n'est jamais
+       écrasé silencieusement. */
+    var curDir=parseFloat(_v('cfgWindDir'))||0, curSpd=parseFloat(_v('cfgWindSpd'))||0;
+    if(curDir===0 && curSpd===0){
+      var nearestIdx=0, nearestDiff=Infinity;
+      levels.forEach(function(l,idx){ var diff=Math.abs(l.alt-2000); if(diff<nearestDiff){ nearestDiff=diff; nearestIdx=idx; } });
+      _applyGametWindByIdx(nearestIdx, true);
+    }
   }).catch(function(){ /* opmet.html indisponible (offline) : widget reste masqué */ });
 }
 window.loadGametWindWidget=loadGametWindWidget;
+
+var _gametActiveIdx=-1;
+function _renderGametWindRow(){
+  var row = document.getElementById('gametWindRow');
+  if(!row || !_lastGametLevels) return;
+  row.innerHTML = _lastGametLevels.map(function(l,idx){
+    var isActive=(idx===_gametActiveIdx);
+    return '<div class="gamet-level-card" data-idx="'+idx+'" onclick="window._applyGametWindByIdx('+idx+')" '
+      + 'title="Cliquer pour appliquer ce vent aux calculs (report automatique dans la config Vent du Navlog)" '
+      + 'style="cursor:pointer;background:'+(isActive?'rgba(79,195,247,.18)':'var(--bg-container)')+';border:1px solid '+(isActive?'#4fc3f7':'var(--border-color)')+';border-radius:10px;padding:8px 12px;text-align:center;min-width:88px;transition:background .15s,border-color .15s">'
+      + '<div style="font-weight:700;font-size:.85em;color:#4fc3f7">'+l.alt+' ft'+(isActive?' ✓':'')+'</div>'
+      + '<div style="font-size:.82em;margin-top:2px">'+l.dir+'°/'+l.spd+'kt</div>'
+      + '<div style="font-size:.78em;color:var(--text-secondary)">'+l.temp+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* Reporte le vent d'un niveau GAMET dans la config Vent utilisée par TOUS les calculs de leg
+   (cfgWindDir/cfgWindSpd, dans la planche Caractéristiques du Navlog) — évite d'avoir à retaper
+   à la main une valeur déjà affichée juste au-dessus. 'silent' (utilisé pour l'application
+   automatique au chargement) n'affiche pas de toast, pour ne pas surprendre l'utilisateur dès
+   l'ouverture de la page. */
+function _applyGametWindByIdx(idx, silent){
+  if(!_lastGametLevels || !_lastGametLevels[idx]) return;
+  var l=_lastGametLevels[idx];
+  var dir=parseInt(l.dir,10);
+  var spdStr=String(l.spd);
+  var spd;
+  if(spdStr.indexOf('-')>=0){
+    var parts=spdStr.split('-').map(Number);
+    spd=Math.round((parts[0]+parts[1])/2);
+  } else {
+    spd=parseInt(spdStr,10);
+  }
+  var dirEl=document.getElementById('cfgWindDir'), spdEl=document.getElementById('cfgWindSpd');
+  var dirSliderEl=document.getElementById('cfgWindDirSlider'), spdSliderEl=document.getElementById('cfgWindSpdSlider');
+  if(!dirEl||!spdEl) return;
+  dirEl.value=dir;
+  if(dirSliderEl) dirSliderEl.value=dir;
+  spdEl.value=spd;
+  if(spdSliderEl) spdSliderEl.value=Math.min(spd,50);
+  if(typeof updateWindRose==='function') updateWindRose();
+  if(typeof recalcNavlog==='function') recalcNavlog();
+  _gametActiveIdx=idx;
+  _renderGametWindRow();
+  if(!silent && typeof _toast==='function') _toast('💨 Vent '+dir+'°/'+spd+'kt ('+l.alt+' ft) appliqué aux calculs','',3000);
+}
+window._applyGametWindByIdx=_applyGametWindByIdx;
 
 /* ===== AVIS DU JOUR (DAILY WARNINGS SKEYES) =====
    Charge daily_warnings.json (généré par fetch_notams.py à partir du PIB SKEYES,
@@ -6904,7 +6973,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
        aussi : elles concernaient CE point, pas "le leg" au sens abstrait, mais vivent maintenant
        sur son unique ligne. */
     rows+='<tr class="nl-recap-leg-row'+(wp.isEtape?' nl-recap-etape':'')+'" onmouseenter="window._highlightRecapLeg('+prevI+','+i+')" onmouseleave="window._clearRecapLegHighlight()">'+
-      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> '+escHTML(prevName)+' → '+nameInputHtml+tagsHtml+'</td>'+
+      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> <span class="nl-recap-prevname">'+escHTML(prevName)+'</span> → '+nameInputHtml+tagsHtml+'</td>'+
       '<td class="'+altCellClass.trim()+'"><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude pour ce segment (éditable)">'+altChangeHtml+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
@@ -7339,13 +7408,19 @@ function printNavlogRecapTable(blank){
         totalRows=wantPoints+(wantPoints-1)+1;
       }
     }
+    /* info/infoLbl (bandeau Avion/Date/TAS/... en haut + Trip/Roulage/Réserve/... en bas) : ces
+       2 blocs ont toujours le même nombre de cases (8 chacun) quel que soit le nombre de points
+       de la route — contrairement au tableau de legs, ils n'ont donc pas besoin de rétrécir
+       aussi agressivement pour tenir sur une page. Tailles nettement augmentées (+~40%) par
+       rapport au reste, qui doit lui rester proportionnel au nombre de lignes pour garantir une
+       seule feuille. */
     var prof;
-    if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
-    else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
-    else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:6.7,infoLbl:5.8};
-    else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:5.9,infoLbl:5.1};
-    else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:5.2,infoLbl:4.5};
-    else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:5,infoLbl:4.4};
+    if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:12,infoLbl:10};
+    else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:10.5,infoLbl:9};
+    else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:9.5,infoLbl:8};
+    else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:8.5,infoLbl:7};
+    else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:7.5,infoLbl:6.2};
+    else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:7,infoLbl:5.8};
 
     /* Bug corrigé : deux attributs style="..." sur la même balise <section> (page-break-after
        ET font-size) — un navigateur ignore le second attribut dupliqué, ce qui pouvait faire
