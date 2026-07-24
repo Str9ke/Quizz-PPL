@@ -7273,6 +7273,81 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
   return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel};
 }
 
+/* Résumé numérique carburant/temps — reproduit EXACTEMENT la même classification que
+   renderFuelLog() (onglet Carbu) : navigation vs circuit départ vs circuit arrivée, jonction
+   d'étape via wp._stages, taxi supplémentaire à chaque escale intermédiaire (wp.isEtape). Utilisé
+   par la feuille imprimée pour que ses totaux (par étape ET global) soient TOUJOURS identiques à
+   ceux de l'onglet Carbu — avant ce correctif, la feuille imprimée ne sommait QUE les legs de
+   navigation (les points de circuit dép/arr, filtrés hors du tableau imprimé pour rester lisible,
+   étaient aussi absents des totaux), alors que l'onglet Carbu les inclut : distance/temps/carburant
+   affichés ne correspondaient pas d'une page à l'autre. */
+function _computeFuelTimeSummary(){
+  var isEtapesMode=(typeof flightType!=='undefined' && flightType==='etapes');
+  var totalDist=0, tripFuel=0, tripTimeMin=0;
+  var navFuel=0, navTimeMin=0, circDepFuel=0, circDepTimeMin=0, circArrFuel=0, circArrTimeMin=0;
+  var stageTotals={};
+  var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0;
+  function legStage(prevWp,wp){
+    if(!prevWp._stages||!wp._stages) return null;
+    for(var a=0;a<prevWp._stages.length;a++){ if(wp._stages.indexOf(prevWp._stages[a])>=0) return prevWp._stages[a]; }
+    return wp._stages[0];
+  }
+  function recordStage(){
+    if(curStageNum===null) return;
+    stageTotals[curStageNum]={
+      navFuel:stageNavFuel, navTimeMin:stageNavTimeMin,
+      depFuel:stageCircDepFuel, depTimeMin:stageCircDepTimeMin,
+      arrFuel:stageCircArrFuel, arrTimeMin:stageCircArrTimeMin,
+      dist:stageDist,
+      fuel:stageNavFuel+stageCircDepFuel+stageCircArrFuel,
+      timeMin:stageNavTimeMin+stageCircDepTimeMin+stageCircArrTimeMin
+    };
+  }
+  for(var i=1;i<waypoints.length;i++){
+    var wp=waypoints[i];
+    if(!(wp.dist>0)) continue;
+    if(isEtapesMode){
+      var thisLegStage=legStage(waypoints[i-1],wp);
+      if(thisLegStage!==null && thisLegStage!==curStageNum){
+        recordStage();
+        curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0;
+      }
+      stageDist+=wp.dist;
+    }
+    totalDist+=wp.dist;
+    var legData=wp._leg||{};
+    var eteVal=(legData.ete!==undefined && !isNaN(legData.ete))?legData.ete:0;
+    var t=eteVal*60;
+    tripTimeMin+=t;
+    var legFuel=legData.fuel||0;
+    tripFuel+=legFuel;
+    if(wp.ptType==='circuitDep'){ circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t; }
+    else if(wp.ptType==='circuitArr'){ circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t; }
+    else { navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t; }
+  }
+  recordStage();
+
+  var fuelBurn=parseFloat(_v('fuelBurn'))||20;
+  var taxiD=parseFloat(_v('fuelTaxiD'))||0;
+  var taxiA=parseFloat(_v('fuelTaxiA'))||0;
+  var etapeFuel=0, etapeTimeMin=0, etapeCount=0;
+  for(var ei=1;ei<waypoints.length-1;ei++){
+    if(waypoints[ei]&&waypoints[ei].isEtape){ etapeFuel+=((taxiD+taxiA)/60)*fuelBurn; etapeTimeMin+=taxiD+taxiA; etapeCount++; }
+  }
+  var bf=computeFullFuelBreakdown(tripFuel);
+  return {
+    totalDist:totalDist, tripFuel:tripFuel, tripTimeMin:tripTimeMin,
+    navFuel:navFuel, navTimeMin:navTimeMin,
+    circDepFuel:circDepFuel, circDepTimeMin:circDepTimeMin,
+    circArrFuel:circArrFuel, circArrTimeMin:circArrTimeMin,
+    stageTotals:stageTotals,
+    etapeFuel:etapeFuel, etapeTimeMin:etapeTimeMin, etapeCount:etapeCount,
+    bf:bf, totalBlockFuel:bf.total+etapeFuel, totalBlockTimeMin:tripTimeMin+taxiD+taxiA+etapeTimeMin,
+    taxiD:taxiD, taxiA:taxiA, fuelBurn:fuelBurn
+  };
+}
+window._computeFuelTimeSummary=_computeFuelTimeSummary;
+
 function printNavlogRecapTable(blank){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
@@ -7303,7 +7378,12 @@ function printNavlogRecapTable(blank){
      vol à étapes) : réutilisé tel quel sur CHAQUE feuille, à côté du "Trip" propre à l'étape de
      cette feuille. */
   var globalRes=_buildRecapSegmentRows(shownIdx,cfg,blank,true,true,perfTakeoffWind,perfLandingWind);
-  var fbGlobal=computeFullFuelBreakdown(globalRes.cumFuel);
+  /* Source unique partagée avec l'onglet Carbu (voir _computeFuelTimeSummary) : tripFuel/tripTimeMin
+     ici incluent les legs de circuit départ/arrivée (masqués du tableau imprimé pour rester
+     lisible, mais PAS de leur carburant/temps consommé) — contrairement à globalRes.cumFuel/cumMin
+     qui ne couvrent que les legs de navigation affichés. */
+  var fuelSummary=_computeFuelTimeSummary();
+  var fbGlobal=fuelSummary.bf;
   var acReg=cfg.perfAircraft||'—';
   var depIcao=waypoints[0]&&waypoints[0].name||'—';
   var arrIcao=waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'—';
@@ -7316,13 +7396,21 @@ function printNavlogRecapTable(blank){
     var segDepIcao=waypoints[segIdx[0]]&&waypoints[segIdx[0]].name||'—';
     var segArrIcao=waypoints[segIdx[segIdx.length-1]]&&waypoints[segIdx[segIdx.length-1]].name||'—';
 
+    /* Totaux DE CETTE FEUILLE (dist/temps/carburant) : repris du même résumé que l'onglet Carbu
+       (circuits départ/arrivée inclus), pas des seuls legs de navigation affichés dans le
+       tableau — sinon la feuille imprimée affiche systématiquement moins que "Σ Sous-total
+       étape N" côté Carbu pour toute route avec circuit dép/arr. */
+    var segTotals=multiSheet
+      ? (fuelSummary.stageTotals[segI+1]||{dist:res.cumDist,timeMin:res.cumMin,fuel:res.cumFuel})
+      : {dist:fuelSummary.totalDist,timeMin:fuelSummary.tripTimeMin,fuel:fuelSummary.tripFuel};
+
     var totRow='<tr class="tot-row">'+
       '<td colspan="7">TOTAL '+(multiSheet?'ÉTAPE '+(segI+1):'ROUTE')+'</td>'+
-      '<td>'+(blank?'':(Math.round(res.cumDist*10)/10)+' NM')+'</td>'+
+      '<td>'+(blank?'':(Math.round(segTotals.dist*10)/10)+' NM')+'</td>'+
       '<td></td>'+
-      '<td>'+(blank?'':formatTime(res.cumMin/60).replace(/^0:/,''))+'</td>'+
+      '<td>'+(blank?'':formatTime(segTotals.timeMin/60).replace(/^0:/,''))+'</td>'+
       '<td></td>'+
-      '<td>'+(blank?'':(Math.round(res.cumFuel*10)/10)+' L')+'</td>'+
+      '<td>'+(blank?'':(Math.round(segTotals.fuel*10)/10)+' L')+'</td>'+
       '<td></td>'+
     '</tr>';
 
@@ -7350,13 +7438,14 @@ function printNavlogRecapTable(blank){
        reste. */
     var fuelBlock=
       '<div class="fuel-grid">'+
-        '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?'':(Math.round(res.cumFuel*10)/10)+' L')+'</div>'+
+        '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?'':(Math.round(segTotals.fuel*10)/10)+' L')+'</div>'+
         '<div><b>Roulage</b><br>'+(blank?'':(Math.round(fbGlobal.taxiFuel*10)/10)+' L')+'</div>'+
+        (fuelSummary.etapeCount>0?'<div><b>Étapes taxi (×'+fuelSummary.etapeCount+')</b><br>'+(blank?'':(Math.round(fuelSummary.etapeFuel*10)/10)+' L')+'</div>':'')+
         '<div><b>Marge ('+fbGlobal.contPct+'%)</b><br>'+(blank?'':(Math.round(fbGlobal.contFuel*10)/10)+' L')+'</div>'+
         '<div><b>Réserve ('+fbGlobal.resMin+' min)</b><br>'+(blank?'':(Math.round(fbGlobal.resFuel*10)/10)+' L')+'</div>'+
         (fbGlobal.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?'':(Math.round(fbGlobal.altnFuel*10)/10)+' L')+'</div>':'')+
         (fbGlobal.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?'':(Math.round(fbGlobal.extraFuel*10)/10)+' L')+'</div>':'')+
-        '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?'':(Math.round(fbGlobal.total*10)/10)+' L')+'</div>'+
+        '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?'':(Math.round(fuelSummary.totalBlockFuel*10)/10)+' L')+'</div>'+
       '</div>';
 
     /* Taille de police déterminée AVANT impression, à partir du nombre de lignes DE CETTE
@@ -7373,11 +7462,14 @@ function printNavlogRecapTable(blank){
        base pour démarrer) — sinon la feuille imprimée reste minuscule en haut de page. On
        complète avec des lignes vides supplémentaires jusqu'à un nombre de points cible, dans le
        même format (alternance ligne point / ligne leg) que les lignes réelles.
-       62 = calibré empiriquement (mesure réelle de la hauteur rendue vs une page A4 avec marges
-       10mm, voir test_print_fill_measure) pour ~92% de la hauteur de page — assez pour "remplir
-       toute la page" sans risquer un débordement sur une 2e feuille selon le moteur d'impression. */
+       15 = demandé explicitement (pas plus de 15 points, bien espacés, grande écriture — un
+       tableau à 62 points minuscules était illisible et inutilisable en vol). La police/le
+       padding de ces lignes ne suivent PLUS le barème "prof" ci-dessous (calibré pour rétrécir
+       un tableau dense de données réelles) : voir le profil dédié "blank" plus bas, calibré
+       empiriquement (mesure réelle de la hauteur rendue vs une page A4 avec marges 10mm, voir
+       test_print_fill_measure) pour ~92% de la hauteur de page avec EXACTEMENT 15 points. */
     if(blank){
-      var wantPoints=62;
+      var wantPoints=15;
       if(segIdx.length<wantPoints){
         var fillerCount=wantPoints-segIdx.length;
         var fillerLegNum=(res.rows.match(/<tr class="leg-row">/g)||[]).length;
@@ -7407,7 +7499,12 @@ function printNavlogRecapTable(blank){
        rapport au reste, qui doit lui rester proportionnel au nombre de lignes pour garantir une
        seule feuille. */
     var prof;
-    if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:12,infoLbl:10};
+    /* Feuille VIERGE : nombre de lignes désormais FIXE (15 points cible, voir wantPoints
+       ci-dessus) — pas besoin du barème dégressif ci-dessous (pensé pour rétrécir un tableau de
+       données réelles de taille variable) : une police large et bien espacée, calibrée pour
+       remplir la page avec exactement ce nombre de lignes (voir test_print_fill_measure). */
+    if(blank) prof={f:14,p:'9px 7px',lp:'8px 7px',h1:17,sub:9.5,info:13,infoLbl:10.5};
+    else if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:12,infoLbl:10};
     else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:10.5,infoLbl:9};
     else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:9.5,infoLbl:8};
     else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:8.5,infoLbl:7};
