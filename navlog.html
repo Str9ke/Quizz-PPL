@@ -7648,14 +7648,15 @@ function printNavlogRecapTable(blank){
        base pour démarrer) — sinon la feuille imprimée reste minuscule en haut de page. On
        complète avec des lignes vides supplémentaires jusqu'à un nombre de points cible, dans le
        même format (alternance ligne point / ligne leg) que les lignes réelles.
-       15 = demandé explicitement (pas plus de 15 points, bien espacés, grande écriture — un
-       tableau à 62 points minuscules était illisible et inutilisable en vol). La police/le
-       padding de ces lignes ne suivent PLUS le barème "prof" ci-dessous (calibré pour rétrécir
-       un tableau dense de données réelles) : voir le profil dédié "blank" plus bas, calibré
-       empiriquement (mesure réelle de la hauteur rendue vs une page A4 avec marges 10mm, voir
-       test_print_fill_measure) pour ~92% de la hauteur de page avec EXACTEMENT 15 points. */
+       10 = calibré avec une MARGE DE SÉCURITÉ volontairement large : à 15 points, la feuille
+       tenait sur une seule page dans nos mesures (headless Chromium, marges @page 10mm) mais
+       débordait quand même sur 2 pages sur un vrai téléphone/imprimante (métriques de police
+       et marges d'impression réelles différentes, invérifiables depuis ici) — "pas plus d'une
+       page" prime sur "le plus de points possible". La police/le padding de ces lignes ne
+       suivent PLUS le barème "prof" ci-dessous (calibré pour rétrécir un tableau dense de
+       données réelles) : voir le profil dédié "blank" plus bas. */
     if(blank){
-      var wantPoints=15;
+      var wantPoints=10;
       if(segIdx.length<wantPoints){
         var fillerCount=wantPoints-segIdx.length;
         var fillerLegNum=(res.rows.match(/<tr class="leg-row">/g)||[]).length;
@@ -7692,7 +7693,7 @@ function printNavlogRecapTable(blank){
        tableau rempli juste en dessous, qui garantit toujours une seule feuille quel que soit le
        nombre de points. Tailles calibrées empiriquement (voir test_print_fill_measure) pour
        laisser aussi la place au profil d'altitude imprimé en bas de chaque feuille remplie. */
-    if(blank && totalRows<=30) prof={f:14,p:'8px 6px',lp:'7px 6px',h1:16,sub:9,info:11,infoLbl:9};
+    if(blank && totalRows<=30) prof={f:11,p:'5.5px 4.5px',lp:'4.5px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
     else if(totalRows<=6) prof={f:15,p:'7px 6px',lp:'3.8px 5px',h1:14,sub:8,info:10,infoLbl:8.5};
     else if(totalRows<=11) prof={f:11.5,p:'5px 4px',lp:'2.5px 4px',h1:11.5,sub:7,info:9,infoLbl:7.6};
     else if(totalRows<=16) prof={f:9.4,p:'3.7px 3px',lp:'1.9px 3.2px',h1:10,sub:6.2,info:8,infoLbl:6.8};
