@@ -7348,6 +7348,99 @@ function _computeFuelTimeSummary(){
 }
 window._computeFuelTimeSummary=_computeFuelTimeSummary;
 
+/* Ajoute des minutes à une heure "HH:MM" (modulo 24h) — utilisé pour calculer le "Départ prévu"
+   de chaque étape à l'impression (heure de départ globale + temps de bloc cumulé des étapes
+   précédentes), pour qu'il corresponde vraiment à l'heure réelle plutôt que d'afficher un tiret. */
+function _addMinToClock(hhmm, addMin){
+  var m=(hhmm||'').match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return hhmm||'—';
+  var total=(parseInt(m[1],10)*60+parseInt(m[2],10)+Math.round(addMin))%1440;
+  if(total<0) total+=1440;
+  var h=Math.floor(total/60), mi=total%60;
+  return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+
+/* Profil d'altitude STATIQUE (SVG autonome, sans interactivité) pour une plage d'indices
+   GLOBAUX du tableau waypoints — utilisé pour imprimer, sous CHAQUE feuille (une par étape), le
+   profil qui correspond exactement à CETTE étape (pas la route entière). Version volontairement
+   simplifiée de renderAltProfile() (pas de terrain/espaces aériens/crosshair : juste
+   dép/arr/points + montée-descente) puisque ce cache terrain est indexé sur la distance de la
+   ROUTE ENTIÈRE, pas d'une étape isolée, et qu'un graphique interactif n'a de toute façon aucun
+   sens sur une page imprimée. */
+function _buildStaticAltProfileSvg(fromIdx,toIdx){
+  if(fromIdx==null||toIdx==null||toIdx<=fromIdx) return '';
+  var sub=waypoints.slice(fromIdx,toIdx+1);
+  if(sub.length<2) return '';
+  var totalDist=0;for(var i=1;i<sub.length;i++) totalDist+=(sub[i].dist||0);
+  if(totalDist<=0) return '';
+  function wpElev(w){
+    var icao=(w.name||'').trim().toUpperCase();
+    return AIRPORT_ELEV[icao]!==undefined?AIRPORT_ELEV[icao]:0;
+  }
+  var wpAlts=[];
+  for(var i=0;i<sub.length;i++){
+    if(i===0||i===sub.length-1||sub[i].isEtape) wpAlts.push(wpElev(sub[i]));
+    else wpAlts.push(sub[i].altitude||parseInt(_v('cfgAlt'))||2300);
+  }
+  var maxAlt=0;for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
+  maxAlt=Math.ceil((maxAlt+600)/500)*500;if(maxAlt<1000) maxAlt=1000;
+
+  /* Dimensions compactes (mêmes proportions que le mode plein écran de renderAltProfile, déjà
+     calibré pour tenir dans une bande courte) : la feuille imprimée doit garder de la place
+     pour le tableau ET les bandeaux au-dessus, le graphique n'est qu'un complément. */
+  var W=700,H=100,ml=34,mr=8,mt=6,mb=18;
+  var cw=W-ml-mr,ch=H-mt-mb;
+  function xS(d){return ml+(d/totalDist)*cw;}
+  function yS(a){return mt+ch-((a/maxAlt)*ch);}
+
+  var CPR=300;
+  var pts=[{x:0,y:wpAlts[0]}];var cumDist=0;
+  for(var i=1;i<sub.length;i++){
+    var ld=sub[i].dist||0;
+    var la=wpAlts[i];
+    var pa=pts[pts.length-1].y,ad=la-pa;
+    if(ld>0&&Math.abs(ad)>50){
+      var td=Math.min(Math.abs(ad)/CPR,ld*0.65);
+      if(ad>0) pts.push({x:cumDist+td,y:la});
+      else pts.push({x:cumDist+ld-td,y:pa});
+    }
+    pts.push({x:cumDist+ld,y:la});
+    cumDist+=ld;
+  }
+  var pD='M'+xS(pts[0].x)+','+yS(pts[0].y);
+  for(var j=1;j<pts.length;j++) pD+=' L'+xS(pts[j].x)+','+yS(pts[j].y);
+  var fillD=pD+' L'+xS(totalDist)+','+(mt+ch)+' L'+xS(0)+','+(mt+ch)+' Z';
+
+  var yStep=maxAlt>4000?1000:500,yGrid='';
+  for(var alt=0;alt<=maxAlt;alt+=yStep){
+    var yy=yS(alt);
+    yGrid+='<line x1="'+ml+'" y1="'+yy+'" x2="'+(W-mr)+'" y2="'+yy+'" stroke="#ccc" stroke-width="0.6"/>'+
+           '<text x="'+(ml-4)+'" y="'+(yy+3)+'" text-anchor="end" font-size="7" fill="#666">'+alt+'</text>';
+  }
+  var xStep=totalDist>80?20:(totalDist>40?10:(totalDist>15?5:2)),xGrid='';
+  for(var d2=0;d2<=totalDist+0.01;d2+=xStep){
+    var xx=xS(Math.min(d2,totalDist));
+    xGrid+='<line x1="'+xx+'" y1="'+mt+'" x2="'+xx+'" y2="'+(mt+ch)+'" stroke="#ccc" stroke-width="0.6"/>'+
+           '<text x="'+xx+'" y="'+(mt+ch+11)+'" text-anchor="middle" font-size="7" fill="#666">'+Math.round(d2)+'</text>';
+  }
+
+  var wpMk='',cumD2=0;
+  for(var i=0;i<sub.length;i++){
+    if(i>0) cumD2+=(sub[i].dist||0);
+    var wx=xS(cumD2),wy=yS(wpAlts[i]);
+    wpMk+='<circle cx="'+wx+'" cy="'+wy+'" r="2.4" fill="#1565c0" stroke="#fff" stroke-width="1"/>';
+    wpMk+='<text x="'+wx+'" y="'+(wy-6)+'" text-anchor="middle" font-size="7" fill="#333">'+wpAlts[i]+'ft</text>';
+  }
+
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+
+    '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="#f5f5f5"/>'+
+    yGrid+xGrid+
+    '<path d="'+fillD+'" fill="rgba(21,101,192,.14)"/>'+
+    '<path d="'+pD+'" fill="none" stroke="#1565c0" stroke-width="1.5"/>'+
+    wpMk+
+  '</svg>';
+}
+
 function printNavlogRecapTable(blank){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
@@ -7390,6 +7483,11 @@ function printNavlogRecapTable(blank){
   var todayStr=new Date().toLocaleDateString('fr-FR');
 
   var sheetsHtml='';
+  /* Cumul du temps de bloc (roulage+vol+roulage) des étapes déjà traitées — sert à calculer le
+     "Départ prévu" RÉEL de chaque étape suivante (heure globale + ce cumul), au lieu d'un tiret
+     qui ne disait rien. Mis à jour à la fin de chaque itération, donc déjà à jour pour la
+     suivante (les étapes sont traitées dans l'ordre chronologique du vol). */
+  var cumTimeMinSoFar=0;
   segments.forEach(function(segIdx,segI){
     var isFirstSeg=(segI===0), isLastSeg=(segI===segments.length-1);
     var res=multiSheet?_buildRecapSegmentRows(segIdx,cfg,blank,isFirstSeg,isLastSeg,perfTakeoffWind,perfLandingWind):globalRes;
@@ -7403,6 +7501,12 @@ function printNavlogRecapTable(blank){
     var segTotals=multiSheet
       ? (fuelSummary.stageTotals[segI+1]||{dist:res.cumDist,timeMin:res.cumMin,fuel:res.cumFuel})
       : {dist:fuelSummary.totalDist,timeMin:fuelSummary.tripTimeMin,fuel:fuelSummary.tripFuel};
+
+    /* "Départ prévu" de CETTE étape = heure de départ globale + temps de bloc (roulage+vol) déjà
+       cumulé par les étapes précédentes — doit correspondre EXACTEMENT à l'heure d'arrivée
+       affichée sur la feuille de l'étape précédente (+ le roulage de reprise), pas un tiret. */
+    var depTimeStr=isFirstSeg?(cfg.depTime||'—'):_addMinToClock(cfg.depTime,cumTimeMinSoFar);
+    cumTimeMinSoFar+=fuelSummary.taxiD+segTotals.timeMin+fuelSummary.taxiA;
 
     var totRow='<tr class="tot-row">'+
       '<td colspan="7">TOTAL '+(multiSheet?'ÉTAPE '+(segI+1):'ROUTE')+'</td>'+
@@ -7421,7 +7525,7 @@ function printNavlogRecapTable(blank){
       '<div class="info-grid">'+
         '<div><b>Avion</b><br>'+(blank?'':escHTML(acReg))+'</div>'+
         '<div><b>Date</b><br>'+(blank?'':todayStr)+'</div>'+
-        '<div><b>Départ prévu</b><br>'+(blank?'':(isFirstSeg?escHTML(cfg.depTime||'—'):'—'))+'</div>'+
+        '<div><b>Départ prévu</b><br>'+(blank?'':escHTML(depTimeStr))+'</div>'+
         '<div><b>TAS</b><br>'+(blank?'':cfg.tas+' kt')+'</div>'+
         '<div><b>Alt. croisière</b><br>'+(blank?'':cfg.alt+' ft')+'</div>'+
         '<div><b>Déclinaison</b><br>'+(blank?'':(cfg.dev>=0?'+':'')+cfg.dev+'°')+'</div>'+
@@ -7499,17 +7603,34 @@ function printNavlogRecapTable(blank){
        rapport au reste, qui doit lui rester proportionnel au nombre de lignes pour garantir une
        seule feuille. */
     var prof;
-    /* Feuille VIERGE : nombre de lignes désormais FIXE (15 points cible, voir wantPoints
-       ci-dessus) — pas besoin du barème dégressif ci-dessous (pensé pour rétrécir un tableau de
-       données réelles de taille variable) : une police large et bien espacée, calibrée pour
-       remplir la page avec exactement ce nombre de lignes (voir test_print_fill_measure). */
-    if(blank) prof={f:14,p:'9px 7px',lp:'8px 7px',h1:17,sub:9.5,info:13,infoLbl:10.5};
-    else if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:12,infoLbl:10};
-    else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:10.5,infoLbl:9};
-    else if(totalRows<=16) prof={f:10.2,p:'4.5px 3.5px',lp:'2.3px 3.8px',h1:11,sub:6.7,info:9.5,infoLbl:8};
-    else if(totalRows<=22) prof={f:8.2,p:'3px 2.7px',lp:'1.7px 3px',h1:9.4,sub:5.9,info:8.5,infoLbl:7};
-    else if(totalRows<=30) prof={f:6.3,p:'1.9px 1.9px',lp:'1.2px 1.9px',h1:7.6,sub:5.2,info:7.5,infoLbl:6.2};
-    else prof={f:6,p:'1.7px 1.7px',lp:'1.1px 1.7px',h1:7.4,sub:5,info:7,infoLbl:5.8};
+    /* Feuille VIERGE : nombre de lignes désormais FIXE à 15 points (voir wantPoints ci-dessus) —
+       ne s'applique QUE quand cette limite a effectivement pu être tenue (totalRows<=30). Si
+       l'étape a DÉJÀ plus de 15 points réels (route déjà longue), on ne force plus une grande
+       police : ça ferait dépasser la page. On retombe alors sur le même barème dégressif que le
+       tableau rempli juste en dessous, qui garantit toujours une seule feuille quel que soit le
+       nombre de points. Tailles calibrées empiriquement (voir test_print_fill_measure) pour
+       laisser aussi la place au profil d'altitude imprimé en bas de chaque feuille remplie. */
+    if(blank && totalRows<=30) prof={f:14,p:'8px 6px',lp:'7px 6px',h1:16,sub:9,info:11,infoLbl:9};
+    else if(totalRows<=6) prof={f:15,p:'7px 6px',lp:'3.8px 5px',h1:14,sub:8,info:10,infoLbl:8.5};
+    else if(totalRows<=11) prof={f:11.5,p:'5px 4px',lp:'2.5px 4px',h1:11.5,sub:7,info:9,infoLbl:7.6};
+    else if(totalRows<=16) prof={f:9.4,p:'3.7px 3px',lp:'1.9px 3.2px',h1:10,sub:6.2,info:8,infoLbl:6.8};
+    else if(totalRows<=22) prof={f:7.6,p:'2.5px 2.3px',lp:'1.4px 2.5px',h1:8.7,sub:5.5,info:7.2,infoLbl:6};
+    else if(totalRows<=30) prof={f:5.9,p:'1.6px 1.6px',lp:'1px 1.6px',h1:7,sub:4.8,info:6.4,infoLbl:5.3};
+    else prof={f:5.6,p:'1.4px 1.4px',lp:'0.9px 1.4px',h1:6.8,sub:4.6,info:6,infoLbl:5};
+
+    /* Profil d'altitude imprimé EN BAS de CETTE feuille, propre à CETTE étape (jamais sur la
+       feuille vierge, où il n'y a de toute façon aucune donnée réelle à tracer). Bornes en
+       indices GLOBAUX du tableau waypoints (pas segIdx, qui exclut les points de circuit) : du
+       premier point de cette étape jusqu'au dernier point RÉEL qui lui appartient encore
+       (juste avant le premier point de l'étape suivante, ou la fin du tableau pour la dernière
+       étape) — pour inclure les circuits départ/arrivée de cette étape dans le tracé. */
+    var altProfileHtml='';
+    if(!blank){
+      var altFromIdx=segIdx[0];
+      var altToIdx=(segI<segments.length-1)?(segments[segI+1][0]-1):(waypoints.length-1);
+      var altSvg=_buildStaticAltProfileSvg(altFromIdx,altToIdx);
+      if(altSvg) altProfileHtml='<div class="alt-profile-print"><b style="display:block;font-size:'+prof.infoLbl+'px;text-transform:uppercase;color:#555;margin:5px 0 2px">Profil d\'altitude'+(multiSheet?' — étape '+(segI+1):'')+'</b>'+altSvg+'</div>';
+    }
 
     /* Bug corrigé : deux attributs style="..." sur la même balise <section> (page-break-after
        ET font-size) — un navigateur ignore le second attribut dupliqué, ce qui pouvait faire
@@ -7526,6 +7647,10 @@ function printNavlogRecapTable(blank){
         'th{font-size:'+Math.max(6,Math.round(prof.f*0.62*10)/10)+'px}'+
         'td.c-name .tag{font-size:'+(prof.f-2)+'px}'+
         'td.c-name .tag.windtag{font-size:'+Math.max(6,prof.f-4)+'px}'+
+        /* Numéro de leg illisible (chiffres coupés dès 2 chiffres, ex "10".."15" tronqués en
+           "1") avec le padding générique + une colonne à 4% : padding dédié plus serré, sur
+           une colonne élargie (voir colgroup ci-dessous), pour que 2 chiffres tiennent. */
+        'td.c-num,th.c-num{padding-left:2px;padding-right:2px}'+
       '</style>'+
       '<h1>'+(blank?'Tableau vierge (à remplir à la main)':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — ')+escHTML(segDepIcao)+' → '+escHTML(segArrIcao))+'</h1>'+
       '<p class="sub">'+(blank?'Points et cap à lister, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':''))+'</p>'+
@@ -7539,6 +7664,7 @@ function printNavlogRecapTable(blank){
         '<tbody>'+res.rows+totRow+'</tbody>'+
       '</table>'+
       fuelBlock+
+      altProfileHtml+
     '</section>';
   });
 
@@ -7559,7 +7685,7 @@ function printNavlogRecapTable(blank){
     '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'+
     'body{margin:0;padding:0;font-family:Arial,sans-serif;color:#111}'+
     '.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-bottom:6px}'+
-    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px}'+
+    '.info-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:2px 5px}'+
     '.info-grid div:nth-child(4n){border-right:none}'+
     '.info-grid div:nth-last-child(-n+4){border-bottom:none}'+
     '.info-grid b{display:block;text-transform:uppercase;color:#555;font-weight:700}'+
@@ -7568,9 +7694,9 @@ function printNavlogRecapTable(blank){
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
     'th{background:#333;color:#fff;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
-    'col.c-num{width:4%}col.c-name{width:14%}col.c-alt{width:6%}col.c-route{width:6%}'+
+    'col.c-num{width:6%}col.c-name{width:14%}col.c-alt{width:6%}col.c-route{width:6%}'+
     'col.c-wind{width:8%}col.c-wca{width:5%}col.c-cap{width:7%}col.c-dist{width:8%}'+
-    'col.c-gs{width:6%}col.c-ete{width:7%}col.c-eta{width:8%}col.c-fuel{width:7%}col.c-comment{width:14%}'+
+    'col.c-gs{width:6%}col.c-ete{width:7%}col.c-eta{width:8%}col.c-fuel{width:7%}col.c-comment{width:12%}'+
     'tbody tr.pt-row.alt td{background:#f2f2f2}'+
     '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
@@ -7592,12 +7718,13 @@ function printNavlogRecapTable(blank){
     'tr.tot-row td:first-child{text-align:left}'+
     'tr{page-break-inside:avoid}'+
     '.fuel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.4px solid #333;margin-top:6px}'+
-    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:3px 5px}'+
+    '.fuel-grid div{border-right:1px solid #333;border-bottom:1px solid #333;padding:2px 5px}'+
     '.fuel-grid div:nth-child(4n){border-right:none}'+
     '.fuel-grid div:nth-last-child(-n+4){border-bottom:none}'+
     '.fuel-grid b{display:block;text-transform:uppercase;color:#555;font-weight:700}'+
     '.fuel-grid .fuel-total{background:#ffe500}'+
     '.fuel-grid .fuel-total b{color:#111}'+
+    '.alt-profile-print{border:1.4px solid #333;border-top:none;padding:3px 5px 1px}'+
     '.sheet{page-break-inside:avoid}'+
     '</style></head><body>'+
     sheetsHtml+
