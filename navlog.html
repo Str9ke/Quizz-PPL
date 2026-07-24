@@ -6736,6 +6736,25 @@ function _arrivalViaCircuit(fieldIdx){
   return !!(prev && prev.ptType==='circuitArr');
 }
 
+/* Vrai si le point 'si' est un DOUBLON redondant du point qui le suit immédiatement : même nom
+   (ex: deux « EHMZ » de suite) et moins de 0,5 NM d'écart. Cas typique : un aérodrome saisi deux
+   fois en fin de route (point de compte-rendu + terrain, ou duplication à la composition d'un vol
+   à étapes), qui crée un leg « X → X » de ~0,2 NM totalement inutile. On masque alors le PREMIER
+   des deux du tableau (on garde le second, qui est l'arrivée/jonction) — le leg fantôme disparaît.
+   Sûr : ne s'applique qu'à deux points SUCCESSIFS de même nom quasi confondus (≠ dédoublonnage
+   agressif par proximité qui cassait les circuits, cf. correctif précédent), et jamais si le point
+   suivant est un point de circuit (géré par _arrivalViaCircuit). */
+function _isDupOfNextPoint(si){
+  if(si<=0) return false;
+  var a=waypoints[si], b=waypoints[si+1];
+  if(!a || !b) return false;
+  if(b.ptType) return false;
+  var na=(a.name||'').trim().toUpperCase(), nb=(b.name||'').trim().toUpperCase();
+  if(!na || na!==nb) return false;
+  if(a.lat==null||a.lon==null||b.lat==null||b.lon==null) return true;
+  return haversine(a.lat,a.lon,b.lat,b.lon) < 0.5;
+}
+
 /* Construit UNE table HTML (thead+tbody complets, avec tous les contrôles interactifs :
    renommage, altitude éditable, commentaires, boutons Dép/Arr) pour UN segment de points —
    utilisé pour chaque étape séparément quand le vol en a plusieurs (temps/numérotation propres
@@ -6882,7 +6901,7 @@ function renderNavlogRecapTable(){
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) shownIdx.push(si);
+    if((si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) && !_isDupOfNextPoint(si)) shownIdx.push(si);
   }
   var hiddenCount=waypoints.length-shownIdx.length;
 
@@ -7154,7 +7173,7 @@ function printNavlogRecapTable(blank){
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if(si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) shownIdx.push(si);
+    if((si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) && !_isDupOfNextPoint(si)) shownIdx.push(si);
   }
 
   /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes
