@@ -7734,11 +7734,34 @@ function setRoute(i,val){
 }
 window.setRoute=setRoute;
 
+/* Étape (_stages) à attribuer à un point INSÉRÉ entre 'beforeWp' et 'afterWp' : intersection des
+   étapes des deux voisins (cas courant : les deux dans la même étape), sinon repli sur l'étape du
+   voisin qui en a une. Sans ceci, un point ajouté au milieu d'une étape composée n'appartenait à
+   AUCUNE étape et n'était donc pas rattaché à son tableau/ses totaux carburant. Partagé par
+   insertWaypoint, addWaypoint et l'insertion par glisser sur la carte. */
+function _inheritStagesBetween(beforeWp, afterWp){
+  var s=null;
+  if(beforeWp && beforeWp._stages && afterWp && afterWp._stages){
+    s=beforeWp._stages.filter(function(x){return afterWp._stages.indexOf(x)>=0;});
+  }
+  if(!s || !s.length){
+    s=(beforeWp&&beforeWp._stages)?beforeWp._stages:((afterWp&&afterWp._stages)?afterWp._stages:null);
+  }
+  return s?s.slice():null;
+}
+window._inheritStagesBetween=_inheritStagesBetween;
+
 function addWaypoint(){
   var newWp={name:'',lat:null,lon:null,icon:'',dist:0,route:0};
   if(flightType==='local' && waypoints.length>=2){
+    var st=_inheritStagesBetween(waypoints[waypoints.length-2],waypoints[waypoints.length-1]);
+    if(st) newWp._stages=st;
     waypoints.splice(waypoints.length-1,0,newWp);
   } else {
+    /* En bout de route : hériter de l'étape du dernier point (la nouvelle destination
+       appartient à la dernière étape). */
+    var st2=(waypoints.length&&waypoints[waypoints.length-1]&&waypoints[waypoints.length-1]._stages)?waypoints[waypoints.length-1]._stages.slice():null;
+    if(st2) newWp._stages=st2;
     waypoints.push(newWp);
   }
   renderNavlog();
@@ -7747,7 +7770,10 @@ function addWaypoint(){
 window.addWaypoint=addWaypoint;
 
 function insertWaypoint(pos){
-  waypoints.splice(pos,0,{name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+  var newWp={name:'',lat:null,lon:null,icon:'',dist:0,route:0};
+  var st=_inheritStagesBetween(waypoints[pos-1],waypoints[pos]);
+  if(st) newWp._stages=st;
+  waypoints.splice(pos,0,newWp);
   renderNavlog();
   recalcNavlog();
 }
@@ -12428,15 +12454,8 @@ function _mapLineGrabCore(lat,lon){
      de rester un simple point de navigation supplémentaire. On prend l'INTERSECTION des étapes
      des deux extrémités du leg d'origine (le cas courant où les deux valent la même étape), avec
      repli sur l'union si jamais elles ne se recoupent pas. */
-  var _gbBefore=waypoints[insertAfterIdx], _gbAfter=waypoints[insertAfterIdx+1];
-  var _gbStages=null;
-  if(_gbBefore && _gbBefore._stages && _gbAfter && _gbAfter._stages){
-    _gbStages=_gbBefore._stages.filter(function(s){return _gbAfter._stages.indexOf(s)>=0;});
-  }
-  if(!_gbStages || !_gbStages.length){
-    _gbStages=(_gbBefore&&_gbBefore._stages)?_gbBefore._stages:((_gbAfter&&_gbAfter._stages)?_gbAfter._stages:null);
-  }
-  if(_gbStages) newWp._stages=_gbStages.slice();
+  var _gbStages=_inheritStagesBetween(waypoints[insertAfterIdx], waypoints[insertAfterIdx+1]);
+  if(_gbStages) newWp._stages=_gbStages;
   var newIdx=insertAfterIdx+1;
   waypoints.splice(newIdx,0,newWp);
   /* SURTOUT PAS de renderNavlog/recalcNavlog ici (pendant le geste) :
