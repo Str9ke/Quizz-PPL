@@ -837,6 +837,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       </div>
     </div>
 
+    <!-- Bandeau « construction d'une étape en cours » : affiché pendant que l'utilisateur bâtit
+         une nouvelle étape via le bouton « Nouvelle étape » du composeur (voir _startNewStage). -->
+    <div id="stageBuildBanner" style="display:none;position:sticky;top:0;z-index:60;margin-bottom:14px;padding:12px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(102,126,234,.22),rgba(118,75,162,.22));border:1px solid #7c4dff">
+      <div style="font-weight:700;font-size:.95em;margin-bottom:4px">🧭 Construction d'une nouvelle étape</div>
+      <div style="font-size:.82em;color:var(--text-secondary);margin-bottom:10px">Ajoutez le départ, les waypoints (circuits inclus) et l'arrivée de cette étape avec les outils habituels ci-dessous (carte, planche « Caractéristiques »). Quand la route est prête, enregistrez-la comme étape.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="stageBuildName" placeholder="Nom de l'étape (optionnel)" style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+        <button class="navlog-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:transparent;color:#fff" onclick="window._saveNewStage()">✅ Enregistrer cette étape</button>
+        <button class="navlog-btn" style="background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window._cancelNewStage()">✖ Annuler</button>
+      </div>
+    </div>
+
     <!-- Vol à étapes : composeur de dossiers — repliable, et repli automatique une fois le vol
          composé (voir la fin de _composeEtapes) pour ne pas encombrer l'écran une fois qu'on n'en
          a plus besoin, tout en restant réouvrable au besoin (ex. pour ajouter une étape). -->
@@ -846,9 +858,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span id="etapesComposerToggleLabel" style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">&#x25BE; Masquer</span>
       </div>
       <div id="etapesComposerBody">
-      <div style="font-size:.82em;color:var(--text-secondary);margin-bottom:8px">S&#xe9;lectionnez les dossiers &#xe0; enchaîner, dans l'ordre de vol souhait&#xe9; (cliquez dans l'ordre). Le vent de croisi&#xe8;re configur&#xe9; ci-dessous s'appliquera &#xe0; toutes les &#xe9;tapes. Un rafra&#xee;chissement m&#xe9;t&#xe9;o/NOTAM sera lanc&#xe9; apr&#xe8;s composition pour garder les infos les plus &#xe0; jour.</div>
+      <div style="font-size:.82em;color:var(--text-secondary);margin-bottom:8px">S&#xe9;lectionnez les dossiers &#xe0; enchaîner, dans l'ordre de vol souhait&#xe9; (cliquez dans l'ordre) &mdash; ou cr&#xe9;ez une nouvelle &#xe9;tape &#xe0; la vol&#xe9;e avec le bouton ci-dessous. Le vent de croisi&#xe8;re configur&#xe9; ci-dessous s'appliquera &#xe0; toutes les &#xe9;tapes. Un rafra&#xee;chissement m&#xe9;t&#xe9;o/NOTAM sera lanc&#xe9; apr&#xe8;s composition pour garder les infos les plus &#xe0; jour.</div>
       <div id="etapesDossierList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="navlog-btn" style="background:linear-gradient(135deg,#7c4dff,#5b8def);border-color:transparent;color:#fff" onclick="window._startNewStage()">&#x2795; Nouvelle &#xe9;tape</button>
         <button class="navlog-btn" onclick="window._composeEtapes()">&#x2705; Composer le vol &#xe0; &#xe9;tapes</button>
         <button class="navlog-btn" style="background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window._resetEtapesSelection()">&#x21BA; R&#xe9;initialiser la s&#xe9;lection</button>
       </div>
@@ -8497,6 +8510,108 @@ function _resetEtapesSelection(){
   _renderEtapesDossierList();
 }
 window._resetEtapesSelection=_resetEtapesSelection;
+
+/* ===== Constructeur d'étape à la volée =====
+   « ➕ Nouvelle étape » : au lieu de devoir d'abord enregistrer un vol complet comme dossier
+   séparé puis venir le sélectionner, on bascule le plan de travail en mode navigation vierge,
+   l'utilisateur construit la route de l'étape avec TOUS les outils habituels (carte, planche
+   Caractéristiques, circuits dép/arr…), puis « Enregistrer cette étape » la sauve comme dossier
+   ET l'ajoute directement à la sélection du composeur. On peut enchaîner autant d'étapes que
+   voulu, puis « Composer ». */
+window._stageBuildMode=false;
+
+function _startNewStage(){
+  if(window._stageBuildMode) return;
+  window._stageBuildMode=true;
+  flightType='nav';
+  var btns=document.querySelectorAll('.flight-type-btn');
+  if(btns[0]) btns[0].classList.remove('active');
+  if(btns[1]) btns[1].classList.add('active');
+  if(btns[2]) btns[2].classList.remove('active');
+  var composer=document.getElementById('etapesComposerCard');
+  if(composer) composer.style.display='none';
+  var banner=document.getElementById('stageBuildBanner');
+  if(banner) banner.style.display='';
+  var nameEl=document.getElementById('stageBuildName');
+  if(nameEl) nameEl.value='';
+  /* Route vierge : un départ (défaut EBSG, à changer) + un point d'arrivée vide à configurer. */
+  waypoints=[
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
+    {name:'',lat:null,lon:null,icon:'',dist:0,route:0}
+  ];
+  renderNavlog();
+  recalcNavlog();
+  if(typeof updateRouteMap==='function'){ try{ updateRouteMap(); }catch(e){} }
+  requestAnimationFrame(function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+}
+window._startNewStage=_startNewStage;
+
+function _backToComposerView(){
+  window._stageBuildMode=false;
+  var banner=document.getElementById('stageBuildBanner');
+  if(banner) banner.style.display='none';
+  flightType='etapes';
+  var btns=document.querySelectorAll('.flight-type-btn');
+  if(btns[0]) btns[0].classList.remove('active');
+  if(btns[1]) btns[1].classList.remove('active');
+  if(btns[2]) btns[2].classList.add('active');
+  var composer=document.getElementById('etapesComposerCard');
+  if(composer) composer.style.display='';
+  /* Plan de travail remis à un placeholder neutre (départ + 2 points vides) — il sera de toute
+     façon remplacé par la route composée dès qu'on clique « Composer ». */
+  waypoints=[
+    {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0},
+    {name:'',lat:null,lon:null,icon:'',dist:0,route:0},
+    {name:'',lat:null,lon:null,icon:'',dist:0,route:0}
+  ];
+  renderNavlog();
+  recalcNavlog();
+  _renderEtapesDossierList();
+  if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(true);
+  requestAnimationFrame(function(){
+    var c=document.getElementById('etapesComposerCard');
+    if(c) c.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+
+function _saveNewStage(){
+  if(!window._stageBuildMode) return;
+  var dep=(waypoints[0]&&waypoints[0].name||'').trim();
+  var arr=(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'').trim();
+  if(waypoints.length<2 || !dep || !arr){
+    _toast('⚠️ Configurez au moins un départ ET une arrivée pour cette étape','error',3200);
+    return;
+  }
+  var nameEl=document.getElementById('stageBuildName');
+  var name=(nameEl&&nameEl.value.trim())||(dep+' → '+arr);
+  var dossier={
+    id:Date.now(),
+    syncCode:(typeof _getSyncCode==='function')?_getSyncCode():undefined,
+    name:name,
+    date:new Date().toISOString(),
+    config:(typeof getConfig==='function')?getConfig():{},
+    waypoints:JSON.parse(JSON.stringify(waypoints)),
+    reserveMode:reserveMode,
+    flightType:'nav',
+    _cloudSynced:false
+  };
+  var dossiers=getDossiers();
+  dossiers.push(dossier);
+  setDossiers(dossiers);
+  if(typeof _fbSaveDossier==='function'){ try{ _fbSaveDossier(dossier); }catch(e){} }
+  if(typeof renderDossierList==='function'){ try{ renderDossierList(); }catch(e){} }
+  /* Ajouter directement l'étape fraîchement créée à la sélection du composeur, dans l'ordre. */
+  if(_etapesSelection.indexOf(dossier.id)<0) _etapesSelection.push(dossier.id);
+  _toast('✅ Étape « '+name+' » ajoutée. « ➕ Nouvelle étape » pour la suivante, ou « ✅ Composer » quand tout est prêt.','success',5000);
+  _backToComposerView();
+}
+window._saveNewStage=_saveNewStage;
+
+function _cancelNewStage(){
+  if(!window._stageBuildMode) return;
+  _backToComposerView();
+}
+window._cancelNewStage=_cancelNewStage;
 
 function _composeEtapes(){
   if(_etapesSelection.length<2){
