@@ -7056,9 +7056,13 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     if(k===0 && windBadgeFirst && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
     else if(k===segIdx.length-1 && windBadgeLast && perfLandingWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfLandingWind.dir)+'°/'+Math.round(perfLandingWind.spd)+'kt piste</span>';
 
+    /* Impression VIERGE : la colonne Point est laissée entièrement vide (ni nom de waypoint, ni
+       rôle Départ/Arrivée, ni tag) — l'utilisateur remplit tout à la main. Le découpage
+       visuel lignes-point / lignes-leg suffit à structurer le formulaire. */
+    var nameCellHtml=blank?'':(escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+viaCircuitTag+windBadge);
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num"></td>'+
-      '<td class="c-name">'+escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+viaCircuitTag+windBadge+'</td>'+
+      '<td class="c-name">'+nameCellHtml+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
       '<td class="dim">—</td>'+
       '<td class="dim">—</td>'+
@@ -7114,9 +7118,12 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     }
     prevLegAlt=nextAlt;
 
+    /* Impression vierge : la ligne de leg garde son numéro (structure) mais pas le nom de
+       destination — à remplir à la main. */
+    var legNameHtml=blank?'':('↳ vers '+escHTML(nextName));
     rows+='<tr class="leg-row">'+
       '<td class="c-num">'+legNum+'</td>'+
-      '<td class="c-name leg-arrow">↳ vers '+escHTML(nextName)+'</td>'+
+      '<td class="c-name leg-arrow">'+legNameHtml+'</td>'+
       '<td'+altCellCls+'>'+nextAltTxt+altChangeTxt+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td>'+windTxt+'</td>'+
