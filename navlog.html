@@ -4553,11 +4553,10 @@ function setFlightType(type){
         {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:10,route:0}
       ];
     } else if(type==='etapes'){
-      /* Composé via le panneau de sélection de dossiers ; en attendant, un point de départ vide */
-      waypoints=[
-        {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
-      ];
-      for(var i2=0;i2<2;i2++) waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0});
+      /* Composé via le composeur de dossiers (bouton « ➕ Nouvelle étape » ou sélection de
+         dossiers enregistrés) — plan de travail vide tant que rien n'a été composé, sans
+         aérodrome ni points placeholder préremplis qui ressemblaient à un faux mini-vol. */
+      waypoints=[];
     } else {
       waypoints=[
         {name:'EBSG',lat:AIRPORT_COORDS.EBSG.lat,lon:AIRPORT_COORDS.EBSG.lon,icon:'tower',dist:0,route:0}
@@ -6785,6 +6784,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
     var delBtn='<button class="nl-recap-del-btn" onclick="window._removeRecapWaypoint('+i+')" title="Supprimer ce point">✕</button>';
+    var splitBtn=canType?'<button class="nl-recap-type-btn" onclick="window._splitStageAtWaypoint('+i+')" title="Couper la route en 2 étapes à ce point : un nouveau tableau Navlog apparaît en dessous pour la suite">✂️ Couper</button>':'';
     var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
 
     /* Ligne POINT = uniquement le NOM du waypoint (+ rôle/actions/commentaire). Les colonnes de
@@ -6813,7 +6813,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td></td>'+
       '<td></td>'+
       '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
-      '<td class="nl-recap-type">'+typeBtn+delBtn+'</td>'+
+      '<td class="nl-recap-type">'+typeBtn+splitBtn+delBtn+'</td>'+
     '</tr>';
 
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
@@ -7080,19 +7080,20 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
        rôle Départ/Arrivée, ni tag) — l'utilisateur remplit tout à la main. Le découpage
        visuel lignes-point / lignes-leg suffit à structurer le formulaire. */
     var nameCellHtml=blank?'':(escHTML(name)+(roleLabel?' <span class="tag">'+roleLabel+'</span>':'')+viaCircuitTag+windBadge);
+    var dimDash=blank?'':'—';
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num"></td>'+
       '<td class="c-name">'+nameCellHtml+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
-      '<td class="dim">—</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+etaCell+'</td>'+
-      '<td class="dim">—</td>'+
+      '<td class="dim">'+dimDash+'</td>'+
       '<td class="c-comment">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
     '</tr>';
 
@@ -7255,6 +7256,35 @@ function printNavlogRecapTable(blank){
        plusieurs pages), quitte à ce que l'écriture à la main soit plus petite sur une étape à
        beaucoup de points. */
     var totalRows=segIdx.length+(segIdx.length-1)+1;
+    /* Feuille VIERGE : l'utilisateur remplit tout à la main, donc le nombre de lignes ne doit
+       pas dépendre du nombre de points réellement placés sur la carte (souvent 2-3, une simple
+       base pour démarrer) — sinon la feuille imprimée reste minuscule en haut de page. On
+       complète avec des lignes vides supplémentaires jusqu'à un nombre de points cible, dans le
+       même format (alternance ligne point / ligne leg) que les lignes réelles. */
+    if(blank){
+      var wantPoints=14;
+      if(segIdx.length<wantPoints){
+        var fillerCount=wantPoints-segIdx.length;
+        var fillerLegNum=(res.rows.match(/<tr class="leg-row">/g)||[]).length;
+        for(var fj=0;fj<fillerCount;fj++){
+          fillerLegNum++;
+          res.rows+='<tr class="leg-row">'+
+            '<td class="c-num">'+fillerLegNum+'</td>'+
+            '<td class="c-name leg-arrow"></td>'+
+            '<td></td><td></td><td></td><td></td><td class="cap"></td><td></td><td></td><td></td><td></td><td></td>'+
+            '<td class="c-comment"></td>'+
+          '</tr>'+
+          '<tr class="pt-row'+((segIdx.length+fj)%2?' alt':'')+'">'+
+            '<td class="c-num"></td>'+
+            '<td class="c-name"></td>'+
+            '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
+            '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
+            '<td class="c-comment"></td>'+
+          '</tr>';
+        }
+        totalRows=wantPoints+(wantPoints-1)+1;
+      }
+    }
     var prof;
     if(totalRows<=6) prof={f:16,p:'8.5px 7px',lp:'4.5px 6px',h1:15,sub:8.6,info:8.6,infoLbl:7.5};
     else if(totalRows<=11) prof={f:12.5,p:'6px 4.5px',lp:'3px 4.5px',h1:12.5,sub:7.5,info:7.5,infoLbl:6.4};
@@ -7279,8 +7309,8 @@ function printNavlogRecapTable(blank){
         'td.c-name .tag{font-size:'+(prof.f-2)+'px}'+
         'td.c-name .tag.windtag{font-size:'+Math.max(6,prof.f-4)+'px}'+
       '</style>'+
-      '<h1>'+(blank?'Tableau vierge (à remplir à la main) — ':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — '))+escHTML(segDepIcao)+' → '+escHTML(segArrIcao)+'</h1>'+
-      '<p class="sub">'+(blank?'Feuille vierge générée le '+todayStr+' — points et cap listés, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':''))+'</p>'+
+      '<h1>'+(blank?'Tableau vierge (à remplir à la main)':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — ')+escHTML(segDepIcao)+' → '+escHTML(segArrIcao))+'</h1>'+
+      '<p class="sub">'+(blank?'Points et cap à lister, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':''))+'</p>'+
       infoBlock+
       '<table>'+
         '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
@@ -7832,6 +7862,38 @@ function toggleEtape(i){
   });
 }
 window.toggleEtape=toggleEtape;
+
+/* Coupe la route en 2 étapes à partir du point d'index 'i' (dans le tableau complet
+   waypoints) : ce point devient la jonction commune entre les 2 étapes (dernier point de la
+   1ère, premier point de la 2e), exactement comme une jonction fusionnée produite par
+   _composeEtapes (voir _computeStageSegments, cas "prevStages.length>1"). Réutilise donc
+   tel quel tout le découpage déjà en place (tableau à l'écran, impression multi-feuilles,
+   Carbu par étape) sans dupliquer cette logique — un 2e <table> Navlog apparaît simplement
+   en dessous, numérotation legs/temps repartant à 1/00:00. Les nouveaux points ajoutés après
+   coup en bout de route héritent automatiquement de l'étape 2 (voir addWaypoint). */
+function _splitStageAtWaypoint(i){
+  if(!waypoints[i]) return;
+  if(i<=0 || i>=waypoints.length-1){
+    if(typeof _toast==='function') _toast('⚠️ Impossible de couper sur le premier ou le dernier point','error',2800);
+    return;
+  }
+  var wp=waypoints[i];
+  if(!confirm('Couper la route en 2 étapes à partir de « '+(wp.name||'ce point')+' » ?\n\nCe point devient la jonction : un nouveau tableau Navlog apparaîtra en dessous pour la suite (numérotation des legs et du temps repartant à zéro).')) return;
+  var maxStage=0;
+  for(var w=0;w<waypoints.length;w++){
+    var st=waypoints[w]._stages;
+    if(st) for(var s=0;s<st.length;s++){ if(st[s]>maxStage) maxStage=st[s]; }
+  }
+  var stageA=maxStage+1, stageB=maxStage+2;
+  for(var w2=0;w2<i;w2++) waypoints[w2]._stages=[stageA];
+  waypoints[i]._stages=[stageA,stageB];
+  for(var w3=i+1;w3<waypoints.length;w3++) waypoints[w3]._stages=[stageB];
+  renderNavlog();
+  recalcNavlog();
+  if(typeof updateRouteMap==='function') updateRouteMap();
+  if(typeof _toast==='function') _toast('✂️ Route coupée en 2 étapes','',3200);
+}
+window._splitStageAtWaypoint=_splitStageAtWaypoint;
 
 /* Cycle nav -> circuit départ -> circuit arrivée -> nav. Ces points restent dans le
    calcul complet (temps de vol / carburant total) mais sont retirés du tableau
@@ -8847,7 +8909,11 @@ function _scheduleAutosave(){
 }
 function _doAutosave(){
   try{
-    if(!waypoints||waypoints.length===0){ localStorage.removeItem(NAVLOG_AUTOSAVE_KEY); return; }
+    /* waypoints vide n'est PAS forcément "rien à sauver" : un vol à étapes tout juste basculé
+       sur cet onglet (avant toute composition de dossiers) a délibérément 0 waypoint (voir
+       setFlightType) — sans sauver flightType ici, un rechargement de page perdait ce choix
+       d'onglet et cachait le bouton « ➕ Nouvelle étape » derrière l'onglet Nav par défaut. */
+    if(!waypoints){ localStorage.removeItem(NAVLOG_AUTOSAVE_KEY); return; }
     var snap={
       config:getConfig(),
       waypoints:JSON.parse(JSON.stringify(waypoints)),
@@ -8873,7 +8939,7 @@ function _restoreAutosaveIfAny(){
   if(!raw) return;
   var snap;
   try{ snap=JSON.parse(raw); }catch(e){ return; }
-  if(!snap||!snap.waypoints||!snap.waypoints.length||!snap.config) return;
+  if(!snap||!snap.waypoints||!snap.config) return;
   var cfg=snap.config;
   var setVal=function(id,v){ var el=document.getElementById(id); if(el&&v!==undefined&&v!==null) el.value=v; };
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
@@ -8911,6 +8977,14 @@ function _restoreAutosaveIfAny(){
     }
     var _composerCard=document.getElementById('etapesComposerCard');
     if(_composerCard) _composerCard.style.display=(flightType==='etapes')?'':'none';
+    /* Le composeur se replie automatiquement après une composition (voir fin de
+       _composeEtapes) — sans ceci, cet état replié survivait à la restauration
+       automatique, laissant le bouton « ➕ Nouvelle étape » caché derrière un
+       « ▸ Afficher » que rien ne signalait comme contenant l'action recherchée. */
+    if(flightType==='etapes'){
+      if(typeof _renderEtapesDossierList==='function') _renderEtapesDossierList();
+      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(true);
+    }
   }
   waypoints=snap.waypoints;
   window._etapesStageCount=snap.etapesStageCount||0;
