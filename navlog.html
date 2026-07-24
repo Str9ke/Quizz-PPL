@@ -448,6 +448,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td{background:rgba(255,167,38,.1)}
 .nl-recap-table td.nl-recap-name,.nl-recap-table th:first-child{position:sticky;left:0;z-index:2;background:var(--bg-container)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td.nl-recap-name{background:rgba(255,167,38,.16)}
+.nl-recap-table tr.nl-recap-leg-row.nl-recap-etape td.nl-recap-name{background:rgba(255,167,38,.16)}
 .nl-recap-table tbody tr.nl-recap-point-row:hover td.nl-recap-name{background:rgba(102,126,234,.16)}
 /* La ligne POINT n'a de vraies données que dans la cellule Nom (Route/Vent/Cap/Dist/GS/ETE ne
    s'appliquent pas à un point isolé, juste des tirets) — elle prenait pourtant la même hauteur
@@ -6792,11 +6793,16 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
   /* Altitude de référence pour détecter un changement : celle du point de départ du segment,
      mise à jour à chaque leg (voir plus bas). */
   var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
+  /* UNE seule ligne par point (pas une ligne "point" vide + une ligne "leg" séparée) : chaque
+     point (sauf le départ) porte à la fois les données du leg qui y mène ET ses propres nom/
+     rôle/actions (Dép/Arr/Couper/✕). Le départ (k=0), qui n'a pas de leg entrant, garde une
+     ligne à lui sans données de navigation (rien à y afficher). Ancienne version : une ligne
+     "point" avec seulement le nom, suivie d'une ligne "leg" séparée avec les données — deux
+     lignes pour une seule information utile, avec une ligne à moitié vide au milieu. */
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
     var wp=waypoints[i];
     var name=wp.name||('WP'+(i+1));
-    var alt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
     var canType=(i>0 && i<waypoints.length-1);
     var typeBtn=canType
       ? '<button class="nl-recap-type-btn" onclick="window.setCircuitType('+i+',\'circuitDep\',false)" title="Marquer ce point comme circuit départ">🛫 Dép</button>'+
@@ -6811,49 +6817,50 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     }
     var delBtn='<button class="nl-recap-del-btn" onclick="window._removeRecapWaypoint('+i+')" title="Supprimer ce point">✕</button>';
     var splitBtn=canType?'<button class="nl-recap-type-btn" onclick="window._splitStageAtWaypoint('+i+')" title="Couper la route en 2 étapes à ce point : un nouveau tableau Navlog apparaît en dessous pour la suite">✂️ Couper</button>':'';
-    var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
+    var actionsHtml=typeBtn+splitBtn+delBtn;
+    var nameInputHtml='<input class="nl-recap-name-input" data-idx="'+i+'" value="'+escHTML(name)+'" '+
+        'size="'+Math.max(3,Math.min(10,name.length||4))+'" '+
+        'oninput="window._syncWaypointName('+i+',this.value,this)" '+
+        'title="Renommer ce point">';
+    var tagsHtml=(wp.isEtape?' 🟠':'')+(roleLabel?' <span class="nl-recap-role-tag">'+roleLabel+'</span>':'')+viaCircuitTag+unconfWarning;
 
-    /* Ligne POINT = uniquement le NOM du waypoint (+ rôle/actions/commentaire). Les colonnes de
-       navigation (Alt, Route, Cap, Dist, GS, ETE, ETA) sont laissées VIDES ici — ce sont des
-       caractéristiques de LEG, pas de point : elles n'ont de sens que sur la ligne leg qui
-       s'intercale entre deux points. Avant, ces cellules affichaient des tirets « — » qui
-       donnaient une grande ligne à moitié vide, inutile, à hauteur du nom. L'altitude du départ
-       reste modifiable via la ligne leg juste en dessous. */
-    rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
-      '<td class="nl-recap-name">'+
-        '<span class="nl-recap-num-badge">'+(k+1)+'</span>'+
-        '<input class="nl-recap-name-input" data-idx="'+i+'" value="'+escHTML(name)+'" '+
-          'size="'+Math.max(3,Math.min(10,name.length||4))+'" '+
-          'oninput="window._syncWaypointName('+i+',this.value,this)" '+
-          'title="Renommer ce point">'+
-        (wp.isEtape?' 🟠':'')+
-        (roleLabel?' <span class="nl-recap-role-tag">'+roleLabel+'</span>':'')+
-        viaCircuitTag+
-        unconfWarning+
-      '</td>'+
-      '<td class="nl-recap-point-fill" colspan="7"></td>'+
-      '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
-      '<td class="nl-recap-type">'+typeBtn+splitBtn+delBtn+'</td>'+
-    '</tr>';
+    if(k===0){
+      /* Départ : pas de leg entrant, rien à afficher dans les colonnes de navigation. */
+      var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
+      rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
+        '<td class="nl-recap-name"><span class="nl-recap-num-badge">1</span>'+nameInputHtml+tagsHtml+'</td>'+
+        '<td class="nl-recap-point-fill" colspan="7"></td>'+
+        '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
+        '<td class="nl-recap-type">'+delBtn+'</td>'+
+      '</tr>';
+      continue;
+    }
 
-    if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
-
-    var nextI=segIdx[k+1];
+    var prevI=segIdx[k-1];
+    var prevWp=waypoints[prevI];
+    var prevName=prevWp.name||('WP'+(prevI+1));
     /* Dernier leg menant à un aérodrome d'arrivée précédé de ses points de circuit arrivée :
        ne PAS dessiner ce leg (il sauterait par-dessus les points de circuit masqués et
-       simulerait un "direct piste" — le leg fantôme signalé). L'arrivée est déjà marquée
-       « 🛬 via circuit » sur la ligne du point d'arrivée. */
-    if(k+1===segIdx.length-1 && _arrivalViaCircuit(nextI)) continue;
-
-    var next=waypoints[nextI];
-    var nextName=next.name||('WP'+(nextI+1));
-    var dist=0,routeTrue=0;
-    if(wp.lat!==null&&wp.lon!==null&&next.lat!==null&&next.lon!==null){
-      dist=Math.round(haversine(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
-      routeTrue=Math.round(trueBearing(wp.lat,wp.lon,next.lat,next.lon)*10)/10;
+       simulerait un "direct piste" — le leg fantôme signalé). Ligne quand même émise pour ce
+       point (arrivée), simplement sans données de navigation, avec le tag "via circuit". */
+    if(k===segIdx.length-1 && isArrivalViaCircuit){
+      var ptCommentHtml2='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
+      rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
+        '<td class="nl-recap-name"><span class="nl-recap-num-badge">'+(k+1)+'</span>'+nameInputHtml+tagsHtml+'</td>'+
+        '<td class="nl-recap-point-fill" colspan="7"></td>'+
+        '<td class="nl-recap-comment">'+ptCommentHtml2+'</td>'+
+        '<td class="nl-recap-type">'+delBtn+'</td>'+
+      '</tr>';
+      continue;
     }
-    var nextAlt=next.altitude||(parseInt(_v('cfgAlt'))||2300);
-    var leg=calcLeg(dist,routeTrue,cfg,next.legWind,nextAlt);
+
+    var dist=0,routeTrue=0;
+    if(prevWp.lat!==null&&prevWp.lon!==null&&wp.lat!==null&&wp.lon!==null){
+      dist=Math.round(haversine(prevWp.lat,prevWp.lon,wp.lat,wp.lon)*10)/10;
+      routeTrue=Math.round(trueBearing(prevWp.lat,prevWp.lon,wp.lat,wp.lon)*10)/10;
+    }
+    var nextAlt=wp.altitude||(parseInt(_v('cfgAlt'))||2300);
+    var leg=calcLeg(dist,routeTrue,cfg,wp.legWind,nextAlt);
     cumMin+=leg.ete*60;
     legNum++;
     var routeM=Math.round(((routeTrue+cfg.dev)%360+360)%360);
@@ -6865,7 +6872,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
     var legEtaStr=cumMin?formatETA(cumMin):'--:--';
 
-    var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(next._legComment||'')+'" data-idx="'+nextI+'" data-field="leg" onchange="window._setRecapComment('+nextI+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
+    var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._legComment||'')+'" data-idx="'+i+'" data-field="leg" onchange="window._setRecapComment('+i+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
 
     /* Alerte de changement d'altitude : compare l'altitude de CE leg à celle du leg PRÉCÉDENT
        (ou à l'altitude de départ pour le tout premier leg) — c'est CE leg qui doit monter/
@@ -6882,10 +6889,14 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     /* Flèche explicite ENTRE les deux points du leg (nom départ → nom arrivée), plutôt que
        juste "vers X" — pour que ce soit sans ambiguïté quel tronçon cette ligne décrit, en
        particulier une fois plusieurs tableaux séparés par étape. Numéro de LEG (pas de point)
-       affiché ici, propre à ce segment (redémarre à 1 à chaque étape). */
-    rows+='<tr class="nl-recap-leg-row" onmouseenter="window._highlightRecapLeg('+i+','+nextI+')" onmouseleave="window._clearRecapLegHighlight()">'+
-      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> '+escHTML(name)+' → '+escHTML(nextName)+'</td>'+
-      '<td class="'+altCellClass.trim()+'"><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+nextI+'" onchange="window._setRecapAlt('+nextI+',this.value)" title="Altitude pour ce segment (éditable)">'+altChangeHtml+'</td>'+
+       affiché ici, propre à ce segment (redémarre à 1 à chaque étape). Nom du point d'ARRIVÉE de
+       ce leg toujours éditable (input), comme avant sur sa propre ligne "point" — plus besoin
+       d'une ligne séparée pour ça. Actions (Dép/Arr/Couper/✕) du point d'arrivée regroupées ici
+       aussi : elles concernaient CE point, pas "le leg" au sens abstrait, mais vivent maintenant
+       sur son unique ligne. */
+    rows+='<tr class="nl-recap-leg-row'+(wp.isEtape?' nl-recap-etape':'')+'" onmouseenter="window._highlightRecapLeg('+prevI+','+i+')" onmouseleave="window._clearRecapLegHighlight()">'+
+      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> '+escHTML(prevName)+' → '+nameInputHtml+tagsHtml+'</td>'+
+      '<td class="'+altCellClass.trim()+'"><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude pour ce segment (éditable)">'+altChangeHtml+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
       '<td>'+distTxt+'</td>'+
@@ -6893,7 +6904,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td>'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td class="nl-recap-comment">'+legCommentHtml+'</td>'+
-      '<td></td>'+
+      '<td class="nl-recap-type">'+actionsHtml+'</td>'+
     '</tr>';
   }
   var depName=(waypoints[segIdx[0]]&&waypoints[segIdx[0]].name)||'?';
