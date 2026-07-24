@@ -6766,13 +6766,14 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       unconfWarning='<button class="wp-unconfigured-tag" onclick="window.removeUnconfiguredWaypoint('+i+')" title="Ce point n’a pas de coordonnées : cliquer pour le supprimer (ou configurez-le via la planche NavLog plus bas).">⚠️ non configuré — supprimer ✕</button>';
     }
     var delBtn='<button class="nl-recap-del-btn" onclick="window._removeRecapWaypoint('+i+')" title="Supprimer ce point">✕</button>';
-    var isDep=(k===0);
-    var altCellHtml=isDep
-      ? '<input class="nl-recap-alt-input" type="number" step="100" value="'+alt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude à ce point (éditable)">'
-      : '<span class="nl-recap-dim">—</span>';
-    var etaCellHtml=isDep?'00:00':'<span class="nl-recap-dim">—</span>';
     var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
 
+    /* Ligne POINT = uniquement le NOM du waypoint (+ rôle/actions/commentaire). Les colonnes de
+       navigation (Alt, Route, Cap, Dist, GS, ETE, ETA) sont laissées VIDES ici — ce sont des
+       caractéristiques de LEG, pas de point : elles n'ont de sens que sur la ligne leg qui
+       s'intercale entre deux points. Avant, ces cellules affichaient des tirets « — » qui
+       donnaient une grande ligne à moitié vide, inutile, à hauteur du nom. L'altitude du départ
+       reste modifiable via la ligne leg juste en dessous. */
     rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
       '<td class="nl-recap-name">'+
         '<span class="nl-recap-num-badge">'+(k+1)+'</span>'+
@@ -6785,13 +6786,13 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
         viaCircuitTag+
         unconfWarning+
       '</td>'+
-      '<td>'+altCellHtml+'</td>'+
-      '<td class="nl-recap-dim">—</td>'+
-      '<td class="nl-recap-dim">—</td>'+
-      '<td class="nl-recap-dim">—</td>'+
-      '<td class="nl-recap-dim">—</td>'+
-      '<td class="nl-recap-dim">—</td>'+
-      '<td>'+etaCellHtml+'</td>'+
+      '<td></td>'+
+      '<td></td>'+
+      '<td></td>'+
+      '<td></td>'+
+      '<td></td>'+
+      '<td></td>'+
+      '<td></td>'+
       '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
       '<td class="nl-recap-type">'+typeBtn+delBtn+'</td>'+
     '</tr>';
