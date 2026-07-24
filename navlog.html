@@ -434,6 +434,14 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border-color)}
 .nl-recap-table{width:100%;border-collapse:collapse;font-size:.82em;min-width:680px}
 .nl-recap-table th,.nl-recap-table td{border:1px solid var(--border-color);padding:7px 9px;text-align:center;white-space:nowrap}
+/* border-collapse:collapse fait gagner la bordure la plus "forte" des 2 cellules qui partagent
+   un bord — retirer la bordure horizontale d'UN SEUL côté (ex: la cellule fusionnée de la ligne
+   point) ne suffit donc à rien tant que la ligne LEG voisine garde la sienne : la ligne
+   horizontale restait visible malgré la fusion des cases. Seule solution : aucune bordure
+   horizontale nulle part dans le corps du tableau, uniquement les bordures verticales (colonnes)
+   — le découpage point/leg reste lisible via la couleur de fond + le liseré bleu, pas via des
+   traits. */
+.nl-recap-table tbody td{border-top:none;border-bottom:none}
 .nl-recap-table thead th{background:rgba(102,126,234,.14);color:var(--text-secondary);font-weight:700;font-size:.74em;text-transform:uppercase;letter-spacing:.02em}
 .nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;min-width:82px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 4px}
 .nl-recap-table tbody tr.nl-recap-point-row:hover td{background:rgba(102,126,234,.1)}
@@ -6740,14 +6748,21 @@ function _arrivalViaCircuit(fieldIdx){
   return !!(prev && prev.ptType==='circuitArr');
 }
 
-/* Vrai si le point 'si' est un DOUBLON redondant du point qui le suit immédiatement : même nom
-   (ex: deux « EHMZ » de suite) et moins de 0,5 NM d'écart. Cas typique : un aérodrome saisi deux
-   fois en fin de route (point de compte-rendu + terrain, ou duplication à la composition d'un vol
-   à étapes), qui crée un leg « X → X » de ~0,2 NM totalement inutile. On masque alors le PREMIER
-   des deux du tableau (on garde le second, qui est l'arrivée/jonction) — le leg fantôme disparaît.
-   Sûr : ne s'applique qu'à deux points SUCCESSIFS de même nom quasi confondus (≠ dédoublonnage
-   agressif par proximité qui cassait les circuits, cf. correctif précédent), et jamais si le point
-   suivant est un point de circuit (géré par _arrivalViaCircuit). */
+/* Vrai si le point 'si' est un DOUBLON redondant du point qui le suit immédiatement dans le
+   tableau COMPLET (même nom, ex: deux « EHMZ » de suite) et moins de 0,5 NM d'écart. Cas
+   typique : un aérodrome saisi deux fois en fin de route (point de compte-rendu + terrain, ou
+   duplication à la composition d'un vol à étapes), qui crée un leg « X → X » de ~0,2 NM
+   totalement inutile. On masque alors le PREMIER des deux du tableau (on garde le second, qui
+   est l'arrivée/jonction) — le leg fantôme disparaît.
+   IMPORTANT : comparer STRICTEMENT au voisin immédiat (waypoints[si+1]), jamais en sautant par-
+   dessus des points de circuit masqués pour trouver "le prochain point affiché" — un point de
+   circuit peut légitimement séparer un point d'ENTRÉE dans le circuit (même nom d'aérodrome,
+   rôle différent) du point d'arrivée final ; les traiter comme un doublon effaçait le point
+   d'entrée ET, combiné à _arrivalViaCircuit qui masque alors aussi le leg direct restant,
+   supprimait toute distance réelle entre le dernier point de navigation et l'aérodrome (route
+   entière affichée à 0 NM). Sûr : ne s'applique qu'à deux points SUCCESSIFS de même nom quasi
+   confondus, et jamais si le point suivant est un point de circuit (géré par
+   _arrivalViaCircuit). */
 function _isDupOfNextPoint(si){
   if(si<=0) return false;
   var a=waypoints[si], b=waypoints[si+1];
@@ -6756,13 +6771,11 @@ function _isDupOfNextPoint(si){
   var na=(a.name||'').trim().toUpperCase(), nb=(b.name||'').trim().toUpperCase();
   if(!na || na!==nb) return false;
   if(a.lat==null||a.lon==null||b.lat==null||b.lon==null) return true;
-  /* Juste avant l'arrivée finale de TOUTE la route (dernier index du tableau waypoints, pas
-     seulement du segment affiché) : même aérodrome saisi deux fois de suite, quelle que soit la
-     distance — contrairement au cas général (<0,5NM). Un point de circuit peut être
-     physiquement à 1-2NM du point d'arrivée réel tout en désignant conceptuellement "le même
-     aérodrome atteint deux fois" (ex: jonction de deux dossiers composés qui n'a pas fusionné
-     par nom exact). Sans ce cas, un leg fantôme "aérodrome → même aérodrome" (1-2NM, donc pas
-     capté par le seuil général) restait affiché juste avant l'arrivée. */
+  /* Juste avant l'arrivée finale de TOUTE la route (dernier index du tableau waypoints) : même
+     aérodrome saisi deux fois de suite, quelle que soit la distance — contrairement au cas
+     général (<0,5NM). Reste limité aux voisins STRICTEMENT adjacents (voir ci-dessus) : sans
+     point de circuit entre les deux, le risque de confondre "entrée de circuit" et "doublon"
+     ne se pose pas. */
   if(si+1===waypoints.length-1) return true;
   return haversine(a.lat,a.lon,b.lat,b.lon) < 0.5;
 }
