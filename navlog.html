@@ -6772,15 +6772,24 @@ function _isDupOfNextPoint(si){
   var na=(a.name||'').trim().toUpperCase(), nb=(b.name||'').trim().toUpperCase();
   if(!na || na!==nb) return false;
   if(a.lat==null||a.lon==null||b.lat==null||b.lon==null) return true;
-  /* Juste avant l'arrivée finale de TOUTE la route (dernier index du tableau waypoints) : même
-     aérodrome saisi deux fois de suite, quelle que soit la distance — contrairement au cas
-     général (<0,5NM). Reste limité aux voisins STRICTEMENT adjacents (voir ci-dessus) : sans
-     point de circuit entre les deux, le risque de confondre "entrée de circuit" et "doublon"
-     ne se pose pas. */
-  if(si+1===waypoints.length-1) return true;
+  /* "b" agit comme l'arrivée AFFICHÉE de la route (ou de l'étape) dès lors que TOUT ce qui suit
+     "b" dans le tableau complet n'est que des points de circuit (masqués) — même si "b" n'est
+     PAS littéralement le tout dernier index du tableau. Cas réel qui a fait persister ce leg
+     fantôme malgré le garde-fou précédent (limité à waypoints.length-1) : le pilote ajoute
+     d'abord le point d'arrivée "plein" (ex: EBSG), PUIS revient ajouter les points du circuit
+     d'arrivée par-dessus — ces derniers s'ajoutent donc APRÈS "b" dans le tableau, pas avant.
+     "b" n'est alors plus littéralement le dernier index, mais reste bien le dernier point RÉEL
+     affiché (rôle "Arrivée"). Même aérodrome juste avant lui, quelle que soit la distance —
+     comme pour le cas "dernier index" original, toujours limité aux voisins STRICTEMENT
+     adjacents (si/si+1), donc sans risque de confondre un point d'entrée légitime plus loin dans
+     la route (voir la note ci-dessus). */
+  var bIsEffectivelyFinal=true;
+  for(var j=si+2;j<waypoints.length;j++){
+    if(!waypoints[j].ptType){ bIsEffectivelyFinal=false; break; }
+  }
+  if(bIsEffectivelyFinal) return true;
   return haversine(a.lat,a.lon,b.lat,b.lon) < 0.5;
 }
-
 /* Construit UNE table HTML (thead+tbody complets, avec tous les contrôles interactifs :
    renommage, altitude éditable, commentaires, boutons Dép/Arr) pour UN segment de points —
    utilisé pour chaque étape séparément quand le vol en a plusieurs (temps/numérotation propres
@@ -6928,11 +6937,19 @@ function renderNavlogRecapTable(){
   if(waypoints.length<2){ card.style.display='none'; return; }
   card.style.display='';
 
-  /* Points affichés : le départ, l'arrivée, et tout point de navigation (pas de circuit). */
+  /* Points affichés : le départ, l'arrivée, et tout point de navigation (pas de circuit).
+     Le premier/dernier index du tableau n'est PAS automatiquement affiché s'il s'agit d'un
+     point de circuit (w.ptType) : quand les points de circuit d'arrivée sont ajoutés APRÈS le
+     point d'arrivée "normal" déjà en place (flux courant : on pose d'abord le point d'arrivée,
+     puis on revient dessiner le circuit par-dessus), ce sont EUX qui se retrouvent en dernière
+     position du tableau — les afficher quand même comme "l'arrivée" créait un faux point final
+     (et un leg fantôme vers lui) alors qu'ils sont censés rester masqués comme tout point de
+     circuit. Seuls les points non-circuit (ou de jonction d'étape) sont montrés, qu'ils soient
+     en bout de tableau ou non. */
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if((si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) && !_isDupOfNextPoint(si)) shownIdx.push(si);
+    if((w.isEtape||!w.ptType) && !_isDupOfNextPoint(si)) shownIdx.push(si);
   }
   var hiddenCount=waypoints.length-shownIdx.length;
 
@@ -7208,7 +7225,7 @@ function printNavlogRecapTable(blank){
   var shownIdx=[];
   for(var si=0;si<waypoints.length;si++){
     var w=waypoints[si];
-    if((si===0||si===waypoints.length-1||w.isEtape||(!w.ptType)) && !_isDupOfNextPoint(si)) shownIdx.push(si);
+    if((w.isEtape||!w.ptType) && !_isDupOfNextPoint(si)) shownIdx.push(si);
   }
 
   /* Vol à étapes (dossiers enchaînés, voir _composeEtapes) : une jonction entre deux étapes
