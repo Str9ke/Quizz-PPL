@@ -448,6 +448,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
    la ligne leg reste géré par la couleur de fond + le liseré, pas par la hauteur). */
 .nl-recap-table tr.nl-recap-point-row td{padding-top:2px;padding-bottom:2px}
 .nl-recap-table tr.nl-recap-point-row td.nl-recap-name{padding-top:3px;padding-bottom:3px}
+/* Une seule cellule fusionnée (colspan) à la place des 7 cases vides Alt/Route/Cap/Dist/GS/ETE/
+   ETA — sans bordures internes ni fond distinct, elle se fond dans la ligne au lieu de rester
+   visible comme une rangée de cases inutiles alors qu'aucune de ces colonnes ne s'applique à un
+   point isolé (voir la ligne LEG juste en dessous, qui porte ces données). */
+.nl-recap-table td.nl-recap-point-fill{border-top:none;border-bottom:none;background:transparent}
 .nl-recap-table td.nl-recap-type{width:1%;white-space:nowrap;padding-left:4px;padding-right:4px}
 .nl-recap-table td.nl-recap-type .nl-recap-type-btn{padding:2px 6px;font-size:.76em}
 /* Ligne LEG : décalée visuellement (fond teinté + flèche en retrait + liseré bleu à gauche)
@@ -6751,6 +6756,14 @@ function _isDupOfNextPoint(si){
   var na=(a.name||'').trim().toUpperCase(), nb=(b.name||'').trim().toUpperCase();
   if(!na || na!==nb) return false;
   if(a.lat==null||a.lon==null||b.lat==null||b.lon==null) return true;
+  /* Juste avant l'arrivée finale de TOUTE la route (dernier index du tableau waypoints, pas
+     seulement du segment affiché) : même aérodrome saisi deux fois de suite, quelle que soit la
+     distance — contrairement au cas général (<0,5NM). Un point de circuit peut être
+     physiquement à 1-2NM du point d'arrivée réel tout en désignant conceptuellement "le même
+     aérodrome atteint deux fois" (ex: jonction de deux dossiers composés qui n'a pas fusionné
+     par nom exact). Sans ce cas, un leg fantôme "aérodrome → même aérodrome" (1-2NM, donc pas
+     capté par le seuil général) restait affiché juste avant l'arrivée. */
+  if(si+1===waypoints.length-1) return true;
   return haversine(a.lat,a.lon,b.lat,b.lon) < 0.5;
 }
 
@@ -6805,13 +6818,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
         viaCircuitTag+
         unconfWarning+
       '</td>'+
-      '<td></td>'+
-      '<td></td>'+
-      '<td></td>'+
-      '<td></td>'+
-      '<td></td>'+
-      '<td></td>'+
-      '<td></td>'+
+      '<td class="nl-recap-point-fill" colspan="7"></td>'+
       '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
       '<td class="nl-recap-type">'+typeBtn+splitBtn+delBtn+'</td>'+
     '</tr>';
@@ -6969,7 +6976,10 @@ function renderNavlogRecapTable(){
     '</div>'+
     borderBanner+
     tablesHtml+
-    hiddenNote;
+    hiddenNote+
+    '<div style="margin-top:10px;text-align:center">'+
+      '<button class="navlog-btn" style="background:linear-gradient(135deg,#7c4dff,#5b8def);border-color:transparent;color:#fff" onclick="window._addNewStageFromEnd()" title="Termine la route actuelle et prépare un nouveau tableau vide : cliquez ensuite sur la carte pour placer son premier point">➕ Étape suivante</button>'+
+    '</div>';
 }
 window.renderNavlogRecapTable=renderNavlogRecapTable;
 
@@ -7260,9 +7270,12 @@ function printNavlogRecapTable(blank){
        pas dépendre du nombre de points réellement placés sur la carte (souvent 2-3, une simple
        base pour démarrer) — sinon la feuille imprimée reste minuscule en haut de page. On
        complète avec des lignes vides supplémentaires jusqu'à un nombre de points cible, dans le
-       même format (alternance ligne point / ligne leg) que les lignes réelles. */
+       même format (alternance ligne point / ligne leg) que les lignes réelles.
+       62 = calibré empiriquement (mesure réelle de la hauteur rendue vs une page A4 avec marges
+       10mm, voir test_print_fill_measure) pour ~92% de la hauteur de page — assez pour "remplir
+       toute la page" sans risquer un débordement sur une 2e feuille selon le moteur d'impression. */
     if(blank){
-      var wantPoints=14;
+      var wantPoints=62;
       if(segIdx.length<wantPoints){
         var fillerCount=wantPoints-segIdx.length;
         var fillerLegNum=(res.rows.match(/<tr class="leg-row">/g)||[]).length;
@@ -7894,6 +7907,39 @@ function _splitStageAtWaypoint(i){
   if(typeof _toast==='function') _toast('✂️ Route coupée en 2 étapes','',3200);
 }
 window._splitStageAtWaypoint=_splitStageAtWaypoint;
+
+/* Ajoute une étape supplémentaire APRÈS la fin actuelle de la route (bouton sous le tableau
+   Navlog) : le dernier point existant devient la jonction partagée (même technique que
+   _splitStageAtWaypoint, _stages fusionnés [étape N, étape N+1]), et un point vide (sans
+   coordonnées) est poussé en bout de tableau pour recevoir la position du PROCHAIN clic sur la
+   carte — voir routeMap.on('click', ...) qui cherche déjà le premier point sans coordonnées et
+   le remplit (et préserve maintenant _stages en le faisant, voir plus bas). */
+function _addNewStageFromEnd(){
+  if(!waypoints.length) return;
+  var last=waypoints[waypoints.length-1];
+  if(last.lat===null || last.lon===null){
+    if(typeof _toast==='function') _toast('⚠️ Configurez d\'abord le dernier point de la route (aérodrome ou position sur la carte) avant d\'ajouter une étape','error',3600);
+    return;
+  }
+  if(!confirm('Ajouter une étape supplémentaire à partir de « '+(last.name||'ce point')+' » ?\n\nUn nouveau tableau Navlog vide apparaîtra en dessous : cliquez ensuite sur la carte pour placer le premier point de cette nouvelle étape.')) return;
+  var maxStage=0;
+  for(var w=0;w<waypoints.length;w++){
+    var st=waypoints[w]._stages;
+    if(st) for(var s=0;s<st.length;s++){ if(st[s]>maxStage) maxStage=st[s]; }
+  }
+  var existingStage=maxStage>0?maxStage:1;
+  var newStage=existingStage+1;
+  var mergedStages=last._stages?last._stages.slice():[];
+  if(mergedStages.indexOf(existingStage)<0) mergedStages.push(existingStage);
+  if(mergedStages.indexOf(newStage)<0) mergedStages.push(newStage);
+  last._stages=mergedStages;
+  waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0,_stages:[newStage]});
+  renderNavlog();
+  recalcNavlog();
+  if(typeof updateRouteMap==='function') updateRouteMap();
+  if(typeof _toast==='function') _toast('➕ Nouvelle étape prête — cliquez sur la carte pour placer son premier point','',3600);
+}
+window._addNewStageFromEnd=_addNewStageFromEnd;
 
 /* Cycle nav -> circuit départ -> circuit arrivée -> nav. Ces points restent dans le
    calcul complet (temps de vol / carburant total) mais sont retirés du tableau
@@ -12577,6 +12623,10 @@ function initRouteMap(){
       if(waypoints[wi].lat === null && waypoints[wi].lon === null){ emptySlotIdx = wi; break; }
     }
     if(emptySlotIdx >= 0){
+      /* Le placeholder remplacé peut porter une métadonnée _stages (ex: premier point d'une
+         étape fraîchement créée via le bouton "➕ Étape suivante" sous le tableau Navlog) — la
+         perdre ici casserait silencieusement le découpage en plusieurs tableaux. */
+      if(waypoints[emptySlotIdx]._stages) newWp._stages = waypoints[emptySlotIdx]._stages.slice();
       waypoints[emptySlotIdx] = newWp;   /* overwrite the empty placeholder */
     } else if(flightType === 'local' && waypoints.length >= 2){
       waypoints.splice(waypoints.length-1, 0, newWp);
