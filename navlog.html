@@ -2742,6 +2742,24 @@ var waypoints = [];
 var wxCache = {};
 var flightType = 'local';
 var reserveMode = 'day';
+/* Date du vol (planification possible à l'avance, pas forcément "aujourd'hui") — champ affiché
+   au-dessus du tableau Navlog (voir renderNavlogRecapTable). Conservée dans une variable à part
+   (plutôt que de relire le DOM à chaque fois) car ce champ vit DANS le HTML régénéré à chaque
+   recalcNavlog()/renderNavlogRecapTable() — sans ça, toute saisie ailleurs dans l'app effaçait
+   la date choisie au prochain re-rendu. */
+var _navlogFlightDate = null;
+function _todayISO(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _isoToFrDate(iso){
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
+  return m?(m[3]+'/'+m[2]+'/'+m[1]):(iso||'');
+}
+window._setNavlogFlightDate=function(v){
+  _navlogFlightDate=v;
+  if(typeof _scheduleAutosave==='function') _scheduleAutosave();
+};
 var calYear, calMonth;
 
 /* Map modal state */
@@ -6500,6 +6518,7 @@ function getConfig(){
     dev:parseFloat(_v('cfgDev'))||-1,
     reserveMin:reserveMode==='day'?30:45,
     depTime:_v('cfgDepTime')||'09:00',
+    flightDate:_navlogFlightDate||_todayISO(),
     taxiMin:parseFloat(_v('cfgTaxi'))||10,
     landingMin:parseFloat(_v('cfgLanding'))||10,
     fuelBurn:parseFloat(_v('fuelBurn'))||20,
@@ -7071,9 +7090,15 @@ function renderNavlogRecapTable(){
   cont.innerHTML=
     '<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
       '<span><span class="icon">📋</span> Navlog</span>'+
+      '<span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+      '<span style="display:flex;align-items:center;gap:6px;font-size:.78em;color:var(--text-secondary)">'+
+        '<label for="cfgFlightDate" style="white-space:nowrap">📅 Date du vol</label>'+
+        '<input type="date" id="cfgFlightDate" value="'+(_navlogFlightDate||_todayISO())+'" onchange="window._setNavlogFlightDate(this.value)" style="padding:4px 6px;border-radius:6px;border:1px solid var(--input-border,var(--border-color));background:var(--input-bg,var(--bg-container));color:var(--input-text,var(--text-primary));font-size:.95em">'+
+      '</span>'+
       '<span style="display:flex;gap:6px;flex-wrap:wrap">'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px" onclick="window.printNavlogRecapTable()">🖨️ Imprimer</button>'+
       '<button class="navlog-btn" style="font-size:.75em;padding:5px 12px;background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window.printNavlogRecapTable(true)" title="Imprimer une feuille vierge à remplir à la main en vol">📝 Imprimer vierge</button>'+
+      '</span>'+
       '</span>'+
     '</div>'+
     borderBanner+
@@ -7389,25 +7414,11 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
   var offsetDist=0;
   for(var oi=1;oi<=fromIdx;oi++) offsetDist+=(waypoints[oi].dist||0);
 
-  var maxAlt=0;for(var i=0;i<wpAlts.length;i++) maxAlt=Math.max(maxAlt,wpAlts[i]);
-  /* Les volumes d'espace aérien/avis du jour traversés PAR CETTE étape peuvent culminer plus
-     haut que l'altitude de croisière (ex: TMA à 4500ft survolée à 2300ft) — sans en tenir
-     compte ici, leur bande dépasserait le haut du graphique. */
-  if(typeof _routeAirspaces!=='undefined'){
-    _routeAirspaces.forEach(function(a){
-      a.crossings.forEach(function(c){
-        if(c.exitDist-offsetDist>0 && c.entryDist-offsetDist<totalDist) maxAlt=Math.max(maxAlt,a.upperFt||0);
-      });
-    });
-  }
-  if(typeof _routeDailyWarnings!=='undefined'){
-    _routeDailyWarnings.forEach(function(w){
-      w.crossings.forEach(function(c){
-        if(c.exitDist-offsetDist>0 && c.entryDist-offsetDist<totalDist) maxAlt=Math.max(maxAlt,w.upperFt||0);
-      });
-    });
-  }
-  maxAlt=Math.ceil((maxAlt+600)/500)*500;if(maxAlt<1000) maxAlt=1000;
+  /* Échelle verticale FIXE 0-5000ft (demandé explicitement) : une zone d'espace aérien qui
+     culmine plus haut (TMA à 18000ft, etc.) est simplement coupée au sommet du graphique plutôt
+     que d'étirer toute l'échelle — un vol VFR à ces altitudes n'a de toute façon aucun intérêt à
+     être lu au-delà de 5000ft sur cette feuille. */
+  var maxAlt=5000;
 
   /* Dimensions compactes (mêmes proportions que le mode plein écran de renderAltProfile, déjà
      calibré pour tenir dans une bande courte) : la feuille imprimée doit garder de la place
@@ -7548,6 +7559,10 @@ function printNavlogRecapTable(blank){
   var depIcao=waypoints[0]&&waypoints[0].name||'—';
   var arrIcao=waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'—';
   var todayStr=new Date().toLocaleDateString('fr-FR');
+  /* Date DU VOL (champ dédié au-dessus du tableau Navlog, cfg.flightDate) — distincte de
+     todayStr (date d'IMPRESSION, "Généré le ..."), pour planifier un vol à une date future
+     sans que la feuille imprimée continue d'afficher la date du jour de l'impression. */
+  var flightDateStr=blank?'':_isoToFrDate(cfg.flightDate);
 
   var sheetsHtml='';
   /* Cumul du temps de bloc (roulage+vol+roulage) des étapes déjà traitées — sert à calculer le
@@ -7591,7 +7606,7 @@ function printNavlogRecapTable(blank){
     var infoBlock=
       '<div class="info-grid">'+
         '<div><b>Avion</b><br>'+(blank?'':escHTML(acReg))+'</div>'+
-        '<div><b>Date</b><br>'+(blank?'':todayStr)+'</div>'+
+        '<div><b>Date</b><br>'+(blank?'':flightDateStr)+'</div>'+
         '<div><b>Départ prévu</b><br>'+(blank?'':escHTML(depTimeStr))+'</div>'+
         '<div><b>TAS</b><br>'+(blank?'':cfg.tas+' kt')+'</div>'+
         '<div><b>Alt. croisière</b><br>'+(blank?'':cfg.alt+' ft')+'</div>'+
@@ -9399,6 +9414,7 @@ function _restoreAutosaveIfAny(){
   setVal('cfgWindDirSlider',cfg.windDir); setVal('cfgWindSpdSlider',Math.min(cfg.windSpd||0,50));
   setVal('cfgDev',cfg.dev);
   if(cfg.depTime) setVal('cfgDepTime',cfg.depTime);
+  if(cfg.flightDate) _navlogFlightDate=cfg.flightDate;
   if(cfg.taxiMin!==undefined) setVal('cfgTaxi',cfg.taxiMin);
   if(cfg.landingMin!==undefined) setVal('cfgLanding',cfg.landingMin);
   if(cfg.alt){ setVal('cfgAlt',cfg.alt); setVal('cfgAltSlider',cfg.alt); }
@@ -10011,6 +10027,7 @@ function loadDossier(id, _freshCloudFiles){
   document.getElementById('cfgWindSpd').value=d.config.windSpd;
   document.getElementById('cfgDev').value=d.config.dev;
   if(d.config.depTime) document.getElementById('cfgDepTime').value=d.config.depTime;
+  if(d.config.flightDate) _navlogFlightDate=d.config.flightDate;
   if(d.config.taxiMin!==undefined) document.getElementById('cfgTaxi').value=d.config.taxiMin;
   if(d.config.landingMin!==undefined) document.getElementById('cfgLanding').value=d.config.landingMin;
   if(d.config.alt){var _ca=document.getElementById('cfgAlt');if(_ca)_ca.value=d.config.alt;var _cas=document.getElementById('cfgAltSlider');if(_cas)_cas.value=d.config.alt;}
