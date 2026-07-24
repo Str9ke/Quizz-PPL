@@ -12615,8 +12615,16 @@ function initRouteMap(){
     var name = 'WP' + (waypoints.length + 1);
     var newWp = {name: name, lat: coord.lat, lon: coord.lng, icon: '', dist: 0, route: 0};
     
-    // Auto-name if near an airport
-    var minDist = 0.1;
+    /* Auto-name si le clic tombe QUASIMENT sur l'aérodrome — 0.1° (~6 NM à cette latitude) avalait
+       tout le circuit de piste ET les points de report visuels (VRP) proches (souvent 1-5 NM de
+       l'aérodrome, PAR CONCEPTION pour être des repères distincts) : un clic pourtant destiné à un
+       point de circuit ou un VRP comme "Gare SG" se faisait silencieusement renommer avec le code
+       de l'aérodrome, créant plusieurs points affichés "EBSG" qui n'étaient pas de vrais doublons —
+       juste la même étiquette collée par erreur à des emplacements différents (d'où le leg fantôme
+       "EBSG → EBSG" avec une vraie distance : ce sont deux endroits distincts mal nommés pareil).
+       0.015° (~0.6-1 NM) : assez pour "j'ai cliqué juste à côté du symbole aérodrome", trop petit
+       pour engloutir un circuit ou un VRP. */
+    var minDist = 0.015;
     for(var code in AIRPORT_COORDS) {
       var dLat = AIRPORT_COORDS[code].lat - coord.lat;
       var dLon = AIRPORT_COORDS[code].lon - coord.lng;
