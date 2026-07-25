@@ -6552,7 +6552,16 @@ function getConfig(){
     fuelContingency:parseFloat(_v('fuelContingency'))||5,
     fuelExtra:parseFloat(_v('fuelExtra'))||0,
     fuelAltnDist:parseFloat(_v('fuelAltnDist'))||0,
-    perfAircraft:window._perfAircraft||'OO-MQA'
+    perfAircraft:window._perfAircraft||'OO-MQA',
+    /* Vent MANUEL saisi dans l'onglet Perf pour décollage/atterrissage (distinct du "vent réf."
+       ci-dessus, qui sert au calcul des caps/temps de route) : n'était sauvegardé nulle part —
+       ni dans le dossier, ni restauré au chargement — donc un vent manuel entré sur un appareil
+       n'apparaissait jamais sur un autre. Chaîne vide (pas 0) tant que le champ n'a pas été
+       rempli, pour ne jamais réappliquer un vent "0" que l'utilisateur n'a jamais saisi. */
+    perfWindDirManual:_v('perfWindDirManual'),
+    perfWindSpdManual:_v('perfWindSpdManual'),
+    perfWindDirManualLd:_v('perfWindDirManualLd'),
+    perfWindSpdManualLd:_v('perfWindSpdManualLd')
   };
 }
 
@@ -9522,6 +9531,19 @@ function _restoreAutosaveIfAny(){
   window._perfStage=undefined;
   renderNavlog();
   recalcNavlog();
+  /* Vent manuel décollage/atterrissage (onglet Perf) — voir loadDossier() pour l'explication
+     complète : sauvegardé via getConfig() mais jamais réappliqué à la restauration, donc
+     invisible après un simple rechargement de page (pas seulement en changeant d'appareil). */
+  if(cfg.perfWindDirManual){
+    setVal('perfWindDirManual',cfg.perfWindDirManual);
+    setVal('perfWindSpdManual',cfg.perfWindSpdManual||'');
+    if(typeof perfApplyManualWind==='function') perfApplyManualWind();
+  }
+  if(cfg.perfWindDirManualLd){
+    setVal('perfWindDirManualLd',cfg.perfWindDirManualLd);
+    setVal('perfWindSpdManualLd',cfg.perfWindSpdManualLd||'');
+    if(typeof perfApplyManualWindLanding==='function') perfApplyManualWindLanding();
+  }
   if(typeof _renderMapStageFilter==='function') _renderMapStageFilter();
   if(typeof _toast==='function') _toast('📂 Espace de travail restauré (dernière session)','',3200);
 }
@@ -10352,6 +10374,21 @@ function loadDossier(id, _freshCloudFiles){
   renderNavlog();
   recalcNavlog();
   renderWxPanels();
+  /* Vent manuel décollage/atterrissage (onglet Perf) : restaure les champs bruts saisis par
+     l'utilisateur puis relance la même décomposition face/travers qu'un vrai saisie manuelle
+     (perfApplyManualWind/Landing) — plutôt que de sauvegarder la composante face déjà calculée,
+     qui deviendrait fausse si la piste suggérée diffère d'un appareil à l'autre. Appelé après
+     waypoints/renderNavlog() car ces fonctions ont besoin de l'aérodrome dép/arr déjà en place. */
+  if(d.config.perfWindDirManual){
+    var _pwd=document.getElementById('perfWindDirManual'); if(_pwd) _pwd.value=d.config.perfWindDirManual;
+    var _pws=document.getElementById('perfWindSpdManual'); if(_pws) _pws.value=d.config.perfWindSpdManual||'';
+    if(typeof perfApplyManualWind==='function') perfApplyManualWind();
+  }
+  if(d.config.perfWindDirManualLd){
+    var _pwdl=document.getElementById('perfWindDirManualLd'); if(_pwdl) _pwdl.value=d.config.perfWindDirManualLd;
+    var _pwsl=document.getElementById('perfWindSpdManualLd'); if(_pwsl) _pwsl.value=d.config.perfWindSpdManualLd||'';
+    if(typeof perfApplyManualWindLanding==='function') perfApplyManualWindLanding();
+  }
   switchTab('nav');
 }
 window.loadDossier=loadDossier;
