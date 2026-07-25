@@ -14152,7 +14152,7 @@ var AC_DIFF_TABLE = [
   {label:'VNE',                     c150:'141 kt',              c172:'158 kt'},
   {label:'Va (masse max)',          c150:'97 kt',               c172:'96 kt'},
   {label:'Carburant total / utilisable', c150:'98 L / 85 L',    c172:'159 L / 144 L'},
-  {label:'Conso croisière 65% / 75%', c150:'19 L/h / 21 L/h',   c172:'28 L/h / 30 L/h'},
+  {label:'Conso croisière 65% / 75%', c150:'19 L/h / 21 L/h',   c172:'27.5 L/h / 31 L/h'},
   {label:'Huile (type / quantité)', c150:'XPD 100, 4-6 quarts', c172:'XPD 100, 6-8 quarts'},
   {label:'Décollage roulement (2500\', masse max)', c150:'304 m', c172:'365 m'},
   {label:'Décollage passage 15m',   c150:'556 m',               c172:'670 m'},
@@ -14182,8 +14182,8 @@ function syncAircraftSelection(reg, keepCruise){
   // Auto-apply default cruise performance unless caller wants to keep existing values
   if(!keepCruise){
     var _is172=reg==='OO-FCE';
-    var _defTas=_is172?100:91;      // F172M: 100 kt (2200 RPM) | C150: 91 kt
-    var _defFuel=_is172?26.0:19.3; // matching L/h
+    var _defTas=_is172?94:91;      // F172M: 94 kt (2200 RPM, 2500ft — manuel de vol OO-FCE) | C150: 91 kt
+    var _defFuel=_is172?23.5:19.3; // matching L/h
     var _tasFld=document.getElementById('cfgTAS');if(_tasFld) _tasFld.value=_defTas;
     var _fuFld=document.getElementById('cfgFuel');if(_fuFld) _fuFld.value=_defFuel;
     var _fbFld=document.getElementById('fuelBurn');if(_fbFld) _fbFld.value=_defFuel;
@@ -14612,36 +14612,44 @@ var PERF_CLIMB_172 = [
   {alt:5000, temp:5,  rateMs:2.74, rateFpm:540, vi_kmh:120, fuelLh:34.0},
   {alt:10000,temp:-5, rateMs:1.52, rateFpm:300, vi_kmh:120, fuelLh:30.0}
 ];
+/* Source : Manuel de vol Reims/Cessna F172M immatriculé OO-FCE (Tableau 2 — Performances de
+   croisière), transcrit tel quel depuis le manuel papier de l'appareil. Les valeurs précédentes
+   (approximées, sans source citée) surestimaient systématiquement la consommation de 4 à 23% par
+   rapport au manuel réel à régime moteur équivalent (jusqu'à +6.4 L/h à 10000ft/2600 RPM), tout
+   en surestimant AUSSI la vitesse de croisière au même régime — deux erreurs qui ne se
+   compensent pas, l'une gonflant le carburant requis et l'autre sous-estimant le temps de vol
+   réel pour une distance donnée. Bloc 12500ft du manuel non repris ici (chiffres illisibles sur
+   la photo fournie, à ne pas deviner sur une donnée de sécurité). */
 var CRUISE_DATA_172 = [
   {alt:2500,  rows:[
-    {rpm:2550,hp:75,tasKmh:226,tasKt:122,fuelLh:38.0},
-    {rpm:2500,hp:72,tasKmh:220,tasKt:119,fuelLh:36.0},
-    {rpm:2400,hp:65,tasKmh:211,tasKt:114,fuelLh:32.0},
-    {rpm:2300,hp:58,tasKmh:198,tasKt:107,fuelLh:29.0},
-    {rpm:2200,hp:51,tasKmh:185,tasKt:100,fuelLh:26.0},
-    {rpm:2100,hp:44,tasKmh:169,tasKt:91, fuelLh:22.0}
+    {rpm:2700,hp:87,tasKmh:224,tasKt:121,fuelLh:36.4},
+    {rpm:2600,hp:78,tasKmh:214,tasKt:116,fuelLh:32.6},
+    {rpm:2500,hp:70,tasKmh:205,tasKt:111,fuelLh:29.2},
+    {rpm:2400,hp:63,tasKmh:196,tasKt:106,fuelLh:26.9},
+    {rpm:2300,hp:57,tasKmh:187,tasKt:101,fuelLh:25.0},
+    {rpm:2200,hp:51,tasKmh:174,tasKt:94, fuelLh:23.5}
   ]},
   {alt:5000,  rows:[
-    {rpm:2550,hp:75,tasKmh:231,tasKt:125,fuelLh:37.0},
-    {rpm:2500,hp:73,tasKmh:226,tasKt:122,fuelLh:36.0},
-    {rpm:2400,hp:66,tasKmh:215,tasKt:116,fuelLh:32.0},
-    {rpm:2300,hp:59,tasKmh:202,tasKt:109,fuelLh:29.0},
-    {rpm:2200,hp:52,tasKmh:189,tasKt:102,fuelLh:26.0},
-    {rpm:2100,hp:45,tasKmh:174,tasKt:94, fuelLh:22.0}
+    {rpm:2700,hp:81,tasKmh:222,tasKt:120,fuelLh:33.7},
+    {rpm:2600,hp:73,tasKmh:215,tasKt:116,fuelLh:30.7},
+    {rpm:2500,hp:66,tasKmh:205,tasKt:111,fuelLh:28.0},
+    {rpm:2400,hp:60,tasKmh:194,tasKt:105,fuelLh:25.8},
+    {rpm:2300,hp:54,tasKmh:183,tasKt:99, fuelLh:24.3},
+    {rpm:2200,hp:48,tasKmh:172,tasKt:93, fuelLh:22.7}
   ]},
   {alt:7500,  rows:[
-    {rpm:2550,hp:75,tasKmh:237,tasKt:128,fuelLh:36.0},
-    {rpm:2500,hp:73,tasKmh:231,tasKt:125,fuelLh:35.0},
-    {rpm:2400,hp:66,tasKmh:220,tasKt:119,fuelLh:31.0},
-    {rpm:2300,hp:59,tasKmh:207,tasKt:112,fuelLh:28.0},
-    {rpm:2200,hp:52,tasKmh:193,tasKt:104,fuelLh:24.0}
+    {rpm:2700,hp:76,tasKmh:222,tasKt:120,fuelLh:32.0},
+    {rpm:2600,hp:69,tasKmh:213,tasKt:115,fuelLh:28.8},
+    {rpm:2500,hp:63,tasKmh:204,tasKt:110,fuelLh:26.9},
+    {rpm:2400,hp:57,tasKmh:193,tasKt:104,fuelLh:25.0},
+    {rpm:2300,hp:51,tasKmh:179,tasKt:97, fuelLh:23.5}
   ]},
   {alt:10000, rows:[
-    {rpm:2550,hp:74,tasKmh:241,tasKt:130,fuelLh:36.0},
-    {rpm:2500,hp:71,tasKmh:235,tasKt:127,fuelLh:34.0},
-    {rpm:2400,hp:65,tasKmh:224,tasKt:121,fuelLh:30.0},
-    {rpm:2300,hp:59,tasKmh:209,tasKt:113,fuelLh:27.0},
-    {rpm:2200,hp:52,tasKmh:196,tasKt:106,fuelLh:24.0}
+    {rpm:2650,hp:72,tasKmh:222,tasKt:120,fuelLh:29.9},
+    {rpm:2600,hp:66,tasKmh:211,tasKt:114,fuelLh:27.6},
+    {rpm:2500,hp:59,tasKmh:200,tasKt:108,fuelLh:25.6},
+    {rpm:2400,hp:54,tasKmh:188,tasKt:102,fuelLh:24.2},
+    {rpm:2300,hp:48,tasKmh:177,tasKt:96, fuelLh:22.7}
   ]}
 ];
 window._perfAircraft = localStorage.getItem('perfAircraft') || 'OO-MQA';
