@@ -7776,6 +7776,23 @@ function printNavlogRecapTable(blank){
            "1") avec le padding générique + une colonne à 4% : padding dédié plus serré, sur
            une colonne élargie (voir colgroup ci-dessous), pour que 2 chiffres tiennent. */
         'td.c-num,th.c-num{padding-left:2px;padding-right:2px}'+
+        /* FEUILLE VIERGE — hauteurs FIXES en millimètres.
+           Historique : la hauteur des lignes venait uniquement du padding, donc la hauteur
+           totale de la feuille dépendait des métriques de la police. Calibrer cette hauteur
+           depuis un environnement de test qui ne dispose PAS d'Arial (police substituée, donc
+           interlignes plus courts) donnait une feuille plus courte qu'en réalité : trois
+           tentatives de calibrage ont ainsi été validées « sur une page » côté test tout en
+           débordant sur l'imprimante de l'utilisateur.
+           Avec une hauteur imposée par ligne, la hauteur de la feuille devient une simple
+           addition (indépendante de la police) : en-tête 6mm + 22 lignes × 7mm + les deux
+           bandeaux ≈ 205mm, contre ~250mm réellement imprimables dans le pire cas (marges +
+           en-tête/pied du navigateur). La marge de sécurité ne dépend plus d'une mesure. */
+        (blank?
+          'thead th{height:6mm}'+
+          'tbody tr.pt-row td,tbody tr.leg-row td{height:7mm;padding-top:0;padding-bottom:0}'+
+          'tbody tr.tot-row td{height:7mm;padding-top:0;padding-bottom:0}'+
+          '.info-grid div,.fuel-grid div{height:9mm;padding-top:1mm;padding-bottom:0}'
+        :'')+
       '</style>'+
       /* Feuille VIERGE : titre réduit au strict minimum ("NAVLOG"), sans route ni sous-titre
          explicatif — tout ce texte est connu du pilote qui remplit la feuille et ne servait
