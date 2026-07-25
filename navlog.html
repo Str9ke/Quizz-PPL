@@ -2471,8 +2471,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <span id="syncEmailDisplay" style="font-size:.82em;color:#a78bfa">&#x1F464; —</span>
           <button id="syncNowBtn" onclick="window._navlogSyncNow()" style="padding:6px 14px;border-radius:10px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-size:.78em;font-weight:700">&#x1F504; Synchroniser</button>
         </div>
-        <p style="font-size:.73em;color:var(--text-secondary);margin:8px 0 0">&#x2705; Vos dossiers sont automatiquement synchronis&eacute;s sur tous vos appareils connect&eacute;s avec ce compte.</p>
+        <p id="syncAutoMsg" style="font-size:.73em;color:var(--text-secondary);margin:8px 0 0">&#x2705; Vos dossiers sont automatiquement synchronis&eacute;s sur tous vos appareils connect&eacute;s avec ce compte.</p>
       </div>
+      <!-- Résultat de la DERNIÈRE tentative de synchronisation automatique (masqué tant qu'aucune
+           tentative n'a échoué) — évite qu'un échec réseau/permission passe inaperçu. -->
+      <p id="syncStatusBanner" style="display:none;font-size:.75em;margin:10px 0 0;padding:8px 10px;border-radius:8px"></p>
       <!-- Non connecté -->
       <div id="syncNotLoggedIn" style="display:none">
         <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 10px">&#x26A0;&#xFE0F; Non connect&eacute; — connectez-vous sur la page <strong>Accueil du Quiz</strong> pour synchroniser automatiquement sur tous vos appareils.</p>
@@ -2853,8 +2856,13 @@ function switchTab(id){
     calBtn.classList.add('visible');
     _renderSyncCodeUI();
     renderDossierList();
-    /* Sync silently from cloud each time dossiers tab is opened */
-    syncDossiersFromCloud();
+    /* Sync depuis le cloud à chaque ouverture de l'onglet Dossiers. Le résultat n'était pas
+       exploité du tout (appel sans callback) : un échec de la requête Firestore passait donc
+       totalement inaperçu et l'utilisateur restait devant une liste périmée en croyant tout
+       synchronisé. On remonte désormais l'échec dans le bandeau de statut. */
+    syncDossiersFromCloud(null,function(n,errorOccurred){
+      _setSyncStatus(errorOccurred?'error':'ok');
+    });
   }else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
   
   if(id==='checklist') initChecklist();
@@ -9648,6 +9656,25 @@ var _fbDB = null;
 var _fbStorage = null;
 var _fbAuth = null;
 var _navlogUid = localStorage.getItem('cachedUid') || null; // UID du compte connecté (partagé avec l'app Quiz)
+/* _navlogUid peut venir d'un simple cache localStorage alors que Firebase Auth n'a JAMAIS
+   confirmé de session sur cet appareil (session expirée, stockage cloisonné par le navigateur,
+   Auth indisponible…). Dans ce cas les requêtes Firestore partent quand même mais peuvent être
+   refusées, et l'interface affichait pourtant le bloc "connecté" avec son message rassurant
+   "synchronisés sur tous vos appareils" et un identifiant vide ("👤 —") : l'utilisateur croyait
+   la synchronisation active alors qu'elle échouait en silence (cas constaté sur tablette, alors
+   que PC et téléphone — réellement authentifiés — fonctionnaient). Ce drapeau distingue une
+   session RÉELLEMENT authentifiée d'un simple UID mis en cache. */
+var _navlogAuthLive = false;
+/* Firebase Auth restaure sa session de façon ASYNCHRONE : au premier rendu, _navlogAuthLive est
+   encore false même sur un appareil parfaitement connecté. Sans ce second drapeau, PC et
+   téléphone afficheraient brièvement l'avertissement "session non confirmée" avant correction —
+   une fausse alerte. On n'affiche donc cet avertissement qu'une fois qu'Auth s'est réellement
+   prononcé (ou qu'on sait qu'Auth n'est pas disponible du tout). */
+var _navlogAuthResolved = false;
+/* Mémorise si la DERNIÈRE tentative de synchronisation a échoué, pour pouvoir la relancer dès
+   que la session devient valide (sinon une tentative prématurée, partie avant la restauration
+   d'Auth, laissait le bandeau d'erreur affiché indéfiniment). */
+var _navlogLastSyncFailed = false;
 var _FB_COLLECTION = 'navlog_dossiers';
 
 function _initFirebase(){
@@ -9768,9 +9795,11 @@ function _navlogSyncNow(){
        instable, hors-ligne, permission refusée...) — c'était le bug observé sur tablette :
        un message rassurant à tort qui masquait un vrai échec de synchronisation. */
     if(errorOccurred){
+      _setSyncStatus('error');
       _toast('❌ Échec de la synchronisation — vérifiez la connexion et réessayez','error',3800);
       return;
     }
+    _setSyncStatus('ok');
     _toast(n>0?('✅ '+n+' dossier(s) synchronisé(s)'):'✅ Dossiers à jour','success',2500);
   });
 }
@@ -9779,23 +9808,29 @@ window._navlogSyncNow=_navlogSyncNow;
 /* Initialisation Auth au chargement de la page */
 (function _initNavlogAuth(){
   var db=_initFirebase();
-  if(!_fbAuth) return;
+  /* Auth carrément indisponible (SDK bloqué, pas de config…) : il n'y aura jamais de rappel
+     onAuthStateChanged, donc l'état est déjà "prononcé" — sinon l'interface resterait bloquée
+     sur "vérification de la session…" pour toujours. */
+  if(!_fbAuth){ _navlogAuthResolved=true; _renderSyncCodeUI(); return; }
   _fbAuth.onAuthStateChanged(function(user){
     var oldUid=_navlogUid;
     if(user){
       _navlogUid=user.uid;
+      _navlogAuthLive=true; /* session réellement confirmée par Firebase Auth */
+      _navlogAuthResolved=true;
       localStorage.setItem('cachedUid',user.uid);
       /* Mise à jour de l'UI */
-      var li=document.getElementById('syncLoggedIn');
-      var lo=document.getElementById('syncNotLoggedIn');
       var em=document.getElementById('syncEmailDisplay');
-      if(li) li.style.display='block';
-      if(lo) lo.style.display='none';
       if(em) em.textContent='\uD83D\uDC64 '+(user.email||user.uid.slice(0,8));
+      _renderSyncCodeUI();
       _notesUpdateAuthUI(user);
-      /* Si UID vient d'être détecté ou a changé → sync silencieuse */
-      if(oldUid!==user.uid){
-        syncDossiersFromCloud();
+      /* Sync dès que la session est valide. Relancée aussi quand la tentative précédente a
+         échoué : sur un appareil connecté, l'ouverture de l'onglet Dossiers peut déclencher une
+         requête AVANT la restauration d'Auth ; sans ce rattrapage, l'UID en cache étant identique
+         à l'UID réel (oldUid===user.uid), aucune nouvelle tentative n'avait lieu et le bandeau
+         d'erreur restait affiché à tort. */
+      if(oldUid!==user.uid || _navlogLastSyncFailed){
+        syncDossiersFromCloud(null,function(n,err){ _setSyncStatus(err?'error':'ok'); });
         /* Synchroniser les notes depuis le cloud dès que l'UID est connu */
         setTimeout(function(){_loadNotesCloud(function(){renderNotes();});},800);
       }
@@ -9804,18 +9839,13 @@ window._navlogSyncNow=_navlogSyncNow;
       var _cached=localStorage.getItem('cachedUid');
       if(!_cached) _navlogUid=null;
       /* else on garde _navlogUid tel quel (initialisé depuis cachedUid au démarrage) */
-      var li2=document.getElementById('syncLoggedIn');
-      var lo2=document.getElementById('syncNotLoggedIn');
-      if(_navlogUid){
-        if(li2)li2.style.display='block';
-        if(lo2)lo2.style.display='none';
-        _notesUpdateAuthUI({uid:_navlogUid});
-      } else {
-        if(li2)li2.style.display='none';
-        if(lo2)lo2.style.display='block';
-        _renderSyncCodeUI();
-        _notesUpdateAuthUI(null);
-      }
+      /* UID éventuellement connu (cache), mais AUCUNE session confirmée sur cet appareil :
+         _renderSyncCodeUI() affiche alors un avertissement explicite au lieu du message
+         rassurant "synchronisés sur tous vos appareils". */
+      _navlogAuthLive=false;
+      _navlogAuthResolved=true;
+      _renderSyncCodeUI();
+      _notesUpdateAuthUI(_navlogUid?{uid:_navlogUid}:null);
     }
   });
 })();
@@ -9936,17 +9966,61 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
 }
 window.syncDossiersFromCloud=syncDossiersFromCloud;
 
+/* Rend l'état RÉEL de la synchronisation, en distinguant trois cas au lieu de deux :
+   1. session Firebase active            → sync automatique, message vert
+   2. UID seulement mis en cache         → sync NON garantie, message d'avertissement explicite
+   3. aucun UID                          → mode code manuel
+   Le cas 2 était auparavant confondu avec le cas 1, ce qui affichait "synchronisés sur tous vos
+   appareils" et un identifiant vide alors que rien ne se synchronisait vraiment. */
+/* Bandeau de résultat de la dernière synchronisation automatique. N'affiche RIEN quand tout va
+   bien (pas de bruit visuel à chaque ouverture d'onglet) mais reste visible en cas d'échec, pour
+   qu'une liste de dossiers périmée ne soit jamais prise pour une liste à jour. */
+function _setSyncStatus(state){
+  _navlogLastSyncFailed=(state==='error');
+  var el=document.getElementById('syncStatusBanner');
+  if(!el) return;
+  if(state==='error'){
+    el.style.display='block';
+    el.style.background='rgba(244,67,54,.12)';
+    el.style.border='1px solid rgba(244,67,54,.4)';
+    el.style.color='#ef9a9a';
+    el.innerHTML='❌ <strong>La synchronisation a échoué sur cet appareil.</strong> La liste ci-dessous peut être incomplète ou périmée. Vérifiez la connexion, puis appuyez sur <strong>🔄 Synchroniser</strong>.';
+  } else {
+    el.style.display='none';
+  }
+}
+window._setSyncStatus=_setSyncStatus;
+
 function _renderSyncCodeUI(){
+  var li=document.getElementById('syncLoggedIn');
+  var lo=document.getElementById('syncNotLoggedIn');
+  var em=document.getElementById('syncEmailDisplay');
+  var msg=document.getElementById('syncAutoMsg');
   if(_navlogUid){
-    var li=document.getElementById('syncLoggedIn');
-    var lo=document.getElementById('syncNotLoggedIn');
     if(li) li.style.display='block';
     if(lo) lo.style.display='none';
+    if(!_navlogAuthLive && !_navlogAuthResolved){
+      /* Auth pas encore prononcé : état neutre, surtout pas d'alarme prématurée. */
+      if(em) em.innerHTML='👤 <span style="color:var(--text-secondary)">vérification de la session…</span>';
+      if(msg){
+        msg.style.color='';
+        msg.innerHTML='⏳ Vérification de la session en cours…';
+      }
+    } else if(!_navlogAuthLive){
+      if(em) em.innerHTML='👤 <span style="color:#ffb74d">session non confirmée</span>';
+      if(msg){
+        msg.style.color='#ffb74d';
+        msg.innerHTML='⚠️ Votre session n’a pas pu être confirmée sur cet appareil : la synchronisation automatique n’est <strong>pas</strong> garantie ici. Reconnectez-vous depuis la page <strong>Accueil du Quiz</strong>, puis revenez sur cet onglet.';
+      }
+    } else {
+      if(msg){
+        msg.style.color='';
+        msg.innerHTML='✅ Vos dossiers sont automatiquement synchronisés sur tous vos appareils connectés avec ce compte.';
+      }
+    }
   } else {
-    var li2=document.getElementById('syncLoggedIn');
-    var lo2=document.getElementById('syncNotLoggedIn');
-    if(li2) li2.style.display='none';
-    if(lo2) lo2.style.display='block';
+    if(li) li.style.display='none';
+    if(lo) lo.style.display='block';
     var el=document.getElementById('syncCodeDisplay');
     if(el) el.textContent=_getSyncCode();
   }
