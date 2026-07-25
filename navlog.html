@@ -9488,13 +9488,13 @@ function _restoreAutosaveIfAny(){
     }
     var _composerCard=document.getElementById('etapesComposerCard');
     if(_composerCard) _composerCard.style.display=(flightType==='etapes')?'':'none';
-    /* Le composeur se replie automatiquement après une composition (voir fin de
-       _composeEtapes) — sans ceci, cet état replié survivait à la restauration
-       automatique, laissant le bouton « ➕ Nouvelle étape » caché derrière un
-       « ▸ Afficher » que rien ne signalait comme contenant l'action recherchée. */
+    /* Replié par défaut, y compris à la restauration automatique (ouverture de page) : un vol à
+       étapes déjà composé n'a plus besoin d'afficher la liste des dossiers à sélectionner — ça
+       repoussait tout le reste de la page vers le bas dès l'ouverture. Réouvrable via son
+       en-tête. */
     if(flightType==='etapes'){
       if(typeof _renderEtapesDossierList==='function') _renderEtapesDossierList();
-      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(true);
+      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(false);
     }
   }
   waypoints=snap.waypoints;
@@ -10184,6 +10184,9 @@ function loadDossier(id, _freshCloudFiles){
     if(ftBtns[2]) ftBtns[2].classList.toggle('active',flightType==='etapes');
     var _composerCard2=document.getElementById('etapesComposerCard');
     if(_composerCard2) _composerCard2.style.display=(flightType==='etapes')?'':'none';
+    /* Replié par défaut à l'ouverture d'un dossier — même raison qu'à la restauration
+       automatique (voir plus haut) : un vol déjà composé n'a pas besoin de rouvrir la liste. */
+    if(flightType==='etapes' && typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(false);
   }
   window._mapFittedOnce=false;  /* force re-fit on new route */
   _altTerrainCache=null;        /* terrain doit être rechargé pour cette route */
