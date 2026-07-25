@@ -2480,7 +2480,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <span style="font-size:.8em;color:var(--text-secondary)">Code manuel&nbsp;:</span>
           <code id="syncCodeDisplay" style="font-size:1em;font-weight:700;letter-spacing:2px;padding:3px 8px;border-radius:6px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.3);color:#a78bfa">—</code>
           <input type="text" id="syncCodeInput" placeholder="Code d'un autre appareil" maxlength="8" style="flex:1;min-width:130px;max-width:180px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.82em;text-transform:uppercase">
-          <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳…';window.syncDossiersFromCloud(code,function(n){btn.disabled=false;btn.textContent='\u2B07\uFE0F Importer';if(n>0)_toast(n+' dossier(s) import\u00e9(s)','success',2500);else _toast('Aucun dossier trouv\u00e9 pour ce code','error',2500);});" class="navlog-btn primary" style="white-space:nowrap;padding:5px 10px">&#x2B07;&#xFE0F; Importer</button>
+          <button onclick="var code=document.getElementById('syncCodeInput').value.trim().toUpperCase();if(!code){alert('Entrez un code');return;}var btn=this;btn.disabled=true;btn.textContent='⏳…';window.syncDossiersFromCloud(code,function(n,errorOccurred){btn.disabled=false;btn.textContent='\u2B07\uFE0F Importer';if(errorOccurred)_toast('\u274c \u00c9chec de la synchronisation \u2014 r\u00e9essayez','error',3000);else if(n>0)_toast(n+' dossier(s) import\u00e9(s)','success',2500);else _toast('Aucun dossier trouv\u00e9 pour ce code','error',2500);});" class="navlog-btn primary" style="white-space:nowrap;padding:5px 10px">&#x2B07;&#xFE0F; Importer</button>
         </div>
       </div>
     </div>
@@ -9735,8 +9735,15 @@ window._getSyncCode=_getSyncCode;
 function _navlogSyncNow(){
   var btn=document.getElementById('syncNowBtn');
   if(btn){btn.textContent='⏳ En cours…';btn.disabled=true;}
-  syncDossiersFromCloud(null,function(n){
+  syncDossiersFromCloud(null,function(n,errorOccurred){
     if(btn){btn.textContent='🔄 Synchroniser';btn.disabled=false;}
+    /* Ne JAMAIS afficher "Dossiers à jour" quand la requête a en réalité échoué (réseau
+       instable, hors-ligne, permission refusée...) — c'était le bug observé sur tablette :
+       un message rassurant à tort qui masquait un vrai échec de synchronisation. */
+    if(errorOccurred){
+      _toast('❌ Échec de la synchronisation — vérifiez la connexion et réessayez','error',3800);
+      return;
+    }
     _toast(n>0?('✅ '+n+' dossier(s) synchronisé(s)'):'✅ Dossiers à jour','success',2500);
   });
 }
@@ -9822,8 +9829,14 @@ function _fbDeleteDossier(dossierId){
     .delete().catch(function(e){ console.warn('Firebase delete error',e); });
 }
 
+/* IMPORTANT : le 2e argument du callback (errorOccurred) distingue "0 dossier cloud trouvé,
+   vraiment rien de neuf" de "la requête Firestore a échoué" (réseau instable, permission
+   refusée, hors-ligne...) — avant ce correctif, .catch() renvoyait cb([]) dans les deux cas,
+   ce qui faisait afficher "✅ Dossiers à jour" même quand la synchronisation avait en réalité
+   échoué (observé sur tablette : message rassurant à tort alors que rien n'avait été récupéré
+   du cloud). Voir syncDossiersFromCloud()/_navlogSyncNow() qui exploitent ce 2e argument. */
 function _fbLoadAllDossiers(syncCode, cb){
-  var db=_initFirebase(); if(!db){ cb([]); return; }
+  var db=_initFirebase(); if(!db){ cb([],true); return; }
   db.collection(_FB_COLLECTION)
     .where('syncCode','==',syncCode)
     .get()
@@ -9832,8 +9845,8 @@ function _fbLoadAllDossiers(syncCode, cb){
       snapshot.forEach(function(doc){
         try{ loaded.push(JSON.parse(doc.data().data)); }catch(e){}
       });
-      cb(loaded);
-    }).catch(function(){ cb([]); });
+      cb(loaded,false);
+    }).catch(function(e){ console.warn('Firestore sync error',e); cb([],true); });
 }
 
 /* Retente l'upload Firestore de tout dossier local jamais confirmé (_cloudSynced!==true) —
@@ -9853,8 +9866,12 @@ window._retryUnsyncedDossiers=_retryUnsyncedDossiers;
 function syncDossiersFromCloud(syncCodeOverride, cb){
   var syncCode=syncCodeOverride||_getSyncCode();
   _retryUnsyncedDossiers();
-  _fbLoadAllDossiers(syncCode, function(cloudDossiers){
-    if(!cloudDossiers.length){ if(cb) cb(0); return; }
+  _fbLoadAllDossiers(syncCode, function(cloudDossiers,errorOccurred){
+    /* Échec réel (réseau/permission/...) : ne SURTOUT PAS traiter comme "0 dossier cloud" —
+       ça purgerait potentiellement rien ici (le early-return protège déjà ça) mais surtout ça
+       ferait mentir l'appelant (cb(0) est indiscernable d'un "vraiment à jour"). */
+    if(errorOccurred){ if(cb) cb(0,true); return; }
+    if(!cloudDossiers.length){ if(cb) cb(0,false); return; }
     var local=getDossiers();
     cloudDossiers.forEach(function(d){
       var found=false;
@@ -9887,7 +9904,7 @@ function syncDossiersFromCloud(syncCodeOverride, cb){
     local = local.filter(function(d){ return cloudIds.has(d.id) || !d.syncCode || d._cloudSynced!==true; });
     setDossiers(local);
     renderDossierList();
-    if(cb) cb(cloudDossiers.length);
+    if(cb) cb(cloudDossiers.length,false);
   });
 }
 window.syncDossiersFromCloud=syncDossiersFromCloud;
