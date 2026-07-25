@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v69d';
+const CACHE_NAME = 'quiz-ppl-v69e';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -187,7 +187,15 @@ self.addEventListener('fetch', event => {
   // vol. Même traitement network-first que les JSON de questions, mais avec repli sur le
   // cache existant (pas de contenu vide) si hors-ligne.
   const isAutoFetchedWx = /\/(opmet|notams_belgique|daily_warnings)\.html$/.test(url.pathname);
-  if (isAutoFetchedWx && navigator.onLine) {
+  // Cartes TEMSI/WINTEM (manifest.json + PNG + PDF regénérés par le workflow toutes les
+  // ~3h) : le code cliente (initTemsiCarousels) ajoute déjà un paramètre "?t=timestamp"
+  // pour forcer un fetch frais après un clic sur "Relancer GitHub Action" — mais le
+  // caches.match({ignoreSearch:true}) ci-dessous ignore justement ce paramètre, donc
+  // cette tentative de cache-busting était neutralisée et l'utilisateur revoyait
+  // indéfiniment la carte périmée même après un cycle du workflow réussi. Même
+  // traitement network-first que isAutoFetchedWx.
+  const isAutoFetchedTemsiWintem = /\/(temsi|wintem)_(france|euroc)[^/]*\.(png|pdf|json)$/.test(url.pathname);
+  if ((isAutoFetchedWx || isAutoFetchedTemsiWintem) && navigator.onLine) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.ok) {
