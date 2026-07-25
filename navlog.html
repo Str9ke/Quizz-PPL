@@ -14618,8 +14618,12 @@ var PERF_CLIMB_172 = [
    rapport au manuel réel à régime moteur équivalent (jusqu'à +6.4 L/h à 10000ft/2600 RPM), tout
    en surestimant AUSSI la vitesse de croisière au même régime — deux erreurs qui ne se
    compensent pas, l'une gonflant le carburant requis et l'autre sous-estimant le temps de vol
-   réel pour une distance donnée. Bloc 12500ft du manuel non repris ici (chiffres illisibles sur
-   la photo fournie, à ne pas deviner sur une donnée de sécurité). */
+   réel pour une distance donnée.
+   Bloc 12500ft : les 2 premières lignes du manuel imprimaient le km/h AVANT le kt/mph
+   correspondant (colonnes décalées d'une ligne à l'impression) — détecté et corrigé en
+   revérifiant chaque triplet km/h·kt·mph par la conversion physique (kt = km/h×0.53996,
+   mph = km/h×0.62137) : seule la lecture avec km/h=213/196/185 (pas 196/213/185, l'ordre tel
+   qu'imprimé) rend les 3 colonnes cohérentes entre elles sur les 3 lignes. */
 var CRUISE_DATA_172 = [
   {alt:2500,  rows:[
     {rpm:2700,hp:87,tasKmh:224,tasKt:121,fuelLh:36.4},
@@ -14650,6 +14654,11 @@ var CRUISE_DATA_172 = [
     {rpm:2500,hp:59,tasKmh:200,tasKt:108,fuelLh:25.6},
     {rpm:2400,hp:54,tasKmh:188,tasKt:102,fuelLh:24.2},
     {rpm:2300,hp:48,tasKmh:177,tasKt:96, fuelLh:22.7}
+  ]},
+  {alt:12500, rows:[
+    {rpm:2650,hp:65,tasKmh:213,tasKt:115,fuelLh:27.3},
+    {rpm:2500,hp:56,tasKmh:196,tasKt:106,fuelLh:24.6},
+    {rpm:2400,hp:51,tasKmh:185,tasKt:100,fuelLh:23.5}
   ]}
 ];
 window._perfAircraft = localStorage.getItem('perfAircraft') || 'OO-MQA';
