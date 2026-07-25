@@ -3007,9 +3007,18 @@ function renderFuelLog(){
     if(curStageNum===null || !isEtapesFuelLog) return;
     var stageFuel=stageNavFuel+stageCircDepFuel+stageCircArrFuel;
     var stageTimeMin=stageNavTimeMin+stageCircDepTimeMin+stageCircArrTimeMin;
-    html+='<div style="padding:6px 10px;margin-bottom:6px;background:rgba(102,126,234,.14);border-radius:0 0 8px 8px;display:flex;justify-content:space-between;align-items:center;font-size:.85em;font-weight:700;color:#8fa0f5">'+
-      '<span>Σ Sous-total étape '+curStageNum+' ('+(Math.round(stageDist*10)/10)+' NM — '+formatTime(stageTimeMin/60)+')</span>'+
-      '<span>'+stageFuel.toFixed(1)+' L</span>'+
+    /* Ce sous-total inclut les circuits départ/arrivée, alors que la ligne "Délestage
+       (Navigation) — Étape N" du bloc CONSOMMATION ne compte QUE les legs de navigation : deux
+       chiffres différents pour la même étape, qui se lisaient comme une incohérence. La
+       décomposition est donc affichée explicitement sous le sous-total. */
+    html+='<div style="padding:6px 10px;margin-bottom:6px;background:rgba(102,126,234,.14);border-radius:0 0 8px 8px;font-size:.85em;font-weight:700;color:#8fa0f5">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<span>Σ Sous-total étape '+curStageNum+' ('+(Math.round(stageDist*10)/10)+' NM — '+formatTime(stageTimeMin/60)+')</span>'+
+        '<span>'+stageFuel.toFixed(1)+' L</span>'+
+      '</div>'+
+      '<div style="font-weight:500;font-size:.85em;opacity:.85;margin-top:2px">'+
+        'navigation '+stageNavFuel.toFixed(1)+' L + circuit départ '+stageCircDepFuel.toFixed(1)+' L + circuit arrivée '+stageCircArrFuel.toFixed(1)+' L'+
+      '</div>'+
     '</div>';
   }
 
@@ -3139,7 +3148,9 @@ function renderFuelLog(){
       var st=stageTotals[sn];
       col1+=row('Roulage départ — Étape '+sn, (taxiD/60)*fuelBurn);
       if(st.depFuel>0) col1+=row('🛫 Circuit départ — Étape '+sn, st.depFuel, '#b39ddb');
-      col1+=row('Délestage (Navigation) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
+      /* "hors circuits" explicite : ce chiffre ne couvre QUE les legs de navigation, alors que
+         le "Σ Sous-total étape N" du détail ci-dessus additionne navigation + circuits. */
+      col1+=row('Délestage (Navigation, hors circuits) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
       if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
       col1+=row('Roulage arrivée — Étape '+sn, (taxiA/60)*fuelBurn);
     });
@@ -3183,7 +3194,7 @@ function renderFuelLog(){
       var st=stageTotals[sn];
       col2+=timeRow('Taxi Départ — Étape '+sn, taxiD);
       if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
-      col2+=timeRow('Temps Vol (Navigation) — Étape '+sn, st.navTime);
+      col2+=timeRow('Temps Vol (Navigation, hors circuits) — Étape '+sn, st.navTime);
       if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
       col2+=timeRow('Taxi Arrivée — Étape '+sn, taxiA);
     });
@@ -7603,16 +7614,19 @@ function printNavlogRecapTable(blank){
     /* Vierge = TOUT écrit à la main, y compris avion/date/TAS/vent/etc du bandeau d'en-tête —
        seuls les libellés (labels) restent imprimés, aucune valeur préremplie nulle part sur
        la feuille. */
+    /* En vierge, une case laissée totalement vide ne se lit pas comme "à remplir" : on y met un
+       trait d'écriture explicite (même rôle que les pointillés d'un formulaire papier). */
+    var fl=blank?'<span class="fill-line"></span>':'';
     var infoBlock=
       '<div class="info-grid">'+
-        '<div><b>Avion</b><br>'+(blank?'':escHTML(acReg))+'</div>'+
-        '<div><b>Date</b><br>'+(blank?'':flightDateStr)+'</div>'+
-        '<div><b>Départ prévu</b><br>'+(blank?'':escHTML(depTimeStr))+'</div>'+
-        '<div><b>TAS</b><br>'+(blank?'':cfg.tas+' kt')+'</div>'+
-        '<div><b>Alt. croisière</b><br>'+(blank?'':cfg.alt+' ft')+'</div>'+
-        '<div><b>Déclinaison</b><br>'+(blank?'':(cfg.dev>=0?'+':'')+cfg.dev+'°')+'</div>'+
-        '<div><b>Vent réf.</b><br>'+(blank?'':cfg.windDir+'°/'+cfg.windSpd+' kt')+'</div>'+
-        '<div><b>Conso croisière</b><br>'+(blank?'':cfg.fuelBurn+' L/h')+'</div>'+
+        '<div><b>Avion</b><br>'+(blank?fl:escHTML(acReg))+'</div>'+
+        '<div><b>Date</b><br>'+(blank?fl:flightDateStr)+'</div>'+
+        '<div><b>Départ prévu</b><br>'+(blank?fl:escHTML(depTimeStr))+'</div>'+
+        '<div><b>TAS</b><br>'+(blank?fl:cfg.tas+' kt')+'</div>'+
+        '<div><b>Alt. croisière</b><br>'+(blank?fl:cfg.alt+' ft')+'</div>'+
+        '<div><b>Déclinaison</b><br>'+(blank?fl:(cfg.dev>=0?'+':'')+cfg.dev+'°')+'</div>'+
+        '<div><b>Vent réf.</b><br>'+(blank?fl:cfg.windDir+'°/'+cfg.windSpd+' kt')+'</div>'+
+        '<div><b>Conso croisière</b><br>'+(blank?fl:cfg.fuelBurn+' L/h')+'</div>'+
       '</div>';
 
     /* Bandeau de bas de page : le "Trip" est propre à CETTE étape (ce que cette feuille fait
@@ -7624,14 +7638,14 @@ function printNavlogRecapTable(blank){
        reste. */
     var fuelBlock=
       '<div class="fuel-grid">'+
-        '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?'':(Math.round(segTotals.fuel*10)/10)+' L')+'</div>'+
-        '<div><b>Roulage</b><br>'+(blank?'':(Math.round(fbGlobal.taxiFuel*10)/10)+' L')+'</div>'+
-        (fuelSummary.etapeCount>0?'<div><b>Étapes taxi (×'+fuelSummary.etapeCount+')</b><br>'+(blank?'':(Math.round(fuelSummary.etapeFuel*10)/10)+' L')+'</div>':'')+
-        '<div><b>Marge ('+fbGlobal.contPct+'%)</b><br>'+(blank?'':(Math.round(fbGlobal.contFuel*10)/10)+' L')+'</div>'+
-        '<div><b>Réserve ('+fbGlobal.resMin+' min)</b><br>'+(blank?'':(Math.round(fbGlobal.resFuel*10)/10)+' L')+'</div>'+
-        (fbGlobal.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?'':(Math.round(fbGlobal.altnFuel*10)/10)+' L')+'</div>':'')+
-        (fbGlobal.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?'':(Math.round(fbGlobal.extraFuel*10)/10)+' L')+'</div>':'')+
-        '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?'':(Math.round(fuelSummary.totalBlockFuel*10)/10)+' L')+'</div>'+
+        '<div><b>'+(multiSheet?'Trip (cette étape)':'Trip')+'</b><br>'+(blank?fl:(Math.round(segTotals.fuel*10)/10)+' L')+'</div>'+
+        '<div><b>Roulage</b><br>'+(blank?fl:(Math.round(fbGlobal.taxiFuel*10)/10)+' L')+'</div>'+
+        (fuelSummary.etapeCount>0?'<div><b>Étapes taxi (×'+fuelSummary.etapeCount+')</b><br>'+(blank?fl:(Math.round(fuelSummary.etapeFuel*10)/10)+' L')+'</div>':'')+
+        '<div><b>Marge ('+fbGlobal.contPct+'%)</b><br>'+(blank?fl:(Math.round(fbGlobal.contFuel*10)/10)+' L')+'</div>'+
+        '<div><b>Réserve ('+fbGlobal.resMin+' min)</b><br>'+(blank?fl:(Math.round(fbGlobal.resFuel*10)/10)+' L')+'</div>'+
+        (fbGlobal.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?fl:(Math.round(fbGlobal.altnFuel*10)/10)+' L')+'</div>':'')+
+        (fbGlobal.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?fl:(Math.round(fbGlobal.extraFuel*10)/10)+' L')+'</div>':'')+
+        '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?fl:(Math.round(fuelSummary.totalBlockFuel*10)/10)+' L')+'</div>'+
       '</div>';
 
     /* Taille de police déterminée AVANT impression, à partir du nombre de lignes DE CETTE
@@ -7693,7 +7707,13 @@ function printNavlogRecapTable(blank){
        tableau rempli juste en dessous, qui garantit toujours une seule feuille quel que soit le
        nombre de points. Tailles calibrées empiriquement (voir test_print_fill_measure) pour
        laisser aussi la place au profil d'altitude imprimé en bas de chaque feuille remplie. */
-    if(blank && totalRows<=30) prof={f:11,p:'5.5px 4.5px',lp:'4.5px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
+    /* Hauteur de ligne calibrée avec le VRAI moteur d'impression (page.pdf de Chromium, pas une
+       capture d'écran approximée : voir l'historique d'un débordement sur 2 pages non détecté par
+       la mesure par capture). 11px/10px = dernier palier qui tient encore sur UNE page même en
+       simulant des marges d'impression de 25mm et l'en-tête/pied natif du navigateur ; le palier
+       suivant (12px) déborde dès 25mm, celui d'après (13px) dès 15mm. Remplit ~87% de la hauteur
+       utile contre ~58% avant. */
+    if(blank && totalRows<=30) prof={f:11,p:'11px 4.5px',lp:'10px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
     else if(totalRows<=6) prof={f:15,p:'7px 6px',lp:'3.8px 5px',h1:14,sub:8,info:10,infoLbl:8.5};
     else if(totalRows<=11) prof={f:11.5,p:'5px 4px',lp:'2.5px 4px',h1:11.5,sub:7,info:9,infoLbl:7.6};
     else if(totalRows<=16) prof={f:9.4,p:'3.7px 3px',lp:'1.9px 3.2px',h1:10,sub:6.2,info:8,infoLbl:6.8};
@@ -7742,8 +7762,11 @@ function printNavlogRecapTable(blank){
            une colonne élargie (voir colgroup ci-dessous), pour que 2 chiffres tiennent. */
         'td.c-num,th.c-num{padding-left:2px;padding-right:2px}'+
       '</style>'+
-      '<h1>'+(blank?'Tableau vierge (à remplir à la main)':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — ')+escHTML(segDepIcao)+' → '+escHTML(segArrIcao))+'</h1>'+
-      '<p class="sub">'+(blank?'Points et cap à lister, valeurs à calculer/renseigner en vol':'Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':''))+'</p>'+
+      /* Feuille VIERGE : titre réduit au strict minimum ("NAVLOG"), sans route ni sous-titre
+         explicatif — tout ce texte est connu du pilote qui remplit la feuille et ne servait
+         qu'à consommer de la hauteur utile au détriment des lignes à écrire. */
+      '<h1>'+(blank?'NAVLOG':(multiSheet?'Étape '+(segI+1)+'/'+segments.length+' — ':'Récapitulatif de route — ')+escHTML(segDepIcao)+' → '+escHTML(segArrIcao))+'</h1>'+
+      (blank?'':'<p class="sub">Généré le '+todayStr+' — cap magnétique surligné = valeur à suivre à la manette · lignes bleues en retrait = trajet entre les deux points encadrants'+(multiSheet?' · vol à '+segments.length+' étapes':'')+'</p>')+
       infoBlock+
       '<table>'+
         '<colgroup><col class="c-num"><col class="c-name"><col class="c-alt"><col class="c-route">'+
@@ -7760,7 +7783,10 @@ function printNavlogRecapTable(blank){
 
   var w=window.open('','_blank');
   if(!w){ alert("Le navigateur a bloqué la fenêtre d'impression (pop-up)."); return; }
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+(blank?'Tableau vierge':'Récapitulatif route')+' — '+escHTML(routeName)+'</title>'+
+  /* Le <title> alimente l'en-tête natif que le navigateur imprime en haut de page (hors CSS
+     @page) : en vierge il y affichait la route réelle ("… — EBSG → EBSG"), donnée que le pilote
+     remplit lui-même sur la feuille. Réduit à "NAVLOG". */
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+(blank?'NAVLOG':'Récapitulatif route — '+escHTML(routeName))+'</title>'+
     '<style>'+
     /* Pas de "size" forcé (A5 ignoré par certains pipelines d'impression mobiles) : le contenu
        s'adapte au papier réellement utilisé grâce à des tailles NATURELLES (pas étirées) —
@@ -7779,6 +7805,7 @@ function printNavlogRecapTable(blank){
     '.info-grid div:nth-child(4n){border-right:none}'+
     '.info-grid div:nth-last-child(-n+4){border-bottom:none}'+
     '.info-grid b{display:block;text-transform:uppercase;color:#555;font-weight:700}'+
+    '.fill-line{display:block;border-bottom:1px solid #999;height:1em;margin-top:1px}'+
     'table{width:100%;border-collapse:collapse;table-layout:fixed}'+
     'th,td{border:1px solid #333;text-align:center;overflow:hidden;white-space:nowrap}'+
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
