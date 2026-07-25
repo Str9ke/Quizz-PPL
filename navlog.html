@@ -869,9 +869,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="nl-card" id="etapesComposerCard" style="display:none">
       <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="window._toggleEtapesComposer()">
         <span><span class="icon">&#x1F9ED;</span> Composer le vol &#xe0; &#xe9;tapes depuis des dossiers enregistr&#xe9;s</span>
-        <span id="etapesComposerToggleLabel" style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">&#x25BE; Masquer</span>
+        <span id="etapesComposerToggleLabel" style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">&#x25B8; Afficher</span>
       </div>
-      <div id="etapesComposerBody">
+      <!-- Replié par défaut (voir _toggleEtapesComposer) : l'état initial du DOM doit correspondre
+           à l'état replié, sinon le libellé du bouton annonce l'inverse de ce qui est affiché. -->
+      <div id="etapesComposerBody" style="display:none">
       <div style="font-size:.82em;color:var(--text-secondary);margin-bottom:8px">S&#xe9;lectionnez les dossiers &#xe0; enchaîner, dans l'ordre de vol souhait&#xe9; (cliquez dans l'ordre) &mdash; ou cr&#xe9;ez une nouvelle &#xe9;tape &#xe0; la vol&#xe9;e avec le bouton ci-dessous. Le vent de croisi&#xe8;re configur&#xe9; ci-dessous s'appliquera &#xe0; toutes les &#xe9;tapes. Un rafra&#xee;chissement m&#xe9;t&#xe9;o/NOTAM sera lanc&#xe9; apr&#xe8;s composition pour garder les infos les plus &#xe0; jour.</div>
       <div id="etapesDossierList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -4577,7 +4579,10 @@ function setFlightType(type){
     composerCard.style.display=(type==='etapes')?'':'none';
     if(type==='etapes'){
       _renderEtapesDossierList();
-      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(true); /* déplié par défaut */
+      /* Replié par défaut : ce composeur ne sert qu'au moment précis où l'on assemble le vol à
+         partir de dossiers enregistrés. Déplié systématiquement, il repoussait tout le reste de
+         la page vers le bas à chaque ouverture. Le titre reste cliquable pour le rouvrir. */
+      if(typeof _toggleEtapesComposer==='function') _toggleEtapesComposer(false);
     }
   }
   /* Preserve existing waypoints if they have data */
@@ -7678,7 +7683,7 @@ function printNavlogRecapTable(blank){
        suivent PLUS le barème "prof" ci-dessous (calibré pour rétrécir un tableau dense de
        données réelles) : voir le profil dédié "blank" plus bas. */
     if(blank){
-      var wantPoints=13;
+      var wantPoints=11; /* 11 points = 10 legs (demandé explicitement) */
       if(segIdx.length<wantPoints){
         var fillerCount=wantPoints-segIdx.length;
         var fillerLegNum=(res.rows.match(/<tr class="leg-row">/g)||[]).length;
@@ -7716,12 +7721,14 @@ function printNavlogRecapTable(blank){
        nombre de points. Tailles calibrées empiriquement (voir test_print_fill_measure) pour
        laisser aussi la place au profil d'altitude imprimé en bas de chaque feuille remplie. */
     /* Hauteur de ligne calibrée avec le VRAI moteur d'impression (page.pdf de Chromium, pas une
-       capture d'écran approximée : voir l'historique d'un débordement sur 2 pages non détecté par
-       la mesure par capture). 11px/10px = dernier palier qui tient encore sur UNE page même en
-       simulant des marges d'impression de 25mm et l'en-tête/pied natif du navigateur ; le palier
-       suivant (12px) déborde dès 25mm, celui d'après (13px) dès 15mm. Remplit ~87% de la hauteur
-       utile contre ~58% avant. */
-    if(blank && totalRows<=30) prof={f:11,p:'11px 4.5px',lp:'10px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
+       capture d'écran approximée : voir l'historique d'un débordement non détecté par la mesure
+       par capture). Calibrage fait sur le cas le PLUS HAUT, à savoir un vol à ÉTAPES : sa feuille
+       porte une case carburant supplémentaire ("Étapes taxi ×N") qui fait passer la grille sur
+       une 2e rangée, plus une ligne "TOTAL ÉTAPE n". Un calibrage fait sur un vol simple (sans
+       étapes) sous-estime cette hauteur et débordait donc en usage réel. À 10 legs, 12px/11px
+       tient sur UNE page par étape jusqu'à des marges simulées de 25mm ; le premier palier qui
+       déborde est 14px, ce qui laisse deux crans de sécurité. */
+    if(blank && totalRows<=30) prof={f:11,p:'12px 4.5px',lp:'11px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
     else if(totalRows<=6) prof={f:15,p:'7px 6px',lp:'3.8px 5px',h1:14,sub:8,info:10,infoLbl:8.5};
     else if(totalRows<=11) prof={f:11.5,p:'5px 4px',lp:'2.5px 4px',h1:11.5,sub:7,info:9,infoLbl:7.6};
     else if(totalRows<=16) prof={f:9.4,p:'3.7px 3px',lp:'1.9px 3.2px',h1:10,sub:6.2,info:8,infoLbl:6.8};
