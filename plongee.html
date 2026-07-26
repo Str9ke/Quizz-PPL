@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Plongée</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20260720b" />
+  <style>
+    .dq-config { max-width: 700px; margin: 0 auto; }
+    .dq-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 10px 0 14px; }
+    .dq-cat-btn { padding: 7px 10px; font-size: 0.82em; font-weight: 600; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; text-align: left; }
+    .dq-cat-btn:hover { border-color: #26c6da; color: #26c6da; }
+    .dq-cat-btn.active { background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; border-color: transparent; }
+    /* Topic sub-tabs (Communication, + futurs sous-onglets) */
+    .dq-topic-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 4px 0 18px; }
+    .dq-topic-btn { padding: 9px 22px; font-size: 0.9em; font-weight: 700; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; }
+    .dq-topic-btn.active { background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; border-color: transparent; }
+    .dq-topic-btn:disabled { opacity: 0.35; cursor: default; }
+    /* Tabbed modes inside a topic: Quiz / Consulter */
+    .dq-tab-row { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); }
+    .dq-tab { flex: 1; padding: 10px 6px; font-size: 0.9em; font-weight: 700; cursor: pointer; background: transparent; border: none; color: var(--text-secondary); border-bottom: 3px solid transparent; transition: all 0.2s; text-align: center; }
+    .dq-tab:hover { color: #26c6da; }
+    .dq-tab.active { color: #26c6da; border-bottom-color: #26c6da; }
+    /* Consultation / browse mode */
+    .dq-browse { max-width: 900px; margin: 0 auto; }
+    .dq-browse-group { margin-bottom: 20px; }
+    .dq-browse-group-title { font-size: 1em; font-weight: 700; color: var(--text-heading); margin: 12px 0 8px; padding: 6px 12px; background: linear-gradient(135deg, rgba(2,136,209,.1) 0%, rgba(38,198,218,.1) 100%); border-radius: 8px; }
+    .dq-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+    .dq-browse-card { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.85em; }
+    .dq-browse-card .dq-browse-sym { font-weight: 700; color: var(--text-heading); }
+    .dq-browse-card .dq-browse-mean { color: #26c6da; font-weight: 600; }
+    .dq-mode-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+    .dq-mode-btn { padding: 8px 20px; font-size: 0.88em; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; }
+    .dq-mode-btn.active { background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; border-color: transparent; }
+    .dq-start-btn { display: block; margin: 16px auto; padding: 12px 40px; font-size: 1em; font-weight: 700; border-radius: 24px; cursor: pointer; border: none; background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; box-shadow: 0 4px 15px rgba(2,136,209,0.3); transition: all 0.25s; }
+    .dq-start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2,136,209,0.4); }
+    .dq-start-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+    .dq-quiz-area { max-width: 700px; margin: 0 auto; }
+    .dq-progress { text-align: center; font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; }
+    .dq-progress-bar { height: 4px; background: var(--border-color); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+    .dq-progress-fill { height: 100%; background: linear-gradient(90deg, #0288d1, #26c6da); border-radius: 2px; transition: width 0.3s; }
+    .dq-question-card { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+    .dq-q-label { font-size: 0.75em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+    .dq-q-prompt { font-size: 1.15em; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; text-align: center; padding: 14px 10px; line-height: 1.4; }
+    .dq-q-cat { font-size: 0.72em; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
+    .dq-choices { display: flex; flex-direction: column; gap: 8px; }
+    .dq-choice { padding: 12px 16px; font-size: 0.92em; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-primary); transition: all 0.2s; text-align: left; font-weight: 500; }
+    .dq-choice:hover:not(.dq-locked) { border-color: #26c6da; background: rgba(38,198,218,0.06); }
+    .dq-choice.dq-correct { border-color: #4caf50; background: rgba(76,175,80,0.12); color: #4caf50; font-weight: 700; }
+    .dq-choice.dq-wrong { border-color: #f44336; background: rgba(244,67,54,0.1); color: #f44336; }
+    .dq-choice.dq-locked { cursor: default; opacity: 0.7; }
+    .dq-choice.dq-correct.dq-locked { opacity: 1; }
+    .dq-next-btn { display: block; margin: 12px auto 0; padding: 10px 30px; font-size: 0.92em; font-weight: 700; border-radius: 20px; cursor: pointer; border: none; background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; transition: all 0.2s; }
+    .dq-result { text-align: center; padding: 30px 20px; }
+    .dq-result-score { font-size: 2.5em; font-weight: 800; background: linear-gradient(135deg, #0288d1, #26c6da); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .dq-result-label { font-size: 1.1em; color: var(--text-secondary); margin: 8px 0 20px; }
+    .dq-result-details { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 20px; }
+    .dq-nb-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
+    .dq-nb-input { width: 70px; padding: 6px 10px; font-size: 0.95em; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-container); color: var(--text-primary); text-align: center; }
+    .dq-select-btns { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .dq-select-btn { padding: 4px 12px; font-size: 0.75em; border-radius: 12px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); }
+    .dq-select-btn:hover { border-color: #26c6da; color: #26c6da; }
+    .dq-review-list { max-width: 700px; margin: 0 auto; }
+    .dq-review-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 0.85em; gap: 10px; }
+    .dq-review-item:last-child { border-bottom: none; }
+    .dq-review-sym { font-weight: 500; color: var(--text-secondary); flex: 1; }
+    .dq-review-mean { color: var(--text-heading); font-weight: 700; text-align: right; }
+    .dq-review-icon { margin-left: 8px; }
+    .dq-soon-note { text-align: center; font-size: 0.82em; color: var(--text-secondary); padding: 40px 20px; }
+  </style>
+</head>
+<body>
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <script>
+    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">🤿</div>
+    <h1 class="home-hero-title">Plongée</h1>
+    <div class="home-hero-subtitle">Entraînez-vous aux signes de communication sous-marine</div>
+  </div>
+
+  <!-- Top navigation -->
+  <div class="top-nav-bar">
+    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
+    <a href="navlog.html" class="top-nav-link top-nav-featured">🗺️ Briefing</a>
+    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
+    <a href="stats.html" class="top-nav-link">📊 Stats</a>
+    <a href="rates.html" class="top-nav-link">📖 Révision</a>
+    <a href="historique.html" class="top-nav-link">📅 Historique</a>
+    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
+    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
+    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
+    <a href="radial.html" class="top-nav-link">📡 Radial</a>
+    <a href="fiches.html" class="top-nav-link">📝 Fiches</a>
+    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
+    <a href="configuration.html" class="top-nav-link">⚙️ Configuration</a>
+    <a href="epreuve.html" class="top-nav-link">📝 Examen blanc</a>
+    <a href="plongee.html" class="top-nav-link top-nav-current">🤿 Plongée</a>
+  </div>
+
+  <!-- Sous-onglets : sujets de plongée (Communication, + futurs sujets) -->
+  <div class="dq-topic-row" id="topicRow"></div>
+
+  <div id="configPanel" class="home-card dq-config">
+    <div class="home-card-header">
+      <span class="home-card-icon">⚙️</span>
+      <span class="home-card-title">Configuration</span>
+    </div>
+
+    <!-- Tabs: Quiz / Consulter -->
+    <div class="dq-tab-row">
+      <button class="dq-tab active" data-tab="quiz" onclick="switchTab('quiz',this)">🎯 Quiz</button>
+      <button class="dq-tab" data-tab="browse" onclick="switchTab('browse',this)">📖 Consulter</button>
+    </div>
+
+    <!-- ===== QUIZ TAB ===== -->
+    <div id="tabQuiz">
+
+    <!-- Mode -->
+    <div style="margin-bottom: 6px; font-size: 0.85em; color: var(--text-secondary); font-weight: 600;">Mode :</div>
+    <div class="dq-mode-row">
+      <button class="dq-mode-btn active" data-mode="symbol" onclick="setMode('symbol', this)">🤿 Signe → Signification</button>
+      <button class="dq-mode-btn" data-mode="meaning" onclick="setMode('meaning', this)">📝 Signification → Signe</button>
+    </div>
+
+    <!-- Categories -->
+    <div style="margin: 12px 0 4px; font-size: 0.85em; color: var(--text-secondary); font-weight: 600;">Catégories :</div>
+    <div class="dq-select-btns">
+      <button class="dq-select-btn" onclick="selectAllCats()">Tout sélectionner</button>
+      <button class="dq-select-btn" onclick="deselectAllCats()">Tout désélectionner</button>
+    </div>
+    <div class="dq-cat-grid" id="catGrid"></div>
+
+    <!-- Nb questions -->
+    <div class="dq-nb-row">
+      <label style="font-size: 0.88em; color: var(--text-secondary);">Questions :</label>
+      <input type="number" id="nbQuestions" class="dq-nb-input" value="5" min="1" max="999">
+      <span id="maxLabel" style="font-size: 0.78em; color: var(--text-secondary);"></span>
+    </div>
+
+    <button class="dq-start-btn" id="btnStart" onclick="startQuiz()">🚀 Commencer le test</button>
+    </div><!-- /tabQuiz -->
+
+    <!-- ===== BROWSE TAB ===== -->
+    <div id="tabBrowse" style="display:none;">
+      <div style="margin-bottom:8px; font-size:0.85em; color:var(--text-secondary); font-weight:600;">Filtrer par groupe :</div>
+      <div class="dq-select-btns" id="browseFilterBtns"></div>
+      <div class="dq-browse" id="browseContent"></div>
+    </div>
+
+  </div>
+
+  <div id="quizPanel" style="display:none;">
+    <div class="dq-quiz-area">
+      <div class="dq-progress" id="progressText"></div>
+      <div class="dq-progress-bar"><div class="dq-progress-fill" id="progressFill"></div></div>
+      <div class="dq-question-card" id="questionCard"></div>
+    </div>
+  </div>
+
+  <div id="resultPanel" style="display:none;" class="home-card dq-config">
+    <div class="dq-result" id="resultContent"></div>
+    <div class="dq-review-list" id="reviewList"></div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ================================================
+    // SOUS-ONGLETS "SUJETS" — seul 'communication' existe pour l'instant.
+    // Prévu pour accueillir d'autres sujets de plongée plus tard
+    // (ex: tables de plongée, matériel, procédures...).
+    // ================================================
+    var TOPICS = [
+      { id: 'communication', label: '🤝 Communication', ready: true }
+      // Futurs sujets : { id: 'materiel', label: '🎒 Matériel', ready: false }, etc.
+    ];
+    var activeTopic = 'communication';
+
+    function buildTopicRow() {
+      var row = document.getElementById('topicRow');
+      var html = '';
+      TOPICS.forEach(function(t) {
+        html += '<button class="dq-topic-btn' + (t.id === activeTopic ? ' active' : '') + '"' +
+          (t.ready ? ' onclick="switchTopic(\'' + t.id + '\')"' : ' disabled title="Bientôt disponible"') +
+          '>' + t.label + (t.ready ? '' : ' (bientôt)') + '</button>';
+      });
+      row.innerHTML = html;
+    }
+
+    window.switchTopic = function(id) {
+      activeTopic = id;
+      buildTopicRow();
+      // Un seul sujet actif pour l'instant : rien d'autre à faire.
+    };
+
+    // ================================================
+    // GROUP MAPPING
+    // ================================================
+    var CAT_GROUPS = {
+      'Général': '👋 Signaux généraux',
+      'État & besoins': '🙋 État & besoins',
+      'Air & urgence': '🫧 Air & urgence',
+      'Sécurité & technique': '🦺 Sécurité & technique'
+    };
+    function getGroup(cat) { return CAT_GROUPS[cat] || cat; }
+
+    // ================================================
+    // SIGNAUX DE PLONGÉE — extraits des 4 planches de référence fournies.
+    // "sym" décrit le geste (côté visuel du signe), "mean" est sa signification
+    // (le libellé indiqué sous chaque pictogramme dans les planches).
+    // ================================================
+    var SIGNALS = [
+      // === Planche 1 — Signaux généraux ===
+      { cat: 'Général', sym: 'Deux poings qui s\'agrippent l\'un à l\'autre devant la poitrine', mean: 'Se tenir la main' },
+      { cat: 'Général', sym: 'Poing fermé, secoué vers le bas en biais (comme un coup sec)', mean: 'Danger' },
+      { cat: 'Général', sym: 'Main fermée formant un cercle avec le pouce et l\'index repliés (variante gantée du OK)', mean: 'Ok (avec des gants)' },
+      { cat: 'Général', sym: 'Main à plat, paume vers le bas, mouvement lent de haut en bas devant soi', mean: 'Ralentir ou se relaxer' },
+      { cat: 'Général', sym: 'Index levé, qui tourne en boucle (mouvement circulaire) devant le masque', mean: 'Faire demi-tour' },
+      { cat: 'Général', sym: 'Pouce replié, main qui balaie un arc de cercle d\'un côté à l\'autre', mean: 'Quelle direction ?' },
+      { cat: 'Général', sym: 'Deux index pointés vers l\'avant, l\'un derrière l\'autre', mean: 'Qui dirige, qui suit ?' },
+
+      // === Planche 2 — État & besoins ===
+      { cat: 'État & besoins', sym: 'Index pointé et posé sur l\'oreille / le masque', mean: 'Mes oreilles ne passent pas' },
+      { cat: 'État & besoins', sym: 'Pouce levé', mean: 'Monter' },
+      { cat: 'État & besoins', sym: 'Pouce vers le bas', mean: 'Descendre' },
+      { cat: 'État & besoins', sym: 'Paume ouverte, à plat, tournée vers l\'avant (comme "stop")', mean: 'Stop/Reste ici' },
+      { cat: 'État & besoins', sym: 'Les deux mains ouvertes, paumes vers le haut, écartées de chaque côté', mean: 'Tu as une question' },
+      { cat: 'État & besoins', sym: 'Bras tendu au-dessus de la tête, main agitée d\'un côté à l\'autre', mean: 'Détresse/à l\'aide' },
+      { cat: 'État & besoins', sym: 'Main à plat qui bascule/oscille latéralement (geste "comme-ci comme-ça")', mean: 'Ça ne va pas' },
+      { cat: 'État & besoins', sym: 'Avant-bras croisés serrés contre la poitrine, poings fermés', mean: 'J\'ai froid' },
+      { cat: 'État & besoins', sym: 'Les deux mains jointes en coupe, formant une coque de bateau', mean: 'Bateau' },
+      { cat: 'État & besoins', sym: 'Deux mains jointes, doigts entrelacés, pointées vers le bas', mean: 'Restez en binôme' },
+
+      // === Planche 3 — Air & urgence ===
+      { cat: 'Air & urgence', sym: 'Avant-bras croisés à plat devant soi, en X', mean: 'Fin' },
+      { cat: 'Air & urgence', sym: 'Main paume vers le haut, doigts qui font signe de venir vers soi', mean: 'Viens' },
+      { cat: 'Air & urgence', sym: 'Poing fermé, tenu devant soi', mean: 'Je suis sur la réserve' },
+      { cat: 'Air & urgence', sym: 'Main à plat, tranchant, passée horizontalement au niveau de la gorge', mean: 'Je n\'ai plus d\'air' },
+      { cat: 'Air & urgence', sym: 'Deux doigts (index et majeur) qui vont et viennent vers la bouche/le détendeur', mean: 'Partageons l\'air' },
+      { cat: 'Air & urgence', sym: 'Pouce et index formant un cercle, les trois autres doigts tendus (signe OK classique)', mean: 'Ok?/Ok' },
+      { cat: 'Air & urgence', sym: 'Paume posée à plat sur le dessus du masque/de la tête', mean: 'Ok?/Ok (une main occupée)' },
+      { cat: 'Air & urgence', sym: 'Les deux bras levés au-dessus de la tête, formant un cercle complet', mean: 'Ok?/Ok (en surface à distance)' },
+      { cat: 'Air & urgence', sym: 'Deux doigts (index et majeur) pointés vers ses propres yeux puis vers soi', mean: 'Moi/Regarde moi' },
+      { cat: 'Air & urgence', sym: 'Main à plat, paume vers le bas, maintenue immobile à l\'horizontale', mean: 'Reste à ce niveau' },
+
+      // === Planche 4 — Sécurité & technique ===
+      { cat: 'Sécurité & technique', sym: 'Main à plat, 3 doigts tendus à l\'horizontale devant le masque (indique le palier)', mean: 'Palier de sécurité' },
+      { cat: 'Sécurité & technique', sym: 'Tranchant d\'une main qui vient couper la paume de l\'autre main, verticalement', mean: 'Quelle quantité d\'air ?' },
+      { cat: 'Sécurité & technique', sym: 'Main à plat, horizontale, tenue immobile devant le masque', mean: 'Mi-bouteille' },
+      { cat: 'Sécurité & technique', sym: 'Main posée sur le détendeur/l\'inflateur, doigts ajustant une valve', mean: 'Equilibre' },
+      { cat: 'Sécurité & technique', sym: 'Index tendu, bras pointant devant soi dans une direction', mean: 'Direction' }
+    ];
+
+    // ================================================
+    // STATE
+    // ================================================
+    var selectedCats = new Set();
+    var quizMode = 'symbol'; // 'symbol' or 'meaning'
+    var quizQuestions = [];
+    var currentIdx = 0;
+    var score = 0;
+    var answers = [];
+    var activeTab = 'quiz';
+
+    // ================================================
+    // TABS (Quiz / Consulter)
+    // ================================================
+    window.switchTab = function(tab, btn) {
+      activeTab = tab;
+      document.querySelectorAll('.dq-tab').forEach(function(t) { t.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      document.getElementById('tabQuiz').style.display = tab === 'quiz' ? '' : 'none';
+      document.getElementById('tabBrowse').style.display = tab === 'browse' ? '' : 'none';
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('configPanel').style.display = 'block';
+      if (tab === 'browse') buildBrowseContent();
+    };
+
+    // ================================================
+    // CATEGORIES — group-based selection
+    // ================================================
+    function getCategories() {
+      var cats = [];
+      var seen = {};
+      SIGNALS.forEach(function(s) {
+        if (!seen[s.cat]) { seen[s.cat] = true; cats.push(s.cat); }
+      });
+      return cats;
+    }
+
+    function getGroups() {
+      var groups = [];
+      var seen = {};
+      getCategories().forEach(function(cat) {
+        var g = getGroup(cat);
+        if (!seen[g]) { seen[g] = true; groups.push(g); }
+      });
+      return groups;
+    }
+
+    function getCatsForGroup(group) {
+      return getCategories().filter(function(cat) { return getGroup(cat) === group; });
+    }
+
+    function countGroup(group) {
+      var cats = getCatsForGroup(group);
+      return SIGNALS.filter(function(s) { return cats.indexOf(s.cat) >= 0; }).length;
+    }
+
+    function buildCatGrid() {
+      var grid = document.getElementById('catGrid');
+      var groups = getGroups();
+      var html = '';
+      groups.forEach(function(grp) {
+        var cats = getCatsForGroup(grp);
+        var allActive = cats.every(function(c) { return selectedCats.has(c); });
+        html += '<button class="dq-cat-btn' + (allActive ? ' active' : '') + '" data-group="' + grp + '" onclick="toggleGroup(this)">' + grp + ' <span style="opacity:0.5">(' + countGroup(grp) + ')</span></button>';
+      });
+      grid.innerHTML = html;
+      updateMaxLabel();
+    }
+
+    window.toggleGroup = function(btn) {
+      var grp = btn.getAttribute('data-group');
+      var cats = getCatsForGroup(grp);
+      var allActive = cats.every(function(c) { return selectedCats.has(c); });
+      if (allActive) {
+        cats.forEach(function(c) { selectedCats.delete(c); });
+        btn.classList.remove('active');
+      } else {
+        cats.forEach(function(c) { selectedCats.add(c); });
+        btn.classList.add('active');
+      }
+      updateMaxLabel();
+    };
+
+    window.selectAllCats = function() {
+      getCategories().forEach(function(c) { selectedCats.add(c); });
+      buildCatGrid();
+    };
+
+    window.deselectAllCats = function() {
+      selectedCats.clear();
+      buildCatGrid();
+    };
+
+    function updateMaxLabel() {
+      var pool = getPool();
+      document.getElementById('maxLabel').textContent = '/ ' + pool.length + ' disponibles';
+      document.getElementById('btnStart').disabled = pool.length === 0;
+    }
+
+    function getPool() {
+      if (selectedCats.size === 0) return [];
+      return SIGNALS.filter(function(s) { return selectedCats.has(s.cat); });
+    }
+
+    // ================================================
+    // MODE
+    // ================================================
+    window.setMode = function(mode, btn) {
+      quizMode = mode;
+      document.querySelectorAll('.dq-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    };
+
+    // ================================================
+    // QUIZ LOGIC
+    // ================================================
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    window.startQuiz = function() {
+      var pool = getPool();
+      if (pool.length === 0) return;
+      var nb = parseInt(document.getElementById('nbQuestions').value) || 20;
+      nb = Math.min(nb, pool.length);
+      quizQuestions = shuffle(pool).slice(0, nb);
+      currentIdx = 0;
+      score = 0;
+      answers = [];
+      document.getElementById('configPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('quizPanel').style.display = 'block';
+      showQuestion();
+    };
+
+    function showQuestion() {
+      var q = quizQuestions[currentIdx];
+      var total = quizQuestions.length;
+      document.getElementById('progressText').textContent = 'Question ' + (currentIdx + 1) + ' / ' + total + '  —  Score : ' + score;
+      document.getElementById('progressFill').style.width = ((currentIdx / total) * 100) + '%';
+
+      // Build 4 choices (1 correct + 3 distractors from same category preferably)
+      var sameCat = SIGNALS.filter(function(s) { return s.cat === q.cat && s !== q; });
+      var otherPool = SIGNALS.filter(function(s) { return s !== q; });
+      var distractors = shuffle(sameCat).slice(0, 3);
+      if (distractors.length < 3) {
+        var remaining = shuffle(otherPool.filter(function(s) { return distractors.indexOf(s) < 0; }));
+        distractors = distractors.concat(remaining.slice(0, 3 - distractors.length));
+      }
+
+      var choices = shuffle([q].concat(distractors));
+      var correctIdx = choices.indexOf(q);
+      var promptHtml, choiceHtmls;
+
+      if (quizMode === 'symbol') {
+        // Montrer le geste → deviner la signification
+        promptHtml = escHtml(q.sym);
+        choiceHtmls = choices.map(function(c) { return escHtml(c.mean); });
+      } else {
+        // Montrer la signification → deviner le geste
+        promptHtml = escHtml(q.mean);
+        choiceHtmls = choices.map(function(c) { return escHtml(c.sym); });
+      }
+
+      var html = '<div class="dq-q-label">' + (quizMode === 'symbol' ? 'Que signifie ce signe ?' : 'Comment fait-on ce signe ?') + '</div>';
+      html += '<div class="dq-q-prompt">' + promptHtml + '</div>';
+      html += '<div class="dq-q-cat">' + escHtml(getGroup(q.cat)) + '</div>';
+      html += '<div class="dq-choices">';
+      for (var i = 0; i < choices.length; i++) {
+        html += '<button class="dq-choice" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + choiceHtmls[i] + '</button>';
+      }
+      html += '</div>';
+      html += '<div id="nextBtnWrap" style="display:none;"><button class="dq-next-btn" onclick="nextQuestion()">Suivant ▶</button></div>';
+
+      document.getElementById('questionCard').innerHTML = html;
+    }
+
+    window.pickAnswer = function(btn) {
+      var allBtns = btn.parentElement.querySelectorAll('.dq-choice');
+      var alreadyLocked = btn.classList.contains('dq-locked');
+      if (alreadyLocked) return;
+
+      var idx = parseInt(btn.getAttribute('data-idx'));
+      var correctIdx = parseInt(btn.getAttribute('data-correct'));
+      var isCorrect = idx === correctIdx;
+
+      allBtns.forEach(function(b) { b.classList.add('dq-locked'); });
+      allBtns[correctIdx].classList.add('dq-correct');
+      if (!isCorrect) {
+        btn.classList.add('dq-wrong');
+      } else {
+        score++;
+      }
+
+      answers.push({ item: quizQuestions[currentIdx], correct: isCorrect });
+
+      document.getElementById('progressText').textContent = 'Question ' + (currentIdx + 1) + ' / ' + quizQuestions.length + '  —  Score : ' + score;
+      document.getElementById('nextBtnWrap').style.display = 'block';
+    };
+
+    window.nextQuestion = function() {
+      currentIdx++;
+      if (currentIdx >= quizQuestions.length) {
+        showResults();
+      } else {
+        showQuestion();
+      }
+    };
+
+    function showResults() {
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'block';
+      var total = quizQuestions.length;
+      var pct = Math.round(100 * score / total);
+      var emoji = pct >= 90 ? '🏆' : pct >= 70 ? '👏' : pct >= 50 ? '💪' : '📚';
+
+      var html = '<div class="dq-result-score">' + pct + '%</div>';
+      html += '<div class="dq-result-label">' + emoji + ' ' + score + ' / ' + total + ' correct' + (score > 1 ? 's' : '') + '</div>';
+      html += '<div class="dq-result-details">' + getModeLabel() + '</div>';
+      html += '<button class="dq-start-btn" onclick="resetQuiz()" style="margin-top:10px;">🔄 Recommencer</button>';
+      html += '<button class="dq-next-btn" onclick="resetToConfig()" style="margin-top:8px;">⚙️ Reconfigurer</button>';
+      document.getElementById('resultContent').innerHTML = html;
+
+      var rhtml = '<div style="margin-top:16px; border-top: 1px solid var(--border-color); padding-top: 12px;">';
+      rhtml += '<div style="text-align:center; font-weight:600; font-size:0.88em; color:var(--text-secondary); margin-bottom:10px;">Récapitulatif</div>';
+      answers.forEach(function(a) {
+        var icon = a.correct ? '✅' : '❌';
+        rhtml += '<div class="dq-review-item">';
+        rhtml += '<span class="dq-review-sym">' + escHtml(a.item.sym) + '</span>';
+        rhtml += '<span class="dq-review-mean">' + escHtml(a.item.mean) + '</span>';
+        rhtml += '<span class="dq-review-icon">' + icon + '</span>';
+        rhtml += '</div>';
+      });
+      rhtml += '</div>';
+      document.getElementById('reviewList').innerHTML = rhtml;
+
+      _savePlongeeSession(score, total, answers);
+    }
+
+    /**
+     * Sauvegarde une session plongée dans localStorage, sur le même format
+     * que symbolesSessionHistory (clés séparées pour ne pas interférer).
+     */
+    function _savePlongeeSession(correct, total, answersArr) {
+      try {
+        var now = new Date().toISOString();
+        var catsUsed = {};
+        answersArr.forEach(function(a) {
+          var grp = getGroup(a.item.cat);
+          if (!catsUsed[grp]) catsUsed[grp] = { correct: 0, total: 0 };
+          catsUsed[grp].total++;
+          if (a.correct) catsUsed[grp].correct++;
+        });
+        var catNames = Object.keys(catsUsed).sort();
+        var categoryLabel = catNames.length === 1 ? catNames[0] : 'Multi (' + catNames.length + ' groupes)';
+
+        var sessions = [];
+        try { sessions = JSON.parse(localStorage.getItem('plongeeSessionHistory') || '[]'); } catch(e) {}
+        sessions.push({
+          date: now, correct: correct, total: total, category: categoryLabel,
+          percent: total > 0 ? Math.round(100 * correct / total) : 0, groups: catNames
+        });
+        if (sessions.length > 200) sessions = sessions.slice(-200);
+        localStorage.setItem('plongeeSessionHistory', JSON.stringify(sessions));
+
+        var responses = {};
+        try { responses = JSON.parse(localStorage.getItem('plongeeResponses') || '{}'); } catch(e) {}
+        answersArr.forEach(function(a) {
+          var key = 'dive_' + a.item.cat + '_' + a.item.mean;
+          if (!responses[key]) responses[key] = { cat: a.item.cat, group: getGroup(a.item.cat), mean: a.item.mean, correct: 0, wrong: 0, lastDate: null };
+          if (a.correct) responses[key].correct++; else responses[key].wrong++;
+          responses[key].lastDate = now;
+        });
+        localStorage.setItem('plongeeResponses', JSON.stringify(responses));
+      } catch(e) {
+        console.warn('[_savePlongeeSession] erreur:', e.message);
+      }
+    }
+
+    window.resetQuiz = function() {
+      document.getElementById('resultPanel').style.display = 'none';
+      startQuiz();
+    };
+
+    window.resetToConfig = function() {
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('quizPanel').style.display = 'none';
+      document.getElementById('configPanel').style.display = 'block';
+    };
+
+    function getModeLabel() {
+      return quizMode === 'symbol' ? 'Signe → Signification' : 'Signification → Signe';
+    }
+
+    function escHtml(t) {
+      return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ================================================
+    // BROWSE / CONSULTATION MODE
+    // ================================================
+    var browseActiveGroups = new Set();
+
+    function buildBrowseFilters() {
+      var btns = document.getElementById('browseFilterBtns');
+      var groups = getGroups();
+      var html = '<button class="dq-select-btn" onclick="browseSelectAll()">Tous</button>';
+      groups.forEach(function(g) {
+        var active = browseActiveGroups.has(g);
+        html += '<button class="dq-select-btn' + (active ? ' active" style="background:linear-gradient(135deg,#0288d1 0%,#26c6da 100%);color:#fff;border-color:transparent;"' : '"') + ' data-bgroup="' + g + '" onclick="toggleBrowseGroup(this)">' + g + '</button>';
+      });
+      btns.innerHTML = html;
+    }
+
+    window.toggleBrowseGroup = function(btn) {
+      var g = btn.getAttribute('data-bgroup');
+      if (browseActiveGroups.has(g)) browseActiveGroups.delete(g);
+      else browseActiveGroups.add(g);
+      buildBrowseContent();
+    };
+
+    window.browseSelectAll = function() {
+      browseActiveGroups.clear();
+      getGroups().forEach(function(g) { browseActiveGroups.add(g); });
+      buildBrowseContent();
+    };
+
+    function buildBrowseContent() {
+      if (browseActiveGroups.size === 0) {
+        getGroups().forEach(function(g) { browseActiveGroups.add(g); });
+      }
+      buildBrowseFilters();
+      var container = document.getElementById('browseContent');
+      var groups = getGroups().filter(function(g) { return browseActiveGroups.has(g); });
+      var html = '';
+      groups.forEach(function(grp) {
+        html += '<div class="dq-browse-group">';
+        html += '<div class="dq-browse-group-title">' + escHtml(grp) + '</div>';
+        html += '<div class="dq-browse-grid">';
+        var cats = getCatsForGroup(grp);
+        SIGNALS.forEach(function(s) {
+          if (cats.indexOf(s.cat) < 0) return;
+          html += '<div class="dq-browse-card">';
+          html += '<div class="dq-browse-mean">' + escHtml(s.mean) + '</div>';
+          html += '<div class="dq-browse-sym">' + escHtml(s.sym) + '</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      });
+      container.innerHTML = html;
+    }
+
+    // ================================================
+    // INIT
+    // ================================================
+    buildTopicRow();
+    selectAllCats();
+    buildCatGrid();
+
+  })();
+  </script>
+</body>
+</html>
