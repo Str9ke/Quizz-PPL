@@ -14280,7 +14280,22 @@ function init(){
     dnInput.addEventListener('input',function(){dnInput._userEdited=true;});
   }
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});
+    /* Recharge automatiquement dès qu'une nouvelle version du Service Worker prend le
+       contrôle de la page — sans ça, un onglet navlog.html déjà ouvert continuait à exécuter
+       l'ANCIEN JavaScript déjà chargé en mémoire indéfiniment, même après un déploiement
+       réussi et même après le passage en cache-first du nouveau sw.js : seul un nouvel onglet
+       (ou un rechargement manuel complet) récupérait vraiment le code à jour. Ce mécanisme
+       existe déjà pour les autres pages via js/offline.js, mais navlog.html enregistre son
+       propre Service Worker séparément sans jamais l'avoir repris. Le garde-fou
+       "_swRefreshing" évite une boucle si l'événement se déclenche plusieurs fois. */
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      var _swRefreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',function(){
+        if(_swRefreshing) return;
+        _swRefreshing=true;
+        window.location.reload();
+      });
+    }).catch(function(e){console.log('SW:',e);});
   }
   /* Restore aircraft selection across tabs + apply default cruise performance */
   var _savedAc=localStorage.getItem('perfAircraft')||'OO-MQA';
