@@ -7575,6 +7575,7 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
   var bandsHtml='';
   if(typeof _routeAirspaces!=='undefined' && _routeAirspaces.length){
     var sortedAS=_routeAirspaces.slice().sort(function(a,b){return (b.upperFt-b.lowerFt)-(a.upperFt-a.lowerFt);});
+    var labelCandidatesPrint=[];
     sortedAS.forEach(function(a){
       var col=(typeof _airspaceBandColor==='function')?_airspaceBandColor(a.classLabel):'#888';
       a.crossings.forEach(function(c){
@@ -7585,8 +7586,24 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
         var byTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(a.lowerFt||0,0));
         var bw=bx2-bx1,bh=byBot-byTop;
         bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="0.8"/>';
-        if(bw>32 && bh>9) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+8)+'" text-anchor="middle" font-size="6.5" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+(typeof _airspaceClassBadge==='function'?_airspaceClassBadge(a):'')+'</text>';
+        if(bw>32 && bh>9) labelCandidatesPrint.push({x1:bx1,x2:bx2,yTop:byTop,yBot:byBot,col:col,txt:a.classLabel+(typeof _airspaceClassBadge==='function'?_airspaceClassBadge(a):'')});
       });
+    });
+    /* Empile verticalement les étiquettes qui se chevauchent horizontalement (voir même
+       logique dans renderAltitudesProfile). */
+    var placedLabelsPrint=[];
+    labelCandidatesPrint.forEach(function(lc){
+      var estW=Math.max(20,lc.txt.length*3.9);
+      var cx=(lc.x1+lc.x2)/2, lx1=cx-estW/2, lx2=cx+estW/2;
+      var ly=lc.yTop+8, maxY=Math.max(ly,lc.yBot-2), guard=0;
+      while(guard<40){
+        var collide=placedLabelsPrint.some(function(p){ return Math.abs(p.y-ly)<7.5 && lx1<p.x2 && lx2>p.x1; });
+        if(!collide) break;
+        ly+=7.5; guard++;
+        if(ly>maxY){ ly=maxY; break; }
+      }
+      placedLabelsPrint.push({x1:lx1,x2:lx2,y:ly});
+      bandsHtml+='<text x="'+cx+'" y="'+ly+'" text-anchor="middle" font-size="6.5" fill="'+lc.col+'" font-weight="700">'+escHTML(lc.txt)+'</text>';
     });
   }
   if(typeof _routeDailyWarnings!=='undefined' && _routeDailyWarnings.length){
@@ -11942,6 +11959,7 @@ function renderAltitudesProfile(){
     return (b.upperFt-b.lowerFt)-(a.upperFt-a.lowerFt);
   });
   var bandsHtml='';
+  var labelCandidates=[];
   sortedAirspaces.forEach(function(a){
     var col=_airspaceBandColor(a.classLabel);
     a.crossings.forEach(function(c){
@@ -11949,8 +11967,29 @@ function renderAltitudesProfile(){
       var yTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)), yBot=yS(Math.max(a.lowerFt||0,0));
       var bw=x2-x1, bh=yBot-yTop;
       bandsHtml+='<rect x="'+x1+'" y="'+yTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
-      if(bw>36 && bh>15) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+12)+'" text-anchor="middle" font-size="9" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+_airspaceClassBadge(a)+'</text>';
+      if(bw>36 && bh>15) labelCandidates.push({x1:x1,x2:x2,yTop:yTop,yBot:yBot,col:col,txt:a.classLabel+_airspaceClassBadge(a)});
     });
+  });
+  /* Étiquettes des bandes : plusieurs zones (ex: FIR + TMA + SIV) se
+     superposent souvent exactement à la même position horizontale — les
+     empiler verticalement plutôt que de les laisser se chevaucher les unes
+     sur les autres et devenir illisibles. On tente d'abord la position
+     habituelle (juste sous le haut de la bande), et si elle entre en
+     collision avec une étiquette déjà placée on descend d'une ligne, tant
+     que ça reste dans la hauteur de la bande. */
+  var placedLabels=[];
+  labelCandidates.forEach(function(lc){
+    var estW=Math.max(28,lc.txt.length*5.4);
+    var cx=(lc.x1+lc.x2)/2, lx1=cx-estW/2, lx2=cx+estW/2;
+    var ly=lc.yTop+12, maxY=Math.max(ly,lc.yBot-4), guard=0;
+    while(guard<40){
+      var collide=placedLabels.some(function(p){ return Math.abs(p.y-ly)<11 && lx1<p.x2 && lx2>p.x1; });
+      if(!collide) break;
+      ly+=11; guard++;
+      if(ly>maxY){ ly=maxY; break; }
+    }
+    placedLabels.push({x1:lx1,x2:lx2,y:ly});
+    bandsHtml+='<text x="'+cx+'" y="'+ly+'" text-anchor="middle" font-size="9" fill="'+lc.col+'" font-weight="700">'+escHTML(lc.txt)+'</text>';
   });
 
   /* Volumes des avis du jour (daily_warnings.json), par-dessus les espaces aériens —
@@ -12068,7 +12107,8 @@ function renderAltitudesProfile(){
       tooltipEl.innerHTML=hits.map(function(a){
         var upperLabel=(a.upperFt>=60000)?'UNL':((a.upperFt||0)+' ft');
         var col=a._warning?'#ef5350':_airspaceBandColor(a.classLabel);
-        return '<div style="margin-bottom:4px"><b style="color:'+col+'">'+escHTML(a.classLabel)+'</b> '+escHTML(a.name)+
+        var classTag=(!a._warning && a.icaoClass)?(' <span style="border:1px solid '+col+';border-radius:4px;padding:0 4px;font-size:.92em">Classe '+escHTML(a.icaoClass)+'</span>'):'';
+        return '<div style="margin-bottom:4px"><b style="color:'+col+'">'+escHTML(a.classLabel)+'</b>'+classTag+' '+escHTML(a.name)+
           '<br><span style="opacity:.75">'+(a.lowerFt||0)+'–'+upperLabel+'</span></div>';
       }).join('');
       tooltipEl.style.display='block';
@@ -12441,6 +12481,7 @@ function renderAltProfile(){
   var bandsHtml='';
   if(typeof _routeAirspaces!=='undefined'&&_routeAirspaces.length){
     var sortedAirspacesMini=_routeAirspaces.slice().sort(function(a,b){return (b.upperFt-b.lowerFt)-(a.upperFt-a.lowerFt);});
+    var labelCandidatesMini=[];
     sortedAirspacesMini.forEach(function(a){
       var col=_airspaceBandColor(a.classLabel);
       a.crossings.forEach(function(c){
@@ -12448,8 +12489,24 @@ function renderAltProfile(){
         var byTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(a.lowerFt||0,0));
         var bw=bx2-bx1,bh=byBot-byTop;
         bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
-        if(bw>30 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+_airspaceClassBadge(a)+'</text>';
+        if(bw>30 && bh>13) labelCandidatesMini.push({x1:bx1,x2:bx2,yTop:byTop,yBot:byBot,col:col,txt:a.classLabel+_airspaceClassBadge(a)});
       });
+    });
+    /* Empile verticalement les étiquettes qui se chevauchent horizontalement (voir même
+       logique dans renderAltitudesProfile). */
+    var placedLabelsMini=[];
+    labelCandidatesMini.forEach(function(lc){
+      var estW=Math.max(24,lc.txt.length*4.8);
+      var cx=(lc.x1+lc.x2)/2, lx1=cx-estW/2, lx2=cx+estW/2;
+      var ly=lc.yTop+11, maxY=Math.max(ly,lc.yBot-3), guard=0;
+      while(guard<40){
+        var collide=placedLabelsMini.some(function(p){ return Math.abs(p.y-ly)<10 && lx1<p.x2 && lx2>p.x1; });
+        if(!collide) break;
+        ly+=10; guard++;
+        if(ly>maxY){ ly=maxY; break; }
+      }
+      placedLabelsMini.push({x1:lx1,x2:lx2,y:ly});
+      bandsHtml+='<text x="'+cx+'" y="'+ly+'" text-anchor="middle" font-size="8" fill="'+lc.col+'" font-weight="700">'+escHTML(lc.txt)+'</text>';
     });
   }
 
