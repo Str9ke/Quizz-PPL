@@ -761,6 +761,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .tts-voice-sel{font-size:.72em;padding:2px 5px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-container);color:var(--text-primary);cursor:pointer;max-width:145px}
 .dw-airport-label{background:rgba(10,10,20,.82) !important;border:none !important;color:#fff !important;font-size:.72em !important;padding:1px 5px !important;box-shadow:none !important}
 .dw-airport-label::before{display:none !important}
+.as-map-label{background:rgba(10,10,20,.82) !important;border:none !important;color:#fff !important;font-size:.74em !important;font-weight:700 !important;padding:2px 6px !important;box-shadow:none !important;pointer-events:none}
+.as-map-label::before{display:none !important}
   </style>
 </head>
 <body>
@@ -984,6 +986,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="navlog-btn success" onclick="window.returnToStart()" title="Ajouter le point de départ comme destination finale">&#x21A9;&#xFE0F; Retour départ</button>
         <button class="navlog-btn rm-fullscreen-btn" onclick="window.toggleRouteMapFullscreen()" title="Agrandir la carte en plein écran (pratique sur mobile)">&#x26F6; Plein écran</button>
         <button class="navlog-btn" id="dwMapToggleBtn" onclick="window.toggleDailyWarningsOnMap()" title="Afficher/masquer les zones des avis du jour sur la carte">&#x26A0;&#xFE0F; Zones du jour</button>
+        <button class="navlog-btn" id="asMapToggleBtn" onclick="window.toggleAirspacesOnMap()" title="Afficher/masquer les espaces aériens croisés sur la carte, avec leur classe OACI (touchez une zone) — charge d'abord les espaces aériens depuis l'onglet Altitudes">&#x1F170;&#xFE0F; Classes espace aérien</button>
         <label class="rm-measure-toggle" title="Cliquez 2 points sur la carte (hors navigation) pour mesurer une distance et estimer l'altitude mini pour rejoindre le rivage au-dessus d'un bras de mer">
           <input type="checkbox" id="rmMeasureCheckbox" onchange="window.toggleMeasureMode(this)"> &#x1F4CF; Mode mesure
         </label>
@@ -3460,10 +3463,10 @@ function printConsolidatedDossier(){
 
   /* --- Espaces aériens --- */
   if(typeof _routeAirspaces!=='undefined' && _routeAirspaces.length){
-    html+='<h2>🏔️ Espaces aériens traversés</h2><table><tr><th>Classe/Type</th><th>Nom</th><th>Plancher – Plafond</th></tr>';
+    html+='<h2>🏔️ Espaces aériens traversés</h2><table><tr><th>Type</th><th>Classe OACI</th><th>Nom</th><th>Plancher – Plafond</th></tr>';
     _routeAirspaces.forEach(function(a){
       var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(a.classLabel);
-      html+='<tr><td class="'+(isDanger?'danger':'')+'">'+esc(a.classLabel)+(isDanger?' ⚠️':'')+'</td><td>'+esc(a.name)+'</td><td>'+(a.lowerFt||0)+' – '+(a.upperFt||'?')+' ft</td></tr>';
+      html+='<tr><td class="'+(isDanger?'danger':'')+'">'+esc(a.classLabel)+(isDanger?' ⚠️':'')+'</td><td>'+esc(a.icaoClass||'—')+'</td><td>'+esc(a.name)+'</td><td>'+(a.lowerFt||0)+' – '+(a.upperFt||'?')+' ft</td></tr>';
     });
     html+='</table>';
   }
@@ -6392,6 +6395,80 @@ function _renderDailyWarningsOnRouteMap(){
   _dwMapLayerGroup=group;
 }
 
+/* ===== Bouton carte : classe OACI des espaces aériens sur la carte de route =====
+   Le fond de carte "ICAO" (icaoLayer, tuiles PNG pré-rendues par OpenAIP) affiche déjà les
+   noms/types de zone (TMA, CTR, "TYPE 21"...) mais AUCUNE classe A-G — et ce sont des images
+   figées côté serveur OpenAIP, impossible à modifier depuis ce code. La seule façon d'ajouter
+   la classe SUR LA CARTE est donc un calque interactif séparé, dessiné par-dessus à partir des
+   données vectorielles déjà récupérées (mêmes _lastOpenaipItems que l'onglet Altitudes) — touché
+   pour afficher un popup "Type · Classe X". Limité aux zones RÉELLEMENT croisées par la route
+   (déjà calculées dans _routeAirspaces) pour ne pas noyer la carte sous toutes les zones de la
+   zone élargie chargée (jusqu'à plusieurs dizaines). */
+var _asMapLayerGroup=null;
+var _asMapVisible=false;
+function toggleAirspacesOnMap(){
+  if(typeof routeMap==='undefined'||!routeMap) return;
+  if(!_lastOpenaipItems || !_lastOpenaipItems.length){
+    _toast('⚠️ Charge d\'abord les espaces aériens depuis l\'onglet Altitudes (bouton "Charger les espaces aériens")','error',3500);
+    return;
+  }
+  _asMapVisible=!_asMapVisible;
+  var btn=document.getElementById('asMapToggleBtn');
+  if(_asMapVisible){
+    _renderAirspacesOnRouteMap();
+    if(btn){ btn.style.background='linear-gradient(135deg,#3498db,#2980b9)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+  } else {
+    if(_asMapLayerGroup){ routeMap.removeLayer(_asMapLayerGroup); _asMapLayerGroup=null; }
+    if(btn){ btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  }
+}
+window.toggleAirspacesOnMap=toggleAirspacesOnMap;
+
+function _renderAirspacesOnRouteMap(){
+  if(typeof routeMap==='undefined'||!routeMap||!_lastOpenaipItems||typeof L==='undefined') return;
+  if(_asMapLayerGroup){ routeMap.removeLayer(_asMapLayerGroup); _asMapLayerGroup=null; }
+  if(typeof _recomputeAirspacesIfStale==='function') _recomputeAirspacesIfStale();
+  /* Zones réellement croisées par la route, par nom — évite d'afficher les dizaines de zones
+     de la zone élargie qui n'ont rien à voir avec ce vol précis. */
+  var crossedNames={};
+  (_routeAirspaces||[]).forEach(function(a){ crossedNames[a.name]=a; });
+
+  var group=L.layerGroup();
+  _lastOpenaipItems.forEach(function(it){
+    var name=it.name||it.designator||'Zone sans nom';
+    var crossed=crossedNames[name];
+    if(!crossed) return;
+    var geom=it.geometry||it.geojson;
+    if(!geom||!geom.coordinates) return;
+    var rings=[];
+    if(geom.type==='Polygon') rings=[geom.coordinates[0]];
+    else if(geom.type==='MultiPolygon') rings=geom.coordinates.map(function(p){return p[0];});
+    if(!rings.length) return;
+
+    var col=_airspaceBandColor(crossed.classLabel);
+    var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(crossed.classLabel);
+    var upperLabel=(crossed.upperFt>=60000)?'UNL':((crossed.upperFt||0)+' ft');
+    var classTxt=crossed.icaoClass?('Classe '+crossed.icaoClass):'Classe OACI non renseignée';
+    var popupHtml='<b style="color:'+col+'">'+escHTML(crossed.classLabel)+'</b>'+(isDanger?' ⚠️':'')+
+      ' — <b>'+escHTML(classTxt)+'</b><br>'+escHTML(name)+
+      '<br>'+(crossed.lowerFt||0)+' – '+upperLabel;
+
+    rings.forEach(function(ring){
+      var latlngs=ring.map(function(pt){ return [pt[1],pt[0]]; }); /* GeoJSON = [lon,lat] */
+      var layer=L.polygon(latlngs,{color:col,weight:2,fillColor:col,fillOpacity:.14,dashArray:isDanger?'5,4':null});
+      layer.bindPopup(popupHtml);
+      /* Étiquette permanente courte (type · classe) au centre de la zone — évite d'avoir à
+         cliquer juste pour voir l'info de base, cohérent avec la demande "affiché sur la carte"
+         plutôt que seulement au clic. */
+      var labelTxt=crossed.classLabel+(crossed.icaoClass?(' · '+crossed.icaoClass):'');
+      layer.bindTooltip(labelTxt,{permanent:true,direction:'center',className:'as-map-label',opacity:.9});
+      group.addLayer(layer);
+    });
+  });
+  group.addTo(routeMap);
+  _asMapLayerGroup=group;
+}
+
 /* Carte locale (projection équirectangulaire) d'un avis, centrée sur son centre/centroïde,
    avec les waypoints de la route affichés à proximité pour donner le contexte géographique. */
 function renderWarningMapSVG(w){
@@ -7508,7 +7585,7 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
         var byTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(a.lowerFt||0,0));
         var bw=bx2-bx1,bh=byBot-byTop;
         bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="0.8"/>';
-        if(bw>32 && bh>9) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+8)+'" text-anchor="middle" font-size="6.5" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+        if(bw>32 && bh>9) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+8)+'" text-anchor="middle" font-size="6.5" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+(typeof _airspaceClassBadge==='function'?_airspaceClassBadge(a):'')+'</text>';
       });
     });
   }
@@ -11076,6 +11153,23 @@ function _openaipClassLabel(item){
   return 'ZONE';
 }
 
+/* _openaipIcaoClass() — Extrait la classe OACI (A-G) SEULE, séparément du type (CTR/TMA/...)
+   ci-dessus. Demandé explicitement : voir le nom d'une zone sur la carte/le profil d'altitude
+   ne dit pas si un contact radio est obligatoire (classes C/D) ou pas (E/G) — l'info existante
+   (classLabel) privilégie à raison le TYPE, mais ne montrait alors JAMAIS la classe quand le
+   type était connu. Retourne null si absente/non normalisable (beaucoup de DANGER/RESTRICTED/
+   PROHIBITED/FIR n'ont pas de classe OACI au sens propre) plutôt que de deviner. */
+function _openaipIcaoClass(item){
+  var classMap={0:'A',1:'B',2:'C',3:'D',4:'E',5:'F',6:'G'};
+  if(item.icaoClass!==undefined && classMap[item.icaoClass]!==undefined) return classMap[item.icaoClass];
+  if(typeof item.icaoClass==='string' && /^[A-G]$/i.test(item.icaoClass)) return item.icaoClass.toUpperCase();
+  return null;
+}
+/* Badge compact "TMA · D" pour les libellés SVG (peu de place) — '' si classe inconnue. */
+function _airspaceClassBadge(a){
+  return (a && a.icaoClass) ? (' · '+a.icaoClass) : '';
+}
+
 function _airspaceBandColor(label){
   var m={A:'#e74c3c',B:'#e67e22',C:'#f1c40f',D:'#3498db',E:'#2ecc71',F:'#1abc9c',G:'#95a5a6',
     CTR:'#3498db',TMA:'#9b59b6',TMZ:'#8e44ad',RMZ:'#8e44ad',ATZ:'#2980b9',MATZ:'#5b2c8e',
@@ -11445,6 +11539,7 @@ function _computeAirspaceCrossings(items){
 
     var name=it.name||it.designator||'Zone sans nom';
     var classLabel=_openaipClassLabel(it);
+    var icaoClass=_openaipIcaoClass(it);
     var lowerFt=_openaipLimitToFt(it.lowerLimit||it.lower_limit);
     var upperFt=_openaipLimitToFt(it.upperLimit||it.upper_limit);
 
@@ -11456,7 +11551,7 @@ function _computeAirspaceCrossings(items){
     });
     if(inside && samples.length) runs.push({entryDist:entryDist, exitDist:samples[samples.length-1].dist});
 
-    if(runs.length) results.push({name:name, classLabel:classLabel, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
+    if(runs.length) results.push({name:name, classLabel:classLabel, icaoClass:icaoClass, lowerFt:lowerFt, upperFt:upperFt, crossings:runs});
   });
   console.log('[Altitudes] '+items.length+' zone(s), '+skippedNoGeom+' sans géométrie, '+
     JSON.stringify(skippedGeomTypes)+' ignorée(s) (type non géré), '+results.length+' croisée(s) par la route actuelle.');
@@ -11741,7 +11836,7 @@ function renderAltitudesCrossingsList(){
       }
       return hit;
     });
-    if(relevantCrossings.length) relevant.push({name:a.name,classLabel:a.classLabel,lowerFt:a.lowerFt,upperFt:a.upperFt,crossings:relevantCrossings});
+    if(relevantCrossings.length) relevant.push({name:a.name,classLabel:a.classLabel,icaoClass:a.icaoClass,lowerFt:a.lowerFt,upperFt:a.upperFt,crossings:relevantCrossings});
   });
 
   if(!relevant.length){
@@ -11764,6 +11859,7 @@ function renderAltitudesCrossingsList(){
     html+='<div style="padding:6px 10px;margin-bottom:5px;border-left:3px solid '+col+';background:'+(isDanger?'rgba(231,76,60,.08)':'var(--bg-container)')+';border-radius:0 8px 8px 0;font-size:.85em">';
     html+='<div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">';
     html+='<span style="font-weight:700;color:'+col+';flex:0 0 auto">'+escHTML(a.classLabel)+'</span>';
+    if(a.icaoClass) html+='<span style="font-weight:700;color:'+col+';flex:0 0 auto;border:1px solid '+col+';border-radius:5px;padding:0 5px;font-size:.9em">Classe '+escHTML(a.icaoClass)+'</span>';
     html+='<span style="font-weight:600">'+escHTML(a.name)+'</span>';
     if(isDanger) html+='<span style="color:#e74c3c;font-weight:700">⚠️</span>';
     html+='</div>';
@@ -11847,7 +11943,7 @@ function renderAltitudesProfile(){
       var yTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)), yBot=yS(Math.max(a.lowerFt||0,0));
       var bw=x2-x1, bh=yBot-yTop;
       bandsHtml+='<rect x="'+x1+'" y="'+yTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
-      if(bw>36 && bh>15) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+12)+'" text-anchor="middle" font-size="9" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+      if(bw>36 && bh>15) bandsHtml+='<text x="'+((x1+x2)/2)+'" y="'+(yTop+12)+'" text-anchor="middle" font-size="9" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+_airspaceClassBadge(a)+'</text>';
     });
   });
 
@@ -12346,7 +12442,7 @@ function renderAltProfile(){
         var byTop=yS(Math.min(a.upperFt||maxAlt,maxAlt)),byBot=yS(Math.max(a.lowerFt||0,0));
         var bw=bx2-bx1,bh=byBot-byTop;
         bandsHtml+='<rect x="'+bx1+'" y="'+byTop+'" width="'+Math.max(1,bw)+'" height="'+Math.max(1,bh)+'" fill="'+col+'" fill-opacity="0.28" stroke="'+col+'" stroke-width="1"/>';
-        if(bw>30 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+'</text>';
+        if(bw>30 && bh>13) bandsHtml+='<text x="'+((bx1+bx2)/2)+'" y="'+(byTop+11)+'" text-anchor="middle" font-size="8" fill="'+col+'" font-weight="700">'+escHTML(a.classLabel)+_airspaceClassBadge(a)+'</text>';
       });
     });
   }
