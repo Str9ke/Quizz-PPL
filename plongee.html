@@ -27,10 +27,17 @@
     .dq-browse { max-width: 900px; margin: 0 auto; }
     .dq-browse-group { margin-bottom: 20px; }
     .dq-browse-group-title { font-size: 1em; font-weight: 700; color: var(--text-heading); margin: 12px 0 8px; padding: 6px 12px; background: linear-gradient(135deg, rgba(2,136,209,.1) 0%, rgba(38,198,218,.1) 100%); border-radius: 8px; }
-    .dq-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
-    .dq-browse-card { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.85em; }
-    .dq-browse-card .dq-browse-sym { font-weight: 700; color: var(--text-heading); }
+    .dq-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+    .dq-browse-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.85em; }
+    .dq-browse-card img { width: 52px; height: 90px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
     .dq-browse-card .dq-browse-mean { color: #26c6da; font-weight: 600; }
+    /* Images côté quiz (Signe -> Signification, et choix images en Signification -> Signe) */
+    .dq-q-img-wrap { text-align: center; margin-bottom: 4px; }
+    .dq-q-img-wrap img { max-width: 200px; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); }
+    .dq-choices.dq-choices-img { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dq-choice.dq-choice-img { text-align: center; padding: 8px; }
+    .dq-choice.dq-choice-img img { width: 100%; max-width: 160px; border-radius: 8px; display: block; margin: 0 auto; }
+    .dq-review-thumb { width: 32px; height: 55px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 8px; }
     .dq-mode-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
     .dq-mode-btn { padding: 8px 20px; font-size: 0.88em; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s; }
     .dq-mode-btn.active { background: linear-gradient(135deg, #0288d1 0%, #26c6da 100%); color: #fff; border-color: transparent; }
@@ -222,46 +229,47 @@
     // "sym" décrit le geste (côté visuel du signe), "mean" est sa signification
     // (le libellé indiqué sous chaque pictogramme dans les planches).
     // ================================================
+    var IMG_BASE = 'Symboles/Plongee/';
     var SIGNALS = [
       // === Planche 1 — Signaux généraux ===
-      { cat: 'Général', sym: 'Deux poings qui s\'agrippent l\'un à l\'autre devant la poitrine', mean: 'Se tenir la main' },
-      { cat: 'Général', sym: 'Poing fermé, secoué vers le bas en biais (comme un coup sec)', mean: 'Danger' },
-      { cat: 'Général', sym: 'Main fermée formant un cercle avec le pouce et l\'index repliés (variante gantée du OK)', mean: 'Ok (avec des gants)' },
-      { cat: 'Général', sym: 'Main à plat, paume vers le bas, mouvement lent de haut en bas devant soi', mean: 'Ralentir ou se relaxer' },
-      { cat: 'Général', sym: 'Index levé, qui tourne en boucle (mouvement circulaire) devant le masque', mean: 'Faire demi-tour' },
-      { cat: 'Général', sym: 'Pouce replié, main qui balaie un arc de cercle d\'un côté à l\'autre', mean: 'Quelle direction ?' },
-      { cat: 'Général', sym: 'Deux index pointés vers l\'avant, l\'un derrière l\'autre', mean: 'Qui dirige, qui suit ?' },
+      { cat: 'Général', img: IMG_BASE + 'se-tenir-la-main.jpg', mean: 'Se tenir la main' },
+      { cat: 'Général', img: IMG_BASE + 'danger.jpg', mean: 'Danger' },
+      { cat: 'Général', img: IMG_BASE + 'ok-gants.jpg', mean: 'Ok (avec des gants)' },
+      { cat: 'Général', img: IMG_BASE + 'ralentir-relaxer.jpg', mean: 'Ralentir ou se relaxer' },
+      { cat: 'Général', img: IMG_BASE + 'faire-demi-tour.jpg', mean: 'Faire demi-tour' },
+      { cat: 'Général', img: IMG_BASE + 'quelle-direction.jpg', mean: 'Quelle direction ?' },
+      { cat: 'Général', img: IMG_BASE + 'qui-dirige-qui-suit.jpg', mean: 'Qui dirige, qui suit ?' },
 
       // === Planche 2 — État & besoins ===
-      { cat: 'État & besoins', sym: 'Index pointé et posé sur l\'oreille / le masque', mean: 'Mes oreilles ne passent pas' },
-      { cat: 'État & besoins', sym: 'Pouce levé', mean: 'Monter' },
-      { cat: 'État & besoins', sym: 'Pouce vers le bas', mean: 'Descendre' },
-      { cat: 'État & besoins', sym: 'Paume ouverte, à plat, tournée vers l\'avant (comme "stop")', mean: 'Stop/Reste ici' },
-      { cat: 'État & besoins', sym: 'Les deux mains ouvertes, paumes vers le haut, écartées de chaque côté', mean: 'Tu as une question' },
-      { cat: 'État & besoins', sym: 'Bras tendu au-dessus de la tête, main agitée d\'un côté à l\'autre', mean: 'Détresse/à l\'aide' },
-      { cat: 'État & besoins', sym: 'Main à plat qui bascule/oscille latéralement (geste "comme-ci comme-ça")', mean: 'Ça ne va pas' },
-      { cat: 'État & besoins', sym: 'Avant-bras croisés serrés contre la poitrine, poings fermés', mean: 'J\'ai froid' },
-      { cat: 'État & besoins', sym: 'Les deux mains jointes en coupe, formant une coque de bateau', mean: 'Bateau' },
-      { cat: 'État & besoins', sym: 'Deux mains jointes, doigts entrelacés, pointées vers le bas', mean: 'Restez en binôme' },
+      { cat: 'État & besoins', img: IMG_BASE + 'oreilles-ne-passent-pas.jpg', mean: 'Mes oreilles ne passent pas' },
+      { cat: 'État & besoins', img: IMG_BASE + 'monter.jpg', mean: 'Monter' },
+      { cat: 'État & besoins', img: IMG_BASE + 'descendre.jpg', mean: 'Descendre' },
+      { cat: 'État & besoins', img: IMG_BASE + 'stop-reste-ici.jpg', mean: 'Stop/Reste ici' },
+      { cat: 'État & besoins', img: IMG_BASE + 'tu-as-une-question.jpg', mean: 'Tu as une question' },
+      { cat: 'État & besoins', img: IMG_BASE + 'detresse-aide.jpg', mean: 'Détresse/à l\'aide' },
+      { cat: 'État & besoins', img: IMG_BASE + 'ca-ne-va-pas.jpg', mean: 'Ça ne va pas' },
+      { cat: 'État & besoins', img: IMG_BASE + 'jai-froid.jpg', mean: 'J\'ai froid' },
+      { cat: 'État & besoins', img: IMG_BASE + 'bateau.jpg', mean: 'Bateau' },
+      { cat: 'État & besoins', img: IMG_BASE + 'restez-en-binome.jpg', mean: 'Restez en binôme' },
 
       // === Planche 3 — Air & urgence ===
-      { cat: 'Air & urgence', sym: 'Avant-bras croisés à plat devant soi, en X', mean: 'Fin' },
-      { cat: 'Air & urgence', sym: 'Main paume vers le haut, doigts qui font signe de venir vers soi', mean: 'Viens' },
-      { cat: 'Air & urgence', sym: 'Poing fermé, tenu devant soi', mean: 'Je suis sur la réserve' },
-      { cat: 'Air & urgence', sym: 'Main à plat, tranchant, passée horizontalement au niveau de la gorge', mean: 'Je n\'ai plus d\'air' },
-      { cat: 'Air & urgence', sym: 'Deux doigts (index et majeur) qui vont et viennent vers la bouche/le détendeur', mean: 'Partageons l\'air' },
-      { cat: 'Air & urgence', sym: 'Pouce et index formant un cercle, les trois autres doigts tendus (signe OK classique)', mean: 'Ok?/Ok' },
-      { cat: 'Air & urgence', sym: 'Paume posée à plat sur le dessus du masque/de la tête', mean: 'Ok?/Ok (une main occupée)' },
-      { cat: 'Air & urgence', sym: 'Les deux bras levés au-dessus de la tête, formant un cercle complet', mean: 'Ok?/Ok (en surface à distance)' },
-      { cat: 'Air & urgence', sym: 'Deux doigts (index et majeur) pointés vers ses propres yeux puis vers soi', mean: 'Moi/Regarde moi' },
-      { cat: 'Air & urgence', sym: 'Main à plat, paume vers le bas, maintenue immobile à l\'horizontale', mean: 'Reste à ce niveau' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'fin.jpg', mean: 'Fin' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'viens.jpg', mean: 'Viens' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'reserve.jpg', mean: 'Je suis sur la réserve' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'plus-dair.jpg', mean: 'Je n\'ai plus d\'air' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'partageons-lair.jpg', mean: 'Partageons l\'air' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'ok-ok.jpg', mean: 'Ok?/Ok' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'ok-ok-main-occupee.jpg', mean: 'Ok?/Ok (une main occupée)' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'ok-ok-surface-distance.jpg', mean: 'Ok?/Ok (en surface à distance)' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'moi-regarde-moi.jpg', mean: 'Moi/Regarde moi' },
+      { cat: 'Air & urgence', img: IMG_BASE + 'reste-a-ce-niveau.jpg', mean: 'Reste à ce niveau' },
 
       // === Planche 4 — Sécurité & technique ===
-      { cat: 'Sécurité & technique', sym: 'Main à plat, 3 doigts tendus à l\'horizontale devant le masque (indique le palier)', mean: 'Palier de sécurité' },
-      { cat: 'Sécurité & technique', sym: 'Tranchant d\'une main qui vient couper la paume de l\'autre main, verticalement', mean: 'Quelle quantité d\'air ?' },
-      { cat: 'Sécurité & technique', sym: 'Main à plat, horizontale, tenue immobile devant le masque', mean: 'Mi-bouteille' },
-      { cat: 'Sécurité & technique', sym: 'Main posée sur le détendeur/l\'inflateur, doigts ajustant une valve', mean: 'Equilibre' },
-      { cat: 'Sécurité & technique', sym: 'Index tendu, bras pointant devant soi dans une direction', mean: 'Direction' }
+      { cat: 'Sécurité & technique', img: IMG_BASE + 'palier-securite.jpg', mean: 'Palier de sécurité' },
+      { cat: 'Sécurité & technique', img: IMG_BASE + 'quelle-quantite-dair.jpg', mean: 'Quelle quantité d\'air ?' },
+      { cat: 'Sécurité & technique', img: IMG_BASE + 'mi-bouteille.jpg', mean: 'Mi-bouteille' },
+      { cat: 'Sécurité & technique', img: IMG_BASE + 'equilibre.jpg', mean: 'Equilibre' },
+      { cat: 'Sécurité & technique', img: IMG_BASE + 'direction.jpg', mean: 'Direction' }
     ];
 
     // ================================================
@@ -422,24 +430,26 @@
 
       var choices = shuffle([q].concat(distractors));
       var correctIdx = choices.indexOf(q);
-      var promptHtml, choiceHtmls;
+      var promptHtml, choiceHtmls, imgChoices;
 
       if (quizMode === 'symbol') {
-        // Montrer le geste → deviner la signification
-        promptHtml = escHtml(q.sym);
+        // Montrer l'image du signe → deviner la signification (choix texte)
+        promptHtml = '<div class="dq-q-img-wrap"><img src="' + q.img + '" alt="Signe de plongée"></div>';
         choiceHtmls = choices.map(function(c) { return escHtml(c.mean); });
+        imgChoices = false;
       } else {
-        // Montrer la signification → deviner le geste
+        // Montrer la signification (texte) → deviner le signe (choix images)
         promptHtml = escHtml(q.mean);
-        choiceHtmls = choices.map(function(c) { return escHtml(c.sym); });
+        choiceHtmls = choices.map(function(c) { return '<img src="' + c.img + '" alt="">'; });
+        imgChoices = true;
       }
 
       var html = '<div class="dq-q-label">' + (quizMode === 'symbol' ? 'Que signifie ce signe ?' : 'Comment fait-on ce signe ?') + '</div>';
       html += '<div class="dq-q-prompt">' + promptHtml + '</div>';
       html += '<div class="dq-q-cat">' + escHtml(getGroup(q.cat)) + '</div>';
-      html += '<div class="dq-choices">';
+      html += '<div class="dq-choices' + (imgChoices ? ' dq-choices-img' : '') + '">';
       for (var i = 0; i < choices.length; i++) {
-        html += '<button class="dq-choice" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + choiceHtmls[i] + '</button>';
+        html += '<button class="dq-choice' + (imgChoices ? ' dq-choice-img' : '') + '" data-idx="' + i + '" data-correct="' + correctIdx + '" onclick="pickAnswer(this)">' + choiceHtmls[i] + '</button>';
       }
       html += '</div>';
       html += '<div id="nextBtnWrap" style="display:none;"><button class="dq-next-btn" onclick="nextQuestion()">Suivant ▶</button></div>';
@@ -498,7 +508,7 @@
       answers.forEach(function(a) {
         var icon = a.correct ? '✅' : '❌';
         rhtml += '<div class="dq-review-item">';
-        rhtml += '<span class="dq-review-sym">' + escHtml(a.item.sym) + '</span>';
+        rhtml += '<span class="dq-review-sym"><img class="dq-review-thumb" src="' + a.item.img + '" alt="">' + escHtml(getGroup(a.item.cat)) + '</span>';
         rhtml += '<span class="dq-review-mean">' + escHtml(a.item.mean) + '</span>';
         rhtml += '<span class="dq-review-icon">' + icon + '</span>';
         rhtml += '</div>';
@@ -613,8 +623,8 @@
         SIGNALS.forEach(function(s) {
           if (cats.indexOf(s.cat) < 0) return;
           html += '<div class="dq-browse-card">';
+          html += '<img src="' + s.img + '" alt="">';
           html += '<div class="dq-browse-mean">' + escHtml(s.mean) + '</div>';
-          html += '<div class="dq-browse-sym">' + escHtml(s.sym) + '</div>';
           html += '</div>';
         });
         html += '</div></div>';
