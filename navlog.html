@@ -11916,7 +11916,13 @@ function renderAltitudesProfile(){
   if(minInp && document.activeElement!==minInp) minInp.value=minAlt;
   if(maxInp && document.activeElement!==maxInp) maxInp.value=maxAlt;
 
-  var W=680,H=360,ml=56,mr=14,mt=20,mb=36;
+  /* Largeur du graphique proportionnelle à la distance totale (au lieu d'une largeur fixe qui
+     tassait toutes les étiquettes d'espaces aériens dans le même espace, quelle que soit la
+     longueur réelle de la route) : les routes longues/chargées en zones obtiennent plus de
+     pixels, donc plus de lisibilité, au prix d'un dépassement horizontal qu'on peut alors faire
+     défiler (glisser-déposer ou molette — voir _makeContainerPannable ci-dessous). Les routes
+     courtes gardent la largeur plancher de 680px (comportement inchangé, pas de scroll inutile). */
+  var W=Math.max(680,Math.round(totalDist*9)+70),H=360,ml=56,mr=14,mt=20,mb=36;
   var cw=W-ml-mr,ch=H-mt-mb;
   var altSpan=Math.max(1,maxAlt-minAlt);
   function xS(d){return ml+(Math.min(d,totalDist)/totalDist)*cw;}
@@ -12027,7 +12033,7 @@ function renderAltitudesProfile(){
      recalculer à chaque pixel de déplacement de la souris). */
   _altitudes2Geom={ml:ml,mr:mr,mt:mt,mb:mb,W:W,H:H,cw:cw,ch:ch,minAlt:minAlt,maxAlt:maxAlt,totalDist:totalDist};
 
-  container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:680px;overflow:visible;display:block;touch-action:pan-x">'
+  container.innerHTML='<svg id="alt2Svg" viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;min-width:680px;overflow:visible;display:block;touch-action:pan-x">'
     + '<rect x="'+ml+'" y="'+mt+'" width="'+cw+'" height="'+ch+'" fill="rgba(0,0,0,.22)" rx="3"/>'
     + yGrid + xGrid + bandsHtml
     + (terrainPath?'<path d="'+terrainPath+'" fill="rgba(110,70,30,.4)" stroke="rgba(150,100,40,.7)" stroke-width="1" style="pointer-events:none"/>':'')
@@ -12125,8 +12131,45 @@ function renderAltitudesProfile(){
     if(loadingG) loadingG.innerHTML='<text x="'+(ml+cw/2)+'" y="'+(mt+ch/2)+'" text-anchor="middle" font-size="9" fill="rgba(150,100,40,.6)">Chargement terrain…</text>';
     _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb);
   }
+
+  _makeContainerPannable(container);
 }
 window.renderAltitudesProfile=renderAltitudesProfile;
+
+/* Rend un conteneur "overflow-x:auto" navigable à la souris quand il est plus large que la
+   route ne l'affichait auparavant (beaucoup d'espaces aériens sur le profil Altitudes = graphique
+   très large) : on ne pouvait le faire défiler qu'en attrapant la fine barre de scroll tout en
+   bas. Ajoute (une seule fois par conteneur, via _panBound) :
+   1) glisser-déposer (clic maintenu + déplacement horizontal, comme sur une carte),
+   2) molette verticale convertie en défilement horizontal quand la souris survole la zone.
+   Ignore les éléments interactifs du profil (poignées de glisser-altitude) pour ne pas leur
+   voler le mousedown. */
+function _makeContainerPannable(container){
+  if(!container || container._panBound) return;
+  container._panBound=true;
+  container.style.cursor='grab';
+  var isDown=false, startX=0, startScroll=0;
+  container.addEventListener('mousedown',function(e){
+    var t=e.target;
+    if(t && t.closest && (t.closest('.alt2-hit')||t.closest('.alt-leg-hit')||t.closest('.alt-wp-hit')||t.id==='alt2HitPath')) return;
+    isDown=true;
+    startX=e.clientX;
+    startScroll=container.scrollLeft;
+    container.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove',function(e){
+    if(!isDown) return;
+    container.scrollLeft=startScroll-(e.clientX-startX);
+  });
+  window.addEventListener('mouseup',function(){
+    if(isDown){ isDown=false; container.style.cursor='grab'; }
+  });
+  container.addEventListener('wheel',function(e){
+    if(container.scrollWidth<=container.clientWidth) return;
+    e.preventDefault();
+    container.scrollLeft += (e.deltaY!==0?e.deltaY:e.deltaX);
+  },{passive:false});
+}
 
 /* Plage d'altitude (ft) affichée sur le graphique Altitudes — persistée,
    par défaut 0–5000 ft (voir demande utilisateur). */
@@ -12656,6 +12699,8 @@ function renderAltProfile(){
      réapplique ici la déformation "remplir toute la largeur" à chaque rendu tant que le
      mode est actif — voir toggleRouteMapFullscreen(). */
   if(window._rmFullscreen && typeof _rmApplyFullscreenSvgStyle==='function') _rmApplyFullscreenSvgStyle();
+
+  _makeContainerPannable(container);
 }
 
 var _altTerrainCache=null; /* cache des élévations terrain [e0..eN] */
