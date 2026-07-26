@@ -8476,11 +8476,19 @@ function _splitStageAtWaypoint(i){
 window._splitStageAtWaypoint=_splitStageAtWaypoint;
 
 /* Ajoute une étape supplémentaire APRÈS la fin actuelle de la route (bouton sous le tableau
-   Navlog) : le dernier point existant devient la jonction partagée (même technique que
-   _splitStageAtWaypoint, _stages fusionnés [étape N, étape N+1]), et un point vide (sans
-   coordonnées) est poussé en bout de tableau pour recevoir la position du PROCHAIN clic sur la
-   carte — voir routeMap.on('click', ...) qui cherche déjà le premier point sans coordonnées et
-   le remplit (et préserve maintenant _stages en le faisant, voir plus bas). */
+   Navlog) : un point vide (sans coordonnées) est poussé en bout de tableau pour recevoir la
+   position du PROCHAIN clic sur la carte — voir routeMap.on('click', ...) qui cherche déjà le
+   premier point sans coordonnées et le remplit.
+   Bug corrigé : cette fonction fusionnait AUTOMATIQUEMENT le dernier point existant avec la
+   nouvelle étape (_stages=[étape N, étape N+1], même technique que _splitStageAtWaypoint) —
+   contrairement à _composeEtapes() un peu plus haut, qui ne fusionne QUE si les deux étapes
+   partagent réellement le même aérodrome, et laisse sinon la nouvelle étape démarrer sur son
+   propre point indépendant. Ici la fusion était systématique, donc le premier clic sur la carte
+   ne définissait jamais le PREMIER point de la nouvelle étape (déjà "pris" par le point réutilisé
+   du dessus) mais son second — l'utilisateur voulait justement pouvoir cliquer un point de départ
+   à lui pour cette étape, potentiellement ailleurs qu'à l'endroit où la précédente s'est arrêtée.
+   Le dernier point reste marqué "isEtape" (escale, compté dans le calcul carburant/temps de
+   roulage entre étapes), sans lui imposer d'appartenir aussi à la nouvelle étape. */
 function _addNewStageFromEnd(){
   if(!waypoints.length) return;
   var last=waypoints[waypoints.length-1];
@@ -8488,7 +8496,7 @@ function _addNewStageFromEnd(){
     if(typeof _toast==='function') _toast('⚠️ Configurez d\'abord le dernier point de la route (aérodrome ou position sur la carte) avant d\'ajouter une étape','error',3600);
     return;
   }
-  if(!confirm('Ajouter une étape supplémentaire à partir de « '+(last.name||'ce point')+' » ?\n\nUn nouveau tableau Navlog vide apparaîtra en dessous : cliquez ensuite sur la carte pour placer le premier point de cette nouvelle étape.')) return;
+  if(!confirm('Terminer l\'étape actuelle à « '+(last.name||'ce point')+' » et commencer une nouvelle étape ?\n\nUn nouveau tableau Navlog vide apparaîtra en dessous : cliquez ensuite sur la carte pour placer le PREMIER point de cette nouvelle étape (peu importe où — rien n\'est présupposé).')) return;
   var maxStage=0;
   for(var w=0;w<waypoints.length;w++){
     var st=waypoints[w]._stages;
@@ -8496,10 +8504,8 @@ function _addNewStageFromEnd(){
   }
   var existingStage=maxStage>0?maxStage:1;
   var newStage=existingStage+1;
-  var mergedStages=last._stages?last._stages.slice():[];
-  if(mergedStages.indexOf(existingStage)<0) mergedStages.push(existingStage);
-  if(mergedStages.indexOf(newStage)<0) mergedStages.push(newStage);
-  last._stages=mergedStages;
+  last.isEtape=true;
+  if(!last._stages) last._stages=[existingStage];
   waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0,_stages:[newStage]});
   renderNavlog();
   recalcNavlog();
