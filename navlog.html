@@ -8513,7 +8513,6 @@ function _addNewStageFromEnd(){
     if(typeof _toast==='function') _toast('⚠️ Configurez d\'abord le dernier point de la route (aérodrome ou position sur la carte) avant d\'ajouter une étape','error',3600);
     return;
   }
-  if(!confirm('Terminer l\'étape actuelle à « '+(last.name||'ce point')+' » et commencer une nouvelle étape ?\n\nUn nouveau tableau Navlog vide apparaîtra en dessous : cliquez ensuite sur la carte pour placer le PREMIER point de cette nouvelle étape (peu importe où — rien n\'est présupposé).')) return;
   var maxStage=0;
   for(var w=0;w<waypoints.length;w++){
     var st=waypoints[w]._stages;
@@ -8527,7 +8526,6 @@ function _addNewStageFromEnd(){
   renderNavlog();
   recalcNavlog();
   if(typeof updateRouteMap==='function') updateRouteMap();
-  if(typeof _toast==='function') _toast('➕ Nouvelle étape prête — cliquez sur la carte pour placer son premier point','',3600);
 }
 window._addNewStageFromEnd=_addNewStageFromEnd;
 
@@ -13377,6 +13375,7 @@ function initRouteMap(){
        0.015° (~0.6-1 NM) : assez pour "j'ai cliqué juste à côté du symbole aérodrome", trop petit
        pour engloutir un circuit ou un VRP. */
     var minDist = 0.015;
+    var isAirportMatch = false;
     for(var code in AIRPORT_COORDS) {
       var dLat = AIRPORT_COORDS[code].lat - coord.lat;
       var dLon = AIRPORT_COORDS[code].lon - coord.lng;
@@ -13384,10 +13383,26 @@ function initRouteMap(){
       if(d < minDist) {
         minDist = d;
         name = code;
+        isAirportMatch = true;
       }
     }
+    /* Nom générique "WPn" basé sur waypoints.length : ce compteur ne grandit PAS quand le clic
+       remplit un emplacement vide déjà présent (ex: point de départ d'une étape fraîchement créée
+       via « ➕ Étape suivante », voir _addNewStageFromEnd) — il peut donc coïncider avec le nom
+       déjà porté par un autre point du tableau (par ex. si ce point avait lui-même été nommé à un
+       moment où waypoints.length valait la même valeur). Deux points PORTANT LE MÊME NOM alors
+       qu'ils sont à des endroits différents faisait ensuite croire à _isDupOfNextPoint() qu'il
+       s'agissait d'un doublon à masquer, ce qui cassait silencieusement la coupure entre étapes
+       (l'étape précédente disparaissait du tableau récapitulatif). On ne touche PAS au cas d'un
+       nom d'aérodrome retrouvé ci-dessus : là, la réutilisation du même nom est volontaire. */
+    if(!isAirportMatch){
+      var usedNames = {};
+      waypoints.forEach(function(w){ if(w && w.name) usedNames[w.name.trim().toUpperCase()] = true; });
+      var n = waypoints.length + 1;
+      while(usedNames[name.toUpperCase()]){ n++; name = 'WP' + n; }
+    }
     newWp.name = name;
-    
+
     /* Fill first empty WP slot (no coords yet) instead of always inserting a new row */
     var emptySlotIdx = -1;
     var searchFrom = (flightType === 'local') ? 1 : 0;
