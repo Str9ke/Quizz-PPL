@@ -8529,6 +8529,51 @@ function _addNewStageFromEnd(){
 }
 window._addNewStageFromEnd=_addNewStageFromEnd;
 
+/* Terminer l'étape à un point CLIQUÉ SUR LA CARTE (menu du marqueur), plutôt qu'au dernier
+   index du tableau (voir _addNewStageFromEnd) : tronque tout ce qui suit ce point (avec
+   confirmation, puisque c'est destructif) avant de démarrer la nouvelle étape — permet de
+   clôturer l'étape même quand le tout dernier point du tableau n'est pas configurable en soi
+   (ex: le point fixe "Zone locale" d'un vol local), qui bloquait sinon "➕ Étape suivante". */
+function _mapSetWaypointAsStageEnd(idx){
+  if(!waypoints[idx]) return;
+  var removedCount=waypoints.length-(idx+1);
+  var msg=removedCount>0
+    ? ('Terminer l\'étape à « '+(waypoints[idx].name||'ce point')+' » ?\n\nLes '+removedCount+' point(s) après lui seront supprimés, et une nouvelle étape vide démarrera : cliquez ensuite sur la carte pour placer son premier point.')
+    : ('Terminer l\'étape à « '+(waypoints[idx].name||'ce point')+' » et démarrer une nouvelle étape vide ?');
+  if(!confirm(msg)) return;
+  if(removedCount>0) waypoints.splice(idx+1,removedCount);
+  var maxStage=0;
+  for(var w=0;w<waypoints.length;w++){
+    var st=waypoints[w]._stages;
+    if(st) for(var s=0;s<st.length;s++){ if(st[s]>maxStage) maxStage=st[s]; }
+  }
+  var existingStage=maxStage>0?maxStage:1;
+  var newStage=existingStage+1;
+  waypoints[idx].isEtape=true;
+  if(!waypoints[idx]._stages) waypoints[idx]._stages=[existingStage];
+  waypoints.push({name:'',lat:null,lon:null,icon:'',dist:0,route:0,_stages:[newStage]});
+  renderNavlog();
+  recalcNavlog();
+  if(typeof updateRouteMap==='function') updateRouteMap();
+}
+window._mapSetWaypointAsStageEnd=_mapSetWaypointAsStageEnd;
+
+/* Suppression d'un waypoint depuis le menu de son marqueur sur la carte (remplace l'ancien
+   confirm() direct au clic, qui empêchait d'offrir d'autres actions — voir le menu construit
+   dans updateRouteMap). */
+function _mapDeleteWaypoint(idx){
+  if(!waypoints[idx]) return;
+  if(!confirm('Supprimer ce waypoint ?')) return;
+  waypoints.splice(idx,1);
+  renderNavlog();
+  recalcNavlog();
+  requestAnimationFrame(function(){
+    var mapCard=document.getElementById('routeMapContainer');
+    if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
+  });
+}
+window._mapDeleteWaypoint=_mapDeleteWaypoint;
+
 /* Cycle nav -> circuit départ -> circuit arrivée -> nav. Ces points restent dans le
    calcul complet (temps de vol / carburant total) mais sont retirés du tableau
    récapitulatif de navigation et comptabilisés à part dans le détail carburant,
@@ -14017,17 +14062,21 @@ function updateRouteMap(){
           if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
         });
       });
-      marker.on('click', function(){
+      marker.on('click', function(e){
         if(window._measureModeActive) return;
-        if(confirm('Supprimer ce waypoint ?')) {
-          waypoints.splice(idx, 1);
-          renderNavlog();
-          recalcNavlog();
-          requestAnimationFrame(function(){
-            var mapCard=document.getElementById('routeMapContainer');
-            if(mapCard){ var t=mapCard.getBoundingClientRect().top+(window.scrollY||window.pageYOffset); window.scrollTo({top:t-8,behavior:'instant'}); }
-          });
-        }
+        /* Menu au clic (au lieu d'une suppression directe derrière un confirm()) : offre aussi
+           "Terminer l'étape ici", qui répond au blocage vécu avec "➕ Étape suivante" quand le
+           tout dernier point du tableau (ex: le point fixe "Zone locale" d'un vol local, jamais
+           vraiment "configurable" par coordonnées) empêchait de clôturer l'étape — voir
+           _mapSetWaypointAsStageEnd, qui tronque tout ce qui suit LE POINT CLIQUÉ plutôt que de
+           dépendre du dernier index du tableau. */
+        var wpName=escHTML(waypoints[idx]?(waypoints[idx].name||'Point'):'Point');
+        var menuHtml='<div class="rm-leg-menu">'+
+          '<div class="rm-leg-menu-title">'+wpName+'</div>'+
+          (flightType==='etapes'&&idx>0?'<button class="rm-leg-menu-btn" onclick="window._mapSetWaypointAsStageEnd('+idx+')">🏁 Terminer l\'étape ici</button>':'')+
+          '<button class="rm-leg-menu-btn" style="color:#ff8a80" onclick="window._mapDeleteWaypoint('+idx+')">🗑️ Supprimer ce point</button>'+
+        '</div>';
+        marker.bindPopup(menuHtml,{closeButton:true,minWidth:170,className:'rm-leg-menu-popup'}).openPopup();
       });
     })(p.idx);
 
