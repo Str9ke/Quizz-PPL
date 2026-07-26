@@ -867,6 +867,36 @@ async function _startObjectifDuJour() {
 }
 
 /**
+ * _startRevisionsOnly() – Lance directement une session de RÉVISIONS UNIQUEMENT (aucune
+ * nouvelle question), toujours sur "TOUTES LES QUESTIONS" quelle que soit la catégorie
+ * actuellement sélectionnée dans le menu — contrairement à _startObjectifDuJour() qui respecte
+ * la catégorie choisie. Bouton dédié demandé à côté du titre "Répétition espacée" pour ne pas
+ * avoir à changer la catégorie ni le menu "Mode" à la main juste pour réviser ce qui est dû.
+ */
+async function _startRevisionsOnly() {
+  const btn = document.getElementById('revisionsOnlyBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
+  try {
+    selectedCategory = 'TOUTES';
+    const catSelect = document.getElementById('categorie');
+    if (catSelect) catSelect.value = 'TOUTES';
+    if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+    // Les cases marquées/importantes/avec notes s'appliquent aussi ici : updateModeCounts()
+    // (sans argument) les lit automatiquement, exactement comme pour "Objectif du jour".
+    if (typeof updateModeCounts === 'function') await updateModeCounts();
+
+    const modeSelect = document.getElementById('mode');
+    if (modeSelect) modeSelect.value = 'revisions';
+    const nbInput = document.getElementById('nbQuestions');
+    if (nbInput) nbInput.value = nbRevisionsToday;
+
+    if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📅 Révisions uniquement'; }
+  }
+}
+
+/**
  * voirStats() – Redirige vers la page des statistiques
  */
 function voirStats() {
