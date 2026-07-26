@@ -6074,9 +6074,14 @@ function loadGametWindWidget(){
        spans vent/température du même niveau — l'ancien \s* strict ratait alors ce niveau
        silencieusement. On tolère maintenant un écart borné (texte quelconque, non-greedy)
        pour retrouver les spans vent/température les plus proches, quel que soit ce qui les sépare. */
-    /* Le vent GAMET est parfois donné en plage ("15-20KT") plutôt qu'en valeur unique —
-       le groupe vitesse doit donc accepter un tiret + une seconde valeur optionnelle. */
-    var levelRe = /<span class="wx-alt">(\d+)\s*FT<\/span>[\s\S]{0,80}?<span class="wx-wind">(\d{3})\/(\d{2,3}(?:-\d{2,3})?)KT<\/span>[\s\S]{0,80}?<span class="wx-temp">([A-Z]{2})(\d{2})<\/span>/g;
+    /* Le vent GAMET est parfois donné en plage ("15-20KT") plutôt qu'en valeur unique — la
+       direction ELLE AUSSI, pas seulement la vitesse (ex. "250-290/20-28KT") : le premier groupe
+       matchait alors 3 chiffres puis attendait "/" immédiatement après, qui ne venait jamais (un
+       "-" arrivait à la place) — TOUT le regex échouait silencieusement pour l'intégralité du
+       bulletin dès qu'UN SEUL niveau utilisait ce format, laissant le widget masqué (aucun
+       niveau trouvé). Les deux groupes (direction ET vitesse) acceptent maintenant chacun un
+       tiret + une seconde valeur optionnelle. */
+    var levelRe = /<span class="wx-alt">(\d+)\s*FT<\/span>[\s\S]{0,80}?<span class="wx-wind">(\d{3}(?:-\d{2,3})?)\/(\d{2,3}(?:-\d{2,3})?)KT<\/span>[\s\S]{0,80}?<span class="wx-temp">([A-Z]{2})(\d{2})<\/span>/g;
     var levels = [];
     var m;
     while((m = levelRe.exec(block)) !== null){
@@ -6134,7 +6139,14 @@ function _renderGametWindRow(){
 function _applyGametWindByIdx(idx, silent){
   if(!_lastGametLevels || !_lastGametLevels[idx]) return;
   var l=_lastGametLevels[idx];
-  var dir=parseInt(l.dir,10);
+  var dirStr=String(l.dir);
+  var dir;
+  if(dirStr.indexOf('-')>=0){
+    var dirParts=dirStr.split('-').map(Number);
+    dir=Math.round((dirParts[0]+dirParts[1])/2);
+  } else {
+    dir=parseInt(dirStr,10);
+  }
   var spdStr=String(l.spd);
   var spd;
   if(spdStr.indexOf('-')>=0){
@@ -6794,13 +6806,37 @@ function recalcNavlog(){
      carburant, qui n'utilise que wp.dist. */
   var lastValidLat=(waypoints[0]&&waypoints[0].lat!==null)?waypoints[0].lat:null;
   var lastValidLon=(waypoints[0]&&waypoints[0].lon!==null)?waypoints[0].lon:null;
+  var lastValidIdx=0;
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
+    /* Vol à étapes : ne JAMAIS calculer de distance/route/leg entre le dernier point d'une
+       étape et le premier point de la suivante — ce ne sont pas deux points reliés par un vol
+       réel (voir _computeStageSegments/_computeMapSegments, même logique de coupure). Sans ce
+       garde-fou, le premier point d'une nouvelle étape héritait silencieusement d'une distance
+       "à vol d'oiseau" jusqu'au dernier point de l'étape précédente (souvent plusieurs dizaines
+       de NM sans rapport avec un vrai leg), qui se retrouvait ensuite AJOUTÉE à la distance/au
+       temps/au carburant TOTAL du dossier (totalDist/totalTime/totalFuel plus bas) — donc un
+       chiffre trompeur en haut de page, en plus de l'étiquette fantôme affichée sur la carte
+       (voir _renderRouteLegLabels). */
+    var isStageBoundary=false;
     if(lastValidLat!==null&&lastValidLon!==null&&wp.lat!==null&&wp.lon!==null){
+      var _prevWpForStage=waypoints[lastValidIdx];
+      var _prevStages=(_prevWpForStage&&_prevWpForStage._stages)||[];
+      var _curStages=wp._stages||[];
+      if(_prevStages.length===1 && _curStages.length>0){
+        var _overlap=false;
+        for(var _oi=0;_oi<_prevStages.length;_oi++){ if(_curStages.indexOf(_prevStages[_oi])>=0){ _overlap=true; break; } }
+        isStageBoundary=!_overlap;
+      }
+    }
+    if(lastValidLat!==null&&lastValidLon!==null&&wp.lat!==null&&wp.lon!==null&&!isStageBoundary){
       wp.dist=Math.round(haversine(lastValidLat,lastValidLon,wp.lat,wp.lon)*10)/10;
       wp.route=Math.round(trueBearing(lastValidLat,lastValidLon,wp.lat,wp.lon)*10)/10;
+    } else if(isStageBoundary){
+      wp.dist=0;
+      wp.route=0;
     }
-    if(wp.lat!==null&&wp.lon!==null){ lastValidLat=wp.lat; lastValidLon=wp.lon; }
+    if(wp.lat!==null&&wp.lon!==null){ lastValidLat=wp.lat; lastValidLon=wp.lon; lastValidIdx=i; }
     var legAlt = wp.altitude || (parseInt(_v('cfgAlt'))||2300);
     var leg=calcLeg(wp.dist,wp.route,cfg,wp.legWind,legAlt);
     wp._leg=leg;
@@ -7100,7 +7136,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
       '<td>'+distTxt+'</td>'+
       '<td>'+gsTxt+'</td>'+
-      '<td>'+eteTxt+'</td>'+
+      '<td class="nl-recap-cap">'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td class="nl-recap-comment">'+legCommentHtml+'</td>'+
       '<td class="nl-recap-type">'+actionsHtml+'</td>'+
@@ -13361,7 +13397,13 @@ function _renderRouteLegLabels(){
       pts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon});
     }
   }
+  /* Jamais d'étiquette entre le dernier point d'une étape et le premier point de la suivante
+     (voir _computeMapSegments, même logique de coupure que les flèches/lignes de la carte) —
+     wp2._leg existe toujours pour ce point (recalcNavlog le force à ete=0/dist=0 désormais),
+     donc le garde-fou précédent (!wp2._leg) ne suffisait plus à lui seul à l'exclure. */
+  var _legLabelConnected=_computeMapSegments(pts).connected;
   for(var m=0;m<pts.length-1;m++){
+    if(!_legLabelConnected[m]) continue;
     var la=pts[m],lb=pts[m+1];
     var wp2=waypoints[lb.idx];
     if(!wp2||!wp2._leg) continue;
