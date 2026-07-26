@@ -13254,8 +13254,11 @@ document.addEventListener('paste',function(e){
 /* ===== ROUTE MAP ===== */
 var routeMap=null;
 var routeMapLayers=[];
-var _currentRoutePolyline=null; /* référence pour mise à jour légère pendant un glisser (voir _mapLineGrabStartMouse/Touch) */
-var _currentRouteHitPolyline=null; /* polyline invisible élargie servant de zone de saisie tactile */
+/* Une entrée par ÉTAPE (voir _computeMapSegments) : deux étapes distinctes ne partagent jamais
+   de ligne, donc pas une seule polyline continue mais un tableau — utilisé pour la mise à jour
+   légère pendant un glisser (voir _mapLineGrabStartMouse/Touch/_mapLineGrabRefreshLines). */
+var _currentRoutePolylines=[];
+var _currentRouteHitPolylines=[];
 var _recapLegHighlightLayer=null; /* surlignage du leg survolé dans le tableau récapitulatif (voir _highlightRecapLeg) — hors routeMapLayers pour ne pas être recréé/effacé à chaque updateRouteMap() pendant un survol */
 
 /* Survol d'une ligne LEG du tableau récapitulatif → surlignage jaune du segment
@@ -13537,10 +13540,21 @@ function _mapNearestLegInsertIdx(lat,lon,ptsArr){
   }
   return ptsArr[best].idx;
 }
-function _mapLineGrabCore(lat,lon){
+function _mapLineGrabCore(lat,lon,restrictIdxs){
+  /* restrictIdxs (optionnel) : liste ordonnée d'index waypoints[] à laquelle limiter la
+     recherche du leg le plus proche — un hitLine par étape (voir updateRouteMap) le fournit
+     TOUJOURS désormais, pour ne jamais insérer un point "au milieu" d'un segment invisible
+     reliant deux étapes distinctes (qui n'existe dans aucun calcul nav/carburant). */
   var freshPts=[];
-  for(var w=0;w<waypoints.length;w++){
-    if(waypoints[w].lat!==null&&waypoints[w].lon!==null) freshPts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon});
+  if(restrictIdxs){
+    for(var r=0;r<restrictIdxs.length;r++){
+      var wIdx=restrictIdxs[r];
+      if(waypoints[wIdx]&&waypoints[wIdx].lat!==null&&waypoints[wIdx].lon!==null) freshPts.push({idx:wIdx,lat:waypoints[wIdx].lat,lon:waypoints[wIdx].lon});
+    }
+  } else {
+    for(var w=0;w<waypoints.length;w++){
+      if(waypoints[w].lat!==null&&waypoints[w].lon!==null) freshPts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon});
+    }
   }
   if(freshPts.length<2) return -1;
   var insertAfterIdx=_mapNearestLegInsertIdx(lat,lon,freshPts);
@@ -13612,23 +13626,36 @@ function _mapLineGrabFinish(newIdx,moved){
    rétrécir" la carte en continu pendant le glissement. Le rebuild complet
    (avec le marqueur définitif et le recadrage) n'a lieu qu'au relâchement. */
 function _mapLineGrabRefreshLines(){
-  if(!_currentRoutePolyline) return;
-  var coords=[];
+  /* Recalculé entièrement à partir de waypoints[] à CHAQUE appel (jamais depuis une liste
+     d'index capturée au rendu précédent) : _mapLineGrabCore() vient de faire un splice() qui
+     décale tous les index situés après le point inséré — une liste d'index figée serait fausse
+     dès le premier appel pendant le glisser. Même construction que updateRouteMap(), qui a créé
+     _currentRoutePolylines/_currentRouteHitPolylines dans le MÊME ordre d'étapes — cet ordre ne
+     change pas pendant un simple glisser (seule la position du point saisi bouge). */
+  var stageFilter=window._mapStageFilter;
+  var pts=[];
   for(var w=0;w<waypoints.length;w++){
-    if(waypoints[w].lat!==null&&waypoints[w].lon!==null) coords.push([waypoints[w].lat,waypoints[w].lon]);
+    if(waypoints[w].lat!==null && waypoints[w].lon!==null){
+      if(stageFilter && stageFilter!=='all' && waypoints[w]._stages && waypoints[w]._stages.indexOf(parseInt(stageFilter))<0) continue;
+      pts.push({idx:w,lat:waypoints[w].lat,lon:waypoints[w].lon});
+    }
   }
-  _currentRoutePolyline.setLatLngs(coords);
-  if(_currentRouteHitPolyline) _currentRouteHitPolyline.setLatLngs(coords);
+  var segments=_computeMapSegments(pts).segments.filter(function(seg){return seg.length>=2;});
+  for(var s=0;s<segments.length && s<_currentRoutePolylines.length;s++){
+    var coords=segments[s].map(function(p){return [p.lat,p.lon];});
+    if(_currentRoutePolylines[s]) _currentRoutePolylines[s].setLatLngs(coords);
+    if(_currentRouteHitPolylines[s]) _currentRouteHitPolylines[s].setLatLngs(coords);
+  }
 }
 function _mapLineGrabLiveUpdate(newIdx,lat,lon){
   waypoints[newIdx].lat=lat;
   waypoints[newIdx].lon=lon;
   _mapLineGrabRefreshLines();
 }
-function _mapLineGrabStartMouse(e){
+function _mapLineGrabStartMouse(e,restrictIdxs){
   if(window._measureModeActive) return;
   L.DomEvent.stopPropagation(e);
-  var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng);
+  var newIdx=_mapLineGrabCore(e.latlng.lat,e.latlng.lng,restrictIdxs);
   if(newIdx<0) return;
   routeMap.dragging.disable();
   document.body.style.userSelect='none';
@@ -13659,7 +13686,7 @@ function _mapLineGrabStartMouse(e){
   document.addEventListener('mousemove',onMove,{capture:true});
   document.addEventListener('mouseup',onUp,{capture:true});
 }
-function _mapLineGrabStartTouch(ev){
+function _mapLineGrabStartTouch(ev,restrictIdxs){
   if(window._measureModeActive) return;
   if(!ev.touches||!ev.touches.length) return;
   ev.preventDefault();
@@ -13668,7 +13695,7 @@ function _mapLineGrabStartTouch(ev){
   var t=ev.touches[0];
   var cp=routeMap.mouseEventToContainerPoint(t);
   var latlng=routeMap.containerPointToLatLng(cp);
-  var newIdx=_mapLineGrabCore(latlng.lat,latlng.lng);
+  var newIdx=_mapLineGrabCore(latlng.lat,latlng.lng,restrictIdxs);
   if(newIdx<0) return;
   routeMap.dragging.disable();
   document.body.style.userSelect='none';
@@ -13815,6 +13842,39 @@ function _measureMapClick(latlng){
   _measureSetHint('\u{1F4CF} Mode mesure : '+distNM.toFixed(1)+' NM — cliquez pour une nouvelle mesure');
 }
 
+/* Scinde un tableau de points carte (voir 'pts' dans updateRouteMap, {idx,lat,lon,name}) en
+   groupes qui doivent chacun recevoir leur PROPRE polyline — même logique de coupure que
+   _computeStageSegments (tableau Navlog), appliquée ici aux points affichés sur la carte : sans
+   ça, une seule ligne continue traversait tout le tracé y compris entre deux étapes bien
+   distinctes (le dernier point d'une étape et le premier point de la suivante, ex: après un clic
+   sur "➕ Étape suivante"), donnant l'illusion trompeuse d'un leg qui n'existe dans aucun calcul
+   nav/carburant. */
+function _computeMapSegments(pts){
+  var segments=[];
+  var connected=[]; /* connected[i] = true si pts[i]->pts[i+1] est un leg réel (même étape) */
+  if(!pts.length) return {segments:segments,connected:connected};
+  var segStart=0;
+  for(var i=1;i<pts.length;i++){
+    var prevWp=waypoints[pts[i-1].idx], curWp=waypoints[pts[i].idx];
+    var prevStages=(prevWp&&prevWp._stages)||[], curStages=(curWp&&curWp._stages)||[];
+    if(prevStages.length>1){
+      segments.push(pts.slice(segStart,i));
+      segStart=i-1;
+      connected[i-1]=true;
+      continue;
+    }
+    if(prevStages.length===0 || curStages.length===0){ connected[i-1]=true; continue; }
+    var overlap=false;
+    for(var oi=0;oi<prevStages.length;oi++){ if(curStages.indexOf(prevStages[oi])>=0){ overlap=true; break; } }
+    if(overlap){ connected[i-1]=true; continue; }
+    segments.push(pts.slice(segStart,i));
+    segStart=i;
+    connected[i-1]=false;
+  }
+  segments.push(pts.slice(segStart));
+  return {segments:segments,connected:connected};
+}
+
 function updateRouteMap(){
   if(!routeMap) return;
   _renderMapStageFilter();
@@ -13844,20 +13904,33 @@ function updateRouteMap(){
      juste au-dessus (qui a d\u00e9j\u00e0 tous les points, dans l'ordre, avec bien plus de d\u00e9tail) \u2014 \u00e7a
      ne faisait qu'occuper de l'espace entre la carte et le profil d'altitude pour rien. */
   if(infoEl) infoEl.textContent=pts.length+' point'+(pts.length>1?'s':'')+' sur la route';
-  /* Draw route polyline (couleur par d\u00e9faut \u2014 navigation). Une polyline de survol par-dessus
-     (voir plus bas) reprend en couleur distincte les legs de circuit d\u00e9part/arriv\u00e9e, sans
-     toucher \u00e0 cette ligne de base : c'est elle que _mapLineGrabRefreshLines() met \u00e0 jour en
-     direct pendant un glisser (setLatLngs), donc la garder unique et continue \u00e9vite de casser
-     cette interaction. */
-  var coords=pts.map(function(p){return [p.lat,p.lon];});
-  var polyline=L.polyline(coords,{color:'#ff1493',weight:4,opacity:.9}).addTo(routeMap);
-  routeMapLayers.push(polyline);
-  _currentRoutePolyline=polyline;
+  /* Draw route polyline (couleur par d\u00e9faut \u2014 navigation) : une polyline PAR \u00e9tape (voir
+     _computeMapSegments) \u2014 deux \u00e9tapes distinctes ne sont JAMAIS reli\u00e9es par une ligne, sinon le
+     dernier point d'une \u00e9tape et le premier point de la suivante donnaient l'illusion trompeuse
+     d'un leg qui n'existe dans aucun calcul nav/carburant (ex: juste apr\u00e8s un clic sur "\u2795 \u00c9tape
+     suivante"). Une polyline de survol par-dessus (voir plus bas) reprend en couleur distincte
+     les legs de circuit d\u00e9part/arriv\u00e9e, sans toucher \u00e0 cette ligne de base : ce sont elles que
+     _mapLineGrabRefreshLines() met \u00e0 jour en direct pendant un glisser (setLatLngs). */
+  var mapSeg=_computeMapSegments(pts);
+  /* Filtré ici (segments d'au moins 2 points) AVANT de construire _currentRoutePolylines : la
+     mise à jour légère pendant un glisser (_mapLineGrabRefreshLines) recalcule ces segments à
+     l'identique et les associe par POSITION dans le tableau — filtrer aux deux endroits, dans
+     le même ordre, est ce qui garde ces deux listes alignées. */
+  var mapSegments=mapSeg.segments.filter(function(seg){return seg.length>=2;});
+  var mapConnected=mapSeg.connected;
+  _currentRoutePolylines=[];
+  mapSegments.forEach(function(seg){
+    var segCoords=seg.map(function(p){return [p.lat,p.lon];});
+    var segPolyline=L.polyline(segCoords,{color:'#ff1493',weight:4,opacity:.9}).addTo(routeMap);
+    routeMapLayers.push(segPolyline);
+    _currentRoutePolylines.push(segPolyline);
+  });
   /* Legs de circuit d\u00e9part/arriv\u00e9e : surlign\u00e9s dans une couleur distincte, par-dessus la ligne
      de base, pour les distinguer visuellement des legs de navigation "r\u00e9els". */
   var CIRCUIT_DEP_COLOR='#7c4dff', CIRCUIT_ARR_COLOR='#00bcd4';
   var hasCircuitDepLeg=false, hasCircuitArrLeg=false;
   for(var cl=0;cl<pts.length-1;cl++){
+    if(!mapConnected[cl]) continue; /* jamais de leg trac\u00e9 entre deux \u00e9tapes distinctes */
     var clType=waypoints[pts[cl+1].idx]?waypoints[pts[cl+1].idx].ptType:null;
     if(clType!=='circuitDep' && clType!=='circuitArr') continue;
     var clColor=clType==='circuitDep'?CIRCUIT_DEP_COLOR:CIRCUIT_ARR_COLOR;
@@ -13874,6 +13947,7 @@ function updateRouteMap(){
      repère tombe exactement SUR le trait affiché, pas légèrement à côté. */
   var TICK_INTERVAL_MIN=3, TICK_HALF_NM=0.35, hasTimetics=false;
   for(var tk=0;tk<pts.length-1;tk++){
+    if(!mapConnected[tk]) continue; /* jamais de repère entre deux étapes distinctes */
     var tkWp=waypoints[pts[tk+1].idx];
     var tkLeg=tkWp&&tkWp._leg;
     var tkDist=tkWp?tkWp.dist:0;
@@ -13966,24 +14040,33 @@ function updateRouteMap(){
      sur mobile. On superpose donc une polyline INVISIBLE de 30px qui sert de
      zone de saisie (même technique que le hit-path du graphique Altitudes),
      avec touch-action:none pour que le navigateur ne détourne pas le geste
-     en défilement de page avant même qu'on le reçoive. */
-  var hitLine=L.polyline(coords,{color:'#ff1493',opacity:0.001,weight:30,interactive:true}).addTo(routeMap);
-  routeMapLayers.push(hitLine);
-  _currentRouteHitPolyline=hitLine;
-  hitLine.on('mousedown',_mapLineGrabStartMouse);
-  var _hitEl=hitLine.getElement&&hitLine.getElement();
-  if(_hitEl){
-    _hitEl.style.touchAction='none';
-    _hitEl.addEventListener('touchstart',_mapLineGrabStartTouch,{passive:false});
-  }
-  /* Survol inverse : survoler le tracé sur la carte indique la position correspondante
-     sur le profil d'altitude sous la carte (voir _routeDistAtLatLon/_altProfileSetCrosshair) —
-     sans ça, seul le sens profil→carte fonctionnait. */
-  hitLine.on('mousemove',function(e){
-    var d=_routeDistAtLatLon(e.latlng.lat,e.latlng.lng);
-    if(d!==null) _altProfileSetCrosshair(d);
+     en défilement de page avant même qu'on le reçoive.
+     Une zone de saisie PAR étape (même découpage que la ligne visible ci-dessus) : chacune
+     restreint l'insertion à SES propres points (restrictIdxs), pour ne jamais glisser un
+     nouveau point "au milieu" d'un intervalle invisible qui reliait avant deux étapes
+     distinctes — voir _mapLineGrabCore. */
+  _currentRouteHitPolylines=[];
+  mapSegments.forEach(function(seg){
+    var segCoords=seg.map(function(p){return [p.lat,p.lon];});
+    var segRestrictIdxs=seg.map(function(p){return p.idx;});
+    var hitLine=L.polyline(segCoords,{color:'#ff1493',opacity:0.001,weight:30,interactive:true}).addTo(routeMap);
+    routeMapLayers.push(hitLine);
+    _currentRouteHitPolylines.push(hitLine);
+    hitLine.on('mousedown',function(e){ _mapLineGrabStartMouse(e,segRestrictIdxs); });
+    var _hitEl=hitLine.getElement&&hitLine.getElement();
+    if(_hitEl){
+      _hitEl.style.touchAction='none';
+      _hitEl.addEventListener('touchstart',function(ev){ _mapLineGrabStartTouch(ev,segRestrictIdxs); },{passive:false});
+    }
+    /* Survol inverse : survoler le tracé sur la carte indique la position correspondante
+       sur le profil d'altitude sous la carte (voir _routeDistAtLatLon/_altProfileSetCrosshair) —
+       sans ça, seul le sens profil→carte fonctionnait. */
+    hitLine.on('mousemove',function(e){
+      var d=_routeDistAtLatLon(e.latlng.lat,e.latlng.lng);
+      if(d!==null) _altProfileSetCrosshair(d);
+    });
+    hitLine.on('mouseout',_altProfileHideCrosshair);
   });
-  hitLine.on('mouseout',_altProfileHideCrosshair);
   /* Draw direction arrows along each leg — offset to avoid overlap on round trips.
      Cliquables : ouvrent un petit menu (popup Leaflet) pour configurer ce leg en
      circuit départ/arrivée/normal directement depuis la carte, sans redescendre au
@@ -13997,9 +14080,12 @@ function updateRouteMap(){
   function _mapLegStageOf(aWp,bWp){
     if(!aWp._stages||!bWp._stages) return null;
     for(var si=0;si<aWp._stages.length;si++){ if(bWp._stages.indexOf(aWp._stages[si])>=0) return aWp._stages[si]; }
-    return bWp._stages[0];
+    return null;
   }
   for(var k=0;k<pts.length-1;k++){
+    if(!mapConnected[k]) continue; /* jamais de flèche/numéro de leg entre deux étapes distinctes
+      (c'était exactement ça qui donnait l'impression trompeuse que le dernier point d'une étape
+      servait de départ au "leg 1" de la suivante — voir _computeMapSegments) */
     var a=pts[k],b=pts[k+1];
     var brg=trueBearing(a.lat,a.lon,b.lat,b.lon);
     var arrowLegType=waypoints[b.idx]?waypoints[b.idx].ptType:null;
