@@ -1,6 +1,6 @@
 {
-  "generated": "Sat, 25 Jul 2026 17:25:57 GMT",
-  "count": 7,
+  "generated": "Sun, 26 Jul 2026 06:04:56 GMT",
+  "count": 14,
   "warnings": [
     {
       "ref": "B0100/26",
@@ -10,6 +10,30 @@
       "text": "BERTRIX GLIDER ACT RADIUS 05NM EXC LFFF FIR. OPERATIONS ON FREQ 130.130 MHZ",
       "lower": "SFC",
       "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2246/26",
+      "from": "25 JUL 2026 07:30",
+      "till": "26 JUL 2026 10:30",
+      "schedule": "DAILY 0730-1030",
+      "text": "HTA10A- COASTAL HELICOPTER TRAINING AREA ACT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2245/26",
+      "from": "25 JUL 2026 08:00",
+      "till": "26 JUL 2026 17:00",
+      "schedule": "DAILY 0800-1700",
+      "text": "EBR69-WIEKEVORST ACT",
+      "lower": "GND",
+      "upper": "1500FT AMSL",
       "geometry": {
         "type": "unlocated"
       }
@@ -27,6 +51,23 @@
       }
     },
     {
+      "ref": "F2038/26",
+      "from": "26 JUL 2026 07:30",
+      "till": "26 JUL 2026 17:00",
+      "schedule": null,
+      "text": "HAVERSIN UAS ACT 501437N 0051230E RADIUS 400M.",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.243611,
+          5.208333
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
       "ref": "F1966/26",
       "from": "24 JUL 2026 07:00",
       "till": "26 JUL 2026 19:30",
@@ -39,6 +80,23 @@
         "center": [
           50.721111,
           3.433611
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
+      "ref": "F1834/26",
+      "from": "25 JUL 2026 08:00",
+      "till": "26 JUL 2026 17:00",
+      "schedule": "0800-1700",
+      "text": "VERDENNE 501330N 0052343E MODEL ACFT EVENT RADIUS 400M",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.225,
+          5.395278
         ],
         "radiusNm": 0.216
       }
@@ -65,6 +123,57 @@
       "upper": "500FT AMSL",
       "geometry": {
         "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G1794/26",
+      "from": "25 JUL 2026 07:45",
+      "till": "26 JUL 2026 14:30",
+      "schedule": "DAILY 0745-0830 0945-1030 1145-1230 1345-1430",
+      "text": "KEIHEUVEL FLY-IN PJE ESTABLISHED 511047N 0051259E RADIUS 03NM",
+      "lower": "GND",
+      "upper": "FL065",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          51.179722,
+          5.216389
+        ],
+        "radiusNm": 3.0
+      }
+    },
+    {
+      "ref": "G1782/26",
+      "from": "26 JUL 2026 10:00",
+      "till": "26 JUL 2026 17:00",
+      "schedule": null,
+      "text": "DUDELANGE PJE 492942N 0060407E RADIUS 01NM",
+      "lower": "GND",
+      "upper": "FL100",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          49.495,
+          6.068611
+        ],
+        "radiusNm": 1.0
+      }
+    },
+    {
+      "ref": "G1774/26",
+      "from": "25 JUL 2026 07:00",
+      "till": "26 JUL 2026 17:00",
+      "schedule": "DAILY 0700-1700",
+      "text": "TRA 'BALEN KEIHEUVEL' ESTABLISHED 511051N 0051315E RADIUS 02NM FOR FLY IN. BALEN RADIO 120.310MHZ, SPACC REF SA2026.0264",
+      "lower": "GND",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          51.180833,
+          5.220833
+        ],
+        "radiusNm": 2.0
       }
     },
     {
