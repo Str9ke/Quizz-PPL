@@ -1719,18 +1719,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: OPMET ===== -->
     <div id="msub-opmet" class="meteo-sub-content">
-      <!-- METAR rapide (uniquement) -->
-      <div class="map-card" style="margin-bottom:14px;">
-        <div class="map-card-title">&#x26A1; METAR rapide (Skeyes)</div>
-        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">R&#xe9;cup&#xe8;re UNIQUEMENT le METAR (pas TAF/SIGMET/GAMET, pas d&#x2019;images) &#x2014; le plus rapide possible quand tu as juste besoin de la m&#xe9;t&#xe9;o actuelle.</p>
-        <iframe id="metarFastFrame" src="metar_fast.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
-        <div class="map-card-actions">
-          <button onclick="window.triggerMetarOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:bold;">&#x26A1; METAR uniquement (rapide)</button>
-          <button onclick="var f=document.getElementById('metarFastFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
-          <span id="metarFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
-        </div>
-      </div>
-
       <!-- OPMET Automatique -->
       <div class="map-card" style="margin-bottom:14px;">
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
@@ -1738,9 +1726,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div id="autoOpmetFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
           <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
         <div class="map-card-actions">
+          <button onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe8;re et remplace la TOTALIT&#xc9; de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET) sans NOTAMs/images/TEMSI-WINTEM &#x2014; le plus rapide possible">&#x26A1; OPMET rapide</button>
           <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
           <button onclick="var f=document.getElementById('autoOpmetFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
           <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
+          <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
         </div>
       </div>
 
@@ -16026,7 +16016,7 @@ function _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt, on
 }
 
 /* D\u00E9clenche le workflow complet (NOTAMs + images + OPMET complet + TEMSI/WINTEM) \u2014 plusieurs
-   minutes. Voir triggerMetarOnlyAction ci-dessous pour la version rapide METAR seul. */
+   minutes. Voir triggerOpmetOnlyAction ci-dessous pour la version rapide OPMET seul. */
 window.triggerGithubAction = function() {
   return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'), function() {
     if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
@@ -16034,13 +16024,15 @@ window.triggerGithubAction = function() {
   });
 };
 
-/* Version rapide : ne d\u00E9clenche que fetch_notams.py --metar-only c\u00F4t\u00E9 serveur (voir
-   update_notams.yml + fetch_metar_fast() dans fetch_notams.py) \u2014 ignore NOTAMs, images
-   radar/satellite, TEMSI/WINTEM et TAF/SIGMET/GAMET pour un run aussi court que possible. */
-window.triggerMetarOnlyAction = function() {
-  var statusEl = document.getElementById('metarFastStatus');
-  return _dispatchUpdateWorkflow({ metar_only: 'true' }, statusEl, function() {
-    var f = document.getElementById('metarFastFrame');
+/* Version rapide : ne d\u00E9clenche que fetch_notams.py --opmet-only c\u00F4t\u00E9 serveur (voir
+   update_notams.yml + fetch_opmet()/main_opmet_only() dans fetch_notams.py) \u2014 r\u00E9cup\u00E8re et
+   remplace la TOTALIT\u00C9 de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET, comme sur la page Skeyes),
+   mais ignore NOTAMs, images radar/satellite et TEMSI/WINTEM pour un run aussi court que
+   possible. Recharge le M\u00CAME iframe autoOpmetFrame que le pipeline complet. */
+window.triggerOpmetOnlyAction = function() {
+  var statusEl = document.getElementById('opmetFastStatus');
+  return _dispatchUpdateWorkflow({ opmet_only: 'true' }, statusEl, function() {
+    var f = document.getElementById('autoOpmetFrame');
     if (f) f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();
   });
 };

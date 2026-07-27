@@ -617,188 +617,6 @@ try{
 
     return True
 
-
-def fetch_metar_fast(session):
-    """Récupère UNIQUEMENT le METAR (pas TAF/SIGMET/GAMET, pas le PDF, pas les images) —
-    utilisé par le bouton 'METAR rapide' de la page OPMET quand l'utilisateur veut la donnée
-    la plus fraîche possible sans attendre le pipeline complet (fetch_opmet + images radar/
-    satellite + NOTAMs, qui prend plusieurs minutes). Écrit un fichier séparé metar_fast.html
-    pour ne jamais écraser opmet.html (qui contient TAF/SIGMET/GAMET en plus du METAR)."""
-    print("\n--- Fetching METAR (fast, METAR only) ---")
-
-    init_url_1 = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-    resp = session.get(init_url_1, headers={"Referer": "https://ops.skeyes.be/opersite/home.do"})
-    soup = BeautifulSoup(resp.text, 'html.parser')
-    if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in resp.text:
-        raise Exception("METAR fast: login form or session lost on init")
-
-    init_url_2 = "https://ops.skeyes.be/opersite/opmet.do?cmd=init"
-    resp = session.get(init_url_2, headers={"Referer": init_url_1})
-    resp.raise_for_status()
-
-    payload = [
-        ('templateName', ''),
-        ('newTemplateName', ''),
-        ('selectCountry', ''),
-        ('template', 'select'),
-        ('icaocodes', 'EBBR;EBCI;EBSG;EBAW;EBBE;EBBL;EBCV;EBFN;EBFS;EBLG;EBOS;ELLX'),
-        ('land1', 'on'),
-        ('metar', 'on'),
-    ]
-    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Referer': init_url_2}
-    post_url = "https://ops.skeyes.be/opersite/opmetData.do?cmd=retrieveOpmet"
-    submit_resp = session.post(post_url, data=payload, headers=headers)
-    submit_resp.raise_for_status()
-
-    soup = BeautifulSoup(submit_resp.text, 'html.parser')
-    if soup.find('form', {'name': 'loginForm'}) or "Session perdue" in submit_resp.text:
-        raise Exception("METAR fast fetch returned login form or session lost error")
-
-    has_metar = bool(re.search(r'METAR\s+EB', submit_resp.text))
-    if not has_metar:
-        raise Exception("METAR fast: no METAR data in response")
-
-    body = soup.find('body')
-    if body:
-        for tag in body.find_all(['form', 'script', 'style', 'link', 'nav', 'header']):
-            tag.decompose()
-        raw_text = body.get_text('\n')
-    else:
-        raw_text = soup.get_text('\n')
-
-    lines = raw_text.split('\n')
-    cleaned = []
-    for line in lines:
-        stripped = line.rstrip()
-        if stripped:
-            cleaned.append(stripped)
-        elif cleaned and cleaned[-1] != '':
-            cleaned.append('')
-    raw_text = '\n'.join(cleaned).strip()
-    raw_text = re.sub(r'\n{3,}', '\n\n', raw_text)
-
-    # Seule la section METAR est attendue (TAF/SIGMET/GAMET n'ont pas été cochés), mais on
-    # ignore quand même toute autre section par prudence (ex. un changement de comportement
-    # côté Skeyes qui renverrait les autres sections vides).
-    metar_lines = []
-    in_metar = False
-    for line in raw_text.split('\n'):
-        line_upper = line.strip().upper()
-        if line_upper == 'METAR':
-            in_metar = True
-            continue
-        if line_upper in ('TAF FC', 'TAF FT', 'SIGMET', 'GAMET', 'AIRMET'):
-            in_metar = False
-            continue
-        if in_metar:
-            metar_lines.append(line)
-
-    # Grouper les lignes en entrées individuelles (une par METAR/SPECI/"not provided")
-    entries = []
-    current = []
-    for line in metar_lines:
-        stripped = line.strip()
-        if not stripped:
-            if current:
-                entries.append(' '.join(current))
-                current = []
-            continue
-        if re.match(r'^(METAR|SPECI)\s+E[BL]', stripped) or re.match(r'^E[BL]\w+\s+(not provided|NIL)', stripped):
-            if current:
-                entries.append(' '.join(current))
-            current = [stripped]
-        else:
-            current.append(stripped)
-    if current:
-        entries.append(' '.join(current))
-
-    def colorize(text):
-        text = re.sub(r'\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?(KT|MPS)\b',
-                      r'<span class="wx-wind">\1\2\3\4</span>', text)
-        text = re.sub(r'\b(\d{3}V\d{3})\b', r'<span class="wx-wind">\1</span>', text)
-        text = re.sub(r'\b(CAVOK)\b', r'<span class="wx-vis-good">\1</span>', text)
-        text = re.sub(r'(?<!\d)\b(\d{4})\b(?!\d|Z|/)',
-                      lambda m: f'<span class="wx-vis-{"good" if int(m.group(1))>=5000 else "bad"}">{m.group(1)}</span>', text)
-        text = re.sub(r'\b(\+?-?(?:VC)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?(?:DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)+)\b',
-                      r'<span class="wx-phen">\1</span>', text)
-        text = re.sub(r'\b(NSW)\b', r'<span class="wx-vis-good">\1</span>', text)
-        text = re.sub(r'\b(FEW|SCT|BKN|OVC|NCD|NSC)(\d{3})(///|CB|TCU)?\b',
-                      r'<span class="wx-cloud">\1\2\3</span>', text)
-        text = re.sub(r'\b(VV\d{3}|VV///)\b', r'<span class="wx-cloud">\1</span>', text)
-        text = re.sub(r'\b(Q\d{4})\b', r'<span class="wx-qnh">\1</span>', text)
-        text = re.sub(r'\b(M?\d{2}/M?\d{2})\b', r'<span class="wx-temp">\1</span>', text)
-        text = re.sub(r'\b(NOSIG|BECMG|TEMPO|PROB\d{2}|INTER)\b',
-                      r'<span class="wx-trend">\1</span>', text)
-        text = re.sub(r'\b(BLU|WHT|GRN|YLO|AMB|RED)\b',
-                      lambda m: f'<span class="wx-mil-{m.group(1).lower()}">{m.group(1)}</span>', text)
-        return text
-
-    html_parts = []
-    html_parts.append("""<!DOCTYPE html><html><head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html{color-scheme:dark}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;padding:12px;margin:0;
-  background:transparent;color:#e0e0e8}
-.entry{padding:8px 14px;font-family:'Cascadia Code','Fira Code','SF Mono',Consolas,monospace;font-size:13.5px;line-height:1.6;border-bottom:1px solid rgba(255,255,255,.06);white-space:pre-wrap;word-break:break-word;color:#e0e0e8}
-.entry:last-child{border-bottom:none}
-.entry-notprov{color:#a0a0b8;font-style:italic;font-size:12px}
-.icao{color:#f59e0b;font-weight:700}
-.timestamp{color:#a78bfa}
-.wx-wind{color:#60a5fa;font-weight:600}
-.wx-vis-good{color:#34d399}
-.wx-vis-bad{color:#fb923c;font-weight:600}
-.wx-phen{color:#f87171;font-weight:700}
-.wx-cloud{color:#c084fc}
-.wx-qnh{color:#2dd4bf;font-weight:600}
-.wx-temp{color:#fbbf24}
-.wx-trend{color:#f472b6;font-weight:700;text-decoration:underline;text-underline-offset:2px}
-.wx-mil-blu{color:#3b82f6}.wx-mil-wht{color:#e5e7eb}.wx-mil-grn{color:#22c55e}
-.wx-mil-ylo{color:#eab308}.wx-mil-amb{color:#f97316;font-weight:700}.wx-mil-red{color:#ef4444;font-weight:700}
-.updated{text-align:center;padding:8px;font-size:11px;color:#a0a0b8}
-body.light{color:#333;color-scheme:light}
-body.light .entry{color:#333;border-color:rgba(0,0,0,.08)}
-body.light .entry-notprov{color:#666}
-body.light .updated{color:#666}
-</style>
-<script>
-try{
-  function _syncTheme(){
-    try{if(window.parent&&window.parent.document.body.classList.contains('light'))document.body.classList.add('light');else document.body.classList.remove('light');}catch(e){}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_syncTheme);
-  else _syncTheme();
-}catch(e){}
-</script>
-</head><body>
-""")
-
-    if not entries:
-        html_parts.append('<div class="entry entry-notprov">Aucune donnée</div>')
-    for entry in entries:
-        entry_esc = entry.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        if 'not provided' in entry.lower() or entry.strip().endswith('NIL') or entry.strip().endswith('NIL='):
-            css = 'entry-notprov'
-        else:
-            css = 'entry'
-        entry_esc = re.sub(r'\b(E[BL][A-Z]{2})\b', r'<span class="icao">\1</span>', entry_esc)
-        entry_esc = re.sub(r'\b(\d{6}Z)\b', r'<span class="timestamp">\1</span>', entry_esc)
-        if css == 'entry':
-            entry_esc = colorize(entry_esc)
-        html_parts.append(f'<div class="entry {css}">{entry_esc}</div>')
-
-    from datetime import datetime, timezone
-    now_utc = datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%MZ')
-    html_parts.append(f'<div class="updated">METAR rapide — mis à jour: {now_utc}</div>')
-    html_parts.append('</body></html>')
-
-    with open("metar_fast.html", "w", encoding="utf-8") as f:
-        f.write('\n'.join(html_parts))
-    print(f"METAR fast: saved {len(entries)} entries")
-    return True
-
-
 def _extract_utc_timestamp(original_path):
     """Extract UTC timestamp string from a Skeyes image path. Returns ISO-like 'YYYY-MM-DDTHH:MMZ' or None."""
     basename = original_path.rsplit('/', 1)[-1]
@@ -1282,10 +1100,12 @@ def main():
     except Exception as e:
         print(f"Error fetching daily warnings: {e}")
 
-def main_metar_only():
-    """Point d'entrée léger pour le bouton 'METAR rapide' : login + fetch_metar_fast()
-    UNIQUEMENT (pas de NOTAMs, pas d'images radar/satellite, pas de TEMSI/WINTEM, pas de
-    PDF) — pour un job GitHub Actions le plus court possible."""
+def main_opmet_only():
+    """Point d'entrée léger pour le bouton 'OPMET rapide' : login + fetch_opmet() UNIQUEMENT
+    (pas de NOTAMs, pas d'images radar/satellite, pas de TEMSI/WINTEM) — récupère et remplace
+    la TOTALITÉ de l'OPMET (METAR + TAF + SIGMET + GAMET/AIRMET, exactement comme sur la page
+    Skeyes) dans opmet.html, réutilisant fetch_opmet() telle quelle (même sortie que le
+    pipeline complet), pour un job GitHub Actions le plus court possible."""
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
 
@@ -1299,15 +1119,15 @@ def main_metar_only():
     do_login(session, username, password)
 
     try:
-        fetch_metar_fast(session)
+        fetch_opmet(session)
     except Exception as e:
-        print(f"Error fetching fast METAR: {e}")
-        generate_error_html("metar_fast.html", "METAR rapide", session, str(e))
+        print(f"Error fetching OPMET (fast): {e}")
+        generate_error_html("opmet.html", "OPMET", session, str(e))
 
 
 if __name__ == "__main__":
     import sys
-    if '--metar-only' in sys.argv:
-        main_metar_only()
+    if '--opmet-only' in sys.argv:
+        main_opmet_only()
     else:
         main()
