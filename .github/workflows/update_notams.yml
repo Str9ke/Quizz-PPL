@@ -5,8 +5,8 @@ on:
     - cron: '0 5-19/3 * * 0,3,5,6' # Toutes les 3h (5h,8h,11h,14h,17h UTC), uniquement Mer, Ven, Sam, Dim
   workflow_dispatch: # Lancement manuel
     inputs:
-      metar_only:
-        description: 'METAR uniquement (rapide) — ignore NOTAMs/images/TEMSI-WINTEM/TAF/SIGMET/GAMET'
+      opmet_only:
+        description: 'OPMET uniquement (rapide) — METAR+TAF+SIGMET+GAMET/AIRMET complets, ignore NOTAMs/images/TEMSI-WINTEM'
         type: boolean
         default: false
 
@@ -40,9 +40,9 @@ jobs:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
         run: |
-          if [ "${{ github.event.inputs.metar_only }}" = "true" ]; then
-            echo "METAR-only fast run: skipping NOTAMs/images/TEMSI-WINTEM/full OPMET"
-            python fetch_notams.py --metar-only || true
+          if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
+            echo "OPMET-only fast run: full METAR+TAF+SIGMET+GAMET/AIRMET, skipping NOTAMs/images/TEMSI-WINTEM"
+            python fetch_notams.py --opmet-only || true
           else
             python fetch_notams.py || true
             python fetch_meteo.py || true
