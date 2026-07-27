@@ -1139,8 +1139,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- Sub-tabs -->
     <div class="meteo-subtabs">
-      <button class="meteo-subtab active" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
-      <button class="meteo-subtab" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
+      <button class="meteo-subtab active" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
+      <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
       <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
       <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
@@ -1153,9 +1153,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- Global Skeyes refresh bar -->
     <div class="meteo-refresh-bar">
+      <button class="meteo-action-btn" onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706)" title="R&#xe9;cup&#xe8;re et remplace la TOTALIT&#xc9; de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET) sans NOTAMs/images/TEMSI-WINTEM &#x2014; le plus rapide possible">&#x26A1; OPMET rapide</button>
       <button class="meteo-action-btn" onclick="window.refreshAllMeteo()" style="background:linear-gradient(135deg,#e74c3c,#c0392b)" title="Actualiser toutes les cartes m&#xe9;t&#xe9;o">&#x1F504; Actualiser tout</button>
       <button class="meteo-action-btn" onclick="window.refreshAllSkeyesImages()" style="background:linear-gradient(135deg,#667eea,#764ba2)" title="Recharger toutes les images radar/satellite depuis le serveur">&#x1F504; Images Skeyes</button>
       <button class="meteo-action-btn" onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b)" title="Relance le pipeline complet (NOTAMs+images+OPMET+TEMSI/WINTEM) &#x2014; plusieurs minutes">&#x26A1; Tout relancer (GH Action)</button>
+      <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
       <span id="ghaStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
     </div>
 
@@ -1199,7 +1201,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
 
     <!-- ===== SUB: TEMSI / WINTEM ===== -->
-    <div id="msub-charts" class="meteo-sub-content active">
+    <div id="msub-charts" class="meteo-sub-content">
 
       <!-- Bouton d'actualisation globale -->
       <div style="text-align: center; margin-bottom: 15px;">
@@ -1718,7 +1720,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     </div>
 
     <!-- ===== SUB: OPMET ===== -->
-    <div id="msub-opmet" class="meteo-sub-content">
+    <div id="msub-opmet" class="meteo-sub-content active">
       <!-- OPMET Automatique -->
       <div class="map-card" style="margin-bottom:14px;">
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
@@ -1726,11 +1728,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div id="autoOpmetFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
           <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
         <div class="map-card-actions">
-          <button onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe8;re et remplace la TOTALIT&#xc9; de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET) sans NOTAMs/images/TEMSI-WINTEM &#x2014; le plus rapide possible">&#x26A1; OPMET rapide</button>
           <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;">&#x26A1; Actualiser Imm&#xe9;diatement (GitHub Action)</button>
           <button onclick="var f=document.getElementById('autoOpmetFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
           <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
-          <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
         </div>
       </div>
 
