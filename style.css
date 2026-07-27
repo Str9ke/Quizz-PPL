@@ -803,6 +803,23 @@ body.light .wrong {
   color: red;
 }
 
+/* ===== Récapitulatif des erreurs (fin de correction quiz) ===== */
+.quiz-error-recap-header {
+  margin-top: 24px;
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.4);
+}
+.quiz-error-recap-item {
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  background: rgba(220, 53, 69, 0.05);
+}
+.quiz-error-recap-item .question-block {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-bottom: 0;
+}
+
 /* ===== Explanation block ===== */
 .explication-block {
   margin-top: 10px;
