@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v70a';
+const CACHE_NAME = 'quiz-ppl-v70b';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -187,7 +187,7 @@ self.addEventListener('fetch', event => {
   // rafraîchi le cache — inacceptable pour des METAR/TAF/NOTAM utilisés en préparation de
   // vol. Même traitement network-first que les JSON de questions, mais avec repli sur le
   // cache existant (pas de contenu vide) si hors-ligne.
-  const isAutoFetchedWx = /\/(opmet|notams_belgique|daily_warnings)\.html$/.test(url.pathname);
+  const isAutoFetchedWx = /\/(opmet|metar_fast|notams_belgique|daily_warnings)\.html$/.test(url.pathname);
   // Cartes TEMSI/WINTEM (manifest.json + PNG + PDF regénérés par le workflow toutes les
   // ~3h) : le code cliente (initTemsiCarousels) ajoute déjà un paramètre "?t=timestamp"
   // pour forcer un fetch frais après un clic sur "Relancer GitHub Action" — mais le

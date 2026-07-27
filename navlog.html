@@ -358,6 +358,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .meteo-subtab:hover{color:#667eea;background:rgba(102,126,234,.08)}
 .meteo-subtab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .meteo-sub-content{display:none}.meteo-sub-content.active{display:block}
+.meteo-refresh-bar{display:flex;gap:6px;align-items:center;justify-content:center;padding:6px 0 12px;flex-wrap:wrap}
+.meteo-action-btn{padding:7px 14px;font-size:.78em;font-weight:700;border-radius:12px;cursor:pointer;border:none;color:#fff;white-space:nowrap}
 .iframe-card{position:relative;width:100%;background:var(--bg-question);border-radius:8px;overflow:hidden;min-height:200px}
 .iframe-card iframe{width:100%;border:none;display:block}
 .iframe-blocked-msg{padding:16px;text-align:center;font-size:.82em;color:var(--text-secondary);background:rgba(102,126,234,.04);border-radius:8px;margin:8px 16px}
@@ -656,7 +658,17 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .navlog-tab,.flight-type-btn,.model-nav button,.skeyes-nav button,.map-card-actions button,
   .wp-etape-btn,.wp-remove-btn,.wp-map-btn,.wp-circuit-btn,.reserve-toggle,
   .aeroweb-nav-btn,.aeroweb-toggle-btn,.note-tb-btn,
-  .global-refresh-btn,.wx-snap-btn{width:auto;margin:0}
+  .global-refresh-btn,.wx-snap-btn,.meteo-action-btn{width:auto;margin:0}
+  /* Barre de sous-onglets météo (10 boutons) : le flex-wrap classique laissait chaque bouton
+     prendre sa largeur de contenu, ce qui — combiné au bouton "Actualiser tout" poussé à
+     droite par margin-left:auto — le faisait systématiquement retomber seul sur sa propre
+     ligne, et le reste s'étalait sur 5-6 lignes inégales. Grille fixe à 3 colonnes égales
+     (le bouton "Actualiser tout" a été déplacé hors de cette barre, voir .meteo-refresh-bar) :
+     tient sur 4 lignes bien rangées au lieu d'une longue colonne. */
+  .meteo-subtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px}
+  /* Barre d'actions Skeyes (3 boutons pleine phrase) : même compression que ci-dessus, texte
+     et remplissage réduits pour tenir sur 2 lignes serrées au lieu de 3 pleines lignes. */
+  .meteo-action-btn{padding:6px 10px;font-size:.68em;flex:1 1 auto;text-align:center}
 }
 
 /* Subtab scroll indicators */
@@ -1137,13 +1149,13 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-subtab" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
       <button class="meteo-subtab" data-sub="sigmet" onclick="window.switchMeteoSub('sigmet')">&#x26A0;&#xFE0F; SIGMET</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
-      <button onclick="window.refreshAllMeteo()" style="margin-left:auto;padding:6px 14px;font-size:.78em;font-weight:700;border-radius:12px;cursor:pointer;border:none;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff" title="Actualiser toutes les cartes m&#xe9;t&#xe9;o">&#x1F504; Actualiser tout</button>
     </div>
 
     <!-- Global Skeyes refresh bar -->
-    <div style="display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 0 12px;flex-wrap:wrap">
-      <button onclick="window.refreshAllSkeyesImages()" style="padding:8px 18px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;transition:all .2s" title="Recharger toutes les images radar/satellite depuis le serveur">&#x1F504; Actualiser toutes les images Skeyes</button>
-      <button onclick="window.triggerGithubAction()" style="padding:8px 18px;font-size:.84em;font-weight:700;border-radius:14px;cursor:pointer;border:none;background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff">&#x26A1; Relancer GitHub Action</button>
+    <div class="meteo-refresh-bar">
+      <button class="meteo-action-btn" onclick="window.refreshAllMeteo()" style="background:linear-gradient(135deg,#e74c3c,#c0392b)" title="Actualiser toutes les cartes m&#xe9;t&#xe9;o">&#x1F504; Actualiser tout</button>
+      <button class="meteo-action-btn" onclick="window.refreshAllSkeyesImages()" style="background:linear-gradient(135deg,#667eea,#764ba2)" title="Recharger toutes les images radar/satellite depuis le serveur">&#x1F504; Images Skeyes</button>
+      <button class="meteo-action-btn" onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b)" title="Relance le pipeline complet (NOTAMs+images+OPMET+TEMSI/WINTEM) &#x2014; plusieurs minutes">&#x26A1; Tout relancer (GH Action)</button>
       <span id="ghaStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
     </div>
 
@@ -1707,6 +1719,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
     <!-- ===== SUB: OPMET ===== -->
     <div id="msub-opmet" class="meteo-sub-content">
+      <!-- METAR rapide (uniquement) -->
+      <div class="map-card" style="margin-bottom:14px;">
+        <div class="map-card-title">&#x26A1; METAR rapide (Skeyes)</div>
+        <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">R&#xe9;cup&#xe8;re UNIQUEMENT le METAR (pas TAF/SIGMET/GAMET, pas d&#x2019;images) &#x2014; le plus rapide possible quand tu as juste besoin de la m&#xe9;t&#xe9;o actuelle.</p>
+        <iframe id="metarFastFrame" src="metar_fast.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
+        <div class="map-card-actions">
+          <button onclick="window.triggerMetarOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:bold;">&#x26A1; METAR uniquement (rapide)</button>
+          <button onclick="var f=document.getElementById('metarFastFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
+          <span id="metarFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
+        </div>
+      </div>
+
       <!-- OPMET Automatique -->
       <div class="map-card" style="margin-bottom:14px;">
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
@@ -15962,7 +15986,7 @@ window.applyPerformance=function(tas, fuel){
    lisible sans authentification) au lieu de laisser l'utilisateur deviner s'il
    s'est pass\u00E9 quelque chose ("je ne vois pas l'\u00E9volution"). Une fois termin\u00E9
    avec succ\u00E8s, recharge automatiquement les cartes m\u00E9t\u00E9o affich\u00E9es. */
-function _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt) {
+function _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt, onSuccess) {
   attempt = attempt || 0;
   if (attempt > 45) { // ~9 min max de suivi automatique
     if (statusEl) statusEl.textContent = '\u26A0\uFE0F Toujours en attente apr\u00E8s plusieurs minutes \u2014 v\u00E9rifie directement sur GitHub Actions.';
@@ -15975,29 +15999,50 @@ function _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt) {
       var run = runs.find(function(r) { return new Date(r.created_at).getTime() >= dispatchedAtMs - 15000; });
       if (!run) {
         if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En attente du d\u00E9marrage\u2026';
-        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
         return;
       }
       if (run.status !== 'completed') {
         if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En cours d\u2019ex\u00E9cution\u2026';
-        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
         return;
       }
       if (run.conclusion === 'success') {
-        if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 \u2014 actualisation des cartes\u2026';
-        if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
-        if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
+        if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 \u2014 actualisation\u2026';
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
+          if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
+        }
         setTimeout(function() { if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 et actualis\u00E9.'; }, 800);
       } else {
         if (statusEl) statusEl.textContent = '\uD83D\uDD34 \u00C9chec (voir GitHub Actions pour le d\u00E9tail).';
       }
     })
     .catch(function() {
-      setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1); }, 8000);
+      setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
     });
 }
 
-window.triggerGithubAction = async function() {
+/* D\u00E9clenche le workflow complet (NOTAMs + images + OPMET complet + TEMSI/WINTEM) \u2014 plusieurs
+   minutes. Voir triggerMetarOnlyAction ci-dessous pour la version rapide METAR seul. */
+window.triggerGithubAction = function() {
+  return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'));
+};
+
+/* Version rapide : ne d\u00E9clenche que fetch_notams.py --metar-only c\u00F4t\u00E9 serveur (voir
+   update_notams.yml + fetch_metar_fast() dans fetch_notams.py) \u2014 ignore NOTAMs, images
+   radar/satellite, TEMSI/WINTEM et TAF/SIGMET/GAMET pour un run aussi court que possible. */
+window.triggerMetarOnlyAction = function() {
+  var statusEl = document.getElementById('metarFastStatus');
+  return _dispatchUpdateWorkflow({ metar_only: 'true' }, statusEl, function() {
+    var f = document.getElementById('metarFastFrame');
+    if (f) f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();
+  });
+};
+
+async function _dispatchUpdateWorkflow(inputs, statusEl, onSuccess) {
     let token = localStorage.getItem("github_pat");
     if (!token) {
         token = prompt("Pour lancer l'actualisation depuis le site, veuillez entrer votre GitHub Personal Access Token (PAT) avec l'autorisation 'repo' :\n\nPour en obtenir un : github.com/settings/tokens");
@@ -16005,11 +16050,12 @@ window.triggerGithubAction = async function() {
         localStorage.setItem("github_pat", token);
     }
 
-    var statusEl = document.getElementById('ghaStatus');
     if (statusEl) { statusEl.style.display = ''; statusEl.textContent = '\u23F3 D\u00E9clenchement\u2026'; }
     var dispatchedAtMs = Date.now();
 
     try {
+        var body = { "ref": "main" };
+        if (inputs) body.inputs = inputs;
         let response = await fetch("https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/dispatches", {
             method: "POST",
             headers: {
@@ -16017,14 +16063,12 @@ window.triggerGithubAction = async function() {
                 "Authorization": "Bearer " + token,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                "ref": "main"
-            })
+            body: JSON.stringify(body)
         });
         if(response.ok || response.status === 204) {
              console.log("Action d\u00E9clench\u00E9e avec succ\u00E8s");
              if (statusEl) statusEl.textContent = '\uD83D\uDFE1 Lanc\u00E9e \u2014 suivi en cours\u2026';
-             setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl); }, 4000);
+             setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, 0, onSuccess); }, 4000);
         } else {
             if (statusEl) statusEl.style.display = 'none';
             alert("\u274C Erreur: " + response.status + " " + response.statusText + "\n V\u00E9rifiez votre token PAT (il doit avoir les droits 'repo').");
