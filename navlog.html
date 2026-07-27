@@ -15986,49 +15986,52 @@ window.applyPerformance=function(tas, fuel){
    lisible sans authentification) au lieu de laisser l'utilisateur deviner s'il
    s'est pass\u00E9 quelque chose ("je ne vois pas l'\u00E9volution"). Une fois termin\u00E9
    avec succ\u00E8s, recharge automatiquement les cartes m\u00E9t\u00E9o affich\u00E9es. */
-function _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt, onSuccess) {
+/* Interroge l'API GitHub (authentifi\u00E9e avec le PAT stock\u00E9 \u2014 un appel non authentifi\u00E9 est
+   plafonn\u00E9 \u00E0 60 requ\u00EAtes/heure PAR IP, largement \u00E9puisable en quelques cycles de suivi ; le
+   statut restait alors bloqu\u00E9 sur "En cours d'ex\u00E9cution\u2026" ind\u00E9finiment sans jamais signaler
+   d'erreur, donnant l'impression que le bouton "ne marche pas" alors que tout se passait bien
+   c\u00F4t\u00E9 serveur) pour suivre un run du workflow indiqu\u00E9 d\u00E9clench\u00E9 apr\u00E8s sinceMs. */
+function _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt, onSuccess) {
   attempt = attempt || 0;
   if (attempt > 45) { // ~9 min max de suivi automatique
     if (statusEl) statusEl.textContent = '\u26A0\uFE0F Toujours en attente apr\u00E8s plusieurs minutes \u2014 v\u00E9rifie directement sur GitHub Actions.';
     return;
   }
-  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3')
+  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/' + workflowFile + '/runs?per_page=3', {
+      headers: token ? { "Authorization": "Bearer " + token } : {}
+    })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       var runs = (data && data.workflow_runs) || [];
-      var run = runs.find(function(r) { return new Date(r.created_at).getTime() >= dispatchedAtMs - 15000; });
+      var run = runs.find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; });
       if (!run) {
         if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En attente du d\u00E9marrage\u2026';
-        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
+        setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
         return;
       }
       if (run.status !== 'completed') {
         if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En cours d\u2019ex\u00E9cution\u2026';
-        setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
+        setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
         return;
       }
       if (run.conclusion === 'success') {
-        if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 \u2014 actualisation\u2026';
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
-          if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
-        }
-        setTimeout(function() { if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 et actualis\u00E9.'; }, 800);
+        if (onSuccess) onSuccess();
       } else {
         if (statusEl) statusEl.textContent = '\uD83D\uDD34 \u00C9chec (voir GitHub Actions pour le d\u00E9tail).';
       }
     })
     .catch(function() {
-      setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, attempt + 1, onSuccess); }, 8000);
+      setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
     });
 }
 
 /* D\u00E9clenche le workflow complet (NOTAMs + images + OPMET complet + TEMSI/WINTEM) \u2014 plusieurs
    minutes. Voir triggerMetarOnlyAction ci-dessous pour la version rapide METAR seul. */
 window.triggerGithubAction = function() {
-  return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'));
+  return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'), function() {
+    if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
+    if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
+  });
 };
 
 /* Version rapide : ne d\u00E9clenche que fetch_notams.py --metar-only c\u00F4t\u00E9 serveur (voir
@@ -16042,7 +16045,7 @@ window.triggerMetarOnlyAction = function() {
   });
 };
 
-async function _dispatchUpdateWorkflow(inputs, statusEl, onSuccess) {
+async function _dispatchUpdateWorkflow(inputs, statusEl, onFullyDeployed) {
     let token = localStorage.getItem("github_pat");
     if (!token) {
         token = prompt("Pour lancer l'actualisation depuis le site, veuillez entrer votre GitHub Personal Access Token (PAT) avec l'autorisation 'repo' :\n\nPour en obtenir un : github.com/settings/tokens");
@@ -16068,7 +16071,22 @@ async function _dispatchUpdateWorkflow(inputs, statusEl, onSuccess) {
         if(response.ok || response.status === 204) {
              console.log("Action d\u00E9clench\u00E9e avec succ\u00E8s");
              if (statusEl) statusEl.textContent = '\uD83D\uDFE1 Lanc\u00E9e \u2014 suivi en cours\u2026';
-             setTimeout(function() { _pollGithubActionStatus(dispatchedAtMs, statusEl, 0, onSuccess); }, 4000);
+             setTimeout(function() {
+               _pollWorkflowStatus('update_notams.yml', dispatchedAtMs, token, statusEl, 0, function() {
+                 // La donn\u00E9e est fetch\u00E9e et pouss\u00E9e sur main, mais pas encore visible sur le
+                 // site tant que le d\u00E9ploiement Pages (d\u00E9clench\u00E9 automatiquement en fin de
+                 // workflow, voir update_notams.yml) n'a pas lui-m\u00EAme termin\u00E9 \u2014 sans cette
+                 // 2e \u00E9tape, recharger l'iframe ici montrait encore l'ancienne version.
+                 if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Donn\u00E9e r\u00E9cup\u00E9r\u00E9e \u2014 d\u00E9ploiement du site\u2026';
+                 var deployStartMs = Date.now();
+                 setTimeout(function() {
+                   _pollWorkflowStatus('deploy-pages.yml', deployStartMs, token, statusEl, 0, function() {
+                     if (onFullyDeployed) onFullyDeployed();
+                     if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 et actualis\u00E9.';
+                   });
+                 }, 4000);
+               });
+             }, 4000);
         } else {
             if (statusEl) statusEl.style.display = 'none';
             alert("\u274C Erreur: " + response.status + " " + response.statusText + "\n V\u00E9rifiez votre token PAT (il doit avoir les droits 'repo').");
