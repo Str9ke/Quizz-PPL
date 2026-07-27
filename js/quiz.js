@@ -1,6 +1,17 @@
 // === quiz.js === Quiz display, validation, immediate correction ===
 
 /**
+ * _isPracticeMode() – Vrai si le quiz en cours a été lancé en "mode entraînement libre"
+ * (ex. depuis echecs.html avec une sélection manuelle de questions) : dans ce mode, aucune
+ * réponse n'est persistée — pas de failCount/successCount, pas de planification de
+ * répétition espacée, pas de file de ré-interrogation, pas de compteurs quotidiens. Le
+ * quiz sert uniquement à s'entraîner sans toucher au suivi de progression.
+ */
+function _isPracticeMode() {
+  return localStorage.getItem('quizPracticeMode') === '1';
+}
+
+/**
  * _speakCorrectAnswer() – Lit la bonne réponse via Web Speech Synthesis (TTS)
  * Uniquement si l'option TTS est activée (localStorage ttsEnabled)
  */
@@ -256,6 +267,7 @@ async function demarrerQuiz() {
   }
 
   // store parameters for quiz page
+  localStorage.removeItem('quizPracticeMode');
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('quizMode', modeQuiz);
   localStorage.setItem('quizFilterFlags', JSON.stringify(filterFlags));
@@ -908,7 +920,7 @@ function afficherQuiz() {
       // validation, on garde un instantané de l'état d'origine de la question et on
       // recalcule l'entrée depuis cet instantané à chaque changement (sinon changer
       // d'avis appliquerait deux fois la planification / le failCount).
-      if (localStorage.getItem('correctionImmediate') !== '1') {
+      if (localStorage.getItem('correctionImmediate') !== '1' && !_isPracticeMode()) {
         try {
           const key2 = getKeyFor(q2);
           window._sessionPrevSnapshot = window._sessionPrevSnapshot || {};
@@ -1252,6 +1264,8 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     if (currentResponses[_pKey] && currentResponses[_pKey].status !== undefined) {
       window._immediateSavedEntries[_pKey] = currentResponses[_pKey];
     }
+  } else if (_isPracticeMode()) {
+    // Mode entraînement libre : ne rien persister (voir _isPracticeMode)
   } else {
     if (!(_pKey in window._immediatePrevStatus)) {
       window._immediatePrevStatus[_pKey] = currentResponses[_pKey]?.status;
@@ -1297,8 +1311,8 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   if (!isCorrect && !isRestore) {
     const correctText = _resolveTtsText(q);
     _speakCorrectAnswer(correctText);
-    // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
-    _queueForReask(q);
+    // Ajouter la question à la file de ré-interrogation (2 quiz plus tard) — pas en mode entraînement libre
+    if (!_isPracticeMode()) _queueForReask(q);
     // Permettre de re-lire la bonne réponse en cliquant n'importe où dans la zone réponses
     const answerList = selectedRadio.closest('.answer-list');
     if (answerList && !answerList._ttsReplayAttached) {
@@ -1425,6 +1439,13 @@ async function validerReponses() {
         answeredCount++;
         const key = getKeyFor(q);
 
+        // Mode entraînement libre : ne rien persister ni logger, juste compter le score
+        // affiché à l'écran (voir _isPracticeMode).
+        if (_isPracticeMode()) {
+          if (selectedVal === q.bonne_reponse) correctCount++;
+          return;
+        }
+
         // L'entrée SR a déjà été calculée ET sauvegardée au moment du clic (mode immédiat :
         // handleImmediateAnswer ; mode normal : écouteur 'change' de afficherQuiz). La
         // réutiliser telle quelle — la recalculer ici doublerait l'incrément d'intervalle SR
@@ -1501,6 +1522,10 @@ async function validerReponses() {
         `;
         rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // Mode entraînement libre : le score est affiché ci-dessus, mais rien n'est écrit nulle
+    // part (Firestore, compteurs quotidiens, session, SR) — voir _isPracticeMode.
+    if (_isPracticeMode()) return;
 
     // Rien n'a été répondu → rien à enregistrer (ne pas polluer l'historique de sessions
     // ni les compteurs quotidiens avec une session vide)
