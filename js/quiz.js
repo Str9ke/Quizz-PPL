@@ -1,6 +1,32 @@
 // === quiz.js === Quiz display, validation, immediate correction ===
 
 /**
+ * _isPracticeMode() – Vrai si le quiz en cours a été lancé en "mode entraînement libre"
+ * (ex. depuis echecs.html avec une sélection manuelle de questions) : dans ce mode, aucune
+ * réponse n'est persistée — pas de failCount/successCount, pas de planification de
+ * répétition espacée, pas de file de ré-interrogation, pas de compteurs quotidiens. Le
+ * quiz sert uniquement à s'entraîner sans toucher au suivi de progression.
+ */
+function _isPracticeMode() {
+  return localStorage.getItem('quizPracticeMode') === '1';
+}
+
+/**
+ * _scrollBelowStickyBanner() – Scroll fluide vers un élément en tenant compte de la hauteur
+ * ACTUELLE de #resultContainer (position: sticky; top: 0 — hauteur variable selon le texte du
+ * score). Un simple target.scrollIntoView() alignerait le haut de la cible sur le haut du
+ * viewport, où la bannière collante vient justement se repositionner : la cible se
+ * retrouverait cachée derrière elle au lieu d'apparaître juste en dessous.
+ */
+function _scrollBelowStickyBanner(target) {
+  if (!target) return;
+  const rc = document.getElementById('resultContainer');
+  const bannerH = (rc && rc.style.display !== 'none') ? rc.offsetHeight : 0;
+  const y = target.getBoundingClientRect().top + window.scrollY - bannerH - 12;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+
+/**
  * _speakCorrectAnswer() – Lit la bonne réponse via Web Speech Synthesis (TTS)
  * Uniquement si l'option TTS est activée (localStorage ttsEnabled)
  */
@@ -189,7 +215,8 @@ function _srStatsHtml(q) {
 /**
  * _buildExplicationHtml() – Construit le HTML d'affichage d'une explication
  */
-function _buildExplicationHtml(q) {
+function _buildExplicationHtml(q, includeNote) {
+  if (includeNote === undefined) includeNote = true;
   let html = '';
   const hasExplication = q.explication || (q.explication_images && q.explication_images.length);
   if (hasExplication) {
@@ -208,7 +235,10 @@ function _buildExplicationHtml(q) {
     }
     html += '</div>';
   }
-  // Note personnelle : afficher immédiatement si disponible en cache
+  // Note personnelle : afficher immédiatement si disponible en cache. Omis quand la carte est
+  // dupliquée hors de son emplacement d'origine (récapitulatif des erreurs, voir plus bas) —
+  // un id="noteDisplay_<key>" en double casserait document.getElementById.
+  if (!includeNote) return html;
   const key = getKeyFor(q);
   html += `<div class="personal-note-display" id="noteDisplay_${key}">`;
   if (_notesCache && _notesCache[key] && (_notesCache[key].text || _notesCache[key].image)) {
@@ -256,6 +286,7 @@ async function demarrerQuiz() {
   }
 
   // store parameters for quiz page
+  localStorage.removeItem('quizPracticeMode');
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('quizMode', modeQuiz);
   localStorage.setItem('quizFilterFlags', JSON.stringify(filterFlags));
@@ -908,7 +939,7 @@ function afficherQuiz() {
       // validation, on garde un instantané de l'état d'origine de la question et on
       // recalcule l'entrée depuis cet instantané à chaque changement (sinon changer
       // d'avis appliquerait deux fois la planification / le failCount).
-      if (localStorage.getItem('correctionImmediate') !== '1') {
+      if (localStorage.getItem('correctionImmediate') !== '1' && !_isPracticeMode()) {
         try {
           const key2 = getKeyFor(q2);
           window._sessionPrevSnapshot = window._sessionPrevSnapshot || {};
@@ -1252,6 +1283,8 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     if (currentResponses[_pKey] && currentResponses[_pKey].status !== undefined) {
       window._immediateSavedEntries[_pKey] = currentResponses[_pKey];
     }
+  } else if (_isPracticeMode()) {
+    // Mode entraînement libre : ne rien persister (voir _isPracticeMode)
   } else {
     if (!(_pKey in window._immediatePrevStatus)) {
       window._immediatePrevStatus[_pKey] = currentResponses[_pKey]?.status;
@@ -1297,8 +1330,8 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   if (!isCorrect && !isRestore) {
     const correctText = _resolveTtsText(q);
     _speakCorrectAnswer(correctText);
-    // Ajouter la question à la file de ré-interrogation (2 quiz plus tard)
-    _queueForReask(q);
+    // Ajouter la question à la file de ré-interrogation (2 quiz plus tard) — pas en mode entraînement libre
+    if (!_isPracticeMode()) _queueForReask(q);
     // Permettre de re-lire la bonne réponse en cliquant n'importe où dans la zone réponses
     const answerList = selectedRadio.closest('.answer-list');
     if (answerList && !answerList._ttsReplayAttached) {
@@ -1425,6 +1458,13 @@ async function validerReponses() {
         answeredCount++;
         const key = getKeyFor(q);
 
+        // Mode entraînement libre : ne rien persister ni logger, juste compter le score
+        // affiché à l'écran (voir _isPracticeMode).
+        if (_isPracticeMode()) {
+          if (selectedVal === q.bonne_reponse) correctCount++;
+          return;
+        }
+
         // L'entrée SR a déjà été calculée ET sauvegardée au moment du clic (mode immédiat :
         // handleImmediateAnswer ; mode normal : écouteur 'change' de afficherQuiz). La
         // réutiliser telle quelle — la recalculer ici doublerait l'incrément d'intervalle SR
@@ -1499,8 +1539,22 @@ async function validerReponses() {
             ${skippedCount > 0 ? `<br><small style="color:var(--text-secondary)">(${skippedCount} question${skippedCount > 1 ? 's' : ''} non répondue${skippedCount > 1 ? 's' : ''} — non comptée${skippedCount > 1 ? 's' : ''}, ${skippedCount > 1 ? 'elles restent' : 'elle reste'} à voir)</small>` : ''}
             ${timingHtml}
         `;
-        rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Aller directement aux erreurs de la session (récapitulatif construit par
+        // afficherCorrection ci-dessus) plutôt que de rester sur la bannière de score : le
+        // bandeau reste de toute façon visible en permanence (position: sticky), inutile donc
+        // de forcer un retour en haut de page qui oblige à rescroller tout le questionnaire
+        // pour retrouver ses erreurs.
+        const errorRecap = document.getElementById('quizErrorRecap');
+        if (errorRecap) {
+          _scrollBelowStickyBanner(errorRecap);
+        } else {
+          rc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
+
+    // Mode entraînement libre : le score est affiché ci-dessus, mais rien n'est écrit nulle
+    // part (Firestore, compteurs quotidiens, session, SR) — voir _isPracticeMode.
+    if (_isPracticeMode()) return;
 
     // Rien n'a été répondu → rien à enregistrer (ne pas polluer l'historique de sessions
     // ni les compteurs quotidiens avec une session vide)
@@ -1651,6 +1705,55 @@ async function validerReponses() {
 /**
  * afficherCorrection() – Affiche la correction sur quiz.html
  */
+/**
+ * _buildCorrectionCardHtml() – Construit la carte HTML d'une question corrigée (réponses
+ * surlignées + explication). Extrait d'afficherCorrection() pour être réutilisé à la fois
+ * dans la liste ordonnée normale et dans le récapitulatif des erreurs (voir plus bas) —
+ * évite de dupliquer la logique de surlignage vert/rouge à deux endroits.
+ */
+function _buildCorrectionCardHtml(q, idx, checkedVal, anchorId, includeNote) {
+  let ansHtml = "";
+  q.choix.forEach((choixText, i) => {
+    let styleCls = "";
+    // Surligne la bonne réponse en vert
+    if (i === q.bonne_reponse) {
+      styleCls = "correct";
+    }
+    // Surligne la mauvaise réponse choisie en rouge
+    if (checkedVal !== null && checkedVal === i && checkedVal !== q.bonne_reponse) {
+      styleCls = "wrong";
+    }
+    ansHtml += `<div style="margin-bottom:4px;">
+      <span class="${styleCls}">${choixText}</span>
+    </div>`;
+  });
+
+  // Affiche "NON RÉPONDU" si aucune réponse sélectionnée
+  const nonReponduHtml = checkedVal === null
+    ? `<span style="color:red; font-weight:bold;">NON RÉPONDU</span>`
+    : "";
+
+  return `
+    <div class="question-block"${anchorId ? ` id="${anchorId}"` : ''}>
+      <div class="question-title">
+        ${idx + 1}. ${q.question}
+        ${nonReponduHtml}
+      </div>
+      ${ q.image
+        ? `<div class="question-image">
+             <img src="${q.image}" alt="Question ${q.id} illustration"
+                  onerror="this.style.display='none'; console.warn('Image introuvable:', this.src);" />
+           </div>`
+        : "" }
+      <div class="answer-list">
+        ${ansHtml}
+      </div>
+      ${_srStatsHtml(q)}
+      ${_buildExplicationHtml(q, includeNote)}
+    </div>
+  `;
+}
+
 function afficherCorrection() {
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
@@ -1658,10 +1761,9 @@ function afficherCorrection() {
   let html = "";
   const isImmediate = localStorage.getItem('correctionImmediate') === '1';
   const immediateAnswers = window._immediateAnswers || {};
+  const wrongItems = []; // {q, idx, checkedVal} — pour le récapitulatif des erreurs en bas de page
 
   currentQuestions.forEach((q, idx) => {
-    const key = getKeyFor(q);
-    const response = currentResponses[key];
     let checkedVal = null;
     if (isImmediate && immediateAnswers[idx] !== undefined) {
       checkedVal = immediateAnswers[idx];
@@ -1670,47 +1772,34 @@ function afficherCorrection() {
       checkedVal = checkedInput ? parseInt(checkedInput.value) : null;
     }
 
-    let ansHtml = "";
-    q.choix.forEach((choixText, i) => {
-      let styleCls = "";
-      // Surligne la bonne réponse en vert
-      if (i === q.bonne_reponse) {
-        styleCls = "correct";
-      }
-      // Surligne la mauvaise réponse choisie en rouge
-      if (checkedVal !== null && checkedVal === i && checkedVal !== q.bonne_reponse) {
-        styleCls = "wrong";
-      }
-      ansHtml += `<div style="margin-bottom:4px;">
-        <span class="${styleCls}">${choixText}</span>
-      </div>`;
-    });
+    if (checkedVal !== null && checkedVal !== q.bonne_reponse) {
+      wrongItems.push({ q, idx, checkedVal });
+    }
 
-    // Affiche "NON RÉPONDU" si aucune réponse sélectionnée
-    const nonReponduHtml = checkedVal === null
-      ? `<span style="color:red; font-weight:bold;">NON RÉPONDU</span>`
-      : "";
+    html += _buildCorrectionCardHtml(q, idx, checkedVal, 'qcorr-' + idx);
+  });
 
+  // Récapitulatif des erreurs : toutes les questions ratées de cette session regroupées en
+  // bas de page (avec renvoi vers leur position dans la liste ci-dessus), pour ne pas avoir
+  // à chercher ses erreurs au milieu de toutes les questions.
+  if (wrongItems.length) {
     html += `
-      <div class="question-block">
-        <div class="question-title">
-          ${idx + 1}. ${q.question}
-          ${nonReponduHtml}
+      <div class="question-block quiz-error-recap-header" id="quizErrorRecap">
+        <div class="question-title" style="color:#e57373;">
+          🔴 Récapitulatif des erreurs (${wrongItems.length})
         </div>
-        ${ q.image 
-          ? `<div class="question-image">
-               <img src="${q.image}" alt="Question ${q.id} illustration"
-                    onerror="this.style.display='none'; console.warn('Image introuvable:', this.src);" />
-             </div>`
-          : "" }
-        <div class="answer-list">
-          ${ansHtml}
-        </div>
-        ${_srStatsHtml(q)}
-        ${_buildExplicationHtml(q)}
       </div>
     `;
-  });
+    wrongItems.forEach(item => {
+      html += `<div class="quiz-error-recap-item" style="border-left:4px solid #dc3545;">
+        ${_buildCorrectionCardHtml(item.q, item.idx, item.checkedVal, null, false)}
+        <div style="text-align:right;margin:-6px 8px 10px;">
+          <a href="#qcorr-${item.idx}" onclick="event.preventDefault();_scrollBelowStickyBanner(document.getElementById('qcorr-${item.idx}'));" style="font-size:.82em;color:var(--link-color,#8ab4f8);text-decoration:none;">↑ Voir dans la liste (Q${item.idx + 1})</a>
+        </div>
+      </div>`;
+    });
+  }
+
   cont.innerHTML = html;
 
   // re-attach mark buttons on corrected view

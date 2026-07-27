@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Plus ratées</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260720b" />
+  <link rel="stylesheet" href="style.css?v=20260727a" />
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -32,7 +32,7 @@
   <script src="js/helpers.js?v=20260718a"></script>
   <script src="js/categories.js?v=20260718a"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260720a"></script>
+  <script src="js/quiz.js?v=20260727b"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260224i"></script>
 </head>
@@ -90,6 +90,16 @@
       </div>
       <div id="echecsCountCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px 12px;"></div>
       <div id="echecsStatus" style="margin-top:10px;font-size:.85em;color:var(--text-secondary,#aaa);"></div>
+      <div id="echecsQuizLauncher" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-color,rgba(255,255,255,.1));align-items:center;flex-wrap:wrap;gap:10px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85em;">
+          Nombre de questions :
+          <input type="number" id="echecsQuizNb" min="1" value="10" style="width:70px;padding:4px 6px;border-radius:4px;">
+        </label>
+        <button class="hist-filter-btn hist-filter-quiz" style="font-size:.95em;padding:8px 20px;" onclick="echecsLaunchQuiz()">▶️ Lancer un test</button>
+        <div style="font-size:.72em;color:var(--text-secondary,#aaa);width:100%;">
+          🛡️ N'affecte ni les statistiques, ni la répétition espacée, ni le compteur de ratés — pur entraînement sur la sélection filtrée ci-dessus.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -273,7 +283,48 @@
         ? '<strong>' + list.length + '</strong> question' + (list.length > 1 ? 's' : '') + ' ratée' + (list.length > 1 ? 's' : '') + ' au moins une fois'
         : '<span style="color:var(--text-secondary)">Aucune question ne correspond aux cases cochées</span>';
 
+      // Mémoriser la sélection filtrée COMPLÈTE (pas tronquée à 100) pour le lancement de test
+      window._echecsFilteredList = list;
+      const launcher = document.getElementById('echecsQuizLauncher');
+      const nbInput = document.getElementById('echecsQuizNb');
+      if (list.length) {
+        launcher.style.display = 'flex';
+        nbInput.max = list.length;
+        const current = parseInt(nbInput.value) || 10;
+        nbInput.value = Math.max(1, Math.min(current, list.length));
+      } else {
+        launcher.style.display = 'none';
+      }
+
       renderQuestions(list.slice(0, 100), document.getElementById('echecsResults'));
+    };
+
+    // === Lancer un test à partir de la sélection filtrée (n'impacte pas les stats/SR) ===
+    window.echecsLaunchQuiz = function() {
+      const list = window._echecsFilteredList || [];
+      if (!list.length) { alert('Aucune question à lancer.'); return; }
+      const nbInput = document.getElementById('echecsQuizNb');
+      let nb = parseInt(nbInput.value) || 0;
+      nb = Math.max(1, Math.min(nb, list.length));
+
+      // Mélanger puis prendre les N premières
+      const shuffled = list.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const selected = shuffled.slice(0, nb).map(item => JSON.parse(JSON.stringify(item.q)));
+
+      localStorage.setItem('currentQuestions', JSON.stringify(selected));
+      localStorage.setItem('quizCategory', 'PLUS RATÉES (entraînement)');
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', selected.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      localStorage.setItem('quizPracticeMode', '1');
+      localStorage.removeItem('currentQuizAnswers');
+      localStorage.removeItem('currentQuizBatchPos');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      window.location = 'quiz.html';
     };
 
     // === Render questions (repris de search.html) ===
@@ -337,9 +388,9 @@
         html += '<div class="personal-note-display" id="noteDisplay_' + key + '"></div>';
 
         html += '<div class="question-actions-row">';
-        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="echecsToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
-        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="echecsToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
-        html += '<button class="note-toggle-btn" onclick="echecsToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
+        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isMarked ? 'Supprimer le marquage' : 'Marquer cette question') + '" onclick="echecsToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? '🗑️' : '🔖') + '</button>';
+        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isImportant ? 'Retirer Important' : 'Marquer comme important') + '" onclick="echecsToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? '⭐' : '☆') + '</button>';
+        html += '<button class="note-toggle-btn qa-icon-btn" title="Ma note personnelle" onclick="echecsToggleNote(\'' + key + '\', this)">📝</button>';
         html += '</div>';
 
         html += '</div>';
@@ -371,8 +422,9 @@
       if (prev.status !== undefined) entry.status = prev.status;
       const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, marked: newMarked };
-      btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
-      btn.className = newMarked ? 'delete-button' : 'mark-button';
+      btn.textContent = newMarked ? '🗑️' : '🔖';
+      btn.title = newMarked ? 'Supprimer le marquage' : 'Marquer cette question';
+      btn.className = (newMarked ? 'delete-button' : 'mark-button') + ' qa-icon-btn';
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
       db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
@@ -388,8 +440,9 @@
       if (prev.status !== undefined) entry.status = prev.status;
       const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, important: newImportant };
-      btn.textContent = newImportant ? 'Retirer Important' : 'Important';
-      btn.className = newImportant ? 'delete-button' : 'mark-button';
+      btn.textContent = newImportant ? '⭐' : '☆';
+      btn.title = newImportant ? 'Retirer Important' : 'Marquer comme important';
+      btn.className = (newImportant ? 'delete-button' : 'mark-button') + ' qa-icon-btn';
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
       db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
