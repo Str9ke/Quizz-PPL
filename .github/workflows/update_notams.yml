@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -48,6 +49,7 @@ jobs:
           fi
 
       - name: Commit and push changes
+        id: commit
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -60,6 +62,7 @@ jobs:
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET"
@@ -85,6 +88,7 @@ jobs:
             git fetch --depth=1 origin main
             if git rebase origin/main && git push origin HEAD:main; then
               echo "Push réussi (tentative $attempt)."
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             git rebase --abort 2>/dev/null || true
@@ -93,3 +97,25 @@ jobs:
           done
           echo "::error::Échec du push après plusieurs tentatives."
           exit 1
+
+      - name: Trigger GitHub Pages redeploy
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Un push effectué avec le GITHUB_TOKEN par défaut ne déclenche PAS les autres
+          # workflows du dépôt (protection anti-boucle infinie de GitHub Actions) — le
+          # "push: branches: [main]" de deploy-pages.yml ne se déclenchait donc JAMAIS après
+          # ce job, malgré des commits automatiques réguliers (toutes les ~3h) : le site en
+          # ligne restait figé sur la dernière donnée déployée par un push humain, parfois
+          # périmée de plusieurs heures voire jours (NOTAMs, METAR/TAF/OPMET, TEMSI/WINTEM).
+          # On déclenche donc explicitement le déploiement via l'API workflow_dispatch, qui
+          # n'est PAS soumise à cette restriction (c'est un déclenchement direct, pas un
+          # événement "push" indirect).
+          curl -sS -f -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-pages.yml/dispatches" \
+            -d '{"ref":"main"}' \
+          && echo "Déploiement Pages déclenché." \
+          || echo "::warning::Échec du déclenchement du déploiement Pages — le site restera périmé jusqu'au prochain déploiement manuel."
