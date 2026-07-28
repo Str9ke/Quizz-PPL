@@ -12491,6 +12491,117 @@ function _altProfileHideCrosshair(){
   _altProfileHideMapPos();
 }
 
+/* ===== Clic sur le profil d'altitude : surlignage de zone(s) sur la carte =====
+   Détermine le(s) espace(s) aérien(s)/avis du jour dont la distance ET l'altitude couvrent
+   le point cliqué (même logique de "hit test" que l'info-bulle au survol de l'onglet
+   Altitudes, voir renderAltitudesProfile). */
+function _altProfileZonesAtPoint(d,alt,maxAltLocal){
+  var hits=[];
+  if(typeof _routeAirspaces!=='undefined' && _routeAirspaces){
+    _routeAirspaces.forEach(function(a){
+      (a.crossings||[]).forEach(function(c){
+        if(d>=c.entryDist && d<=c.exitDist && alt>=(a.lowerFt||0) && alt<=(a.upperFt||maxAltLocal)){
+          hits.push({kind:'airspace',name:a.name,data:a});
+        }
+      });
+    });
+  }
+  if(typeof _routeDailyWarnings!=='undefined' && _routeDailyWarnings){
+    _routeDailyWarnings.forEach(function(w){
+      (w.crossings||[]).forEach(function(c){
+        if(d>=c.entryDist && d<=c.exitDist && alt>=(w.lowerFt||0) && alt<=(w.upperFt||maxAltLocal)){
+          hits.push({kind:'warning',name:w.name,data:w});
+        }
+      });
+    });
+  }
+  return hits;
+}
+
+var _altProfileHighlightLayer=null;
+function _altProfileClearHighlight(){
+  if(_altProfileHighlightLayer && typeof routeMap!=='undefined' && routeMap){
+    try{ routeMap.removeLayer(_altProfileHighlightLayer); }catch(e){}
+  }
+  _altProfileHighlightLayer=null;
+}
+
+/* Dessine la zone choisie EN ENTIER (géométrie complète, pas seulement le tronçon traversé
+   par la route) sur la carte, en semi-transparent, avec son nom en étiquette permanente —
+   même style que _renderAirspacesOnRouteMap()/_renderDailyWarningsOnRouteMap() mais pour une
+   seule zone à la fois, indépendamment du bouton "Classes espace aérien". */
+function _altProfileHighlightZone(hit){
+  _altProfileClearHighlight();
+  if(typeof routeMap==='undefined'||!routeMap||typeof L==='undefined') return;
+  var group=L.layerGroup();
+  var drawn=false;
+  if(hit.kind==='airspace'){
+    if(!_lastOpenaipItems || !_lastOpenaipItems.length){
+      _toast('⚠️ Charge d\'abord les espaces aériens depuis l\'onglet Altitudes (bouton "Charger les espaces aériens")','error',3500);
+      return;
+    }
+    var it=_lastOpenaipItems.find(function(x){ return (x.name||x.designator||'Zone sans nom')===hit.name; });
+    var geom=it&&(it.geometry||it.geojson);
+    if(geom && geom.coordinates){
+      var rings=[];
+      if(geom.type==='Polygon') rings=[geom.coordinates[0]];
+      else if(geom.type==='MultiPolygon') rings=geom.coordinates.map(function(p){return p[0];});
+      var col=_airspaceBandColor(hit.data.classLabel);
+      var isDanger=/RESTRICTED|DANGER|PROHIBITED/.test(hit.data.classLabel);
+      rings.forEach(function(ring){
+        var latlngs=ring.map(function(pt){return [pt[1],pt[0]];}); /* GeoJSON = [lon,lat] */
+        var layer=L.polygon(latlngs,{color:col,weight:2.5,fillColor:col,fillOpacity:.35,dashArray:isDanger?'5,4':null});
+        layer.bindTooltip(hit.name,{permanent:true,direction:'center',className:'as-map-label',opacity:.95});
+        group.addLayer(layer);
+        drawn=true;
+      });
+    }
+  } else if(hit.kind==='warning'){
+    var wRaw=(typeof _dailyWarningsData!=='undefined'&&_dailyWarningsData&&_dailyWarningsData.warnings)
+      ? _dailyWarningsData.warnings.find(function(w){ return w.ref===hit.data.ref; }) : null;
+    var wGeom=wRaw&&wRaw.geometry;
+    if(wGeom){
+      var wLayer=null;
+      if(wGeom.type==='circle'){
+        wLayer=L.circle([wGeom.center[0],wGeom.center[1]],{radius:(wGeom.radiusNm||1)*1852,color:'#ef5350',weight:2.5,fillColor:'#ef5350',fillOpacity:.32,dashArray:'5,5'});
+      } else if(wGeom.vertices&&wGeom.vertices.length>=3){
+        wLayer=L.polygon(wGeom.vertices.map(function(v){return [v[0],v[1]];}),{color:'#ef5350',weight:2.5,fillColor:'#ef5350',fillOpacity:.32,dashArray:'5,5'});
+      }
+      if(wLayer){
+        wLayer.bindTooltip(hit.name,{permanent:true,direction:'center',className:'as-map-label',opacity:.95});
+        group.addLayer(wLayer);
+        drawn=true;
+      }
+    }
+  }
+  if(drawn){
+    group.addTo(routeMap);
+    _altProfileHighlightLayer=group;
+  }
+}
+
+/* Cycle un clic à la fois à travers toutes les zones présentes au point cliqué : 1er clic =
+   1ère zone, 2e clic (même endroit) = 2e zone, ..., puis clic suivant = tout effacer, et le
+   cycle recommence indéfiniment. Un clic ailleurs (zones différentes) repart de zéro. */
+var _altProfileClickState={sigKey:null,index:-1};
+function _altProfileHandleClick(d,alt,maxAltLocal){
+  var hits=_altProfileZonesAtPoint(d,alt,maxAltLocal);
+  if(!hits.length){
+    _altProfileClearHighlight();
+    _altProfileClickState={sigKey:null,index:-1};
+    return;
+  }
+  var sigKey=hits.map(function(h){ return h.kind+':'+h.name; }).join('|');
+  if(_altProfileClickState.sigKey===sigKey) _altProfileClickState.index++;
+  else _altProfileClickState={sigKey:sigKey,index:0};
+  if(_altProfileClickState.index>=hits.length){
+    _altProfileClearHighlight();
+    _altProfileClickState.index=-1;
+    return;
+  }
+  _altProfileHighlightZone(hits[_altProfileClickState.index]);
+}
+
 /* ===== ALTITUDE PROFILE CHART ===== */
 var _altDragState=null;
 function renderAltProfile(){
@@ -12786,6 +12897,55 @@ function renderAltProfile(){
     svg.addEventListener('touchstart',_updateCrosshairTouch,{passive:false});
     svg.addEventListener('touchmove',_updateCrosshairTouch,{passive:false});
     svg.addEventListener('touchend',_altProfileHideCrosshair);
+
+    /* Info-bulle au survol : indique le(s) espace(s) aérien(s)/avis du jour sous le curseur —
+       même principe que l'onglet Altitudes (voir renderAltitudesProfile / #alt2Tooltip). */
+    var apTooltipEl=document.getElementById('altProfileTooltip');
+    if(!apTooltipEl){
+      apTooltipEl=document.createElement('div');
+      apTooltipEl.id='altProfileTooltip';
+      apTooltipEl.style.cssText='position:fixed;z-index:9999;pointer-events:none;background:rgba(15,15,28,.97);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 9px;font-size:11px;line-height:1.45;max-width:270px;display:none;box-shadow:0 4px 14px rgba(0,0,0,.45)';
+      document.body.appendChild(apTooltipEl);
+    }
+    function _altProfilePointFromClientXY(clientX,clientY){
+      var rect=svg.getBoundingClientRect();
+      if(!rect.width) return null;
+      var svgX=(clientX-rect.left)*(W/rect.width), svgY=(clientY-rect.top)*(H/rect.height);
+      if(svgX<ml||svgX>ml+cw||svgY<mt||svgY>mt+ch) return null;
+      return {d:(svgX-ml)/cw*totalDist, alt:maxAlt*(mt+ch-svgY)/ch};
+    }
+    svg.addEventListener('mousemove',function(ev){
+      var pt=_altProfilePointFromClientXY(ev.clientX,ev.clientY);
+      if(!pt){ apTooltipEl.style.display='none'; return; }
+      var hits=_altProfileZonesAtPoint(pt.d,pt.alt,maxAlt);
+      if(!hits.length){ apTooltipEl.style.display='none'; return; }
+      apTooltipEl.innerHTML=hits.map(function(h){
+        var a=h.data;
+        var col=h.kind==='warning'?'#ef5350':_airspaceBandColor(a.classLabel);
+        var upperLabel=(a.upperFt>=60000)?'UNL':((a.upperFt||0)+' ft');
+        var classTag=(h.kind==='airspace'&&a.icaoClass)?(' <span style="border:1px solid '+col+';border-radius:4px;padding:0 4px;font-size:.92em">Classe '+escHTML(a.icaoClass)+'</span>'):'';
+        var label=h.kind==='warning'?'⚠ AVIS':a.classLabel;
+        return '<div style="margin-bottom:4px"><b style="color:'+col+'">'+escHTML(label)+'</b>'+classTag+' '+escHTML(a.name)+
+          '<br><span style="opacity:.75">'+(a.lowerFt||0)+'–'+upperLabel+'</span></div>';
+      }).join('');
+      apTooltipEl.style.display='block';
+      var tx=ev.clientX+14, ty=ev.clientY+14;
+      if(tx+270>window.innerWidth) tx=ev.clientX-284;
+      apTooltipEl.style.left=tx+'px';
+      apTooltipEl.style.top=ty+'px';
+    });
+    svg.addEventListener('mouseleave',function(){ apTooltipEl.style.display='none'; });
+
+    /* Clic : surligne la zone concernée EN ENTIER sur la carte (pas seulement le tronçon
+       traversé) — voir _altProfileHandleClick. Recliquer la même zone la masque ; s'il y a
+       plusieurs zones superposées au même endroit, chaque clic fait défiler l'une après
+       l'autre puis efface tout, prêt à recommencer. */
+    svg.addEventListener('click',function(ev){
+      if(ev.target && ev.target.closest && (ev.target.closest('.alt-leg-hit')||ev.target.closest('.alt-wp-hit'))) return;
+      var pt=_altProfilePointFromClientXY(ev.clientX,ev.clientY);
+      if(!pt) return;
+      _altProfileHandleClick(pt.d,pt.alt,maxAlt);
+    });
   }
 
   /* Lance fetch terrain si pas encore en cache */
