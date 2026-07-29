@@ -24,7 +24,10 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
@@ -34,7 +37,7 @@
   <script src="js/stats.js?v=20260720c"></script>
   <script src="js/quiz.js?v=20260727b"></script>
   <script src="js/init.js?v=20260717b"></script>
-  <script src="js/offline.js?v=20260224i"></script>
+  <script src="js/offline.js?v=20260728a"></script>
   <style>
     .cfg-section { margin-bottom: 10px; }
     .cfg-section-title { font-weight: 700; font-size: 1em; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
@@ -92,6 +95,25 @@
     Ces réglages sont propres à cet appareil/navigateur (stockés en local, pas synchronisés entre appareils).
     Chaque réglage a une valeur par défaut indiquée entre parenthèses.
   </p>
+
+  <!-- Mode hors-ligne -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">✈️ Mode hors-ligne</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      À vérifier AVANT un vol, pendant que tu es encore connecté — pas en plein vol.
+    </p>
+    <div id="cfgOfflineVerdict" style="padding:10px 12px;border-radius:8px;font-weight:700;font-size:.9em;margin-bottom:10px">Vérification…</div>
+    <div id="cfgOfflineDetails" style="font-size:.85em"></div>
+    <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;gap:8px;flex-wrap:wrap">
+      <button type="button" class="stats-btn" onclick="_cfgRunOfflineCheck()" style="padding:6px 14px">🔍 Vérifier maintenant</button>
+      <button type="button" class="stats-btn" onclick="_cfgRequestPersistentStorage()" style="padding:6px 14px">🔒 Protéger le stockage</button>
+      <button type="button" class="stats-btn" id="cfgForceRecacheBtn" onclick="_cfgForceRecache()" style="padding:6px 14px">📥 Forcer le téléchargement complet</button>
+    </div>
+    <p class="cfg-hint" style="margin-top:8px">
+      "Protéger le stockage" demande au navigateur de ne pas effacer les questions/ta progression hors-ligne sous pression de stockage.
+      "Forcer le téléchargement complet" retélécharge tous les fichiers nécessaires au fonctionnement hors-ligne (à faire en Wi-Fi, avant de partir).
+    </p>
+  </div>
 
   <!-- Apparence -->
   <div class="home-card cfg-section">
@@ -435,6 +457,126 @@
       _loadPrivacy();
     };
 
+    // === Mode hors-ligne : diagnostic de préparation avant un vol ===
+    // Vérifie les 4 conditions nécessaires à un usage 100% hors-ligne fiable :
+    // 1) Service Worker actif (sert les pages/JS/CSS depuis le cache)
+    // 2) Fichiers critiques réellement présents dans le cache (pas juste "SW installé")
+    // 3) Persistance Firestore active (sinon la progression ne survit pas à un rechargement
+    //    hors-ligne — cache mémoire seulement, perdu à la fermeture de l'onglet)
+    // 4) Stockage protégé contre l'effacement automatique par le système (Android peut sinon
+    //    vider silencieusement le cache d'une appli peu utilisée récemment)
+    function _cfgSendSwMessage(data, timeoutMs) {
+      return new Promise(resolve => {
+        if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) { resolve(null); return; }
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => resolve(null), timeoutMs || 4000);
+        channel.port1.onmessage = e => { clearTimeout(timer); resolve(e.data); };
+        navigator.serviceWorker.controller.postMessage(data, [channel.port2]);
+      });
+    }
+    async function _cfgCheckOfflineReadiness() {
+      const r = { swActive: false, cacheFileCount: 0, criticalFilesOk: false,
+        persistenceStatus: 'checking', storagePersisted: false, quota: null };
+
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration().catch(() => null);
+        r.swActive = !!(reg && reg.active);
+      }
+
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          let total = 0;
+          for (const k of keys) {
+            const c = await caches.open(k);
+            total += (await c.keys()).length;
+          }
+          r.cacheFileCount = total;
+          const criticalUrls = ['quiz.html', 'index.html', 'js/quiz.js', 'js/offline.js', 'questions_reglementation.json'];
+          const checks = await Promise.all(criticalUrls.map(u => caches.match(u).then(m => !!m)));
+          r.criticalFilesOk = checks.every(Boolean);
+        } catch (e) { console.warn('[offline-diag] cache check failed', e); }
+      }
+
+      try { if (window._persistenceReady) await window._persistenceReady; } catch (e) { /* déjà géré */ }
+      r.persistenceStatus = window._persistenceStatus || 'unknown';
+
+      if (navigator.storage && navigator.storage.persisted) {
+        r.storagePersisted = await navigator.storage.persisted().catch(() => false);
+      }
+      if (navigator.storage && navigator.storage.estimate) {
+        r.quota = await navigator.storage.estimate().catch(() => null);
+      }
+      return r;
+    }
+
+    function _cfgRenderOfflineDiagnostic(r) {
+      const verdictEl = document.getElementById('cfgOfflineVerdict');
+      const detailsEl = document.getElementById('cfgOfflineDetails');
+      if (!verdictEl || !detailsEl) return;
+
+      const items = [
+        { ok: r.swActive, label: 'Service Worker actif', okMsg: 'actif — sert les pages depuis le cache', badMsg: 'inactif — recharge complètement la page (ou réinstalle l\'appli)' },
+        { ok: r.criticalFilesOk, label: 'Fichiers essentiels en cache', okMsg: (r.cacheFileCount + ' fichiers en cache'), badMsg: 'des fichiers essentiels manquent (' + r.cacheFileCount + ' en cache) — clique "Forcer le téléchargement complet" en Wi-Fi' },
+        { ok: r.persistenceStatus === 'ok', label: 'Progression / répétition espacée sauvegardée hors-ligne',
+          okMsg: 'active — tes réponses survivent à une fermeture de l\'appli hors-ligne',
+          badMsg: r.persistenceStatus === 'unavailable'
+            ? 'non disponible sur ce navigateur — en hors-ligne, une réponse donnée puis l\'appli fermée AVANT de repasser en ligne peut se perdre'
+            : 'erreur au démarrage — recharge la page en ligne pour réessayer' },
+        { ok: r.storagePersisted, label: 'Stockage protégé contre l\'effacement automatique',
+          okMsg: 'protégé', badMsg: 'non protégé — le système peut effacer le cache hors-ligne d\'une appli peu utilisée ; clique "Protéger le stockage"' }
+      ];
+
+      const allOk = items.every(it => it.ok);
+      const someOk = items.some(it => it.ok);
+      verdictEl.style.background = allOk ? 'rgba(76,175,80,.18)' : (someOk ? 'rgba(255,167,38,.18)' : 'rgba(244,67,54,.18)');
+      verdictEl.style.color = allOk ? '#66bb6a' : (someOk ? '#ffa726' : '#ef5350');
+      verdictEl.textContent = allOk
+        ? '✅ Prêt pour un usage hors-ligne complet (quiz + répétition espacée)'
+        : (someOk ? '⚠️ Partiellement prêt — voir le détail ci-dessous' : '❌ Pas prêt — reste en ligne et corrige les points ci-dessous avant de partir');
+
+      let quotaHtml = '';
+      if (r.quota && r.quota.quota) {
+        const usedMb = Math.round(r.quota.usage / 1048576);
+        const quotaMb = Math.round(r.quota.quota / 1048576);
+        quotaHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">💾 Stockage utilisé</div><div style="font-size:.85em;color:var(--text-secondary)">' + usedMb + ' Mo / ' + quotaMb + ' Mo disponibles</div></div>';
+      }
+
+      detailsEl.innerHTML = items.map(it =>
+        '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">' + (it.ok ? '✅' : '❌') + ' ' + it.label + '</div>' +
+        '<div style="font-size:.8em;color:var(--text-secondary);flex:2;min-width:180px">' + (it.ok ? it.okMsg : it.badMsg) + '</div></div>'
+      ).join('') + quotaHtml;
+    }
+
+    window._cfgRunOfflineCheck = async function() {
+      const verdictEl = document.getElementById('cfgOfflineVerdict');
+      if (verdictEl) { verdictEl.style.background = 'rgba(255,255,255,.06)'; verdictEl.style.color = ''; verdictEl.textContent = 'Vérification…'; }
+      const r = await _cfgCheckOfflineReadiness();
+      _cfgRenderOfflineDiagnostic(r);
+    };
+
+    window._cfgRequestPersistentStorage = async function() {
+      if (typeof window._requestPersistentStorage !== 'function') { alert('Fonction indisponible sur ce navigateur.'); return; }
+      const ok = await window._requestPersistentStorage();
+      alert(ok ? '✅ Stockage protégé.' : '❌ Le navigateur a refusé — réessaie après avoir utilisé l\'appli quelques fois de plus (installée sur l\'écran d\'accueil, elle a plus de chances d\'être acceptée).');
+      window._cfgRunOfflineCheck();
+    };
+
+    window._cfgForceRecache = async function() {
+      const btn = document.getElementById('cfgForceRecacheBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Téléchargement…'; }
+      if (!navigator.onLine) {
+        alert('Tu es hors-ligne : connecte-toi au Wi-Fi/réseau avant de forcer le téléchargement.');
+        if (btn) { btn.disabled = false; btn.textContent = '📥 Forcer le téléchargement complet'; }
+        return;
+      }
+      const result = await _cfgSendSwMessage('refreshPrecache', 20000);
+      if (btn) { btn.disabled = false; btn.textContent = '📥 Forcer le téléchargement complet'; }
+      if (result) alert('✅ ' + result.ok + ' / ' + result.total + ' fichiers téléchargés et mis en cache.');
+      else alert('⚠️ Pas de réponse du Service Worker — réessaie, ou recharge la page une fois puis réessaie.');
+      window._cfgRunOfflineCheck();
+    };
+
     // === Reset global (réglages uniquement, jamais la progression) ===
     window._cfgResetAll = function() {
       if (!confirm('Réinitialiser TOUS les réglages de cette page à leurs valeurs par défaut ?\n\nTa progression, tes statistiques et tes réponses ne sont pas concernées.')) return;
@@ -460,6 +602,7 @@
       _loadFilters();
       _loadNavlog();
       _loadPrivacy();
+      window._cfgRunOfflineCheck();
     }
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }

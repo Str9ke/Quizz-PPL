@@ -227,16 +227,40 @@ async function registerServiceWorker() {
 }
 
 // ============================================================
+// Stockage persistant — évite que Android/Chrome n'efface silencieusement le cache
+// hors-ligne (Cache Storage du Service Worker + IndexedDB de Firestore) sous pression de
+// stockage ou faute d'utilisation récente. SANS cet appel, le stockage est "best-effort" :
+// le système peut le vider n'importe quand sans prévenir — le pire moment possible étant
+// précisément entre le dernier chargement en ligne et un vol où l'appli s'avère alors vide.
+// Le navigateur peut refuser silencieusement (retourne false) selon des heuristiques
+// d'engagement (PWA installée + visites répétées augmentent les chances d'acceptation) —
+// voir _cfgOfflineDiagnostic() dans configuration.html pour vérifier le résultat réel.
+// ============================================================
+async function _requestPersistentStorage() {
+  if (!(navigator.storage && navigator.storage.persist)) return false;
+  try {
+    const already = await navigator.storage.persisted();
+    if (already) return true;
+    return await navigator.storage.persist();
+  } catch (e) {
+    console.warn('[offline] navigator.storage.persist() a échoué:', e);
+    return false;
+  }
+}
+window._requestPersistentStorage = _requestPersistentStorage;
+
+// ============================================================
 // Init
 // ============================================================
 
 function initOffline() {
   registerServiceWorker();
   createOfflineIndicator();
-  
+  _requestPersistentStorage();
+
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
-  
+
   console.log('[offline] Module simplifié initialisé (Firestore Persistence)');
 }
 

@@ -24,7 +24,10 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
