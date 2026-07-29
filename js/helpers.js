@@ -492,18 +492,6 @@ function _saveDailyNewTarget() {
 }
 
 /**
- * _saveQuizBatchSize() – Sauvegarde le nombre de questions affichées à la fois pendant
- * le quiz (page par page, avec bouton "Suivant"). Réglable depuis l'écran d'accueil.
- */
-function _saveQuizBatchSize() {
-  const input = document.getElementById('quizBatchSize');
-  if (!input) return;
-  const v = Math.max(1, parseInt(input.value) || 5);
-  input.value = v;
-  localStorage.setItem('quizBatchSize', v);
-}
-
-/**
  * ===== Suivi du temps réel passé par question (_qt*) =====
  * Apprend, séparément pour les questions "nouvelles" et "révisions", le temps réel que
  * l'utilisateur passe par question — pour que l'estimation "~X min" reflète son vrai rythme

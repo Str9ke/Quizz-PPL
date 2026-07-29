@@ -30,7 +30,7 @@
   <title>Quiz Aviation - Accueil</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260727a" />
+  <link rel="stylesheet" href="style.css?v=20260729a" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <!-- Inclusion des SDK Firebase en mode compat -->
@@ -353,10 +353,6 @@
           <label for="mode" class="home-label">Mode</label>
           <select id="mode" class="home-select" onchange="_saveModeSelectValue()"></select>
         </div>
-        <div class="home-form-group">
-          <label for="quizBatchSize" class="home-label">Affichage par page</label>
-          <input type="number" id="quizBatchSize" class="home-input" value="5" min="1" max="50" onchange="_saveQuizBatchSize()">
-        </div>
       </div>
       <div class="home-options">
         <label class="home-checkbox-label">
@@ -399,15 +395,6 @@
         🎯 Démarrer le Quiz
       </button>
     </div>
-    <script>
-      (function() {
-        var saved = localStorage.getItem('quizBatchSize');
-        if (saved !== null) {
-          var el = document.getElementById('quizBatchSize');
-          if (el) el.value = saved;
-        }
-      })();
-    </script>
 
     <!-- Quick navigation cards -->
     <div class="home-nav-grid">
@@ -454,10 +441,10 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260717d"></script>
-  <script src="js/helpers.js?v=20260718a"></script>
+  <script src="js/helpers.js?v=20260729a"></script>
   <script src="js/categories.js?v=20260718a"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260727b"></script>
+  <script src="js/quiz.js?v=20260729a"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
 

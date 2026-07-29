@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Configuration</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260727a" />
+  <link rel="stylesheet" href="style.css?v=20260729a" />
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -32,10 +32,10 @@
     });
   </script>
   <script src="js/globals.js?v=20260717d"></script>
-  <script src="js/helpers.js?v=20260718a"></script>
+  <script src="js/helpers.js?v=20260729a"></script>
   <script src="js/categories.js?v=20260718a"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260727b"></script>
+  <script src="js/quiz.js?v=20260729a"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
   <style>
@@ -168,12 +168,6 @@
       <div class="cfg-label">Correction immédiate par défaut<div class="cfg-hint">Par défaut : désactivée (correction en fin de session)</div></div>
       <div class="cfg-control">
         <label class="home-checkbox-label" style="margin:0"><input type="checkbox" id="cfgCorrImm" onchange="_cfgSetCorrImm(this.checked)"><span></span></label>
-      </div>
-    </div>
-    <div class="cfg-row">
-      <div class="cfg-label">Questions affichées par page<div class="cfg-hint">Par défaut : 5</div></div>
-      <div class="cfg-control">
-        <input type="number" id="cfgBatchSize" class="home-input" style="width:70px" min="1" max="50" onchange="_cfgSetBatchSize(this.value)">
       </div>
     </div>
     <div class="cfg-row">
@@ -393,14 +387,12 @@
     function _loadQuiz() {
       document.getElementById('cfgAutoStart').checked = localStorage.getItem('autoStartQuiz') === 'true';
       document.getElementById('cfgCorrImm').checked = localStorage.getItem('correctionImmediate') === '1';
-      document.getElementById('cfgBatchSize').value = parseInt(localStorage.getItem('quizBatchSize')) || 5;
       document.getElementById('cfgDailyNew').value = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
       const goalOverride = parseInt(localStorage.getItem('dailyGoalOverride'));
       document.getElementById('cfgDailyGoal').value = (goalOverride > 0) ? goalOverride : '';
     }
     window._cfgSetAutoStart = checked => localStorage.setItem('autoStartQuiz', checked ? 'true' : 'false');
     window._cfgSetCorrImm = checked => localStorage.setItem('correctionImmediate', checked ? '1' : '0');
-    window._cfgSetBatchSize = val => { const v = Math.max(1, parseInt(val) || 5); document.getElementById('cfgBatchSize').value = v; localStorage.setItem('quizBatchSize', v); };
     window._cfgSetDailyNew = val => { const v = Math.max(0, parseInt(val) || 0); document.getElementById('cfgDailyNew').value = v; localStorage.setItem('dailyNewTarget', v); };
     window._cfgSetDailyGoal = val => {
       const v = parseInt(val);
@@ -581,7 +573,7 @@
     window._cfgResetAll = function() {
       if (!confirm('Réinitialiser TOUS les réglages de cette page à leurs valeurs par défaut ?\n\nTa progression, tes statistiques et tes réponses ne sont pas concernées.')) return;
       const keysToReset = ['theme', 'ttsEnabled', 'ttsVolume', 'ttsPreferredVoiceName',
-        'autoStartQuiz', 'correctionImmediate', 'quizBatchSize', 'dailyNewTarget', 'dailyGoalOverride',
+        'autoStartQuiz', 'correctionImmediate', 'dailyNewTarget', 'dailyGoalOverride',
         'perfAircraft', 'notesEmail'];
       keysToReset.forEach(k => localStorage.removeItem(k));
       if (typeof _FILTER_CHECKBOX_PAIRS !== 'undefined') {

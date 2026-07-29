@@ -815,36 +815,18 @@ function afficherQuiz() {
   window._qtLastTouchedIdx = null;
   if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
 
-  // Affichage par lots (pagination) : ne montrer que N questions à la fois pour ne pas
-  // noyer l'utilisateur avec des sessions de centaines/milliers de questions (mode Objectif).
-  // En mode "Révisions" (répétition espacée), pas de pagination : ce sont des sessions
-  // courtes (questions dues du jour), l'utilisateur ne veut pas de boutons Suivant/Précédent
-  // à cliquer, juste répondre à la suite jusqu'à Valider.
-  const batchSize = (modeQuiz === 'revisions')
-    ? currentQuestions.length
-    : Math.max(1, parseInt(localStorage.getItem('quizBatchSize')) || 5);
-  const totalBatches = Math.ceil(currentQuestions.length / batchSize);
-  window._quizBatchSize = batchSize;
-
-  // Restaurer les réponses déjà cochées et le lot où l'utilisateur s'était arrêté, pour
-  // qu'un changement de page / rechargement pendant une session ne fasse pas tout perdre.
-  // Les réponses sont mémorisées par TEXTE du choix (pas par index) car l'ordre des choix
-  // est re-mélangé à chaque appel de afficherQuiz() — un index brut ne serait plus valide.
+  // Restaurer les réponses déjà cochées, pour qu'un changement de page / rechargement
+  // pendant une session ne fasse pas tout perdre. Les réponses sont mémorisées par TEXTE
+  // du choix (pas par index) car l'ordre des choix est re-mélangé à chaque appel de
+  // afficherQuiz() — un index brut ne serait plus valide.
   let savedAnswers = {};
   try { savedAnswers = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}'); } catch (e) { savedAnswers = {}; }
-  let savedBatch = parseInt(localStorage.getItem('currentQuizBatchPos'));
-  if (isNaN(savedBatch) || savedBatch < 0 || savedBatch >= totalBatches) savedBatch = 0;
-  window._quizCurrentBatch = savedBatch;
 
   // Construire TOUT le HTML en une seule chaîne puis injecter une seule fois
   // (évite innerHTML += en boucle qui détruit/recrée le DOM à chaque itération,
   //  ce qui peut interrompre le chargement des images)
   let quizHtml = "";
   currentQuestions.forEach((q, idx) => {
-    if (idx % batchSize === 0) {
-      const batchIdx = Math.floor(idx / batchSize);
-      quizHtml += `<div class="quiz-batch" data-batch="${batchIdx}" style="display:${batchIdx === savedBatch ? 'block' : 'none'}">`;
-    }
     // Mélanger les choix pour ne pas toujours avoir les réponses au même endroit
     // Créer un tableau d'indices [0, 1, 2, 3], le mélanger (Fisher-Yates)
     const indices = q.choix.map((_, i) => i);
@@ -879,9 +861,6 @@ function afficherQuiz() {
         </div>
       </div>
     `;
-    if ((idx + 1) % batchSize === 0 || idx === currentQuestions.length - 1) {
-      quizHtml += `</div>`; // ferme .quiz-batch
-    }
   });
   cont.innerHTML = quizHtml;
 
@@ -1000,89 +979,18 @@ function afficherQuiz() {
     });
   }
 
-  _setupQuizPagination(totalBatches);
+  _setupQuizPagination();
 }
 
 /**
- * _setupQuizPagination() – Insère la barre de pagination (Précédent / X–Y sur Z / Suivant)
- * en haut du quiz, et masque le bouton "Valider" tant que le dernier lot n'est pas atteint
- * (sinon une validation prématurée marquerait comme "ratées" toutes les questions des lots
- * pas encore affichés/répondus).
+ * _setupQuizPagination() – Toutes les questions étant affichées d'un coup, il n'y a plus de
+ * lots à naviguer : rend juste "Valider" visible et masque "Nouvelles Questions" pendant la
+ * session en cours.
  */
-function _setupQuizPagination(totalBatches) {
-  const cont = document.getElementById('quizContainer');
-  if (!cont) return;
+function _setupQuizPagination() {
   document.querySelectorAll('.quiz-pagination-bar').forEach(el => el.remove());
-
-  // Session en cours → masquer "Nouvelles Questions" : pendant qu'on répond, la seule
-  // action proposée doit être "Suivant" (ou "Valider" sur le dernier lot). Le bouton
-  // réapparaît une fois la session validée (voir validerReponses).
   _updateResetBtnVisibility(false);
-
-  if (totalBatches <= 1) {
-    _updateQuizValidateVisibility(true);
-    return;
-  }
-
-  // Deux barres identiques : une en haut ET une en bas du lot de questions — avant, le
-  // "Suivant" n'existait qu'en haut : arrivé en bas d'un lot, le seul bouton visible
-  // était "Nouvelles Questions" (qui jette la session), source de confusion permanente.
-  const mkBar = () => {
-    const bar = document.createElement('div');
-    bar.className = 'quiz-pagination-bar';
-    bar.innerHTML = `
-      <button type="button" class="quiz-btn quiz-prev-batch" onclick="_goToQuizBatch(window._quizCurrentBatch-1)">⬅️ Précédent</button>
-      <span class="quiz-batch-label"></span>
-      <button type="button" class="quiz-btn quiz-btn-next quiz-next-batch" onclick="_goToQuizBatch(window._quizCurrentBatch+1)">Suivant ➡️</button>
-    `;
-    return bar;
-  };
-  cont.insertBefore(mkBar(), cont.firstChild);
-  cont.appendChild(mkBar());
-  _updateQuizBatchLabel(totalBatches);
-  // Respecter le lot restauré (retour en cours de session) : si on reprend directement
-  // sur le dernier lot, "Valider" doit être visible tout de suite.
-  _updateQuizValidateVisibility(window._quizCurrentBatch === totalBatches - 1);
-}
-
-/**
- * _goToQuizBatch() – Bascule l'affichage vers le lot de questions demandé.
- */
-function _goToQuizBatch(newBatch) {
-  const totalBatches = Math.ceil(currentQuestions.length / window._quizBatchSize);
-  if (newBatch < 0 || newBatch >= totalBatches) return;
-  // Suivi du temps réel par question : repartir de zéro pour le nouveau lot (la réponse
-  // à la dernière question du lot précédent a déjà été enregistrée au moment du clic —
-  // voir le listener 'change' délégué — donc rien à récupérer ici, juste à réinitialiser
-  // pour ne pas compter le temps de défilement/lecture entre les lots dans la 1ère question
-  // du nouveau lot).
-  window._qtLastTouchedIdx = null;
-  if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
-  const prevEl = document.querySelector(`.quiz-batch[data-batch="${window._quizCurrentBatch}"]`);
-  if (prevEl) prevEl.style.display = 'none';
-  const nextEl = document.querySelector(`.quiz-batch[data-batch="${newBatch}"]`);
-  if (nextEl) nextEl.style.display = 'block';
-  window._quizCurrentBatch = newBatch;
-  try { localStorage.setItem('currentQuizBatchPos', newBatch); } catch (e) { /* ignore */ }
-  _updateQuizBatchLabel(totalBatches);
-  _updateQuizValidateVisibility(newBatch === totalBatches - 1);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-window._goToQuizBatch = _goToQuizBatch;
-
-function _updateQuizBatchLabel(totalBatches) {
-  const bs = window._quizBatchSize;
-  const start = window._quizCurrentBatch * bs + 1;
-  const end = Math.min(start + bs - 1, currentQuestions.length);
-  // Mettre à jour TOUTES les barres de pagination (haut + bas)
-  document.querySelectorAll('.quiz-pagination-bar').forEach(bar => {
-    const label = bar.querySelector('.quiz-batch-label');
-    if (label) label.textContent = `Questions ${start}–${end} sur ${currentQuestions.length}`;
-    const prevBtn = bar.querySelector('.quiz-prev-batch');
-    const nextBtn = bar.querySelector('.quiz-next-batch');
-    if (prevBtn) prevBtn.disabled = (window._quizCurrentBatch === 0);
-    if (nextBtn) nextBtn.style.display = (window._quizCurrentBatch === totalBatches - 1) ? 'none' : '';
-  });
+  _updateQuizValidateVisibility(true);
 }
 
 /**
