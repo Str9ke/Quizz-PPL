@@ -33,7 +33,10 @@
     }
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
@@ -137,7 +140,7 @@
   <script src="js/stats.js?v=20260720c"></script>
   <script src="js/quiz.js?v=20260727b"></script>
   <script src="js/init.js?v=20260717b"></script>
-  <script src="js/offline.js?v=20260224i"></script>
+  <script src="js/offline.js?v=20260728a"></script>
   <script>
     // Affichage instantané du compteur depuis localStorage (updateDailyStatsBar)
     // initQuiz() se chargera de l'appel Firestore via displayDailyStats()

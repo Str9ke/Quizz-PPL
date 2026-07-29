@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v70e';
+const CACHE_NAME = 'quiz-ppl-v71a';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -85,21 +85,27 @@ const PRECACHE_URLS = [
   BASE + 'gligli_reglementation_easy.json'
 ];
 
+/* precacheAll() — factorisé pour être réutilisable à l'installation ET à la demande (voir le
+   message 'refreshPrecache' plus bas, déclenché par le diagnostic hors-ligne de
+   configuration.html) : un fichier manquant lors d'une INSTALLATION précédente (réseau
+   coupé au mauvais moment, ex. juste avant d'embarquer) restait silencieusement absent du
+   cache jusqu'à la prochaine mise à jour de version — sans bouton pour retenter manuellement
+   pendant qu'on est encore en ligne. cache.add() individuel (pas cache.addAll()) pour qu'un
+   seul fichier en échec ne fasse pas échouer tout le lot. */
+async function precacheAll() {
+  const cache = await caches.open(CACHE_NAME);
+  const results = await Promise.allSettled(
+    PRECACHE_URLS.map(url => cache.add(url).catch(e => console.warn('[SW] Échec cache:', url, e.message)))
+  );
+  const ok = results.filter(r => r.status === 'fulfilled').length;
+  console.log(`[SW] Pré-cache: ${ok}/${PRECACHE_URLS.length} fichiers`);
+  return { ok, total: PRECACHE_URLS.length };
+}
+
 // ---- INSTALLATION : pré-cache des fichiers critiques ----
 self.addEventListener('install', event => {
   console.log('[SW] Installation — pré-cache des assets');
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      // Cacher chaque fichier individuellement pour ne pas bloquer si un seul échoue
-      const results = await Promise.allSettled(
-        PRECACHE_URLS.map(url => cache.add(url).catch(e => console.warn('[SW] Échec cache:', url, e.message)))
-      );
-      const ok = results.filter(r => r.status === 'fulfilled').length;
-      console.log(`[SW] Pré-cache: ${ok}/${PRECACHE_URLS.length} fichiers`);
-    }).then(() => {
-      return self.skipWaiting();
-    })
-  );
+  event.waitUntil(precacheAll().then(() => self.skipWaiting()));
 });
 
 // ---- ACTIVATION : nettoyage des anciens caches ----
@@ -116,6 +122,20 @@ self.addEventListener('activate', event => {
     })
   );
 });
+
+/* fetchWithTimeout() — navigator.onLine ment très souvent en pratique (ex: Wi-Fi de bord
+   d'avion "connecté" au point d'accès local mais sans aucune passerelle internet réelle) :
+   les branches "network-first" ci-dessous croyaient alors être en ligne et lançaient un vrai
+   fetch() SANS AUCUN TIMEOUT, qui pouvait rester bloqué de longues secondes (voire plus d'une
+   minute selon le comportement du réseau captif) avant d'échouer et de retomber sur le cache
+   — pendant ce temps l'appli semblait totalement figée/inutilisable. Toutes les requêtes
+   "quand en ligne" passent maintenant par ce wrapper pour garantir un repli rapide sur le
+   cache local dans tous les cas. */
+function fetchWithTimeout(request, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(request, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
 
 // ---- FETCH : stratégie de cache ----
 self.addEventListener('fetch', event => {
@@ -158,7 +178,7 @@ self.addEventListener('fetch', event => {
   // Garantit que les questions et la config sont toujours à jour entre navigateurs
   if ((isJsonFile || isConfigJs) && navigator.onLine) {
     event.respondWith(
-      fetch(event.request).then(response => {
+      fetchWithTimeout(event.request, 3000).then(response => {
         if (response && response.ok) {
           const clone = response.clone();
           const cleanUrl = new URL(event.request.url);
@@ -198,7 +218,7 @@ self.addEventListener('fetch', event => {
   const isAutoFetchedTemsiWintem = /\/(temsi|wintem)_(france|euroc)[^/]*\.(png|pdf|json)$/.test(url.pathname);
   if ((isAutoFetchedWx || isAutoFetchedTemsiWintem) && navigator.onLine) {
     event.respondWith(
-      fetch(event.request).then(response => {
+      fetchWithTimeout(event.request, 3000).then(response => {
         if (response && response.ok) {
           const clone = response.clone();
           const cleanUrl = new URL(event.request.url);
@@ -236,7 +256,7 @@ self.addEventListener('fetch', event => {
         return cached;
       }
       // Pas en cache → aller chercher sur le réseau
-      return fetch(event.request).then(response => {
+      return fetchWithTimeout(event.request, 6000).then(response => {
         // Mettre en cache pour la prochaine fois (images, etc.)
         if (response && response.ok) {
           const clone = response.clone();
@@ -278,6 +298,14 @@ self.addEventListener('message', event => {
       cache.keys().then(keys => {
         event.ports[0].postMessage({ cached: keys.length });
       });
+    });
+  }
+  // Déclenché par le bouton "Forcer le téléchargement complet" du diagnostic hors-ligne
+  // (configuration.html) — retente explicitement tout fichier manquant du pré-cache pendant
+  // qu'on est encore en ligne, sans attendre une prochaine mise à jour de version du site.
+  if (event.data === 'refreshPrecache') {
+    precacheAll().then(result => {
+      if (event.ports && event.ports[0]) event.ports[0].postMessage(result);
     });
   }
 });
