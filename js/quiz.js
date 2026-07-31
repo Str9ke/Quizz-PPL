@@ -980,6 +980,13 @@ function afficherQuiz() {
   }
 
   _setupQuizPagination();
+
+  // Bouton ✏️ "Corriger la bonne réponse" — posé une seule fois, réutilisé aussi bien pour la
+  // coloration immédiate (handleImmediateAnswer) que pour la correction en fin de quiz
+  // (afficherCorrection), qui réutilisent toutes les deux ce même #quizContainer.
+  if (typeof _wireCorrectOverrideButtons === 'function') {
+    _wireCorrectOverrideButtons(cont, key => currentQuestions.find(qq => getKeyFor(qq) === key));
+  }
 }
 
 /**
@@ -1171,6 +1178,9 @@ window.addEventListener('pagehide', _flushImmPersist);
  *   on ne déclenche pas la validation automatique de fin de quiz.
  */
 function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
+  if (typeof _applyStoredCorrectOverride === 'function') {
+    _applyStoredCorrectOverride(q, currentResponses[getKeyFor(q)]);
+  }
   const selectedVal = parseInt(selectedRadio.value);
   const isCorrect = selectedVal === q.bonne_reponse;
 
@@ -1301,6 +1311,9 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
       // Charger et afficher la note existante
       if (_notesCache && _notesCache[key2]) {
         _renderNoteDisplay(key2, _notesCache[key2]);
+      }
+      if (typeof _correctOverrideBtnHtml === 'function' && !row.querySelector('.correct-override-btn')) {
+        row.insertAdjacentHTML('beforeend', _correctOverrideBtnHtml(key2));
       }
     }
   }
@@ -1620,6 +1633,10 @@ async function validerReponses() {
  * évite de dupliquer la logique de surlignage vert/rouge à deux endroits.
  */
 function _buildCorrectionCardHtml(q, idx, checkedVal, anchorId, includeNote) {
+  const _key = getKeyFor(q);
+  if (typeof _applyStoredCorrectOverride === 'function') {
+    _applyStoredCorrectOverride(q, currentResponses[_key]);
+  }
   let ansHtml = "";
   q.choix.forEach((choixText, i) => {
     let styleCls = "";
@@ -1658,6 +1675,9 @@ function _buildCorrectionCardHtml(q, idx, checkedVal, anchorId, includeNote) {
       </div>
       ${_srStatsHtml(q)}
       ${_buildExplicationHtml(q, includeNote)}
+      <div class="question-actions-row">
+        ${typeof _correctOverrideBtnHtml === 'function' ? _correctOverrideBtnHtml(_key) : ''}
+      </div>
     </div>
   `;
 }

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Historique</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260729a" />
+  <link rel="stylesheet" href="style.css?v=20260730a" />
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -32,10 +32,10 @@
     });
   </script>
   <script src="js/globals.js?v=20260717d"></script>
-  <script src="js/helpers.js?v=20260729b"></script>
+  <script src="js/helpers.js?v=20260730a"></script>
   <script src="js/categories.js?v=20260729b"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260729a"></script>
+  <script src="js/quiz.js?v=20260730a"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
 </head>
@@ -230,10 +230,12 @@
     // === Render questions ===
     function renderQuestions(questionsList, container) {
       if (!questionsList.length) { container.innerHTML = ''; return; }
+      container._lastRenderedList = questionsList;
       let html = '';
       questionsList.forEach(function(q) {
         var key = getKeyFor(q);
         var resp = currentResponses[key] || {};
+        if (typeof _applyStoredCorrectOverride === 'function') _applyStoredCorrectOverride(q, resp);
         var isMarked = resp.marked === true;
         var isImportant = resp.important === true;
         var status = resp.status || null;
@@ -287,12 +289,19 @@
         html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="histToggleMarquer(\'' + key + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
         html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="histToggleImportant(\'' + key + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
         html += '<button class="note-toggle-btn" onclick="histToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
+        html += (typeof _correctOverrideBtnHtml === 'function') ? _correctOverrideBtnHtml(key, 'Corriger') : '';
         html += '</div>';
 
         html += '</div>';
       });
 
       container.innerHTML = html;
+
+      if (typeof _wireCorrectOverrideButtons === 'function') {
+        _wireCorrectOverrideButtons(container, function(k) {
+          return (container._lastRenderedList || []).find(function(qq) { return getKeyFor(qq) === k; });
+        });
+      }
 
       // TTS click
       container.querySelectorAll('.answer-list').forEach(function(el) {
