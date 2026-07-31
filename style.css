@@ -803,6 +803,30 @@ body.light .wrong {
   color: red;
 }
 
+/* ===== Correction manuelle de la bonne réponse ===== */
+.correct-override-btn.active {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.correct-override-hint {
+  font-size: 0.78em;
+  color: #f59e0b;
+  font-weight: 600;
+  margin: 2px 0 6px;
+}
+.answer-list.correct-override-active {
+  outline: 2px dashed #f59e0b;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.answer-list.correct-override-active > * {
+  cursor: pointer;
+}
+.answer-list.correct-override-active > *:hover {
+  background: rgba(245, 158, 11, 0.18) !important;
+}
+
 /* ===== Récapitulatif des erreurs (fin de correction quiz) ===== */
 .quiz-error-recap-header {
   margin-top: 24px;

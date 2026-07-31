@@ -179,6 +179,137 @@ function updateMarkedCount() {
 }
 
 /**
+ * ===== Correction manuelle de la bonne réponse (correctOverride) =====
+ * Si la banque de questions contient une erreur, l'utilisateur peut lui-même corriger quelle
+ * proposition est la bonne réponse. Stocké par TEXTE (pas par index, car l'ordre des
+ * propositions est remélangé à chaque affichage du quiz) dans le même document Firestore que
+ * les réponses (`quizProgress/{uid}.responses[key].correctOverride`), donc personnel à
+ * l'utilisateur et sans impact sur la banque de questions elle-même ni sur les autres joueurs.
+ */
+
+/**
+ * _applyStoredCorrectOverride(q, resp) – Si une correction a été enregistrée pour cette
+ * question, réécrit q.bonne_reponse en conséquence (mutation en place). À appeler juste avant
+ * toute logique qui compare une réponse à q.bonne_reponse (affichage vert/rouge, calcul du
+ * score, planification de répétition espacée), pour que la correction personnelle s'applique
+ * partout où la question réapparaît, y compris dans une session/quiz future.
+ */
+function _applyStoredCorrectOverride(q, resp) {
+  const ov = resp && resp.correctOverride;
+  if (!ov || !Array.isArray(q.choix)) return;
+  const idx = q.choix.indexOf(ov);
+  if (idx >= 0) q.bonne_reponse = idx;
+}
+
+/**
+ * _saveCorrectOverride(q, choiceText) – Enregistre la correction et met à jour q.bonne_reponse
+ * immédiatement (pour un re-surlignage instantané sans recharger la page).
+ */
+async function _saveCorrectOverride(q, choiceText) {
+  const uid = (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
+  if (!uid) { alert('Vous devez être connecté pour corriger une réponse.'); return false; }
+  const key = getKeyFor(q);
+  const payload = { responses: { [key]: { correctOverride: choiceText } } };
+  try {
+    await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
+  } catch (e) {
+    console.warn('[correctOverride] échec de sauvegarde:', e);
+    if (typeof saveToggleWithOfflineFallback === 'function') {
+      saveToggleWithOfflineFallback(uid, key, payload);
+    }
+  }
+  if (typeof currentResponses !== 'undefined' && currentResponses) {
+    currentResponses[key] = { ...(currentResponses[key] || {}), correctOverride: choiceText };
+  }
+  const idx = q.choix.indexOf(choiceText);
+  if (idx >= 0) q.bonne_reponse = idx;
+  return true;
+}
+
+/**
+ * _correctOverrideBtnHtml(key, text) – HTML du bouton ✏️ à insérer dans une .question-actions-row.
+ * `text` optionnel permet aux pages au style plus verbeux (ex. historique.html) de garder leur
+ * convention "Marquer"/"Important" plutôt que des boutons purement en icône.
+ */
+function _correctOverrideBtnHtml(key, text) {
+  const label = text ? ('✏️ ' + text) : '✏️';
+  const cls = text ? 'correct-override-btn' : 'correct-override-btn qa-icon-btn';
+  return `<button type="button" class="${cls}" data-key="${key}" title="Corriger la bonne réponse">${label}</button>`;
+}
+
+/**
+ * _wireCorrectOverrideButtons(container, getQuestionByKey) – Écouteur délégué unique (posé une
+ * seule fois par container) qui gère le cycle complet du bouton ✏️ : au clic, bascule un mode
+ * où le PROCHAIN clic sur une proposition de cette question devient la nouvelle bonne réponse
+ * (sauvegardée puis surlignée en vert). Réutilisable partout où une question est affichée avec
+ * ses propositions dans une structure `.question-block > .answer-list > (une div par choix,
+ * dans l'ordre de q.choix, contenant un <span>)` — quiz.html (correction), search.html,
+ * echecs.html, historique.html.
+ * En phase de capture (3e argument `true`) pour intercepter le clic AVANT le listener TTS déjà
+ * posé sur chaque .answer-list (qui lirait sinon la réponse à voix haute à chaque correction).
+ * @param {HTMLElement} container
+ * @param {(key: string) => Object|null|undefined} getQuestionByKey
+ */
+function _wireCorrectOverrideButtons(container, getQuestionByKey) {
+  if (!container || container._correctOverrideWired) return;
+  container._correctOverrideWired = true;
+  container.addEventListener('click', function(e) {
+    const btn = e.target.closest('.correct-override-btn');
+    if (btn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const block = btn.closest('.question-block');
+      const al = block ? block.querySelector('.answer-list') : null;
+      if (!al) return;
+      const active = al.classList.toggle('correct-override-active');
+      btn.classList.toggle('active', active);
+      btn.title = active ? 'Annuler la correction' : 'Corriger la bonne réponse';
+      let hint = block.querySelector('.correct-override-hint');
+      if (active) {
+        if (!hint) {
+          hint = document.createElement('div');
+          hint.className = 'correct-override-hint';
+          hint.textContent = '👉 Clique sur la proposition qui est en réalité la bonne réponse.';
+          al.insertAdjacentElement('afterend', hint);
+        }
+        hint.style.display = '';
+      } else if (hint) {
+        hint.style.display = 'none';
+      }
+      return;
+    }
+
+    const answerList = e.target.closest('.answer-list');
+    if (!answerList || !answerList.classList.contains('correct-override-active')) return;
+    const block = answerList.closest('.question-block');
+    const abtn = block ? block.querySelector('.correct-override-btn') : null;
+    const key = abtn ? abtn.getAttribute('data-key') : null;
+    const q = key ? getQuestionByKey(key) : null;
+    if (!q) return;
+    const children = Array.from(answerList.children);
+    const choiceEl = children.find(el => el === e.target || el.contains(e.target));
+    if (!choiceEl) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const idx = children.indexOf(choiceEl);
+    const choiceText = q.choix[idx];
+    _saveCorrectOverride(q, choiceText).then(ok => {
+      if (!ok) return;
+      answerList.classList.remove('correct-override-active');
+      if (abtn) { abtn.classList.remove('active'); abtn.title = 'Corriger la bonne réponse'; }
+      const hint = block.querySelector('.correct-override-hint');
+      if (hint) hint.style.display = 'none';
+      children.forEach((el, i) => {
+        const span = el.querySelector('span');
+        const isCorrect = i === q.bonne_reponse;
+        if (span) span.className = isCorrect ? 'correct' : '';
+        el.style.background = isCorrect ? 'rgba(76,175,80,0.12)' : '';
+      });
+    });
+  }, true);
+}
+
+/**
  * ensureDailyStatsBarVisible() – Crée/affiche la barre quotidienne avec streak, objectif et progression
  */
 function ensureDailyStatsBarVisible() {
