@@ -10,7 +10,16 @@ let _persistenceAwaited = false;
 async function _ensurePersistence() {
   if (_persistenceAwaited) return;
   if (window._persistenceReady) {
-    try { await window._persistenceReady; } catch (e) { /* already handled */ }
+    // enablePersistence() résout toujours via .then()/.catch() (voir index.html etc.), mais un
+    // timeout de secours évite que ce point d'attente unique, réutilisé par toutes les lectures
+    // Firestore de la page, ne bloque tout indéfiniment si IndexedDB est dans un état bloqué
+    // (ex. plusieurs onglets, connexion fantôme d'un onglet précédent).
+    try {
+      await Promise.race([
+        window._persistenceReady,
+        new Promise(resolve => setTimeout(resolve, 5000))
+      ]);
+    } catch (e) { /* already handled */ }
   }
   _persistenceAwaited = true;
 }
@@ -23,31 +32,35 @@ async function _ensurePersistence() {
  * @param {number} timeoutMs – Délai max avant fallback cache (défaut 2000ms)
  * @returns {Promise<firebase.firestore.DocumentSnapshot>}
  */
+function _raceTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(label || 'timeout')), ms))
+  ]);
+}
+
 async function getDocWithTimeout(docRef, timeoutMs = 2000) {
   // S'assurer que la persistance Firestore est initialisée
   await _ensurePersistence();
-  // Hors-ligne → lecture cache immédiate (pas de timeout réseau)
+  // Hors-ligne → lecture cache immédiate (pas de timeout réseau). Le lecture cache elle-même
+  // est bornée par un timeout : une IndexedDB bloquée/en mauvais état (ex. plusieurs onglets
+  // ouverts, connexion IndexedDB fantôme d'un onglet précédent) ne doit jamais bloquer
+  // indéfiniment un bouton — mieux vaut renvoyer un snapshot vide que de rester figé.
   if (!navigator.onLine) {
     try {
-      return await docRef.get({ source: 'cache' });
+      return await _raceTimeout(docRef.get({ source: 'cache' }), timeoutMs, 'cache timeout');
     } catch (e) {
-      // Pas en cache du tout → retourner un snapshot vide
-      console.warn('[getDocWithTimeout] cache miss offline:', e.message);
+      console.warn('[getDocWithTimeout] cache miss/bloqué offline:', e.message);
       return { exists: false, data: () => ({}) };
     }
   }
   // En ligne → forcer lecture SERVEUR pour données cross-device fraîches
   try {
-    return await Promise.race([
-      docRef.get({ source: 'server' }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs)
-      )
-    ]);
+    return await _raceTimeout(docRef.get({ source: 'server' }), timeoutMs, 'Firestore timeout');
   } catch (e) {
     console.warn('[getDocWithTimeout] réseau lent/indisponible, fallback cache:', e.message);
     try {
-      return await docRef.get({ source: 'cache' });
+      return await _raceTimeout(docRef.get({ source: 'cache' }), timeoutMs, 'cache timeout');
     } catch (e2) {
       return { exists: false, data: () => ({}) };
     }
@@ -824,31 +837,39 @@ async function _startObjectifDuJour() {
   const btn = document.getElementById('objectifStartBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
-    // Les cases marquées/importantes/avec notes s'appliquent aussi à "Objectif du jour" :
-    // updateModeCounts() (appelé ci-dessous sans argument) les lit automatiquement et scope
-    // nbRevisionsToday/nbNonvuesToday sur ce sous-ensemble, donc le nb calculé plus bas promet
-    // exactement ce que filtrerQuestions() (qui relit les mêmes cases) livrera.
-    const catSelect = document.getElementById('categorie');
-    const cat = catSelect ? catSelect.value : 'TOUTES';
-    selectedCategory = cat;
-    if (cat === 'TOUTES') {
-      if (typeof loadAllQuestions === 'function') await loadAllQuestions();
-    } else if (typeof chargerQuestions === 'function') {
-      await chargerQuestions(cat);
-    }
-    if (typeof updateModeCounts === 'function') await updateModeCounts();
+    // Garde-fou : si un chargement (JSON, Firestore) reste bloqué plus de 20s malgré leurs
+    // propres timeouts internes, ne jamais laisser le bouton figé indéfiniment — mieux vaut
+    // échouer avec un message clair que de faire croire que l'appli est plantée.
+    await _raceTimeout((async () => {
+      // Les cases marquées/importantes/avec notes s'appliquent aussi à "Objectif du jour" :
+      // updateModeCounts() (appelé ci-dessous sans argument) les lit automatiquement et scope
+      // nbRevisionsToday/nbNonvuesToday sur ce sous-ensemble, donc le nb calculé plus bas promet
+      // exactement ce que filtrerQuestions() (qui relit les mêmes cases) livrera.
+      const catSelect = document.getElementById('categorie');
+      const cat = catSelect ? catSelect.value : 'TOUTES';
+      selectedCategory = cat;
+      if (cat === 'TOUTES') {
+        if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+      } else if (typeof chargerQuestions === 'function') {
+        await chargerQuestions(cat);
+      }
+      if (typeof updateModeCounts === 'function') await updateModeCounts();
 
-    // Ne jamais promettre plus de "nouvelles" qu'il n'en reste réellement de non vues
-    // dans cette catégorie (sinon l'objectif affiché ment et le quiz démarre vide).
-    const dailyNewTarget = Math.min(getDailyNewTarget(), typeof nbNonvuesToday === 'number' ? nbNonvuesToday : getDailyNewTarget());
-    const nb = nbRevisionsToday + dailyNewTarget;
+      // Ne jamais promettre plus de "nouvelles" qu'il n'en reste réellement de non vues
+      // dans cette catégorie (sinon l'objectif affiché ment et le quiz démarre vide).
+      const dailyNewTarget = Math.min(getDailyNewTarget(), typeof nbNonvuesToday === 'number' ? nbNonvuesToday : getDailyNewTarget());
+      const nb = nbRevisionsToday + dailyNewTarget;
 
-    const modeSelect = document.getElementById('mode');
-    if (modeSelect) modeSelect.value = 'objectif';
-    const nbInput = document.getElementById('nbQuestions');
-    if (nbInput) nbInput.value = nb;
+      const modeSelect = document.getElementById('mode');
+      if (modeSelect) modeSelect.value = 'objectif';
+      const nbInput = document.getElementById('nbQuestions');
+      if (nbInput) nbInput.value = nb;
 
-    if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+      if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+    })(), 20000, 'Démarrage trop long');
+  } catch (e) {
+    console.error('[_startObjectifDuJour] échec:', e);
+    alert("Le démarrage a pris trop de temps ou a échoué. Réessaie, et recharge la page si ça persiste.\n\n(" + (e && e.message ? e.message : e) + ")");
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🚀 Lancer ma session du jour'; }
   }
@@ -865,20 +886,27 @@ async function _startRevisionsOnly() {
   const btn = document.getElementById('revisionsOnlyBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Préparation...'; }
   try {
-    selectedCategory = 'TOUTES';
-    const catSelect = document.getElementById('categorie');
-    if (catSelect) catSelect.value = 'TOUTES';
-    if (typeof loadAllQuestions === 'function') await loadAllQuestions();
-    // Les cases marquées/importantes/avec notes s'appliquent aussi ici : updateModeCounts()
-    // (sans argument) les lit automatiquement, exactement comme pour "Objectif du jour".
-    if (typeof updateModeCounts === 'function') await updateModeCounts();
+    // Garde-fou : voir _startObjectifDuJour() — ne jamais laisser ce bouton figé
+    // indéfiniment si un chargement reste bloqué malgré ses propres timeouts internes.
+    await _raceTimeout((async () => {
+      selectedCategory = 'TOUTES';
+      const catSelect = document.getElementById('categorie');
+      if (catSelect) catSelect.value = 'TOUTES';
+      if (typeof loadAllQuestions === 'function') await loadAllQuestions();
+      // Les cases marquées/importantes/avec notes s'appliquent aussi ici : updateModeCounts()
+      // (sans argument) les lit automatiquement, exactement comme pour "Objectif du jour".
+      if (typeof updateModeCounts === 'function') await updateModeCounts();
 
-    const modeSelect = document.getElementById('mode');
-    if (modeSelect) modeSelect.value = 'revisions';
-    const nbInput = document.getElementById('nbQuestions');
-    if (nbInput) nbInput.value = nbRevisionsToday;
+      const modeSelect = document.getElementById('mode');
+      if (modeSelect) modeSelect.value = 'revisions';
+      const nbInput = document.getElementById('nbQuestions');
+      if (nbInput) nbInput.value = nbRevisionsToday;
 
-    if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+      if (typeof demarrerQuiz === 'function') await demarrerQuiz();
+    })(), 20000, 'Démarrage trop long');
+  } catch (e) {
+    console.error('[_startRevisionsOnly] échec:', e);
+    alert("Le démarrage a pris trop de temps ou a échoué. Réessaie, et recharge la page si ça persiste.\n\n(" + (e && e.message ? e.message : e) + ")");
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '📅 Révisions uniquement'; }
   }

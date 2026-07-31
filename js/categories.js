@@ -124,8 +124,12 @@ async function prefetchAllJsonFiles() {
     'gligli_reglementation_easy.json'
   ];
   const t0 = performance.now();
+  // Timeout par fichier : Promise.allSettled attend que TOUTES les promesses se règlent (résolue
+  // OU rejetée) — un seul fetch qui reste bloqué sans jamais résoudre ni rejeter bloquerait donc
+  // l'ensemble du préchargement indéfiniment, malgré allSettled. _raceTimeout() garantit que
+  // chaque fetch rejette au bout de 10s au pire, laissant les autres fichiers déjà chargés utiles.
   const results = await Promise.allSettled(
-    files.map(f => fetch(f).then(r => r.ok ? r.json() : []))
+    files.map(f => _raceTimeout(fetch(f), 10000, 'fetch timeout: ' + f).then(r => r.ok ? r.json() : []))
   );
   results.forEach((r, i) => {
     if (r.status === 'fulfilled') {
@@ -686,7 +690,11 @@ async function chargerQuestions(cat) {
         if (_jsonCache.has(fileName)) {
           data = _jsonCache.get(fileName);
         } else {
-          const res = await fetch(fileName);
+          // Timeout de secours : un fetch qui reste bloqué (réseau capricieux, proxy) ne doit
+          // jamais figer indéfiniment le démarrage d'un quiz — voir _raceTimeout (helpers.js).
+          const res = await (typeof _raceTimeout === 'function'
+            ? _raceTimeout(fetch(fileName), 10000, 'fetch timeout: ' + fileName)
+            : fetch(fileName));
           data = res.ok ? await res.json() : [];
           if (Array.isArray(data)) _jsonCache.set(fileName, data);
         }
