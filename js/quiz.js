@@ -291,7 +291,13 @@ async function demarrerQuiz() {
   localStorage.setItem('quizMode', modeQuiz);
   localStorage.setItem('quizFilterFlags', JSON.stringify(filterFlags));
   localStorage.setItem('quizNbQuestions', nbQuestions);
-  localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+  const _saved = (typeof _setLocalStorageWithCleanup === 'function')
+    ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(currentQuestions))
+    : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions)); return true; } catch (e) { return false; } })();
+  if (!_saved) {
+    alert("Stockage local plein : impossible de démarrer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+    return;
+  }
   // Nouveau quiz : effacer les réponses/position en cours d'une session précédente
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
@@ -702,7 +708,11 @@ async function initQuiz() {
     let restoredFlags = [];
     try { restoredFlags = JSON.parse(localStorage.getItem('quizFilterFlags') || '[]'); } catch (e) { /* ignore */ }
     await filtrerQuestions(modeQuiz, nbQuestions, restoredFlags);
-    localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+    if (typeof _setLocalStorageWithCleanup === 'function') {
+      _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(currentQuestions));
+    } else {
+      try { localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions)); } catch (e) { /* best-effort */ }
+    }
   }
 
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');

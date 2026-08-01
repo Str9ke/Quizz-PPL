@@ -1,6 +1,50 @@
 // === helpers.js === Utility functions ===
 
 /**
+ * _clearRegenerableLocalStorage() – Libère de la place dans localStorage en supprimant
+ * UNIQUEMENT des caches régénérables (jamais un dossier Navlog ni un travail en cours) :
+ * cartes météo capturées, PDF OPMET, cache d'espaces aériens. localStorage a un quota strict
+ * (~5-10 Mo, bien plus petit que le Cache Storage du Service Worker) et le module Navlog y
+ * stocke des images/PDF en base64 — sur un navigateur PC utilisé longtemps pour préparer des
+ * vols, ce quota peut se remplir au point de faire échouer une écriture qui n'a rien à voir
+ * (ex. démarrer un quiz), avec une QuotaExceededError. Utilisé en dernier recours avant de
+ * réessayer une écriture bloquée pour cette raison.
+ */
+function _clearRegenerableLocalStorage() {
+  const keysToClear = [
+    'navlog_map_temsi', 'navlog_map_temsiEuroc', 'navlog_map_wintem', 'navlog_map_fronts',
+    'navlog_opmet_pdf', 'navlog_extra_images',
+    'navlogAirspacesWideCache_v1', 'navlogAirspacesCache_v1'
+  ];
+  keysToClear.forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
+}
+
+/**
+ * _setLocalStorageWithCleanup(key, value) – Écrit dans localStorage ; si le quota est dépassé,
+ * libère les caches régénérables (voir _clearRegenerableLocalStorage) puis réessaie une fois.
+ * Renvoie true si l'écriture a fini par réussir, false sinon (l'appelant doit alors informer
+ * l'utilisateur au lieu de continuer comme si la sauvegarde avait fonctionné).
+ */
+function _setLocalStorageWithCleanup(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    const isQuotaError = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22);
+    if (!isQuotaError) { console.error('[localStorage] échec d\'écriture:', e); return false; }
+    console.warn('[localStorage] quota dépassé, nettoyage des caches régénérables...');
+    _clearRegenerableLocalStorage();
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e2) {
+      console.error('[localStorage] toujours plein après nettoyage:', e2);
+      return false;
+    }
+  }
+}
+
+/**
  * _ensurePersistence() – Attend que enablePersistence() soit prêt.
  * Sur Android lent, enablePersistence() peut prendre 1-2s à initialiser IndexedDB.
  * Sans cette attente, les opérations Firestore utilisent un cache in-memory

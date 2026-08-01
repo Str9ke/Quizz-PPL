@@ -31,11 +31,11 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260717d"></script>
-  <script src="js/helpers.js?v=20260730a"></script>
+  <script src="js/globals.js?v=20260730a"></script>
+  <script src="js/helpers.js?v=20260730b"></script>
   <script src="js/categories.js?v=20260729b"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260730a"></script>
+  <script src="js/quiz.js?v=20260730b"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
   <style>
@@ -112,6 +112,14 @@
     <p class="cfg-hint" style="margin-top:8px">
       "Protéger le stockage" demande au navigateur de ne pas effacer les questions/ta progression hors-ligne sous pression de stockage.
       "Forcer le téléchargement complet" retélécharge tous les fichiers nécessaires au fonctionnement hors-ligne (à faire en Wi-Fi, avant de partir).
+    </p>
+    <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;gap:8px;flex-wrap:wrap;align-items:center">
+      <div id="cfgLocalStorageUsage" style="font-size:.85em;flex:1;min-width:200px"></div>
+      <button type="button" class="stats-btn" onclick="_cfgClearRegenerableCaches()" style="padding:6px 14px">🧹 Vider les caches Navlog (PDF/cartes)</button>
+    </div>
+    <p class="cfg-hint" style="margin-top:8px">
+      Le stockage local (distinct du cache hors-ligne ci-dessus) est limité à quelques Mo par navigateur. Le module Briefing/Navlog y stocke le PDF OPMET et les cartes météo importées :
+      s'il est plein, ça peut empêcher de démarrer un quiz ("stockage plein"). Ce bouton vide uniquement ces caches régénérables (jamais tes dossiers Navlog enregistrés).
     </p>
   </div>
 
@@ -569,6 +577,33 @@
       window._cfgRunOfflineCheck();
     };
 
+    function _cfgLocalStorageUsedBytes() {
+      let total = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        total += (k || '').length + (localStorage.getItem(k) || '').length;
+      }
+      return total;
+    }
+
+    function _cfgRenderLocalStorageUsage() {
+      const el = document.getElementById('cfgLocalStorageUsage');
+      if (!el) return;
+      const kb = Math.round(_cfgLocalStorageUsedBytes() / 1024);
+      el.textContent = '💾 Stockage local utilisé : ~' + kb + ' Ko';
+    }
+
+    window._cfgClearRegenerableCaches = function() {
+      if (typeof _clearRegenerableLocalStorage !== 'function') { alert('Fonction indisponible.'); return; }
+      const before = _cfgLocalStorageUsedBytes();
+      _clearRegenerableLocalStorage();
+      const freedKb = Math.round((before - _cfgLocalStorageUsedBytes()) / 1024);
+      alert(freedKb > 0
+        ? '🧹 ' + freedKb + ' Ko libérés (PDF OPMET, cartes météo, cache d\'espaces aériens).'
+        : 'Rien à libérer — ces caches étaient déjà vides.');
+      _cfgRenderLocalStorageUsage();
+    };
+
     // === Reset global (réglages uniquement, jamais la progression) ===
     window._cfgResetAll = function() {
       if (!confirm('Réinitialiser TOUS les réglages de cette page à leurs valeurs par défaut ?\n\nTa progression, tes statistiques et tes réponses ne sont pas concernées.')) return;
@@ -595,6 +630,7 @@
       _loadNavlog();
       _loadPrivacy();
       window._cfgRunOfflineCheck();
+      _cfgRenderLocalStorageUsage();
     }
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }
