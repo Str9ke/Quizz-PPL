@@ -1,7 +1,24 @@
 {
-  "generated": "Fri, 31 Jul 2026 17:39:59 GMT",
-  "count": 4,
+  "generated": "Sat, 01 Aug 2026 06:03:47 GMT",
+  "count": 10,
   "warnings": [
+    {
+      "ref": "B0182/26",
+      "from": "01 AUG 2026 07:00",
+      "till": "02 AUG 2026 17:00",
+      "schedule": "DAILY 0700-1700",
+      "text": "TEMPORARY RESERVED AREA (TRA) 'GERAARDSBERGEN' INSTALLED 504520N 0035150E RADIUS 01NM DUE TO FLY IN OVERBOELARE. ENTRY PROHIBITED, UNLESS AUTHORISED BY OVERBOELARE RADIO 124.155MHZ",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.755556,
+          3.863889
+        ],
+        "radiusNm": 1.0
+      }
+    },
     {
       "ref": "B0100/26",
       "from": "27 JUN 2026 07:00",
@@ -15,32 +32,85 @@
       }
     },
     {
-      "ref": "F2275/26",
-      "from": "31 JUL 2026 16:00",
-      "till": "02 AUG 2026 17:00",
-      "schedule": "JUL 31 1600-1900, AUG 01 0330-0500, 02 0330-0500 1500-1700",
-      "text": "MOLENBAIX ASCENTS AND EVOLUTIONS OF ABOUT 9 HOT AIR BALLOONS 504211N 0032525E RADIUS 10NM",
+      "ref": "F2326/26",
+      "from": "01 AUG 2026 07:30",
+      "till": "01 AUG 2026 10:30",
+      "schedule": null,
+      "text": "HTA10A- COASTAL HELICOPTER TRAINING AREA ACT",
       "lower": "GND",
-      "upper": "2500FT AMSL",
+      "upper": "500FT AGL",
       "geometry": {
-        "type": "circle",
-        "center": [
-          50.703056,
-          3.423611
-        ],
-        "radiusNm": 10.0
+        "type": "unlocated"
       }
     },
     {
-      "ref": "F2210/26",
-      "from": "27 JUL 2026 06:00",
-      "till": "31 JUL 2026 20:00",
-      "schedule": "DAILY 0600-2000",
-      "text": "EBR72- SINT-TRUIDEN 6 ACT",
+      "ref": "F2314/26",
+      "from": "01 AUG 2026 08:00",
+      "till": "02 AUG 2026 17:00",
+      "schedule": "DAILY 0800-1700",
+      "text": "EBR69-WIEKEVORST ACT",
       "lower": "GND",
-      "upper": "2000FT AMSL",
+      "upper": "1500FT AMSL",
       "geometry": {
         "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2304/26",
+      "from": "01 AUG 2026 08:00",
+      "till": "02 AUG 2026 17:00",
+      "schedule": "DAILY 0800-1700",
+      "text": "EBR68-TONGEREN ACT",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2258/26",
+      "from": "01 AUG 2026 04:13",
+      "till": "02 AUG 2026 19:30",
+      "schedule": "DAILY SR-SS",
+      "text": "EBR70-POTTES ACT",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2034/26",
+      "from": "01 AUG 2026 08:00",
+      "till": "01 AUG 2026 17:00",
+      "schedule": null,
+      "text": "HERENTALS 511058N 0045214E MODEL ACFT EVENT RADIUS 400M",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          51.182778,
+          4.870556
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
+      "ref": "F1037/26",
+      "from": "01 AUG 2026 08:00",
+      "till": "02 AUG 2026 15:00",
+      "schedule": "DAILY 0800-1500",
+      "text": "WAREMME PSN 504046N 0051614E MODEL ACFT EVENT RADIUS 400M",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.679444,
+          5.270556
+        ],
+        "radiusNm": 0.216
       }
     },
     {
@@ -48,9 +118,21 @@
       "from": "01 JUL 2026 07:00",
       "till": "30 AUG 2026 18:31",
       "schedule": "DAILY 0700-SS",
-      "text": "GLIDER ACT RADIUS 05NM EXC EHAA FIR. CROSSING OVERHEAD BELOW 3000FT AGL MUST BE AVOIDED DUE TO WINCH LAUNCHING. CONTACT PRIOR ENTERING IS REQUESTED VIA WEELDE RADIO 119.605 MHZ OR WEELDE AIR CADETS 118.015 MHZ.",
+      "text": "GLIDER ACT RADIUS 05NM EXC EHAA FIR. CROSSING OVERHEAD BELOW 3000FT AGL MUST BE AVOIDED DUE TO WINCH LAUNCHING. CONTACT PRIOR ENTERING IS REQUESTED VIA WEELDE RADIO 119.605 MHZ OR WEELDE AIR BELGIUM AERONAUTICAL INFORMATION SERVICES Pre-Flight Information Bulletin: AREA BULLETIN FULL PIB VALIDITY (UTC): 01 AUG 2026 06:03 - 01 AUG 2026 23:59 Service Type: FULL Date: 01 AUG 2026 Time: 06:03 UTC Flight Rules: IV Contents: Warnings, including miscellaneous information Briefing Type: International Height Limits (lower/upper) 000/999 Contains only NOTAM not older than 250 days and 'PERM' NOTAM not older than 90 days. For NOTAM info beyond these validity periods contact NOTAM Office tel 02/206.25.30 1 of 01/08/2026 2 CADETS 118.015 MHZ.",
       "lower": "SFC",
       "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G1867/26",
+      "from": "01 AUG 2026 06:30",
+      "till": "01 AUG 2026 15:30",
+      "schedule": null,
+      "text": "LFA11-KOKSIJDE TRAINING AREA ACT",
+      "lower": "10FT AMSL",
+      "upper": "500FT AMSL",
       "geometry": {
         "type": "unlocated"
       }
