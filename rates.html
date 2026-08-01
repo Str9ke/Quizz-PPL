@@ -271,7 +271,13 @@
       var questionsForQuiz = unseen.map(function(item) {
         return JSON.parse(JSON.stringify(item.q));
       });
-      localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz));
+      var saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(questionsForQuiz))
+        : (function() { try { localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
       localStorage.setItem('quizCategory', 'RÉVISION');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());

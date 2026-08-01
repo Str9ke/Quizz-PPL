@@ -31,11 +31,11 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260717d"></script>
-  <script src="js/helpers.js?v=20260730a"></script>
+  <script src="js/globals.js?v=20260730a"></script>
+  <script src="js/helpers.js?v=20260730b"></script>
   <script src="js/categories.js?v=20260729b"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260730a"></script>
+  <script src="js/quiz.js?v=20260730b"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
 </head>
@@ -811,7 +811,13 @@
         var q = JSON.parse(JSON.stringify(item.q));
         return q;
       });
-      localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz));
+      var saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(questionsForQuiz))
+        : (function() { try { localStorage.setItem('currentQuestions', JSON.stringify(questionsForQuiz)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
       localStorage.setItem('quizCategory', 'HISTORIQUE');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());

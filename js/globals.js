@@ -50,7 +50,13 @@ function resetQuiz() {
         );
         return;
       }
-      localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions));
+      const saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(currentQuestions))
+        : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(currentQuestions)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de lancer de nouvelles questions.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
       if (sousCat) localStorage.setItem('quizSousCategorie', sousCat);
       // Éviter un reload complet (lent offline) : ré-afficher le quiz directement
       if (typeof afficherQuiz === 'function') {
