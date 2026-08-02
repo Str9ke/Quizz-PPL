@@ -1010,6 +1010,25 @@ body.light .personal-note-block {
   background: #fff8e1;
   border-left-color: #e69500;
 }
+/* Tableaux collés dans une note (Excel/Word/page web) : la plupart gardent leurs bordures/
+   couleurs propres via l'attribut style (autorisé par le nettoyage HTML), ce CSS n'est qu'un
+   filet de sécurité pour un tableau qui n'en aurait pas. */
+.personal-note-block table, .note-textarea table {
+  border-collapse: collapse;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+  margin: 8px 0;
+}
+.personal-note-block td, .personal-note-block th,
+.note-textarea td, .note-textarea th {
+  border: 1px solid var(--border-color, rgba(255,255,255,.15));
+  padding: 4px 8px;
+}
+.personal-note-block th, .note-textarea th {
+  font-weight: bold;
+  background: rgba(102, 126, 234, 0.08);
+}
 .note-toggle-btn {
   margin-top: 8px;
   padding: 4px 12px;
