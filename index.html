@@ -311,6 +311,22 @@
           <input type="checkbox" id="objFilterPlusRateesCheckbox" onchange="_onModeFilterCheckboxChange(this)">
           <span>🔥 Plus ratées d'abord<span class="filter-count" id="objFilterPlusRateesCount"></span></span>
         </label>
+        <!-- Filtre par difficulté (facile/moyen/difficile), visible uniquement pour les 3 catégories
+             analysées une à une (voir NAV_DIFFICULTY_CATEGORIES dans js/categories.js). -->
+        <div id="objNavDifficultyFilterInline" style="display:none;align-items:center;gap:6px;flex-wrap:wrap" title="Filtrer par difficulté de la question">
+          <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);border-radius:8px">
+            <input type="checkbox" id="objFilterDiffFacileCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+            <span>🟢 Facile<span class="filter-count" id="objFilterDiffFacileCount"></span></span>
+          </label>
+          <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:8px">
+            <input type="checkbox" id="objFilterDiffMoyenCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+            <span>🟡 Moyen<span class="filter-count" id="objFilterDiffMoyenCount"></span></span>
+          </label>
+          <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:8px">
+            <input type="checkbox" id="objFilterDiffDifficileCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+            <span>🔴 Difficile<span class="filter-count" id="objFilterDiffDifficileCount"></span></span>
+          </label>
+        </div>
       </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
     </div>
@@ -461,8 +477,8 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260730a"></script>
-  <script src="js/helpers.js?v=20260802b"></script>
-  <script src="js/categories.js?v=20260802b"></script>
+  <script src="js/helpers.js?v=20260802c"></script>
+  <script src="js/categories.js?v=20260802c"></script>
   <script src="js/stats.js?v=20260720c"></script>
   <script src="js/quiz.js?v=20260802a"></script>
   <script src="js/init.js?v=20260802b"></script>

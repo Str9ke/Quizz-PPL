@@ -894,13 +894,16 @@ let _categoryChangeToken = 0;
  * catégorie (aucune question n'y a de champ "difficulte", le filtre y renverrait silencieusement 0).
  */
 function _updateNavDifficultyMenuVisibility() {
-  const el = document.getElementById('navDifficultyFilterInline');
-  if (!el) return;
+  const els = ['navDifficultyFilterInline', 'objNavDifficultyFilterInline']
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+  if (!els.length) return;
   const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
   const show = NAV_DIFFICULTY_CATEGORIES.includes(normalizedSel);
-  el.style.display = show ? 'flex' : 'none';
+  els.forEach(el => { el.style.display = show ? 'flex' : 'none'; });
   if (!show) {
-    ['filterDiffFacileCheckbox', 'filterDiffMoyenCheckbox', 'filterDiffDifficileCheckbox'].forEach(id => {
+    ['filterDiffFacileCheckbox', 'filterDiffMoyenCheckbox', 'filterDiffDifficileCheckbox',
+     'objFilterDiffFacileCheckbox', 'objFilterDiffMoyenCheckbox', 'objFilterDiffDifficileCheckbox'].forEach(id => {
       const cb = document.getElementById(id);
       if (cb && cb.checked) { cb.checked = false; _onModeFilterCheckboxChange(cb); }
     });
