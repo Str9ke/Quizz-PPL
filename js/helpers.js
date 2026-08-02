@@ -887,7 +887,14 @@ const _FILTER_CHECKBOX_PAIRS = [
   { flag: 'avecnotes',   ids: ['filterNotesCheckbox', 'objFilterNotesCheckbox'],          countIds: ['filterNotesCount', 'objFilterNotesCount'] },
   { flag: 'aucune',          ids: ['filterAucuneCheckbox', 'objFilterAucuneCheckbox'],                 countIds: ['filterAucuneCount', 'objFilterAucuneCount'] },
   { flag: 'avecexplication', ids: ['filterAvecExplicationCheckbox', 'objFilterAvecExplicationCheckbox'], countIds: ['filterAvecExplicationCount', 'objFilterAvecExplicationCount'] },
-  { flag: 'plusratees',      ids: ['filterPlusRateesCheckbox', 'objFilterPlusRateesCheckbox'],          countIds: ['filterPlusRateesCount', 'objFilterPlusRateesCount'] }
+  { flag: 'plusratees',      ids: ['filterPlusRateesCheckbox', 'objFilterPlusRateesCheckbox'],          countIds: ['filterPlusRateesCount', 'objFilterPlusRateesCount'] },
+  // Filtre par difficulté RÉELLE de la question (facile/moyen/difficile), analysée au contenu —
+  // uniquement pertinent pour les catégories GLIGLI NAVIGATION EASY/HARD et EASA NAVIGATION (seules
+  // à avoir été annotées), voir NAV_DIFFICULTY_CATEGORIES dans categories.js. N'existe que dans la
+  // carte "Configuration du Quiz" (pas de jumelle dans "Objectif du jour").
+  { flag: 'diff_facile',    ids: ['filterDiffFacileCheckbox'],    countIds: ['filterDiffFacileCount'] },
+  { flag: 'diff_moyen',     ids: ['filterDiffMoyenCheckbox'],     countIds: ['filterDiffMoyenCount'] },
+  { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount'] }
 ];
 
 /**
@@ -897,7 +904,7 @@ const _FILTER_CHECKBOX_PAIRS = [
  * s'il était traité comme les autres, le cocher seul viderait le résultat (aucune question ne
  * "correspond" à "plusratees" au sens membership du filtre OR).
  */
-const _MEMBERSHIP_FILTER_FLAGS = ['marquees', 'importantes', 'avecnotes', 'aucune', 'avecexplication'];
+const _MEMBERSHIP_FILTER_FLAGS = ['marquees', 'importantes', 'avecnotes', 'aucune', 'avecexplication', 'diff_facile', 'diff_moyen', 'diff_difficile'];
 
 /**
  * _hasOfficialExplication(q) – Vrai si la question a un commentaire/explication OFFICIEL fourni

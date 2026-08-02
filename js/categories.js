@@ -25,6 +25,12 @@ const _fileToCategory = {
   'gligli_reglementation_easy.json': 'GLIGLI REGLEMENTATION EASY',
 };
 
+// Catégories dont les questions ont été analysées une à une et annotées d'un champ "difficulte"
+// ("facile"/"moyen"/"difficile", calibré selon le réel processus de résolution — voir
+// gligli_navigation_easy.json / gligli_navigation_hard.json / section_easa_navigation.json).
+// Seules ces catégories affichent le petit menu de filtre par difficulté sur l'accueil.
+const NAV_DIFFICULTY_CATEGORIES = ['GLIGLI NAVIGATION EASY', 'GLIGLI NAVIGATION HARD', 'EASA NAVIGATION'];
+
 /**
  * resolveEpreuveQuestions(data, epreuveCategoryName) – Résout les questions d'un fichier épreuve.
  * Les entrées avec ref_file/ref_index sont résolues depuis _jsonCache avec leur catégorie d'origine.
@@ -300,6 +306,8 @@ async function updateModeCounts(filterFlags) {
     if (typeof _updateFilterCheckboxCounts === 'function') {
       let rawMarquees = 0, rawImportantes = 0, rawAvecNotes = 0, rawAucune = 0, rawAvecExpl = 0, rawPlusRatees = 0;
       let vMarquees = 0, vImportantes = 0, vAvecNotes = 0, vAucune = 0, vAvecExpl = 0;
+      let rawDiffFacile = 0, rawDiffMoyen = 0, rawDiffDifficile = 0;
+      let vDiffFacile = 0, vDiffMoyen = 0, vDiffDifficile = 0;
       list.forEach(q => {
         const key = getKeyFor(q);
         const r = currentResponses[key];
@@ -315,6 +323,9 @@ async function updateModeCounts(filterFlags) {
         if (!isMarquee && !isImportante && !hasNote) { rawAucune++; if (seen) vAucune++; }
         if (_hasOfficialExplication(q)) { rawAvecExpl++; if (seen) vAvecExpl++; }
         if ((r && r.failCount || 0) >= 1) rawPlusRatees++;
+        if (q.difficulte === 'facile')    { rawDiffFacile++;    if (seen) vDiffFacile++; }
+        if (q.difficulte === 'moyen')     { rawDiffMoyen++;     if (seen) vDiffMoyen++; }
+        if (q.difficulte === 'difficile') { rawDiffDifficile++; if (seen) vDiffDifficile++; }
       });
       _updateFilterCheckboxCounts({
         marquees: { total: rawMarquees, vues: vMarquees },
@@ -322,7 +333,10 @@ async function updateModeCounts(filterFlags) {
         avecnotes: { total: rawAvecNotes, vues: vAvecNotes },
         aucune: { total: rawAucune, vues: vAucune },
         avecexplication: { total: rawAvecExpl, vues: vAvecExpl },
-        plusratees: rawPlusRatees
+        plusratees: rawPlusRatees,
+        diff_facile: { total: rawDiffFacile, vues: vDiffFacile },
+        diff_moyen: { total: rawDiffMoyen, vues: vDiffMoyen },
+        diff_difficile: { total: rawDiffDifficile, vues: vDiffDifficile }
       });
     }
 
@@ -341,6 +355,9 @@ async function updateModeCounts(filterFlags) {
         if (membershipFlags.includes('avecnotes') && !!notesMap[key]) return true;
         if (membershipFlags.includes('avecexplication') && _hasOfficialExplication(q)) return true;
         if (membershipFlags.includes('aucune') && !(r?.marked) && !(r?.important) && !notesMap[key]) return true;
+        if (membershipFlags.includes('diff_facile') && q.difficulte === 'facile') return true;
+        if (membershipFlags.includes('diff_moyen') && q.difficulte === 'moyen') return true;
+        if (membershipFlags.includes('diff_difficile') && q.difficulte === 'difficile') return true;
         return false;
       });
     }
@@ -869,10 +886,32 @@ function updateCategorySelect() {
  * récent a démarré entre-temps, celui-ci abandonne silencieusement avant de toucher au DOM.
  */
 let _categoryChangeToken = 0;
+/**
+ * _updateNavDifficultyMenuVisibility() – Affiche/masque le petit menu de filtre par difficulté
+ * (facile/moyen/difficile) à côté du sélecteur "Catégorie", uniquement pour les 3 catégories dont
+ * les questions ont été analysées une à une (voir NAV_DIFFICULTY_CATEGORIES). Décoche aussi les 3
+ * cases quand le menu se masque, pour ne pas laisser un filtre actif invisible fausser une autre
+ * catégorie (aucune question n'y a de champ "difficulte", le filtre y renverrait silencieusement 0).
+ */
+function _updateNavDifficultyMenuVisibility() {
+  const el = document.getElementById('navDifficultyFilterInline');
+  if (!el) return;
+  const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+  const show = NAV_DIFFICULTY_CATEGORIES.includes(normalizedSel);
+  el.style.display = show ? 'flex' : 'none';
+  if (!show) {
+    ['filterDiffFacileCheckbox', 'filterDiffMoyenCheckbox', 'filterDiffDifficileCheckbox'].forEach(id => {
+      const cb = document.getElementById(id);
+      if (cb && cb.checked) { cb.checked = false; _onModeFilterCheckboxChange(cb); }
+    });
+  }
+}
+
 async function categoryChanged() {
   const myToken = ++_categoryChangeToken;
   const selected = document.getElementById("categorie").value;
   selectedCategory = selected;
+  _updateNavDifficultyMenuVisibility();
   // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
   const modeSelect = document.getElementById('mode');
   const previousMode = modeSelect ? modeSelect.value : 'mixte';
@@ -1004,6 +1043,9 @@ async function filtrerQuestions(mode, nb, filterFlags) {
       if (membershipFlagsFQ.includes('avecnotes') && notesMapFlt && !!notesMapFlt[key]) return true;
       if (membershipFlagsFQ.includes('avecexplication') && _hasOfficialExplication(q)) return true;
       if (membershipFlagsFQ.includes('aucune') && !(r?.marked) && !(r?.important) && !(notesMapFlt && notesMapFlt[key])) return true;
+      if (membershipFlagsFQ.includes('diff_facile') && q.difficulte === 'facile') return true;
+      if (membershipFlagsFQ.includes('diff_moyen') && q.difficulte === 'moyen') return true;
+      if (membershipFlagsFQ.includes('diff_difficile') && q.difficulte === 'difficile') return true;
       return false;
     });
   }
