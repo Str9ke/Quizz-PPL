@@ -890,11 +890,11 @@ const _FILTER_CHECKBOX_PAIRS = [
   { flag: 'plusratees',      ids: ['filterPlusRateesCheckbox', 'objFilterPlusRateesCheckbox'],          countIds: ['filterPlusRateesCount', 'objFilterPlusRateesCount'] },
   // Filtre par difficulté RÉELLE de la question (facile/moyen/difficile), analysée au contenu —
   // uniquement pertinent pour les catégories GLIGLI NAVIGATION EASY/HARD et EASA NAVIGATION (seules
-  // à avoir été annotées), voir NAV_DIFFICULTY_CATEGORIES dans categories.js. N'existe que dans la
-  // carte "Configuration du Quiz" (pas de jumelle dans "Objectif du jour").
-  { flag: 'diff_facile',    ids: ['filterDiffFacileCheckbox'],    countIds: ['filterDiffFacileCount'] },
-  { flag: 'diff_moyen',     ids: ['filterDiffMoyenCheckbox'],     countIds: ['filterDiffMoyenCount'] },
-  { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount'] }
+  // à avoir été annotées), voir NAV_DIFFICULTY_CATEGORIES dans categories.js. Présent dans les deux
+  // cartes ("Configuration du Quiz" ET "Objectif du jour"), comme les autres filtres.
+  { flag: 'diff_facile',    ids: ['filterDiffFacileCheckbox', 'objFilterDiffFacileCheckbox'],       countIds: ['filterDiffFacileCount', 'objFilterDiffFacileCount'] },
+  { flag: 'diff_moyen',     ids: ['filterDiffMoyenCheckbox', 'objFilterDiffMoyenCheckbox'],         countIds: ['filterDiffMoyenCount', 'objFilterDiffMoyenCount'] },
+  { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox', 'objFilterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount', 'objFilterDiffDifficileCount'] }
 ];
 
 /**
