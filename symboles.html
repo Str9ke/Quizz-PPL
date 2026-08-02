@@ -25,7 +25,7 @@
     .sym-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
     .sym-browse-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.82em; }
     .sym-browse-card .sym-browse-img { flex-shrink: 0; max-width: 70px; max-height: 55px; }
-    .sym-browse-card .sym-browse-img svg, .sym-browse-card .sym-browse-img img { max-width: 70px; max-height: 55px; }
+    .sym-browse-card .sym-browse-img svg, .sym-browse-card .sym-browse-img img { max-width: 70px; max-height: 55px; cursor: zoom-in; }
     .sym-browse-card .sym-browse-sym { font-weight: 700; color: var(--text-heading); min-width: 50px; }
     .sym-browse-card .sym-browse-mean { color: var(--text-secondary); flex: 1; }
     /* Cloud interactive diagram */
@@ -56,11 +56,21 @@
     .sym-question-card { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
     .sym-q-label { font-size: 0.75em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     .sym-q-prompt { font-size: 1.3em; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; text-align: center; padding: 10px 0; }
-    .sym-q-prompt svg, .sym-q-prompt img { max-width: 160px; max-height: 140px; display: block; margin: 0 auto 4px; }
+    .sym-q-prompt svg, .sym-q-prompt img { max-width: 160px; max-height: 140px; display: block; margin: 0 auto 4px; cursor: zoom-in; }
     .sym-q-prompt .sym-svg-wrap { display: flex; justify-content: center; padding: 6px 0; }
     .sym-choice .sym-choice-svg { display: inline-block; vertical-align: middle; margin-right: 8px; }
     .sym-choice .sym-choice-svg svg { width: 44px; height: 30px; vertical-align: middle; }
-    .sym-choice .sym-choice-svg img { width: auto; height: 44px; vertical-align: middle; }
+    .sym-choice .sym-choice-svg img { width: auto; height: 44px; vertical-align: middle; cursor: zoom-in; }
+    /* Zoom plein écran des images de symboles (browse + question + choix) : tap pour agrandir,
+       essentiel sur Android où les vignettes de 44-70px sont illisibles et où il n'y a pas de
+       survol/clic-droit pour zoomer autrement. */
+    #symZoomOverlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.88); align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; touch-action: manipulation; }
+    #symZoomOverlay.open { display: flex; }
+    #symZoomContent { display: flex; align-items: center; justify-content: center; max-width: 92vw; max-height: 88vh; }
+    #symZoomContent img { max-width: 92vw; max-height: 88vh; width: auto; height: auto; object-fit: contain; border-radius: 10px; background: #f5f0e1; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+    #symZoomContent svg { width: min(80vw, 320px); height: auto; max-height: 80vh; background: #f5f0e1; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.5); padding: 20px; box-sizing: border-box; }
+    #symZoomOverlay .sym-zoom-close { position: absolute; top: 14px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: 1.4em; line-height: 44px; text-align: center; cursor: pointer; }
+    #symZoomOverlay .sym-zoom-alt { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); max-width: 90vw; text-align: center; color: #fff; font-size: .9em; background: rgba(0,0,0,.5); padding: 6px 14px; border-radius: 20px; }
     .sym-q-cat { font-size: 0.72em; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
     .sym-choices { display: flex; flex-direction: column; gap: 8px; }
     .sym-choice { padding: 12px 16px; font-size: 0.92em; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-primary); transition: all 0.2s; text-align: left; font-weight: 500; }
@@ -97,6 +107,45 @@
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
   <script>
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+  </script>
+
+  <!-- Zoom plein écran des images/SVG de symboles (browse/quiz) — voir CSS #symZoomOverlay -->
+  <div id="symZoomOverlay" onclick="if(event.target===this) _closeSymZoom()">
+    <button class="sym-zoom-close" onclick="_closeSymZoom()" aria-label="Fermer">✕</button>
+    <div id="symZoomContent"></div>
+    <div class="sym-zoom-alt" id="symZoomAlt" style="display:none"></div>
+  </div>
+  <script>
+    function _openSymZoom(el) {
+      var ov = document.getElementById('symZoomOverlay');
+      var content = document.getElementById('symZoomContent');
+      var altEl = document.getElementById('symZoomAlt');
+      var alt = '';
+      if (el.tagName === 'IMG') {
+        content.innerHTML = '<img src="' + el.src + '" alt="">';
+        alt = el.alt || '';
+      } else {
+        // SVG inline : cloner le noeud (vectoriel, redimensionné en CSS via #symZoomContent svg)
+        content.innerHTML = '';
+        content.appendChild(el.cloneNode(true));
+      }
+      if (alt) { altEl.textContent = alt; altEl.style.display = 'block'; }
+      else { altEl.style.display = 'none'; }
+      ov.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function _closeSymZoom() {
+      document.getElementById('symZoomOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    window._closeSymZoom = _closeSymZoom;
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') _closeSymZoom(); });
+    // Délégation : tap/clic sur n'importe quelle vignette (browse, prompt de question, choix de
+    // réponse) ouvre le zoom plein écran — fonctionne au clic ET au tap (Android/iOS).
+    document.addEventListener('click', function(e) {
+      var el = e.target.closest('.sym-browse-img img, .sym-browse-img svg, .sym-q-prompt img, .sym-q-prompt svg, .sym-choice-svg img, .sym-choice-svg svg');
+      if (el) _openSymZoom(el);
+    });
   </script>
 
   <!-- Hero banner -->
