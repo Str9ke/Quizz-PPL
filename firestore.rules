@@ -1,14 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Documents keyed "<syncCode>__<dossierId>" ; syncCode = l'UID Firebase Auth de son
+    // propriétaire dès qu'une session est active (voir navlog.html _getSyncCode()), donc
+    // resource.data.syncCode == request.auth.uid restreint bien chaque dossier à son auteur.
     match /navlog_dossiers/{document} {
-      allow read, write: if request.auth != null;
+      allow read, update, delete: if request.auth != null
+        && resource.data.syncCode == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.syncCode == request.auth.uid;
     }
     match /quizProgress/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
     match /navlogNotes/{uid} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

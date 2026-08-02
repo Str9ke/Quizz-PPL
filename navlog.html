@@ -2284,7 +2284,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <!-- Notes cloud sync -->
       <div id="notesSyncBar" style="margin-bottom:10px;padding:8px 12px;background:var(--bg-container);border:1px solid var(--border-color);border-radius:10px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <input type="email" id="notesEmailInput" placeholder="votre@email.com pour synchro" autocomplete="email"
+          <input type="email" id="notesEmailInput" placeholder="connectez-vous pour synchroniser" autocomplete="email" readonly
             style="flex:1;min-width:160px;padding:5px 9px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:.78em"
             oninput="window._notesEmailChanged()">
           <button class="navlog-btn" id="notesSyncBtn" onclick="_notesSyncManual()" title="Synchroniser les notes avec le cloud">&#x2601;&#xFE0F; Sync</button>
@@ -10753,45 +10753,44 @@ window._setNoteColor=_setNoteColor;
 function _saveNotesLocal(){
   localStorage.setItem('navlog_notes',JSON.stringify(_navlogNotes));
 }
-/* ---- Notes cloud via Firestore REST API (pas de SDK) ---- */
-var _FS_NOTES_URL='https://firestore.googleapis.com/v1/projects/quizaviation-b79ff/databases/(default)/documents/navlogNotes/';
-function _fsKey(){return (window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)||'';}
-function _notesKey(){return window._navlogNotesKey||window._navlogUid;}
+/* ---- Notes cloud via le SDK Firestore (authentifié) ----
+   AVANT ce correctif, la synchro passait par des appels REST bruts, sans jeton d'authentification
+   (juste la clé API publique, visible de n'importe qui dans config.js), et la clé du document
+   était dérivée d'un email tapé librement dans un champ — donc devinable/connu par n'importe qui
+   connaissant l'adresse email de l'utilisateur, sans même avoir de compte. Les notes étaient donc
+   lisibles/modifiables par quiconque, pas seulement par leur propriétaire. On passe maintenant par
+   le SDK (jeton d'authentification Firebase réel, automatique) et on indexe par l'UID authentifié
+   — même mécanisme que quizProgress/navlog_dossiers — pour que les règles de sécurité Firestore
+   puissent vraiment vérifier que seul le propriétaire accède à ses notes. */
+function _notesKey(){ return _navlogUid || null; }
 
 function _saveNotesCloud(){
-  var key=_notesKey(), apiKey=_fsKey();
-  if(!key||!apiKey) return;
+  var db=_initFirebase(); var key=_notesKey();
+  if(!db||!key) return;
   console.log('[Notes] save →',key,'('+_navlogNotes.length+' notes)');
-  fetch(_FS_NOTES_URL+encodeURIComponent(key)+'?key='+apiKey,{
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({fields:{
-      notes:{stringValue:JSON.stringify(_navlogNotes)},
-      updatedAt:{stringValue:new Date().toISOString()}
-    }})
-  }).then(function(r){
-    if(!r.ok) r.text().then(function(t){console.warn('[Notes] save error:',r.status,t);});
-    else console.log('[Notes] save OK');
-  }).catch(function(e){console.warn('[Notes] save catch:',e);});
+  db.collection('navlogNotes').doc(key).set({
+    notes: JSON.stringify(_navlogNotes),
+    updatedAt: new Date().toISOString()
+  }, {merge:true}).then(function(){
+    console.log('[Notes] save OK');
+  }).catch(function(e){ console.warn('[Notes] save error:', e); });
 }
 
 function _loadNotesCloud(cb){
-  var key=_notesKey(), apiKey=_fsKey();
-  if(!key||!apiKey){if(cb) cb();return;}
+  var db=_initFirebase(); var key=_notesKey();
+  if(!db||!key){ if(cb) cb(); return; }
   console.log('[Notes] load →',key);
   if(_notesSyncing){_notesSyncing=false;} /* reset lock */
   _notesSyncing=true;
   function done(){_notesSyncing=false;if(cb)cb();}
-  fetch(_FS_NOTES_URL+encodeURIComponent(key)+'?key='+apiKey)
-    .then(function(r){return r.json().then(function(d){return {s:r.status,d:d};});})
-    .then(function(res){
-      if(res.s===404||(res.d&&res.d.error)){
+  db.collection('navlogNotes').doc(key).get().then(function(doc){
+      if(!doc.exists){
         console.log('[Notes] pas de doc cloud → push local si besoin');
         if(_navlogNotes.length) _saveNotesCloud();
         done(); return;
       }
       var cloud=[];
-      try{cloud=JSON.parse(res.d.fields.notes.stringValue);}catch(e){console.warn('[Notes] parse cloud:',e);}
+      try{cloud=JSON.parse(doc.data().notes||'[]');}catch(e){console.warn('[Notes] parse cloud:',e);}
       console.log('[Notes] cloud a',cloud.length,'notes');
       if(cloud.length){
         var cloudIds={};
@@ -10926,43 +10925,32 @@ function _noteDragSetup(container){
 window.toggleNoteEditor=toggleNoteEditor;window.saveCurrentNote=saveCurrentNote;
 window.deleteNote=deleteNote;window.moveNote=moveNote;
 
-function _notesEmailToKey(email){
-  /* Convert email to safe Firestore document id */
-  return email.trim().toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,80);
-}
+/* Le champ email n'est plus qu'un affichage informatif du compte connecté — la synchro est
+   désormais indexée sur l'UID Firebase Auth réel (voir _notesKey), pas sur un texte libre
+   (avant : n'importe qui connaissant l'email d'un utilisateur pouvait accéder à ses notes). */
 function _notesInitFromEmail(){
-  var saved=localStorage.getItem('notesEmail')||'';
   var input=document.getElementById('notesEmailInput');
-  if(input&&saved) input.value=saved;
-  if(saved){
-    window._navlogNotesKey=_notesEmailToKey(saved);
-    var st=document.getElementById('notesSyncStatus');
-    if(st){st.textContent='\uD83D\uDC64 '+saved;st.style.color='#a78bfa';st.style.display='block';}
-  }
+  if(input){ input.readOnly=true; input.placeholder='connectez-vous pour synchroniser'; }
 }
-window._notesEmailChanged=function(){
-  var input=document.getElementById('notesEmailInput');
-  if(!input)return;
-  var email=input.value.trim();
-  localStorage.setItem('notesEmail',email);
-  window._navlogNotesKey=email?_notesEmailToKey(email):null;
-};
+window._notesEmailChanged=function(){}; /* conservé pour compat, champ désormais lecture seule */
 function _notesSetStatus(msg,color,autohide){
   var st=document.getElementById('notesSyncStatus');
   if(!st)return;st.textContent=msg;st.style.color=color||'';st.style.display='block';
-  if(autohide)setTimeout(function(){var saved=localStorage.getItem('notesEmail');if(st)st.textContent=saved?'\uD83D\uDC64 '+saved:'';},autohide);
+  if(autohide)setTimeout(function(){
+    var input=document.getElementById('notesEmailInput');
+    var em=_navlogUid&&input&&input.value;
+    if(st) st.textContent=em?'\uD83D\uDC64 '+em:'';
+  },autohide);
 }
 
 function _notesUpdateAuthUI(user){
-  /* kept for compat with onAuthStateChanged calls — update email input if UID known */
+  var input=document.getElementById('notesEmailInput');
   if(user&&user.email){
-    var input=document.getElementById('notesEmailInput');
-    if(input&&!input.value){
-      input.value=user.email;
-      localStorage.setItem('notesEmail',user.email);
-      window._navlogNotesKey=_notesEmailToKey(user.email);
-    }
+    if(input) input.value=user.email;
     _notesSetStatus('\uD83D\uDC64 '+user.email,'#a78bfa',0);
+  } else {
+    if(input) input.value='';
+    _notesSetStatus('\u26A0\uFE0F Non connecté \u2014 les notes ne se synchronisent pas','#f44336',0);
   }
 }
 window._notesLoginGoogle=function(){}; /* no longer needed */
@@ -10970,29 +10958,17 @@ window._notesLoginGoogle=function(){}; /* no longer needed */
 /* sync manuel notes cloud */
 window._notesSyncManual=function(){
   var btn=document.getElementById('notesSyncBtn');
-  /* Ensure key is set from input field — email always takes priority */
-  var input=document.getElementById('notesEmailInput');
-  if(input&&input.value.trim()){
-    var email=input.value.trim();
-    localStorage.setItem('notesEmail',email);
-    window._navlogNotesKey=_notesEmailToKey(email);
-  }
-  if(!window._navlogNotesKey){
-    _notesSetStatus('\u26A0\uFE0F Entrez votre email d\'abord','#f44336',4000);
-    return;
-  }
-  if(!_fsKey()){
-    _notesSetStatus('\u274C API key manquante','#f44336',4000);
+  if(!_notesKey()){
+    _notesSetStatus('\u26A0\uFE0F Connectez-vous d\'abord (page Accueil)','#f44336',4000);
     return;
   }
   if(btn){btn.disabled=true;btn.textContent='\u23F3...';}
-  _notesSetStatus('Cl\u00e9: '+window._navlogNotesKey,'#888',0);
   /* Force reset du lock en cas de sync auto bloquée */
   _notesSyncing=false;
   _loadNotesCloud(function(){
     renderNotes();
     if(btn){btn.disabled=false;btn.textContent='\u2601\uFE0F Sync';}
-    _notesSetStatus('\u2705 Synchronis\u00e9 ('+_navlogNotes.length+' notes)','#4caf50',5000);
+    _notesSetStatus('\u2705 Synchronisé ('+_navlogNotes.length+' notes)','#4caf50',5000);
   });
 };
 
