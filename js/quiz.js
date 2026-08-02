@@ -1767,10 +1767,13 @@ function _sanitizeNoteHtml(html) {
   const doc = parser.parseFromString(html, 'text/html');
   const allowedTags = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'div', 'ul', 'ol', 'li',
     'span', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'sub', 'sup', 'blockquote', 'pre', 'code', 'hr',
+    /* Tableaux (ex. collés depuis Excel/Word/une page web) */
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption', 'col', 'colgroup',
     /* KaTeX elements */ 'math', 'semantics', 'annotation', 'mrow', 'mi', 'mo', 'mn', 'mfrac', 'msub',
     'msup', 'msubsup', 'msqrt', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'mtext',
     'mspace', 'mpadded', 'menclose', 'mglyph', 'svg', 'line', 'path']);
-  const allowedAttrs = new Set(['href', 'target', 'style', 'class', 'aria-hidden', 'xmlns', 'width', 'height', 'viewbox', 'd', 'x1', 'y1', 'x2', 'y2']);
+  const allowedAttrs = new Set(['href', 'target', 'style', 'class', 'aria-hidden', 'xmlns', 'width', 'height',
+    'viewbox', 'd', 'x1', 'y1', 'x2', 'y2', 'colspan', 'rowspan', 'align', 'valign', 'border']);
 
   function clean(node) {
     const children = Array.from(node.childNodes);

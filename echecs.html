@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Plus ratées</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260730a" />
+  <link rel="stylesheet" href="style.css?v=20260731a" />
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -35,7 +35,7 @@
   <script src="js/helpers.js?v=20260730b"></script>
   <script src="js/categories.js?v=20260729b"></script>
   <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260730b"></script>
+  <script src="js/quiz.js?v=20260731a"></script>
   <script src="js/init.js?v=20260717b"></script>
   <script src="js/offline.js?v=20260728a"></script>
 </head>
@@ -621,8 +621,9 @@
       if (!html) return '';
       var parser = new DOMParser();
       var doc = parser.parseFromString(html, 'text/html');
-      var allowedTags = ['b','strong','i','em','u','br','p','div','ul','ol','li','span','a','h1','h2','h3','h4','h5','h6','sub','sup','blockquote','pre','code','hr'];
-      var allowedAttrs = ['href','target','style'];
+      var allowedTags = ['b','strong','i','em','u','br','p','div','ul','ol','li','span','a','h1','h2','h3','h4','h5','h6','sub','sup','blockquote','pre','code','hr',
+        'table','thead','tbody','tfoot','tr','td','th','caption','col','colgroup'];
+      var allowedAttrs = ['href','target','style','colspan','rowspan','align','valign','border'];
       function clean(node) {
         var children = Array.from(node.childNodes);
         children.forEach(function(child) {
