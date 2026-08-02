@@ -2886,12 +2886,6 @@ function switchTab(id){
   }else{calBtn.classList.remove('visible');document.getElementById('calOverlay').classList.remove('open');}
   
   if(id==='checklist') initChecklist();
-  /* Reprendre le champ Carburant du M&CG sur le devis Carbu à chaque retour sur l'onglet
-     (voir _mbFuelManualChange) — annule aussi une éventuelle édition manuelle en attente. */
-  if(id==='masse'){
-    if(typeof _mbFuelRevertTimer!=='undefined' && _mbFuelRevertTimer){ clearTimeout(_mbFuelRevertTimer); _mbFuelRevertTimer=null; }
-    if(typeof _mbFuelSyncNow==='function') _mbFuelSyncNow();
-  }
   if(id==='fuel') window.renderFuelLog();
   if(id==='fpl') window.renderFPL();
 
@@ -14676,11 +14670,14 @@ function mbSelectAircraft(){
   var html='';
   /* Quantit\u00e9 de carburant PAR D\u00c9FAUT = le BLOCK FUEL d\u00e9j\u00e0 calcul\u00e9 par l'onglet Carbu (au lieu
      d'une valeur fixe arbitraire de 78 L, sans rapport avec le devis r\u00e9el) \u2014 sinon les litres
-     affich\u00e9s en M&CG et en Carbu \u00e9taient incoh\u00e9rents entre eux. Reste \u00e9ditable \u00e0 la vol\u00e9e
-     (bouton Max ou saisie manuelle), voir window._mbFuelManualChange/_mbFuelSyncNow. */
+     affich\u00e9s en M&CG et en Carbu \u00e9taient incoh\u00e9rents entre eux au premier affichage. Reste
+     ENTI\u00e8REMENT \u00e9ditable ensuite (saisie libre, bouton Max, ou resync manuel via le lien
+     \u{1F504} \u2014 voir window._mbFuelManualChange/_mbFuelSyncNow) : la valeur choisie par le pilote
+     n'est plus jamais \u00e9cras\u00e9e automatiquement (avant : elle revenait seule au devis Carbu au
+     bout de 6s ou \u00e0 chaque retour sur l'onglet, ce qui emp\u00eachait de facto toute saisie manuelle). */
   var _mbDefaultFuel=(window._lastComputedBlockFuelL!==undefined)?Math.min(ac.fuelUsable,Math.round(window._lastComputedBlockFuelL*10)/10):78;
   html+='<tr><td>Masse \u00e0 vide</td><td>'+ac.emptyArm.toFixed(4)+'</td><td>'+ac.emptyMass.toFixed(1)+'</td><td>'+ac.emptyMom.toFixed(2)+'</td></tr>';
-  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+_mbDefaultFuel+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window._mbFuelManualChange()"> L <button onclick="document.getElementById(\'mbFuel\').value='+ac.fuelUsable+';window._mbFuelManualChange()" style="padding:2px 7px;font-size:.75em;border-radius:5px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-weight:600;margin-left:4px" title="Remplir au maximum ('+ac.fuelUsable+' L)">Max</button> &rarr; <span id="mbFuelKg">'+(_mbDefaultFuel*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div><div id="mbFuelSyncHint" style="font-size:.72em;color:var(--text-secondary);margin-top:2px">\u{1F517} Synchronis\u00e9 avec Carbu ('+_mbDefaultFuel.toFixed(1)+' L)</div></td><td id="mbFuelMom">'+(_mbDefaultFuel*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
+  html+='<tr><td>Carburant</td><td>'+ac.fuelArm.toFixed(2)+'</td><td><input type="number" id="mbFuel" value="'+_mbDefaultFuel+'" min="0" max="'+ac.fuelUsable+'" step="1" onchange="window._mbFuelManualChange()"> L <button onclick="document.getElementById(\'mbFuel\').value='+ac.fuelUsable+';window._mbFuelManualChange()" style="padding:2px 7px;font-size:.75em;border-radius:5px;border:1px solid #667eea;background:rgba(102,126,234,.12);color:#667eea;cursor:pointer;font-weight:600;margin-left:4px" title="Remplir au maximum ('+ac.fuelUsable+' L)">Max</button> &rarr; <span id="mbFuelKg">'+(_mbDefaultFuel*ac.density).toFixed(1)+'</span> kg<div id="mbAutonomy" style="font-size:.78em;color:var(--text-secondary);margin-top:2px"></div><div id="mbFuelSyncHint" style="font-size:.72em;color:var(--text-secondary);margin-top:2px">\u{1F517} Pr\u00e9-rempli depuis Carbu (\u00e9ditable) \u2014 <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">resynchroniser avec Carbu</a></div></td><td id="mbFuelMom">'+(_mbDefaultFuel*ac.density*ac.fuelArm).toFixed(2)+'</td></tr>';
   if(ac.has2seats){
     html+='<tr><td>Pilote</td><td>'+ac.pilotArm.toFixed(2)+'</td><td><input type="number" id="mbPilot1" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPilotMom">—</td></tr>';
     html+='<tr><td>Passager</td><td>'+(ac.paxArm||ac.pilotArm).toFixed(2)+'</td><td><input type="number" id="mbPax" value="70" min="0" max="200" onchange="window.mbRecalc()"> kg</td><td id="mbPaxMom">—</td></tr>';
@@ -14859,9 +14856,11 @@ function mbRecalc(){
 window.mbRecalc=mbRecalc;
 
 /* Resynchronise le champ Carburant du M&CG sur le BLOCK FUEL actuellement calculé par
-   l'onglet Carbu — appelé au premier passage sur l'onglet, et automatiquement après une
-   édition manuelle (voir _mbFuelManualChange) une fois le délai de grâce écoulé. */
-var _mbFuelRevertTimer=null;
+   l'onglet Carbu — UNIQUEMENT à la demande explicite du pilote (lien "resynchroniser avec
+   Carbu" à côté du champ). N'est plus jamais appelée automatiquement : avant, un
+   retour-automatique (minuteur de 6s + resync forcé à chaque retour sur l'onglet) écrasait
+   silencieusement toute saisie manuelle, empêchant de facto de renseigner ses propres litres
+   (ex. ne pas faire le plein) — voir _mbFuelManualChange ci-dessous. */
 function _mbFuelSyncNow(){
   var el=document.getElementById('mbFuel');
   var ac=MB_DATA[document.getElementById('mbAircraft').value];
@@ -14871,22 +14870,16 @@ function _mbFuelSyncNow(){
   el.value=val;
   mbRecalc();
   var hint=document.getElementById('mbFuelSyncHint');
-  if(hint) hint.innerHTML='\u{1F517} Synchronisé avec Carbu ('+val.toFixed(1)+' L)';
+  if(hint) hint.innerHTML='\u{1F517} Pré-rempli depuis Carbu ('+val.toFixed(1)+' L, éditable) — <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">resynchroniser avec Carbu</a>';
 }
 window._mbFuelSyncNow=_mbFuelSyncNow;
 
-/* Édition manuelle du champ Carburant (saisie ou bouton Max) : on respecte la valeur choisie
-   quelques secondes (simuler un cas particulier, ex. ne pas prendre le plein), puis on
-   revient automatiquement au devis Carbu — sans ça, les litres du M&CG pouvaient dériver
-   indéfiniment loin de ce que l'onglet Carbu calcule réellement, sans que le pilote s'en
-   rende compte plus tard dans sa préparation. Revient aussi immédiatement si on quitte puis
-   revient sur l'onglet M&CG (voir switchTab). */
+/* Édition manuelle du champ Carburant (saisie libre ou bouton Max) : la valeur choisie par le
+   pilote est définitive et ne revient plus jamais toute seule au devis Carbu. */
 function _mbFuelManualChange(){
   mbRecalc();
   var hint=document.getElementById('mbFuelSyncHint');
-  if(hint) hint.innerHTML='✏️ Valeur manuelle — revient au calcul Carbu dans quelques secondes';
-  if(_mbFuelRevertTimer) clearTimeout(_mbFuelRevertTimer);
-  _mbFuelRevertTimer=setTimeout(_mbFuelSyncNow,6000);
+  if(hint) hint.innerHTML='✏️ Valeur saisie manuellement — <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">resynchroniser avec Carbu</a>';
 }
 window._mbFuelManualChange=_mbFuelManualChange;
 
