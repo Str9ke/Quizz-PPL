@@ -86,9 +86,9 @@ function _resolveTtsText(q) {
   // Nettoyer le point final
   const cleaned = correctChoice.replace(/\.?\s*$/, '');
 
-  // Vérifier si le choix ne contient que des numéros séparés par virgules/et
-  // Ex: "1, 2 et 3" ou "2 et 4" ou "3" ou "1, 2, 3 et 4"
-  if (!/^\d+(\s*,\s*\d+)*(\s+et\s+\d+)?$/.test(cleaned)) return correctChoice;
+  // Vérifier si le choix ne contient que des numéros séparés par virgules/tirets/et
+  // Ex: "1, 2 et 3" ou "2 et 4" ou "3" ou "1, 2, 3 et 4" ou "1 - 3" ou "2 - 4"
+  if (!/^\d+(\s*[,\-–—]\s*\d+)*(\s+et\s+\d+)?$/.test(cleaned)) return correctChoice;
 
   // Extraire les numéros référencés
   const numbers = cleaned.match(/\d+/g);
