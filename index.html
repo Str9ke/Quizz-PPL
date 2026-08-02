@@ -343,7 +343,27 @@
       <div class="home-form-grid">
         <div class="home-form-group">
           <label for="categorie" class="home-label">Catégorie</label>
-          <select id="categorie" class="home-select" onchange="categoryChanged()"></select>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <select id="categorie" class="home-select" onchange="categoryChanged()" style="flex:1;min-width:120px"></select>
+            <!-- Petit menu de filtre par difficulté (facile/moyen/difficile), visible uniquement pour
+                 GLIGLI NAVIGATION EASY/HARD et EASA NAVIGATION — questions analysées une à une, voir
+                 NAV_DIFFICULTY_CATEGORIES dans js/categories.js. Affiché/masqué par
+                 _updateNavDifficultyMenuVisibility(). -->
+            <div id="navDifficultyFilterInline" style="display:none;align-items:center;gap:4px;flex-wrap:wrap" title="Filtrer par difficulté de la question">
+              <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);border-radius:8px;font-size:.75em">
+                <input type="checkbox" id="filterDiffFacileCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+                <span>🟢 Facile<span class="filter-count" id="filterDiffFacileCount"></span></span>
+              </label>
+              <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:8px;font-size:.75em">
+                <input type="checkbox" id="filterDiffMoyenCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+                <span>🟡 Moyen<span class="filter-count" id="filterDiffMoyenCount"></span></span>
+              </label>
+              <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:8px;font-size:.75em">
+                <input type="checkbox" id="filterDiffDifficileCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+                <span>🔴 Difficile<span class="filter-count" id="filterDiffDifficileCount"></span></span>
+              </label>
+            </div>
+          </div>
         </div>
         <div class="home-form-group">
           <label for="nbQuestions" class="home-label">Questions</label>
