@@ -327,6 +327,18 @@
             <span>🔴 Difficile<span class="filter-count" id="objFilterDiffDifficileCount"></span></span>
           </label>
         </div>
+        <!-- Filtre par originalité (originale/doublon), visible uniquement pour RÉGLEMENTATION
+             (voir REGL_ORIGINALITY_CATEGORIES dans js/categories.js). -->
+        <div id="objReglOriginalityFilterInline" style="display:none;align-items:center;gap:6px;flex-wrap:wrap" title="Filtrer par originalité (déjà présente ailleurs ou non)">
+          <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.4);border-radius:8px">
+            <input type="checkbox" id="objFilterOrigOriginaleCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+            <span>🆕 Original<span class="filter-count" id="objFilterOrigOriginaleCount"></span></span>
+          </label>
+          <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(148,163,184,.15);border:1px solid rgba(148,163,184,.4);border-radius:8px">
+            <input type="checkbox" id="objFilterOrigDoublonCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+            <span>🔁 Déjà traité<span class="filter-count" id="objFilterOrigDoublonCount"></span></span>
+          </label>
+        </div>
       </div>
       <button id="objectifStartBtn" class="home-btn-start" onclick="_startObjectifDuJour()">🚀 Lancer ma session du jour</button>
     </div>
@@ -377,6 +389,20 @@
               <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:8px;font-size:.75em">
                 <input type="checkbox" id="filterDiffDifficileCheckbox" onchange="_onModeFilterCheckboxChange(this)">
                 <span>🔴 Difficile<span class="filter-count" id="filterDiffDifficileCount"></span></span>
+              </label>
+            </div>
+            <!-- Petit menu de filtre par originalité (originale/doublon), visible uniquement pour la
+                 catégorie RÉGLEMENTATION — comparée une à une à GLIGLI RÉGLEMENTATION EASY/HARD et
+                 EASA RÉGLEMENTATION, voir REGL_ORIGINALITY_CATEGORIES dans js/categories.js. Affiché/
+                 masqué par _updateReglOriginalityMenuVisibility(). -->
+            <div id="reglOriginalityFilterInline" style="display:none;align-items:center;gap:4px;flex-wrap:wrap" title="Filtrer par originalité (déjà présente ailleurs ou non)">
+              <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.4);border-radius:8px;font-size:.75em">
+                <input type="checkbox" id="filterOrigOriginaleCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+                <span>🆕 Original<span class="filter-count" id="filterOrigOriginaleCount"></span></span>
+              </label>
+              <label class="home-checkbox-label" style="margin:0;padding:3px 7px;background:rgba(148,163,184,.15);border:1px solid rgba(148,163,184,.4);border-radius:8px;font-size:.75em">
+                <input type="checkbox" id="filterOrigDoublonCheckbox" onchange="_onModeFilterCheckboxChange(this)">
+                <span>🔁 Déjà traité<span class="filter-count" id="filterOrigDoublonCount"></span></span>
               </label>
             </div>
           </div>
@@ -477,11 +503,11 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260730a"></script>
-  <script src="js/helpers.js?v=20260802c"></script>
-  <script src="js/categories.js?v=20260802c"></script>
+  <script src="js/helpers.js?v=20260803a"></script>
+  <script src="js/categories.js?v=20260803a"></script>
   <script src="js/stats.js?v=20260720c"></script>
   <script src="js/quiz.js?v=20260802a"></script>
-  <script src="js/init.js?v=20260802b"></script>
+  <script src="js/init.js?v=20260803a"></script>
   <script src="js/offline.js?v=20260728a"></script>
 
   <!-- Sélecteur de voix TTS : population & test -->

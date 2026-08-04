@@ -894,7 +894,13 @@ const _FILTER_CHECKBOX_PAIRS = [
   // cartes ("Configuration du Quiz" ET "Objectif du jour"), comme les autres filtres.
   { flag: 'diff_facile',    ids: ['filterDiffFacileCheckbox', 'objFilterDiffFacileCheckbox'],       countIds: ['filterDiffFacileCount', 'objFilterDiffFacileCount'] },
   { flag: 'diff_moyen',     ids: ['filterDiffMoyenCheckbox', 'objFilterDiffMoyenCheckbox'],         countIds: ['filterDiffMoyenCount', 'objFilterDiffMoyenCount'] },
-  { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox', 'objFilterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount', 'objFilterDiffDifficileCount'] }
+  { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox', 'objFilterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount', 'objFilterDiffDifficileCount'] },
+  // Filtre par ORIGINALITÉ (question originale vs doublon d'une question déjà présente sous une
+  // autre forme dans GLIGLI RÉGLEMENTATION EASY/HARD ou EASA RÉGLEMENTATION), analysé au contenu —
+  // uniquement pertinent pour la catégorie RÉGLEMENTATION (seule annotée), voir
+  // REGL_ORIGINALITY_CATEGORIES dans categories.js.
+  { flag: 'orig_originale', ids: ['filterOrigOriginaleCheckbox', 'objFilterOrigOriginaleCheckbox'], countIds: ['filterOrigOriginaleCount', 'objFilterOrigOriginaleCount'] },
+  { flag: 'orig_doublon',   ids: ['filterOrigDoublonCheckbox', 'objFilterOrigDoublonCheckbox'],     countIds: ['filterOrigDoublonCount', 'objFilterOrigDoublonCount'] }
 ];
 
 /**
@@ -904,7 +910,7 @@ const _FILTER_CHECKBOX_PAIRS = [
  * s'il était traité comme les autres, le cocher seul viderait le résultat (aucune question ne
  * "correspond" à "plusratees" au sens membership du filtre OR).
  */
-const _MEMBERSHIP_FILTER_FLAGS = ['marquees', 'importantes', 'avecnotes', 'aucune', 'avecexplication', 'diff_facile', 'diff_moyen', 'diff_difficile'];
+const _MEMBERSHIP_FILTER_FLAGS = ['marquees', 'importantes', 'avecnotes', 'aucune', 'avecexplication', 'diff_facile', 'diff_moyen', 'diff_difficile', 'orig_originale', 'orig_doublon'];
 
 /**
  * _hasOfficialExplication(q) – Vrai si la question a un commentaire/explication OFFICIEL fourni
