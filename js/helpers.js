@@ -896,9 +896,9 @@ const _FILTER_CHECKBOX_PAIRS = [
   { flag: 'diff_moyen',     ids: ['filterDiffMoyenCheckbox', 'objFilterDiffMoyenCheckbox'],         countIds: ['filterDiffMoyenCount', 'objFilterDiffMoyenCount'] },
   { flag: 'diff_difficile', ids: ['filterDiffDifficileCheckbox', 'objFilterDiffDifficileCheckbox'], countIds: ['filterDiffDifficileCount', 'objFilterDiffDifficileCount'] },
   // Filtre par ORIGINALITÉ (question originale vs doublon d'une question déjà présente sous une
-  // autre forme dans GLIGLI RÉGLEMENTATION EASY/HARD ou EASA RÉGLEMENTATION), analysé au contenu —
-  // uniquement pertinent pour la catégorie RÉGLEMENTATION (seule annotée), voir
-  // REGL_ORIGINALITY_CATEGORIES dans categories.js.
+  // autre forme dans le(s) fichier(s) GLIGLI EASY/HARD de référence), analysé au contenu —
+  // pertinent pour RÉGLEMENTATION et chaque catégorie EASA (seules annotées), voir
+  // ORIGINALITY_CATEGORIES dans categories.js.
   { flag: 'orig_originale', ids: ['filterOrigOriginaleCheckbox', 'objFilterOrigOriginaleCheckbox'], countIds: ['filterOrigOriginaleCount', 'objFilterOrigOriginaleCount'] },
   { flag: 'orig_doublon',   ids: ['filterOrigDoublonCheckbox', 'objFilterOrigDoublonCheckbox'],     countIds: ['filterOrigDoublonCount', 'objFilterOrigDoublonCount'] }
 ];

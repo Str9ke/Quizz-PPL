@@ -216,7 +216,7 @@ async function initIndex() {
   
   await updateModeCounts();
   if (typeof _updateNavDifficultyMenuVisibility === 'function') _updateNavDifficultyMenuVisibility();
-  if (typeof _updateReglOriginalityMenuVisibility === 'function') _updateReglOriginalityMenuVisibility();
+  if (typeof _updateOriginalityMenuVisibility === 'function') _updateOriginalityMenuVisibility();
 
   // Mode par défaut : "Mixte" (nouvelles + révisions dues), pour que la répétition espacée
   // soit réellement utilisée sans que l'utilisateur ait à y penser à chaque session — SAUF
