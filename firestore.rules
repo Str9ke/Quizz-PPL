@@ -12,6 +12,14 @@ service cloud.firestore {
     }
     match /quizProgress/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+      // Sous-collection dédiée à l'historique des réponses (statusLog), un document par
+      // question — chaque document a sa PROPRE limite Firestore de 1 Mio, indépendante du
+      // document principal ci-dessus. Les règles ne sont PAS héritées automatiquement par
+      // les sous-collections : sans cette entrée, toute lecture/écriture y échouerait avec
+      // permission-denied.
+      match /history/{questionKey} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
     match /navlogNotes/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;

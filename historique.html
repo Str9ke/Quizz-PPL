@@ -34,10 +34,10 @@
   <script src="js/globals.js?v=20260730a"></script>
   <script src="js/helpers.js?v=20260803b"></script>
   <script src="js/categories.js?v=20260803b"></script>
-  <script src="js/stats.js?v=20260720c"></script>
-  <script src="js/quiz.js?v=20260802a"></script>
-  <script src="js/init.js?v=20260803b"></script>
-  <script src="js/offline.js?v=20260728a"></script>
+  <script src="js/stats.js?v=20260804a"></script>
+  <script src="js/quiz.js?v=20260804a"></script>
+  <script src="js/init.js?v=20260804a"></script>
+  <script src="js/offline.js?v=20260804a"></script>
 </head>
 <body>
   <!-- Theme toggle -->
@@ -126,6 +126,7 @@
   (function() {
     let allQuestionsLoaded = [];
     let currentResponses = {};
+    let _historyLogs = {}; // { key: [{status, ts}, ...] } — depuis quizProgress/{uid}/history
     let _notesCache = {};
     let uid = null;
     let _selectedDate = null; // Date object for selected calendar day
@@ -219,6 +220,47 @@
         } catch (e) {}
       } catch (e) {
         console.warn('[historique] Firestore load failed:', e);
+      }
+
+      // Charger l'historique des réponses (statusLog) depuis la sous-collection dédiée
+      // quizProgress/{uid}/history — l'historique complet ne vit plus inline dans le
+      // document principal (voir _migrateStatusLogToSubcollection dans js/offline.js),
+      // chaque document de cette sous-collection ayant sa PROPRE limite Firestore de 1 Mio.
+      try {
+        let histSnap;
+        const histCol = db.collection('quizProgress').doc(uid).collection('history');
+        if (navigator.onLine) {
+          try {
+            histSnap = await Promise.race([
+              histCol.get({ source: 'server' }),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+            ]);
+          } catch (e) {
+            histSnap = await histCol.get();
+          }
+        } else {
+          histSnap = await histCol.get();
+        }
+        histSnap.forEach(function(d) {
+          var data = d.data();
+          if (data && Array.isArray(data.log)) _historyLogs[d.id] = data.log;
+        });
+      } catch (e) {
+        console.warn('[historique] chargement historique (sous-collection) échoué:', e);
+      }
+      // Filet de sécurité : fusionner tout statusLog encore inline (pas encore migré, ex.
+      // migration pas encore passée pour cet utilisateur) avec l'historique de la
+      // sous-collection, pour ne rien perdre pendant la transition.
+      Object.keys(currentResponses).forEach(function(key) {
+        var resp = currentResponses[key];
+        if (!resp || !Array.isArray(resp.statusLog) || !resp.statusLog.length) return;
+        var merged = (_historyLogs[key] || []).concat(resp.statusLog);
+        var dedup = {};
+        merged.forEach(function(e) { dedup[e.status + '_' + e.ts] = e; });
+        _historyLogs[key] = Object.keys(dedup).map(function(k) { return dedup[k]; });
+      });
+      if (typeof _migrateStatusLogToSubcollection === 'function') {
+        _migrateStatusLogToSubcollection(uid).catch(function(e) { console.warn('[historique] migration statusLog:', e); });
       }
 
       document.getElementById('revisionLoading').style.display = 'none';
@@ -560,13 +602,14 @@
     // === Calendar Navigation ===
     function _buildActivityDates() {
       _activityDates.clear();
-      // Scan all responses for dates with statusLog or timestamp
+      // Scan all responses for dates with historique (sous-collection) ou timestamp
       Object.keys(currentResponses).forEach(function(key) {
         var resp = currentResponses[key];
         if (!resp) return;
-        // Use statusLog entries
-        if (resp.statusLog && resp.statusLog.length) {
-          resp.statusLog.forEach(function(e) {
+        // Use history subcollection entries
+        var log = _historyLogs[key];
+        if (log && log.length) {
+          log.forEach(function(e) {
             var d = new Date(e.ts);
             var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             _activityDates.add(k);
@@ -725,9 +768,10 @@
         var resp = currentResponses[key];
         if (!resp) return;
 
-        // Utiliser statusLog si disponible pour reconstituer l'historique du jour
-        if (resp.statusLog && resp.statusLog.length) {
-          var dayEntries = resp.statusLog.filter(function(e) {
+        // Utiliser l'historique (sous-collection) si disponible pour reconstituer le jour
+        var log = _historyLogs[key];
+        if (log && log.length) {
+          var dayEntries = log.filter(function(e) {
             return e.ts >= startMs && e.ts < endMs;
           });
           if (dayEntries.length > 0) {
@@ -739,7 +783,7 @@
           }
         }
 
-        // Fallback : ancien comportement (pas de statusLog)
+        // Fallback : ancien comportement (pas d'historique)
         var ts = null;
         if (resp.timestamp) {
           if (resp.timestamp.seconds !== undefined) ts = resp.timestamp.seconds * 1000;

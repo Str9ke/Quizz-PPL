@@ -56,13 +56,31 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     }
   }
 
+  // Extraire les entrées d'historique en attente (_pendingLogEntry, posé par
+  // _computeSrEntry()) AVANT le merge : elles ne doivent JAMAIS atterrir dans le
+  // document principal quizProgress/{uid} (champ responses.<key>) mais dans la
+  // sous-collection quizProgress/{uid}/history/{key}, qui a sa PROPRE limite de 1 Mio
+  // par document — voir _migrateStatusLogToSubcollection() pour le contexte complet de
+  // cette architecture (avant elle, un historique cumulé sur des milliers de questions
+  // faisait dépasser la limite du document unique et bloquait TOUTE écriture future).
+  const pendingLogEntries = [];
+  const cleanedResponsesToSave = {};
+  Object.keys(responsesToSave).forEach(key => {
+    const incoming = { ...responsesToSave[key] };
+    if (incoming._pendingLogEntry) {
+      pendingLogEntries.push({ key, logEntry: incoming._pendingLogEntry });
+      delete incoming._pendingLogEntry;
+    }
+    cleanedResponsesToSave[key] = incoming;
+  });
+
   // Merger les réponses en mémoire
   const merged = { ...existing };
-  Object.keys(responsesToSave).forEach(key => {
+  Object.keys(cleanedResponsesToSave).forEach(key => {
     if (merged[key]) {
-      merged[key] = { ...merged[key], ...responsesToSave[key] };
+      merged[key] = { ...merged[key], ...cleanedResponsesToSave[key] };
     } else {
-      merged[key] = responsesToSave[key];
+      merged[key] = cleanedResponsesToSave[key];
     }
   });
 
@@ -72,21 +90,49 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
   // de la page (ex : téléphone sauvegarde nextReview → PC ne le voit pas encore → PC sauvegarde
   // et ne doit pas écraser le nextReview du téléphone).
   try {
+    const mainRef = db.collection('quizProgress').doc(uid);
     const firestoreUpdate = { lastUpdated: firebase.firestore.Timestamp.now() };
-    Object.keys(responsesToSave).forEach(key => {
+    Object.keys(cleanedResponsesToSave).forEach(key => {
       firestoreUpdate['responses.' + key] = _stripUndefinedFields(merged[key]);
     });
 
+    // writeHistoryEntries() : écrit chaque nouvelle entrée de log dans son propre document
+    // de sous-collection via arrayUnion (idempotent — un retry ne duplique jamais l'entrée).
+    const writeHistoryEntries = async () => {
+      if (!pendingLogEntries.length) return;
+      const histBatch = db.batch();
+      pendingLogEntries.forEach(({ key, logEntry }) => {
+        histBatch.set(
+          mainRef.collection('history').doc(key),
+          { log: firebase.firestore.FieldValue.arrayUnion(logEntry) },
+          { merge: true }
+        );
+      });
+      await histBatch.commit();
+    };
+
     try {
-      // update() ne fonctionne que si le doc existe — cas normal après la 1ère session
-      await db.collection('quizProgress').doc(uid).update(firestoreUpdate);
+      // update() ne fonctionne que si le doc existe — cas normal après la 1ère session.
+      // Groupé dans un batch avec les écritures d'historique pour que les deux
+      // n'aboutissent (ou n'échouent) qu'ensemble.
+      const batch = db.batch();
+      batch.update(mainRef, firestoreUpdate);
+      pendingLogEntries.forEach(({ key, logEntry }) => {
+        batch.set(
+          mainRef.collection('history').doc(key),
+          { log: firebase.firestore.FieldValue.arrayUnion(logEntry) },
+          { merge: true }
+        );
+      });
+      await batch.commit();
     } catch (e) {
       if (e.code === 'not-found') {
-        // Premier enregistrement : créer le document avec set()
+        // Premier enregistrement : créer le document avec set(), puis écrire l'historique
         await db.collection('quizProgress').doc(uid).set(
           { responses: _stripUndefinedFields(merged), lastUpdated: firebase.firestore.Timestamp.now() },
           { merge: true }
         );
+        await writeHistoryEntries();
       } else {
         throw e;
       }
@@ -107,6 +153,92 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
       currentResponses = normalizeResponses(merged);
     }
     throw e;
+  }
+}
+
+/**
+ * _migrateStatusLogToSubcollection() – Déplace le champ statusLog encore présent dans le
+ * document principal quizProgress/{uid} (ancien format, avant l'introduction de la
+ * sous-collection quizProgress/{uid}/history) vers un document dédié par question dans
+ * cette sous-collection, PUIS retire statusLog du document principal.
+ *
+ * Conçue pour être appelée sans risque à chaque chargement de page (idempotente et
+ * retry-safe) :
+ *  - L'écriture vers la sous-collection utilise arrayUnion → la relancer plusieurs fois
+ *    ne duplique jamais une entrée déjà migrée.
+ *  - La suppression du statusLog inline dans le document principal n'est effectuée
+ *    QU'APRÈS confirmation que l'écriture vers la sous-collection a réussi pour ce lot :
+ *    en cas d'échec réseau à n'importe quelle étape, aucune donnée n'est perdue — au pire
+ *    elle reste temporairement dupliquée (présente aux deux endroits) jusqu'au prochain
+ *    passage, jamais absente des deux.
+ *  - Une fois tous les statusLog inline migrés pour un utilisateur, les appels suivants
+ *    ne trouvent plus rien à faire et ressortent immédiatement (aucune lecture/écriture
+ *    Firestore superflue).
+ */
+async function _migrateStatusLogToSubcollection(uid) {
+  if (!uid || typeof currentResponses === 'undefined' || !currentResponses) return;
+  const keysToMigrate = Object.keys(currentResponses).filter(k => {
+    const r = currentResponses[k];
+    return r && Array.isArray(r.statusLog) && r.statusLog.length > 0;
+  });
+  if (!keysToMigrate.length) return;
+
+  const mainRef = db.collection('quizProgress').doc(uid);
+  const CHUNK = 400; // marge sous la limite de 500 opérations par batch Firestore
+  for (let i = 0; i < keysToMigrate.length; i += CHUNK) {
+    const chunk = keysToMigrate.slice(i, i + CHUNK);
+    try {
+      const histBatch = db.batch();
+      chunk.forEach(k => {
+        const log = currentResponses[k].statusLog;
+        histBatch.set(
+          mainRef.collection('history').doc(k),
+          { log: firebase.firestore.FieldValue.arrayUnion(...log) },
+          { merge: true }
+        );
+      });
+      await histBatch.commit();
+
+      // Uniquement après succès confirmé de l'écriture ci-dessus : retirer le statusLog
+      // inline du document principal (via update() + FieldValue.delete(), en notation
+      // pointée, pour ne toucher QUE ce champ et laisser le reste de chaque entrée intact).
+      const mainUpdate = {};
+      chunk.forEach(k => { mainUpdate['responses.' + k + '.statusLog'] = firebase.firestore.FieldValue.delete(); });
+      await mainRef.update(mainUpdate);
+
+      // Refléter localement pour éviter une re-tentative inutile dans la même session
+      chunk.forEach(k => { if (currentResponses[k]) delete currentResponses[k].statusLog; });
+    } catch (e) {
+      console.warn('[offline] Migration statusLog → sous-collection : échec sur ce lot, on réessaiera au prochain chargement de page.', e);
+      // Ne pas continuer les lots suivants sur une erreur réseau probable — inutile de
+      // les faire tous échouer un par un ; le prochain chargement de page reprendra
+      // exactement là où on s'est arrêté (les clés déjà migrées sont ignorées car leur
+      // statusLog local a été supprimé ci-dessus).
+      return;
+    }
+  }
+}
+
+/**
+ * _deleteHistorySubcollection() – Supprime intégralement la sous-collection
+ * quizProgress/{uid}/history. Firestore ne supprime PAS automatiquement les
+ * sous-collections quand le document parent (ou un de ses champs) est effacé — il n'existe
+ * pas d'API de suppression récursive côté client, il faut donc énumérer puis supprimer
+ * chaque document explicitement. Utilisée par resetStats() (js/stats.js) pour que
+ * "Réinitialiser les statistiques" efface bien TOUT l'historique, y compris celui migré
+ * hors du document principal.
+ */
+async function _deleteHistorySubcollection(uid) {
+  if (!uid) return;
+  const histCol = db.collection('quizProgress').doc(uid).collection('history');
+  const snap = await histCol.get();
+  if (snap.empty) return;
+  const docs = snap.docs;
+  const CHUNK = 450;
+  for (let i = 0; i < docs.length; i += CHUNK) {
+    const batch = db.batch();
+    docs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref));
+    await batch.commit();
   }
 }
 

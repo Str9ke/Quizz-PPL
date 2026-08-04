@@ -168,6 +168,9 @@ async function initIndex() {
     }
     const docData = docResp.exists ? docResp.data() : {};
     currentResponses = normalizeResponses(docData.responses || {});
+    if (typeof _migrateStatusLogToSubcollection === 'function') {
+      _migrateStatusLogToSubcollection(uid).catch(e => console.warn('[initIndex] migration statusLog:', e));
+    }
     // Charger le cache de notes pour le mode "Avec notes"
     _notesCache = docData.notes || {};
     _dailyHist = docData.dailyHistory || {};
