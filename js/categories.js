@@ -31,11 +31,24 @@ const _fileToCategory = {
 // Seules ces catégories affichent le petit menu de filtre par difficulté sur l'accueil.
 const NAV_DIFFICULTY_CATEGORIES = ['GLIGLI NAVIGATION EASY', 'GLIGLI NAVIGATION HARD', 'EASA NAVIGATION'];
 
-// Catégorie dont les questions ont été comparées une à une à GLIGLI RÉGLEMENTATION EASY/HARD +
-// EASA RÉGLEMENTATION pour détecter les doublons (question testant le même fait réglementaire
-// sous une autre forme) — voir questions_reglementation.json (champ "originalite" :
-// "originale"/"doublon"). Seule cette catégorie affiche le menu de filtre par originalité.
-const REGL_ORIGINALITY_CATEGORIES = ['RÉGLEMENTATION'];
+// Catégories dont les questions ont été comparées une à une à leur(s) référence(s) GLIGLI
+// EASY/HARD pour détecter les doublons (question testant le même fait sous une autre forme) —
+// champ "originalite" ("originale"/"doublon") ajouté à chaque question du fichier JSON de la
+// catégorie. RÉGLEMENTATION (banque à part, non-GLIGLI/EASA) est comparée à GLIGLI RÉGLEMENTATION
+// EASY/HARD + EASA RÉGLEMENTATION ; chaque catégorie EASA est comparée à son couple GLIGLI
+// EASY/HARD thématiquement équivalent. Seules ces catégories affichent le menu de filtre par
+// originalité (🆕 Original / 🔁 Déjà traité) sur l'accueil.
+const ORIGINALITY_CATEGORIES = [
+  'RÉGLEMENTATION',
+  'EASA PROCEDURES',
+  'EASA AERODYNAMIQUE',
+  'EASA NAVIGATION',
+  "EASA CONNAISSANCE DE L'AVION",
+  'EASA METEOROLOGIE',
+  'EASA PERFORMANCE ET PLANIFICATION',
+  'EASA REGLEMENTATION',
+  'EASA PERFORMANCES HUMAINES'
+];
 
 /**
  * resolveEpreuveQuestions(data, epreuveCategoryName) – Résout les questions d'un fichier épreuve.
@@ -925,18 +938,18 @@ function _updateNavDifficultyMenuVisibility() {
 }
 
 /**
- * _updateReglOriginalityMenuVisibility() – Même principe que _updateNavDifficultyMenuVisibility()
- * mais pour le menu "🆕 Original / 🔁 Déjà traité", visible uniquement pour la catégorie
- * RÉGLEMENTATION (voir REGL_ORIGINALITY_CATEGORIES) — seule catégorie dont les questions ont un
- * champ "originalite" (comparaison avec GLIGLI RÉGLEMENTATION EASY/HARD + EASA RÉGLEMENTATION).
+ * _updateOriginalityMenuVisibility() – Même principe que _updateNavDifficultyMenuVisibility()
+ * mais pour le menu "🆕 Original / 🔁 Déjà traité", visible pour RÉGLEMENTATION et chaque
+ * catégorie EASA (voir ORIGINALITY_CATEGORIES) — seules catégories dont les questions ont un
+ * champ "originalite" (comparaison avec leur(s) référence(s) GLIGLI EASY/HARD).
  */
-function _updateReglOriginalityMenuVisibility() {
+function _updateOriginalityMenuVisibility() {
   const els = ['reglOriginalityFilterInline', 'objReglOriginalityFilterInline']
     .map(id => document.getElementById(id))
     .filter(Boolean);
   if (!els.length) return;
   const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
-  const show = REGL_ORIGINALITY_CATEGORIES.includes(normalizedSel);
+  const show = ORIGINALITY_CATEGORIES.includes(normalizedSel);
   els.forEach(el => { el.style.display = show ? 'flex' : 'none'; });
   if (!show) {
     ['filterOrigOriginaleCheckbox', 'filterOrigDoublonCheckbox',
@@ -952,7 +965,7 @@ async function categoryChanged() {
   const selected = document.getElementById("categorie").value;
   selectedCategory = selected;
   _updateNavDifficultyMenuVisibility();
-  _updateReglOriginalityMenuVisibility();
+  _updateOriginalityMenuVisibility();
   // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
   const modeSelect = document.getElementById('mode');
   const previousMode = modeSelect ? modeSelect.value : 'mixte';
