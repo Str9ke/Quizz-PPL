@@ -31,6 +31,12 @@ const _fileToCategory = {
 // Seules ces catégories affichent le petit menu de filtre par difficulté sur l'accueil.
 const NAV_DIFFICULTY_CATEGORIES = ['GLIGLI NAVIGATION EASY', 'GLIGLI NAVIGATION HARD', 'EASA NAVIGATION'];
 
+// Catégorie dont les questions ont été comparées une à une à GLIGLI RÉGLEMENTATION EASY/HARD +
+// EASA RÉGLEMENTATION pour détecter les doublons (question testant le même fait réglementaire
+// sous une autre forme) — voir questions_reglementation.json (champ "originalite" :
+// "originale"/"doublon"). Seule cette catégorie affiche le menu de filtre par originalité.
+const REGL_ORIGINALITY_CATEGORIES = ['RÉGLEMENTATION'];
+
 /**
  * resolveEpreuveQuestions(data, epreuveCategoryName) – Résout les questions d'un fichier épreuve.
  * Les entrées avec ref_file/ref_index sont résolues depuis _jsonCache avec leur catégorie d'origine.
@@ -308,6 +314,8 @@ async function updateModeCounts(filterFlags) {
       let vMarquees = 0, vImportantes = 0, vAvecNotes = 0, vAucune = 0, vAvecExpl = 0;
       let rawDiffFacile = 0, rawDiffMoyen = 0, rawDiffDifficile = 0;
       let vDiffFacile = 0, vDiffMoyen = 0, vDiffDifficile = 0;
+      let rawOrigOriginale = 0, rawOrigDoublon = 0;
+      let vOrigOriginale = 0, vOrigDoublon = 0;
       list.forEach(q => {
         const key = getKeyFor(q);
         const r = currentResponses[key];
@@ -326,6 +334,8 @@ async function updateModeCounts(filterFlags) {
         if (q.difficulte === 'facile')    { rawDiffFacile++;    if (seen) vDiffFacile++; }
         if (q.difficulte === 'moyen')     { rawDiffMoyen++;     if (seen) vDiffMoyen++; }
         if (q.difficulte === 'difficile') { rawDiffDifficile++; if (seen) vDiffDifficile++; }
+        if (q.originalite === 'originale') { rawOrigOriginale++; if (seen) vOrigOriginale++; }
+        if (q.originalite === 'doublon')   { rawOrigDoublon++;   if (seen) vOrigDoublon++; }
       });
       _updateFilterCheckboxCounts({
         marquees: { total: rawMarquees, vues: vMarquees },
@@ -336,7 +346,9 @@ async function updateModeCounts(filterFlags) {
         plusratees: rawPlusRatees,
         diff_facile: { total: rawDiffFacile, vues: vDiffFacile },
         diff_moyen: { total: rawDiffMoyen, vues: vDiffMoyen },
-        diff_difficile: { total: rawDiffDifficile, vues: vDiffDifficile }
+        diff_difficile: { total: rawDiffDifficile, vues: vDiffDifficile },
+        orig_originale: { total: rawOrigOriginale, vues: vOrigOriginale },
+        orig_doublon: { total: rawOrigDoublon, vues: vOrigDoublon }
       });
     }
 
@@ -358,6 +370,8 @@ async function updateModeCounts(filterFlags) {
         if (membershipFlags.includes('diff_facile') && q.difficulte === 'facile') return true;
         if (membershipFlags.includes('diff_moyen') && q.difficulte === 'moyen') return true;
         if (membershipFlags.includes('diff_difficile') && q.difficulte === 'difficile') return true;
+        if (membershipFlags.includes('orig_originale') && q.originalite === 'originale') return true;
+        if (membershipFlags.includes('orig_doublon') && q.originalite === 'doublon') return true;
         return false;
       });
     }
@@ -910,11 +924,35 @@ function _updateNavDifficultyMenuVisibility() {
   }
 }
 
+/**
+ * _updateReglOriginalityMenuVisibility() – Même principe que _updateNavDifficultyMenuVisibility()
+ * mais pour le menu "🆕 Original / 🔁 Déjà traité", visible uniquement pour la catégorie
+ * RÉGLEMENTATION (voir REGL_ORIGINALITY_CATEGORIES) — seule catégorie dont les questions ont un
+ * champ "originalite" (comparaison avec GLIGLI RÉGLEMENTATION EASY/HARD + EASA RÉGLEMENTATION).
+ */
+function _updateReglOriginalityMenuVisibility() {
+  const els = ['reglOriginalityFilterInline', 'objReglOriginalityFilterInline']
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+  if (!els.length) return;
+  const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
+  const show = REGL_ORIGINALITY_CATEGORIES.includes(normalizedSel);
+  els.forEach(el => { el.style.display = show ? 'flex' : 'none'; });
+  if (!show) {
+    ['filterOrigOriginaleCheckbox', 'filterOrigDoublonCheckbox',
+     'objFilterOrigOriginaleCheckbox', 'objFilterOrigDoublonCheckbox'].forEach(id => {
+      const cb = document.getElementById(id);
+      if (cb && cb.checked) { cb.checked = false; _onModeFilterCheckboxChange(cb); }
+    });
+  }
+}
+
 async function categoryChanged() {
   const myToken = ++_categoryChangeToken;
   const selected = document.getElementById("categorie").value;
   selectedCategory = selected;
   _updateNavDifficultyMenuVisibility();
+  _updateReglOriginalityMenuVisibility();
   // Mémoriser le mode actuellement sélectionné AVANT la mise à jour
   const modeSelect = document.getElementById('mode');
   const previousMode = modeSelect ? modeSelect.value : 'mixte';
@@ -1049,6 +1087,8 @@ async function filtrerQuestions(mode, nb, filterFlags) {
       if (membershipFlagsFQ.includes('diff_facile') && q.difficulte === 'facile') return true;
       if (membershipFlagsFQ.includes('diff_moyen') && q.difficulte === 'moyen') return true;
       if (membershipFlagsFQ.includes('diff_difficile') && q.difficulte === 'difficile') return true;
+      if (membershipFlagsFQ.includes('orig_originale') && q.originalite === 'originale') return true;
+      if (membershipFlagsFQ.includes('orig_doublon') && q.originalite === 'doublon') return true;
       return false;
     });
   }
