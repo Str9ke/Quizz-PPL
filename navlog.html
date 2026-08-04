@@ -477,6 +477,23 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-table tr.nl-recap-leg-row:hover td.nl-recap-name{background:var(--bg-container)}
 .nl-recap-table td.nl-recap-leg-arrow{padding-left:14px;color:#5b8def;font-weight:700;font-style:normal;white-space:normal}
 .nl-recap-leg-num{display:inline-block;font-size:.72em;font-weight:800;background:#1565c0;color:#fff;border-radius:8px;padding:1px 6px;margin-right:5px;vertical-align:middle}
+/* Fanion WAYPOINT : chaque point (départ, intermédiaire ET arrivée) a maintenant sa PROPRE
+   ligne fine (nl-recap-point-row), distincte de la ligne LEG qui porte les données de
+   navigation pures — au lieu du nom fondu dans "Leg N → Nom" sur la même ligne que les
+   chiffres. La pointe en forme de flèche (clip-path) casse volontairement l'alignement de
+   la grille pour qu'un nom de point se repère d'un coup d'œil, jamais confondu avec une
+   valeur de colonne comme les autres. */
+.nl-recap-wp-flag{
+  position:relative;display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(90deg,#3949ab,#4a5bc4);color:#fff;font-weight:700;
+  clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+  padding:5px 22px 5px 10px;
+}
+.nl-recap-wp-flag.nl-recap-wp-flag-arr{background:linear-gradient(90deg,#2e7d32,#43a047)}
+.nl-recap-wp-flag .nl-recap-num-badge{background:rgba(255,255,255,.28);color:#fff}
+.nl-recap-wp-flag .nl-recap-role-tag{background:rgba(255,255,255,.24);color:#fff}
+.nl-recap-wp-flag .nl-recap-name-input:hover{border-color:rgba(255,255,255,.5)}
+.nl-recap-wp-flag .nl-recap-name-input:focus{border-color:#fff;background:rgba(255,255,255,.18)}
 .nl-recap-stage-title{font-weight:800;font-size:.92em;margin:14px 0 6px;padding:6px 10px;border-radius:8px;background:rgba(102,126,234,.16);color:#8fa0f5}
 .nl-recap-stage-title:first-child{margin-top:0}
 .nl-recap-table tr.nl-recap-leg-row td.nl-recap-cap{font-style:normal}
@@ -7038,12 +7055,12 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
   /* Altitude de référence pour détecter un changement : celle du point de départ du segment,
      mise à jour à chaque leg (voir plus bas). */
   var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
-  /* UNE seule ligne par point (pas une ligne "point" vide + une ligne "leg" séparée) : chaque
-     point (sauf le départ) porte à la fois les données du leg qui y mène ET ses propres nom/
-     rôle/actions (Dép/Arr/Couper/✕). Le départ (k=0), qui n'a pas de leg entrant, garde une
-     ligne à lui sans données de navigation (rien à y afficher). Ancienne version : une ligne
-     "point" avec seulement le nom, suivie d'une ligne "leg" séparée avec les données — deux
-     lignes pour une seule information utile, avec une ligne à moitié vide au milieu. */
+  /* Chaque point (départ, intermédiaire ET arrivée) a sa PROPRE ligne "fanion", fine et
+     décalée visuellement de la ligne LEG voisine (voir .nl-recap-wp-flag) — plutôt que le
+     nom du point fondu dans "Leg N → Nom" au milieu des données chiffrées de la ligne LEG.
+     Ancienne version : un nom de point qu'on repérait seulement en lisant toute la ligne de
+     navigation ; ici le fanion, en pointe, casse volontairement l'alignement de la grille
+     pour qu'un point se voie d'un coup d'œil, jamais confondu avec une valeur de colonne. */
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
     var wp=waypoints[i];
@@ -7068,35 +7085,29 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
         'oninput="window._syncWaypointName('+i+',this.value,this)" '+
         'title="Renommer ce point">';
     var tagsHtml=(wp.isEtape?' 🟠':'')+(roleLabel?' <span class="nl-recap-role-tag">'+roleLabel+'</span>':'')+viaCircuitTag+unconfWarning;
+    var flagClass='nl-recap-wp-flag'+(roleLabel==='Arrivée'?' nl-recap-wp-flag-arr':'');
+    /* Boutons Dép/Arr/Couper conservés UNIQUEMENT sur départ/arrivée réelle (comportement
+       historique inchangé : canType est déjà false pour ces deux extrémités, donc
+       actionsHtml s'y réduisait déjà à delBtn seul — cette variable ne fait que rendre ce
+       cas explicite plutôt que de dépendre implicitement de canType). */
+    var ptActionsHtml=(k===0||isArrivalViaCircuit)?delBtn:actionsHtml;
+    var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
+    rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
+      '<td class="nl-recap-name"><span class="'+flagClass+'"><span class="nl-recap-num-badge">'+(k+1)+'</span>'+nameInputHtml+tagsHtml+'</span></td>'+
+      '<td class="nl-recap-point-fill" colspan="7"></td>'+
+      '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
+      '<td class="nl-recap-type">'+ptActionsHtml+'</td>'+
+    '</tr>';
 
-    if(k===0){
-      /* Départ : pas de leg entrant, rien à afficher dans les colonnes de navigation. */
-      var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
-      rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
-        '<td class="nl-recap-name"><span class="nl-recap-num-badge">1</span>'+nameInputHtml+tagsHtml+'</td>'+
-        '<td class="nl-recap-point-fill" colspan="7"></td>'+
-        '<td class="nl-recap-comment">'+ptCommentHtml+'</td>'+
-        '<td class="nl-recap-type">'+delBtn+'</td>'+
-      '</tr>';
-      continue;
-    }
+    if(k===0) continue; /* départ : pas de leg entrant */
 
     var prevI=segIdx[k-1];
     var prevWp=waypoints[prevI];
     /* Dernier leg menant à un aérodrome d'arrivée précédé de ses points de circuit arrivée :
        ne PAS dessiner ce leg (il sauterait par-dessus les points de circuit masqués et
-       simulerait un "direct piste" — le leg fantôme signalé). Ligne quand même émise pour ce
-       point (arrivée), simplement sans données de navigation, avec le tag "via circuit". */
-    if(k===segIdx.length-1 && isArrivalViaCircuit){
-      var ptCommentHtml2='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
-      rows+='<tr class="nl-recap-point-row'+(wp.isEtape?' nl-recap-etape':'')+'">'+
-        '<td class="nl-recap-name"><span class="nl-recap-num-badge">'+(k+1)+'</span>'+nameInputHtml+tagsHtml+'</td>'+
-        '<td class="nl-recap-point-fill" colspan="7"></td>'+
-        '<td class="nl-recap-comment">'+ptCommentHtml2+'</td>'+
-        '<td class="nl-recap-type">'+delBtn+'</td>'+
-      '</tr>';
-      continue;
-    }
+       simulerait un "direct piste" — le leg fantôme signalé). Le point (arrivée) a déjà reçu
+       sa ligne fanion ci-dessus, avec le tag "via circuit". */
+    if(k===segIdx.length-1 && isArrivalViaCircuit) continue;
 
     var dist=0,routeTrue=0;
     if(prevWp.lat!==null&&prevWp.lon!==null&&wp.lat!==null&&wp.lon!==null){
@@ -7131,15 +7142,13 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
     prevLegAlt=nextAlt;
 
     /* Numéro de LEG (pas de point) affiché ici, propre à ce segment (redémarre à 1 à chaque
-       étape). Nom du point d'ARRIVÉE de ce leg toujours éditable (input). Le nom du point de
-       DÉPART de ce leg (prevName) n'est PAS répété ici : il est déjà affiché, éditable, sur la
-       ligne précédente (son propre "Leg N-1 → prevName", ou la ligne Départ pour le tout premier
-       leg) — le répéter en tête de cette ligne-ci créait un doublon visuel immédiat, le même nom
-       apparaissant deux fois de suite (fin d'une ligne, début de la suivante) sans rien
-       apporter. Actions (Dép/Arr/Couper/✕) du point d'arrivée regroupées ici : elles
-       concernaient CE point, pas "le leg" au sens abstrait, mais vivent sur son unique ligne. */
+       étape) — le nom du point d'arrivée vit désormais sur SA PROPRE ligne fanion (émise
+       juste au-dessus, en tout début de cette itération), plus dans cette ligne LEG qui ne
+       porte plus que les données de navigation pures. Actions (Dép/Arr/Couper/✕) déplacées
+       sur la ligne fanion du point d'arrivée (ptActionsHtml, ci-dessus) : elles concernaient
+       CE point, pas "le leg" au sens abstrait. */
     rows+='<tr class="nl-recap-leg-row'+(wp.isEtape?' nl-recap-etape':'')+'" onmouseenter="window._highlightRecapLeg('+prevI+','+i+')" onmouseleave="window._clearRecapLegHighlight()">'+
-      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span> → '+nameInputHtml+tagsHtml+'</td>'+
+      '<td class="nl-recap-name nl-recap-leg-arrow"><span class="nl-recap-leg-num">Leg '+legNum+'</span></td>'+
       '<td class="'+altCellClass.trim()+'"><input class="nl-recap-alt-input" type="number" step="100" value="'+nextAlt+'" data-idx="'+i+'" onchange="window._setRecapAlt('+i+',this.value)" title="Altitude pour ce segment (éditable)">'+altChangeHtml+'</td>'+
       '<td>'+routeT+'</td>'+
       '<td class="nl-recap-cap">'+hdgMTxt+'</td>'+
@@ -7148,7 +7157,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td class="nl-recap-cap">'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td class="nl-recap-comment">'+legCommentHtml+'</td>'+
-      '<td class="nl-recap-type">'+actionsHtml+'</td>'+
+      '<td class="nl-recap-type"></td>'+
     '</tr>';
   }
   var depName=(waypoints[segIdx[0]]&&waypoints[segIdx[0]].name)||'?';
@@ -7159,7 +7168,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
   return titleHtml+
     '<div class="nl-recap-table-wrap">'+
     '<table class="nl-recap-table" id="navlogRecapTableEl'+(tableIdx!==null?tableIdx:'')+'">'+
-      '<thead><tr><th>Point</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Commentaires</th><th>Actions</th></tr></thead>'+
+      '<thead><tr><th>Waypoint</th><th>Alt</th><th>Route T</th><th class="nl-recap-cap">Cap M</th><th>Dist</th><th>GS</th><th>ETE</th><th>ETA</th><th>Commentaires</th><th>Actions</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
     '</table>'+
     '</div>';
