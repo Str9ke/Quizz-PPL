@@ -113,6 +113,9 @@
       "Protéger le stockage" demande au navigateur de ne pas effacer les questions/ta progression hors-ligne sous pression de stockage.
       "Forcer le téléchargement complet" retélécharge tous les fichiers nécessaires au fonctionnement hors-ligne (à faire en Wi-Fi, avant de partir).
     </p>
+    <p class="cfg-hint" style="margin-top:8px">
+      La mise à jour de l'appli se fait automatiquement, mais UNIQUEMENT quand tu l'ouvres en étant connecté — un navigateur ne vérifie jamais les mises à jour en arrière-plan pendant que l'appli est fermée. Ouvre-la donc en Wi-Fi juste avant un vol : la nouvelle version se télécharge et s'active alors toute seule (rechargement automatique), sans bouton à cliquer. La ligne "Version en cache" ci-dessus te confirme quelle version tourne réellement sur cet appareil, et "Dernière synchro." te confirme que tes réponses les plus récentes ont bien atteint le serveur.
+    </p>
     <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;gap:8px;flex-wrap:wrap;align-items:center">
       <div id="cfgLocalStorageUsage" style="font-size:.85em;flex:1;min-width:200px"></div>
       <button type="button" class="stats-btn" onclick="_cfgClearRegenerableCaches()" style="padding:6px 14px">🧹 Vider les caches Navlog (PDF/cartes)</button>
@@ -476,7 +479,8 @@
     }
     async function _cfgCheckOfflineReadiness() {
       const r = { swActive: false, cacheFileCount: 0, criticalFilesOk: false,
-        persistenceStatus: 'checking', storagePersisted: false, quota: null };
+        persistenceStatus: 'checking', storagePersisted: false, quota: null,
+        appVersion: null, lastSync: null, lastSyncFromServer: false };
 
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.getRegistration().catch(() => null);
@@ -495,6 +499,12 @@
           const criticalUrls = ['quiz.html', 'index.html', 'js/quiz.js', 'js/offline.js', 'questions_reglementation.json'];
           const checks = await Promise.all(criticalUrls.map(u => caches.match(u).then(m => !!m)));
           r.criticalFilesOk = checks.every(Boolean);
+          // Nom du cache actif du Service Worker (ex: "quiz-ppl-v88a") — permet de vérifier
+          // "quelle version tourne réellement sur cet appareil", même hors-ligne. Les anciens
+          // caches sont supprimés à l'activation d'une nouvelle version (voir sw.js), donc il
+          // n'en reste normalement qu'un seul portant ce préfixe.
+          const appCache = keys.find(k => k.startsWith('quiz-ppl-v'));
+          r.appVersion = appCache || null;
         } catch (e) { console.warn('[offline-diag] cache check failed', e); }
       }
 
@@ -507,6 +517,34 @@
       if (navigator.storage && navigator.storage.estimate) {
         r.quota = await navigator.storage.estimate().catch(() => null);
       }
+
+      // Horodatage de la dernière écriture confirmée sur le serveur (champ "lastUpdated" posé
+      // à chaque sauvegarde de réponse — voir js/offline.js). C'est la façon la plus fiable de
+      // vérifier que la progression saisie hors-ligne a bien fini par remonter : si ce chrono
+      // reste "vieux" alors que tu viens de répondre à des questions en étant reconnecté depuis
+      // un moment, la synchronisation n'a pas abouti.
+      try {
+        const cfgUid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+        if (cfgUid) {
+          let doc = null;
+          if (navigator.onLine) {
+            try {
+              doc = await Promise.race([
+                db.collection('quizProgress').doc(cfgUid).get({ source: 'server' }),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+              ]);
+              r.lastSyncFromServer = true;
+            } catch (e) { doc = null; }
+          }
+          if (!doc) {
+            doc = await db.collection('quizProgress').doc(cfgUid).get({ source: 'cache' }).catch(() => null);
+            r.lastSyncFromServer = false;
+          }
+          const lu = doc && doc.exists ? doc.data().lastUpdated : null;
+          if (lu && lu.toDate) r.lastSync = lu.toDate();
+        }
+      } catch (e) { console.warn('[offline-diag] lastSync check failed', e); }
+
       return r;
     }
 
@@ -542,10 +580,34 @@
         quotaHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">💾 Stockage utilisé</div><div style="font-size:.85em;color:var(--text-secondary)">' + usedMb + ' Mo / ' + quotaMb + ' Mo disponibles</div></div>';
       }
 
+      // Version de l'appli réellement en cache sur CET appareil (nom du cache SW actif) : sert
+      // à vérifier que la mise à jour la plus récente a bien été appliquée, sans avoir à deviner.
+      const versionHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">📦 Version en cache sur cet appareil</div><div style="font-size:.85em;color:var(--text-secondary)">' +
+        (r.appVersion || 'inconnue — recharge la page en ligne') + '</div></div>';
+
+      // Dernière écriture CONFIRMÉE par le serveur (pas juste "tentée en local") — la seule
+      // façon fiable de vérifier qu'une réponse donnée hors-ligne a bien fini par remonter.
+      let lastSyncHtml = '';
+      if (r.lastSync) {
+        const d = r.lastSync;
+        const now = new Date();
+        const diffMin = Math.round((now - d) / 60000);
+        let relLabel;
+        if (diffMin < 1) relLabel = "à l'instant";
+        else if (diffMin < 60) relLabel = 'il y a ' + diffMin + ' min';
+        else if (diffMin < 1440) relLabel = 'il y a ' + Math.round(diffMin / 60) + ' h';
+        else relLabel = 'il y a ' + Math.round(diffMin / 1440) + ' j';
+        const abs = d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        lastSyncHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">🕐 Dernière synchro. confirmée par le serveur</div><div style="font-size:.85em;color:var(--text-secondary)">' +
+          abs + ' (' + relLabel + (r.lastSyncFromServer ? '' : ' — valeur en cache, pas vérifiée en ligne') + ')</div></div>';
+      } else {
+        lastSyncHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">🕐 Dernière synchro. confirmée par le serveur</div><div style="font-size:.85em;color:var(--text-secondary)">aucune donnée trouvée</div></div>';
+      }
+
       detailsEl.innerHTML = items.map(it =>
         '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">' + (it.ok ? '✅' : '❌') + ' ' + it.label + '</div>' +
         '<div style="font-size:.8em;color:var(--text-secondary);flex:2;min-width:180px">' + (it.ok ? it.okMsg : it.badMsg) + '</div></div>'
-      ).join('') + quotaHtml;
+      ).join('') + quotaHtml + versionHtml + lastSyncHtml;
     }
 
     window._cfgRunOfflineCheck = async function() {
