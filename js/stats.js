@@ -1942,6 +1942,13 @@ async function resetStats() {
         throw e;
       }
     }
+    // L'historique des réponses (statusLog) vit désormais dans la sous-collection
+    // quizProgress/{uid}/history, PAS dans le champ "responses" ci-dessus : la supprimer
+    // séparément est nécessaire, sinon "Réinitialiser les statistiques" laisserait
+    // l'historique complet des anciennes réponses derrière lui.
+    if (typeof _deleteHistorySubcollection === 'function') {
+      try { await _deleteHistorySubcollection(uid); } catch (e) { console.warn('[resetStats] suppression historique:', e); }
+    }
     alert("Les statistiques ont été réinitialisées !");
     window.location.reload();
   } catch (error) {
@@ -2634,12 +2641,32 @@ async function _exportProgress() {
     }
 
     const data = doc.exists ? doc.data() : {};
+    const responses = data.responses || {};
+
+    // Réintégrer l'historique (statusLog) depuis la sous-collection quizProgress/{uid}/history
+    // dans l'export, pour que le fichier de sauvegarde reste un snapshot COMPLET et
+    // autonome — l'historique ne vit plus inline dans le document principal (voir
+    // _migrateStatusLogToSubcollection dans js/offline.js) mais doit quand même apparaître
+    // dans une sauvegarde/export destinée à l'utilisateur.
+    try {
+      const histSnap = await db.collection('quizProgress').doc(uid).collection('history').get();
+      histSnap.forEach(d => {
+        const hData = d.data();
+        if (hData && Array.isArray(hData.log) && hData.log.length) {
+          if (!responses[d.id]) responses[d.id] = {};
+          responses[d.id] = { ...responses[d.id], statusLog: hData.log };
+        }
+      });
+    } catch (e) {
+      console.warn('[exportProgress] chargement historique (sous-collection) échoué:', e);
+    }
+
     // Include localStorage session data as well
     const backup = {
       version: 1,
       exportDate: new Date().toISOString(),
       uid: uid,
-      responses: data.responses || {},
+      responses: responses,
       dailyHistory: data.dailyHistory || {},
       sessionHistory: JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]'),
       symbolesResponses: JSON.parse(localStorage.getItem('symbolesResponses') || '{}'),
@@ -2790,6 +2817,18 @@ function _importProgress() {
       };
       if (backup.dailyHistory) update.dailyHistory = backup.dailyHistory;
       await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+
+      // D'anciennes sauvegardes (exportées avant l'introduction de la sous-collection
+      // d'historique) peuvent contenir un statusLog inline par question : le set() ci-dessus
+      // vient de le réintroduire dans le document principal. Le ressortir immédiatement vers
+      // quizProgress/{uid}/history via la même migration idempotente que celle exécutée au
+      // chargement des pages, pour ne pas réintroduire le risque de dépassement de 1 Mio.
+      if (typeof _migrateStatusLogToSubcollection === 'function') {
+        try {
+          currentResponses = normalizeResponses(backup.responses);
+          await _migrateStatusLogToSubcollection(uid);
+        } catch (e) { console.warn('[importProgress] migration statusLog:', e); }
+      }
 
       // Restore localStorage data
       if (backup.sessionHistory) {

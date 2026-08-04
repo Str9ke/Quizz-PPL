@@ -727,6 +727,9 @@ async function initQuiz() {
   getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(async (doc) => {
     const data = doc.exists ? doc.data() : {};
     currentResponses = normalizeResponses(data.responses || {});
+    if (typeof _migrateStatusLogToSubcollection === 'function') {
+      _migrateStatusLogToSubcollection(uid).catch(e => console.warn('[initQuiz] migration statusLog:', e));
+    }
     _currentSessionCount = data.quizSessionCount || 0;
     // Sync daily stats from Firestore (cross-device)
     const _dailyHist = data.dailyHistory || {};
@@ -1083,18 +1086,16 @@ function _computeSrEntry(q, selectedVal) {
         nextReview: nextReviewMs,
         timestamp: firebase.firestore.Timestamp.now()
     };
-    // Préserver et enrichir le statusLog (historique des réponses par jour). Plafonné à 15
-    // (au lieu de 100 auparavant) : failCount/successCount portent déjà le compte total exact
-    // (voir _srStatsHtml) — le log ne sert qu'à un aperçu récent, pas à stocker l'historique
-    // complet. Avec des milliers de questions répondues, un plafond à 100 entrées par question
-    // fait grossir le document Firestore unique 'quizProgress/{uid}' au-delà de la limite dure
-    // de 1 Mio de Firestore, ce qui fait échouer TOUTE écriture (même sur d'autres questions)
-    // sans qu'aucun indice ne soit visible avant l'ajout du message d'erreur explicite.
-    const existingLog = (currentResponses[key] && currentResponses[key].statusLog) ? [...currentResponses[key].statusLog] : [];
-    existingLog.push({ status, ts: Date.now() });
-    const STATUS_LOG_CAP = 15;
-    if (existingLog.length > STATUS_LOG_CAP) existingLog.splice(0, existingLog.length - STATUS_LOG_CAP);
-    entry.statusLog = existingLog;
+    // Historique des réponses (log par jour, utilisé par historique.html) : PAS stocké
+    // inline sur l'entrée — routé séparément vers la sous-collection quizProgress/{uid}/
+    // history/{key} (voir saveResponsesWithOfflineFallback() dans js/offline.js), qui a sa
+    // PROPRE limite Firestore de 1 Mio par document. Avant cette architecture, un historique
+    // cumulé (jusqu'à 100 entrées/question) dans le document principal unique finissait par
+    // dépasser cette limite sur des milliers de questions répondues, ce qui faisait échouer
+    // TOUTE écriture (même sur d'autres questions) sans aucun indice visible avant l'ajout
+    // du message d'erreur explicite. _pendingLogEntry est un marqueur transitoire : il n'est
+    // jamais persisté tel quel dans responses.<key>, offline.js l'extrait avant d'écrire.
+    entry._pendingLogEntry = { status, ts: Date.now() };
     // Ne pas écraser marked/important si les réponses Firestore n'ont pas encore chargé
     if (wasMarked !== undefined) entry.marked = wasMarked;
     if (wasImportant !== undefined) entry.important = wasImportant;
