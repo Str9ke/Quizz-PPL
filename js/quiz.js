@@ -604,6 +604,14 @@ function afficherBoutonsMarquer() {
     btnHarder.onclick = () => adjustSrFrequency(idx, btnHarder, 'harder');
     row.appendChild(btnHarder);
 
+    // Bouton ✏️ "Corriger la bonne réponse" — déjà posé par _buildCorrectionCardHtml() sur
+    // l'écran de correction, mais cette fonction supprime toute .question-actions-row
+    // existante avant de reconstruire la sienne : on doit donc le réinjecter ici pour ne pas
+    // le faire disparaître.
+    if (typeof _correctOverrideBtnHtml === 'function') {
+      row.insertAdjacentHTML('beforeend', _correctOverrideBtnHtml(key));
+    }
+
     block.appendChild(row);
   });
 }
