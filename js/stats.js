@@ -2312,7 +2312,7 @@ function _computeSrForecast(responses, numDays, validKeys) {
 function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
-  const NUM_DAYS = 14;
+  const NUM_DAYS = 21;
   const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
