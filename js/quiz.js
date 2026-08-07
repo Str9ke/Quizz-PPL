@@ -1103,9 +1103,14 @@ function _computeSrEntry(q, selectedVal) {
     }
     const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
 
+    // NOTE : ni `category` ni `questionId` ne sont stockés ici — les deux sont 100% redondants
+    // avec la CLÉ de l'entrée (getKeyFor(q) = "question_" + catégorie normalisée + "_" + id) et
+    // n'étaient lus nulle part ailleurs dans l'app (write-only, vérifié). Sur un compte avec
+    // des milliers de questions répondues, ces deux champs (dont `category`, une chaîne de
+    // ~15-45 caractères) pesaient un poids mort non négligeable dans le document Firestore
+    // quizProgress/{uid}, plafonné à 1 Mio — voir _stripRedundantFields() (js/stats.js) pour
+    // le nettoyage rétroactif des entrées déjà existantes.
     const entry = {
-        category: q.categorie,
-        questionId: q.id,
         status,
         failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
         successCount: status === 'réussie' ? prevSuccessCount + 1 : prevSuccessCount,
