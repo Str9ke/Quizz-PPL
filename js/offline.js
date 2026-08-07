@@ -63,42 +63,63 @@ const RESPONSE_SHARD_CAPACITY = 2000;
  * retire du document principal — SEULEMENT après confirmation que l'écriture de tous les
  * shards a réussi. Sans effet (retour immédiat) une fois la migration terminée pour cet
  * utilisateur, ou si hors-ligne (on retentera au prochain chargement en ligne).
+ *
+ * PROTECTION CONTRE LES APPELS CONCURRENTS (_migrationInFlight) : sur un même chargement de
+ * page, PLUSIEURS chemins de code peuvent appeler _loadMergedResponses() avant que la première
+ * migration soit terminée — typiquement initQuiz() au chargement ET saveResponsesWithOfflineFallback()
+ * si l'utilisateur répond très vite (avant que window._respKeyShard soit alimenté). Sans cette
+ * protection, une DEUXIÈME migration démarrée en parallèle relit `responses` inline (l'instantané
+ * pré-réponse) et l'écrit dans le shard APRÈS la réponse fraîche qui vient d'y être sauvegardée
+ * séparément par _saveResponsesSharded() — écrasant silencieusement cette réponse fraîche avec
+ * l'ancienne valeur (bug réel constaté : une réponse confirmée "enregistrée" disparaissait après
+ * navigation). En mutualisant l'appel en cours, tout code qui a besoin des shards attend la MÊME
+ * migration au lieu d'en démarrer une seconde qui pourrait se terminer après une écriture fraîche.
  */
+let _migrationInFlight = {};
 async function _migrateResponsesToShards(uid) {
   if (!uid || !navigator.onLine) return { migrated: false };
-  try {
-    const mainRef = db.collection('quizProgress').doc(uid);
-    const doc = await mainRef.get({ source: 'server' }).catch(() => mainRef.get());
-    if (!doc.exists) return { migrated: false };
-    const data = doc.data();
-    const inline = data.responses;
-    if (!inline || !Object.keys(inline).length) return { migrated: false };
+  if (_migrationInFlight[uid]) return _migrationInFlight[uid];
+  const promise = (async () => {
+    try {
+      const mainRef = db.collection('quizProgress').doc(uid);
+      const doc = await mainRef.get({ source: 'server' }).catch(() => mainRef.get());
+      if (!doc.exists) return { migrated: false };
+      const data = doc.data();
+      const inline = data.responses;
+      if (!inline || !Object.keys(inline).length) return { migrated: false };
 
-    // Chunking déterministe (clés triées) : un retry après échec partiel reproduit exactement
-    // le même découpage tant que le champ `responses` inline n'a pas encore été retiré — donc
-    // aucun risque de doublon/incohérence entre deux tentatives.
-    const keys = Object.keys(inline).sort();
-    const shardCount = Math.max(1, Math.ceil(keys.length / RESPONSE_SHARD_CAPACITY));
+      // Chunking déterministe (clés triées) : un retry après échec partiel reproduit exactement
+      // le même découpage tant que le champ `responses` inline n'a pas encore été retiré — donc
+      // aucun risque de doublon/incohérence entre deux tentatives.
+      const keys = Object.keys(inline).sort();
+      const shardCount = Math.max(1, Math.ceil(keys.length / RESPONSE_SHARD_CAPACITY));
 
-    for (let i = 0; i < shardCount; i++) {
-      const chunkKeys = keys.slice(i * RESPONSE_SHARD_CAPACITY, (i + 1) * RESPONSE_SHARD_CAPACITY);
-      const chunkResponses = {};
-      chunkKeys.forEach(k => { chunkResponses[k] = inline[k]; });
-      await mainRef.collection('responseShards').doc(String(i)).set(
-        { responses: _stripUndefinedFields(chunkResponses) },
-        { merge: true }
-      );
+      for (let i = 0; i < shardCount; i++) {
+        const chunkKeys = keys.slice(i * RESPONSE_SHARD_CAPACITY, (i + 1) * RESPONSE_SHARD_CAPACITY);
+        // Écriture par CHEMIN POINTÉ ('responses.<clé>'), clé par clé — jamais un objet imbriqué
+        // {responses: {...}} — pour ne jamais risquer d'écraser, via un merge profond sur tout le
+        // champ `responses`, une entrée qu'une écriture concurrente aurait déjà posée dans ce
+        // même shard entre la lecture ci-dessus et cette écriture (voir _saveResponsesSharded,
+        // qui utilise le même principe pour la même raison).
+        const setPayload = {};
+        chunkKeys.forEach(k => { setPayload['responses.' + k] = _stripUndefinedFields(inline[k]); });
+        await mainRef.collection('responseShards').doc(String(i)).set(setPayload, { merge: true });
+      }
+
+      // Seulement après succès confirmé de TOUS les shards ci-dessus : retirer `responses` du
+      // document principal et enregistrer le nombre de shards créés.
+      await mainRef.update({ responses: firebase.firestore.FieldValue.delete(), responseShardCount: shardCount });
+      console.log(`[offline] Migration responses → ${shardCount} shard(s) (${keys.length} question(s)) réussie.`);
+      return { migrated: true, shardCount };
+    } catch (e) {
+      console.warn('[offline] Migration responses → shards : échec, on réessaiera au prochain chargement de page.', e);
+      return { migrated: false, error: e };
+    } finally {
+      delete _migrationInFlight[uid];
     }
-
-    // Seulement après succès confirmé de TOUS les shards ci-dessus : retirer `responses` du
-    // document principal et enregistrer le nombre de shards créés.
-    await mainRef.update({ responses: firebase.firestore.FieldValue.delete(), responseShardCount: shardCount });
-    console.log(`[offline] Migration responses → ${shardCount} shard(s) (${keys.length} question(s)) réussie.`);
-    return { migrated: true, shardCount };
-  } catch (e) {
-    console.warn('[offline] Migration responses → shards : échec, on réessaiera au prochain chargement de page.', e);
-    return { migrated: false, error: e };
-  }
+  })();
+  _migrationInFlight[uid] = promise;
+  return promise;
 }
 
 /**
