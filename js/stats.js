@@ -2724,8 +2724,37 @@ async function _compactQuizProgress() {
     const SAFETY_LIMIT = 900 * 1024; // vise nettement sous la limite dure de 1 Mio, avec marge pour de futures réponses
     const responses = data.responses || {};
 
-    // Compactage par paliers de plus en plus agressifs : on s'arrête dès que la taille estimée
-    // repasse sous la marge de sécurité, pour perdre le MOINS d'historique détaillé possible.
+    // ---- Étape 1 : purger les entrées ORPHELINES — des réponses dont la clé ne correspond
+    // plus à AUCUNE question dans AUCUNE banque actuelle (questions supprimées, renommées ou
+    // dédupliquées au fil des mises à jour du bank JSON). Ces entrées sont déjà invisibles
+    // partout ailleurs dans l'app (stats, forecast, accueil — voir _computeSrForecast) : les
+    // supprimer ne fait perdre AUCUNE progression réelle, juste du poids mort accumulé. C'est
+    // souvent la vraie cause de blocage une fois que statusLog est déjà entièrement migré vers
+    // la sous-collection (voir _migrateStatusLogToSubcollection) et qu'il ne reste donc plus
+    // rien à compacter côté historique : le nombre brut d'entrées répond alors seul de la taille.
+    if (statusEl) statusEl.textContent = '⏳ Recherche des réponses orphelines (anciennes questions supprimées/renommées)…';
+    let orphanKeys = [];
+    try {
+      if (typeof loadAllQuestions === 'function') {
+        await loadAllQuestions();
+        // Garde-fou : si le chargement d'une banque a échoué en cours de route (coupure
+        // réseau, etc.), `questions` peut être anormalement court — dans ce cas NE RIEN
+        // supprimer, pour ne jamais risquer de prendre de vraies questions pour des orphelines.
+        if (typeof questions !== 'undefined' && Array.isArray(questions) && questions.length >= 2500) {
+          const validKeys = new Set(questions.map(q => getKeyFor(q)));
+          orphanKeys = Object.keys(responses).filter(k => !validKeys.has(k));
+          orphanKeys.forEach(k => delete responses[k]);
+        } else {
+          console.warn('[compactQuizProgress] Chargement des banques incomplet (' + (typeof questions !== 'undefined' ? questions.length : 0) + ' questions) — purge des orphelines ignorée par sécurité.');
+        }
+      }
+    } catch (e) {
+      console.warn('[compactQuizProgress] Détection orphelines ignorée (chargement banques incomplet):', e);
+    }
+
+    // ---- Étape 2 : compactage par paliers de plus en plus agressifs sur l'historique détaillé
+    // restant — on s'arrête dès que la taille estimée repasse sous la marge de sécurité, pour
+    // perdre le MOINS d'historique possible.
     function trimTo(cap) {
       let trimmedCount = 0, entriesRemoved = 0;
       Object.keys(responses).forEach(key => {
@@ -2740,7 +2769,7 @@ async function _compactQuizProgress() {
       return { trimmedCount, entriesRemoved };
     }
 
-    let totalTrimmed = 0, totalEntriesRemoved = 0, currentSize = sizeBefore;
+    let totalTrimmed = 0, totalEntriesRemoved = 0, currentSize = new Blob([JSON.stringify(data)]).size;
     for (const cap of [15, 5, 0]) {
       if (currentSize <= SAFETY_LIMIT) break;
       const { trimmedCount, entriesRemoved } = trimTo(cap);
@@ -2750,24 +2779,32 @@ async function _compactQuizProgress() {
       if (statusEl) statusEl.textContent = `⏳ Palier ${cap === 0 ? 'historique retiré' : 'plafond ' + cap} — taille actuelle : ~${Math.round(currentSize / 1024)} Ko…`;
     }
 
-    if (!totalTrimmed) {
+    if (!totalTrimmed && !orphanKeys.length) {
       const sizeKb = Math.round(sizeBefore / 1024);
-      if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (document actuel : ~${sizeKb} Ko, déjà sous la limite historique). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
+      if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (document actuel : ~${sizeKb} Ko, déjà sous la limite historique, aucune réponse orpheline détectée). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
       if (btn) btn.disabled = false;
       return;
     }
 
-    if (statusEl) statusEl.textContent = `⏳ Compactage de ${totalTrimmed} question(s) (${totalEntriesRemoved} entrée(s) d'historique en trop retirée(s))…`;
+    if (statusEl) {
+      const parts = [];
+      if (orphanKeys.length) parts.push(`${orphanKeys.length} réponse(s) orpheline(s) supprimée(s)`);
+      if (totalTrimmed) parts.push(`${totalTrimmed} question(s) allégée(s) (${totalEntriesRemoved} entrée(s) d'historique en trop retirée(s))`);
+      statusEl.textContent = `⏳ Compactage : ${parts.join(' + ')}…`;
+    }
 
-    // set() (pas update()) : on réécrit le document entier avec les statusLog déjà réduits,
-    // pour que la taille du document lui-même redescende sous la limite — un update() partiel
-    // sur une seule question n'aurait rien changé à la taille globale déjà trop grande.
+    // set() (pas update()) : on réécrit le document entier avec les orphelines/statusLog déjà
+    // réduits, pour que la taille du document lui-même redescende sous la limite — un update()
+    // partiel sur une seule question n'aurait rien changé à la taille globale déjà trop grande.
     await db.collection('quizProgress').doc(uid).set(data);
 
     const sizeAfter = new Blob([JSON.stringify(data)]).size;
     if (statusEl) {
+      const details = [];
+      if (orphanKeys.length) details.push(`${orphanKeys.length} réponse(s) orpheline(s) (anciennes questions supprimées/renommées, sans impact sur tes stats actuelles)`);
+      if (totalTrimmed) details.push(`${totalTrimmed} question(s) allégée(s) d'historique détaillé`);
       statusEl.textContent = `✅ Compactage terminé : ${Math.round(sizeBefore / 1024)} Ko → ${Math.round(sizeAfter / 1024)} Ko `
-        + `(${totalTrimmed} question(s) allégée(s), aucune statistique perdue — réussites/échecs/planification intacts). Tes sauvegardes devraient de nouveau fonctionner.`;
+        + `(${details.join(' + ')} — aucune statistique perdue, réussites/échecs/planification intacts). Tes sauvegardes devraient de nouveau fonctionner.`;
     }
     // Recharger currentResponses en mémoire pour que le reste de la page reflète le compactage
     if (typeof currentResponses !== 'undefined') currentResponses = normalizeResponses(responses);
