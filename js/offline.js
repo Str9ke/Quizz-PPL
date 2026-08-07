@@ -156,7 +156,26 @@ async function _loadMergedResponses(uid, timeoutMs) {
           const shardResponses = (shardDoc.exists && shardDoc.data().responses) || {};
           const keys = Object.keys(shardResponses);
           window._respShardEntryCounts[i] = keys.length;
-          keys.forEach(k => { merged[k] = shardResponses[k]; window._respKeyShard[k] = i; });
+          // Les lectures des shards se terminent en parallèle, dans un ordre non déterministe
+          // (timing réseau) : si une même clé existe par erreur dans PLUSIEURS shards (résidu
+          // d'anciennes tentatives d'écriture parties de zéro pendant les pannes de permissions
+          // constatées en pratique), un simple écrasement aurait pu laisser gagner le shard qui
+          // finit de se lire EN DERNIER plutôt que la donnée réellement la plus récente — la
+          // réponse fraîche semblait alors "disparaître" après une navigation. On ne remplace
+          // donc une entrée déjà fusionnée que si celle-ci est authentiquement plus récente
+          // (comparaison par timestamp) ; en cas de doute (timestamp manquant d'un côté), la clé
+          // trouvée en premier est conservée par prudence plutôt que la plus récente à charger.
+          keys.forEach(k => {
+            const incoming = shardResponses[k];
+            const existing = merged[k];
+            if (existing !== undefined) {
+              const existingMs = existing.timestamp && (existing.timestamp.seconds !== undefined ? existing.timestamp.seconds * 1000 : existing.timestamp);
+              const incomingMs = incoming.timestamp && (incoming.timestamp.seconds !== undefined ? incoming.timestamp.seconds * 1000 : incoming.timestamp);
+              if (!(incomingMs && existingMs && incomingMs > existingMs)) return;
+            }
+            merged[k] = incoming;
+            window._respKeyShard[k] = i;
+          });
         })
         .catch(e => console.warn('[offline] Lecture shard ' + i + ' échouée:', e.message))
     );
