@@ -1547,6 +1547,13 @@ function _assistRenderCurrent() {
     </div>
   `;
 
+  // Amener le début de la question pile sous la bannière collante : sans ça, la position de
+  // scroll restait celle de la question précédente (le conteneur est juste réécrit en place,
+  // rien ne déclenche de scroll par défaut), donc une nouvelle question plus courte laissait
+  // la page trop bas et il fallait redescendre à la main pour la voir en entier.
+  const card = cont.querySelector('.assist-mode-card');
+  if (card && typeof _scrollBelowStickyBanner === 'function') _scrollBelowStickyBanner(card);
+
   _assistSpeak(_assistBuildSpeechText(q));
 }
 
