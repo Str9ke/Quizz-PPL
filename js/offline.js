@@ -246,10 +246,31 @@ async function _saveResponsesSharded(uid, updates) {
 
   const mainRef = db.collection('quizProgress').doc(uid);
   const targetShards = Object.keys(byShard).map(Number);
+  console.log('[shard-write] tentative sur shard(s)', targetShards, 'clés:', keys);
   await Promise.all(targetShards.map(shardIdx => {
     const setPayload = {};
     Object.keys(byShard[shardIdx]).forEach(k => { setPayload['responses.' + k] = byShard[shardIdx][k]; });
-    return mainRef.collection('responseShards').doc(String(shardIdx)).set(setPayload, { merge: true });
+    return mainRef.collection('responseShards').doc(String(shardIdx)).set(setPayload, { merge: true })
+      .then(() => console.log('[shard-write] set() résolu pour shard', shardIdx))
+      .catch(e => { console.error('[shard-write] set() a rejeté pour shard', shardIdx, e); throw e; });
+  }));
+  console.log('[shard-write] Promise.all terminé, vérification directe sur le serveur…');
+  // Vérification immédiate : relire le(s) shard(s) qu'on vient d'écrire directement depuis le
+  // serveur (jamais le cache), pour confirmer sans le moindre doute que l'écriture a bien
+  // atteint Firestore et pas seulement la file d'attente locale (voir enablePersistence).
+  await Promise.all(targetShards.map(async shardIdx => {
+    try {
+      const check = await mainRef.collection('responseShards').doc(String(shardIdx)).get({ source: 'server' });
+      const responses = (check.exists && check.data().responses) || {};
+      const writtenKeys = Object.keys(byShard[shardIdx]);
+      const confirmed = writtenKeys.filter(k => responses[k] !== undefined);
+      console.log('[shard-write] VÉRIFICATION shard', shardIdx, '—', confirmed.length + '/' + writtenKeys.length, 'clé(s) confirmée(s) sur le serveur:', confirmed);
+      if (confirmed.length < writtenKeys.length) {
+        console.error('[shard-write] ⚠️ ÉCRITURE NON CONFIRMÉE pour', writtenKeys.filter(k => !confirmed.includes(k)));
+      }
+    } catch (e) {
+      console.error('[shard-write] Échec de la vérification serveur pour shard', shardIdx, e);
+    }
   }));
 
   if (newShardCreated) {
