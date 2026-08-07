@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Quiz</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260731a" />
+  <link rel="stylesheet" href="style.css?v=20260805a" />
   <!-- KaTeX for math rendering in notes -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
@@ -108,9 +108,16 @@
     })();
   </script>
 
+  <!-- Mode Assistance : bouton d'entrée/sortie, visible dès qu'un quiz est chargé -->
+  <div class="assist-mode-bar">
+    <button type="button" id="assistModeToggleBtn" class="quiz-btn quiz-btn-assist" style="display:none;" onclick="_toggleAssistMode()">🎧 Mode Assistance</button>
+  </div>
+
   <div class="container" id="quizContainer">
     <!-- Les questions seront affichées ici -->
   </div>
+  <!-- Mode Assistance : vue une-question-à-la-fois, injectée par _assistRenderCurrent() -->
+  <div id="assistModeContainer" style="display:none;"></div>
   <div class="quiz-actions-bar">
     <button class="quiz-btn quiz-btn-validate" onclick="validerReponses()">✅ Valider les Réponses</button>
     <button class="quiz-btn quiz-btn-new" id="resetQuizBtn">🔄 Nouvelles Questions</button>
@@ -137,8 +144,8 @@
   <script src="js/globals.js?v=20260730a"></script>
   <script src="js/helpers.js?v=20260803b"></script>
   <script src="js/categories.js?v=20260803b"></script>
-  <script src="js/stats.js?v=20260805b"></script>
-  <script src="js/quiz.js?v=20260805a"></script>
+  <script src="js/stats.js?v=20260806a"></script>
+  <script src="js/quiz.js?v=20260805c"></script>
   <script src="js/init.js?v=20260804a"></script>
   <script src="js/offline.js?v=20260804a"></script>
   <script>

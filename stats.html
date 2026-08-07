@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#121218">
   <title>Quiz Aviation - Statistiques</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260731a" />
+  <link rel="stylesheet" href="style.css?v=20260805a" />
   <!-- Charger la configuration Firebase (clé API) AVANT les SDK -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -37,8 +37,8 @@
   <script src="js/globals.js?v=20260730a"></script>
   <script src="js/helpers.js?v=20260803b"></script>
   <script src="js/categories.js?v=20260803b"></script>
-  <script src="js/stats.js?v=20260805b"></script>
-  <script src="js/quiz.js?v=20260805a"></script>
+  <script src="js/stats.js?v=20260806a"></script>
+  <script src="js/quiz.js?v=20260805c"></script>
   <script src="js/init.js?v=20260804a"></script>
   <script src="js/offline.js?v=20260804a"></script>
   <script>
@@ -133,7 +133,7 @@
 
   <!-- Compactage Firestore (limite dure de 1 Mio par document) -->
   <div class="home-card" style="text-align:center;padding:1rem" id="compactCard">
-    <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 8px">Si tes réponses ne s'enregistrent plus (message "Échec de sauvegarde"), c'est que ton fichier de progression a dépassé la limite de taille de Firestore (1 Mio). Ce bouton le compacte sans rien perdre de tes statistiques (réussites/échecs/planification), juste l'historique détaillé au-delà des 15 dernières réponses par question.</p>
+    <p style="font-size:.82em;color:var(--text-secondary);margin:0 0 8px">Si tes réponses ne s'enregistrent plus (message "Échec de sauvegarde"), c'est que ton fichier de progression a dépassé la limite de taille de Firestore (1 Mio). Ce bouton le compacte en deux temps, sans rien perdre de tes statistiques (réussites/échecs/planification) : d'abord les réponses "orphelines" (anciennes questions supprimées/renommées au fil des mises à jour, déjà invisibles partout dans l'app), puis l'historique détaillé au-delà des 15 dernières réponses par question si besoin.</p>
     <button class="stats-btn" onclick="_compactQuizProgress()" style="background:#f59e0b;color:#000;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600" id="compactBtn">
       🧹 Compacter mes données (si les sauvegardes échouent)
     </button>

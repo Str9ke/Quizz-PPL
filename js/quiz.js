@@ -28,14 +28,17 @@ function _scrollBelowStickyBanner(target) {
 
 /**
  * _speakCorrectAnswer() – Lit la bonne réponse via Web Speech Synthesis (TTS)
- * Uniquement si l'option TTS est activée (localStorage ttsEnabled)
+ * Uniquement si l'option TTS est activée (localStorage ttsEnabled), SAUF si `force` est vrai
+ * (utilisé par le Mode Assistance de quiz.js, qui doit toujours lire la bonne réponse — y
+ * compris si le toggle TTS global est coupé, et sans se faire couper par le mécanisme de
+ * "toggle: reclique = stop" ci-dessous qui n'a de sens que pour un clic manuel de l'utilisateur).
  */
 var _ttsTimeoutId = null;
-function _speakCorrectAnswer(answerText) {
-  if (localStorage.getItem('ttsEnabled') !== '1') return;
+function _speakCorrectAnswer(answerText, force) {
+  if (!force && localStorage.getItem('ttsEnabled') !== '1') return;
   if (!('speechSynthesis' in window)) return;
-  // Toggle: if currently speaking, stop
-  if (speechSynthesis.speaking) {
+  // Toggle: if currently speaking, stop (sauf en mode forcé — voir commentaire ci-dessus)
+  if (!force && speechSynthesis.speaking) {
     speechSynthesis.cancel();
     if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
     return;
@@ -51,6 +54,7 @@ function _speakCorrectAnswer(answerText) {
     utterance.lang = 'fr-FR';
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
+    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
     // Utiliser la voix préférée si elle est définie, sinon la première voix FR
     const voices = speechSynthesis.getVoices();
     const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
@@ -815,6 +819,9 @@ function afficherQuiz() {
   window._immediateSavedEntries = {};
   window._immediatePrevStatus = {};
   window._sessionPrevSnapshot = {};
+  // Un nouveau lot de questions vient d'être (re)chargé : toute session de Mode Assistance
+  // précédente n'a plus de sens (autres questions, autre ordre) — la fermer sans scroll.
+  if (typeof _exitAssistMode === 'function') _exitAssistMode(true);
 
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
@@ -823,8 +830,10 @@ function afficherQuiz() {
     cont.innerHTML = `<p style="color:red;">Aucune question chargée.<br>
       Retournez à l'accueil et cliquez sur «Démarrer le Quiz».</p>`;
     if (typeof _updateResetBtnVisibility === 'function') _updateResetBtnVisibility(true);
+    if (typeof _updateAssistBtnVisibility === 'function') _updateAssistBtnVisibility(false);
     return;
   }
+  if (typeof _updateAssistBtnVisibility === 'function') _updateAssistBtnVisibility(true);
 
   // Suivi du temps réel par question (voir helpers.js _qt*) : initialiser le tracker
   // idle-aware et figer MAINTENANT quelles questions sont "nouvelles" vs "déjà vues" —
@@ -1037,6 +1046,16 @@ function _updateQuizValidateVisibility(show) {
  */
 function _updateResetBtnVisibility(show) {
   const btn = document.getElementById('resetQuizBtn');
+  if (btn) btn.style.display = show ? '' : 'none';
+}
+
+/**
+ * _updateAssistBtnVisibility() – Affiche/masque le bouton d'entrée en Mode Assistance.
+ * Visible dès qu'un quiz est chargé sur cette page (quel que soit le mode : répétition
+ * espacée, révision, mixte...), masqué une fois la session validée (plus rien à répondre).
+ */
+function _updateAssistBtnVisibility(show) {
+  const btn = document.getElementById('assistModeToggleBtn');
   if (btn) btn.style.display = show ? '' : 'none';
 }
 
@@ -1266,7 +1285,9 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   // TTS : lire la bonne réponse à voix haute si mauvaise réponse (pas lors d'une restauration)
   if (!isCorrect && !isRestore) {
     const correctText = _resolveTtsText(q);
-    _speakCorrectAnswer(correctText);
+    // En Mode Assistance, la lecture doit être garantie (indépendante du toggle TTS global
+    // et jamais interrompue par le "toggle: reclique = stop" — voir _speakCorrectAnswer).
+    _speakCorrectAnswer(correctText, window._assistModeActive === true);
     // Ajouter la question à la file de ré-interrogation (2 quiz plus tard) — pas en mode entraînement libre
     if (!_isPracticeMode()) _queueForReask(q);
     // Permettre de re-lire la bonne réponse en cliquant n'importe où dans la zone réponses
@@ -1350,6 +1371,230 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     // Sauvegarder automatiquement les réponses
     validerReponses();
   }
+}
+
+// ============================================================
+// Mode Assistance — vue "une question à la fois", lue à voix haute, avec avancement
+// automatique au clic. Pensé pour un usage mobile mains libres : gros boutons tactiles,
+// lecture TTS systématique (indépendante du toggle TTS global — voir _speakCorrectAnswer).
+//
+// Principe : ce mode ne recrée PAS de logique de correction/persistance à part — il pilote
+// le radio réel correspondant dans le #quizContainer normal (resté en mémoire, juste masqué
+// visuellement) et appelle handleImmediateAnswer() dessus, pour rester rigoureusement
+// synchronisé avec la vue normale (coloration, explication, planification SR, historique) —
+// qu'on retrouve intacte en sortant du mode, à l'endroit où on travaillait.
+// ============================================================
+window._assistModeActive = false;
+window._assistCurrentIdx = -1;
+
+/** _assistIsAnswered(idx) – Vrai si la question à cet index a déjà une réponse cette session
+ * (répondue via le Mode Assistance, via la vue normale, ou restaurée après un rechargement). */
+function _assistIsAnswered(idx) {
+  if (window._immediateAnswers && window._immediateAnswers[idx] !== undefined) return true;
+  return !!document.querySelector(`input[name="qidx${idx}"]:checked`);
+}
+
+/** _assistNextUnansweredIdx(fromIdx) – Première question sans réponse après fromIdx, dans
+ * l'ordre d'apparition de currentQuestions (même ordre que la page quiz normale). -1 si fini. */
+function _assistNextUnansweredIdx(fromIdx) {
+  for (let i = fromIdx + 1; i < currentQuestions.length; i++) {
+    if (!_assistIsAnswered(i)) return i;
+  }
+  return -1;
+}
+
+/** _assistSpeak(text) – Lecture TTS inconditionnelle (ignore le toggle ttsEnabled global :
+ * la lecture est le principe même du Mode Assistance, pas une option qu'on pourrait couper
+ * par mégarde en pleine session). Respecte volume/voix préférée comme le reste de l'app. */
+function _assistSpeak(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
+  _ttsTimeoutId = setTimeout(() => {
+    _ttsTimeoutId = null;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
+    const voices = speechSynthesis.getVoices();
+    const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
+    let voice = preferredName ? voices.find(v => v.name === preferredName) : null;
+    if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith('fr'));
+    if (voice) utterance.voice = voice;
+    speechSynthesis.speak(utterance);
+  }, 100);
+}
+
+/** _assistBuildSpeechText(q) – Compose "question + toutes les propositions" à lire d'un
+ * coup à l'arrivée sur une question (les choix sont déjà dans l'ordre mélangé de cette
+ * session — voir le Fisher-Yates dans afficherQuiz() — donc lus dans le même ordre que
+ * ce qui est affiché). */
+function _assistBuildSpeechText(q) {
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const parts = [q.question];
+  q.choix.forEach((c, i) => parts.push(`Proposition ${letters[i] || (i + 1)} : ${c}`));
+  return parts.join('. ');
+}
+
+/** _toggleAssistMode() – Bouton unique d'entrée/sortie, cliquable à la volée à tout moment
+ * tant qu'un quiz est chargé sur cette page. */
+function _toggleAssistMode() {
+  if (window._assistModeActive) _exitAssistMode();
+  else _enterAssistMode();
+}
+
+/** _enterAssistMode() – Bascule vers la vue une-question-à-la-fois, positionnée sur la
+ * première question sans réponse (= "la question à laquelle il faut répondre dans la
+ * progression"), dans l'ordre d'apparition de la page quiz normale. */
+function _enterAssistMode() {
+  if (!currentQuestions || !currentQuestions.length) return;
+  const startIdx = _assistNextUnansweredIdx(-1);
+  if (startIdx === -1) {
+    alert('Toutes les questions de ce quiz ont déjà une réponse.');
+    return;
+  }
+  window._assistModeActive = true;
+  window._assistCurrentIdx = startIdx;
+
+  const quizCont = document.getElementById('quizContainer');
+  const actionsBar = document.querySelector('.quiz-actions-bar');
+  if (quizCont) quizCont.style.display = 'none';
+  if (actionsBar) actionsBar.style.display = 'none';
+
+  const btn = document.getElementById('assistModeToggleBtn');
+  if (btn) btn.textContent = '✕ Quitter le mode assistance';
+
+  _assistRenderCurrent();
+}
+
+/** _exitAssistMode(skipScroll) – Repasse à la vue normale (questions + réponses déjà
+ * inchangées, puisque le Mode Assistance a répondu via les VRAIS radios). Sans skipScroll,
+ * atterrit sur la question en cours de travail ("là où on en était"). skipScroll est utilisé
+ * uniquement quand la dernière question du lot vient d'être répondue : validerReponses() va
+ * gérer son propre scroll (vers le récapitulatif d'erreurs), inutile de le concurrencer. */
+function _exitAssistMode(skipScroll) {
+  const wasActive = window._assistModeActive;
+  window._assistModeActive = false;
+  clearTimeout(window._assistAdvanceTimer);
+  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+  const quizCont = document.getElementById('quizContainer');
+  const actionsBar = document.querySelector('.quiz-actions-bar');
+  const assistCont = document.getElementById('assistModeContainer');
+  if (quizCont) quizCont.style.display = '';
+  if (actionsBar) actionsBar.style.display = '';
+  if (assistCont) { assistCont.style.display = 'none'; assistCont.innerHTML = ''; }
+
+  const btn = document.getElementById('assistModeToggleBtn');
+  if (btn) btn.textContent = '🎧 Mode Assistance';
+
+  if (!skipScroll && wasActive) {
+    const idx = window._assistCurrentIdx;
+    const block = (idx >= 0) ? document.querySelectorAll('.question-block')[idx] : null;
+    if (block && typeof _scrollBelowStickyBanner === 'function') _scrollBelowStickyBanner(block);
+  }
+}
+
+/** _assistRenderCurrent() – Affiche la question courante (une seule à l'écran) et lance sa
+ * lecture TTS automatique. */
+function _assistRenderCurrent() {
+  const idx = window._assistCurrentIdx;
+  const cont = document.getElementById('assistModeContainer');
+  if (!cont || idx < 0 || idx >= currentQuestions.length) return;
+  const q = currentQuestions[idx];
+  const answeredCount = currentQuestions.reduce((n, _, i) => n + (_assistIsAnswered(i) ? 1 : 0), 0);
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div class="assist-mode-card">
+      <div class="assist-mode-progress">Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
+      <div class="assist-mode-question">${q.question}</div>
+      ${ q.image
+        ? `<div class="question-image"><img src="${q.image}" alt="illustration" onerror="this.style.display='none';"></div>`
+        : '' }
+      <div class="assist-mode-choices">
+        ${q.choix.map((c, i) => `
+          <button type="button" class="assist-mode-choice-btn" data-choice-idx="${i}" onclick="_assistAnswer(${i})">
+            <span class="assist-mode-choice-letter">${letters[i] || (i + 1)}</span>
+            <span class="assist-mode-choice-text">${c}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="assist-mode-feedback" id="assistModeFeedback"></div>
+    </div>
+  `;
+
+  _assistSpeak(_assistBuildSpeechText(q));
+}
+
+/** _assistAnswer(choiceIdx) – Traite le clic sur une proposition en Mode Assistance. Pilote
+ * le VRAI radio de la vue normale (checked + handleImmediateAnswer) pour rester à 100%
+ * synchronisé avec elle (persistance, planification SR, historique, coloration au retour).
+ * Cas particulier : si c'est la dernière question sans réponse du lot, sort du Mode
+ * Assistance AVANT de répondre — sinon le scroll automatique de validerReponses() (déclenché
+ * en cascade par handleImmediateAnswer) s'appliquerait à un conteneur encore masqué. */
+function _assistAnswer(choiceIdx) {
+  const idx = window._assistCurrentIdx;
+  const q = currentQuestions[idx];
+  if (!q || _assistIsAnswered(idx)) return; // déjà répondu (double-clic) → ignorer
+
+  const isLastOfBatch = !currentQuestions.some((_, i) => i !== idx && !_assistIsAnswered(i));
+
+  if (isLastOfBatch) {
+    _exitAssistMode(true);
+    const realRadio = document.querySelector(`input[name="qidx${idx}"][value="${choiceIdx}"]`);
+    if (realRadio) {
+      realRadio.checked = true;
+      if (!window._immediateScore) window._immediateScore = { correct: 0, answered: 0, total: currentQuestions.length };
+      handleImmediateAnswer(q, realRadio, idx);
+    }
+    return;
+  }
+
+  const isCorrect = choiceIdx === q.bonne_reponse;
+  const cont = document.getElementById('assistModeContainer');
+  if (cont) {
+    cont.querySelectorAll('.assist-mode-choice-btn').forEach(b => {
+      b.disabled = true;
+      const bIdx = parseInt(b.dataset.choiceIdx, 10);
+      if (bIdx === q.bonne_reponse) b.classList.add('assist-correct');
+      else if (bIdx === choiceIdx) b.classList.add('assist-wrong');
+    });
+    const fb = document.getElementById('assistModeFeedback');
+    if (fb) {
+      fb.innerHTML = (isCorrect
+        ? '✅ Correct'
+        : ('❌ Faux — la bonne réponse était : ' + q.choix[q.bonne_reponse]))
+        + ' <button type="button" class="assist-mode-skip-btn" onclick="_assistSkipToNext()">Suivant ▶</button>';
+    }
+  }
+
+  const realRadio = document.querySelector(`input[name="qidx${idx}"][value="${choiceIdx}"]`);
+  if (realRadio) {
+    realRadio.checked = true;
+    if (!window._immediateScore) window._immediateScore = { correct: 0, answered: 0, total: currentQuestions.length };
+    handleImmediateAnswer(q, realRadio, idx);
+  }
+
+  const delay = isCorrect ? 1200 : 4000;
+  clearTimeout(window._assistAdvanceTimer);
+  window._assistAdvanceTimer = setTimeout(() => _assistSkipToNext(), delay);
+}
+
+/** _assistSkipToNext() – Avance immédiatement vers la question suivante sans réponse
+ * (utilisé par le délai automatique ET par le bouton "Suivant ▶" pour ceux qui ne veulent
+ * pas attendre la fin de la lecture TTS de la bonne réponse). */
+function _assistSkipToNext() {
+  clearTimeout(window._assistAdvanceTimer);
+  if (!window._assistModeActive) return;
+  const idx = window._assistCurrentIdx;
+  const next = _assistNextUnansweredIdx(idx);
+  if (next === -1) { _exitAssistMode(true); return; } // filet de sécurité
+  window._assistCurrentIdx = next;
+  _assistRenderCurrent();
 }
 
 /**
@@ -1704,6 +1949,10 @@ function _buildCorrectionCardHtml(q, idx, checkedVal, anchorId, includeNote) {
 function afficherCorrection() {
   const cont = document.getElementById('quizContainer');
   if (!cont) return;
+  // Quiz validé : plus rien à répondre — masquer le Mode Assistance (et en sortir si besoin,
+  // sans le scroll-vers-la-question-en-cours qui n'a plus de sens ici).
+  if (typeof _exitAssistMode === 'function') _exitAssistMode(true);
+  if (typeof _updateAssistBtnVisibility === 'function') _updateAssistBtnVisibility(false);
 
   let html = "";
   const isImmediate = localStorage.getItem('correctionImmediate') === '1';
