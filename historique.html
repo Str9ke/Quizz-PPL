@@ -32,12 +32,12 @@
     });
   </script>
   <script src="js/globals.js?v=20260730a"></script>
-  <script src="js/helpers.js?v=20260803b"></script>
-  <script src="js/categories.js?v=20260803b"></script>
+  <script src="js/helpers.js?v=20260807c"></script>
+  <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807a"></script>
   <script src="js/quiz.js?v=20260807a"></script>
-  <script src="js/init.js?v=20260804a"></script>
-  <script src="js/offline.js?v=20260807a"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/offline.js?v=20260807c"></script>
 </head>
 <body>
   <!-- Theme toggle -->
@@ -196,21 +196,10 @@
       await loadAllQuestions();
       allQuestionsLoaded = [...questions];
 
-      // Load responses + notes from Firestore
+      // Load responses + notes from Firestore (_loadMergedResponses lit le document principal
+      // ET tous les shards de `responses` — voir js/offline.js)
       try {
-        let doc;
-        if (navigator.onLine) {
-          try {
-            doc = await Promise.race([
-              db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-            ]);
-          } catch (e) {
-            doc = await db.collection('quizProgress').doc(uid).get();
-          }
-        } else {
-          doc = await db.collection('quizProgress').doc(uid).get();
-        }
+        const doc = await _loadMergedResponses(uid, 6000);
         const data = doc.exists ? doc.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
         _notesCache = data.notes || {};
@@ -378,20 +367,18 @@
       if (!uid) return;
       var prev = currentResponses[key] || {};
       var newMarked = !prev.marked;
-      var payload = { responses: {} };
       // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue
       // (Firestore rejette un champ explicite à undefined, donc on l'omet simplement).
       var entry = { marked: newMarked, important: prev.important === true };
       if (prev.status !== undefined) entry.status = prev.status;
-      payload.responses[key] = entry;
       currentResponses[key] = Object.assign({}, prev, { marked: newMarked });
       _syncLastDayQuestionsMark(key, 'marked', newMarked);
       btn.textContent = newMarked ? 'Supprimer' : 'Marquer';
       btn.className = newMarked ? 'delete-button' : 'mark-button';
       var block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(function(e) {
-        try { saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      _saveResponsesSharded(uid, { [key]: entry }).catch(function(e) {
+        _saveResponsesSharded(uid, { [key]: entry }).catch(function(e2) {});
       });
     };
 
@@ -400,19 +387,17 @@
       if (!uid) return;
       var prev = currentResponses[key] || {};
       var newImportant = !prev.important;
-      var payload = { responses: {} };
       // bug corrigé : ne pas défauter status à 'ratée' pour une question jamais répondue.
       var entry = { marked: prev.marked === true, important: newImportant };
       if (prev.status !== undefined) entry.status = prev.status;
-      payload.responses[key] = entry;
       currentResponses[key] = Object.assign({}, prev, { important: newImportant });
       _syncLastDayQuestionsMark(key, 'important', newImportant);
       btn.textContent = newImportant ? 'Retirer Important' : 'Important';
       btn.className = newImportant ? 'delete-button' : 'mark-button';
       var block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(function(e) {
-        try { saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      _saveResponsesSharded(uid, { [key]: entry }).catch(function(e) {
+        _saveResponsesSharded(uid, { [key]: entry }).catch(function(e2) {});
       });
     };
 

@@ -504,12 +504,12 @@
 
   <!-- Inclusion de votre script principal -->
   <script src="js/globals.js?v=20260730a"></script>
-  <script src="js/helpers.js?v=20260803b"></script>
-  <script src="js/categories.js?v=20260803b"></script>
+  <script src="js/helpers.js?v=20260807c"></script>
+  <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807a"></script>
   <script src="js/quiz.js?v=20260807a"></script>
-  <script src="js/init.js?v=20260804a"></script>
-  <script src="js/offline.js?v=20260807a"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/offline.js?v=20260807c"></script>
 
   <!-- Sélecteur de voix TTS : population & test -->
   <script>
@@ -809,10 +809,7 @@
 
         /* 3. REFRESH currentResponses depuis le serveur (pour révisions espacées cross-device) */
         try {
-          var freshDoc = await Promise.race([
-            db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-            new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 5000); })
-          ]);
+          var freshDoc = await _loadMergedResponses(uid, 8000);
           if(freshDoc.exists && freshDoc.data().responses){
             currentResponses = (typeof normalizeResponses === 'function')
               ? normalizeResponses(freshDoc.data().responses)

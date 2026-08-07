@@ -149,23 +149,12 @@ async function initIndex() {
   }
   let _dailyHist = {};
   try {
-    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne
-    // pour récupérer les données fraîches écrites par un autre appareil.
-    let docResp;
-    if (navigator.onLine) {
-      try {
-        docResp = await Promise.race([
-          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('initIndex server timeout')), 6000))
-        ]);
-        console.log('[initIndex] Firestore lu depuis le SERVEUR');
-      } catch (e) {
-        console.warn('[initIndex] lecture serveur échouée, fallback cache:', e.message);
-        docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-      }
-    } else {
-      docResp = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    }
+    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne pour récupérer les
+    // données fraîches écrites par un autre appareil (_loadMergedResponses délègue à
+    // getDocWithTimeout, qui applique déjà cette stratégie serveur→cache) — lit aussi tous les
+    // shards de `responses` (voir js/offline.js), indispensable : c'est l'Accueil, qui alimente
+    // currentResponses pour toute la sélection de quiz qui suit.
+    const docResp = await _loadMergedResponses(uid, 6000);
     const docData = docResp.exists ? docResp.data() : {};
     currentResponses = normalizeResponses(docData.responses || {});
     if (typeof _migrateStatusLogToSubcollection === 'function') {

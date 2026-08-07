@@ -354,9 +354,7 @@ function toggleMarquerQuestion(questionIdx, button) {
   // "ratée" (elle réapparaissait ensuite comme échouée partout, y compris comme due en SR).
   const entry = { marked: newMarked, important: prev.important === true };
   if (prev.status !== undefined) entry.status = prev.status;
-  const payload = { responses: { [key]: entry } };
-  db.collection('quizProgress').doc(uid)
-    .set(payload, { merge: true })
+  _saveResponsesSharded(uid, { [key]: entry })
     .then(() => {
       // update in-memory
       currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
@@ -370,7 +368,7 @@ function toggleMarquerQuestion(questionIdx, button) {
     })
     .catch(async (err) => {
       console.warn('[offline] toggleMarquer fallback');
-      await saveToggleWithOfflineFallback(uid, key, payload);
+      try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] toggleMarquer retry failed:', e2); }
       // update in-memory anyway
       currentResponses[key] = { ...prev, status: prev.status, marked: newMarked };
       button.textContent = newMarked ? "🗑️" : "🔖";
@@ -402,10 +400,8 @@ function toggleImportantQuestion(questionIdx, button) {
   // "non vue".
   const entry = { marked: prev.marked === true, important: newImportant };
   if (prev.status !== undefined) entry.status = prev.status;
-  const payload = { responses: { [key]: entry } };
 
-  db.collection('quizProgress').doc(uid)
-    .set(payload, { merge: true })
+  _saveResponsesSharded(uid, { [key]: entry })
     .then(() => {
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
       button.textContent = newImportant ? "⭐" : "☆";
@@ -416,7 +412,7 @@ function toggleImportantQuestion(questionIdx, button) {
     })
     .catch(async (err) => {
       console.warn('[offline] toggleImportant fallback');
-      await saveToggleWithOfflineFallback(uid, key, payload);
+      try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] toggleImportant retry failed:', e2); }
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: newImportant };
       button.textContent = newImportant ? "⭐" : "☆";
       button.title       = newImportant ? "Retirer Important" : "Marquer comme important";
@@ -452,10 +448,8 @@ function toggleSuspendQuestion(questionIdx, button) {
   // "non vue" (elle compte désormais comme "réussie" via suspended, indépendamment du statut).
   const entry = { marked: prev.marked === true, important: prev.important === true, suspended: newSuspended };
   if (prev.status !== undefined) entry.status = prev.status;
-  const payload = { responses: { [key]: entry } };
 
-  db.collection('quizProgress').doc(uid)
-    .set(payload, { merge: true })
+  _saveResponsesSharded(uid, { [key]: entry })
     .then(() => {
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
       button.textContent = newSuspended ? "↩️" : "🚫";
@@ -467,7 +461,7 @@ function toggleSuspendQuestion(questionIdx, button) {
     })
     .catch(async (err) => {
       console.warn('[offline] toggleSuspend fallback');
-      await saveToggleWithOfflineFallback(uid, key, payload);
+      try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] toggleSuspend retry failed:', e2); }
       currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
       button.textContent = newSuspended ? "↩️" : "🚫";
       button.title       = newSuspended
@@ -522,7 +516,6 @@ function adjustSrFrequency(questionIdx, button, direction) {
     : Math.max(1, Math.round(prevInterval / 3));
   const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
   const entry = { ...prev, srInterval: newInterval, nextReview: nextReviewMs };
-  const payload = { responses: { [key]: entry } };
 
   const applyLocally = () => {
     currentResponses[key] = entry;
@@ -530,12 +523,11 @@ function adjustSrFrequency(questionIdx, button, direction) {
     updateModeCounts();
   };
 
-  db.collection('quizProgress').doc(uid)
-    .set(payload, { merge: true })
+  _saveResponsesSharded(uid, { [key]: entry })
     .then(applyLocally)
     .catch(async () => {
       console.warn('[offline] adjustSrFrequency fallback');
-      await saveToggleWithOfflineFallback(uid, key, payload);
+      try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] adjustSrFrequency retry failed:', e2); }
       applyLocally();
     });
 }
@@ -736,7 +728,8 @@ async function initQuiz() {
   updateCategoryInfoBar(selectedCategory, null, null);
 
   // Charger les réponses en arrière-plan, puis mettre à jour les boutons marquer/important
-  getDocWithTimeout(db.collection('quizProgress').doc(uid)).then(async (doc) => {
+  // (_loadMergedResponses lit le document principal ET tous ses shards — voir js/offline.js)
+  _loadMergedResponses(uid).then(async (doc) => {
     const data = doc.exists ? doc.data() : {};
     currentResponses = normalizeResponses(data.responses || {});
     if (typeof _migrateStatusLogToSubcollection === 'function') {
