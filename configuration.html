@@ -35,7 +35,7 @@
   <script src="js/helpers.js?v=20260807d"></script>
   <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807i"></script>
-  <script src="js/quiz.js?v=20260807h"></script>
+  <script src="js/quiz.js?v=20260807i"></script>
   <script src="js/init.js?v=20260807c"></script>
   <script src="js/offline.js?v=20260807i"></script>
   <style>
@@ -59,7 +59,7 @@
     })();
   </script>
   <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
-  <div class="tts-container" id="ttsContainer" onclick="(function(e){if(e.target.id==='ttsVolume')return;document.getElementById('ttsContainer').classList.toggle('open')})(event)"><div class="tts-volume-track"><input type="range" id="ttsVolume" min="0" max="100" value="80" orient="vertical" oninput="(function(v){localStorage.setItem('ttsVolume',v);document.getElementById('ttsPct').textContent=v+'%'})(this.value)"><div class="tts-volume-pct" id="ttsPct">80%</div></div><button id="ttsToggle" onclick="(function(e){e.stopPropagation();var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})(event)" title="TTS désactivé">🔇</button></div>
+  <div class="tts-container" id="ttsContainer" onclick="(function(e){if(e.target.id==='ttsVolume')return;document.getElementById('ttsContainer').classList.toggle('open')})(event)"><div class="tts-volume-track"><input type="range" id="ttsVolume" min="0" max="100" value="100" orient="vertical" oninput="(function(v){localStorage.setItem('ttsVolume',v);document.getElementById('ttsPct').textContent=v+'%'})(this.value)"><div class="tts-volume-pct" id="ttsPct">100%</div></div><button id="ttsToggle" onclick="(function(e){e.stopPropagation();var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})(event)" title="TTS désactivé">🔇</button></div>
   <script>
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
     if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}(function(){var v=localStorage.getItem('ttsVolume');if(v!==null){document.getElementById('ttsVolume').value=v;document.getElementById('ttsPct').textContent=v+'%';}})();
@@ -194,10 +194,10 @@
       </div>
     </div>
     <div class="cfg-row">
-      <div class="cfg-label">Volume<div class="cfg-hint">Par défaut : 80%</div></div>
+      <div class="cfg-label">Volume<div class="cfg-hint">Par défaut : 100% (max). 100% est le plafond technique de la voix de synthèse du navigateur — au-delà, il n'y a aucun moyen de l'amplifier davantage ; si elle reste trop faible face à de la musique, seul le volume de la musique peut être baissé.</div></div>
       <div class="cfg-control">
         <input type="range" id="cfgTtsVolume" min="0" max="100" style="width:140px" oninput="_cfgSetTtsVolume(this.value)">
-        <span id="cfgTtsVolumeVal" style="font-size:.82em;min-width:34px">80%</span>
+        <span id="cfgTtsVolumeVal" style="font-size:.82em;min-width:34px">100%</span>
       </div>
     </div>
     <div class="cfg-row" style="flex-direction:column;align-items:stretch">
@@ -335,7 +335,7 @@
     // === TTS ===
     function _loadTts() {
       document.getElementById('cfgTtsEnabled').checked = localStorage.getItem('ttsEnabled') === '1';
-      const vol = parseInt(localStorage.getItem('ttsVolume')) || 80;
+      const vol = parseInt(localStorage.getItem('ttsVolume')) || 100;
       document.getElementById('cfgTtsVolume').value = vol;
       document.getElementById('cfgTtsVolumeVal').textContent = vol + '%';
     }
@@ -420,7 +420,7 @@
       const utterance = new SpeechSynthesisUtterance('Ceci est un test de la voix sélectionnée pour le quiz aviation.');
       utterance.lang = 'fr-FR';
       utterance.rate = 0.95;
-      utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
+      utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
       const voices = speechSynthesis.getVoices();
       const voice = select.value ? voices.find(v => v.name === select.value) : voices.find(v => v.lang && v.lang.match(/^fr/i));
       if (voice) utterance.voice = voice;

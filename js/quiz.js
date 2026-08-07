@@ -54,7 +54,7 @@ function _speakCorrectAnswer(answerText, force) {
     utterance.lang = 'fr-FR';
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
-    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
+    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
     // Utiliser la voix préférée si elle est définie, sinon la première voix FR
     const voices = speechSynthesis.getVoices();
     const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
@@ -1414,7 +1414,7 @@ function _assistSpeak(text) {
     utterance.lang = 'fr-FR';
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
-    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 80) / 100;
+    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
     const voices = speechSynthesis.getVoices();
     const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
     let voice = preferredName ? voices.find(v => v.name === preferredName) : null;
