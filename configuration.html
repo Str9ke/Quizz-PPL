@@ -151,6 +151,25 @@
     </div>
   </div>
 
+  <!-- Récupération des réponses écrites au mauvais endroit (champs parasites) -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🩺 Récupérer les réponses mal enregistrées</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      Pendant un temps, une anomalie d'écriture rangeait chaque réponse dans un champ parasite
+      (« responses.question_… » posé à côté de la vraie liste) au lieu de la liste elle-même : ces
+      réponses n'étaient donc jamais relues, et les questions concernées réapparaissaient comme non vues.
+      Cet outil analyse d'abord sans rien modifier. La réparation <strong>recopie</strong> chaque réponse
+      au bon endroit, <strong>vérifie sur le serveur</strong> qu'elle y est bien, et ne supprime le champ
+      parasite <strong>qu'après cette confirmation</strong> — une réponse déjà présente et plus récente
+      n'est jamais écrasée.
+    </p>
+    <button type="button" class="stats-btn" onclick="_cfgScanOrphanFields()" style="padding:6px 14px" id="cfgScanOrphanBtn">🔍 Analyser (sans rien modifier)</button>
+    <pre id="cfgOrphanResult" style="font-size:.8em;margin-top:10px;white-space:pre-wrap;background:rgba(0,0,0,.25);padding:10px;border-radius:8px;display:none"></pre>
+    <div id="cfgOrphanRepairRow" style="margin-top:10px;display:none">
+      <button type="button" class="stats-btn" onclick="_cfgRepairOrphanFields()" style="padding:6px 14px;background:#2e7d32" id="cfgRepairOrphanBtn">♻️ Récupérer puis nettoyer</button>
+    </div>
+  </div>
+
   <!-- Apparence -->
   <div class="home-card cfg-section">
     <div class="cfg-section-title">🎨 Apparence</div>
@@ -680,6 +699,175 @@
         if (statusEl) statusEl.textContent = '❌ Échec : ' + e.message;
       } finally {
         if (btn) btn.disabled = false;
+      }
+    };
+
+    /* === Récupération des réponses rangées dans un champ parasite ===================
+       Contexte : l'écriture des réponses utilisait set({'responses.<clé>': entrée}, {merge:true}).
+       set() n'interprète PAS le point comme un séparateur de chemin (seul update() le fait), donc
+       la chaîne entière devenait UN SEUL nom de champ littéral « responses.question_X » posé à la
+       RACINE du document, au lieu d'une entrée dans la map `responses`. Ces réponses n'ont donc
+       jamais été relues (la lecture parcourt data().responses) : les questions concernées sont
+       réapparues comme « non vues ».
+
+       Ces champs parasites ne sont donc PAS du simple déchet : pour toute question répondue pour
+       la première fois pendant la période affectée, ils contiennent la SEULE copie serveur de la
+       réponse. On récupère avant de nettoyer, jamais l'inverse.
+
+       Ordre des opérations, volontairement prudent :
+         1. recopier l'entrée dans la vraie map `responses` (merge profond, rien d'autre touché) ;
+         2. RELIRE depuis le serveur pour confirmer qu'elle y est réellement ;
+         3. supprimer le champ parasite UNIQUEMENT pour les clés ainsi confirmées.
+       Si l'étape 2 échoue, on ne supprime rien : au pire la donnée reste en double, jamais absente.
+
+       Une entrée déjà présente dans `responses` et plus récente (comparaison par timestamp) n'est
+       jamais écrasée — le champ parasite est alors simplement supprimé. */
+    function _cfgEntryMs(e) {
+      if (!e || !e.timestamp) return 0;
+      return e.timestamp.seconds !== undefined ? e.timestamp.seconds * 1000 : e.timestamp;
+    }
+
+    // Collecte les champs parasites d'un document : renvoie [{fieldName, key, entry, needsRecovery}]
+    function _cfgCollectOrphans(data) {
+      const real = data.responses || {};
+      const out = [];
+      Object.keys(data).forEach(fieldName => {
+        if (fieldName.indexOf('responses.') !== 0) return; // uniquement les champs parasites
+        const key = fieldName.slice('responses.'.length);
+        if (!key) return;
+        const entry = data[fieldName];
+        if (!entry || typeof entry !== 'object') return;
+        const existing = real[key];
+        // À récupérer si absente de la vraie liste, ou si le parasite est authentiquement plus récent
+        const needsRecovery = existing === undefined || _cfgEntryMs(entry) > _cfgEntryMs(existing);
+        out.push({ fieldName, key, entry, needsRecovery });
+      });
+      return out;
+    }
+
+    // Documents à inspecter : le document principal + tous les shards
+    async function _cfgOrphanTargets() {
+      const mainRef = db.collection('quizProgress').doc(uid);
+      const targets = [];
+      const main = await mainRef.get({ source: 'server' });
+      if (main.exists) targets.push({ label: 'document principal', ref: mainRef, data: main.data() });
+      const shardsSnap = await mainRef.collection('responseShards').get({ source: 'server' });
+      shardsSnap.forEach(d => targets.push({ label: 'shard ' + d.id, ref: d.ref, data: d.data() }));
+      return targets;
+    }
+
+    window._cfgScanOrphanFields = async function() {
+      const btn = document.getElementById('cfgScanOrphanBtn');
+      const out = document.getElementById('cfgOrphanResult');
+      const repairRow = document.getElementById('cfgOrphanRepairRow');
+      if (!uid) { alert('Vous devez être connecté.'); return; }
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Analyse en cours…'; }
+      if (out) { out.style.display = 'block'; out.textContent = 'Lecture du serveur…'; }
+      try {
+        const targets = await _cfgOrphanTargets();
+        const lines = [];
+        let totalOrphans = 0, totalRecover = 0, totalBytes = 0;
+        const samples = [];
+        targets.forEach(t => {
+          const orphans = _cfgCollectOrphans(t.data);
+          if (!orphans.length) return;
+          const rec = orphans.filter(o => o.needsRecovery).length;
+          const bytes = orphans.reduce((s, o) => s + o.fieldName.length + JSON.stringify(o.entry || {}).length, 0);
+          totalOrphans += orphans.length; totalRecover += rec; totalBytes += bytes;
+          lines.push('  • ' + t.label + ' : ' + orphans.length + ' champ(s) parasite(s), dont '
+            + rec + ' réponse(s) à récupérer (~' + Math.round(bytes / 1024) + ' Ko)');
+          orphans.slice(0, 3).forEach(o => { if (samples.length < 6) samples.push(o.key); });
+        });
+        const head = [];
+        head.push('Champs parasites trouvés : ' + totalOrphans);
+        head.push('Réponses réellement récupérables (absentes ou plus récentes) : ' + totalRecover);
+        head.push('Poids mort estimé : ~' + Math.round(totalBytes / 1024) + ' Ko');
+        head.push('');
+        if (!totalOrphans) {
+          head.push('✅ Rien à faire : aucun champ parasite sur le serveur.');
+        } else {
+          head.push('Détail par document :');
+        }
+        const tail = samples.length ? ['', 'Exemples de questions concernées :', ...samples.map(s => '  – ' + s)] : [];
+        if (out) out.textContent = head.concat(lines, tail).join('\n');
+        if (repairRow) repairRow.style.display = totalOrphans ? 'block' : 'none';
+      } catch (e) {
+        if (out) out.textContent = '❌ Analyse impossible : ' + (e && e.message ? e.message : e);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔍 Analyser (sans rien modifier)'; }
+      }
+    };
+
+    window._cfgRepairOrphanFields = async function() {
+      const btn = document.getElementById('cfgRepairOrphanBtn');
+      const out = document.getElementById('cfgOrphanResult');
+      if (!uid) { alert('Vous devez être connecté.'); return; }
+      if (!confirm('Récupérer les réponses mal enregistrées, puis supprimer les champs parasites ?\n\nChaque réponse est d\'abord recopiée au bon endroit et vérifiée sur le serveur ; le champ parasite n\'est supprimé qu\'après cette confirmation.')) return;
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Récupération en cours…'; }
+      const log = [];
+      const say = () => { if (out) { out.style.display = 'block'; out.textContent = log.join('\n'); } };
+      try {
+        const targets = await _cfgOrphanTargets();
+        let recovered = 0, cleaned = 0, kept = 0;
+        for (const t of targets) {
+          const orphans = _cfgCollectOrphans(t.data);
+          if (!orphans.length) continue;
+          log.push('▶ ' + t.label + ' : ' + orphans.length + ' champ(s) à traiter…'); say();
+
+          const CHUNK = 150;
+          for (let i = 0; i < orphans.length; i += CHUNK) {
+            const chunk = orphans.slice(i, i + CHUNK);
+
+            // 1) Recopier au bon endroit (objet imbriqué + merge : rien d'autre n'est touché)
+            const toRecover = chunk.filter(o => o.needsRecovery);
+            if (toRecover.length) {
+              const payload = {};
+              toRecover.forEach(o => { payload[o.key] = o.entry; });
+              await t.ref.set({ responses: payload }, { merge: true });
+            }
+
+            // 2) Relire depuis le SERVEUR et ne garder que ce qui est réellement confirmé
+            const check = await t.ref.get({ source: 'server' });
+            const realNow = (check.exists && check.data().responses) || {};
+            const confirmed = chunk.filter(o => realNow[o.key] !== undefined);
+            const unconfirmed = chunk.length - confirmed.length;
+            recovered += toRecover.filter(o => realNow[o.key] !== undefined).length;
+            if (unconfirmed > 0) {
+              kept += unconfirmed;
+              log.push('  ⚠️ ' + unconfirmed + ' champ(s) NON confirmé(s) sur le serveur — conservés tels quels, rien supprimé.'); say();
+            }
+
+            // 3) Supprimer les champs parasites CONFIRMÉS uniquement.
+            //    FieldPath(nom) traite l'argument comme UN SEUL segment littéral : indispensable
+            //    ici, le nom contient des points (et souvent espaces/accents), qu'une simple
+            //    chaîne passée à update() interpréterait à tort comme un chemin imbriqué.
+            if (confirmed.length) {
+              const args = [];
+              confirmed.forEach(o => {
+                args.push(new firebase.firestore.FieldPath(o.fieldName));
+                args.push(firebase.firestore.FieldValue.delete());
+              });
+              await t.ref.update.apply(t.ref, args);
+              cleaned += confirmed.length;
+            }
+            log.push('  … ' + Math.min(i + CHUNK, orphans.length) + '/' + orphans.length + ' traité(s)'); say();
+          }
+        }
+        log.push('');
+        log.push('✅ Terminé.');
+        log.push('Réponses récupérées et remises au bon endroit : ' + recovered);
+        log.push('Champs parasites supprimés (après confirmation serveur) : ' + cleaned);
+        if (kept) log.push('Champs conservés par précaution (non confirmés) : ' + kept + ' — relance l\'opération plus tard.');
+        log.push('');
+        log.push('Recharge l\'Accueil pour voir la progression mise à jour.');
+        say();
+      } catch (e) {
+        log.push('');
+        log.push('❌ Interrompu : ' + (e && e.message ? e.message : e));
+        log.push('Aucun champ n\'est supprimé tant que sa recopie n\'a pas été confirmée — tes données restent intactes. Tu peux relancer l\'opération.');
+        say();
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '♻️ Récupérer puis nettoyer'; }
       }
     };
 
