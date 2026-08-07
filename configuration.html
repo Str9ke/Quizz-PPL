@@ -700,6 +700,7 @@
         let total = 0;
         const seenKeys = {};
         let dupCount = 0;
+        const allEntries = [];
         shardsSnap.forEach(d => {
           const responses = d.data().responses || {};
           const n = Object.keys(responses).length;
@@ -708,10 +709,27 @@
           Object.keys(responses).forEach(k => {
             if (seenKeys[k]) dupCount++;
             seenKeys[k] = true;
+            const r = responses[k];
+            const ms = r.timestamp && (r.timestamp.seconds !== undefined ? r.timestamp.seconds * 1000 : r.timestamp);
+            allEntries.push({ key: k, shard: d.id, status: r.status, ms: ms || 0 });
           });
         });
         lines.push('Total de réponses réparties dans les shards : ' + total);
         lines.push('Clés en double présentes dans plusieurs shards : ' + dupCount + (dupCount > 0 ? ' ⚠️' : ' ✅ aucune'));
+
+        // Les 5 réponses les plus récentes réellement stockées sur le serveur (triées par
+        // timestamp) : si tu viens de répondre à une question, elle DOIT apparaître ici avec
+        // une date très récente et le bon statut — sinon l'écriture n'a pas atteint le serveur ;
+        // si elle apparaît bien mais que l'affichage montre encore l'ancien score, le souci est
+        // dans le calcul d'affichage, pas dans la sauvegarde.
+        allEntries.sort((a, b) => b.ms - a.ms);
+        lines.push('');
+        lines.push('5 réponses les plus récentes sur le serveur :');
+        allEntries.slice(0, 5).forEach(e => {
+          const d = e.ms ? new Date(e.ms).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '(pas de date)';
+          lines.push('  • [' + d + '] shard ' + e.shard + ' — ' + e.status + ' — ' + e.key);
+        });
+
         if (out) out.textContent = lines.join('\n');
       } catch (e) {
         console.error('[shardDiagnostic]', e);
