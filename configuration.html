@@ -137,6 +137,16 @@
     <div id="cfgRestoreBackupStatus" style="font-size:.82em;color:var(--text-secondary);margin-top:8px"></div>
   </div>
 
+  <!-- Diagnostic des shards de réponses -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🔍 Diagnostic de la sauvegarde serveur</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      Vérifie directement sur le serveur (pas depuis le cache) comment tes réponses sont réparties, pour repérer une incohérence.
+    </p>
+    <button type="button" class="stats-btn" onclick="_cfgRunShardDiagnostic()" style="padding:6px 14px" id="cfgShardDiagBtn">🔍 Lancer le diagnostic</button>
+    <pre id="cfgShardDiagResult" style="font-size:.8em;margin-top:10px;white-space:pre-wrap;background:rgba(0,0,0,.25);padding:10px;border-radius:8px;display:none"></pre>
+  </div>
+
   <!-- Apparence -->
   <div class="home-card cfg-section">
     <div class="cfg-section-title">🎨 Apparence</div>
@@ -666,6 +676,48 @@
         if (statusEl) statusEl.textContent = '❌ Échec : ' + e.message;
       } finally {
         if (btn) btn.disabled = false;
+      }
+    };
+
+    // === Diagnostic des shards de réponses (lecture directe serveur, source:'server') ===
+    window._cfgRunShardDiagnostic = async function() {
+      const btn = document.getElementById('cfgShardDiagBtn');
+      const out = document.getElementById('cfgShardDiagResult');
+      if (!uid) { alert('Vous devez être connecté.'); return; }
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Diagnostic en cours…'; }
+      if (out) { out.style.display = 'block'; out.textContent = 'Lecture du serveur…'; }
+      try {
+        const authOk = !!(auth.currentUser && auth.currentUser.uid);
+        const lines = [];
+        lines.push('Connecté (Firebase Auth) : ' + (authOk ? 'OUI ✅' : 'NON ❌ — reconnecte-toi, rien ne peut se sauvegarder sans ça'));
+        const main = await db.collection('quizProgress').doc(uid).get({ source: 'server' });
+        const mainData = main.exists ? main.data() : {};
+        const shardCount = mainData.responseShardCount || 0;
+        lines.push('Compteur responseShardCount (document principal) : ' + shardCount);
+        lines.push('Champ "responses" encore présent en inline sur le document principal (ancien format) : ' + (mainData.responses ? ('OUI ⚠️ (' + Object.keys(mainData.responses).length + ' entrée(s))') : 'non'));
+        const shardsSnap = await db.collection('quizProgress').doc(uid).collection('responseShards').get({ source: 'server' });
+        lines.push('Nombre de documents shard réellement présents sur le serveur : ' + shardsSnap.size);
+        let total = 0;
+        const seenKeys = {};
+        let dupCount = 0;
+        shardsSnap.forEach(d => {
+          const responses = d.data().responses || {};
+          const n = Object.keys(responses).length;
+          total += n;
+          lines.push('  • shard ' + d.id + ' : ' + n + ' entrée(s)');
+          Object.keys(responses).forEach(k => {
+            if (seenKeys[k]) dupCount++;
+            seenKeys[k] = true;
+          });
+        });
+        lines.push('Total de réponses réparties dans les shards : ' + total);
+        lines.push('Clés en double présentes dans plusieurs shards : ' + dupCount + (dupCount > 0 ? ' ⚠️' : ' ✅ aucune'));
+        if (out) out.textContent = lines.join('\n');
+      } catch (e) {
+        console.error('[shardDiagnostic]', e);
+        if (out) out.textContent = '❌ Échec du diagnostic : ' + e.message;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔍 Lancer le diagnostic'; }
       }
     };
 
