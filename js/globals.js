@@ -22,6 +22,13 @@ function resetQuiz() {
   localStorage.removeItem('currentQuestions');
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
+  // Le mode "entraînement libre" (voir _isPracticeMode dans quiz.js) désactive volontairement
+  // toute sauvegarde Firestore pour CETTE session-là (lancé depuis "Plus ratées" avec le flag
+  // quizPracticeMode) — mais rien ne le retirait jamais ici : cliquer "Nouvelles Questions"
+  // gardait ce flag indéfiniment, et TOUTES les réponses suivantes semblaient enregistrées
+  // (score affiché normalement) sans jamais réellement atteindre le serveur. Un nouveau lot de
+  // questions via ce bouton doit redevenir un quiz normal, sauvegardé.
+  localStorage.removeItem('quizPracticeMode');
   if (typeof _qtResetSessionTotal === 'function') _qtResetSessionTotal();
 
   // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
