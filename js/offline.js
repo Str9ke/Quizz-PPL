@@ -84,6 +84,15 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     }
   });
 
+  // Sauvegarde locale de secours, INDÉPENDANTE de Firestore — capture cette réponse (et l'état
+  // fusionné complet) dans localStorage AVANT même de tenter l'écriture Firestore ci-dessous :
+  // si celle-ci échoue (ex. document au plafond de taille, coupure réseau), rien n'est perdu —
+  // voir _restoreFromLocalBackup() (configuration.html) pour la reprise. Best-effort : une
+  // erreur ici (quota localStorage plein) ne doit jamais empêcher la tentative Firestore.
+  if (typeof _backupResponsesLocally === 'function') {
+    try { _backupResponsesLocally(uid, merged); } catch (e) { console.warn('[offline] Backup local échoué:', e); }
+  }
+
   // Sauvegarder via Firestore en utilisant des mises à jour PAR CLÉ INDIVIDUELLE
   // (responses.question_xxx = valeur) au lieu de remplacer tout le champ responses.
   // Cela évite d'écraser les données sauvegardées sur un autre appareil depuis le chargement
@@ -240,6 +249,99 @@ async function _deleteHistorySubcollection(uid) {
     docs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref));
     await batch.commit();
   }
+}
+
+// ============================================================
+// Sauvegarde locale de secours (indépendante de Firestore)
+// ============================================================
+
+/**
+ * _backupResponsesLocally(uid, responses) – Écrit un instantané complet de `responses` dans
+ * localStorage, appelé à CHAQUE réponse (voir saveResponsesWithOfflineFallback, AVANT la
+ * tentative d'écriture Firestore) : même si l'écriture Firestore échoue (document au plafond
+ * de taille, coupure réseau non détectée, etc.), la réponse qu'on vient de donner n'est jamais
+ * perdue — elle est déjà dans ce backup, exportable/restaurable depuis configuration.html à
+ * tout moment via _restoreFromLocalBackup(). Écrase le backup précédent à chaque appel (un seul
+ * instantané "le plus à jour possible", pas un historique de versions) : c'est volontairement
+ * simple et robuste plutôt qu'un journal incrémental qui pourrait diverger silencieusement.
+ */
+function _backupResponsesLocally(uid, responses) {
+  if (!uid || !responses) return;
+  const payload = JSON.stringify({ responses, savedAt: Date.now() });
+  const ok = (typeof _setLocalStorageWithCleanup === 'function')
+    ? _setLocalStorageWithCleanup('responsesBackup_' + uid, payload)
+    : (() => { try { localStorage.setItem('responsesBackup_' + uid, payload); return true; } catch (e) { return false; } })();
+  if (!ok) console.warn('[offline] Backup local des réponses impossible (quota localStorage plein).');
+}
+
+/**
+ * _getLocalBackupInfo(uid) – Métadonnées du backup local courant (nombre de questions, date),
+ * sans le charger entièrement — utilisé par configuration.html pour afficher son état sans
+ * attendre un JSON.parse() complet à chaque ouverture de la page.
+ */
+function _getLocalBackupInfo(uid) {
+  if (!uid) return null;
+  try {
+    const raw = localStorage.getItem('responsesBackup_' + uid);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return { count: Object.keys(parsed.responses || {}).length, savedAt: parsed.savedAt || null };
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * _restoreFromLocalBackup(uid) – Réécrit intégralement Firestore (quizProgress/{uid}.responses)
+ * à partir du backup local, PAR FUSION clé par clé (jamais un remplacement en bloc) pour ne
+ * jamais écraser une réponse plus récente déjà sur le serveur (ex: donnée sur un autre appareil
+ * après ce backup) avec une version locale plus ancienne — seules les clés absentes du serveur
+ * OU dont le backup local est MOINS avancé que le serveur ne sont jamais réécrites ; en cas de
+ * doute (comparaison impossible) la version serveur est conservée par prudence.
+ */
+async function _restoreFromLocalBackup(uid) {
+  if (!uid) throw new Error('Utilisateur non identifié');
+  const raw = localStorage.getItem('responsesBackup_' + uid);
+  if (!raw) throw new Error('Aucun backup local trouvé sur cet appareil.');
+  const { responses: backup } = JSON.parse(raw);
+  if (!backup || !Object.keys(backup).length) throw new Error('Backup local vide.');
+
+  const doc = await db.collection('quizProgress').doc(uid).get();
+  const serverResponses = (doc.exists && doc.data().responses) || {};
+
+  const toRestore = {};
+  Object.keys(backup).forEach(key => {
+    const b = backup[key], s = serverResponses[key];
+    if (!s) { toRestore[key] = b; return; } // absente du serveur → restaurer
+    // Comparaison par timestamp si les deux en ont un ; sinon on ne touche pas au serveur.
+    const bMs = b.timestamp && (b.timestamp.seconds !== undefined ? b.timestamp.seconds * 1000 : b.timestamp);
+    const sMs = s.timestamp && (s.timestamp.seconds !== undefined ? s.timestamp.seconds * 1000 : s.timestamp);
+    if (bMs && sMs && bMs > sMs) toRestore[key] = b;
+  });
+
+  const keys = Object.keys(toRestore);
+  if (!keys.length) return { restoredCount: 0 };
+
+  const mainRef = db.collection('quizProgress').doc(uid);
+  const CHUNK = 400;
+  for (let i = 0; i < keys.length; i += CHUNK) {
+    const chunk = keys.slice(i, i + CHUNK);
+    const update = {};
+    chunk.forEach(k => { update['responses.' + k] = _stripUndefinedFields(toRestore[k]); });
+    try {
+      await mainRef.update(update);
+    } catch (e) {
+      if (e.code === 'not-found') {
+        await mainRef.set({ responses: _stripUndefinedFields(toRestore) }, { merge: true });
+        break;
+      }
+      throw e;
+    }
+  }
+  if (typeof currentResponses !== 'undefined') {
+    currentResponses = normalizeResponses({ ...serverResponses, ...toRestore });
+  }
+  return { restoredCount: keys.length };
 }
 
 /**

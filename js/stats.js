@@ -2752,7 +2752,24 @@ async function _compactQuizProgress() {
       console.warn('[compactQuizProgress] Détection orphelines ignorée (chargement banques incomplet):', e);
     }
 
-    // ---- Étape 2 : compactage par paliers de plus en plus agressifs sur l'historique détaillé
+    // ---- Étape 2 : retirer les champs `category`/`questionId` — 100% redondants avec la clé
+    // de chaque entrée (getKeyFor() les encode déjà), jamais lus nulle part ailleurs dans
+    // l'app (vérifié), mais écrits sur CHAQUE réponse depuis le début : sur un compte avec
+    // plusieurs milliers de questions répondues, `category` (une chaîne de ~15 à 45
+    // caractères) à elle seule peut représenter une part significative du document. Nettoyage
+    // rétroactif ici ; les nouvelles réponses ne les écrivent plus du tout (voir
+    // _computeSrEntry() dans quiz.js).
+    let fieldsStrippedCount = 0;
+    Object.keys(responses).forEach(key => {
+      const r = responses[key];
+      if (r && (r.category !== undefined || r.questionId !== undefined)) {
+        delete r.category;
+        delete r.questionId;
+        fieldsStrippedCount++;
+      }
+    });
+
+    // ---- Étape 3 : compactage par paliers de plus en plus agressifs sur l'historique détaillé
     // restant — on s'arrête dès que la taille estimée repasse sous la marge de sécurité, pour
     // perdre le MOINS d'historique possible.
     function trimTo(cap) {
@@ -2779,7 +2796,7 @@ async function _compactQuizProgress() {
       if (statusEl) statusEl.textContent = `⏳ Palier ${cap === 0 ? 'historique retiré' : 'plafond ' + cap} — taille actuelle : ~${Math.round(currentSize / 1024)} Ko…`;
     }
 
-    if (!totalTrimmed && !orphanKeys.length) {
+    if (!totalTrimmed && !orphanKeys.length && !fieldsStrippedCount) {
       const sizeKb = Math.round(sizeBefore / 1024);
       if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (document actuel : ~${sizeKb} Ko, déjà sous la limite historique, aucune réponse orpheline détectée). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
       if (btn) btn.disabled = false;
@@ -2789,19 +2806,22 @@ async function _compactQuizProgress() {
     if (statusEl) {
       const parts = [];
       if (orphanKeys.length) parts.push(`${orphanKeys.length} réponse(s) orpheline(s) supprimée(s)`);
+      if (fieldsStrippedCount) parts.push(`${fieldsStrippedCount} entrée(s) allégée(s) de champs redondants`);
       if (totalTrimmed) parts.push(`${totalTrimmed} question(s) allégée(s) (${totalEntriesRemoved} entrée(s) d'historique en trop retirée(s))`);
       statusEl.textContent = `⏳ Compactage : ${parts.join(' + ')}…`;
     }
 
-    // set() (pas update()) : on réécrit le document entier avec les orphelines/statusLog déjà
-    // réduits, pour que la taille du document lui-même redescende sous la limite — un update()
-    // partiel sur une seule question n'aurait rien changé à la taille globale déjà trop grande.
+    // set() (pas update()) : on réécrit le document entier avec les orphelines/champs
+    // redondants/statusLog déjà réduits, pour que la taille du document lui-même redescende
+    // sous la limite — un update() partiel sur une seule question n'aurait rien changé à la
+    // taille globale déjà trop grande.
     await db.collection('quizProgress').doc(uid).set(data);
 
     const sizeAfter = new Blob([JSON.stringify(data)]).size;
     if (statusEl) {
       const details = [];
       if (orphanKeys.length) details.push(`${orphanKeys.length} réponse(s) orpheline(s) (anciennes questions supprimées/renommées, sans impact sur tes stats actuelles)`);
+      if (fieldsStrippedCount) details.push(`${fieldsStrippedCount} entrée(s) allégée(s) de champs redondants (jamais utilisés)`);
       if (totalTrimmed) details.push(`${totalTrimmed} question(s) allégée(s) d'historique détaillé`);
       statusEl.textContent = `✅ Compactage terminé : ${Math.round(sizeBefore / 1024)} Ko → ${Math.round(sizeAfter / 1024)} Ko `
         + `(${details.join(' + ')} — aucune statistique perdue, réussites/échecs/planification intacts). Tes sauvegardes devraient de nouveau fonctionner.`;
