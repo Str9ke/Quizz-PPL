@@ -1435,6 +1435,27 @@ function _assistBuildSpeechText(q) {
   return parts.join('. ');
 }
 
+/** _assistReplay() – Relit la question courante depuis le début, à la demande (bouton 🔁 en
+ * coin de la carte). Seul moyen de rejouer/relancer la lecture en Mode Assistance : il n'y a
+ * pas de pause ni de curseur sur speechSynthesis, donc une fois la lecture démarrée ou finie,
+ * rien d'autre ne permettait de la réentendre. Si la question a déjà une réponse, reconstitue
+ * aussi l'annonce du résultat (correct / bonne réponse), pour rejouer exactement ce qui a été
+ * lu au clic — pas seulement l'énoncé initial. */
+function _assistReplay() {
+  const idx = window._assistCurrentIdx;
+  const q = currentQuestions && currentQuestions[idx];
+  if (!q) return;
+  let text = _assistBuildSpeechText(q);
+  if (_assistIsAnswered(idx)) {
+    const checked = document.querySelector(`input[name="qidx${idx}"]:checked`);
+    const chosenIdx = checked ? parseInt(checked.value, 10) : -1;
+    text += (chosenIdx === q.bonne_reponse)
+      ? '. Bonne réponse.'
+      : '. Réponse incorrecte. La bonne réponse était : ' + q.choix[q.bonne_reponse];
+  }
+  _assistSpeak(text);
+}
+
 /** _toggleAssistMode() – Bouton unique d'entrée/sortie, cliquable à la volée à tout moment
  * tant qu'un quiz est chargé sur cette page. */
 function _toggleAssistMode() {
@@ -1508,6 +1529,7 @@ function _assistRenderCurrent() {
   cont.style.display = 'block';
   cont.innerHTML = `
     <div class="assist-mode-card">
+      <button type="button" class="assist-mode-replay-btn" onclick="_assistReplay()" title="Relire la question (et la réponse si déjà répondu)">🔁</button>
       <div class="assist-mode-progress">Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
       <div class="assist-mode-question">${q.question}</div>
       ${ q.image

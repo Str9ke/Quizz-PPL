@@ -1642,11 +1642,32 @@ body.light .quiz-hero-title {
   margin: 0.5rem auto 1.5rem;
 }
 .assist-mode-card {
+  position: relative;
   background: var(--bg-question);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.2rem 1rem 1.4rem;
   box-shadow: 0 4px 18px var(--card-shadow);
+}
+.assist-mode-replay-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--input-border);
+  border-radius: 50%;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 1.15rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.assist-mode-replay-btn:active {
+  transform: scale(0.92);
 }
 .assist-mode-progress {
   font-size: 0.85rem;
