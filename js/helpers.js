@@ -253,14 +253,12 @@ async function _saveCorrectOverride(q, choiceText) {
   const uid = (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
   if (!uid) { alert('Vous devez être connecté pour corriger une réponse.'); return false; }
   const key = getKeyFor(q);
-  const payload = { responses: { [key]: { correctOverride: choiceText } } };
   try {
-    await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
+    await _saveResponsesSharded(uid, { [key]: { correctOverride: choiceText } });
   } catch (e) {
     console.warn('[correctOverride] échec de sauvegarde:', e);
-    if (typeof saveToggleWithOfflineFallback === 'function') {
-      saveToggleWithOfflineFallback(uid, key, payload);
-    }
+    try { await _saveResponsesSharded(uid, { [key]: { correctOverride: choiceText } }); }
+    catch (e2) { console.error('[correctOverride] retry échoué:', e2); }
   }
   if (typeof currentResponses !== 'undefined' && currentResponses) {
     currentResponses[key] = { ...(currentResponses[key] || {}), correctOverride: choiceText };

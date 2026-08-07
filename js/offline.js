@@ -26,6 +26,241 @@ function _stripUndefinedFields(obj) {
   return out;
 }
 
+// ============================================================
+// Répartition de `responses` sur plusieurs documents ("shards")
+// ============================================================
+//
+// CONTEXTE : le champ `responses` du document quizProgress/{uid} contenait TOUTES les
+// réponses de l'utilisateur dans une seule map, sur un document plafonné par Firestore à
+// 1 Mio — un utilisateur avec plusieurs milliers de questions répondues finissait par heurter
+// ce plafond, bloquant TOUTE nouvelle sauvegarde (même sur une seule question) jusqu'à un
+// compactage manuel. Le compactage (voir _compactQuizProgress, js/stats.js) repousse le mur
+// mais ne l'élimine pas : au-delà d'un certain nombre de questions réellement répondues, plus
+// aucune donnée "gratuite" à retirer n'existe.
+//
+// SOLUTION : `responses` est désormais réparti sur des documents séparés
+// quizProgress/{uid}/responseShards/{0,1,2,...}, chacun plafonné à SHARD_CAPACITY entrées —
+// largement sous la limite Firestore même avec des entrées "lourdes" (notes, correctOverride).
+// Un nouveau shard est créé automatiquement dès que le précédent est plein : AUCUNE limite
+// globale au nombre de questions répondues, quel que soit le rythme d'utilisation.
+//
+// Le document principal quizProgress/{uid} garde tous ses AUTRES champs inchangés (notes,
+// dailyHistory, quizSessionCount...) — seul `responses` est déplacé, remplacé par un simple
+// compteur `responseShardCount` (taille négligeable, ne grossit jamais).
+//
+// MIGRATION automatique et unique (_migrateResponsesToShards, appelée par
+// _loadMergedResponses ci-dessous à chaque chargement de page) : déplace le `responses`
+// encore inline (ancien format) vers des shards, PUIS le retire du document principal —
+// jamais l'inverse, pour ne jamais risquer de perdre des données en cours de route (même
+// philosophie que _migrateStatusLogToSubcollection ci-dessous, déjà en place depuis plus
+// longtemps pour l'historique détaillé).
+
+const RESPONSE_SHARD_CAPACITY = 2000;
+
+/**
+ * _migrateResponsesToShards(uid) – Migration unique et idempotente : si le document principal
+ * contient encore un champ `responses` inline (ancien format), le répartit en shards puis le
+ * retire du document principal — SEULEMENT après confirmation que l'écriture de tous les
+ * shards a réussi. Sans effet (retour immédiat) une fois la migration terminée pour cet
+ * utilisateur, ou si hors-ligne (on retentera au prochain chargement en ligne).
+ */
+async function _migrateResponsesToShards(uid) {
+  if (!uid || !navigator.onLine) return { migrated: false };
+  try {
+    const mainRef = db.collection('quizProgress').doc(uid);
+    const doc = await mainRef.get({ source: 'server' }).catch(() => mainRef.get());
+    if (!doc.exists) return { migrated: false };
+    const data = doc.data();
+    const inline = data.responses;
+    if (!inline || !Object.keys(inline).length) return { migrated: false };
+
+    // Chunking déterministe (clés triées) : un retry après échec partiel reproduit exactement
+    // le même découpage tant que le champ `responses` inline n'a pas encore été retiré — donc
+    // aucun risque de doublon/incohérence entre deux tentatives.
+    const keys = Object.keys(inline).sort();
+    const shardCount = Math.max(1, Math.ceil(keys.length / RESPONSE_SHARD_CAPACITY));
+
+    for (let i = 0; i < shardCount; i++) {
+      const chunkKeys = keys.slice(i * RESPONSE_SHARD_CAPACITY, (i + 1) * RESPONSE_SHARD_CAPACITY);
+      const chunkResponses = {};
+      chunkKeys.forEach(k => { chunkResponses[k] = inline[k]; });
+      await mainRef.collection('responseShards').doc(String(i)).set(
+        { responses: _stripUndefinedFields(chunkResponses) },
+        { merge: true }
+      );
+    }
+
+    // Seulement après succès confirmé de TOUS les shards ci-dessus : retirer `responses` du
+    // document principal et enregistrer le nombre de shards créés.
+    await mainRef.update({ responses: firebase.firestore.FieldValue.delete(), responseShardCount: shardCount });
+    console.log(`[offline] Migration responses → ${shardCount} shard(s) (${keys.length} question(s)) réussie.`);
+    return { migrated: true, shardCount };
+  } catch (e) {
+    console.warn('[offline] Migration responses → shards : échec, on réessaiera au prochain chargement de page.', e);
+    return { migrated: false, error: e };
+  }
+}
+
+/**
+ * _loadMergedResponses(uid, timeoutMs) – Point d'entrée UNIQUE pour lire les réponses d'un
+ * utilisateur : déclenche la migration si besoin, lit le document principal ET tous ses
+ * shards, puis renvoie un objet imitant un DocumentSnapshot Firestore ({exists, data()}) où
+ * `data().responses` contient la fusion complète — tous les appelants existants qui font déjà
+ * `const data = doc.data(); ... data.responses ...` continuent de fonctionner sans autre
+ * changement. Alimente aussi window._respKeyShard (quelle entrée vit dans quel shard) et
+ * window._respShardCount, utilisés par _saveResponsesSharded() pour router les écritures.
+ */
+async function _loadMergedResponses(uid, timeoutMs) {
+  if (!uid) return { exists: false, data: () => ({}) };
+  if (typeof _migrateResponsesToShards === 'function') {
+    await _migrateResponsesToShards(uid).catch(() => {});
+  }
+
+  const mainRef = db.collection('quizProgress').doc(uid);
+  const doc = (typeof getDocWithTimeout === 'function')
+    ? await getDocWithTimeout(mainRef, timeoutMs)
+    : await mainRef.get();
+  const primaryData = doc.exists ? doc.data() : {};
+  const merged = { ...(primaryData.responses || {}) };
+  const shardCount = primaryData.responseShardCount || 0;
+
+  window._respKeyShard = {};
+  window._respShardEntryCounts = {};
+  const shardFetches = [];
+  for (let i = 0; i < shardCount; i++) {
+    const shardRef = mainRef.collection('responseShards').doc(String(i));
+    shardFetches.push(
+      ((typeof getDocWithTimeout === 'function') ? getDocWithTimeout(shardRef, timeoutMs) : shardRef.get())
+        .then(shardDoc => {
+          const shardResponses = (shardDoc.exists && shardDoc.data().responses) || {};
+          const keys = Object.keys(shardResponses);
+          window._respShardEntryCounts[i] = keys.length;
+          keys.forEach(k => { merged[k] = shardResponses[k]; window._respKeyShard[k] = i; });
+        })
+        .catch(e => console.warn('[offline] Lecture shard ' + i + ' échouée:', e.message))
+    );
+  }
+  await Promise.all(shardFetches);
+  window._respShardCount = shardCount;
+
+  const exists = doc.exists || shardCount > 0;
+  return { exists, data: () => ({ ...primaryData, responses: merged }) };
+}
+
+/**
+ * _saveResponsesSharded(uid, updates) – Écrit `updates` ({clé: entrée, ...}) dans les shards
+ * corrects : une entrée déjà connue (présente dans window._respKeyShard, alimenté par
+ * _loadMergedResponses ci-dessus) retourne vers SON shard d'origine ; une entrée nouvelle
+ * rejoint le shard "actif" (le dernier créé) tant qu'il a de la place, sinon un nouveau shard
+ * est créé. Retourne { targetShards, newShardCreated } — utilisé par saveResponsesWithOfflineFallback
+ * pour savoir s'il faut aussi mettre à jour responseShardCount sur le document principal.
+ */
+async function _saveResponsesSharded(uid, updates) {
+  const keys = Object.keys(updates);
+  if (!keys.length) return { targetShards: [], newShardCreated: false };
+
+  // Filet de sécurité : si aucun chargement n'a eu lieu avant cette écriture sur cette page
+  // (window._respKeyShard jamais initialisé), charger maintenant pour router correctement.
+  if (!window._respKeyShard) {
+    await _loadMergedResponses(uid).catch(() => {});
+  }
+  window._respKeyShard = window._respKeyShard || {};
+  window._respShardEntryCounts = window._respShardEntryCounts || {};
+  let shardCount = window._respShardCount || 0;
+  let newShardCreated = false;
+
+  // Shard "actif" pour les nouvelles entrées : le dernier existant, ou le tout premier (0) si
+  // aucun shard n'existe encore pour cet utilisateur (tout premier enregistrement).
+  let activeShard = Math.max(0, shardCount - 1);
+  if (shardCount === 0) { shardCount = 1; newShardCreated = true; }
+  let activeCount = window._respShardEntryCounts[activeShard] || 0;
+
+  const byShard = {}; // { shardIdx: { key: entry, ... } }
+  keys.forEach(key => {
+    let target = window._respKeyShard[key];
+    if (target === undefined) {
+      // Nouvelle entrée : rejoint le shard actif, sauf s'il est plein → nouveau shard.
+      if (activeCount >= RESPONSE_SHARD_CAPACITY) {
+        activeShard += 1;
+        shardCount = activeShard + 1;
+        activeCount = 0;
+        newShardCreated = true;
+      }
+      target = activeShard;
+      activeCount += 1;
+      window._respKeyShard[key] = target;
+    }
+    if (!byShard[target]) byShard[target] = {};
+    // Fusion avec l'entrée COMPLÈTE déjà connue localement (currentResponses, tenu à jour dans
+    // toute l'app) AVANT écriture : la cible Firestore ci-dessous est un CHEMIN POINTÉ
+    // ('responses.<key>'), qui REMPLACE toute la valeur à ce chemin — contrairement à un objet
+    // imbriqué {responses:{[key]:...}} avec set(merge:true), qui aurait fusionné en profondeur.
+    // Sans cette fusion, un appelant passant une mise à jour PARTIELLE (ex. juste {marked:true},
+    // comme le font les boutons 🔖⭐🚫✏️) effacerait silencieusement les autres champs de
+    // l'entrée (status, srInterval, nextReview...) au lieu de les préserver.
+    const existing = (typeof currentResponses !== 'undefined' && currentResponses && currentResponses[key]) || {};
+    byShard[target][key] = _stripUndefinedFields({ ...existing, ...updates[key] });
+  });
+  window._respShardEntryCounts[activeShard] = activeCount;
+  window._respShardCount = shardCount;
+
+  const mainRef = db.collection('quizProgress').doc(uid);
+  const targetShards = Object.keys(byShard).map(Number);
+  await Promise.all(targetShards.map(shardIdx => {
+    const setPayload = {};
+    Object.keys(byShard[shardIdx]).forEach(k => { setPayload['responses.' + k] = byShard[shardIdx][k]; });
+    return mainRef.collection('responseShards').doc(String(shardIdx)).set(setPayload, { merge: true });
+  }));
+
+  if (newShardCreated) {
+    await mainRef.set({ responseShardCount: shardCount }, { merge: true });
+  }
+
+  return { targetShards, newShardCreated };
+}
+
+/**
+ * _updateResponseFieldsSharded(uid, dottedUpdate) – Équivalent shardé de
+ * `db.collection('quizProgress').doc(uid).update(dottedUpdate)` pour les mises à jour à
+ * chemins pointés CIBLANT `responses` (ex: {'responses.question_x.status': FieldValue.delete()}) —
+ * utilisé par les outils de réinitialisation partielle (js/stats.js : _resetCategoryStats,
+ * _resetCategoryField, _resetCategoryFlaggedField, _resetGroupStats, _resetGroupFlaggedStats),
+ * qui doivent supprimer PRÉCISÉMENT certains champs d'une entrée (status/srInterval/nextReview/
+ * marked/important) sans toucher au reste — un set(..., {merge:true}) ne le permettrait pas
+ * (il ne supprime jamais un champ absent de l'objet fourni).
+ *
+ * Route chaque chemin vers SON shard (via window._respKeyShard, alimenté par
+ * _loadMergedResponses — l'appelant doit l'avoir chargé avant, ce qui est déjà le cas : ces
+ * outils lisent toujours les réponses existantes avant de construire `dottedUpdate`).
+ */
+async function _updateResponseFieldsSharded(uid, dottedUpdate) {
+  const paths = Object.keys(dottedUpdate);
+  if (!paths.length) return;
+  if (!window._respKeyShard) await _loadMergedResponses(uid).catch(() => {});
+  window._respKeyShard = window._respKeyShard || {};
+
+  const byShard = {}; // { shardIdx: { 'responses.key.field': value, ... } }
+  const skipped = [];
+  paths.forEach(path => {
+    // path = "responses.<key>.<field>" — <key> peut lui-même contenir des points (aucun cas
+    // réel ici, les clés sont générées par getKeyFor() sans point), donc un split simple suffit.
+    const parts = path.split('.');
+    const key = parts[1];
+    const shardIdx = window._respKeyShard[key];
+    if (shardIdx === undefined) { skipped.push(key); return; }
+    if (!byShard[shardIdx]) byShard[shardIdx] = {};
+    byShard[shardIdx][path] = dottedUpdate[path];
+  });
+  if (skipped.length) {
+    console.warn('[offline] _updateResponseFieldsSharded : ' + skipped.length + ' clé(s) sans shard connu, ignorée(s):', skipped.slice(0, 5));
+  }
+
+  const mainRef = db.collection('quizProgress').doc(uid);
+  await Promise.all(Object.keys(byShard).map(shardIdx =>
+    mainRef.collection('responseShards').doc(String(shardIdx)).update(byShard[shardIdx])
+  ));
+}
+
 /**
  * Sauvegarde les réponses dans Firestore.
  * Firestore gère automatiquement la persistence hors-ligne et la synchronisation.
@@ -42,14 +277,16 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     if (typeof _ensurePersistence === 'function') await _ensurePersistence();
   } catch (e) { console.warn('[offline] Persistence check failed', e); }
 
-  // Charger le contexte existant soit du scope global, soit via un fetch optimiste
+  // Charger le contexte existant soit du scope global, soit via _loadMergedResponses (qui lit
+  // le document principal ET tous ses shards — voir plus haut — et alimente au passage
+  // window._respKeyShard nécessaire au routage correct de l'écriture ci-dessous).
   let existing = {};
   if (typeof currentResponses !== 'undefined' && currentResponses) {
     existing = currentResponses;
+    if (!window._respKeyShard) await _loadMergedResponses(uid).catch(() => {});
   } else {
-    // Si pas de currentResponses global, essayer de lire (cache ou serveur)
     try {
-      const doc = await db.collection('quizProgress').doc(uid).get();
+      const doc = await _loadMergedResponses(uid);
       if (doc.exists) existing = doc.data().responses || {};
     } catch (e) {
       console.warn('[offline] Erreur lecture avant save:', e);
@@ -93,17 +330,15 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
     try { _backupResponsesLocally(uid, merged); } catch (e) { console.warn('[offline] Backup local échoué:', e); }
   }
 
-  // Sauvegarder via Firestore en utilisant des mises à jour PAR CLÉ INDIVIDUELLE
-  // (responses.question_xxx = valeur) au lieu de remplacer tout le champ responses.
-  // Cela évite d'écraser les données sauvegardées sur un autre appareil depuis le chargement
-  // de la page (ex : téléphone sauvegarde nextReview → PC ne le voit pas encore → PC sauvegarde
-  // et ne doit pas écraser le nextReview du téléphone).
+  // Sauvegarder chaque réponse dans SON shard (voir _saveResponsesSharded plus haut — router
+  // par clé individuelle, jamais un remplacement en bloc, pour ne jamais écraser une donnée
+  // sauvegardée sur un autre appareil depuis le chargement de cette page), en parallèle avec
+  // lastUpdated sur le document principal et l'historique en attente — trois documents
+  // indépendants, pas de dépendance d'ordre entre eux.
   try {
     const mainRef = db.collection('quizProgress').doc(uid);
-    const firestoreUpdate = { lastUpdated: firebase.firestore.Timestamp.now() };
-    Object.keys(cleanedResponsesToSave).forEach(key => {
-      firestoreUpdate['responses.' + key] = _stripUndefinedFields(merged[key]);
-    });
+    const toSave = {};
+    Object.keys(cleanedResponsesToSave).forEach(key => { toSave[key] = merged[key]; });
 
     // writeHistoryEntries() : écrit chaque nouvelle entrée de log dans son propre document
     // de sous-collection via arrayUnion (idempotent — un retry ne duplique jamais l'entrée).
@@ -120,32 +355,11 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
       await histBatch.commit();
     };
 
-    try {
-      // update() ne fonctionne que si le doc existe — cas normal après la 1ère session.
-      // Groupé dans un batch avec les écritures d'historique pour que les deux
-      // n'aboutissent (ou n'échouent) qu'ensemble.
-      const batch = db.batch();
-      batch.update(mainRef, firestoreUpdate);
-      pendingLogEntries.forEach(({ key, logEntry }) => {
-        batch.set(
-          mainRef.collection('history').doc(key),
-          { log: firebase.firestore.FieldValue.arrayUnion(logEntry) },
-          { merge: true }
-        );
-      });
-      await batch.commit();
-    } catch (e) {
-      if (e.code === 'not-found') {
-        // Premier enregistrement : créer le document avec set(), puis écrire l'historique
-        await db.collection('quizProgress').doc(uid).set(
-          { responses: _stripUndefinedFields(merged), lastUpdated: firebase.firestore.Timestamp.now() },
-          { merge: true }
-        );
-        await writeHistoryEntries();
-      } else {
-        throw e;
-      }
-    }
+    await Promise.all([
+      _saveResponsesSharded(uid, toSave),
+      mainRef.set({ lastUpdated: firebase.firestore.Timestamp.now() }, { merge: true }),
+      writeHistoryEntries()
+    ]);
 
     // Mettre à jour l'objet global si présent
     if (typeof currentResponses !== 'undefined') {
@@ -209,11 +423,13 @@ async function _migrateStatusLogToSubcollection(uid) {
       await histBatch.commit();
 
       // Uniquement après succès confirmé de l'écriture ci-dessus : retirer le statusLog
-      // inline du document principal (via update() + FieldValue.delete(), en notation
-      // pointée, pour ne toucher QUE ce champ et laisser le reste de chaque entrée intact).
+      // inline (via update() + FieldValue.delete(), en notation pointée, pour ne toucher QUE
+      // ce champ et laisser le reste de chaque entrée intact) — routé vers le bon shard via
+      // _updateResponseFieldsSharded (voir plus haut), `responses.<key>.statusLog` ne vivant
+      // plus forcément sur le document principal.
       const mainUpdate = {};
       chunk.forEach(k => { mainUpdate['responses.' + k + '.statusLog'] = firebase.firestore.FieldValue.delete(); });
-      await mainRef.update(mainUpdate);
+      await _updateResponseFieldsSharded(uid, mainUpdate);
 
       // Refléter localement pour éviter une re-tentative inutile dans la même session
       chunk.forEach(k => { if (currentResponses[k]) delete currentResponses[k].statusLog; });
@@ -249,6 +465,30 @@ async function _deleteHistorySubcollection(uid) {
     docs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref));
     await batch.commit();
   }
+}
+
+/**
+ * _deleteAllResponseShards(uid) – Supprime intégralement la sous-collection
+ * quizProgress/{uid}/responseShards (voir le préambule "Répartition de responses..." plus
+ * haut). Utilisée par resetStats() (js/stats.js) pour que "Réinitialiser les statistiques"
+ * efface bien TOUTES les réponses, quel que soit le nombre de shards créés au fil du temps.
+ */
+async function _deleteAllResponseShards(uid) {
+  if (!uid) return;
+  const shardsCol = db.collection('quizProgress').doc(uid).collection('responseShards');
+  const snap = await shardsCol.get();
+  if (!snap.empty) {
+    const docs = snap.docs;
+    const CHUNK = 450;
+    for (let i = 0; i < docs.length; i += CHUNK) {
+      const batch = db.batch();
+      docs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  window._respKeyShard = {};
+  window._respShardEntryCounts = {};
+  window._respShardCount = 0;
 }
 
 // ============================================================
@@ -306,8 +546,8 @@ async function _restoreFromLocalBackup(uid) {
   const { responses: backup } = JSON.parse(raw);
   if (!backup || !Object.keys(backup).length) throw new Error('Backup local vide.');
 
-  const doc = await db.collection('quizProgress').doc(uid).get();
-  const serverResponses = (doc.exists && doc.data().responses) || {};
+  const doc = await _loadMergedResponses(uid);
+  const serverResponses = doc.exists ? (doc.data().responses || {}) : {};
 
   const toRestore = {};
   Object.keys(backup).forEach(key => {
@@ -322,37 +562,12 @@ async function _restoreFromLocalBackup(uid) {
   const keys = Object.keys(toRestore);
   if (!keys.length) return { restoredCount: 0 };
 
-  const mainRef = db.collection('quizProgress').doc(uid);
-  const CHUNK = 400;
-  for (let i = 0; i < keys.length; i += CHUNK) {
-    const chunk = keys.slice(i, i + CHUNK);
-    const update = {};
-    chunk.forEach(k => { update['responses.' + k] = _stripUndefinedFields(toRestore[k]); });
-    try {
-      await mainRef.update(update);
-    } catch (e) {
-      if (e.code === 'not-found') {
-        await mainRef.set({ responses: _stripUndefinedFields(toRestore) }, { merge: true });
-        break;
-      }
-      throw e;
-    }
-  }
+  await _saveResponsesSharded(uid, toRestore);
+
   if (typeof currentResponses !== 'undefined') {
     currentResponses = normalizeResponses({ ...serverResponses, ...toRestore });
   }
   return { restoredCount: keys.length };
-}
-
-/**
- * Sauvegarde un toggle (marquer/important)
- */
-async function saveToggleWithOfflineFallback(uid, key, payload) {
-  try {
-    await db.collection('quizProgress').doc(uid).set(payload, { merge: true });
-  } catch (e) {
-    console.error('[offline] Save toggle failed:', e);
-  }
 }
 
 /**

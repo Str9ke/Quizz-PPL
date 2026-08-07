@@ -1057,11 +1057,13 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     return;
   }
 
-  // fetch and normalize up-to-date responses
+  // fetch and normalize up-to-date responses (_loadMergedResponses lit le document principal
+  // ET tous les shards de `responses` — voir js/offline.js — indispensable ici : c'est LE
+  // point d'entrée qui décide quelles questions sont dues/non vues/ratées pour la sélection.
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   let responses = {};
   if (uid) {
-    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    const doc = await _loadMergedResponses(uid);
     const data = doc.exists ? doc.data() : {};
     responses = normalizeResponses(data.responses || {});
     _currentSessionCount = data.quizSessionCount || _currentSessionCount || 0;

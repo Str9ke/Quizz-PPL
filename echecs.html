@@ -32,12 +32,12 @@
     });
   </script>
   <script src="js/globals.js?v=20260730a"></script>
-  <script src="js/helpers.js?v=20260803b"></script>
-  <script src="js/categories.js?v=20260803b"></script>
+  <script src="js/helpers.js?v=20260807c"></script>
+  <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807a"></script>
   <script src="js/quiz.js?v=20260807a"></script>
-  <script src="js/init.js?v=20260804a"></script>
-  <script src="js/offline.js?v=20260807a"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/offline.js?v=20260807c"></script>
 </head>
 <body>
   <!-- Theme toggle -->
@@ -199,19 +199,9 @@
       await loadAllQuestions();
 
       try {
-        let doc;
-        if (navigator.onLine) {
-          try {
-            doc = await Promise.race([
-              db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-            ]);
-          } catch (e) {
-            doc = await db.collection('quizProgress').doc(uid).get();
-          }
-        } else {
-          doc = await db.collection('quizProgress').doc(uid).get();
-        }
+        // _loadMergedResponses lit le document principal ET tous les shards de `responses`
+        // (voir js/offline.js) — indispensable ici pour la liste complète des questions ratées.
+        const doc = await _loadMergedResponses(uid, 6000);
         const data = doc.exists ? doc.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
         _notesCache = data.notes || {};
@@ -440,15 +430,14 @@
       const newMarked = !prev.marked;
       const entry = { marked: newMarked, important: prev.important === true };
       if (prev.status !== undefined) entry.status = prev.status;
-      const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, marked: newMarked };
       btn.textContent = newMarked ? '🗑️' : '🔖';
       btn.title = newMarked ? 'Supprimer le marquage' : 'Marquer cette question';
       btn.className = (newMarked ? 'delete-button' : 'mark-button') + ' qa-icon-btn';
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
-        try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      _saveResponsesSharded(uid, { [key]: entry }).catch(async (e) => {
+        try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) {}
       });
     };
 
@@ -458,15 +447,14 @@
       const newImportant = !prev.important;
       const entry = { marked: prev.marked === true, important: newImportant };
       if (prev.status !== undefined) entry.status = prev.status;
-      const payload = { responses: { [key]: entry } };
       currentResponses[key] = { ...prev, important: newImportant };
       btn.textContent = newImportant ? '⭐' : '☆';
       btn.title = newImportant ? 'Retirer Important' : 'Marquer comme important';
       btn.className = (newImportant ? 'delete-button' : 'mark-button') + ' qa-icon-btn';
       const block = btn.closest('.search-result-block');
       if (block) updateBadges(block, key);
-      db.collection('quizProgress').doc(uid).set(payload, { merge: true }).catch(async (e) => {
-        try { await saveToggleWithOfflineFallback(uid, key, payload); } catch (e2) {}
+      _saveResponsesSharded(uid, { [key]: entry }).catch(async (e) => {
+        try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) {}
       });
     };
 

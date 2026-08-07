@@ -22,23 +22,12 @@ async function displayDailyStats(forcedUid) {
     return;
   }
   try {
-    // CROSS-BROWSER : forcer une lecture SERVEUR quand on est en ligne
-    // pour récupérer les compteurs écrits par un autre navigateur.
-    // Sans cela, la persistance Firestore retourne le cache local (périmé).
-    let doc;
-    if (navigator.onLine) {
-      try {
-        doc = await Promise.race([
-          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('server timeout')), 6000))
-        ]);
-      } catch (e) {
-        console.warn('[displayDailyStats] lecture serveur échouée, fallback cache:', e.message);
-        doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-      }
-    } else {
-      doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    }
+    // CROSS-BROWSER : forcer une lecture SERVEUR quand on est en ligne pour récupérer les
+    // compteurs écrits par un autre navigateur (_loadMergedResponses délègue déjà à
+    // getDocWithTimeout, qui applique cette même stratégie serveur→cache) — lit aussi tous
+    // les shards de `responses` (voir js/offline.js), nécessaire pour enrichDailyHistoryFromResponses
+    // ci-dessous.
+    const doc = await _loadMergedResponses(uid, 6000);
     const data = doc.exists ? doc.data() : {};
     const rawFirestoreDH = { ...(data.dailyHistory || {}) };
     
@@ -509,24 +498,11 @@ async function initStats() {
     // Pré-charger tous les JSON en parallèle (depuis le cache SW = quasi-instantané)
     await prefetchAllJsonFiles();
 
-    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne
-    // Sans cela, enablePersistence retourne le cache local (périmé si un autre
-    // appareil a écrit de nouvelles données, ex: Android 196 vs PC cache 136).
-    let doc;
-    if (navigator.onLine) {
-      try {
-        doc = await Promise.race([
-          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('initStats server timeout')), 6000))
-        ]);
-        console.log('[initStats] Firestore lu depuis le SERVEUR');
-      } catch (e) {
-        console.warn('[initStats] lecture serveur échouée, fallback cache:', e.message);
-        doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-      }
-    } else {
-      doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
-    }
+    // CROSS-BROWSER FIX : forcer une lecture SERVEUR quand on est en ligne (_loadMergedResponses
+    // délègue à getDocWithTimeout, qui applique déjà cette stratégie serveur→cache) — lit aussi
+    // tous les shards de `responses` (voir js/offline.js) : indispensable ici, c'est LE point
+    // d'entrée qui alimente tout le reste de la page stats.
+    const doc = await _loadMergedResponses(uid, 6000);
     const data = doc.exists ? doc.data() : { responses: {} };
     // Garder une copie des valeurs serveur brutes pour la comparaison lors du write-back
     const rawServerDailyHistory = { ...(data.dailyHistory || {}) };
@@ -1359,29 +1335,21 @@ function _renderSymbolesGroupSessionChart(container, grpLabel) {
 }
 
 /**
- * _fetchQuizProgressResponses() – Charge le champ `responses` de quizProgress/{uid} de façon fiable.
+ * _fetchQuizProgressResponses() – Charge `responses` (document principal + tous les shards,
+ * voir _loadMergedResponses dans js/offline.js) de façon fiable :
  * 1) Serveur (données les plus fraîches, cross-device) si en ligne, avec timeout généreux.
  * 2) Cache Firestore persistant local (fiable : déjà synchronisé lors d'une utilisation normale de l'app).
  * 3) En dernier recours seulement : `currentResponses` en mémoire (peut être incomplet/vide sur cette page).
  * Retourne null si aucune source n'a pu être lue, pour éviter un reset partiel silencieux sur des données vides.
+ * IMPORTANT : alimente aussi window._respKeyShard (via _loadMergedResponses), nécessaire au
+ * routage correct des _updateResponseFieldsSharded() qui suivent dans les fonctions de reset.
  */
 async function _fetchQuizProgressResponses(uid) {
-  if (navigator.onLine) {
-    try {
-      const docSnap = await Promise.race([
-        db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
-      ]);
-      return docSnap.exists ? (docSnap.data().responses || {}) : {};
-    } catch (e) {
-      console.warn('[resetHelpers] Lecture serveur échouée, fallback cache Firestore:', e.message);
-    }
-  }
   try {
-    const docSnap = await db.collection('quizProgress').doc(uid).get({ source: 'cache' });
-    return docSnap.exists ? (docSnap.data().responses || {}) : {};
+    const doc = await _loadMergedResponses(uid, 10000);
+    if (doc.exists) return doc.data().responses || {};
   } catch (e) {
-    console.warn('[resetHelpers] Lecture cache Firestore échouée:', e.message);
+    console.warn('[resetHelpers] _loadMergedResponses échoué:', e.message);
   }
   if (typeof currentResponses !== 'undefined' && currentResponses && Object.keys(currentResponses).length) {
     return currentResponses;
@@ -1443,7 +1411,7 @@ async function _resetCategoryStats(catValue, catLabel) {
 
     if (!changedCount) { alert(`Toutes les questions de « ${catLabel} » sont déjà "non vues".`); return; }
 
-    await db.collection('quizProgress').doc(uid).update(update);
+    await _updateResponseFieldsSharded(uid, update);
 
     // Mettre à jour currentResponses en mémoire si disponible (évite un reload complet optionnel)
     if (typeof currentResponses !== 'undefined' && currentResponses) {
@@ -1545,7 +1513,7 @@ async function _resetCategoryField(catValue, catLabel, field) {
 
     if (!changedKeys.length) { alert(`Aucune question « ${cfg.label} » trouvée dans cette catégorie.`); return; }
 
-    await db.collection('quizProgress').doc(uid).update(update);
+    await _updateResponseFieldsSharded(uid, update);
 
     if (typeof currentResponses !== 'undefined' && currentResponses) {
       changedKeys.forEach(k => {
@@ -1612,7 +1580,7 @@ async function _resetCategoryFlaggedField(catValue, catLabel) {
 
     if (!changedKeys.length) { alert(`Aucune question 📌⭐📝 déjà vue trouvée dans « ${catLabel} ».`); return; }
 
-    await db.collection('quizProgress').doc(uid).update(update);
+    await _updateResponseFieldsSharded(uid, update);
 
     if (typeof currentResponses !== 'undefined' && currentResponses) {
       changedKeys.forEach(k => {
@@ -1890,7 +1858,7 @@ async function synchroniserStatistiques() {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
 
   try {
-    const doc = await getDocWithTimeout(db.collection('quizProgress').doc(uid));
+    const doc = await _loadMergedResponses(uid);
     if (doc.exists) {
       const data = doc.data();
       // Synchroniser les réponses dans localStorage
@@ -1929,12 +1897,21 @@ async function resetStats() {
   });
 
   try {
-    // update() + FieldValue.delete() supprime réellement le champ "responses" en entier.
-    // ATTENTION : set({responses: {}}, {merge:true}) ne fonctionne PAS pour ça — merge:true fusionne
-    // en profondeur, donc fournir un objet vide ne supprime aucune des clés déjà présentes côté serveur.
+    // `responses` vit désormais dans la sous-collection quizProgress/{uid}/responseShards
+    // (voir js/offline.js) plutôt que dans un champ unique du document principal — tout
+    // supprimer nécessite donc d'énumérer et effacer chaque shard, PAS un simple
+    // FieldValue.delete() sur le document principal (qui ne couvrirait qu'un éventuel reliquat
+    // pré-migration). set({responses:{}}, {merge:true}) ne fonctionnerait de toute façon pas
+    // pour ça — merge:true fusionne en profondeur, un objet vide n'efface aucune clé existante.
+    if (typeof _deleteAllResponseShards === 'function') {
+      try { await _deleteAllResponseShards(uid); } catch (e) { console.warn('[resetStats] suppression shards:', e); }
+    }
     try {
-      await db.collection('quizProgress').doc(uid)
-        .update({ responses: firebase.firestore.FieldValue.delete(), lastUpdated: firebase.firestore.Timestamp.now() });
+      await db.collection('quizProgress').doc(uid).update({
+        responses: firebase.firestore.FieldValue.delete(),
+        responseShardCount: firebase.firestore.FieldValue.delete(),
+        lastUpdated: firebase.firestore.Timestamp.now()
+      });
     } catch (e) {
       if (e.code === 'not-found') {
         // Pas encore de document (nouvel utilisateur) : rien à effacer côté serveur
@@ -1942,10 +1919,10 @@ async function resetStats() {
         throw e;
       }
     }
-    // L'historique des réponses (statusLog) vit désormais dans la sous-collection
-    // quizProgress/{uid}/history, PAS dans le champ "responses" ci-dessus : la supprimer
-    // séparément est nécessaire, sinon "Réinitialiser les statistiques" laisserait
-    // l'historique complet des anciennes réponses derrière lui.
+    // L'historique des réponses (statusLog) vit dans la sous-collection
+    // quizProgress/{uid}/history, PAS dans `responses` ci-dessus : la supprimer séparément est
+    // nécessaire, sinon "Réinitialiser les statistiques" laisserait l'historique complet des
+    // anciennes réponses derrière lui.
     if (typeof _deleteHistorySubcollection === 'function') {
       try { await _deleteHistorySubcollection(uid); } catch (e) { console.warn('[resetStats] suppression historique:', e); }
     }
@@ -2037,7 +2014,7 @@ async function _resetGroupStats(groupName) {
 
     if (!changedCount) { alert(`Toutes les questions de « ${groupName} » sont déjà "non vues".`); return; }
 
-    await db.collection('quizProgress').doc(uid).update(update);
+    await _updateResponseFieldsSharded(uid, update);
     allKeys.forEach(k => localStorage.removeItem(k));
     alert(`Progression de « ${groupName} » réinitialisée ! (${changedCount} questions, marquages conservés)`);
     window.location.reload();
@@ -2097,7 +2074,7 @@ async function _resetGroupFlaggedStats(groupName) {
 
     if (!changedKeys.length) { alert(`Aucune question 📌⭐📝 déjà vue trouvée dans « ${groupName} ».`); return; }
 
-    await db.collection('quizProgress').doc(uid).update(update);
+    await _updateResponseFieldsSharded(uid, update);
     // Dédupliquer avant de purger le localStorage (une clé peut apparaître dans plusieurs sous-catégories/épreuves)
     [...new Set(changedKeys)].forEach(k => localStorage.removeItem(k));
     alert(`« ${groupName} » — 📌⭐📝 réinitialisées ! (${changedKeys.length} question${changedKeys.length > 1 ? 's' : ''}, marquages et notes conservés)`);
@@ -2626,20 +2603,9 @@ async function _exportProgress() {
   if (!uid) { alert('Vous devez être connecté.'); return; }
 
   try {
-    let doc;
-    if (navigator.onLine) {
-      try {
-        doc = await Promise.race([
-          db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-        ]);
-      } catch (e) {
-        doc = await db.collection('quizProgress').doc(uid).get();
-      }
-    } else {
-      doc = await db.collection('quizProgress').doc(uid).get();
-    }
-
+    // _loadMergedResponses lit le document principal ET tous les shards de `responses`
+    // (voir js/offline.js) — indispensable ici, l'export doit être un snapshot COMPLET.
+    const doc = await _loadMergedResponses(uid, 6000);
     const data = doc.exists ? doc.data() : {};
     const responses = data.responses || {};
 
@@ -2689,15 +2655,13 @@ async function _exportProgress() {
 }
 
 /**
- * _compactQuizProgress() – Réduit la taille du document Firestore quizProgress/{uid} en
- * plafonnant statusLog à 15 entrées par question (au lieu de jusqu'à 100 auparavant).
- * Firestore refuse TOUTE écriture sur un document dépassant 1 Mio (1 048 576 octets), même une
- * mise à jour minime sur une seule question — avec des milliers de questions répondues,
- * statusLog (jusqu'à 100 entrées/question) peut à lui seul faire dépasser cette limite,
- * bloquant alors TOUTES les sauvegardes sans qu'aucune ne réussisse plus jamais, sur aucune
- * question, jusqu'à ce que le document soit dégonflé. Ne touche à AUCUNE statistique
- * (failCount/successCount/marked/important/srInterval/nextReview intacts) — uniquement à
- * l'historique détaillé au-delà des 15 réponses les plus récentes par question.
+ * _compactQuizProgress() – Allège les réponses stockées dans quizProgress/{uid}/responseShards/*
+ * (voir js/offline.js — `responses` n'est plus limité à un seul document Firestore, mais
+ * réparti en shards plafonnés à 2000 entrées chacun, largement sous la limite dure de
+ * Firestore de 1 Mio par document). Ce bouton reste utile même avec le sharding : il purge le
+ * poids mort accumulé (réponses "orphelines" de questions supprimées/renommées, champs
+ * redondants jamais utilisés, historique détaillé résiduel) — ne touche à AUCUNE statistique
+ * (failCount/successCount/marked/important/srInterval/nextReview intacts).
  */
 async function _compactQuizProgress() {
   const uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
@@ -2708,32 +2672,27 @@ async function _compactQuizProgress() {
   if (statusEl) statusEl.textContent = '⏳ Lecture de tes données…';
 
   try {
-    let doc;
-    try {
-      doc = await Promise.race([
-        db.collection('quizProgress').doc(uid).get({ source: 'server' }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout serveur')), 8000))
-      ]);
-    } catch (e) {
-      doc = await db.collection('quizProgress').doc(uid).get();
-    }
-    if (!doc.exists) { if (statusEl) statusEl.textContent = 'ℹ️ Aucune donnée à compacter.'; if (btn) btn.disabled = false; return; }
+    // _loadMergedResponses déclenche la migration vers les shards si besoin, et alimente
+    // window._respShardCount — mais on a aussi besoin des shards INDIVIDUELLEMENT ici (pour
+    // pouvoir réécrire chacun séparément), donc on les relit un par un juste après.
+    await _loadMergedResponses(uid, 8000);
+    const shardCount = window._respShardCount || 0;
+    if (!shardCount) { if (statusEl) statusEl.textContent = 'ℹ️ Aucune donnée à compacter.'; if (btn) btn.disabled = false; return; }
 
-    const data = doc.data();
-    const sizeBefore = new Blob([JSON.stringify(data)]).size;
-    const SAFETY_LIMIT = 900 * 1024; // vise nettement sous la limite dure de 1 Mio, avec marge pour de futures réponses
-    const responses = data.responses || {};
+    const mainRef = db.collection('quizProgress').doc(uid);
+    const shardDocs = await Promise.all(
+      Array.from({ length: shardCount }, (_, i) => mainRef.collection('responseShards').doc(String(i)).get())
+    );
+    const shards = shardDocs.map(d => (d.exists && d.data().responses) || {});
+    const sizeBefore = shards.reduce((sum, r) => sum + new Blob([JSON.stringify(r)]).size, 0);
 
     // ---- Étape 1 : purger les entrées ORPHELINES — des réponses dont la clé ne correspond
     // plus à AUCUNE question dans AUCUNE banque actuelle (questions supprimées, renommées ou
     // dédupliquées au fil des mises à jour du bank JSON). Ces entrées sont déjà invisibles
     // partout ailleurs dans l'app (stats, forecast, accueil — voir _computeSrForecast) : les
-    // supprimer ne fait perdre AUCUNE progression réelle, juste du poids mort accumulé. C'est
-    // souvent la vraie cause de blocage une fois que statusLog est déjà entièrement migré vers
-    // la sous-collection (voir _migrateStatusLogToSubcollection) et qu'il ne reste donc plus
-    // rien à compacter côté historique : le nombre brut d'entrées répond alors seul de la taille.
+    // supprimer ne fait perdre AUCUNE progression réelle, juste du poids mort accumulé.
     if (statusEl) statusEl.textContent = '⏳ Recherche des réponses orphelines (anciennes questions supprimées/renommées)…';
-    let orphanKeys = [];
+    let orphanCount = 0;
     try {
       if (typeof loadAllQuestions === 'function') {
         await loadAllQuestions();
@@ -2742,8 +2701,11 @@ async function _compactQuizProgress() {
         // supprimer, pour ne jamais risquer de prendre de vraies questions pour des orphelines.
         if (typeof questions !== 'undefined' && Array.isArray(questions) && questions.length >= 2500) {
           const validKeys = new Set(questions.map(q => getKeyFor(q)));
-          orphanKeys = Object.keys(responses).filter(k => !validKeys.has(k));
-          orphanKeys.forEach(k => delete responses[k]);
+          shards.forEach(shardResponses => {
+            Object.keys(shardResponses).forEach(k => {
+              if (!validKeys.has(k)) { delete shardResponses[k]; orphanCount++; }
+            });
+          });
         } else {
           console.warn('[compactQuizProgress] Chargement des banques incomplet (' + (typeof questions !== 'undefined' ? questions.length : 0) + ' questions) — purge des orphelines ignorée par sécurité.');
         }
@@ -2754,80 +2716,74 @@ async function _compactQuizProgress() {
 
     // ---- Étape 2 : retirer les champs `category`/`questionId` — 100% redondants avec la clé
     // de chaque entrée (getKeyFor() les encode déjà), jamais lus nulle part ailleurs dans
-    // l'app (vérifié), mais écrits sur CHAQUE réponse depuis le début : sur un compte avec
-    // plusieurs milliers de questions répondues, `category` (une chaîne de ~15 à 45
-    // caractères) à elle seule peut représenter une part significative du document. Nettoyage
-    // rétroactif ici ; les nouvelles réponses ne les écrivent plus du tout (voir
-    // _computeSrEntry() dans quiz.js).
+    // l'app (vérifié), mais écrits sur CHAQUE réponse depuis le début. Nettoyage rétroactif
+    // ici ; les nouvelles réponses ne les écrivent plus du tout (voir _computeSrEntry() dans
+    // quiz.js).
     let fieldsStrippedCount = 0;
-    Object.keys(responses).forEach(key => {
-      const r = responses[key];
-      if (r && (r.category !== undefined || r.questionId !== undefined)) {
-        delete r.category;
-        delete r.questionId;
-        fieldsStrippedCount++;
-      }
-    });
-
-    // ---- Étape 3 : compactage par paliers de plus en plus agressifs sur l'historique détaillé
-    // restant — on s'arrête dès que la taille estimée repasse sous la marge de sécurité, pour
-    // perdre le MOINS d'historique possible.
-    function trimTo(cap) {
-      let trimmedCount = 0, entriesRemoved = 0;
-      Object.keys(responses).forEach(key => {
-        const r = responses[key];
-        if (r && Array.isArray(r.statusLog) && r.statusLog.length > cap) {
-          entriesRemoved += r.statusLog.length - cap;
-          r.statusLog = cap > 0 ? r.statusLog.slice(-cap) : undefined;
-          if (cap === 0) delete r.statusLog;
-          trimmedCount++;
+    shards.forEach(shardResponses => {
+      Object.keys(shardResponses).forEach(key => {
+        const r = shardResponses[key];
+        if (r && (r.category !== undefined || r.questionId !== undefined)) {
+          delete r.category;
+          delete r.questionId;
+          fieldsStrippedCount++;
         }
       });
-      return { trimmedCount, entriesRemoved };
-    }
+    });
 
-    let totalTrimmed = 0, totalEntriesRemoved = 0, currentSize = new Blob([JSON.stringify(data)]).size;
-    for (const cap of [15, 5, 0]) {
-      if (currentSize <= SAFETY_LIMIT) break;
-      const { trimmedCount, entriesRemoved } = trimTo(cap);
-      totalTrimmed += trimmedCount;
-      totalEntriesRemoved += entriesRemoved;
-      currentSize = new Blob([JSON.stringify(data)]).size;
-      if (statusEl) statusEl.textContent = `⏳ Palier ${cap === 0 ? 'historique retiré' : 'plafond ' + cap} — taille actuelle : ~${Math.round(currentSize / 1024)} Ko…`;
-    }
+    // ---- Étape 3 : retirer tout statusLog résiduel (normalement déjà migré vers la
+    // sous-collection history par _migrateStatusLogToSubcollection, mais un vieux backup
+    // réimporté peut en réintroduire) — chaque shard restant largement sous la limite Firestore
+    // par construction (plafonné à 2000 entrées), plus besoin de paliers progressifs par taille.
+    let totalTrimmed = 0, totalEntriesRemoved = 0;
+    shards.forEach(shardResponses => {
+      Object.keys(shardResponses).forEach(key => {
+        const r = shardResponses[key];
+        if (r && Array.isArray(r.statusLog) && r.statusLog.length) {
+          totalEntriesRemoved += r.statusLog.length;
+          delete r.statusLog;
+          totalTrimmed++;
+        }
+      });
+    });
 
-    if (!totalTrimmed && !orphanKeys.length && !fieldsStrippedCount) {
+    if (!totalTrimmed && !orphanCount && !fieldsStrippedCount) {
       const sizeKb = Math.round(sizeBefore / 1024);
-      if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (document actuel : ~${sizeKb} Ko, déjà sous la limite historique, aucune réponse orpheline détectée). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
+      if (statusEl) statusEl.textContent = `ℹ️ Rien à compacter (${shardCount} shard(s), ~${sizeKb} Ko au total, aucune réponse orpheline détectée). Si tes sauvegardes échouent quand même, envoie-moi le message d'erreur exact.`;
       if (btn) btn.disabled = false;
       return;
     }
 
     if (statusEl) {
       const parts = [];
-      if (orphanKeys.length) parts.push(`${orphanKeys.length} réponse(s) orpheline(s) supprimée(s)`);
+      if (orphanCount) parts.push(`${orphanCount} réponse(s) orpheline(s) supprimée(s)`);
       if (fieldsStrippedCount) parts.push(`${fieldsStrippedCount} entrée(s) allégée(s) de champs redondants`);
       if (totalTrimmed) parts.push(`${totalTrimmed} question(s) allégée(s) (${totalEntriesRemoved} entrée(s) d'historique en trop retirée(s))`);
       statusEl.textContent = `⏳ Compactage : ${parts.join(' + ')}…`;
     }
 
-    // set() (pas update()) : on réécrit le document entier avec les orphelines/champs
-    // redondants/statusLog déjà réduits, pour que la taille du document lui-même redescende
-    // sous la limite — un update() partiel sur une seule question n'aurait rien changé à la
-    // taille globale déjà trop grande.
-    await db.collection('quizProgress').doc(uid).set(data);
+    // set() (pas update()) : réécrit chaque shard modifié en entier, avec les orphelines/champs
+    // redondants/statusLog déjà retirés — un update() partiel n'aurait pas supprimé les clés
+    // orphelines (merge profond, ne supprime jamais une clé absente de l'objet fourni).
+    await Promise.all(shards.map((shardResponses, i) =>
+      mainRef.collection('responseShards').doc(String(i)).set({ responses: shardResponses })
+    ));
 
-    const sizeAfter = new Blob([JSON.stringify(data)]).size;
+    const sizeAfter = shards.reduce((sum, r) => sum + new Blob([JSON.stringify(r)]).size, 0);
     if (statusEl) {
       const details = [];
-      if (orphanKeys.length) details.push(`${orphanKeys.length} réponse(s) orpheline(s) (anciennes questions supprimées/renommées, sans impact sur tes stats actuelles)`);
+      if (orphanCount) details.push(`${orphanCount} réponse(s) orpheline(s) (anciennes questions supprimées/renommées, sans impact sur tes stats actuelles)`);
       if (fieldsStrippedCount) details.push(`${fieldsStrippedCount} entrée(s) allégée(s) de champs redondants (jamais utilisés)`);
       if (totalTrimmed) details.push(`${totalTrimmed} question(s) allégée(s) d'historique détaillé`);
-      statusEl.textContent = `✅ Compactage terminé : ${Math.round(sizeBefore / 1024)} Ko → ${Math.round(sizeAfter / 1024)} Ko `
-        + `(${details.join(' + ')} — aucune statistique perdue, réussites/échecs/planification intacts). Tes sauvegardes devraient de nouveau fonctionner.`;
+      statusEl.textContent = `✅ Compactage terminé (${shardCount} shard(s)) : ${Math.round(sizeBefore / 1024)} Ko → ${Math.round(sizeAfter / 1024)} Ko `
+        + `(${details.join(' + ')} — aucune statistique perdue, réussites/échecs/planification intacts).`;
     }
     // Recharger currentResponses en mémoire pour que le reste de la page reflète le compactage
-    if (typeof currentResponses !== 'undefined') currentResponses = normalizeResponses(responses);
+    if (typeof currentResponses !== 'undefined') {
+      const merged = {};
+      shards.forEach(shardResponses => Object.assign(merged, shardResponses));
+      currentResponses = normalizeResponses(merged);
+    }
   } catch (e) {
     console.error('[compactQuizProgress]', e);
     if (statusEl) statusEl.textContent = '❌ Échec du compactage : ' + e.message + ' (détail en console F12).';
@@ -2867,19 +2823,21 @@ function _importProgress() {
         `• Cela écrasera votre progression actuelle`
       )) return;
 
-      // Write responses to Firestore
-      const update = {
-        responses: backup.responses,
-        lastUpdated: firebase.firestore.Timestamp.now()
-      };
-      if (backup.dailyHistory) update.dailyHistory = backup.dailyHistory;
-      await db.collection('quizProgress').doc(uid).set(update, { merge: true });
+      // Écrire dailyHistory/lastUpdated sur le document principal, et `responses` réparti
+      // sur ses shards via _saveResponsesSharded (voir js/offline.js) — un set(merge:true)
+      // direct sur le document principal ne fonctionnerait plus, `responses` n'y vivant plus.
+      const mainUpdate = { lastUpdated: firebase.firestore.Timestamp.now() };
+      if (backup.dailyHistory) mainUpdate.dailyHistory = backup.dailyHistory;
+      await Promise.all([
+        db.collection('quizProgress').doc(uid).set(mainUpdate, { merge: true }),
+        _saveResponsesSharded(uid, backup.responses)
+      ]);
 
       // D'anciennes sauvegardes (exportées avant l'introduction de la sous-collection
-      // d'historique) peuvent contenir un statusLog inline par question : le set() ci-dessus
-      // vient de le réintroduire dans le document principal. Le ressortir immédiatement vers
+      // d'historique) peuvent contenir un statusLog inline par question : l'écriture ci-dessus
+      // vient de le réintroduire dans son shard. Le ressortir immédiatement vers
       // quizProgress/{uid}/history via la même migration idempotente que celle exécutée au
-      // chargement des pages, pour ne pas réintroduire le risque de dépassement de 1 Mio.
+      // chargement des pages, pour ne pas réintroduire le risque de dépassement de 1 Mio par shard.
       if (typeof _migrateStatusLogToSubcollection === 'function') {
         try {
           currentResponses = normalizeResponses(backup.responses);
