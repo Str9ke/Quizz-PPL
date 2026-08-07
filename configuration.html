@@ -145,6 +145,10 @@
     </p>
     <button type="button" class="stats-btn" onclick="_cfgRunShardDiagnostic()" style="padding:6px 14px" id="cfgShardDiagBtn">🔍 Lancer le diagnostic</button>
     <pre id="cfgShardDiagResult" style="font-size:.8em;margin-top:10px;white-space:pre-wrap;background:rgba(0,0,0,.25);padding:10px;border-radius:8px;display:none"></pre>
+    <div id="cfgPracticeModeRow" style="margin-top:10px;display:none">
+      <div id="cfgPracticeModeStatus" style="font-size:.85em;margin-bottom:6px"></div>
+      <button type="button" class="stats-btn" onclick="_cfgClearPracticeMode()" style="padding:6px 14px;background:#c62828" id="cfgClearPracticeModeBtn">🛠️ Réparer (désactiver le mode entraînement)</button>
+    </div>
   </div>
 
   <!-- Apparence -->
@@ -690,6 +694,14 @@
         const authOk = !!(auth.currentUser && auth.currentUser.uid);
         const lines = [];
         lines.push('Connecté (Firebase Auth) : ' + (authOk ? 'OUI ✅' : 'NON ❌ — reconnecte-toi, rien ne peut se sauvegarder sans ça'));
+        const practiceModeOn = localStorage.getItem('quizPracticeMode') === '1';
+        lines.push('Mode entraînement libre actif (quizPracticeMode) : ' + (practiceModeOn ? 'OUI ⚠️ — AUCUNE réponse n\'est sauvegardée tant que c\'est actif, clique "Réparer" ci-dessous' : 'non ✅'));
+        const pmRow = document.getElementById('cfgPracticeModeRow');
+        const pmStatus = document.getElementById('cfgPracticeModeStatus');
+        if (pmRow) pmRow.style.display = practiceModeOn ? 'block' : 'none';
+        if (pmStatus) pmStatus.textContent = practiceModeOn
+          ? '⚠️ Le mode entraînement libre est actif sur cet appareil : tes réponses ne sont PAS sauvegardées tant que tu ne cliques pas sur "Réparer".'
+          : '';
         const main = await db.collection('quizProgress').doc(uid).get({ source: 'server' });
         const mainData = main.exists ? main.data() : {};
         const shardCount = mainData.responseShardCount || 0;
@@ -737,6 +749,15 @@
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = '🔍 Lancer le diagnostic'; }
       }
+    };
+
+    window._cfgClearPracticeMode = function() {
+      localStorage.removeItem('quizPracticeMode');
+      const pmRow = document.getElementById('cfgPracticeModeRow');
+      const pmStatus = document.getElementById('cfgPracticeModeStatus');
+      if (pmStatus) pmStatus.textContent = '✅ Mode entraînement libre désactivé — tes prochaines réponses seront sauvegardées normalement.';
+      if (pmRow) setTimeout(() => { pmRow.style.display = 'none'; }, 3000);
+      alert('✅ Mode entraînement libre désactivé. Tu peux retourner sur Quiz et répondre normalement.');
     };
 
     window._cfgForceRecache = async function() {
@@ -809,6 +830,14 @@
       window._cfgRunOfflineCheck();
       _cfgRenderLocalStorageUsage();
       _cfgRenderBackupStatus();
+      // Signale d'emblée si le mode entraînement libre est resté actif (voir
+      // _cfgClearPracticeMode) sans attendre que l'utilisateur clique "Lancer le diagnostic".
+      if (localStorage.getItem('quizPracticeMode') === '1') {
+        const pmRow = document.getElementById('cfgPracticeModeRow');
+        const pmStatus = document.getElementById('cfgPracticeModeStatus');
+        if (pmRow) pmRow.style.display = 'block';
+        if (pmStatus) pmStatus.textContent = '⚠️ Le mode entraînement libre est actif sur cet appareil : tes réponses ne sont PAS sauvegardées tant que tu ne cliques pas sur "Réparer".';
+      }
     }
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }
