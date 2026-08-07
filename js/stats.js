@@ -111,7 +111,7 @@ async function displayDailyStats(forcedUid) {
             new Promise(resolve => setTimeout(resolve, 5000))
           ]);
         }
-        console.log('[displayDailyStats] sync OK:', Object.keys(syncUpdate).length, 'dates pushées au serveur');
+        console.log('[displayDailyStats] sync OK:', Object.keys(syncDates).length, 'dates pushées au serveur');
       } catch (e) { console.warn('[displayDailyStats] write-back failed:', e); }
     }
 

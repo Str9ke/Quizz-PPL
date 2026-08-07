@@ -96,14 +96,15 @@ async function _migrateResponsesToShards(uid) {
 
       for (let i = 0; i < shardCount; i++) {
         const chunkKeys = keys.slice(i * RESPONSE_SHARD_CAPACITY, (i + 1) * RESPONSE_SHARD_CAPACITY);
-        // Écriture par CHEMIN POINTÉ ('responses.<clé>'), clé par clé — jamais un objet imbriqué
-        // {responses: {...}} — pour ne jamais risquer d'écraser, via un merge profond sur tout le
-        // champ `responses`, une entrée qu'une écriture concurrente aurait déjà posée dans ce
-        // même shard entre la lecture ci-dessus et cette écriture (voir _saveResponsesSharded,
-        // qui utilise le même principe pour la même raison).
-        const setPayload = {};
-        chunkKeys.forEach(k => { setPayload['responses.' + k] = _stripUndefinedFields(inline[k]); });
-        await mainRef.collection('responseShards').doc(String(i)).set(setPayload, { merge: true });
+        // Objet IMBRIQUÉ ({responses: {...}}) avec merge:true : un merge profond ne remplace que
+        // les clés fournies et préserve celles qu'une écriture concurrente aurait posées entre
+        // la lecture ci-dessus et cette écriture. Surtout, PAS de chemin pointé
+        // ('responses.<clé>') : set() n'interprète pas les points comme des séparateurs de
+        // chemin, la clé deviendrait un nom de champ littéral à la racine et n'atterrirait
+        // jamais dans la map `responses` (voir _saveResponsesSharded pour le détail complet).
+        const shardPayload = {};
+        chunkKeys.forEach(k => { shardPayload[k] = _stripUndefinedFields(inline[k]); });
+        await mainRef.collection('responseShards').doc(String(i)).set({ responses: shardPayload }, { merge: true });
       }
 
       // Seulement après succès confirmé de TOUS les shards ci-dessus : retirer `responses` du
@@ -248,20 +249,28 @@ async function _saveResponsesSharded(uid, updates) {
   const targetShards = Object.keys(byShard).map(Number);
   console.log('[shard-write] tentative sur shard(s)', targetShards, 'clés:', keys);
 
-  // writeShard()/verifyShard() sont factorisées pour pouvoir RÉESSAYER : constaté en
-  // pratique (voir logs [shard-write] VÉRIFICATION … 0/1 confirmée) que set() peut
-  // résoudre sa promesse (accusé de réception LOCAL de la file d'attente Firestore) sans que
-  // l'écriture n'ait encore réellement atteint le serveur — que ce soit parce que le SDK se
-  // croit hors-ligne à tort (navigator.onLine ment souvent, voir sw.js) ou à cause d'un aller-
-  // retour réseau juste assez lent pour que set() batche l'écriture avant de confirmer. Sans
-  // retry, une réponse fraîchement donnée pouvait rester invisible côté serveur alors que
-  // l'UI affichait déjà "sauvegardé" — exactement le symptôme "ça remonte au clic, puis
-  // redescend en revenant à l'accueil" signalé, la donnée n'ayant en réalité jamais quitté
-  // l'appareil.
+  // CAUSE RACINE des réponses qui « ne se sauvegardaient pas » : cette écriture utilisait
+  // set({'responses.<clé>': entrée}, {merge:true}). Or set() n'interprète PAS un point comme
+  // un séparateur de chemin (seul update() le fait) : la clé entière devenait UN SEUL nom de
+  // champ littéral « responses.question_X » posé à la racine du document, au lieu d'une entrée
+  // dans la map `responses`. Rien n'atterrissait donc jamais dans `responses`, et
+  // _loadMergedResponses() (qui lit data().responses) ne retrouvait pas la réponse.
+  //
+  // Le symptôme était trompeur : la vérification ci-dessous ne trouvait la clé que lorsqu'elle
+  // existait DÉJÀ dans `responses` (question déjà répondue avant la migration en shards), d'où
+  // des « 1/1 confirmée » rassurants sur le shard 0 alors que l'écriture réelle était bancale,
+  // et des « 0/1 » systématiques dès qu'il s'agissait d'une question JAMAIS répondue — dont
+  // toutes les nouvelles entrées, qui vont par construction dans le shard actif. C'est
+  // exactement le « 1445 → 1446 → retour à 1445 » : seules les questions déjà connues
+  // semblaient tenir, aucune nouveauté n'était réellement enregistrée.
+  //
+  // Objet IMBRIQUÉ ({responses: {clé: entrée}}) avec merge:true : fusion en profondeur, sans
+  // aucune analyse de chemin — donc compatible avec les clés contenant espaces, accents ou
+  // chiffres (« question_PROCÉDURE RADIO_205 ») — et les autres entrées du shard sont
+  // préservées.
   const writeShard = shardIdx => {
-    const setPayload = {};
-    Object.keys(byShard[shardIdx]).forEach(k => { setPayload['responses.' + k] = byShard[shardIdx][k]; });
-    return mainRef.collection('responseShards').doc(String(shardIdx)).set(setPayload, { merge: true })
+    return mainRef.collection('responseShards').doc(String(shardIdx))
+      .set({ responses: byShard[shardIdx] }, { merge: true })
       .then(() => console.log('[shard-write] set() résolu pour shard', shardIdx))
       .catch(e => { console.error('[shard-write] set() a rejeté pour shard', shardIdx, e); throw e; });
   };
