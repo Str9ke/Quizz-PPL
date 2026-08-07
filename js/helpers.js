@@ -1,5 +1,19 @@
 // === helpers.js === Utility functions ===
 
+// Filet anti-bfcache : quand le navigateur restaure une page depuis son cache
+// mémoire (retour arrière/geste "précédent"), il rejoue l'état FIGÉ tel qu'il était AU
+// MOMENT DU DÉPART — aucun script ne se réexécute, donc `currentResponses`/les compteurs
+// affichés (Progression globale, cartes de catégorie…) restent bloqués sur les valeurs
+// d'AVANT la réponse qu'on vient de donner sur une autre page, même si l'écriture Firestore
+// a parfaitement réussi et est confirmée côté serveur. C'était la cause du symptôme "ça
+// passe à 84 puis en revenant à l'accueil ça remet 83" : rien n'était perdu côté données,
+// seul l'AFFICHAGE restauré était périmé. `event.persisted` est vrai précisément dans ce
+// cas ; un rechargement forcé refait tourner initIndex()/displayHomeProgressBar() avec des
+// données fraîchement relues sur le serveur.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) location.reload();
+});
+
 /**
  * _clearRegenerableLocalStorage() – Libère de la place dans localStorage en supprimant
  * UNIQUEMENT des caches régénérables (jamais un dossier Navlog ni un travail en cours) :
