@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v102';
+const CACHE_NAME = 'quiz-ppl-v103';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -174,9 +174,23 @@ self.addEventListener('fetch', event => {
   // même traitement network-first que les JSON de questions.
   const isConfigJs = url.pathname.endsWith('config.js');
 
-  // === Stratégie pour fichiers JSON / config.js : Network-First (quand en ligne) ===
-  // Garantit que les questions et la config sont toujours à jour entre navigateurs
-  if ((isJsonFile || isConfigJs) && navigator.onLine) {
+  // Code applicatif (js/*.js) et pages HTML : la stratégie cache-first ci-dessous fait son
+  // match via `caches.match(event.request, { ignoreSearch: true })` et STOCKE sous l'URL
+  // débarrassée de sa query string (`cleanUrl.search = ''`, voir plus bas) — ce qui neutralise
+  // COMPLÈTEMENT la convention de cache-busting `?v=YYYYMMDDx` utilisée sur tous les <script>
+  // du site : bumper la version ne change rien pour le Service Worker, qui continue de
+  // reconnaître "le même" fichier et sert l'ancienne copie en cache immédiatement (la version
+  // fraîche n'est récupérée qu'en arrière-plan, pour la PROCHAINE visite — stale-while-
+  // revalidate). Un déploiement mettait donc systématiquement un cycle de navigation complet
+  // avant de réellement prendre effet chez un visiteur ayant déjà le Service Worker installé,
+  // ce qui a fait passer plusieurs correctifs de cette session pour inopérants alors qu'ils
+  // étaient simplement pas encore servis. Même traitement network-first que JSON/config.js.
+  const isAppScript = /\/js\/[^/]+\.js$/.test(url.pathname);
+  const isAppHtml = url.pathname.endsWith('.html');
+
+  // === Stratégie pour fichiers JSON / config.js / JS applicatif / pages HTML : Network-First (quand en ligne) ===
+  // Garantit que les questions, la config et le CODE sont toujours à jour entre navigateurs
+  if ((isJsonFile || isConfigJs || isAppScript || isAppHtml) && navigator.onLine) {
     event.respondWith(
       fetchWithTimeout(event.request, 3000).then(response => {
         if (response && response.ok) {
@@ -190,7 +204,10 @@ self.addEventListener('fetch', event => {
         // Réseau échoué → fallback sur le cache
         return caches.match(event.request, { ignoreSearch: true }).then(cached => {
           if (cached) return cached;
-          return isConfigJs
+          // Navigation HTML sans copie en cache (précache manqué) : retomber sur index.html
+          // plutôt qu'un placeholder vide, comme le fait la stratégie cache-first plus bas.
+          if (isAppHtml) return caches.match(BASE + 'index.html', { ignoreSearch: true });
+          return (isConfigJs || isAppScript)
             ? new Response('', { status: 200, headers: { 'Content-Type': 'application/javascript' } })
             : new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
         });
