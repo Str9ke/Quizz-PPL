@@ -1842,7 +1842,10 @@ async function validerReponses() {
                 const _idTok = await auth.currentUser.getIdToken();
                 const _pBody = {fields:{dailyHistory:{mapValue:{fields:{}}}}};
                 _pBody.fields.dailyHistory.mapValue.fields[_tk] = {integerValue: String(_cnt)};
-                const _pUrl = _fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.'+_tk);
+                // Le segment de date (2026-08-07) n'est PAS un identifiant de chemin valide
+                // pour l'API REST (chiffre en tête + tirets) : sans les accents graves autour,
+                // Firestore renvoie 400 Bad Request et rejette la requête (constaté en console).
+                const _pUrl = _fsBase+encodeURIComponent(uid)+'?updateMask.fieldPaths='+encodeURIComponent('dailyHistory.`'+_tk+'`');
                 fetch(_pUrl,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+_idTok},body:JSON.stringify(_pBody)}).catch(()=>{});
               } catch(_te){ /* ignore token errors */ }
             }

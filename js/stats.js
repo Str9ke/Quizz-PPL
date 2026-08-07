@@ -91,15 +91,19 @@ async function displayDailyStats(forcedUid) {
     // SYNC CROSS-BROWSER : écrire uniquement les valeurs SUPÉRIEURES à Firestore
     // Maintenant que nous forçons source:'server' quand online, rawFirestoreDH reflète
     // les vraies valeurs serveur → on peut comparer et ne jamais écraser une valeur plus haute.
-    const syncUpdate = {};
+    // IMPORTANT : objet IMBRIQUÉ ({dailyHistory: {"2026-08-07": n}}), jamais un chemin pointé
+    // ("dailyHistory.2026-08-07") — voir _dailyDatesUpdate() ci-dessous pour le détail : avec
+    // set(), une clé pointée n'est PAS interprétée comme un chemin, et une date échappée en
+    // `...` fait échouer TOUT le commit (400), y compris les réponses écrites en même temps.
+    const syncDates = {};
     for (const [dateKey, mergedVal] of Object.entries(enrichedDH)) {
       if (mergedVal > 0 && mergedVal > (rawFirestoreDH[dateKey] || 0)) {
-        syncUpdate['dailyHistory.' + dateKey] = mergedVal;
+        syncDates[dateKey] = mergedVal;
       }
     }
-    if (Object.keys(syncUpdate).length > 0) {
+    if (Object.keys(syncDates).length > 0) {
       try {
-        await db.collection('quizProgress').doc(uid).set(syncUpdate, { merge: true });
+        await db.collection('quizProgress').doc(uid).set({ dailyHistory: syncDates }, { merge: true });
         // waitForPendingWrites : attend que le SERVEUR accuse réception
         if (db.waitForPendingWrites) {
           await Promise.race([
@@ -271,9 +275,7 @@ async function saveDailyCount(uid) {
           const doc = await transaction.get(docRef);
           const serverVal = doc.exists ? ((doc.data().dailyHistory || {})[dateKey] || 0) : 0;
           const newVal = Math.max(absoluteCount, serverVal);
-          const update = {};
-          update['dailyHistory.' + dateKey] = newVal;
-          transaction.set(docRef, update, { merge: true });
+          transaction.set(docRef, { dailyHistory: { [dateKey]: newVal } }, { merge: true });
           // Mettre à jour le ratchet local si le serveur avait plus
           if (serverVal > absoluteCount) {
             localStorage.setItem('dailyCountRatchet_' + utcKey, serverVal);
@@ -297,9 +299,7 @@ async function saveDailyCount(uid) {
         }
       }
     } catch (readErr) { /* use absoluteCount as-is */ }
-    const update = {};
-    update['dailyHistory.' + dateKey] = fallbackVal;
-    await docRef.set(update, { merge: true });
+    await docRef.set({ dailyHistory: { [dateKey]: fallbackVal } }, { merge: true });
   } catch (e) {
     console.error('[saveDailyCount] error:', e);
     throw e; // Propager pour que saveDailyCountOffline tombe dans le fallback IndexedDB
@@ -320,14 +320,14 @@ async function saveDailyMastered(uid) {
     await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(docRef);
       const serverDM = doc.exists ? (doc.data().dailyMastered || {}) : {};
-      const update = {};
+      const dates = {};
       let changed = false;
       for (const [k, v] of Object.entries(dmBackup)) {
         const best = Math.max(v, serverDM[k] || 0);
-        if (best > (serverDM[k] || 0)) { update['dailyMastered.' + k] = best; changed = true; }
+        if (best > (serverDM[k] || 0)) { dates[k] = best; changed = true; }
       }
       if (!changed) return;
-      transaction.set(docRef, update, { merge: true });
+      transaction.set(docRef, { dailyMastered: dates }, { merge: true });
     });
   } catch (e) { console.warn('[saveDailyMastered] error:', e); }
 }
@@ -681,13 +681,13 @@ async function initStats() {
         await db.runTransaction(async (transaction) => {
           const freshDoc = await transaction.get(docRef);
           const serverDH = freshDoc.exists ? (freshDoc.data().dailyHistory || {}) : {};
-          const update = {};
+          const updateDates = {};
           let hasUpdates = false;
           // Écrire seulement les valeurs locales SUPÉRIEURES au serveur
           for (const [dateKey, localVal] of Object.entries(dailyHistory)) {
             const serverVal = serverDH[dateKey] || 0;
             if (localVal > serverVal) {
-              update['dailyHistory.' + dateKey] = localVal;
+              updateDates[dateKey] = localVal;
               hasUpdates = true;
             }
             // Si le serveur a une valeur plus haute (autre appareil), mettre à jour localement
@@ -702,7 +702,7 @@ async function initStats() {
             }
           }
           if (hasUpdates) {
-            transaction.set(docRef, update, { merge: true });
+            transaction.set(docRef, { dailyHistory: updateDates }, { merge: true });
           }
         });
         // Après la transaction : mettre à jour localStorage avec les valeurs réconciliées
@@ -729,15 +729,15 @@ async function initStats() {
       } catch (e) {
         console.warn('[initStats] sync transactionnelle échouée:', e.message);
         // Fallback : écrire seulement les valeurs SUPÉRIEURES aux valeurs serveur brutes
-        const syncUpdate2 = {};
+        const syncDates2 = {};
         for (const [dateKey, mergedVal] of Object.entries(dailyHistory)) {
           if (mergedVal > 0 && mergedVal > (rawServerDailyHistory[dateKey] || 0)) {
-            syncUpdate2['dailyHistory.' + dateKey] = mergedVal;
+            syncDates2[dateKey] = mergedVal;
           }
         }
-        if (Object.keys(syncUpdate2).length > 0) {
+        if (Object.keys(syncDates2).length > 0) {
           try {
-            await db.collection('quizProgress').doc(uid).set(syncUpdate2, { merge: true });
+            await db.collection('quizProgress').doc(uid).set({ dailyHistory: syncDates2 }, { merge: true });
           } catch (e2) { console.warn('[initStats] fallback write-back failed:', e2); }
         }
       }
