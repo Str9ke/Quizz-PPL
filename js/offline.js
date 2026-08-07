@@ -247,31 +247,71 @@ async function _saveResponsesSharded(uid, updates) {
   const mainRef = db.collection('quizProgress').doc(uid);
   const targetShards = Object.keys(byShard).map(Number);
   console.log('[shard-write] tentative sur shard(s)', targetShards, 'clés:', keys);
-  await Promise.all(targetShards.map(shardIdx => {
+
+  // writeShard()/verifyShard() sont factorisées pour pouvoir RÉESSAYER : constaté en
+  // pratique (voir logs [shard-write] VÉRIFICATION … 0/1 confirmée) que set() peut
+  // résoudre sa promesse (accusé de réception LOCAL de la file d'attente Firestore) sans que
+  // l'écriture n'ait encore réellement atteint le serveur — que ce soit parce que le SDK se
+  // croit hors-ligne à tort (navigator.onLine ment souvent, voir sw.js) ou à cause d'un aller-
+  // retour réseau juste assez lent pour que set() batche l'écriture avant de confirmer. Sans
+  // retry, une réponse fraîchement donnée pouvait rester invisible côté serveur alors que
+  // l'UI affichait déjà "sauvegardé" — exactement le symptôme "ça remonte au clic, puis
+  // redescend en revenant à l'accueil" signalé, la donnée n'ayant en réalité jamais quitté
+  // l'appareil.
+  const writeShard = shardIdx => {
     const setPayload = {};
     Object.keys(byShard[shardIdx]).forEach(k => { setPayload['responses.' + k] = byShard[shardIdx][k]; });
     return mainRef.collection('responseShards').doc(String(shardIdx)).set(setPayload, { merge: true })
       .then(() => console.log('[shard-write] set() résolu pour shard', shardIdx))
       .catch(e => { console.error('[shard-write] set() a rejeté pour shard', shardIdx, e); throw e; });
-  }));
+  };
+  const verifyShard = async shardIdx => {
+    const check = await mainRef.collection('responseShards').doc(String(shardIdx)).get({ source: 'server' });
+    const responses = (check.exists && check.data().responses) || {};
+    const writtenKeys = Object.keys(byShard[shardIdx]);
+    const confirmed = writtenKeys.filter(k => responses[k] !== undefined);
+    console.log('[shard-write] VÉRIFICATION shard', shardIdx, '—', confirmed.length + '/' + writtenKeys.length, 'clé(s) confirmée(s) sur le serveur:', confirmed);
+    return confirmed.length === writtenKeys.length;
+  };
+
+  await Promise.all(targetShards.map(writeShard));
   console.log('[shard-write] Promise.all terminé, vérification directe sur le serveur…');
-  // Vérification immédiate : relire le(s) shard(s) qu'on vient d'écrire directement depuis le
-  // serveur (jamais le cache), pour confirmer sans le moindre doute que l'écriture a bien
-  // atteint Firestore et pas seulement la file d'attente locale (voir enablePersistence).
+
+  const unconfirmedShards = [];
   await Promise.all(targetShards.map(async shardIdx => {
     try {
-      const check = await mainRef.collection('responseShards').doc(String(shardIdx)).get({ source: 'server' });
-      const responses = (check.exists && check.data().responses) || {};
-      const writtenKeys = Object.keys(byShard[shardIdx]);
-      const confirmed = writtenKeys.filter(k => responses[k] !== undefined);
-      console.log('[shard-write] VÉRIFICATION shard', shardIdx, '—', confirmed.length + '/' + writtenKeys.length, 'clé(s) confirmée(s) sur le serveur:', confirmed);
-      if (confirmed.length < writtenKeys.length) {
-        console.error('[shard-write] ⚠️ ÉCRITURE NON CONFIRMÉE pour', writtenKeys.filter(k => !confirmed.includes(k)));
-      }
+      if (!(await verifyShard(shardIdx))) unconfirmedShards.push(shardIdx);
     } catch (e) {
       console.error('[shard-write] Échec de la vérification serveur pour shard', shardIdx, e);
+      unconfirmedShards.push(shardIdx);
     }
   }));
+
+  // Jusqu'à 2 nouvelles tentatives (écriture + revérification) pour chaque shard resté non
+  // confirmé, avec un court délai pour laisser le temps à une connexion capricieuse de
+  // rétablir un aller-retour réseau réel.
+  for (let attempt = 1; attempt <= 2 && unconfirmedShards.length; attempt++) {
+    console.warn('[shard-write] ⚠️ Non confirmé pour shard(s)', unconfirmedShards, '— nouvelle tentative', attempt + '/2');
+    await new Promise(r => setTimeout(r, 1000 * attempt));
+    const stillUnconfirmed = [];
+    await Promise.all(unconfirmedShards.map(async shardIdx => {
+      try {
+        await writeShard(shardIdx);
+        if (!(await verifyShard(shardIdx))) stillUnconfirmed.push(shardIdx);
+      } catch (e) {
+        console.error('[shard-write] Tentative', attempt, 'échouée pour shard', shardIdx, e);
+        stillUnconfirmed.push(shardIdx);
+      }
+    }));
+    unconfirmedShards.length = 0;
+    unconfirmedShards.push(...stillUnconfirmed);
+  }
+
+  if (unconfirmedShards.length) {
+    const unconfirmedKeys = unconfirmedShards.flatMap(shardIdx => Object.keys(byShard[shardIdx]));
+    console.error('[shard-write] ❌ ÉCRITURE DÉFINITIVEMENT NON CONFIRMÉE après 3 tentatives pour', unconfirmedKeys);
+    throw new Error('Sauvegarde non confirmée par le serveur pour : ' + unconfirmedKeys.join(', '));
+  }
 
   if (newShardCreated) {
     await mainRef.set({ responseShardCount: shardCount }, { merge: true });
