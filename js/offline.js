@@ -148,44 +148,62 @@ async function _loadMergedResponses(uid, timeoutMs) {
 
   window._respKeyShard = {};
   window._respShardEntryCounts = {};
+  window._respLoadIncomplete = false;
   const shardFetches = [];
   for (let i = 0; i < shardCount; i++) {
     const shardRef = mainRef.collection('responseShards').doc(String(i));
+    const applyShardDoc = (shardDoc) => {
+      const shardResponses = (shardDoc.exists && shardDoc.data().responses) || {};
+      const keys = Object.keys(shardResponses);
+      window._respShardEntryCounts[i] = keys.length;
+      // Les lectures des shards se terminent en parallèle, dans un ordre non déterministe
+      // (timing réseau) : si une même clé existe par erreur dans PLUSIEURS shards (résidu
+      // d'anciennes tentatives d'écriture parties de zéro pendant les pannes de permissions
+      // constatées en pratique), un simple écrasement aurait pu laisser gagner le shard qui
+      // finit de se lire EN DERNIER plutôt que la donnée réellement la plus récente — la
+      // réponse fraîche semblait alors "disparaître" après une navigation. On ne remplace
+      // donc une entrée déjà fusionnée que si celle-ci est authentiquement plus récente
+      // (comparaison par timestamp) ; en cas de doute (timestamp manquant d'un côté), la clé
+      // trouvée en premier est conservée par prudence plutôt que la plus récente à charger.
+      keys.forEach(k => {
+        const incoming = shardResponses[k];
+        const existing = merged[k];
+        if (existing !== undefined) {
+          const existingMs = existing.timestamp && (existing.timestamp.seconds !== undefined ? existing.timestamp.seconds * 1000 : existing.timestamp);
+          const incomingMs = incoming.timestamp && (incoming.timestamp.seconds !== undefined ? incoming.timestamp.seconds * 1000 : incoming.timestamp);
+          if (!(incomingMs && existingMs && incomingMs > existingMs)) return;
+        }
+        merged[k] = incoming;
+        window._respKeyShard[k] = i;
+      });
+    };
+    // Un shard qui dépasse timeoutMs (réseau mobile lent/variable) était auparavant abandonné
+    // en silence — le total affiché (Progression globale, cycle de répétition espacée…)
+    // paraissait alors correct alors qu'il manquait des centaines de réponses pourtant bien
+    // enregistrées côté serveur, sans aucun indice visible pour l'utilisateur. Avant d'abandonner :
+    // un 2e essai, sans limite de temps arbitraire (juste la lecture réseau normale), qui laisse
+    // sa chance à une connexion simplement lente plutôt qu'à une vraie panne. Seul un échec des
+    // DEUX tentatives lève le drapeau _respLoadIncomplete, pour que les écrans qui affichent des
+    // totaux puissent avertir plutôt que d'afficher silencieusement un chiffre tronqué.
     shardFetches.push(
       ((typeof getDocWithTimeout === 'function') ? getDocWithTimeout(shardRef, timeoutMs) : shardRef.get())
-        .then(shardDoc => {
-          const shardResponses = (shardDoc.exists && shardDoc.data().responses) || {};
-          const keys = Object.keys(shardResponses);
-          window._respShardEntryCounts[i] = keys.length;
-          // Les lectures des shards se terminent en parallèle, dans un ordre non déterministe
-          // (timing réseau) : si une même clé existe par erreur dans PLUSIEURS shards (résidu
-          // d'anciennes tentatives d'écriture parties de zéro pendant les pannes de permissions
-          // constatées en pratique), un simple écrasement aurait pu laisser gagner le shard qui
-          // finit de se lire EN DERNIER plutôt que la donnée réellement la plus récente — la
-          // réponse fraîche semblait alors "disparaître" après une navigation. On ne remplace
-          // donc une entrée déjà fusionnée que si celle-ci est authentiquement plus récente
-          // (comparaison par timestamp) ; en cas de doute (timestamp manquant d'un côté), la clé
-          // trouvée en premier est conservée par prudence plutôt que la plus récente à charger.
-          keys.forEach(k => {
-            const incoming = shardResponses[k];
-            const existing = merged[k];
-            if (existing !== undefined) {
-              const existingMs = existing.timestamp && (existing.timestamp.seconds !== undefined ? existing.timestamp.seconds * 1000 : existing.timestamp);
-              const incomingMs = incoming.timestamp && (incoming.timestamp.seconds !== undefined ? incoming.timestamp.seconds * 1000 : incoming.timestamp);
-              if (!(incomingMs && existingMs && incomingMs > existingMs)) return;
-            }
-            merged[k] = incoming;
-            window._respKeyShard[k] = i;
-          });
+        .then(applyShardDoc)
+        .catch(e => {
+          console.warn('[offline] Lecture shard ' + i + ' échouée (1re tentative), nouvel essai sans limite de temps:', e.message);
+          return shardRef.get({ source: 'server' })
+            .then(applyShardDoc)
+            .catch(e2 => {
+              console.warn('[offline] Lecture shard ' + i + ' échouée (2e tentative) :', e2.message);
+              window._respLoadIncomplete = true;
+            });
         })
-        .catch(e => console.warn('[offline] Lecture shard ' + i + ' échouée:', e.message))
     );
   }
   await Promise.all(shardFetches);
   window._respShardCount = shardCount;
 
   const exists = doc.exists || shardCount > 0;
-  return { exists, data: () => ({ ...primaryData, responses: merged }) };
+  return { exists, data: () => ({ ...primaryData, responses: merged }), incomplete: window._respLoadIncomplete };
 }
 
 /**

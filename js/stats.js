@@ -226,7 +226,16 @@ function displayHomeProgressBar(responses, dailyHistory) {
     }
   }
 
+  // Un ou plusieurs shards de réponses n'ont pas pu être lus (réseau lent/coupure) malgré la
+  // nouvelle tentative de _loadMergedResponses() — le total ci-dessous est donc potentiellement
+  // sous-évalué. Le signaler plutôt que d'afficher silencieusement un chiffre tronqué comme si
+  // c'était la vérité (voir js/offline.js, window._respLoadIncomplete).
+  const incompleteWarningHtml = window._respLoadIncomplete
+    ? `<div style="background:rgba(244,67,54,.15);border:1px solid rgba(244,67,54,.4);color:#ff8a80;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:.82em">⚠️ Certaines réponses n'ont pas pu être chargées depuis le serveur (connexion lente) — ce total peut être sous-évalué. Réessaie avec une meilleure connexion.</div>`
+    : '';
+
   cont.innerHTML = `
+    ${incompleteWarningHtml}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <strong>Progression globale</strong>
       <span style="font-size:1.4em;font-weight:bold;color:${percColor(perc)}">${perc}%</span>
