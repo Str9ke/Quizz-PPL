@@ -109,7 +109,19 @@ async function _migrateResponsesToShards(uid) {
 
       // Seulement après succès confirmé de TOUS les shards ci-dessus : retirer `responses` du
       // document principal et enregistrer le nombre de shards créés.
-      await mainRef.update({ responses: firebase.firestore.FieldValue.delete(), responseShardCount: shardCount });
+      //
+      // Le compteur ne doit JAMAIS être RABAISSÉ ici. Si un champ `responses` inline réapparaît
+      // un jour sur le document principal (ancien code, restauration, écriture d'un autre
+      // chemin) alors que des shards existent déjà, cette migration se relance et ne voit que
+      // les quelques clés inline : écrire brutalement `responseShardCount = shardCount` ferait
+      // retomber le compteur (ex. 2 → 1) et RENDRAIT INVISIBLES tous les shards au-delà —
+      // exactement le scénario qui a fait disparaître des centaines de réponses pourtant
+      // intactes côté serveur. On garde donc le maximum entre l'existant et le calculé.
+      const declaredBefore = data.responseShardCount || 0;
+      await mainRef.update({
+        responses: firebase.firestore.FieldValue.delete(),
+        responseShardCount: Math.max(declaredBefore, shardCount)
+      });
       console.log(`[offline] Migration responses → ${shardCount} shard(s) (${keys.length} question(s)) réussie.`);
       return { migrated: true, shardCount };
     } catch (e) {
@@ -144,13 +156,40 @@ async function _loadMergedResponses(uid, timeoutMs) {
     : await mainRef.get();
   const primaryData = doc.exists ? doc.data() : {};
   const merged = { ...(primaryData.responses || {}) };
-  const shardCount = primaryData.responseShardCount || 0;
+  const declaredShardCount = primaryData.responseShardCount || 0;
+
+  // Les shards à lire sont déterminés en LISTANT réellement la sous-collection, jamais en se
+  // fiant au seul compteur responseShardCount du document principal. Ce compteur peut se
+  // retrouver en retard sur la réalité (constaté en pratique : compteur à 1 alors que le
+  // serveur hébergeait bien 2 shards de 2000 et 1544 entrées) — et comme l'ancienne boucle
+  // s'arrêtait à `i < responseShardCount`, le second shard n'était même pas DEMANDÉ : ses 1544
+  // réponses, pourtant intactes côté serveur, restaient invisibles partout dans l'app, sans
+  // aucune erreur puisqu'aucune lecture n'échouait. Lister la collection rend la lecture
+  // insensible à un compteur faux, dans un sens comme dans l'autre.
+  let shardIds = [];
+  try {
+    const listSnap = navigator.onLine
+      ? await mainRef.collection('responseShards').get({ source: 'server' })
+      : await mainRef.collection('responseShards').get({ source: 'cache' });
+    listSnap.forEach(d => shardIds.push(d.id));
+  } catch (e) {
+    console.warn('[offline] Listing des shards impossible, repli sur le compteur:', e.message);
+    for (let i = 0; i < declaredShardCount; i++) shardIds.push(String(i));
+  }
+  // Filet supplémentaire : si le listing renvoie moins de shards que le compteur annoncé
+  // (cache partiel), lire quand même ceux que le compteur promet.
+  for (let i = 0; i < declaredShardCount; i++) {
+    if (!shardIds.includes(String(i))) shardIds.push(String(i));
+  }
 
   window._respKeyShard = {};
   window._respShardEntryCounts = {};
   window._respLoadIncomplete = false;
   const shardFetches = [];
-  for (let i = 0; i < shardCount; i++) {
+  for (const shardId of shardIds) {
+    // Index numérique : _saveResponsesSharded() fait de l'arithmétique dessus (shard actif,
+    // création du suivant), un identifiant resté en chaîne y produirait "01" au lieu de 1.
+    const i = Number(shardId);
     const shardRef = mainRef.collection('responseShards').doc(String(i));
     const applyShardDoc = (shardDoc) => {
       const shardResponses = (shardDoc.exists && shardDoc.data().responses) || {};
@@ -200,9 +239,25 @@ async function _loadMergedResponses(uid, timeoutMs) {
     );
   }
   await Promise.all(shardFetches);
-  window._respShardCount = shardCount;
 
-  const exists = doc.exists || shardCount > 0;
+  // Nombre de shards RÉEL = plus grand index rencontré + 1 (et non le compteur annoncé), pour
+  // que _saveResponsesSharded() route ses écritures vers le vrai shard actif au lieu d'en
+  // recréer un déjà existant et d'y écraser des entrées.
+  const realShardCount = shardIds.length
+    ? Math.max(...shardIds.map(Number).filter(n => !isNaN(n))) + 1
+    : 0;
+  window._respShardCount = realShardCount;
+
+  // Auto-réparation du compteur du document principal quand il sous-estime la réalité : sans
+  // ça, chaque nouveau chargement de page repartirait du même compteur faux et dépendrait à
+  // nouveau du listing pour voir les shards oubliés.
+  if (realShardCount > declaredShardCount && navigator.onLine) {
+    mainRef.set({ responseShardCount: realShardCount }, { merge: true })
+      .then(() => console.log('[offline] responseShardCount réparé :', declaredShardCount, '→', realShardCount))
+      .catch(e => console.warn('[offline] Réparation de responseShardCount échouée:', e.message));
+  }
+
+  const exists = doc.exists || realShardCount > 0;
   return { exists, data: () => ({ ...primaryData, responses: merged }), incomplete: window._respLoadIncomplete };
 }
 
