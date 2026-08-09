@@ -113,6 +113,55 @@ function _deduplicateQuestions(questionsArray) {
 }
 
 /**
+ * _loadQuestionFileResilient(fileName) – Charge une banque de questions en épuisant TOUTES les
+ * sources possibles avant de renoncer, dans cet ordre :
+ *   1. fetch normal (passe par le Service Worker : cache-first pour ces fichiers) ;
+ *   2. lecture DIRECTE de l'API Cache du navigateur, toutes générations de cache confondues —
+ *      indispensable quand le Service Worker n'a pas (encore) la main sur la page, a été mis à
+ *      jour, ou vient d'être remplacé : le contenu est bien là, seul l'intermédiaire manquait ;
+ *   3. échec explicite (tableau vide) — mais SANS jamais être mémorisé comme un succès.
+ * Un tableau vide est toujours traité comme un échec : une banque de questions n'est jamais
+ * légitimement vide, donc mieux vaut essayer la source suivante que servir un quiz sans
+ * questions, comme c'est arrivé en vol (réseau qui ment + cache fraîchement effacé).
+ */
+async function _loadQuestionFileResilient(fileName) {
+  // 1) Chemin normal
+  try {
+    const res = await (typeof _raceTimeout === 'function'
+      ? _raceTimeout(fetch(fileName), 10000, 'fetch timeout: ' + fileName)
+      : fetch(fileName));
+    if (res && res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) return data;
+      console.warn('[questions] Réponse vide pour', fileName, '— tentative depuis le cache local');
+    } else {
+      console.warn('[questions] Réponse', res && res.status, 'pour', fileName, '— tentative depuis le cache local');
+    }
+  } catch (e) {
+    console.warn('[questions] fetch impossible pour', fileName, '(' + e.message + ') — tentative depuis le cache local');
+  }
+
+  // 2) Cache du navigateur, en direct (toutes générations)
+  try {
+    if (typeof caches !== 'undefined') {
+      const cached = await caches.match(fileName, { ignoreSearch: true });
+      if (cached && cached.ok) {
+        const data = await cached.json();
+        if (Array.isArray(data) && data.length) {
+          console.log('[questions] ' + fileName + ' récupéré depuis le cache local ✅');
+          return data;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[questions] Lecture directe du cache impossible pour', fileName, e.message);
+  }
+
+  console.error('[questions] ÉCHEC TOTAL du chargement de', fileName);
+  return [];
+}
+
+/**
  * prefetchAllJsonFiles() – Charge tous les fichiers JSON en parallèle.
  * Stocke les résultats dans _jsonCache pour que chargerQuestions() soit instantané.
  */
@@ -162,12 +211,19 @@ async function prefetchAllJsonFiles() {
   // OU rejetée) — un seul fetch qui reste bloqué sans jamais résoudre ni rejeter bloquerait donc
   // l'ensemble du préchargement indéfiniment, malgré allSettled. _raceTimeout() garantit que
   // chaque fetch rejette au bout de 10s au pire, laissant les autres fichiers déjà chargés utiles.
-  const results = await Promise.allSettled(
-    files.map(f => _raceTimeout(fetch(f), 10000, 'fetch timeout: ' + f).then(r => r.ok ? r.json() : []))
-  );
+  // _loadQuestionFileResilient() : en cas de fetch en échec ou de réponse vide, il relit le
+  // fichier DIRECTEMENT depuis l'API Cache du navigateur avant de renoncer — c'est ce qui
+  // permet au préchargement d'aboutir même hors-ligne avec un Service Worker fraîchement
+  // remplacé (le contenu est en cache, seul l'intermédiaire manquait).
+  const results = await Promise.allSettled(files.map(f => _loadQuestionFileResilient(f)));
   results.forEach((r, i) => {
-    if (r.status === 'fulfilled') {
-      _jsonCache.set(files[i], Array.isArray(r.value) ? r.value : []);
+    // Ne JAMAIS mémoriser une banque vide : un fetch "réussi" mais vide (réponse de repli du
+    // Service Worker hors-ligne, fichier tronqué, 404 renvoyant []) empoisonnait _jsonCache
+    // pour toute la session — chargerQuestions() servait alors 0 question sans erreur, et le
+    // seul remède était de tuer complètement l'appli. Une banque de questions n'est jamais
+    // légitimement vide : un tableau vide est un échec, pas un résultat.
+    if (r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length) {
+      _jsonCache.set(files[i], r.value);
     }
   });
   console.log(`[prefetch] ${_jsonCache.size}/${files.length} JSON chargés`);
@@ -743,13 +799,8 @@ async function chargerQuestions(cat) {
         if (_jsonCache.has(fileName)) {
           data = _jsonCache.get(fileName);
         } else {
-          // Timeout de secours : un fetch qui reste bloqué (réseau capricieux, proxy) ne doit
-          // jamais figer indéfiniment le démarrage d'un quiz — voir _raceTimeout (helpers.js).
-          const res = await (typeof _raceTimeout === 'function'
-            ? _raceTimeout(fetch(fileName), 10000, 'fetch timeout: ' + fileName)
-            : fetch(fileName));
-          data = res.ok ? await res.json() : [];
-          if (Array.isArray(data)) _jsonCache.set(fileName, data);
+          data = await _loadQuestionFileResilient(fileName);
+          if (Array.isArray(data) && data.length) _jsonCache.set(fileName, data);
         }
         const normalizedCat = norm;
         const isEpreuve = norm.includes('EPREUVE');

@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v112';
+const CACHE_NAME = 'quiz-ppl-v113';
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -102,26 +102,87 @@ async function precacheAll() {
   return { ok, total: PRECACHE_URLS.length };
 }
 
+/* Fichiers SANS lesquels l'appli est inutilisable hors-ligne : tant que l'un d'eux manque dans
+   le nouveau cache, les anciens caches ne doivent PAS être supprimés (voir 'activate'). On
+   prend ici le pré-cache AU COMPLET, y compris le SDK Firebase servi par CDN (sans lui, plus
+   d'accès aux réponses stockées hors-ligne) : conserver une génération de cache en trop ne
+   coûte que du stockage, alors qu'en supprimer une de trop coûte la séance de révision. */
+const CRITICAL_URLS = PRECACHE_URLS;
+
+/* missingCriticalUrls() — liste ce qui manque encore dans le cache courant. */
+async function missingCriticalUrls() {
+  const cache = await caches.open(CACHE_NAME);
+  const missing = [];
+  for (const url of CRITICAL_URLS) {
+    const hit = await cache.match(url, { ignoreSearch: true });
+    if (!hit) missing.push(url);
+  }
+  return missing;
+}
+
 // ---- INSTALLATION : pré-cache des fichiers critiques ----
 self.addEventListener('install', event => {
   console.log('[SW] Installation — pré-cache des assets');
   event.waitUntil(precacheAll().then(() => self.skipWaiting()));
 });
 
-// ---- ACTIVATION : nettoyage des anciens caches ----
+/* ---- ACTIVATION ----
+   Le nettoyage des anciens caches était INCONDITIONNEL, alors que precacheAll() ci-dessus
+   "réussit" toujours (chaque cache.add() en échec est avalé individuellement). Conséquence
+   vécue en vol : l'appli est ouverte une dernière fois avec un réseau capricieux, le nouveau
+   Service Worker s'installe, ne parvient à mettre en cache presque aucun fichier… et efface
+   malgré tout l'ANCIEN cache, pourtant complet. Une fois hors-ligne, il ne restait donc plus
+   rien du tout : les questions ne se chargeaient plus, alors que le site avait été ouvert
+   des dizaines de fois auparavant.
+   Désormais les anciens caches ne sont supprimés QUE si le nouveau contient réellement tous
+   les fichiers critiques. Sinon on les conserve : `caches.match()` (global, sans nom de cache)
+   utilisé partout dans le gestionnaire fetch cherche dans TOUTES les générations de cache, si
+   bien qu'un cache neuf incomplet est automatiquement complété par le précédent. */
 self.addEventListener('activate', event => {
-  console.log('[SW] Activation — nettoyage anciens caches');
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      );
-    }).then(() => {
-      // Prend le contrôle de toutes les pages immédiatement
-      return self.clients.claim();
-    })
-  );
+  event.waitUntil((async () => {
+    // Compléter d'abord ce qui manque (utile quand l'installation s'est faite en réseau dégradé).
+    await precacheAll().catch(() => {});
+    const missing = await missingCriticalUrls().catch(() => ['(vérification impossible)']);
+    const keys = await caches.keys();
+    const others = keys.filter(k => k !== CACHE_NAME);
+
+    if (!missing.length) {
+      await Promise.all(others.map(k => caches.delete(k)));
+      console.log('[SW] Cache complet — anciens caches supprimés');
+    } else {
+      // Cache neuf incomplet : on GARDE le plus récent des anciens comme filet de sécurité,
+      // et on supprime seulement les plus anciens pour ne pas accumuler indéfiniment.
+      const versionOf = name => { const m = /v(\d+)$/.exec(name); return m ? Number(m[1]) : -1; };
+      const keepAlso = others.sort((a, b) => versionOf(b) - versionOf(a))[0];
+      await Promise.all(others.filter(k => k !== keepAlso).map(k => caches.delete(k)));
+      self._precacheIncomplete = true;
+      console.warn('[SW] Cache incomplet (' + missing.length + ' fichier(s) manquant(s)) — ancien cache "' + keepAlso + '" CONSERVÉ comme filet de sécurité');
+    }
+    await self.clients.claim();
+  })());
 });
+
+/* topUpPrecacheIfNeeded() — auto-réparation : tant que le cache courant est incomplet, toute
+   requête réseau réussie sert de signal "la connexion est revenue" et déclenche une nouvelle
+   tentative de pré-cache (au plus une par minute). Sans ça, un cache resté incomplet le
+   demeurait jusqu'à la prochaine mise à jour du site ou un clic manuel sur "Forcer le
+   téléchargement complet" — c'est-à-dire, potentiellement, jusqu'après le vol. */
+let _lastTopUp = 0;
+function topUpPrecacheIfNeeded() {
+  if (!self._precacheIncomplete) return;
+  const now = Date.now();
+  if (now - _lastTopUp < 60000) return;
+  _lastTopUp = now;
+  precacheAll()
+    .then(() => missingCriticalUrls())
+    .then(missing => {
+      if (!missing.length) {
+        self._precacheIncomplete = false;
+        console.log('[SW] Cache complété automatiquement — filet de sécurité désormais inutile');
+      }
+    })
+    .catch(() => {});
+}
 
 /* fetchWithTimeout() — navigator.onLine ment très souvent en pratique (ex: Wi-Fi de bord
    d'avion "connecté" au point d'accès local mais sans aucune passerelle internet réelle) :
@@ -168,6 +229,15 @@ self.addEventListener('fetch', event => {
 
   // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
   const isJsonFile = url.pathname.endsWith('.json') && !url.pathname.endsWith('manifest.json');
+
+  /* Banques de questions : CACHE-FIRST (elles tombent plus bas dans le stale-while-revalidate),
+     surtout PAS network-first. Ce sont des fichiers statiques qui ne changent qu'au rythme des
+     déploiements : les servir depuis le cache est instantané et surtout increvable hors-ligne,
+     la version fraîche étant récupérée en arrière-plan pour la navigation suivante. En
+     network-first, un réseau qui ment (`navigator.onLine` vrai sur le Wi-Fi de bord d'un avion,
+     sans passerelle réelle) imposait 3 s d'attente par fichier PUIS un repli sur un cache qui
+     pouvait être vide — c'est ce qui a rendu les révisions totalement inaccessibles en vol. */
+  const isQuestionBankJson = /\/(questions_|section_easa_|gligli_)[^/]*\.json$/.test(url.pathname);
   // config.js contient les clés Firebase/OpenAIP injectées à chaque déploiement :
   // s'il reste coincé en cache-first, une clé mise à jour côté secrets GitHub peut
   // rester invisible indéfiniment (carte OpenAIP qui ne s'affiche plus, etc.) — donc
@@ -190,7 +260,7 @@ self.addEventListener('fetch', event => {
 
   // === Stratégie pour fichiers JSON / config.js / JS applicatif / pages HTML : Network-First (quand en ligne) ===
   // Garantit que les questions, la config et le CODE sont toujours à jour entre navigateurs
-  if ((isJsonFile || isConfigJs || isAppScript || isAppHtml) && navigator.onLine) {
+  if (((isJsonFile && !isQuestionBankJson) || isConfigJs || isAppScript || isAppHtml) && navigator.onLine) {
     event.respondWith(
       fetchWithTimeout(event.request, 3000).then(response => {
         if (response && response.ok) {
@@ -198,18 +268,28 @@ self.addEventListener('fetch', event => {
           const cleanUrl = new URL(event.request.url);
           cleanUrl.search = '';
           caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+          topUpPrecacheIfNeeded();
         }
         return response;
       }).catch(() => {
-        // Réseau échoué → fallback sur le cache
+        // Réseau échoué → fallback sur le cache. caches.match() SANS nom de cache parcourt
+        // TOUTES les générations de cache : un cache neuf incomplet est donc complété par le
+        // précédent, conservé exprès par 'activate' tant que le nouveau n'est pas complet.
         return caches.match(event.request, { ignoreSearch: true }).then(cached => {
           if (cached) return cached;
           // Navigation HTML sans copie en cache (précache manqué) : retomber sur index.html
           // plutôt qu'un placeholder vide, comme le fait la stratégie cache-first plus bas.
           if (isAppHtml) return caches.match(BASE + 'index.html', { ignoreSearch: true });
-          return (isConfigJs || isAppScript)
-            ? new Response('', { status: 200, headers: { 'Content-Type': 'application/javascript' } })
-            : new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+          if (isConfigJs || isAppScript) {
+            return new Response('', { status: 200, headers: { 'Content-Type': 'application/javascript' } });
+          }
+          // Plus JAMAIS de "[]" en statut 200 pour un JSON introuvable : le client y voyait un
+          // chargement RÉUSSI d'une banque vide, mémorisait ce vide dans son cache mémoire et
+          // lançait un quiz sur 0 question, sans le moindre message d'erreur. Un vrai code
+          // d'échec permet au client de distinguer "aucune question" de "pas pu charger".
+          return new Response(JSON.stringify({ error: 'offline', url: url.pathname }), {
+            status: 503, statusText: 'Offline', headers: { 'Content-Type': 'application/json' }
+          });
         });
       })
     );
