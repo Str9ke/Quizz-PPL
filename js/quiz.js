@@ -1543,6 +1543,18 @@ function _assistRenderCurrent() {
           </button>
         `).join('')}
       </div>
+      <div class="assist-mode-sr-row">
+        <button type="button" class="assist-mode-sr-btn assist-mode-sr-less"
+                onclick="adjustSrFrequency(${idx}, this, 'easier')"
+                title="Moins souvent — repousser la prochaine révision de cette question (jugée facile)">
+          📉 <span>Moins souvent</span>
+        </button>
+        <button type="button" class="assist-mode-sr-btn assist-mode-sr-more"
+                onclick="adjustSrFrequency(${idx}, this, 'harder')"
+                title="Plus souvent — rapprocher la prochaine révision de cette question (jugée difficile)">
+          📈 <span>Plus souvent</span>
+        </button>
+      </div>
       <div class="assist-mode-feedback" id="assistModeFeedback"></div>
     </div>
   `;

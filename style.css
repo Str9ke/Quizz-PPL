@@ -1741,6 +1741,38 @@ body.light .quiz-hero-title {
   background: var(--wrong-bg);
   border-color: #dc3545;
 }
+/* Réglage manuel de la fréquence de révision, disponible DÈS AVANT de répondre en Mode
+   Assistance (la vue normale, elle, ne montre ses boutons d'action qu'après correction).
+   Volontairement limité à ces deux actions : en usage mains-libres, la barre complète
+   (marquer / important / note / ne plus revoir / corriger) serait impossible à viser. */
+.assist-mode-sr-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.assist-mode-sr-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0.6rem 0.5rem;
+  border: 2px solid var(--input-border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+.assist-mode-sr-btn:active {
+  transform: scale(0.97);
+}
+.assist-mode-sr-less:hover { border-color: #28a745; }
+.assist-mode-sr-more:hover { border-color: #dc3545; }
+
 .assist-mode-feedback {
   margin-top: 1rem;
   font-size: 1rem;
@@ -1763,6 +1795,7 @@ body.light .quiz-hero-title {
 @media (max-width: 600px) {
   .assist-mode-question { font-size: 1.05rem; }
   .assist-mode-choice-btn { min-height: 60px; font-size: 1rem; padding: 0.9rem 1rem; }
+  .assist-mode-sr-btn { min-height: 52px; font-size: 0.86rem; }
 }
 @media (max-width: 600px) {
   .quiz-hero-icon { font-size: 2rem; }
