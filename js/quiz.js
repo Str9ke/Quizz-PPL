@@ -508,6 +508,13 @@ function adjustSrFrequency(questionIdx, button, direction) {
     console.error("Question introuvable dans la catégorie sélectionnée.");
     return;
   }
+  // Même précaution que pour les réponses : tant que l'historique n'est pas chargé, `prev`
+  // serait un objet vide et l'écriture ci-dessous remplacerait l'entrée réelle (statut,
+  // failCount, successCount) par une entrée amputée ne contenant que la planification.
+  if (!window._responsesReady) {
+    _flashQaFeedback(button, '⏳ Chargement…');
+    return;
+  }
   const key = getKeyFor(question);
   const prev = currentResponses[key] || {};
   const prevInterval = prev.srInterval || 1;
@@ -731,7 +738,15 @@ async function initQuiz() {
   // (_loadMergedResponses lit le document principal ET tous ses shards — voir js/offline.js)
   _loadMergedResponses(uid).then(async (doc) => {
     const data = doc.exists ? doc.data() : {};
-    currentResponses = normalizeResponses(data.responses || {});
+    // FUSION (et non remplacement) avec ce qui a pu être répondu entre l'affichage du quiz
+    // ci-dessus et l'arrivée de ces données : un remplacement pur effaçait localement une
+    // réponse tout juste donnée (le serveur avait été lu AVANT son écriture), et la question
+    // réapparaissait ensuite comme jamais répondue.
+    currentResponses = _mergeResponsesPreferringLocal(
+      normalizeResponses(data.responses || {}),
+      currentResponses || {}
+    );
+    _markResponsesReady();
     if (typeof _migrateStatusLogToSubcollection === 'function') {
       _migrateStatusLogToSubcollection(uid).catch(e => console.warn('[initQuiz] migration statusLog:', e));
     }
@@ -796,6 +811,9 @@ async function initQuiz() {
   }).catch(e => {
     console.warn('[offline] Impossible de charger les réponses:', e.message);
     currentResponses = currentResponses || {};
+    // Même en échec, débloquer la file : mieux vaut enregistrer avec un historique incomplet
+    // que de perdre purement et simplement les réponses de la session en cours.
+    _markResponsesReady();
   });
 
   // Compteur quotidien en tâche de fond (non bloquant)
@@ -1149,6 +1167,71 @@ function _computeSrEntry(q, selectedVal) {
  * maximum de temps possible pour aboutir avant que l'utilisateur ne parte (ce qui suppose un
  * nouveau geste de sa part, donc un délai physique d'au moins quelques centaines de ms).
  */
+/* ============================================================================
+   Réponses données AVANT que l'historique ne soit chargé
+   ----------------------------------------------------------------------------
+   initQuiz() affiche volontairement le quiz sans attendre Firestore (qui peut bloquer
+   plus de 10 s sur un réseau lent), puis charge currentResponses en arrière-plan. Toute
+   réponse donnée dans cet intervalle était calculée sur un historique VIDE :
+   _computeSrEntry() voyait prevInterval = 0, donc « première réussite → revoir dans 3 j »,
+   et remettait failCount/successCount à zéro — une question planifiée à 60 jours retombait
+   à 3, en perdant tout son historique. La réponse était ensuite écrasée localement par le
+   remplacement de currentResponses (le serveur ayant été lu avant l'écriture).
+
+   Le cas se produit surtout à la reprise d'une session le lendemain : le filet anti-bfcache
+   (helpers.js) recharge la page quand le téléphone est déverrouillé, et l'utilisateur
+   enchaîne aussitôt les réponses — donc en plein dans cette fenêtre, question après question.
+
+   Désormais l'affichage et la coloration restent immédiats, mais le CALCUL de la
+   planification et son écriture sont mis en file d'attente jusqu'à ce que l'historique
+   réel soit disponible. */
+window._responsesReady = false;
+window._pendingAnswers = [];
+
+function _markResponsesReady() {
+  if (window._responsesReady) return;
+  window._responsesReady = true;
+  const queued = window._pendingAnswers || [];
+  window._pendingAnswers = [];
+  if (queued.length) {
+    console.log('[SR] Historique chargé — traitement de ' + queued.length + ' réponse(s) en attente');
+  }
+  queued.forEach(({ q, selectedVal, isCorrect }) => _recordAnswerNow(q, selectedVal, isCorrect));
+}
+
+/* _mergeResponsesPreferringLocal() – Fusionne les réponses du serveur avec celles déjà
+   présentes en mémoire, en conservant l'entrée locale quand le serveur ne la connaît pas
+   ou quand elle est authentiquement plus récente (même règle de comparaison que la fusion
+   des shards dans js/offline.js). */
+function _mergeResponsesPreferringLocal(serverResponses, localResponses) {
+  const _ms = t => (t && (t.seconds !== undefined ? t.seconds * 1000 : t)) || 0;
+  const merged = { ...(serverResponses || {}) };
+  Object.keys(localResponses || {}).forEach(k => {
+    const local = localResponses[k];
+    if (!local) return;
+    const server = merged[k];
+    if (server === undefined || _ms(local) > _ms(server)) merged[k] = local;
+  });
+  return merged;
+}
+
+/* _recordAnswerNow() – Calcule la planification SR d'une réponse et la persiste. Appelé
+   directement quand l'historique est déjà chargé, sinon depuis la file d'attente. */
+function _recordAnswerNow(q, selectedVal, isCorrect) {
+  const key = getKeyFor(q);
+  if (!window._immediateSavedEntries) window._immediateSavedEntries = {};
+  if (!window._immediatePrevStatus) window._immediatePrevStatus = {};
+  if (!(key in window._immediatePrevStatus)) {
+    window._immediatePrevStatus[key] = currentResponses[key]?.status;
+  }
+  const entry = _computeSrEntry(q, selectedVal);
+  window._immediateSavedEntries[key] = entry;
+  currentResponses[key] = entry;
+  if (!isCorrect) _logWrongAnswer(q, selectedVal);
+  _persistImmediateEntry(key, entry);
+  if (typeof _refreshCategoryInfoBarLive === 'function') _refreshCategoryInfoBarLive();
+}
+
 let _immPersistPending = {};
 function _persistImmediateEntry(key, entry) {
   _immPersistPending[key] = entry;
@@ -1201,10 +1284,20 @@ function _flushImmPersist() {
 }
 // Filet de sécurité : si un appel venait à être remis en file d'attente sans flush immédiat
 // (ex. futur appelant groupé), s'assurer que rien ne reste bloqué à la fermeture de la page.
+/* Page quittée alors que des réponses attendent encore l'historique : les traiter quand même
+   (avec l'historique dont on dispose) plutôt que de les perdre. Une planification raccourcie
+   se rattrape à la réponse suivante ; une réponse jamais écrite, non. */
+function _flushBeforeLeaving() {
+  if (!window._responsesReady && (window._pendingAnswers || []).length) {
+    console.warn('[SR] Page quittée avec des réponses en attente — enregistrement immédiat');
+    _markResponsesReady();
+  }
+  _flushImmPersist();
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') _flushImmPersist();
+  if (document.visibilityState === 'hidden') _flushBeforeLeaving();
 });
-window.addEventListener('pagehide', _flushImmPersist);
+window.addEventListener('pagehide', _flushBeforeLeaving);
 
 /**
  * handleImmediateAnswer() – Gère la correction immédiate d'une question
@@ -1239,16 +1332,12 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     }
   } else if (_isPracticeMode()) {
     // Mode entraînement libre : ne rien persister (voir _isPracticeMode)
+  } else if (!window._responsesReady) {
+    // Historique pas encore chargé : mettre en attente plutôt que de planifier à partir
+    // d'un historique vide (voir le commentaire de _markResponsesReady).
+    window._pendingAnswers.push({ q, selectedVal, isCorrect });
   } else {
-    if (!(_pKey in window._immediatePrevStatus)) {
-      window._immediatePrevStatus[_pKey] = currentResponses[_pKey]?.status;
-    }
-    const _pEntry = _computeSrEntry(q, selectedVal);
-    window._immediateSavedEntries[_pKey] = _pEntry;
-    currentResponses[_pKey] = _pEntry;
-    if (!isCorrect) _logWrongAnswer(q, selectedVal);
-    _persistImmediateEntry(_pKey, _pEntry);
-    if (typeof _refreshCategoryInfoBarLive === 'function') _refreshCategoryInfoBarLive();
+    _recordAnswerNow(q, selectedVal, isCorrect);
   }
 
   // Mettre à jour le score
