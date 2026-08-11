@@ -149,17 +149,36 @@
   </div>
 
   <script>
-    // Afficher la date/heure de dernière mise à jour du site
+    // Date ET heure de la dernière mise à jour réellement déployée.
+    //
+    // Cette date était une constante à modifier À LA MAIN à chaque déploiement — donc jamais
+    // modifiée : elle affichait encore une date vieille de plusieurs semaines alors que le site
+    // avait été mis à jour le jour même, ce qui empêchait justement de savoir si la version
+    // installée sur le téléphone était bien la dernière. Elle vient maintenant de l'horodatage
+    // réel du dernier déploiement GitHub Actions (voir le bloc "statut du déploiement" plus bas,
+    // qui interroge déjà cette API et appelle _renderLastUpdate), mémorisé dans localStorage
+    // pour rester juste hors-ligne. La constante ci-dessous ne sert plus que de valeur de repli
+    // au tout premier chargement, avant toute réponse de l'API.
     (function() {
-      // Date de dernière mise à jour (mise à jour manuellement à chaque déploiement)
-      var LAST_UPDATE = '2026-07-15T13:00:00';
-      var d = new Date(LAST_UPDATE);
-      var pad = function(n) { return n < 10 ? '0' + n : n; };
-      var formatted = pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear()
-        + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-      document.addEventListener('DOMContentLoaded', function() {
+      var FALLBACK_ISO = '2026-07-15T13:00:00';
+
+      function pad(n) { return n < 10 ? '0' + n : n; }
+
+      window._renderLastUpdate = function(iso, relative) {
         var el = document.getElementById('lastUpdateInfo');
-        if (el) el.textContent = 'Derni\u00e8re mise \u00e0 jour : ' + formatted;
+        if (!el || !iso) return;
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return;
+        var formatted = pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear()
+          + ' \u00e0 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        el.textContent = 'Derni\u00e8re mise \u00e0 jour : ' + formatted
+          + (relative ? ' (' + relative + ')' : '');
+      };
+
+      document.addEventListener('DOMContentLoaded', function() {
+        var known = null;
+        try { known = localStorage.getItem('lastDeployAt'); } catch (e) { /* ignore */ }
+        window._renderLastUpdate(known || FALLBACK_ISO);
       });
     })();
   </script>
@@ -193,6 +212,15 @@
         } else if (run.conclusion === 'success') {
           label = '\ud83d\udfe2 D\u00e9ploy\u00e9 avec succ\u00e8s \u2014 ' + relativeTime(run.updated_at || run.run_started_at);
           cls = 'deploy-status-ok';
+          // Horodatage RÉEL du dernier déploiement réussi : sert de "Dernière mise à jour"
+          // affichée sous le titre, et mémorisé pour rester exacte hors-ligne.
+          var deployedAt = run.updated_at || run.run_started_at;
+          if (deployedAt) {
+            try { localStorage.setItem('lastDeployAt', deployedAt); } catch (e) { /* ignore */ }
+            if (typeof window._renderLastUpdate === 'function') {
+              window._renderLastUpdate(deployedAt, relativeTime(deployedAt));
+            }
+          }
         } else {
           label = '\ud83d\udd34 \u00c9chec du dernier d\u00e9ploiement (voir GitHub Actions)';
           cls = 'deploy-status-fail';
