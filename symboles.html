@@ -21,7 +21,11 @@
     /* Consultation / browse mode */
     .sym-browse { max-width: 900px; margin: 0 auto; }
     .sym-browse-group { margin-bottom: 20px; }
-    .sym-browse-group-title { font-size: 1em; font-weight: 700; color: var(--text-heading); margin: 12px 0 8px; padding: 6px 12px; background: linear-gradient(135deg, rgba(102,126,234,.1) 0%, rgba(118,75,162,.1) 100%); border-radius: 8px; }
+    /* Collant (pas de JS nécessaire) : la vue "Consulter" affiche par défaut TOUS les groupes
+       à la suite (321 symboles au total) — sans repère fixe, on perd de vue quel groupe on
+       parcourt après quelques écrans de défilement. `position: sticky` fait remonter et rester
+       le titre du groupe en cours tant qu'on n'a pas atteint le suivant. */
+    .sym-browse-group-title { position: sticky; top: 0; z-index: 40; font-size: 1em; font-weight: 700; color: var(--text-heading); margin: 12px 0 8px; padding: 6px 12px; background: linear-gradient(135deg, rgba(102,126,234,.1) 0%, rgba(118,75,162,.1) 100%); border-radius: 8px; backdrop-filter: blur(4px); box-shadow: 0 2px 6px var(--card-shadow); }
     .sym-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
     .sym-browse-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.82em; }
     .sym-browse-card .sym-browse-img { flex-shrink: 0; max-width: 70px; max-height: 55px; }
@@ -1634,5 +1638,6 @@
   })();
   </script>
   <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
 </body>
 </html>
