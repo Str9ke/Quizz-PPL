@@ -55,10 +55,10 @@ body.light .fiche-card .formula{color:#2a2a35}
 .fiche-search button{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.85em}
 /* Print */
 @media print{
-  .top-nav-bar,.fcat-grid,.fsub-row,.fiche-search,#themeToggle,footer{display:none!important}
+  .sidebar-toggle-btn,.app-sidebar,.sidebar-overlay,.fcat-grid,.fsub-row,.fiche-search,#themeToggle,footer{display:none!important}
   .fiche-section-body{display:block!important}
   .fiche-card{break-inside:avoid;border:1px solid #ccc}
-  body{background:#fff;color:#000}
+  body{background:#fff;color:#000;margin-left:0!important}
   .fiche-card li strong,.fiche-card li b{color:#b8860b}
   .fiche-card h3{color:#333}
 }
@@ -100,23 +100,7 @@ body.light .fiche-card .formula{color:#2a2a35}
     if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
   </script>
   <!-- Top navigation -->
-  <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link">🏠 Accueil</a>
-    <a href="navlog.html" class="top-nav-link top-nav-featured">🗺️ Briefing</a>
-    <a href="quiz.html" class="top-nav-link">🎯 Quiz</a>
-    <a href="stats.html" class="top-nav-link">📊 Stats</a>
-    <a href="rates.html" class="top-nav-link">📖 Révision</a>
-    <a href="historique.html" class="top-nav-link">📅 Historique</a>
-    <a href="search.html" class="top-nav-link">🔍 Recherche</a>
-    <a href="echecs.html" class="top-nav-link">🔥 Plus ratées</a>
-    <a href="symboles.html" class="top-nav-link">🔣 Symboles</a>
-    <a href="radial.html" class="top-nav-link">📡 Radial</a>
-    <a href="fiches.html" class="top-nav-link top-nav-current">📝 Fiches</a>
-    <a href="urgences.html" class="top-nav-link">🚨 Urgences</a>
-    <a href="configuration.html" class="top-nav-link">⚙️ Configuration</a>
-    <a href="epreuve.html" class="top-nav-link">📝 Examen blanc</a>
-    <a href="plongee.html" class="top-nav-link">🤿 Plongée</a>
-  </div>
+  
 
   <h1>📝 Fiches Mémo PPL</h1>
 
@@ -2641,5 +2625,6 @@ buildContent();
 })();
 })();
   </script>
+  <script src="js/sidebar.js"></script>
 </body>
 </html>

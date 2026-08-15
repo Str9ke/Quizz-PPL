@@ -2140,51 +2140,216 @@ body.light .revision-summary { background: rgba(102, 126, 234, 0.06); }
 }
 
 /* ===== Top navigation bar ===== */
-.top-nav-bar {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 6px 10px;
-  margin: 0 auto 8px;
-  max-width: 700px;
+/* ===== Menu latéral (sidebar) — injecté par js/sidebar.js sur chaque page =====
+   Remplace l'ancienne .top-nav-bar (liste de 15 liens en haut de page, dupliquée
+   dans chacun des 15 fichiers HTML — une source d'incohérences à chaque mise à
+   jour). Un seul composant, un seul endroit à maintenir. Voir js/sidebar.js pour
+   la structure des groupes et la logique d'ouverture/fermeture. */
+:root {
+  --sidebar-width: 264px;
 }
-.top-nav-link {
-  display: inline-block;
-  padding: 5px 12px;
-  font-size: 0.78em;
-  font-weight: 600;
-  border-radius: 16px;
-  text-decoration: none;
-  color: var(--text-secondary);
-  background: var(--bg-container);
+
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 44px; /* dégagé du bandeau hors-ligne plein-largeur (#offlineStatusBar, z-index 10000),
+                qui peut rester affiché en permanence pendant un vol */
+  left: 12px;
+  z-index: 10060;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--border-color);
-  transition: all 0.2s;
+  border-radius: 10px;
+  background: var(--bg-container);
+  box-shadow: 0 2px 8px var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+.sidebar-toggle-btn span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text-primary);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+body.sidebar-open .sidebar-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Une fois ouvert, fermer se fait via le ✕ de l'en-tête, l'overlay ou Échap — le bouton ☰
+   flottait sinon par-dessus l'en-tête du tiroir, redondant avec le ✕ juste à côté. */
+body.sidebar-open .sidebar-toggle-btn {
+  display: none;
+}
+
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10055;
+  width: var(--sidebar-width);
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  background: var(--bg-container);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 12px var(--card-shadow);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+}
+body.sidebar-open .app-sidebar {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex: 0 0 auto;
+  min-height: 40px;
+}
+.sidebar-header-icon { font-size: 1.2rem; flex: 0 0 auto; }
+.sidebar-header-title {
+  font-weight: 800;
+  color: var(--text-heading);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-close-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  flex: 0 0 auto;
+  /* La règle générale @media(max-width:600px){button{width:100%}} (style.css, boutons de
+     formulaire pleine largeur sur mobile) s'appliquait aussi à ce bouton faute de `width`
+     explicite ici — flex-basis:auto retombe alors sur cette largeur forcée à 100% du tiroir,
+     écrasant "Quiz PPL" à 0px de large entre l'icône et le ✕. */
+  width: auto;
+  margin: 0;
+}
+
+.sidebar-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
   white-space: nowrap;
 }
-.top-nav-link:hover {
-  color: #667eea;
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.08);
+.sidebar-link:hover {
+  background: rgba(102, 126, 234, 0.1);
 }
-.top-nav-current {
+.sidebar-link-current {
   color: #fff;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: transparent;
   pointer-events: none;
 }
-/* Lien mis en avant (ex: Briefing) : accès plus rapide, distinct visuellement du reste
-   du menu sans pour autant écraser le style "page actuelle" (.top-nav-current). */
-.top-nav-link.top-nav-featured {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.14);
-  border-color: #f59e0b;
-  font-weight: 800;
+
+.sidebar-group { border: none; }
+.sidebar-group summary {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  list-style: none;
 }
-.top-nav-link.top-nav-featured:hover {
-  background: rgba(245, 158, 11, 0.26);
+.sidebar-group summary::-webkit-details-marker { display: none; }
+.sidebar-group summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+}
+.sidebar-group[open] > summary::after {
+  transform: rotate(90deg);
+}
+.sidebar-group summary:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+/* Groupe mis en avant (Briefing) : même traitement ambre que l'ancien lien
+   "featured" de la barre du haut — accès reconnaissable au premier coup d'œil. */
+.sidebar-group[data-featured="1"] > summary {
   color: #f59e0b;
-  border-color: #f59e0b;
+}
+.sidebar-group[data-featured="1"] > summary:hover {
+  background: rgba(245, 158, 11, 0.14);
+}
+.sidebar-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border-color);
+  margin: 2px 0 4px 22px;
+}
+.sidebar-group-items .sidebar-link {
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.sidebar-sep {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 8px 4px;
+}
+
+/* Desktop : le menu reste affiché en permanence, plus besoin du bouton ☰
+   ni de l'overlay — et le contenu de la page se décale pour lui faire place. */
+@media (min-width: 880px) {
+  .sidebar-toggle-btn,
+  .sidebar-overlay,
+  .sidebar-close-btn {
+    display: none !important;
+  }
+  .app-sidebar {
+    transform: none;
+    box-shadow: none;
+  }
+  body {
+    margin-left: var(--sidebar-width);
+  }
 }
 
 /* ===== Calendar widget ===== */
