@@ -707,8 +707,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
 /* Print stylesheet */
 @media print{
-  body{background:#fff!important;color:#000!important}
-  .theme-toggle,.top-nav-bar,.navlog-tabs,.meteo-subtabs,.map-card-actions,.navlog-btn,.clear-ws-btn,
+  body{background:#fff!important;color:#000!important;margin-left:0!important}
+  .theme-toggle,.sidebar-toggle-btn,.app-sidebar,.sidebar-overlay,.navlog-tabs,.meteo-subtabs,.map-card-actions,.navlog-btn,.clear-ws-btn,
   .model-nav,.model-preload-bar,.config-grid,.map-paste-zone,button,select,
   #calOverlay,#calToggleBtn,.extra-images-area{display:none!important}
   .navlog-tab-content{display:block!important;page-break-inside:avoid}
@@ -797,23 +797,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 <body>
   <button class="theme-toggle" onclick="window.toggleTheme()" title="Changer le th&#xe8;me" aria-label="Changer le th&#xe8;me clair/sombre">&#x1F319;</button>
 
-  <div class="top-nav-bar">
-    <a href="index.html?accueil=1" class="top-nav-link">&#x1F3E0; Accueil</a>
-    <a href="navlog.html" class="top-nav-link top-nav-current">&#x1F5FA;&#xFE0F; Briefing</a>
-    <a href="quiz.html" class="top-nav-link">&#x1F3AF; Quiz</a>
-    <a href="search.html" class="top-nav-link">&#x1F50D; Recherche</a>
-    <a href="echecs.html" class="top-nav-link">&#x1F525; Plus rat&#xe9;es</a>
-    <a href="stats.html" class="top-nav-link">&#x1F4CA; Stats</a>
-    <a href="rates.html" class="top-nav-link">&#x1F4D6; R&#xe9;vision</a>
-    <a href="historique.html" class="top-nav-link">&#x1F4C5; Historique</a>
-    <a href="symboles.html" class="top-nav-link">&#x1F523; Symboles</a>
-    <a href="radial.html" class="top-nav-link">&#x1F4E1; Radial</a>
-    <a href="fiches.html" class="top-nav-link">&#x1F4DD; Fiches</a>
-    <a href="urgences.html" class="top-nav-link">&#x1F6A8; Urgences</a>
-    <a href="configuration.html" class="top-nav-link">&#x2699;&#xFE0F; Configuration</a>
-    <a href="epreuve.html" class="top-nav-link">&#x1F4DD; Examen blanc</a>
-    <a href="plongee.html" class="top-nav-link">🤿 Plongée</a>
-  </div>
+  
 
   <div class="navlog-hero">
     <div class="navlog-hero-icon">&#x2708;&#xFE0F;</div>
@@ -16295,8 +16279,23 @@ window.addEventListener('message', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded',init);
+
+/* Active l'onglet demandé par le hash de l'URL (ex: navlog.html#meteo), utilisé par les
+   sous-liens "Briefing" du menu latéral (js/sidebar.js) quand on arrive depuis une autre
+   page. Enregistré APRÈS init() ci-dessus : les deux écouteurs du même événement
+   s'exécutent dans l'ordre d'ajout, donc celui-ci a le dernier mot sur l'onglet actif —
+   sans dépendre de ce qu'init() fait par ailleurs en interne. Un hash absent ou invalide
+   laisse simplement l'onglet par défaut ("nav", déjà actif dans le HTML) inchangé. */
+document.addEventListener('DOMContentLoaded', function () {
+  var validTabs = ['nav','meteo','notam','masse','perf','altitudes','fuel','checklist','notes','fpl','dossiers'];
+  var id = (location.hash || '').replace('#', '');
+  if (id && validTabs.indexOf(id) !== -1 && typeof window.switchTab === 'function') {
+    window.switchTab(id);
+  }
+});
 })();
 </script>
+  <script src="js/sidebar.js"></script>
 </body>
 </html>
 
