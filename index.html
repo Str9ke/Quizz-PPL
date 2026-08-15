@@ -281,6 +281,11 @@
     <!-- Daily stats bar -->
     <div id="dailyStatsBar" style="display:none;"></div>
 
+    <!-- Tableau de bord "Suis-je prêt ?" : même carte que stats.html (voir _renderReadinessDashboard,
+         js/stats.js), remontée en tête d'accueil pour voir d'un coup d'œil les matières faibles
+         sans avoir à naviguer vers Stats. Remplie par initIndex() (js/init.js). -->
+    <div id="readinessDashboardContainer"></div>
+
     <!-- Répétition espacée : lancer une session en un clic (révisions dues + objectif de nouvelles) -->
     <div class="home-card" style="border-color:rgba(245,158,11,.35)">
       <div class="home-card-header">
@@ -846,5 +851,6 @@
     };
   </script>
   <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
 </body>
 </html>

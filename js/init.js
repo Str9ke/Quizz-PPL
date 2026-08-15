@@ -239,6 +239,31 @@ async function initIndex() {
   window._lastDailyHist = _dailyHist; // réutilisé par categoryChanged() pour rafraîchir la carte
   displayHomeProgressBar(currentResponses, _dailyHist);
 
+  // Tableau de bord "Suis-je prêt ?" en tête d'accueil : réutilise TEL QUEL le rendu de
+  // stats.html (_renderReadinessDashboard, EASA_SUBJECTS — définis une seule fois dans
+  // helpers.js/stats.js) plutôt que de dupliquer la logique de seuils/couleurs/filtre ici.
+  //
+  // loadAllQuestions() est rappelé ici volontairement : le bloc de restauration de la dernière
+  // catégorie utilisée plus haut (`chargerQuestions(savedCategory)`) peut avoir réduit le
+  // tableau global `questions` à UNE SEULE catégorie si ce n'était pas "TOUTES" — ce widget doit
+  // couvrir les 9 matières officielles quel que soit ce réglage. Le fichier JSON de chaque
+  // catégorie est déjà en cache mémoire (_jsonCache, chargé par prefetchAllJsonFiles() plus
+  // haut) : ce ré-appel ne refait aucune requête réseau, juste une re-déduplication en mémoire.
+  try {
+    await loadAllQuestions();
+    if (typeof _renderReadinessDashboard === 'function' && typeof EASA_SUBJECTS !== 'undefined') {
+      const neededCats = new Set();
+      EASA_SUBJECTS.forEach(s => s.categories.forEach(c => neededCats.add(c)));
+      const categories = Array.from(neededCats).map(catVal => {
+        const stats = computeStatsForFirestore(questions.filter(q => q.categorie === catVal), currentResponses);
+        return { value: catVal, label: catVal, stats, globalContrib: stats };
+      });
+      _renderReadinessDashboard([{ name: 'EASA', categories }]);
+    }
+  } catch (e) {
+    console.warn('[initIndex] Tableau de bord "Suis-je prêt ?" indisponible:', e.message);
+  }
+
   // Lancer displayDailyStats APRÈS les données Firestore/localStorage à jour
   // (élimine la race condition où displayDailyStats écrasait les données correctes)
   await displayDailyStats().catch(e => console.warn('[initIndex] displayDailyStats error:', e));

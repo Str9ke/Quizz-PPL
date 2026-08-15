@@ -48,6 +48,14 @@ body.light .fiche-card .formula{color:#2a2a35}
 .fiche-section-hdr.open .chevron{transform:rotate(90deg)}
 .fiche-section-body{display:none;padding:4px 0 8px}
 .fiche-section-body.show{display:block}
+/* Barre de catégorie collante (voir buildContent()) */
+.fiche-sticky-bar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin:0 0 10px;background:var(--bg-question);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 2px 8px var(--card-shadow)}
+.fiche-sticky-title{flex:1;min-width:120px;font-weight:700;font-size:.9em;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* width/margin explicites : la règle générale @media(max-width:600px){button{width:100%}}
+   (style.css, pensée pour les boutons de formulaire) s'appliquerait sinon aussi à celui-ci et
+   le forcerait en pleine largeur, poussant le titre de catégorie tout seul sur sa ligne. */
+.fiche-sticky-btn{padding:6px 12px;font-size:.78em;font-weight:600;border-radius:16px;border:1px solid var(--border-color);background:var(--bg-container);color:var(--text-secondary);cursor:pointer;white-space:nowrap;width:auto;margin:0;flex:0 0 auto}
+.fiche-sticky-btn:hover{border-color:#667eea;color:#667eea}
 /* Search */
 .fiche-search{display:flex;gap:8px;margin:10px 0 14px}
 .fiche-search input{flex:1;padding:9px 14px;border-radius:20px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.88em;outline:none}
@@ -55,7 +63,7 @@ body.light .fiche-card .formula{color:#2a2a35}
 .fiche-search button{padding:8px 18px;border-radius:20px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;cursor:pointer;font-size:.85em}
 /* Print */
 @media print{
-  .sidebar-toggle-btn,.app-sidebar,.sidebar-overlay,.fcat-grid,.fsub-row,.fiche-search,#themeToggle,footer{display:none!important}
+  .sidebar-toggle-btn,.app-sidebar,.sidebar-overlay,.fcat-grid,.fsub-row,.fiche-search,.fiche-sticky-bar,#themeToggle,footer{display:none!important}
   .fiche-section-body{display:block!important}
   .fiche-card{break-inside:avoid;border:1px solid #ccc}
   body{background:#fff;color:#000;margin-left:0!important}
@@ -147,6 +155,11 @@ body.light .fiche-card .formula{color:#2a2a35}
         </select>
       </div>
     </div>
+
+    <!-- Barre de catégorie collante : reste visible pendant le défilement d'une catégorie
+         longue (jusqu'à 15 fiches d'affilée) pour ne pas avoir à remonter tout en haut juste
+         pour se rappeler où on est ou pour tout replier. Peuplée par buildContent(). -->
+    <div id="ficheStickyBar" class="fiche-sticky-bar" style="display:none"></div>
 
     <!-- Content area -->
     <div id="ficheContent"></div>
@@ -2382,25 +2395,32 @@ function buildSubs() {
 /* Build content */
 function buildContent() {
   $content.innerHTML = '';
+  const $sticky = document.getElementById('ficheStickyBar');
   if (!activeCat) {
     // Show welcome
     $content.innerHTML = '<div class="fiche-card" style="text-align:center;padding:30px 20px"><h3 style="border:none;font-size:1.2em">S&#xe9;lectionnez une cat&#xe9;gorie ci-dessus</h3><p style="color:var(--text-secondary)">9 cat&#xe9;gories, ' + FICHES.reduce((n,c)=>n+c.subs.length,0) + ' fiches m&#xe9;mo couvrant ~90% des questions du quiz.<br>Chaque fiche est synth&#xe9;tique et organis&#xe9;e par th&#xe8;me.<br>Utilisez la recherche pour trouver un sujet pr&#xe9;cis.</p></div>';
     /* Hide TTS player when no category selected */
     var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='none';
     if(typeof _ttsStop==='function')_ttsStop('tts-fiches');
+    if ($sticky) $sticky.style.display = 'none';
     return;
   }
   const cat = FICHES.find(c => c.id === activeCat);
   if (!cat) return;
   const subs = activeSub !== null ? [cat.subs[activeSub]] : cat.subs;
+  // Plusieurs fiches à la suite (jusqu'à 15 pour une grosse catégorie comme Météorologie) :
+  // repliées par défaut pour donner un sommaire compact au lieu d'un long défilement — sauf
+  // s'il n'y a qu'une seule fiche à afficher (sous-thème précis choisi), où la replier
+  // n'apporterait rien puisqu'il n'y a rien d'autre à masquer.
+  const startOpen = subs.length <= 1;
   subs.forEach(s => {
     const sec = document.createElement('div');
     sec.className = 'fiche-section';
     const hdr = document.createElement('div');
-    hdr.className = 'fiche-section-hdr open';
+    hdr.className = 'fiche-section-hdr' + (startOpen ? ' open' : '');
     hdr.innerHTML = '<span class="chevron">&#x25B6;</span> ' + s.t;
     const body = document.createElement('div');
-    body.className = 'fiche-section-body show';
+    body.className = 'fiche-section-body' + (startOpen ? ' show' : '');
     const card = document.createElement('div');
     card.className = 'fiche-card';
     card.innerHTML = s.html;
@@ -2410,6 +2430,35 @@ function buildContent() {
     sec.appendChild(body);
     $content.appendChild(sec);
   });
+  /* Barre collante : nom de la catégorie + déplier/replier tout, visible en permanence
+     pendant qu'on parcourt la liste (sauf s'il n'y a qu'une fiche, où il n'y a rien à replier). */
+  if ($sticky) {
+    if (subs.length > 1) {
+      $sticky.style.display = 'flex';
+      $sticky.innerHTML =
+        '<span class="fiche-sticky-title">' + cat.icon + ' ' + cat.title + '</span>'
+        + '<button type="button" class="fiche-sticky-btn" id="ficheToggleAllBtn">Tout déplier</button>';
+      // Un seul bouton à bascule (plutôt que deux boutons "Tout déplier"/"Tout replier" côte à
+      // côte) : sur un téléphone étroit, deux boutons de texte à côté du nom de catégorie
+      // passaient chacun à la ligne au lieu de tenir sur une seule rangée compacte.
+      const $toggleAllBtn = document.getElementById('ficheToggleAllBtn');
+      const refreshToggleLabel = () => {
+        const anyClosed = !!$content.querySelector('.fiche-section-hdr:not(.open)');
+        $toggleAllBtn.textContent = anyClosed ? 'Tout déplier' : 'Tout replier';
+      };
+      $toggleAllBtn.onclick = () => {
+        const expand = $toggleAllBtn.textContent === 'Tout déplier';
+        $content.querySelectorAll('.fiche-section-hdr').forEach(h => h.classList.toggle('open', expand));
+        $content.querySelectorAll('.fiche-section-body').forEach(b => b.classList.toggle('show', expand));
+        refreshToggleLabel();
+      };
+      // Un clic sur une fiche individuelle change aussi l'état "tout ouvert/tout fermé" —
+      // le libellé du bouton doit rester juste dans ce cas aussi.
+      $content.querySelectorAll('.fiche-section-hdr').forEach(h => h.addEventListener('click', refreshToggleLabel));
+    } else {
+      $sticky.style.display = 'none';
+    }
+  }
   /* Update TTS player text for this category/sub */
   var _pp=document.getElementById('tts-fiches');if(_pp)_pp.style.display='';
   if(typeof _ttsHtmlToText==='function'&&typeof _ttsSetText==='function'){
@@ -2431,6 +2480,8 @@ function ficheSearch() {
   $subRow.innerHTML = '';
   activeCat = null; activeSub = null; buildGrid();
   $content.innerHTML = '';
+  const $stickySearch = document.getElementById('ficheStickyBar');
+  if ($stickySearch) $stickySearch.style.display = 'none';
   let found = 0;
   FICHES.forEach(cat => {
     cat.subs.forEach(s => {
@@ -2626,5 +2677,6 @@ buildContent();
 })();
   </script>
   <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
 </body>
 </html>
