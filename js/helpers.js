@@ -905,9 +905,78 @@ function _qtFormatDuration(ms) {
  *   éventuel, voir getMaxRevisionsPerDay()) — c'est ce nombre qui sert au calcul du total et
  *   du temps estimé, puisque c'est ce qui sera vraiment inclus dans la session.
  */
+/**
+ * _progressionHealth() – La progression a-t-elle réellement été chargée ?
+ *
+ * Renvoie null quand tout va bien, sinon { level, msg }.
+ *
+ * RAISON D'ÊTRE : « 0 révision due » est affiché À L'IDENTIQUE dans deux situations qui n'ont
+ * rien à voir — « tu as tout révisé, rien n'est dû aujourd'hui » et « je n'ai pas réussi à lire
+ * ta progression ». Cette confusion a coûté une séance entière de révision en vol : l'appli
+ * annonçait 0 question à réviser sur 4742 chargées, sans le moindre indice que les réponses
+ * n'avaient tout simplement pas pu être lues. Un zéro silencieux est le pire des messages.
+ */
+function _progressionHealth() {
+  const uid = (typeof auth !== 'undefined' && auth && auth.currentUser && auth.currentUser.uid)
+    || localStorage.getItem('cachedUid');
+  if (!uid) return null; // pas connecté : rien à charger, donc rien à signaler
+
+  const count = (typeof currentResponses !== 'undefined' && currentResponses)
+    ? Object.keys(currentResponses).length : 0;
+  const offline = (typeof navigator !== 'undefined') && navigator.onLine === false;
+
+  if (count === 0) {
+    // Aucune réponse EN MÉMOIRE alors qu'un compte est connecté. Sur un appareil qui n'a jamais
+    // ouvert l'appli en ligne (typiquement l'application Android fraîchement installée, dont le
+    // stockage est distinct de celui du navigateur), il n'existe localement aucune copie de la
+    // progression — et aucune connexion pour aller la chercher.
+    return offline
+      ? { level: 'error', msg: "⚠️ <b>Ta progression n'a pas pu être lue sur cet appareil.</b><br>"
+          + "Le « 0 révision due » ci-dessous ne veut donc PAS dire que tu es à jour : il veut dire "
+          + "que l'appli ne sait pas où tu en es. Reconnecte-toi au réseau et rouvre cette page une "
+          + "fois : ta progression sera récupérée puis conservée pour les prochaines sessions hors-ligne." }
+      : { level: 'error', msg: "⚠️ <b>Ta progression n'a pas encore été chargée.</b><br>"
+          + "Attends quelques secondes ou recharge la page — le « 0 révision due » ci-dessous n'est pas fiable tant que c'est affiché." };
+  }
+
+  if (window._respLoadIncomplete) {
+    return { level: 'warn', msg: "⚠️ <b>Progression partiellement chargée</b> — une partie de tes réponses "
+      + "n'a pas pu être lue. Les compteurs ci-dessous sont donc sous-estimés. Reconnecte-toi au réseau pour compléter." };
+  }
+
+  if (window._respRestoredFromMirror) {
+    return { level: 'info', msg: "ℹ️ Progression restaurée depuis la copie locale de secours ("
+      + window._respRestoredFromMirror + " réponses). Reconnecte-toi quand tu peux pour resynchroniser." };
+  }
+
+  return null;
+}
+
+/** _renderProgressionWarning() – Insère l'avertissement ci-dessus juste avant le résumé. */
+function _renderProgressionWarning(container) {
+  if (!container || !container.parentNode) return;
+  let box = document.getElementById('progressionHealthWarning');
+  const health = _progressionHealth();
+  if (!health) { if (box) box.remove(); return; }
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'progressionHealthWarning';
+    container.parentNode.insertBefore(box, container);
+  }
+  const colors = {
+    error: { bg: 'rgba(244,67,54,.18)', fg: '#ef5350' },
+    warn:  { bg: 'rgba(255,167,38,.18)', fg: '#ffa726' },
+    info:  { bg: 'rgba(76,175,80,.15)',  fg: '#66bb6a' }
+  }[health.level];
+  box.style.cssText = 'padding:10px 12px;border-radius:8px;font-size:.86em;line-height:1.45;margin:0 0 10px;'
+    + 'background:' + colors.bg + ';color:' + colors.fg;
+  box.innerHTML = health.msg;
+}
+
 function _updateObjectifSummary(nbRevisionsTrue, nbRevisions, dailyNewTarget, total) {
   const el = document.getElementById('objectifSummary');
   if (!el) return;
+  _renderProgressionWarning(el);
   const { secPerNew, secPerReview } = _qtGetEstimateSecPerQuestion();
   const estMin = Math.round((nbRevisions * secPerReview + dailyNewTarget * secPerNew) / 60);
   const catSelect = document.getElementById('categorie');
