@@ -1,19 +1,28 @@
 /**
  * ============================================================================
- * Installation de l'application (PWA) — bouton explicite plutôt que de compter
- * uniquement sur la bannière automatique du navigateur (souvent manquée ou
- * jamais proposée si elle a été ignorée une fois).
+ * Installation de l'application (PWA).
  * ----------------------------------------------------------------------------
- * - Android/Chrome : capture l'événement `beforeinstallprompt`, affiche un
- *   petit bouton flottant "📲 Installer l'app" tant qu'il n'a pas été utilisé
- *   ni fermé. Un clic déclenche l'invite native d'installation.
- * - iOS/Safari : `beforeinstallprompt` n'existe pas sur cette plateforme — un
- *   petit rappel textuel explique la marche à suivre manuelle (Partager →
- *   Sur l'écran d'accueil) à la place, pour ne pas laisser ces utilisateurs
- *   sans aucune indication que l'app est installable.
- * - Ne s'affiche jamais si l'app tourne déjà en mode installé (standalone),
- *   et se souvient d'une fermeture manuelle pendant 14 jours pour ne pas
- *   revenir harceler quelqu'un qui a déjà dit non.
+ * Deux points d'entrée pour la même mécanique :
+ *  1. Un bandeau automatique, discret, qui apparaît de lui-même quand le
+ *     navigateur signale que l'app est installable (Android/Chrome) — mais
+ *     se souvient d'une fermeture manuelle pendant 14 jours pour ne pas
+ *     harceler quelqu'un qui a déjà dit non.
+ *  2. Un bouton PERMANENT dans Configuration (« Forcer l'installation »),
+ *     qui ne dépend d'aucun cooldown — toujours disponible pour quelqu'un
+ *     qui a fermé le bandeau puis change d'avis, ou qui préfère l'action
+ *     volontaire à une bannière qui apparaît toute seule.
+ *
+ * IMPORTANT — ce qui est réellement "forçable" et ce qui ne l'est pas :
+ * `beforeinstallprompt` (Android/Chrome) est un événement que SEUL le
+ * navigateur décide de déclencher, une fois par chargement de page, une fois
+ * ses propres critères d'installabilité vérifiés — aucune API web ne permet
+ * de l'invoquer à la demande. Ce module capture systématiquement cet
+ * événement dès qu'il arrive (qu'un bandeau soit affiché ou non) et le garde
+ * en mémoire, pour que le bouton de Configuration puisse rejouer l'invite
+ * native dès qu'elle est disponible. Sur iOS/Safari, cet événement n'existe
+ * carrément pas : aucun bouton ne peut donc déclencher une installation
+ * automatique — le bouton y affiche la marche à suivre manuelle à la place,
+ * seule voie possible sur cette plateforme.
  * ============================================================================
  */
 (function () {
@@ -39,6 +48,37 @@
     return /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
   }
 
+  // ---- État partagé, exposé pour le bouton permanent de configuration.html ----
+  window._pwaDeferredPrompt = null;
+
+  /** _pwaInstallState() – Constat de la situation actuelle, pour afficher le bon message/bouton :
+   *  'standalone'  → déjà installée, rien à faire ;
+   *  'ready'       → le navigateur a proposé l'installation, prête à être déclenchée ;
+   *  'ios-manual'  → iOS/Safari : pas d'invite automatique possible, marche à suivre manuelle ;
+   *  'pending'     → Android/Chrome mais l'événement n'est pas encore (ou pas) arrivé sur cette
+   *                  page (peut prendre quelques secondes après le chargement, ou ne jamais
+   *                  arriver si les critères du navigateur ne sont pas encore remplis). */
+  window._pwaInstallState = function () {
+    if (isStandalone()) return 'standalone';
+    if (window._pwaDeferredPrompt) return 'ready';
+    if (isIos() && isSafari()) return 'ios-manual';
+    return 'pending';
+  };
+
+  /** _pwaTriggerInstall(callback) – Rejoue l'invite native si elle est disponible. callback
+   *  reçoit ('accepted'|'dismissed'|'unavailable'). Ne fait qu'UN essai : une fois l'invite du
+   *  navigateur consommée (acceptée ou refusée), elle ne peut pas être redéclenchée tant qu'un
+   *  nouveau `beforeinstallprompt` n'arrive pas (nouveau chargement de page). */
+  window._pwaTriggerInstall = function (callback) {
+    var evt = window._pwaDeferredPrompt;
+    if (!evt) { if (callback) callback('unavailable'); return; }
+    window._pwaDeferredPrompt = null;
+    evt.prompt();
+    evt.userChoice
+      .then(function (choice) { if (callback) callback(choice.outcome); })
+      .catch(function () { if (callback) callback('unavailable'); });
+  };
+
   function buildBanner(text, actionLabel, onAction) {
     var el = document.createElement('div');
     el.className = 'pwa-install-banner';
@@ -59,28 +99,31 @@
     return el;
   }
 
-  if (isStandalone() || isDismissedRecently()) return;
+  if (isStandalone()) return;
 
-  var deferredPrompt = null;
+  // Toujours écouter et mémoriser l'événement, MÊME si le bandeau automatique ne doit pas
+  // s'afficher (fermé récemment) — sans ça, le bouton permanent de Configuration n'aurait
+  // jamais rien à déclencher pour quelqu'un qui a fermé le bandeau une première fois.
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
-    deferredPrompt = e;
+    window._pwaDeferredPrompt = e;
+    window.dispatchEvent(new Event('pwa-install-ready'));
+    if (isDismissedRecently()) return;
     buildBanner('📲 Installer Quiz PPL sur cet appareil pour l’ouvrir comme une vraie appli, même hors-ligne.', 'Installer', function (close) {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.finally(function () {
-        deferredPrompt = null;
-        close();
-      });
+      window._pwaTriggerInstall(function () { close(); });
     });
   });
 
   window.addEventListener('appinstalled', function () {
+    window._pwaDeferredPrompt = null;
     document.querySelectorAll('.pwa-install-banner').forEach(function (el) { el.remove(); });
+    window.dispatchEvent(new Event('pwa-install-ready'));
   });
 
   // Pas de beforeinstallprompt sur iOS/Safari : la seule voie d'installation est manuelle.
-  if (isIos() && isSafari()) {
+  // Le bandeau auto respecte quand même le cooldown de fermeture (le bouton permanent de
+  // configuration.html, lui, affichera toujours la marche à suivre sans cette limite).
+  if (isIos() && isSafari() && !isDismissedRecently()) {
     buildBanner('📲 Sur iPhone/iPad : appuie sur Partager, puis « Sur l’écran d’accueil » pour installer l’app.', null, null);
   }
 })();
