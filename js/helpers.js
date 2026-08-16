@@ -692,6 +692,40 @@ function _saveDailyNewTarget() {
 }
 
 /**
+ * getMaxRevisionsPerDay() – Plafond volontaire sur le nombre de révisions dues incluses dans
+ * une session "Objectif du jour" / "Révisions uniquement". Contrairement à getDailyNewTarget(),
+ * l'absence de réglage (champ vide, ou 0) signifie "illimité" — TOUTES les révisions dues sont
+ * incluses, sans plafond : c'est le comportement historique, qu'on ne change pas par défaut.
+ * @returns {number|null} le plafond, ou null si illimité.
+ */
+function getMaxRevisionsPerDay() {
+  const raw = localStorage.getItem('maxRevisionsPerDay');
+  const v = parseInt(raw);
+  return (Number.isFinite(v) && v > 0) ? v : null;
+}
+
+/**
+ * _saveMaxRevisionsPerDay() – Sauvegarde le plafond de révisions/session (localStorage) et
+ * rafraîchit le résumé + le compteur du mode "objectif". Un champ vidé ou à 0 supprime le
+ * réglage (retour à "illimité") plutôt que de mémoriser un plafond de 0, qui viderait
+ * silencieusement toute future session de révisions.
+ */
+function _saveMaxRevisionsPerDay() {
+  const input = document.getElementById('maxRevisionsPerDay');
+  if (!input) return;
+  const raw = input.value.trim();
+  const v = raw === '' ? 0 : Math.max(0, parseInt(raw) || 0);
+  if (v > 0) {
+    input.value = v;
+    localStorage.setItem('maxRevisionsPerDay', v);
+  } else {
+    input.value = '';
+    localStorage.removeItem('maxRevisionsPerDay');
+  }
+  if (typeof updateModeCounts === 'function') updateModeCounts();
+}
+
+/**
  * ===== Suivi du temps réel passé par question (_qt*) =====
  * Apprend, séparément pour les questions "nouvelles" et "révisions", le temps réel que
  * l'utilisateur passe par question — pour que l'estimation "~X min" reflète son vrai rythme
@@ -851,8 +885,12 @@ function _qtFormatDuration(ms) {
  * _updateObjectifSummary() – Affiche le résumé "N dues + M nouvelles = X questions aujourd'hui"
  * sur la carte "Objectif du jour" de l'accueil, avec une estimation de temps.
  * Reflète la catégorie actuellement sélectionnée dans le menu "Catégorie".
+ * @param {number} nbRevisionsTrue - nombre RÉEL de révisions dues, sans plafond.
+ * @param {number} nbRevisions - nombre de révisions effectivement incluses (après plafond
+ *   éventuel, voir getMaxRevisionsPerDay()) — c'est ce nombre qui sert au calcul du total et
+ *   du temps estimé, puisque c'est ce qui sera vraiment inclus dans la session.
  */
-function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
+function _updateObjectifSummary(nbRevisionsTrue, nbRevisions, dailyNewTarget, total) {
   const el = document.getElementById('objectifSummary');
   if (!el) return;
   const { secPerNew, secPerReview } = _qtGetEstimateSecPerQuestion();
@@ -861,8 +899,12 @@ function _updateObjectifSummary(nbRevisions, dailyNewTarget, total) {
   const catLabel = (catSelect && catSelect.selectedOptions && catSelect.selectedOptions[0])
     ? catSelect.selectedOptions[0].textContent
     : 'TOUTES';
+  const isCapped = nbRevisions < nbRevisionsTrue;
+  const revisionsHtml = isCapped
+    ? `<b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} (sur <b>${nbRevisionsTrue}</b> dues — plafonné)`
+    : `<b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`;
   el.innerHTML = `📚 <b>${catLabel}</b><br>`
-    + `📅 <b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`
+    + `📅 ${revisionsHtml}`
     + ` + <b>${dailyNewTarget}</b> nouvelle${dailyNewTarget > 1 ? 's' : ''} = <b>${total}</b> question${total > 1 ? 's' : ''}`
     + ` &nbsp;(~${estMin} min estimées)`;
 
@@ -1058,7 +1100,10 @@ async function _startObjectifDuJour() {
       // Ne jamais promettre plus de "nouvelles" qu'il n'en reste réellement de non vues
       // dans cette catégorie (sinon l'objectif affiché ment et le quiz démarre vide).
       const dailyNewTarget = Math.min(getDailyNewTarget(), typeof nbNonvuesToday === 'number' ? nbNonvuesToday : getDailyNewTarget());
-      const nb = nbRevisionsToday + dailyNewTarget;
+      // nbRevisionsCappedToday (pas nbRevisionsToday) : respecte le plafond réglable "Max
+      // révisions/session" — voir getMaxRevisionsPerDay(). Illimité par défaut (les deux
+      // valeurs sont alors identiques).
+      const nb = nbRevisionsCappedToday + dailyNewTarget;
 
       const modeSelect = document.getElementById('mode');
       if (modeSelect) modeSelect.value = 'objectif';
@@ -1100,7 +1145,9 @@ async function _startRevisionsOnly() {
       const modeSelect = document.getElementById('mode');
       if (modeSelect) modeSelect.value = 'revisions';
       const nbInput = document.getElementById('nbQuestions');
-      if (nbInput) nbInput.value = nbRevisionsToday;
+      // nbRevisionsCappedToday : respecte le plafond "Max révisions/session" (illimité par
+      // défaut). Le mode "revisions" de filtrerQuestions() tronque déjà sur ce nb via .slice().
+      if (nbInput) nbInput.value = nbRevisionsCappedToday;
 
       if (typeof demarrerQuiz === 'function') await demarrerQuiz();
     })(), 20000, 'Démarrage trop long');

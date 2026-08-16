@@ -124,7 +124,8 @@ let selectedCategory = "PROCÉDURE RADIO";
 let modeQuiz = "toutes";
 let nbQuestions = 10;
 let _currentSessionCount = 0; // compteur de sessions quiz (sync Firestore)
-let nbRevisionsToday = 0; // nombre de questions dues pour révision espacée (recalculé par updateModeCounts)
+let nbRevisionsToday = 0; // nombre RÉEL de questions dues pour révision espacée, SANS plafond (recalculé par updateModeCounts) — utilisé par le badge d'accueil, qui doit annoncer le vrai total dû
+let nbRevisionsCappedToday = 0; // même chose, mais après le plafond volontaire éventuel (getMaxRevisionsPerDay) — c'est CE nombre qu'utilisent les boutons de lancement de session
 let nbNonvuesToday = 0; // nombre de questions jamais vues dans la catégorie sélectionnée (recalculé par updateModeCounts)
 let nbSuspenduesTotal = 0; // nombre de questions marquées "ne plus revoir" (recalculé par updateModeCounts)
 
