@@ -2843,12 +2843,19 @@ function formatETA(totalMinutes){
 function initTheme(){
   var t=localStorage.getItem('theme');
   if(t==='light') document.body.classList.add('light');
+  else if(t==='exotique') document.body.classList.add('exotique');
+  var btn=document.querySelector('.theme-toggle');
+  if(btn) btn.textContent=t==='exotique'?'\u{1F334}':(t==='light'?'\u2600\uFE0F':'\u{1F319}');
 }
 function toggleTheme(){
-  document.body.classList.toggle('light');
-  localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');
+  var b=document.body;
+  var cur=b.classList.contains('exotique')?'exotique':(b.classList.contains('light')?'light':'dark');
+  var next=cur==='dark'?'light':(cur==='light'?'exotique':'dark');
+  b.classList.remove('light','exotique');
+  if(next!=='dark') b.classList.add(next);
+  localStorage.setItem('theme',next);
   var btn=document.querySelector('.theme-toggle');
-  btn.textContent=document.body.classList.contains('light')?'\u2600\uFE0F':'\u{1F319}';
+  btn.textContent=next==='exotique'?'\u{1F334}':(next==='light'?'\u2600\uFE0F':'\u{1F319}');
 }
 window.toggleTheme=toggleTheme;
 

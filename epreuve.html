@@ -59,12 +59,12 @@
   <script>
     (function() {
       var saved = localStorage.getItem('theme');
-      if (saved === 'light') document.body.classList.add('light');
+      if (saved === 'light') document.body.classList.add('light'); else if (saved === 'exotique') document.body.classList.add('exotique');
     })();
   </script>
-  <button id="themeToggle" onclick="(function(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');document.getElementById('themeToggle').textContent=document.body.classList.contains('light')?'🌙':'☀️'})()">☀️</button>
+  <button id="themeToggle" onclick="(function(){var b=document.body;var cur=b.classList.contains('exotique')?'exotique':(b.classList.contains('light')?'light':'dark');var next=cur==='dark'?'light':(cur==='light'?'exotique':'dark');b.classList.remove('light','exotique');if(next!=='dark')b.classList.add(next);localStorage.setItem('theme',next);document.getElementById('themeToggle').textContent=next==='light'?'☀️':(next==='exotique'?'🌴':'🌙')})()">☀️</button>
   <script>
-    if(document.body.classList.contains('light'))document.getElementById('themeToggle').textContent='🌙';
+    (function(){var b=document.body;document.getElementById('themeToggle').textContent=b.classList.contains('exotique')?'🌴':(b.classList.contains('light')?'☀️':'🌙')})();
   </script>
 
   <!-- Hero banner -->
