@@ -101,7 +101,13 @@ jobs:
       - name: Install Capacitor
         # @capacitor-community/text-to-speech : la WebView Android n'expose aucune voix
         # utilisable, ce plugin donne accès au moteur de synthèse vocale du système.
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^5
+        #
+        # ATTENTION à la version : la numérotation de ce plugin ne suit PAS celle de Capacitor.
+        # C'est la 6.x qui déclare `@capacitor/core >=7.0.0` ; la 5.x exige core ^6.0.0 et fait
+        # échouer l'installation (ERESOLVE) contre Capacitor 7, la 8.x exige core >=8.0.0.
+        # Vérifier `npm view @capacitor-community/text-to-speech@^N peerDependencies` avant
+        # tout changement de version ici ou de celle de Capacitor.
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6
 
       - name: Generate the Android project
         run: npx cap add android
