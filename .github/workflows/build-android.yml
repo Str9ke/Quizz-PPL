@@ -22,7 +22,11 @@ on:
       - 'Symboles/**'
       - 'IMAGES_*/**'
       - 'capacitor.config.json'
-      - 'tools/build_www.py'
+      - 'tools/**'
+      # sw.js porte CACHE_NAME, dont tools/app_version.py tire la version de l'appli. Sans lui
+      # ici, une version publiée par le site n'aurait JAMAIS d'APK correspondant : l'appli
+      # installée annoncerait une mise à jour disponible qui n'existe pas, indéfiniment.
+      - 'sw.js'
       - '.github/workflows/build-android.yml'
 
 permissions:
@@ -77,6 +81,11 @@ jobs:
           };
           window.OPENAIP_API_KEY = "${{ secrets.OPENAIP_API_KEY }}";
           EOF
+          # Version EMBARQUÉE dans l'APK : c'est elle que js/update-check.js comparera au
+          # version.json publié par le site, pour dire si l'appli installée est à jour.
+          APP_VERSION="$(python3 tools/app_version.py)"
+          printf 'window.APP_BUILD = { version: "%s", channel: "android" };\n' "$APP_VERSION" >> config.js
+          cat config.js | tail -1
 
       - name: Refresh the image manifest
         run: python3 tools/build_assets_manifest.py
@@ -90,7 +99,9 @@ jobs:
           test -s www/config.js
 
       - name: Install Capacitor
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
+        # @capacitor-community/text-to-speech : la WebView Android n'expose aucune voix
+        # utilisable, ce plugin donne accès au moteur de synthèse vocale du système.
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^5
 
       - name: Generate the Android project
         run: npx cap add android
