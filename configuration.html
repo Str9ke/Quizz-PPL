@@ -37,6 +37,8 @@
   <script src="js/stats.js?v=20260807i"></script>
   <script src="js/quiz.js?v=20260807k"></script>
   <script src="js/init.js?v=20260807c"></script>
+  <script src="js/update-check.js?v=20260816b"></script>
+  <script src="js/tts.js?v=20260816b"></script>
   <script src="js/localmirror.js?v=20260816a"></script>
   <script src="js/offline.js?v=20260807i"></script>
   <style>
@@ -89,10 +91,14 @@
     </p>
     <div id="cfgOfflineVerdict" style="padding:10px 12px;border-radius:8px;font-weight:700;font-size:.9em;margin-bottom:10px">Vérification…</div>
     <div id="cfgOfflineDetails" style="font-size:.85em"></div>
+    <!-- width:auto est indispensable sur chacun de ces boutons : une règle globale du site
+         (@media max-width:600px { button { width:100% } }) les étirerait sinon sur toute la
+         largeur, empilés un par ligne — ce qui repoussait le reste du diagnostic hors de
+         l'écran sur téléphone. -->
     <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;gap:8px;flex-wrap:wrap">
-      <button type="button" class="stats-btn" onclick="_cfgRunOfflineCheck()" style="padding:6px 14px">🔍 Vérifier maintenant</button>
-      <button type="button" class="stats-btn" onclick="_cfgRequestPersistentStorage()" style="padding:6px 14px">🔒 Protéger le stockage</button>
-      <button type="button" class="stats-btn" id="cfgForceRecacheBtn" onclick="_cfgForceRecache()" style="padding:6px 14px">📥 Forcer le téléchargement complet</button>
+      <button type="button" class="stats-btn" onclick="_cfgRunOfflineCheck()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔍 Vérifier maintenant</button>
+      <button type="button" class="stats-btn" id="cfgPersistStorageBtn" onclick="_cfgRequestPersistentStorage()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔒 Protéger le stockage</button>
+      <button type="button" class="stats-btn" id="cfgForceRecacheBtn" onclick="_cfgForceRecache()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">📥 Forcer le téléchargement complet</button>
     </div>
     <p class="cfg-hint" style="margin-top:8px">
       "Protéger le stockage" demande au navigateur de ne pas effacer les questions/ta progression hors-ligne sous pression de stockage.
@@ -416,56 +422,66 @@
       if (n.indexOf('online') >= 0) return ' ☁️';
       return '';
     }
+    // Liste des voix connues, format commun aux deux moteurs (voir js/tts.js) — c'est ce qui
+    // permet à ce sélecteur d'afficher les voix NATIVES d'Android dans l'APK, là où la WebView
+    // n'expose aucune voix et affichait « TTS non supporté ».
+    let _cfgVoices = [];
     function _populateVoices() {
       const select = document.getElementById('cfgTtsVoice');
       if (!select) return;
-      if (!('speechSynthesis' in window)) { select.innerHTML = '<option>TTS non supporté</option>'; return; }
-      let voices = speechSynthesis.getVoices();
-      let frVoices = voices.filter(v => v.lang && v.lang.match(/^fr/i));
-      if (frVoices.length === 0 && voices.length === 0) return;
-      if (frVoices.length === 0) frVoices = voices;
-      const saved = localStorage.getItem('ttsPreferredVoiceName') || '';
-      select.innerHTML = '';
-      const defOpt = document.createElement('option');
-      defOpt.value = ''; defOpt.textContent = '🔄 Voix par défaut du système';
-      select.appendChild(defOpt);
-      frVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        let label = v.name + genderIcon(v.name) + qualityBadge(v.name);
-        if (v.localService) label += ' 📱';
-        opt.textContent = label;
-        if (v.name === saved) opt.selected = true;
-        select.appendChild(opt);
+      if (!window.appTts || !window.appTts.supported()) {
+        select.innerHTML = '<option>Synthèse vocale indisponible sur cet appareil</option>';
+        return;
+      }
+      window.appTts.listVoices().then(voices => {
+        _cfgVoices = voices || [];
+        let frVoices = _cfgVoices.filter(v => v.lang && /^fr/i.test(v.lang));
+        if (!frVoices.length) frVoices = _cfgVoices;
+        const saved = localStorage.getItem('ttsPreferredVoiceName') || '';
+        select.innerHTML = '';
+        const defOpt = document.createElement('option');
+        defOpt.value = '';
+        defOpt.textContent = frVoices.length
+          ? '🔄 Voix par défaut du système'
+          : '🔄 Voix par défaut du système (aucune voix listée)';
+        select.appendChild(defOpt);
+        frVoices.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.name;
+          let label = v.name + genderIcon(v.name) + qualityBadge(v.name);
+          if (v.local) label += ' 📱';
+          opt.textContent = label;
+          if (v.name === saved) opt.selected = true;
+          select.appendChild(opt);
+        });
+        _updateVoiceInfo();
+      }).catch(e => {
+        select.innerHTML = '<option>Voix indisponibles (' + (e && e.message ? e.message : 'erreur') + ')</option>';
       });
-      _updateVoiceInfo();
     }
     function _updateVoiceInfo() {
       const select = document.getElementById('cfgTtsVoice');
       const infoDiv = document.getElementById('cfgTtsVoiceInfo');
-      if (!select || !infoDiv || !('speechSynthesis' in window)) return;
+      if (!select || !infoDiv) return;
       const selectedName = select.value;
       if (!selectedName) { infoDiv.textContent = 'La première voix française disponible sera utilisée.'; return; }
-      const voice = speechSynthesis.getVoices().find(v => v.name === selectedName);
+      const voice = _cfgVoices.find(v => v.name === selectedName);
       if (voice) {
-        let info = voice.lang;
-        info += voice.localService ? ' · Locale (hors-ligne)' : ' · En ligne';
-        if (voice.default) info += ' · Par défaut';
+        let info = voice.lang || '';
+        info += voice.local ? ' · Locale (hors-ligne)' : ' · En ligne';
         infoDiv.textContent = info;
       }
     }
     window._cfgTestVoice = function() {
-      if (!('speechSynthesis' in window)) return;
-      speechSynthesis.cancel();
+      if (!window.appTts || !window.appTts.supported()) {
+        alert('Aucun moteur de synthèse vocale disponible sur cet appareil.');
+        return;
+      }
       const select = document.getElementById('cfgTtsVoice');
-      const utterance = new SpeechSynthesisUtterance('Ceci est un test de la voix sélectionnée pour le quiz aviation.');
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.95;
-      utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
-      const voices = speechSynthesis.getVoices();
-      const voice = select.value ? voices.find(v => v.name === select.value) : voices.find(v => v.lang && v.lang.match(/^fr/i));
-      if (voice) utterance.voice = voice;
-      speechSynthesis.speak(utterance);
+      window.appTts.speak('Ceci est un test de la voix sélectionnée pour le quiz aviation.', {
+        volume: (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100,
+        voiceName: select ? select.value : ''
+      });
     };
     document.addEventListener('DOMContentLoaded', () => {
       const select = document.getElementById('cfgTtsVoice');
@@ -474,9 +490,11 @@
         _updateVoiceInfo();
       });
     });
-    if ('speechSynthesis' in window) {
-      speechSynthesis.getVoices();
-      if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = _populateVoices;
+    // Les voix arrivent de façon asynchrone dans les deux moteurs : on re-remplit la liste
+    // quand le navigateur signale qu'elles sont prêtes (le moteur natif, lui, répond déjà via
+    // la promesse de listVoices()).
+    if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = _populateVoices;
     }
 
     // === Quiz ===
@@ -603,7 +621,14 @@
     async function _cfgCheckOfflineReadiness() {
       const r = { swActive: false, cacheFileCount: 0, criticalFilesOk: false,
         persistenceStatus: 'checking', storagePersisted: false, quota: null,
-        appVersion: null, lastSync: null, lastSyncFromServer: false, mirror: null };
+        appVersion: null, lastSync: null, lastSyncFromServer: false, mirror: null,
+        native: !!(window.appUpdate && window.appUpdate.isNativeApp()), update: null };
+
+      // « Suis-je à jour ? » — voir js/update-check.js. Indispensable pour l'APK, qui ne se
+      // met jamais à jour tout seul.
+      try {
+        if (window.appUpdate) r.update = await window.appUpdate.check(false);
+      } catch (e) { console.warn('[offline-diag] vérification de version:', e); }
 
       // État du miroir local des réponses (js/localmirror.js)
       try {
@@ -690,8 +715,16 @@
           badMsg: r.persistenceStatus === 'unavailable'
             ? 'non disponible sur ce navigateur — en hors-ligne, une réponse donnée puis l\'appli fermée AVANT de repasser en ligne peut se perdre'
             : 'erreur au démarrage — recharge la page en ligne pour réessayer' },
-        { ok: r.storagePersisted, label: 'Stockage protégé contre l\'effacement automatique',
-          okMsg: 'protégé', badMsg: 'non protégé — le système peut effacer le cache hors-ligne d\'une appli peu utilisée ; clique "Protéger le stockage"' },
+        // Dans l'application Android, les données appartiennent à l'appli : le navigateur ne
+        // peut pas les évincer sous pression de stockage, seul un « effacer les données » ou
+        // une désinstallation les supprime. Afficher un ❌ alarmant pour un risque qui n'existe
+        // pas dans ce contexte poussait à cliquer « Protéger le stockage », lequel ne peut que
+        // répondre « refusé » — un défaut à corriger qui n'en était pas un.
+        { ok: r.storagePersisted || r.native, label: 'Stockage protégé contre l\'effacement automatique',
+          okMsg: r.native
+            ? 'garanti — dans l\'application Android, ces données ne peuvent pas être évincées automatiquement'
+            : 'protégé',
+          badMsg: 'non protégé — le système peut effacer le cache hors-ligne d\'une appli peu utilisée ; clique "Protéger le stockage"' },
         // Miroir local (js/localmirror.js) : la SEULE garantie qui ne dépende pas du cache
         // interne de Firestore — lequel peut être totalement absent sans le dire (persistance
         // refusée quand plusieurs onglets sont ouverts). C'est cette ligne qui répond vraiment
@@ -723,6 +756,33 @@
       const versionHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">📦 Version en cache sur cet appareil</div><div style="font-size:.85em;color:var(--text-secondary)">' +
         (r.appVersion || 'inconnue — recharge la page en ligne') + '</div></div>';
 
+      // État de mise à jour. Trois cas distincts, jamais confondus : à jour / une version plus
+      // récente existe / impossible de vérifier. Annoncer « à jour » sans avoir pu comparer
+      // serait pire que de ne rien annoncer — c'est exactement ce genre de fausse assurance
+      // qui fait embarquer avec une version périmée.
+      let updateHtml = '';
+      if (r.update) {
+        const u = r.update;
+        let icon, text, color;
+        if (!u.known) {
+          icon = '❔'; color = 'var(--text-secondary)';
+          text = navigator.onLine
+            ? 'impossible de vérifier pour le moment'
+            : 'impossible de vérifier hors-ligne — reconnecte-toi pour savoir';
+        } else if (u.upToDate) {
+          icon = '✅'; color = '#66bb6a';
+          text = 'à jour (' + u.installed + ')';
+        } else {
+          icon = '⚠️'; color = '#ffa726';
+          text = 'une version plus récente existe : <b>' + u.latest + '</b> (installée : ' + u.installed + ')'
+            + (u.native
+              ? '<br><a href="' + window.appUpdate.releaseUrl + '" target="_blank" rel="noopener" style="color:var(--link-color)">⬇️ Télécharger la nouvelle version de l\'application</a>'
+              : '<br>Recharge la page en ligne pour l\'appliquer.');
+        }
+        updateHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">' + icon +
+          ' Mise à jour</div><div style="font-size:.85em;color:' + color + '">' + text + '</div></div>';
+      }
+
       // Dernière écriture CONFIRMÉE par le serveur (pas juste "tentée en local") — la seule
       // façon fiable de vérifier qu'une réponse donnée hors-ligne a bien fini par remonter.
       let lastSyncHtml = '';
@@ -745,7 +805,7 @@
       detailsEl.innerHTML = items.map(it =>
         '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">' + (it.ok ? '✅' : '❌') + ' ' + it.label + '</div>' +
         '<div style="font-size:.8em;color:var(--text-secondary);flex:2;min-width:180px">' + (it.ok ? it.okMsg : it.badMsg) + '</div></div>'
-      ).join('') + quotaHtml + versionHtml + lastSyncHtml;
+      ).join('') + quotaHtml + versionHtml + updateHtml + lastSyncHtml;
     }
 
     window._cfgRunOfflineCheck = async function() {

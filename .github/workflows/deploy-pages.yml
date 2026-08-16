@@ -31,13 +31,24 @@ jobs:
           # copy files but exclude .git, .github and local-only config.js
           rsync -av --exclude='.git' --exclude='.github' --exclude='config.js' --exclude='node_modules' ./ site/
 
+          # version.json : sert à répondre à « suis-je à jour ? » (voir js/update-check.js).
+          # La version vient du CACHE_NAME du Service Worker, pas du commit — la météo est
+          # régénérée toutes les ~3 h et signalerait sinon une mise à jour plusieurs fois par jour.
+          python3 tools/app_version.py --write
+          cp version.json site/version.json
+          APP_VERSION="$(python3 tools/app_version.py)"
+
           # create config.js from repository secret
+          # Heredoc QUOTÉ ('EOF') : le shell n'interprète rien de ce bloc, donc une clé
+          # contenant un « $ » ne peut pas être tronquée en route. La version, elle, est
+          # ajoutée juste après, où la substitution est voulue.
           cat > site/config.js <<'EOF'
           window.FIREBASE_CONFIG = {
             apiKey: "${{ secrets.FIREBASE_API_KEY }}"
           };
           window.OPENAIP_API_KEY = "${{ secrets.OPENAIP_API_KEY }}";
           EOF
+          printf 'window.APP_BUILD = { version: "%s", channel: "web" };\n' "$APP_VERSION" >> site/config.js
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3

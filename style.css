@@ -91,8 +91,13 @@ body.exotique {
 /* ----- Global layout ----- */
 body {
   font-family: Arial, sans-serif;
-  margin: 0; 
-  padding: 0;
+  margin: 0;
+  /* Réserve la hauteur des boutons flottants ancrés en bas à gauche (#themeToggle et le
+     lecteur vocal, 40px + 16px de marge) : sans elle, ils recouvrent définitivement les
+     dernières lignes de chaque page — constaté sur Configuration, où le bouton « Forcer le
+     téléchargement complet » et le texte d'aide qui le suit passaient sous eux sans qu'aucun
+     défilement ne permette de les dégager. */
+  padding: 0 0 72px 0;
   background: var(--bg-body);
   color: var(--text-primary);
   transition: background 0.3s, color 0.3s;

@@ -33,48 +33,21 @@ function _scrollBelowStickyBanner(target) {
  * compris si le toggle TTS global est coupé, et sans se faire couper par le mécanisme de
  * "toggle: reclique = stop" ci-dessous qui n'a de sens que pour un clic manuel de l'utilisateur).
  */
-var _ttsTimeoutId = null;
+// Toute la synthèse vocale passe par window.appTts (js/tts.js), qui choisit le moteur adapté :
+// Web Speech sur le site, moteur natif d'Android dans l'APK — où `speechSynthesis` existe
+// parfois mais ne propose AUCUNE voix, rendant le Mode Assistance totalement muet.
 function _speakCorrectAnswer(answerText, force) {
   if (!force && localStorage.getItem('ttsEnabled') !== '1') return;
-  if (!('speechSynthesis' in window)) return;
-  // Toggle: if currently speaking, stop (sauf en mode forcé — voir commentaire ci-dessus)
-  if (!force && speechSynthesis.speaking) {
-    speechSynthesis.cancel();
-    if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
+  if (!window.appTts || !window.appTts.supported()) return;
+  // Toggle : reclique pendant la lecture = on coupe (sauf en mode forcé — voir plus haut)
+  if (!force && window.appTts.isSpeaking()) {
+    window.appTts.stop();
     return;
   }
-  // Annuler toute lecture en cours + clear pending timeout
-  speechSynthesis.cancel();
-  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
-  // Petit délai après cancel pour contourner un bug Chrome
-  // où speak() est ignoré juste après cancel()
-  _ttsTimeoutId = setTimeout(() => {
-    _ttsTimeoutId = null;
-    const utterance = new SpeechSynthesisUtterance(answerText);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
-    // Utiliser la voix préférée si elle est définie, sinon la première voix FR
-    const voices = speechSynthesis.getVoices();
-    const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
-    let voice = null;
-    if (preferredName) {
-      voice = voices.find(v => v.name === preferredName);
-    }
-    if (!voice) {
-      voice = voices.find(v => v.lang.startsWith('fr'));
-    }
-    if (voice) utterance.voice = voice;
-    speechSynthesis.speak(utterance);
-  }, 100);
-}
-// Pré-charger les voix (Chrome les charge de manière asynchrone)
-if ('speechSynthesis' in window) {
-  speechSynthesis.getVoices();
-  if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
-  }
+  window.appTts.speak(answerText, {
+    volume: (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100,
+    voiceName: localStorage.getItem('ttsPreferredVoiceName') || ''
+  });
 }
 
 /**
@@ -1494,23 +1467,11 @@ function _assistNextUnansweredIdx(fromIdx) {
  * la lecture est le principe même du Mode Assistance, pas une option qu'on pourrait couper
  * par mégarde en pleine session). Respecte volume/voix préférée comme le reste de l'app. */
 function _assistSpeak(text) {
-  if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
-  _ttsTimeoutId = setTimeout(() => {
-    _ttsTimeoutId = null;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.volume = (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100;
-    const voices = speechSynthesis.getVoices();
-    const preferredName = localStorage.getItem('ttsPreferredVoiceName') || '';
-    let voice = preferredName ? voices.find(v => v.name === preferredName) : null;
-    if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith('fr'));
-    if (voice) utterance.voice = voice;
-    speechSynthesis.speak(utterance);
-  }, 100);
+  if (!window.appTts || !window.appTts.supported()) return;
+  window.appTts.speak(text, {
+    volume: (parseInt(localStorage.getItem('ttsVolume')) || 100) / 100,
+    voiceName: localStorage.getItem('ttsPreferredVoiceName') || ''
+  });
 }
 
 /** _assistBuildSpeechText(q) – Compose "question + toutes les propositions" à lire d'un
@@ -1585,8 +1546,7 @@ function _exitAssistMode(skipScroll) {
   const wasActive = window._assistModeActive;
   window._assistModeActive = false;
   clearTimeout(window._assistAdvanceTimer);
-  if (_ttsTimeoutId) { clearTimeout(_ttsTimeoutId); _ttsTimeoutId = null; }
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (window.appTts) window.appTts.stop();
 
   const quizCont = document.getElementById('quizContainer');
   const actionsBar = document.querySelector('.quiz-actions-bar');
