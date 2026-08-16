@@ -144,6 +144,27 @@ jobs:
           fi
           grep -c "$PERM" "$MANIFEST"
 
+      - name: Stamp a real version number on the app
+        # Capacitor génère toujours `versionCode 1` / `versionName "1.0"` : TOUTES les versions
+        # se présentaient donc à Android comme la même. Outre qu'aucune mise à jour n'était
+        # reconnue comme telle, l'installateur peut refuser une réinstallation dans cet état
+        # avec un simple « Application non installée », sans autre explication.
+        # Le numéro vient de CACHE_NAME (quiz-ppl-v125 -> versionCode 125), donc il augmente à
+        # chaque version réelle de l'appli — la même source que version.json, ce qui garde
+        # l'indicateur de mise à jour et le numéro installé cohérents entre eux.
+        run: |
+          set -e
+          GRADLE=android/app/build.gradle
+          test -f "$GRADLE"
+          APP_VERSION="$(python3 tools/app_version.py)"
+          CODE="$(printf '%s' "$APP_VERSION" | sed 's/.*v//')"
+          case "$CODE" in
+            ''|*[!0-9]*) echo "Numéro de version non numérique : '$CODE'"; exit 1 ;;
+          esac
+          sed -i "s/versionCode [0-9]\+/versionCode $CODE/" "$GRADLE"
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$APP_VERSION\"/" "$GRADLE"
+          grep -E 'versionCode|versionName' "$GRADLE"
+
       - name: Generate launcher icons and splash screen
         # @capacitor/assets dérive toutes les densités Android depuis assets/icon.png et
         # assets/splash.png. Non bloquant : une icône générique n'empêche pas l'appli de
@@ -162,12 +183,40 @@ jobs:
 
       - name: Locate the APK
         id: apk
+        # Le chemin est EXPLICITE et non plus « le premier .apk trouvé sous android/ ».
+        # `find ... -print -quit` renvoyait le premier fichier rencontré dans un ordre non
+        # garanti : Gradle laisse aussi des APK INTERMÉDIAIRES sous build/intermediates/, qui
+        # ne sont ni forcément signés ni alignés. En publier un donne un fichier d'apparence
+        # normale qu'Android refuse d'installer avec un laconique « Application non installée ».
         run: |
-          path="$(find android -name '*.apk' -print -quit)"
-          test -n "$path" || { echo "Aucun APK produit"; exit 1; }
+          set -e
+          path=android/app/build/outputs/apk/debug/app-debug.apk
+          if [ ! -f "$path" ]; then
+            echo "APK de sortie introuvable. APK présents dans l'arborescence :"
+            find android -name '*.apk' -printf '%p\t%s octets\n' || true
+            exit 1
+          fi
           cp "$path" quiz-aviation-ppl.apk
           echo "size=$(du -h quiz-aviation-ppl.apk | cut -f1)" >> "$GITHUB_OUTPUT"
           ls -lh quiz-aviation-ppl.apk
+
+      - name: Verify the APK is properly signed
+        # Un APK mal signé s'installe... jusqu'au moment où Android le refuse, sur le téléphone,
+        # après 95 Mo de téléchargement et sans expliquer pourquoi. Autant que la CHAÎNE DE BUILD
+        # le constate : si la signature est absente ou invalide, le build échoue ici et rien
+        # n'est publié.
+        #
+        # L'empreinte SHA-256 affichée est celle de android-signing/debug.keystore. Elle doit
+        # rester IDENTIQUE d'une version à l'autre : c'est cette stabilité qui permet aux mises
+        # à jour de s'installer par-dessus sans effacer la progression.
+        run: |
+          set -e
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "build-tools : $BT"
+          "$BT/apksigner" verify --verbose --print-certs quiz-aviation-ppl.apk
+          echo '--- empreinte attendue (clé du dépôt) ---'
+          keytool -list -v -keystore android-signing/debug.keystore -storepass android \
+            | grep 'SHA256:' | head -1
 
       - name: Upload the APK as a build artifact
         uses: actions/upload-artifact@v4
