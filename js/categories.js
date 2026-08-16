@@ -489,18 +489,26 @@ async function updateModeCounts(filterFlags) {
     nbNonvuesToday = nbNonvues;
     nbSuspenduesTotal = nbSuspendues;
 
+    // Plafond volontaire sur le nombre de révisions incluses dans une session (réglable sur
+    // l'accueil, "Max révisions/session") — illimité par défaut (comportement historique).
+    // nbRevisionsToday (ci-dessus) reste le vrai total dû, utilisé par le badge d'accueil :
+    // le plafond ne s'applique qu'à ce qui sera effectivement inclus dans UNE session.
+    const maxRevisionsPerDay = (typeof getMaxRevisionsPerDay === 'function') ? getMaxRevisionsPerDay() : null;
+    const nbRevisionsCapped = maxRevisionsPerDay ? Math.min(nbRevisions, maxRevisionsPerDay) : nbRevisions;
+    nbRevisionsCappedToday = nbRevisionsCapped;
+
     // Ne jamais promettre plus de "nouvelles" que de questions réellement non vues :
     // sinon l'aperçu ment et "Objectif du jour"/"Mixte" peuvent démarrer un quiz vide.
     const dailyNewTargetRaw = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
     const dailyNewTarget = Math.min(dailyNewTargetRaw, nbNonvues);
-    const objectifTotal = nbRevisions + dailyNewTarget;
+    const objectifTotal = nbRevisionsCapped + dailyNewTarget;
 
     const modeSelect = document.getElementById("mode");
     if (modeSelect) {
       modeSelect.innerHTML = `
-        <option value="objectif">🚀 Répétition espacée (${nbRevisions} dues + ${dailyNewTarget} nouvelles)</option>
+        <option value="objectif">🚀 Répétition espacée (${nbRevisionsCapped} dues + ${dailyNewTarget} nouvelles)</option>
         <option value="mixte">🔀 Mixte : nouvelles + révisions dues (${Math.min(total, nbNonvues + nbRevisions)})</option>
-        <option value="revisions">📅 Révisions du jour (${nbRevisions})</option>
+        <option value="revisions">📅 Révisions du jour (${nbRevisionsCapped})</option>
         <option value="toutes">Toutes (${total})</option>
         ${isEpreuve ? `<option value="uniques">🔹 Uniques épreuve (${nbUniques})</option>` : ''}
         <option value="ratees">Ratées (${nbRatees})</option>
@@ -514,7 +522,7 @@ async function updateModeCounts(filterFlags) {
         <option value="suspendues">🚫 Ne plus revoir (${nbSuspendues})</option>
       `;
     }
-    if (typeof _updateObjectifSummary === 'function') _updateObjectifSummary(nbRevisions, dailyNewTarget, objectifTotal);
+    if (typeof _updateObjectifSummary === 'function') _updateObjectifSummary(nbRevisions, nbRevisionsCapped, dailyNewTarget, objectifTotal);
 }
 
 async function chargerQuestions(cat) {
@@ -1218,14 +1226,23 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     currentQuestions = mix.sort(() => 0.5 - Math.random());
   }
   else if (mode === "objectif") {
-    // Session "Objectif du jour" (bouton un-clic) : TOUTES les révisions dues sont incluses
-    // sans plafond (elles sont prioritaires, non négociables), complétées par un nombre fixe
-    // de nouvelles questions. Contrairement à "mixte", on ne réserve pas un quota de nouvelles
-    // au détriment des révisions : nb est calculé par l'appelant = dues + objectif de nouvelles.
+    // Session "Objectif du jour" (bouton un-clic) : les révisions dues sont prioritaires,
+    // complétées par un nombre fixe de nouvelles questions. Contrairement à "mixte", on ne
+    // réserve pas un quota de nouvelles au détriment des révisions : nb est calculé par
+    // l'appelant = révisions (déjà plafonnées) + objectif de nouvelles.
+    //
+    // Le plafond (getMaxRevisionsPerDay(), réglable sur l'accueil — illimité par défaut) est
+    // réappliqué ICI directement sur dueSorted, pas seulement en amont via `nb` : dueSorted est
+    // recalculé from scratch à chaque appel, donc s'y fier au travers de `nb` seul aurait un
+    // trou — si dueSorted.length dépasse nb, `newTarget = max(0, nb - dueSorted.length)` tombe
+    // à 0 (aucune nouvelle ajoutée), mais TOUTES les révisions dues finissent quand même dans
+    // `mix`, plafond ignoré. En tronquant dueSorted lui-même, le plafond tient quel que soit nb.
     const dueSorted = _dueQuestionsSorted(shuffled, responses);
+    const maxRevisions = (typeof getMaxRevisionsPerDay === 'function') ? getMaxRevisionsPerDay() : null;
+    const dueCapped = maxRevisions ? dueSorted.slice(0, maxRevisions) : dueSorted;
     const newPool = shuffled.filter(q => _isUnseen(responses[getKeyFor(q)]));
-    const newTarget = Math.max(0, nb - dueSorted.length);
-    const mix = [...dueSorted, ...newPool.slice(0, newTarget)];
+    const newTarget = Math.max(0, nb - dueCapped.length);
+    const mix = [...dueCapped, ...newPool.slice(0, newTarget)];
     currentQuestions = mix.sort(() => 0.5 - Math.random());
   }
   else if (mode === "difficiles") {

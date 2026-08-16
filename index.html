@@ -298,9 +298,14 @@
         <label class="home-label" for="objectifCategorie">Catégorie</label>
         <select id="objectifCategorie" class="home-select" onchange="syncCategorieFromObjectif()"></select>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <label class="home-label" style="margin:0" for="dailyNewTarget">Nouvelles questions/jour&nbsp;:</label>
         <input type="number" id="dailyNewTarget" class="home-input" style="width:70px" min="0" value="15" onchange="_saveDailyNewTarget()">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <label class="home-label" style="margin:0" for="maxRevisionsPerDay">Max révisions/session&nbsp;:</label>
+        <input type="number" id="maxRevisionsPerDay" class="home-input" style="width:70px" min="0" placeholder="illimité" onchange="_saveMaxRevisionsPerDay()">
+        <span style="font-size:.78em;color:var(--text-secondary)" title="Vide = toutes les révisions dues sont incluses, sans limite (comportement par défaut). Renseigne un nombre pour plafonner la taille de la session.">ⓘ vide = illimité</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:12px;font-size:.85em">
         <span style="color:var(--text-secondary,#aaa);width:100%">Filtrer cette session (cochables ensemble) :</span>
@@ -365,6 +370,13 @@
         if (saved !== null) {
           var el = document.getElementById('dailyNewTarget');
           if (el) el.value = saved;
+        }
+        // Pas de valeur par défaut ici (contrairement à dailyNewTarget) : le champ vide EST
+        // l'état "illimité" par défaut — voir getMaxRevisionsPerDay() dans js/helpers.js.
+        var savedMax = localStorage.getItem('maxRevisionsPerDay');
+        if (savedMax !== null) {
+          var elMax = document.getElementById('maxRevisionsPerDay');
+          if (elMax) elMax.value = savedMax;
         }
       })();
     </script>
