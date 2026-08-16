@@ -107,10 +107,42 @@ jobs:
         # échouer l'installation (ERESOLVE) contre Capacitor 7, la 8.x exige core >=8.0.0.
         # Vérifier `npm view @capacitor-community/text-to-speech@^N peerDependencies` avant
         # tout changement de version ici ou de celle de Capacitor.
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6
+        # @capacitor/filesystem + @capacitor-community/file-opener : téléchargement de
+        # l'APK et remise à l'installateur d'Android, pour la mise à jour depuis l'appli
+        # elle-même (voir js/app-update.js).
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7
 
       - name: Generate the Android project
         run: npx cap add android
+
+      - name: Allow the app to install an update
+        # Sans REQUEST_INSTALL_PACKAGES, Android refuse à l'appli le droit de présenter un APK
+        # à son installateur : le bouton « Mettre à jour maintenant » téléchargerait les 95 Mo
+        # pour échouer au dernier moment. Le manifeste est REGÉNÉRÉ à chaque `cap add android`
+        # (le dossier android/ n'est pas versionné), d'où ce patch au build plutôt qu'un fichier
+        # modifié une fois pour toutes. L'utilisateur garde le dernier mot : Android affiche sa
+        # propre confirmation, et exige en plus une autorisation explicite « installer des
+        # applications inconnues ».
+        run: |
+          set -e
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          test -f "$MANIFEST"
+          PERM='android.permission.REQUEST_INSTALL_PACKAGES'
+          if grep -q "$PERM" "$MANIFEST"; then
+            echo "Permission déjà présente."
+          else
+            python3 - "$MANIFEST" "$PERM" <<'PYEOF'
+          import sys
+          path, perm = sys.argv[1], sys.argv[2]
+          src = open(path, encoding='utf-8').read()
+          tag = '    <uses-permission android:name="%s" />\n' % perm
+          marker = '</manifest>'
+          assert marker in src, 'balise </manifest> introuvable'
+          open(path, 'w', encoding='utf-8').write(src.replace(marker, tag + marker, 1))
+          print('Permission ajoutée au manifeste.')
+          PYEOF
+          fi
+          grep -c "$PERM" "$MANIFEST"
 
       - name: Generate launcher icons and splash screen
         # @capacitor/assets dérive toutes les densités Android depuis assets/icon.png et
