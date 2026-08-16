@@ -105,11 +105,26 @@ async function getDocWithTimeout(docRef, timeoutMs = 2000) {
   // ouverts, connexion IndexedDB fantôme d'un onglet précédent) ne doit jamais bloquer
   // indéfiniment un bouton — mieux vaut renvoyer un snapshot vide que de rester figé.
   if (!navigator.onLine) {
+    // Le délai appliqué ici NE DOIT PAS être celui du réseau. Une lecture cache est purement
+    // locale : la seule raison de la borner est une IndexedDB réellement bloquée. Avec le
+    // délai réseau (2 s par défaut), un shard volumineux — jusqu'à 2000 réponses, ~1 Mio à
+    // désérialiser sur un téléphone Android — dépassait régulièrement le délai et était
+    // ABANDONNÉ : la progression paraissait vide (« 0 vue » sur 4742 questions chargées) alors
+    // que les données étaient bien présentes en local, juste un peu lentes à sortir. On laisse
+    // donc un budget large, et surtout on RÉESSAIE avant d'abandonner.
+    const cacheBudget = Math.max(timeoutMs || 0, 15000);
     try {
-      return await _raceTimeout(docRef.get({ source: 'cache' }), timeoutMs, 'cache timeout');
+      return await _raceTimeout(docRef.get({ source: 'cache' }), cacheBudget, 'cache timeout');
     } catch (e) {
-      console.warn('[getDocWithTimeout] cache miss/bloqué offline:', e.message);
-      return { exists: false, data: () => ({}) };
+      console.warn('[getDocWithTimeout] 1re lecture cache lente/bloquée, nouvel essai sans limite:', e.message);
+      try {
+        // 2e essai SANS aucune limite de temps : mieux vaut une seconde d'attente de plus
+        // qu'une séance de révision vidée de sa progression.
+        return await docRef.get({ source: 'cache' });
+      } catch (e2) {
+        console.warn('[getDocWithTimeout] cache miss/bloqué offline:', e2.message);
+        return { exists: false, data: () => ({}) };
+      }
     }
   }
   // En ligne → forcer lecture SERVEUR pour données cross-device fraîches

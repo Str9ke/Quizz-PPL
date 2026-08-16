@@ -37,6 +37,7 @@
   <script src="js/stats.js?v=20260807i"></script>
   <script src="js/quiz.js?v=20260807k"></script>
   <script src="js/init.js?v=20260807c"></script>
+  <script src="js/localmirror.js?v=20260816a"></script>
   <script src="js/offline.js?v=20260807i"></script>
   <style>
     .cfg-section { margin-bottom: 10px; }
@@ -97,6 +98,24 @@
       "Protéger le stockage" demande au navigateur de ne pas effacer les questions/ta progression hors-ligne sous pression de stockage.
       "Forcer le téléchargement complet" retélécharge tous les fichiers nécessaires au fonctionnement hors-ligne (à faire en Wi-Fi, avant de partir).
     </p>
+
+    <!-- Images hors-ligne -->
+    <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;flex-direction:column;align-items:stretch;gap:8px">
+      <div class="cfg-label" style="font-weight:700">🖼️ Images hors-ligne
+        <div class="cfg-hint">Les planches de référence (symboles, marshalling, plongée) se téléchargent toutes seules. Les images des questions (~74 Mo) sont à télécharger explicitement, en Wi-Fi.</div>
+      </div>
+      <div id="cfgImagesStatus" style="font-size:.85em">Vérification…</div>
+      <div id="cfgImagesProgressWrap" style="display:none">
+        <div style="height:8px;border-radius:6px;background:var(--progressbar-bg);overflow:hidden">
+          <div id="cfgImagesProgressBar" style="height:100%;width:0;background:linear-gradient(90deg,#14b8a6,#f59e0b);transition:width .2s"></div>
+        </div>
+        <div id="cfgImagesProgressText" style="font-size:.8em;margin-top:4px;color:var(--text-secondary)"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="stats-btn" id="cfgDownloadImagesBtn" onclick="_cfgDownloadImages('all')" style="padding:6px 14px;width:auto;margin:0">📥 Télécharger toutes les images</button>
+        <button type="button" class="stats-btn" id="cfgDownloadRefImagesBtn" onclick="_cfgDownloadImages('reference')" style="padding:6px 14px;width:auto;margin:0">🧭 Planches de référence seules</button>
+      </div>
+    </div>
     <p class="cfg-hint" style="margin-top:8px">
       La mise à jour de l'appli se fait automatiquement, mais UNIQUEMENT quand tu l'ouvres en étant connecté — un navigateur ne vérifie jamais les mises à jour en arrière-plan pendant que l'appli est fermée. Ouvre-la donc en Wi-Fi juste avant un vol : la nouvelle version se télécharge et s'active alors toute seule (rechargement automatique), sans bouton à cliquer. La ligne "Version en cache" ci-dessus te confirme quelle version tourne réellement sur cet appareil, et "Dernière synchro." te confirme que tes réponses les plus récentes ont bien atteint le serveur.
     </p>
@@ -110,13 +129,34 @@
     </p>
   </div>
 
+  <!-- Application Android native (APK) -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🤖 Application Android (recommandé en vol)</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      Vraie application Android, distincte du navigateur : les pages, les questions <b>et les
+      images</b> sont embarquées <b>dans l'application elle-même</b>. Rien ne dépend plus d'un
+      cache que le système peut vider, ni d'une page qu'il aurait fallu ouvrir en ligne au
+      préalable — c'est la seule version réellement à l'abri d'une panne hors-ligne.
+      Seules la synchronisation de ta progression et la météo utilisent encore le réseau.
+    </p>
+    <a class="stats-btn" style="padding:6px 14px;display:inline-block;text-decoration:none"
+       href="https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest"
+       target="_blank" rel="noopener">⬇️ Télécharger l'APK (dernière version)</a>
+    <p class="cfg-hint" style="margin-top:8px">
+      Ouvre ce lien <b>depuis ton téléphone</b>, télécharge le fichier <code>.apk</code> puis
+      ouvre-le. Android demandera d'autoriser l'installation depuis cette source : c'est normal
+      pour une application distribuée hors Play Store.
+    </p>
+  </div>
+
   <!-- Installation de l'application (PWA) -->
   <div class="home-card cfg-section">
-    <div class="cfg-section-title">📲 Installer l'application</div>
+    <div class="cfg-section-title">📲 Installer le raccourci web (PWA)</div>
     <p class="cfg-hint" style="margin:0 0 8px">
-      Installée, l'appli s'ouvre comme une vraie application (icône sur l'écran d'accueil, pas
-      de barre d'adresse) — pratique en vol, où on veut lancer une révision sans chercher un
-      onglet de navigateur. Ce bouton reste disponible ici même si tu as déjà fermé une fois le
+      Solution de repli, plus légère mais moins robuste que l'application Android ci-dessus :
+      c'est le navigateur qui exécute le site et qui garde les fichiers en cache — un cache que
+      le système peut décider de vider. Utile sur iPhone ou sur ordinateur, où l'APK Android ne
+      s'applique pas. Ce bouton reste disponible ici même si tu as déjà fermé une fois le
       bandeau qui propose l'installation automatiquement.
     </p>
     <div id="cfgPwaStatus" style="font-size:.85em;margin-bottom:8px">Vérification…</div>
@@ -513,19 +553,63 @@
     //    hors-ligne — cache mémoire seulement, perdu à la fermeture de l'onglet)
     // 4) Stockage protégé contre l'effacement automatique par le système (Android peut sinon
     //    vider silencieusement le cache d'une appli peu utilisée récemment)
-    function _cfgSendSwMessage(data, timeoutMs) {
+    /* _cfgSendSwMessage — dialogue avec le Service Worker.
+       `navigator.serviceWorker.controller` est null pendant plusieurs centaines de ms après un
+       rechargement forcé (et tant qu'un SW fraîchement installé n'a pas pris le contrôle de la
+       page) : la version précédente abandonnait immédiatement dans ce cas et affichait
+       « Pas de réponse du Service Worker » alors que le SW était parfaitement actif — d'où un
+       diagnostic qui semblait signaler une panne inexistante, précisément au moment où on
+       cherche à vérifier que tout est prêt avant un vol. On attend donc que le contrôleur
+       arrive (via `navigator.serviceWorker.ready`), et on se rabat sur le worker actif de
+       l'enregistrement s'il n'a toujours pas pris la main. */
+    async function _cfgResolveSwTarget() {
+      if (!('serviceWorker' in navigator)) return null;
+      if (navigator.serviceWorker.controller) return navigator.serviceWorker.controller;
+      try {
+        const reg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise(r => setTimeout(() => r(null), 3000))
+        ]);
+        if (navigator.serviceWorker.controller) return navigator.serviceWorker.controller;
+        if (reg && reg.active) return reg.active;
+      } catch (e) { /* ignore */ }
+      return null;
+    }
+
+    /* onProgress (optionnel) : le port reste ouvert et reçoit plusieurs messages successifs —
+       indispensable pour le téléchargement des images, qui dure plusieurs minutes. La promesse
+       ne se résout qu'au message portant `finished`. */
+    async function _cfgSendSwMessage(data, timeoutMs, onProgress) {
+      const target = await _cfgResolveSwTarget();
+      if (!target) return null;
       return new Promise(resolve => {
-        if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) { resolve(null); return; }
         const channel = new MessageChannel();
-        const timer = setTimeout(() => resolve(null), timeoutMs || 4000);
-        channel.port1.onmessage = e => { clearTimeout(timer); resolve(e.data); };
-        navigator.serviceWorker.controller.postMessage(data, [channel.port2]);
+        let timer = setTimeout(() => resolve(null), timeoutMs || 4000);
+        channel.port1.onmessage = e => {
+          const d = e.data;
+          if (onProgress && d && !d.finished) {
+            // Progression : on repousse le délai d'expiration tant que ça avance.
+            clearTimeout(timer);
+            timer = setTimeout(() => resolve(null), timeoutMs || 4000);
+            onProgress(d);
+            return;
+          }
+          clearTimeout(timer);
+          resolve(d);
+        };
+        target.postMessage(data, [channel.port2]);
       });
     }
     async function _cfgCheckOfflineReadiness() {
       const r = { swActive: false, cacheFileCount: 0, criticalFilesOk: false,
         persistenceStatus: 'checking', storagePersisted: false, quota: null,
-        appVersion: null, lastSync: null, lastSyncFromServer: false };
+        appVersion: null, lastSync: null, lastSyncFromServer: false, mirror: null };
+
+      // État du miroir local des réponses (js/localmirror.js)
+      try {
+        const mirrorUid = uid || localStorage.getItem('cachedUid');
+        if (mirrorUid && typeof _mirrorInfo === 'function') r.mirror = await _mirrorInfo(mirrorUid);
+      } catch (e) { console.warn('[offline-diag] miroir:', e); }
 
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.getRegistration().catch(() => null);
@@ -607,7 +691,16 @@
             ? 'non disponible sur ce navigateur — en hors-ligne, une réponse donnée puis l\'appli fermée AVANT de repasser en ligne peut se perdre'
             : 'erreur au démarrage — recharge la page en ligne pour réessayer' },
         { ok: r.storagePersisted, label: 'Stockage protégé contre l\'effacement automatique',
-          okMsg: 'protégé', badMsg: 'non protégé — le système peut effacer le cache hors-ligne d\'une appli peu utilisée ; clique "Protéger le stockage"' }
+          okMsg: 'protégé', badMsg: 'non protégé — le système peut effacer le cache hors-ligne d\'une appli peu utilisée ; clique "Protéger le stockage"' },
+        // Miroir local (js/localmirror.js) : la SEULE garantie qui ne dépende pas du cache
+        // interne de Firestore — lequel peut être totalement absent sans le dire (persistance
+        // refusée quand plusieurs onglets sont ouverts). C'est cette ligne qui répond vraiment
+        // à « est-ce que ma progression sera là en vol ? ».
+        { ok: !!(r.mirror && r.mirror.count), label: 'Copie locale de secours de la progression',
+          okMsg: r.mirror
+            ? (r.mirror.count + ' réponses copiées localement' + (r.mirror.savedAt ? ' (maj. ' + new Date(r.mirror.savedAt).toLocaleString('fr-FR') + ')' : ''))
+            : '',
+          badMsg: 'aucune copie locale — ouvre la page Quiz une fois EN LIGNE pour la créer, sinon ta progression peut être invisible hors-ligne' }
       ];
 
       const allOk = items.every(it => it.ok);
@@ -1013,6 +1106,60 @@
       window._cfgRunOfflineCheck();
     };
 
+    // === Images hors-ligne ===
+    window._cfgRefreshImagesStatus = async function() {
+      const el = document.getElementById('cfgImagesStatus');
+      if (!el) return;
+      const r = await _cfgSendSwMessage({ type: 'imagesStatus' }, 15000);
+      if (!r) { el.textContent = '❔ État indisponible (Service Worker non actif) — recharge la page.'; return; }
+      if (r.error) { el.textContent = '⚠️ ' + r.error; return; }
+      const allOk = r.cachedAll >= r.totalAll;
+      const refOk = r.cachedRef >= r.totalRef;
+      el.innerHTML =
+        (allOk ? '✅' : (refOk ? '🟡' : '❌')) + ' <b>' + r.cachedAll + ' / ' + r.totalAll + '</b> images disponibles hors-ligne' +
+        '<br><span style="color:var(--text-secondary)">dont planches de référence : <b>' + r.cachedRef + ' / ' + r.totalRef + '</b>' +
+        (allOk ? '' : ' — les questions illustrées non téléchargées afficheront une image cassée en vol') + '</span>';
+    };
+
+    window._cfgDownloadImages = async function(which) {
+      const btnAll = document.getElementById('cfgDownloadImagesBtn');
+      const btnRef = document.getElementById('cfgDownloadRefImagesBtn');
+      const wrap = document.getElementById('cfgImagesProgressWrap');
+      const bar = document.getElementById('cfgImagesProgressBar');
+      const txt = document.getElementById('cfgImagesProgressText');
+      if (!navigator.onLine) { alert('Tu es hors-ligne : connecte-toi au Wi-Fi avant de télécharger les images.'); return; }
+      if (btnAll) btnAll.disabled = true;
+      if (btnRef) btnRef.disabled = true;
+      if (wrap) wrap.style.display = 'block';
+      if (txt) txt.textContent = 'Préparation…';
+
+      // Le téléchargement peut durer plusieurs minutes (~74 Mo) : on laisse 90 s SANS AUCUNE
+      // progression avant de considérer que c'est perdu, le délai étant remis à zéro à chaque
+      // lot terminé (voir onProgress dans _cfgSendSwMessage).
+      const result = await _cfgSendSwMessage({ type: 'downloadImages', which }, 90000, p => {
+        if (!p || !p.total) return;
+        const pct = Math.round((p.done / p.total) * 100);
+        if (bar) bar.style.width = pct + '%';
+        if (txt) txt.textContent = p.done + ' / ' + p.total + ' images (' + pct + '%)' + (p.failed ? ' — ' + p.failed + ' échec(s)' : '');
+      });
+
+      if (btnAll) btnAll.disabled = false;
+      if (btnRef) btnRef.disabled = false;
+      if (!result) {
+        if (txt) txt.textContent = '⚠️ Interrompu (aucune progression pendant 90 s). Relance : les images déjà téléchargées sont conservées.';
+      } else if (result.error) {
+        if (txt) txt.textContent = '⚠️ ' + result.error;
+      } else if (result.aborted) {
+        if (txt) txt.textContent = '⚠️ Interrompu (' + result.aborted + ') à ' + result.done + ' / ' + result.total + '. Relance en Wi-Fi : ça reprendra où ça s\'est arrêté.';
+      } else {
+        const pct = result.total ? Math.round((result.done / result.total) * 100) : 100;
+        if (bar) bar.style.width = pct + '%';
+        if (txt) txt.textContent = '✅ ' + result.done + ' / ' + result.total + ' images disponibles hors-ligne'
+          + (result.failed ? ' — ' + result.failed + ' échec(s), relance pour réessayer.' : '.');
+      }
+      _cfgRefreshImagesStatus();
+    };
+
     function _cfgLocalStorageUsedBytes() {
       let total = 0;
       for (let i = 0; i < localStorage.length; i++) {
@@ -1069,6 +1216,7 @@
       _cfgRenderLocalStorageUsage();
       _cfgRenderBackupStatus();
       _cfgRenderPwaStatus();
+      window._cfgRefreshImagesStatus();
       // Signale d'emblée si le mode entraînement libre est resté actif (voir
       // _cfgClearPracticeMode) sans attendre que l'utilisateur clique "Lancer le diagnostic".
       if (localStorage.getItem('quizPracticeMode') === '1') {

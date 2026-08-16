@@ -4,7 +4,26 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v121';
+const CACHE_NAME = 'quiz-ppl-v122';
+
+/* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
+   images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
+     1. Le cache principal est effacé à chaque nouvelle version. Les images, elles, ne changent
+        pas : les y laisser imposait un re-téléchargement de ~80 Mio à chaque déploiement — en
+        pratique jamais effectué, donc images cassées hors-ligne.
+     2. Les images n'étaient mises en cache qu'après un affichage EN LIGNE (stale-while-
+        revalidate). Une page de référence jamais ouverte au sol — marshalling, signes de
+        plongée, symboles TEMSI — n'avait donc AUCUNE image disponible en vol.
+   Ce cache n'est supprimé que si on change explicitement son nom ci-dessous. */
+const ASSETS_CACHE = 'quiz-ppl-assets-v1';
+
+/* isImageAsset() — une image de l'appli (pas une carte météo régénérée toutes les 3 h, qui
+   doit rester sur la stratégie network-first plus bas). */
+function isImageAsset(pathname) {
+  if (!/\.(png|jpe?g|gif|webp|svg)$/i.test(pathname)) return false;
+  if (/\/(skeyes_|temsi_|wintem_|daily_warnings|opmet)/.test(pathname)) return false;
+  return true;
+}
 
 // Déterminer le chemin de base dynamiquement (fonctionne sur GitHub Pages et Firebase)
 const SW_PATH = self.location.pathname; // ex: /Quizz-PPL/sw.js
@@ -29,6 +48,8 @@ const PRECACHE_URLS = [
   BASE + 'js/sidebar.js',
   BASE + 'js/pwa-install.js',
   BASE + 'manifest.json',
+  BASE + 'assets-manifest.json',
+  BASE + 'js/localmirror.js',
   BASE + 'icons/icon-192.png',
   BASE + 'icons/icon-512.png',
   BASE + 'icons/icon-192-maskable.png',
@@ -150,7 +171,14 @@ self.addEventListener('activate', event => {
     await precacheAll().catch(() => {});
     const missing = await missingCriticalUrls().catch(() => ['(vérification impossible)']);
     const keys = await caches.keys();
-    const others = keys.filter(k => k !== CACHE_NAME);
+    // ASSETS_CACHE est explicitement EXCLU du ménage : les images ne changent jamais d'une
+    // version à l'autre, et jusqu'ici chaque déploiement les effaçait avec le reste. C'est
+    // pourquoi TOUTES les images (symboles, marshalling, plongée, images des questions)
+    // apparaissaient cassées hors-ligne : elles n'étaient mises en cache qu'après avoir été
+    // affichées EN LIGNE au moins une fois, dans le cache versionné… donc supprimées au
+    // déploiement suivant. Les re-télécharger à chaque version serait de toute façon absurde :
+    // ~80 Mio pour des fichiers strictement identiques.
+    const others = keys.filter(k => k !== CACHE_NAME && k !== ASSETS_CACHE);
 
     if (!missing.length) {
       await Promise.all(others.map(k => caches.delete(k)));
@@ -165,6 +193,17 @@ self.addEventListener('activate', event => {
       console.warn('[SW] Cache incomplet (' + missing.length + ' fichier(s) manquant(s)) — ancien cache "' + keepAlso + '" CONSERVÉ comme filet de sécurité');
     }
     await self.clients.claim();
+
+    /* Images de RÉFÉRENCE (Symboles/** : marshalling, signes de plongée, symboles TEMSI et
+       carte météo — ~6 Mio) téléchargées automatiquement en tâche de fond, sans bloquer
+       l'activation ni attendre que l'utilisateur pense à cliquer un bouton. Ce sont des
+       planches qu'on consulte précisément quand on n'a pas de réseau ; les laisser dépendre
+       d'une visite préalable en ligne était la garantie de les trouver vides en vol. Les
+       images des QUESTIONS (~74 Mio) restent, elles, sur demande explicite — voir le bouton
+       « Télécharger les images » dans configuration.html. */
+    if (navigator.onLine) {
+      downloadImages('reference', null).catch(e => console.warn('[SW] Pré-chargement des images de référence:', e.message));
+    }
   })());
 });
 
@@ -334,6 +373,30 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  /* === Images de l'appli : CACHE-FIRST STRICT, stockage dans ASSETS_CACHE ===
+     Volontairement SANS stale-while-revalidate : ces fichiers sont immuables (une image de
+     question ou de symbole ne change jamais sans changer de nom), donc revalider ne sert à
+     rien et ne ferait que gaspiller de la bande passante et des réveils réseau. Surtout, le
+     stockage se fait dans ASSETS_CACHE et non dans le cache versionné : c'est ce qui permet
+     aux images de SURVIVRE aux mises à jour de l'appli. */
+  if (isImageAsset(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true }).then(cached => {
+        if (cached) return cached;
+        return fetchWithTimeout(event.request, 8000).then(response => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            const cleanUrl = new URL(event.request.url);
+            cleanUrl.search = '';
+            caches.open(ASSETS_CACHE).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+          }
+          return response;
+        }).catch(() => new Response('', { status: 503, statusText: 'Offline (image)' }));
+      })
+    );
+    return;
+  }
+
   // === Stratégie pour les autres fichiers : Cache-First + Stale-While-Revalidate ===
   // ignoreSearch: true → les paramètres ?v=xxx n'empêchent pas le cache hit
   event.respondWith(
@@ -411,4 +474,98 @@ self.addEventListener('message', event => {
       if (event.ports && event.ports[0]) event.ports[0].postMessage(result);
     });
   }
+
+  // Téléchargement en masse des images (bouton « Télécharger les images » de
+  // configuration.html). `which` vaut 'reference' (symboles/marshalling/plongée, ~6 Mio) ou
+  // 'all' (+ les images des questions, ~80 Mio au total).
+  const msg = event.data;
+  if (msg && typeof msg === 'object' && msg.type === 'downloadImages') {
+    downloadImages(msg.which || 'reference', event.ports && event.ports[0]);
+  }
+  if (msg && typeof msg === 'object' && msg.type === 'imagesStatus') {
+    imagesStatus().then(r => { if (event.ports && event.ports[0]) event.ports[0].postMessage(r); });
+  }
 });
+
+/* loadAssetManifest() — liste des images de l'appli, générée au build par
+   tools/build_assets_manifest.py et déployée avec le site. */
+async function loadAssetManifest() {
+  const res = await fetch(BASE + 'assets-manifest.json', { cache: 'no-cache' });
+  if (!res.ok) throw new Error('manifeste des images introuvable');
+  return res.json();
+}
+
+function manifestUrls(manifest, which) {
+  const list = (which === 'all')
+    ? [].concat(manifest.reference || [], manifest.questions || [])
+    : (manifest.reference || []);
+  return list.map(p => BASE + p);
+}
+
+/* imagesStatus() — combien d'images sont déjà disponibles hors-ligne. Sert à afficher un état
+   honnête ("312 / 710") plutôt qu'un simple "activé/désactivé" qui ne dit rien de ce qui est
+   réellement téléchargé. */
+async function imagesStatus() {
+  try {
+    const manifest = await loadAssetManifest();
+    const cache = await caches.open(ASSETS_CACHE);
+    const all = manifestUrls(manifest, 'all');
+    const ref = manifestUrls(manifest, 'reference');
+    let okAll = 0, okRef = 0;
+    for (const u of all) {
+      if (await cache.match(u, { ignoreSearch: true })) {
+        okAll++;
+        if (ref.indexOf(u) !== -1) okRef++;
+      }
+    }
+    return { totalAll: all.length, cachedAll: okAll, totalRef: ref.length, cachedRef: okRef };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+/* downloadImages() — télécharge dans ASSETS_CACHE toutes les images manquantes, en petits lots
+   séquentiels. Rapporte sa progression en continu via le port du MessageChannel : sur ~80 Mio,
+   un bouton qui reste muet plusieurs minutes serait indistinguable d'un plantage. Les fichiers
+   déjà présents sont sautés — relancer après une coupure reprend là où ça s'était arrêté au
+   lieu de tout recommencer. */
+async function downloadImages(which, port) {
+  const report = m => { try { if (port) port.postMessage(m); } catch (e) { /* port fermé */ } };
+  let urls;
+  try {
+    const manifest = await loadAssetManifest();
+    urls = manifestUrls(manifest, which);
+  } catch (e) {
+    report({ done: true, error: 'Manifeste des images introuvable : ' + e.message });
+    return;
+  }
+
+  const cache = await caches.open(ASSETS_CACHE);
+  const todo = [];
+  for (const u of urls) {
+    if (!(await cache.match(u, { ignoreSearch: true }))) todo.push(u);
+  }
+
+  const total = urls.length;
+  let done = total - todo.length;
+  let failed = 0;
+  report({ total, done, failed, phase: 'start' });
+
+  const BATCH = 6;
+  for (let i = 0; i < todo.length; i += BATCH) {
+    if (!navigator.onLine) {
+      report({ total, done, failed, finished: true, aborted: 'hors-ligne' });
+      return;
+    }
+    const batch = todo.slice(i, i + BATCH);
+    await Promise.all(batch.map(async u => {
+      try {
+        const res = await fetchWithTimeout(new Request(u), 20000);
+        if (res && res.ok) { await cache.put(new Request(u), res.clone()); done++; }
+        else failed++;
+      } catch (e) { failed++; }
+    }));
+    report({ total, done, failed, phase: 'progress' });
+  }
+  report({ total, done, failed, finished: true });
+}

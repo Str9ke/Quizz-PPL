@@ -1,0 +1,144 @@
+name: Build Android APK
+
+# Construit une VRAIE application Android (Capacitor), et non un raccourci Chrome.
+#
+# Différence qui compte en vol : les pages, les 4742 questions et les ~80 Mo d'images sont
+# EMBARQUÉES dans l'APK. Elles ne peuvent donc plus disparaître parce qu'un cache navigateur a
+# été vidé, ni manquer parce qu'une page n'avait jamais été ouverte en ligne. Seules la
+# synchronisation de la progression (Firestore) et la météo nécessitent encore du réseau.
+#
+# L'APK produit est attaché à une pré-release "android-latest" : téléchargeable directement
+# depuis le téléphone, sans passer par le Play Store.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+    paths:
+      - '**.html'
+      - '**.css'
+      - 'js/**'
+      - '*.json'
+      - 'Symboles/**'
+      - 'IMAGES_*/**'
+      - 'capacitor.config.json'
+      - 'tools/build_www.py'
+      - '.github/workflows/build-android.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install the stable signing key
+        # Android REFUSE d'installer une mise à jour signée par une clé différente de celle de
+        # la version déjà présente : il faudrait désinstaller d'abord, ce qui EFFACE toutes les
+        # données locales de l'appli — dont le miroir de la progression (js/localmirror.js) et
+        # les images téléchargées. Or un runner GitHub est neuf à chaque exécution : sans cette
+        # étape, `assembleDebug` fabriquerait une clé de débogage DIFFÉRENTE à chaque build, et
+        # donc un APK impossible à installer par-dessus le précédent. La clé versionnée dans
+        # android-signing/ garantit au contraire une signature identique d'une version à
+        # l'autre : les mises à jour s'installent par-dessus, en conservant les données.
+        run: |
+          mkdir -p ~/.android
+          cp android-signing/debug.keystore ~/.android/debug.keystore
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android | grep -E 'Alias|SHA256' | head -2
+
+      - name: Create config.js from repository secrets
+        # Mêmes secrets que le déploiement du site (voir deploy-pages.yml) : les clés ne sont
+        # jamais versionnées, elles sont injectées au moment du build.
+        run: |
+          cat > config.js <<'EOF'
+          window.FIREBASE_CONFIG = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}"
+          };
+          window.OPENAIP_API_KEY = "${{ secrets.OPENAIP_API_KEY }}";
+          EOF
+
+      - name: Refresh the image manifest
+        run: python3 tools/build_assets_manifest.py
+
+      - name: Assemble www/ (the files shipped inside the APK)
+        run: |
+          python3 tools/build_www.py
+          # config.js est exclu de la copie générique (il contient les clés) : on l'ajoute ici,
+          # après coup, pour qu'il soit bien embarqué dans l'application.
+          cp config.js www/config.js
+          test -s www/config.js
+
+      - name: Install Capacitor
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
+
+      - name: Generate the Android project
+        run: npx cap add android
+
+      - name: Generate launcher icons and splash screen
+        # @capacitor/assets dérive toutes les densités Android depuis assets/icon.png et
+        # assets/splash.png. Non bloquant : une icône générique n'empêche pas l'appli de
+        # fonctionner, alors qu'un échec ici ferait perdre tout le build.
+        continue-on-error: true
+        run: npx @capacitor/assets generate --android
+
+      - name: Sync web assets into the Android project
+        run: npx cap sync android
+
+      - name: Build the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Locate the APK
+        id: apk
+        run: |
+          path="$(find android -name '*.apk' -print -quit)"
+          test -n "$path" || { echo "Aucun APK produit"; exit 1; }
+          cp "$path" quiz-aviation-ppl.apk
+          echo "size=$(du -h quiz-aviation-ppl.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+          ls -lh quiz-aviation-ppl.apk
+
+      - name: Upload the APK as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-aviation-ppl-apk
+          path: quiz-aviation-ppl.apk
+          retention-days: 30
+
+      - name: Publish the APK to the android-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Application Android (dernière version)
+          prerelease: true
+          files: quiz-aviation-ppl.apk
+          body: |
+            Application Android autonome — questions et images embarquées, utilisable sans réseau.
+
+            APK : ${{ steps.apk.outputs.size }} · compilé depuis le commit ${{ github.sha }}
+
+            **Installation** : télécharge le fichier `.apk` ci-dessous depuis ton téléphone,
+            puis ouvre-le. Android demandera d'autoriser l'installation depuis cette source —
+            c'est normal pour une application distribuée hors Play Store.
