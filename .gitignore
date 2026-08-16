@@ -25,3 +25,10 @@ node_modules/
 # generates its own from a GitHub Actions secret (see deploy-pages.yml).
 # Use config.example.js as the template.
 config.js
+
+# Build de l'application Android (Capacitor) — tout est régénéré par
+# tools/build_www.py et le workflow build-android.yml, rien à versionner.
+www/
+android/
+node_modules/
+*.apk

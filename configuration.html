@@ -129,13 +129,34 @@
     </p>
   </div>
 
+  <!-- Application Android native (APK) -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">🤖 Application Android (recommandé en vol)</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      Vraie application Android, distincte du navigateur : les pages, les questions <b>et les
+      images</b> sont embarquées <b>dans l'application elle-même</b>. Rien ne dépend plus d'un
+      cache que le système peut vider, ni d'une page qu'il aurait fallu ouvrir en ligne au
+      préalable — c'est la seule version réellement à l'abri d'une panne hors-ligne.
+      Seules la synchronisation de ta progression et la météo utilisent encore le réseau.
+    </p>
+    <a class="stats-btn" style="padding:6px 14px;display:inline-block;text-decoration:none"
+       href="https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest"
+       target="_blank" rel="noopener">⬇️ Télécharger l'APK (dernière version)</a>
+    <p class="cfg-hint" style="margin-top:8px">
+      Ouvre ce lien <b>depuis ton téléphone</b>, télécharge le fichier <code>.apk</code> puis
+      ouvre-le. Android demandera d'autoriser l'installation depuis cette source : c'est normal
+      pour une application distribuée hors Play Store.
+    </p>
+  </div>
+
   <!-- Installation de l'application (PWA) -->
   <div class="home-card cfg-section">
-    <div class="cfg-section-title">📲 Installer l'application</div>
+    <div class="cfg-section-title">📲 Installer le raccourci web (PWA)</div>
     <p class="cfg-hint" style="margin:0 0 8px">
-      Installée, l'appli s'ouvre comme une vraie application (icône sur l'écran d'accueil, pas
-      de barre d'adresse) — pratique en vol, où on veut lancer une révision sans chercher un
-      onglet de navigateur. Ce bouton reste disponible ici même si tu as déjà fermé une fois le
+      Solution de repli, plus légère mais moins robuste que l'application Android ci-dessus :
+      c'est le navigateur qui exécute le site et qui garde les fichiers en cache — un cache que
+      le système peut décider de vider. Utile sur iPhone ou sur ordinateur, où l'APK Android ne
+      s'applique pas. Ce bouton reste disponible ici même si tu as déjà fermé une fois le
       bandeau qui propose l'installation automatiquement.
     </p>
     <div id="cfgPwaStatus" style="font-size:.85em;margin-bottom:8px">Vérification…</div>
