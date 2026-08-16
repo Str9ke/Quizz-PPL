@@ -110,6 +110,20 @@
     </p>
   </div>
 
+  <!-- Installation de l'application (PWA) -->
+  <div class="home-card cfg-section">
+    <div class="cfg-section-title">📲 Installer l'application</div>
+    <p class="cfg-hint" style="margin:0 0 8px">
+      Installée, l'appli s'ouvre comme une vraie application (icône sur l'écran d'accueil, pas
+      de barre d'adresse) — pratique en vol, où on veut lancer une révision sans chercher un
+      onglet de navigateur. Ce bouton reste disponible ici même si tu as déjà fermé une fois le
+      bandeau qui propose l'installation automatiquement.
+    </p>
+    <div id="cfgPwaStatus" style="font-size:.85em;margin-bottom:8px">Vérification…</div>
+    <button type="button" class="stats-btn" id="cfgPwaInstallBtn" onclick="_cfgTriggerPwaInstall()" style="padding:6px 14px">📲 Installer maintenant</button>
+    <div id="cfgPwaInstallResult" style="font-size:.82em;color:var(--text-secondary);margin-top:8px"></div>
+  </div>
+
   <!-- Sauvegarde locale de secours -->
   <div class="home-card cfg-section">
     <div class="cfg-section-title">🛟 Sauvegarde locale de secours</div>
@@ -652,6 +666,55 @@
       window._cfgRunOfflineCheck();
     };
 
+    // === Installation de l'application (PWA) — voir js/pwa-install.js pour la mécanique
+    // partagée (capture de beforeinstallprompt, état, déclenchement). Ce bloc ne fait
+    // qu'afficher l'état courant et relier le bouton. ===
+    function _cfgRenderPwaStatus() {
+      const statusEl = document.getElementById('cfgPwaStatus');
+      const btn = document.getElementById('cfgPwaInstallBtn');
+      if (!statusEl || !btn || typeof window._pwaInstallState !== 'function') return;
+      const state = window._pwaInstallState();
+      if (state === 'standalone') {
+        statusEl.textContent = '✅ Déjà installée sur cet appareil.';
+        btn.style.display = 'none';
+      } else if (state === 'ready') {
+        statusEl.textContent = 'Prête à être installée.';
+        btn.style.display = '';
+        btn.disabled = false;
+        btn.textContent = '📲 Installer maintenant';
+      } else if (state === 'ios-manual') {
+        statusEl.textContent = 'iOS/Safari ne propose pas d\'installation automatique — marche à suivre manuelle ci-dessous.';
+        btn.style.display = 'none';
+        const resultEl = document.getElementById('cfgPwaInstallResult');
+        if (resultEl) resultEl.textContent = '📲 Appuie sur Partager (le carré avec une flèche vers le haut, dans la barre du bas), puis « Sur l\'écran d\'accueil ».';
+      } else {
+        // 'pending' : Android/Chrome, mais le navigateur n'a pas encore (ou pas) signalé que
+        // l'app est installable sur CE chargement de page — ça peut prendre quelques secondes,
+        // ou ne jamais arriver si un critère technique manque encore. Le bouton reste affiché
+        // (il se réactivera tout seul via l'événement 'pwa-install-ready' si ça arrive) plutôt
+        // que de laisser croire à un échec définitif.
+        statusEl.textContent = '⏳ En attente du navigateur… (peut prendre quelques secondes ; recharge la page si ça ne vient pas)';
+        btn.style.display = '';
+        btn.disabled = true;
+        btn.textContent = '📲 Installer maintenant';
+      }
+    }
+    window.addEventListener('pwa-install-ready', _cfgRenderPwaStatus);
+
+    window._cfgTriggerPwaInstall = function() {
+      if (typeof window._pwaTriggerInstall !== 'function') return;
+      const resultEl = document.getElementById('cfgPwaInstallResult');
+      if (resultEl) resultEl.textContent = '';
+      window._pwaTriggerInstall(function(outcome) {
+        if (resultEl) {
+          resultEl.textContent = outcome === 'accepted' ? '✅ Installation lancée.'
+            : outcome === 'dismissed' ? 'Invite fermée sans installer — tu peux réessayer plus tard.'
+            : '⚠️ Pas encore disponible sur cette page — réessaie dans quelques secondes.';
+        }
+        _cfgRenderPwaStatus();
+      });
+    };
+
     // === Sauvegarde locale de secours ===
     function _cfgRenderBackupStatus() {
       const el = document.getElementById('cfgBackupStatus');
@@ -1002,6 +1065,7 @@
       window._cfgRunOfflineCheck();
       _cfgRenderLocalStorageUsage();
       _cfgRenderBackupStatus();
+      _cfgRenderPwaStatus();
       // Signale d'emblée si le mode entraînement libre est resté actif (voir
       // _cfgClearPracticeMode) sans attendre que l'utilisateur clique "Lancer le diagnostic".
       if (localStorage.getItem('quizPracticeMode') === '1') {
