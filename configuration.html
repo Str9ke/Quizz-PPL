@@ -38,6 +38,7 @@
   <script src="js/quiz.js?v=20260807k"></script>
   <script src="js/init.js?v=20260807c"></script>
   <script src="js/update-check.js?v=20260816b"></script>
+  <script src="js/app-update.js?v=20260816c"></script>
   <script src="js/tts.js?v=20260816b"></script>
   <script src="js/localmirror.js?v=20260816a"></script>
   <script src="js/offline.js?v=20260807i"></script>
@@ -776,7 +777,15 @@
           icon = '⚠️'; color = '#ffa726';
           text = 'une version plus récente existe : <b>' + u.latest + '</b> (installée : ' + u.installed + ')'
             + (u.native
-              ? '<br><a href="' + window.appUpdate.releaseUrl + '" target="_blank" rel="noopener" style="color:var(--link-color)">⬇️ Télécharger la nouvelle version de l\'application</a>'
+              // Dans l'appli Android, on propose la mise à jour EN UN GESTE plutôt qu'un lien
+              // vers GitHub où il faut retrouver le bon fichier parmi les pièces jointes. Le
+              // lien reste le repli quand les greffons nécessaires manquent (version de
+              // l'appli antérieure à leur ajout) : mieux vaut un lien honnête qu'un bouton
+              // qui promet une installation et échoue.
+              ? ((window.appSelfUpdate && window.appSelfUpdate.canSelfUpdate())
+                  ? '<br><button type="button" class="stats-btn" onclick="_cfgSelfUpdate()" id="cfgSelfUpdateBtn" style="padding:6px 14px;width:auto;margin:6px 0 0;flex:0 0 auto">⬇️ Mettre à jour maintenant</button>'
+                    + '<div id="cfgSelfUpdateStatus" style="font-size:.82em;margin-top:6px;color:var(--text-secondary)"></div>'
+                  : '<br><a href="' + window.appUpdate.releaseUrl + '" target="_blank" rel="noopener" style="color:var(--link-color)">⬇️ Télécharger la nouvelle version de l\'application</a>')
               : '<br>Recharge la page en ligne pour l\'appliquer.');
         }
         updateHtml = '<div class="cfg-row"><div class="cfg-label" style="font-size:.9em">' + icon +
@@ -1164,6 +1173,35 @@
       if (result) alert('✅ ' + result.ok + ' / ' + result.total + ' fichiers téléchargés et mis en cache.');
       else alert('⚠️ Pas de réponse du Service Worker — réessaie, ou recharge la page une fois puis réessaie.');
       window._cfgRunOfflineCheck();
+    };
+
+    // === Mise à jour intégrée de l'application Android (voir js/app-update.js) ===
+    window._cfgSelfUpdate = async function() {
+      const btn = document.getElementById('cfgSelfUpdateBtn');
+      const status = document.getElementById('cfgSelfUpdateStatus');
+      const say = t => { if (status) status.textContent = t; };
+      if (!window.appSelfUpdate || !window.appSelfUpdate.canSelfUpdate()) {
+        say('⚠️ Mise à jour intégrée indisponible — utilise le lien de téléchargement.');
+        return;
+      }
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Téléchargement…'; }
+      say('Préparation du téléchargement…');
+      try {
+        await window.appSelfUpdate.downloadAndInstall(p => {
+          say(p.percent !== null
+            ? 'Téléchargement : ' + p.percent + '% (' + p.receivedMb + ' / ' + p.totalMb + ' Mo)'
+            : 'Téléchargement : ' + p.receivedMb + ' Mo…');
+        });
+        // À partir d'ici c'est Android qui affiche sa propre demande de confirmation : on ne
+        // peut pas savoir si l'utilisateur va accepter, donc on n'annonce surtout pas que la
+        // mise à jour « est faite ».
+        say('✅ Téléchargement terminé — Android va demander confirmation pour installer. '
+          + 'Ta progression et tes images sont conservées.');
+      } catch (e) {
+        say('❌ ' + ((e && e.message) || 'Échec de la mise à jour.'));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ Mettre à jour maintenant'; }
+      }
     };
 
     // === Images hors-ligne ===
