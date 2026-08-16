@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#121218">
   <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Doit être chargé AVANT tout le reste : dans l'APK Android, il redirige les fichiers météo
+       (non embarqués car régénérés toutes les ~3 h) vers le site en ligne. Sur le web, sans
+       effet. Voir js/remote-assets.js. -->
+  <script src="js/remote-assets.js?v=20260816a"></script>
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
