@@ -53,6 +53,20 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install the stable signing key
+        # Android REFUSE d'installer une mise à jour signée par une clé différente de celle de
+        # la version déjà présente : il faudrait désinstaller d'abord, ce qui EFFACE toutes les
+        # données locales de l'appli — dont le miroir de la progression (js/localmirror.js) et
+        # les images téléchargées. Or un runner GitHub est neuf à chaque exécution : sans cette
+        # étape, `assembleDebug` fabriquerait une clé de débogage DIFFÉRENTE à chaque build, et
+        # donc un APK impossible à installer par-dessus le précédent. La clé versionnée dans
+        # android-signing/ garantit au contraire une signature identique d'une version à
+        # l'autre : les mises à jour s'installent par-dessus, en conservant les données.
+        run: |
+          mkdir -p ~/.android
+          cp android-signing/debug.keystore ~/.android/debug.keystore
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android | grep -E 'Alias|SHA256' | head -2
+
       - name: Create config.js from repository secrets
         # Mêmes secrets que le déploiement du site (voir deploy-pages.yml) : les clés ne sont
         # jamais versionnées, elles sont injectées au moment du build.
