@@ -185,6 +185,10 @@ async function _loadMergedResponses(uid, timeoutMs) {
   window._respKeyShard = {};
   window._respShardEntryCounts = {};
   window._respLoadIncomplete = false;
+  // Remis à zéro à CHAQUE lecture : sans ça, un comblement depuis le miroir lors d'une lecture
+  // dégradée laisserait l'avertissement « restauré depuis la copie de secours » affiché pour
+  // toute la durée de la session, y compris après une lecture serveur parfaitement saine.
+  window._respRestoredFromMirror = 0;
   const shardFetches = [];
   for (const shardId of shardIds) {
     // Index numérique : _saveResponsesSharded() fait de l'arithmétique dessus (shard actif,
