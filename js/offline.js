@@ -224,12 +224,21 @@ async function _loadMergedResponses(uid, timeoutMs) {
     // sa chance à une connexion simplement lente plutôt qu'à une vraie panne. Seul un échec des
     // DEUX tentatives lève le drapeau _respLoadIncomplete, pour que les écrans qui affichent des
     // totaux puissent avertir plutôt que d'afficher silencieusement un chiffre tronqué.
+    // Le 2e essai visait EXPLICITEMENT le serveur ({ source: 'server' }). Hors-ligne, cette
+    // tentative de secours ne pouvait donc que rater instantanément : le shard était abandonné
+    // et ses réponses disparaissaient de toute l'appli. Combiné au délai trop court appliqué
+    // aux lectures cache (voir getDocWithTimeout, js/helpers.js), c'est ce qui a vidé la
+    // progression en plein vol. La tentative de secours doit viser la MÊME source que celle
+    // qui est réellement disponible : le cache quand on est hors-ligne, le serveur sinon.
+    const retryOnce = () => (navigator.onLine
+      ? shardRef.get({ source: 'server' })
+      : shardRef.get({ source: 'cache' }));
     shardFetches.push(
       ((typeof getDocWithTimeout === 'function') ? getDocWithTimeout(shardRef, timeoutMs) : shardRef.get())
         .then(applyShardDoc)
         .catch(e => {
           console.warn('[offline] Lecture shard ' + i + ' échouée (1re tentative), nouvel essai sans limite de temps:', e.message);
-          return shardRef.get({ source: 'server' })
+          return retryOnce()
             .then(applyShardDoc)
             .catch(e2 => {
               console.warn('[offline] Lecture shard ' + i + ' échouée (2e tentative) :', e2.message);
@@ -257,7 +266,26 @@ async function _loadMergedResponses(uid, timeoutMs) {
       .catch(e => console.warn('[offline] Réparation de responseShardCount échouée:', e.message));
   }
 
-  const exists = doc.exists || realShardCount > 0;
+  // ---- Filet de sécurité local (voir js/localmirror.js) ----
+  // Jusqu'ici, si les lectures ci-dessus revenaient vides ou tronquées (cache Firestore absent
+  // parce que enablePersistence() avait échoué — plusieurs onglets ouverts —, ou shard trop
+  // lent à sortir d'IndexedDB), l'appli se contentait de ce résultat dégradé et affichait une
+  // progression vide, sans le moindre avertissement. Le miroir ne comble QUE les trous d'une
+  // lecture démontrablement dégradée : quand la lecture serveur est saine, elle reste seule
+  // maîtresse (sinon une réinitialisation volontaire serait aussitôt annulée).
+  if (typeof _mirrorFillGaps === 'function') {
+    try {
+      await _mirrorFillGaps(uid, merged, { incomplete: window._respLoadIncomplete });
+    } catch (e) { console.warn('[offline] Comblement depuis le miroir impossible:', e.message); }
+  }
+
+  // Le miroir n'est rafraîchi qu'à partir d'une lecture réputée COMPLÈTE — écrire le résultat
+  // d'une lecture dégradée reviendrait à graver la perte de données dans le filet de sécurité.
+  if (typeof _mirrorSaveResponses === 'function' && !window._respLoadIncomplete) {
+    _mirrorSaveResponses(uid, merged).catch(() => {});
+  }
+
+  const exists = doc.exists || realShardCount > 0 || Object.keys(merged).length > 0;
   return { exists, data: () => ({ ...primaryData, responses: merged }), incomplete: window._respLoadIncomplete };
 }
 
@@ -511,6 +539,15 @@ async function saveResponsesWithOfflineFallback(uid, responsesToSave) {
   // erreur ici (quota localStorage plein) ne doit jamais empêcher la tentative Firestore.
   if (typeof _backupResponsesLocally === 'function') {
     try { _backupResponsesLocally(uid, merged); } catch (e) { console.warn('[offline] Backup local échoué:', e); }
+  }
+  // Miroir IndexedDB (js/localmirror.js) — mis à jour AVANT la tentative Firestore, exactement
+  // comme le backup localStorage ci-dessus, mais sans son plafond de quelques Mio (déjà saturé
+  // en pratique par les caches météo, ce qui faisait échouer le backup en silence). C'est ce
+  // miroir que _loadMergedResponses() relira automatiquement au prochain démarrage si la
+  // lecture Firestore revient dégradée — donc y compris quand l'écriture ci-dessous échoue
+  // faute de réseau, cas où l'on aura justement le plus besoin de lui.
+  if (typeof _mirrorApplyDelta === 'function') {
+    _mirrorApplyDelta(uid, cleanedResponsesToSave).catch(e => console.warn('[offline] Miroir non mis à jour:', e.message));
   }
 
   // Sauvegarder chaque réponse dans SON shard (voir _saveResponsesSharded plus haut — router

@@ -1935,6 +1935,16 @@ async function resetStats() {
     if (typeof _deleteHistorySubcollection === 'function') {
       try { await _deleteHistorySubcollection(uid); } catch (e) { console.warn('[resetStats] suppression historique:', e); }
     }
+    // Le miroir local (js/localmirror.js) doit être vidé EN MÊME TEMPS que le serveur : il
+    // sert à combler les trous d'une lecture ratée, et ne fait donc aucune différence entre
+    // « ces réponses ont été perdues » et « ces réponses ont été volontairement supprimées ».
+    // Sans cette ligne, la prochaine lecture dégradée ressusciterait toute la progression que
+    // l'utilisateur vient d'effacer.
+    if (typeof _mirrorClear === 'function') {
+      try { await _mirrorClear(uid); } catch (e) { console.warn('[resetStats] vidage du miroir:', e); }
+    }
+    // Idem pour la sauvegarde localStorage de secours, pour la même raison.
+    try { localStorage.removeItem('responsesBackup_' + uid); } catch (e) { /* ignore */ }
     alert("Les statistiques ont été réinitialisées !");
     window.location.reload();
   } catch (error) {
