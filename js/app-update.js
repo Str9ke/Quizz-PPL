@@ -118,10 +118,34 @@
       });
   }
 
+  /**
+   * openAppSettings() – Ouvre la fiche système de l'application.
+   *
+   * C'est de là que se fait la DÉSINSTALLATION. Android interdit à une application de se
+   * supprimer elle-même : au mieux elle peut amener l'utilisateur à l'écran système qui le
+   * permet, et c'est exactement ce que fait ce bouton — il ne désinstalle rien de lui-même,
+   * il conduit à l'endroit où la décision se prend. Cette même fiche sert aussi à accorder
+   * l'autorisation « installer des applications inconnues » quand une mise à jour est refusée.
+   */
+  function openAppSettings() {
+    var p = plugins();
+    if (!isNativeApp() || !p || !p.NativeSettings) {
+      return Promise.reject(new Error("Disponible uniquement dans l'application Android."));
+    }
+    return p.NativeSettings.openAndroid({ option: 'application_details' });
+  }
+
+  function canOpenAppSettings() {
+    var p = plugins();
+    return !!(isNativeApp() && p && p.NativeSettings);
+  }
+
   window.appSelfUpdate = {
     canSelfUpdate: canSelfUpdate,
     isNativeApp: isNativeApp,
     downloadAndInstall: downloadAndInstall,
+    openAppSettings: openAppSettings,
+    canOpenAppSettings: canOpenAppSettings,
     apkUrl: APK_URL
   };
 })();
