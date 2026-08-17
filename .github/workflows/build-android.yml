@@ -26,6 +26,12 @@ on:
       # sw.js porte CACHE_NAME, dont tools/app_version.py tire la version de l'appli. Sans lui
       # ici, une version publiée par le site n'aurait JAMAIS d'APK correspondant : l'appli
       # installée annoncerait une mise à jour disponible qui n'existe pas, indéfiniment.
+      #
+      # RÈGLE : toute modification qui change l'APK doit s'accompagner d'un incrément de
+      # CACHE_NAME — y compris quand elle ne touche QUE ce workflow. Le correctif de signature
+      # en a fait la démonstration : l'APK republié était bel et bien différent (signé, enfin,
+      # par la clé du dépôt) mais portait le même numéro, si bien que « Vérifier les mises à
+      # jour » répondait « à jour » à quelqu'un qui devait précisément réinstaller.
       - 'sw.js'
       - '.github/workflows/build-android.yml'
 
