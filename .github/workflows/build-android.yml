@@ -200,6 +200,10 @@ jobs:
           fi
           cp "$path" quiz-aviation-ppl.apk
           echo "size=$(du -h quiz-aviation-ppl.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+          # La version de l'appli (quiz-ppl-vNNN) est CE QUE CONFIGURATION AFFICHE. La mettre
+          # dans la release permet de comparer d'un coup d'œil « installée » et « publiée »,
+          # sans avoir à déchiffrer des empreintes de commit.
+          echo "version=$(python3 tools/app_version.py)" >> "$GITHUB_OUTPUT"
           ls -lh quiz-aviation-ppl.apk
 
       - name: Verify the APK is properly signed
@@ -227,14 +231,29 @@ jobs:
           path: quiz-aviation-ppl.apk
           retention-days: 30
 
+      - name: Point the android-latest tag at this build
+        # Le tag restait figé sur le commit qui l'avait créé la première fois, tandis que le
+        # corps de la release et l'APK, eux, étaient bien à jour. La page de release affichait
+        # donc DEUX commits différents — de quoi douter légitimement de la version qu'on vient
+        # de télécharger. Le tag est désormais repositionné à chaque publication.
+        run: |
+          set -e
+          git tag -f android-latest "${{ github.sha }}"
+          git push -f origin refs/tags/android-latest
+
       - name: Publish the APK to the android-latest release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
-          name: Application Android (dernière version)
+          name: Application Android — ${{ steps.apk.outputs.version }}
           prerelease: true
           files: quiz-aviation-ppl.apk
           body: |
+            ## Version publiée : `${{ steps.apk.outputs.version }}`
+
+            C'est le numéro qu'affiche **Configuration → Application Android**. S'il correspond
+            à celui indiqué comme « installée », l'appli est à jour — inutile de retélécharger.
+
             Application Android autonome — questions et images embarquées, utilisable sans réseau.
 
             APK : ${{ steps.apk.outputs.size }} · compilé depuis le commit ${{ github.sha }}
