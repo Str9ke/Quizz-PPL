@@ -63,7 +63,7 @@
     if (!canSelfUpdate()) {
       return Promise.reject(new Error("Mise à jour intégrée indisponible sur cette version de l'application."));
     }
-    if (!navigator.onLine) {
+    if (!_netOnline()) {
       return Promise.reject(new Error('Tu es hors-ligne : connecte-toi au Wi-Fi pour télécharger la mise à jour.'));
     }
 

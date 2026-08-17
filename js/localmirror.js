@@ -175,7 +175,7 @@ async function _mirrorFillGaps(uid, merged, opts) {
 
   const mergedCount = Object.keys(merged).length;
   const mirrorCount = Object.keys(mirror.responses).length;
-  const offline = (typeof navigator !== 'undefined') && navigator.onLine === false;
+  const offline = !(typeof appIsOnline === 'function' ? appIsOnline() : navigator.onLine !== false);
   const degraded = !!opts.incomplete || (offline && mirrorCount > mergedCount);
 
   if (!degraded) return 0;

@@ -104,7 +104,7 @@ async function getDocWithTimeout(docRef, timeoutMs = 2000) {
   // est bornée par un timeout : une IndexedDB bloquée/en mauvais état (ex. plusieurs onglets
   // ouverts, connexion IndexedDB fantôme d'un onglet précédent) ne doit jamais bloquer
   // indéfiniment un bouton — mieux vaut renvoyer un snapshot vide que de rester figé.
-  if (!navigator.onLine) {
+  if (!_netOnline()) {
     // Le délai appliqué ici NE DOIT PAS être celui du réseau. Une lecture cache est purement
     // locale : la seule raison de la borner est une IndexedDB réellement bloquée. Avec le
     // délai réseau (2 s par défaut), un shard volumineux — jusqu'à 2000 réponses, ~1 Mio à
@@ -923,7 +923,7 @@ function _progressionHealth() {
 
   const count = (typeof currentResponses !== 'undefined' && currentResponses)
     ? Object.keys(currentResponses).length : 0;
-  const offline = (typeof navigator !== 'undefined') && navigator.onLine === false;
+  const offline = !_netOnline();
 
   if (count === 0) {
     // Aucune réponse EN MÉMOIRE alors qu'un compte est connecté. Sur un appareil qui n'a jamais
