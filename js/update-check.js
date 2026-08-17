@@ -50,7 +50,7 @@
    * ce qui est exactement la question qu'on ne peut pas se poser à soi-même.
    */
   function fetchLatestVersion() {
-    if (!navigator.onLine) return Promise.resolve(null);
+    if (!_netOnline()) return Promise.resolve(null);
     var url = REMOTE_BASE + 'version.json?t=' + Date.now();
     return fetch(url, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })

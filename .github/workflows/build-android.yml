@@ -112,7 +112,9 @@ jobs:
         # elle-même (voir js/app-update.js).
         # capacitor-native-settings : ouvre la fiche système de l'appli — seul chemin permis
         # par Android pour une désinstallation, une appli ne pouvant pas se supprimer elle-même.
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7
+        # @capacitor/network : état réseau RÉEL. Dans l'APK la page est servie par un serveur
+        # local, donc navigator.onLine vaut true même en mode avion — voir js/net.js.
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7 @capacitor/network@^7
 
       - name: Generate the Android project
         run: npx cap add android

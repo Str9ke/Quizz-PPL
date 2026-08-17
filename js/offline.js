@@ -57,6 +57,97 @@ function _stripUndefinedFields(obj) {
 
 const RESPONSE_SHARD_CAPACITY = 2000;
 
+/* ============================================================
+   File d'attente des réponses données HORS-LIGNE
+   ============================================================
+   Firestore rejoue normalement seul ses écritures en attente au retour du réseau. Encore
+   faut-il que sa persistance soit réellement active : quand enablePersistence() échoue (cas
+   fréquent et SILENCIEUX — plusieurs onglets, WebView récalcitrante), la file ne survit pas
+   au rechargement de la page et les réponses données hors-ligne disparaissent purement et
+   simplement. Symptôme vécu : une session entière répondue en vol, puis les MÊMES questions
+   reproposées à la reconnexion, comme si rien n'avait été fait.
+
+   On tient donc notre propre liste de clés en attente, dans localStorage (quelques dizaines
+   d'octets par clé, sans commune mesure avec les réponses elles-mêmes, qui vivent dans le
+   miroir IndexedDB). À la reconnexion, ces clés sont réécrites depuis le miroir — la source
+   locale qui, elle, a survécu. */
+const PENDING_SYNC_KEY = 'pendingSyncKeys_';
+
+function _markPendingSync(uid, key) {
+  if (!uid || !key) return;
+  try {
+    const k = PENDING_SYNC_KEY + uid;
+    const set = new Set(JSON.parse(localStorage.getItem(k) || '[]'));
+    set.add(key);
+    localStorage.setItem(k, JSON.stringify([...set]));
+  } catch (e) { console.warn('[sync] impossible de noter la clé en attente:', e.message); }
+}
+
+function _getPendingSync(uid) {
+  try { return JSON.parse(localStorage.getItem(PENDING_SYNC_KEY + uid) || '[]'); }
+  catch (e) { return []; }
+}
+
+function _clearPendingSync(uid, keys) {
+  try {
+    const k = PENDING_SYNC_KEY + uid;
+    if (!keys) { localStorage.removeItem(k); return; }
+    const set = new Set(_getPendingSync(uid));
+    keys.forEach(x => set.delete(x));
+    if (set.size) localStorage.setItem(k, JSON.stringify([...set]));
+    else localStorage.removeItem(k);
+  } catch (e) { /* ignore */ }
+}
+window._getPendingSyncCount = function (uid) { return _getPendingSync(uid).length; };
+
+/**
+ * _flushPendingSync(uid) – Rejoue vers le serveur les réponses données hors-ligne.
+ * Les valeurs sont relues dans le miroir local, seule copie garantie d'avoir survécu à une
+ * fermeture de l'appli. Ne fait rien si le réseau n'est pas revenu.
+ */
+async function _flushPendingSync(uid) {
+  uid = uid || localStorage.getItem('cachedUid');
+  if (!uid || (typeof _netOnline === 'function' && !_netOnline())) return { flushed: 0 };
+  const pending = _getPendingSync(uid);
+  if (!pending.length) return { flushed: 0 };
+
+  let source = (typeof currentResponses !== 'undefined' && currentResponses) ? currentResponses : null;
+  if (!source && typeof _mirrorLoadResponses === 'function') {
+    const m = await _mirrorLoadResponses(uid).catch(() => null);
+    source = (m && m.responses) || null;
+  }
+  if (!source) return { flushed: 0 };
+
+  const updates = {};
+  pending.forEach(k => { if (source[k]) updates[k] = source[k]; });
+  const keys = Object.keys(updates);
+  if (!keys.length) { _clearPendingSync(uid); return { flushed: 0 }; }
+
+  console.log('[sync] rejeu de', keys.length, 'réponse(s) données hors-ligne');
+  try {
+    await _saveResponsesSharded(uid, updates);
+    _clearPendingSync(uid, keys);
+    if (typeof _showSaveStatus === 'function') {
+      _showSaveStatus(true, keys.length + ' réponse(s) hors-ligne synchronisée(s)');
+    }
+    return { flushed: keys.length };
+  } catch (e) {
+    // On GARDE les clés en attente : mieux vaut réessayer à la prochaine occasion que de
+    // considérer comme envoyé ce qui ne l'est pas.
+    console.warn('[sync] rejeu échoué, les clés restent en attente:', e.message);
+    return { flushed: 0, error: e.message };
+  }
+}
+window._flushPendingSync = _flushPendingSync;
+
+// Rejeu automatique dès que le réseau revient, et une fois au démarrage si des réponses
+// attendent depuis une session précédente.
+if (typeof window !== 'undefined') {
+  if (typeof appOnOnline === 'function') appOnOnline(() => _flushPendingSync());
+  setTimeout(() => { _flushPendingSync().catch(() => {}); }, 6000);
+}
+
+
 /**
  * _migrateResponsesToShards(uid) – Migration unique et idempotente : si le document principal
  * contient encore un champ `responses` inline (ancien format), le répartit en shards puis le
@@ -77,7 +168,7 @@ const RESPONSE_SHARD_CAPACITY = 2000;
  */
 let _migrationInFlight = {};
 async function _migrateResponsesToShards(uid) {
-  if (!uid || !navigator.onLine) return { migrated: false };
+  if (!uid || !_netOnline()) return { migrated: false };
   if (_migrationInFlight[uid]) return _migrationInFlight[uid];
   const promise = (async () => {
     try {
@@ -168,7 +259,7 @@ async function _loadMergedResponses(uid, timeoutMs) {
   // insensible à un compteur faux, dans un sens comme dans l'autre.
   let shardIds = [];
   try {
-    const listSnap = navigator.onLine
+    const listSnap = _netOnline()
       ? await mainRef.collection('responseShards').get({ source: 'server' })
       : await mainRef.collection('responseShards').get({ source: 'cache' });
     listSnap.forEach(d => shardIds.push(d.id));
@@ -234,7 +325,7 @@ async function _loadMergedResponses(uid, timeoutMs) {
     // aux lectures cache (voir getDocWithTimeout, js/helpers.js), c'est ce qui a vidé la
     // progression en plein vol. La tentative de secours doit viser la MÊME source que celle
     // qui est réellement disponible : le cache quand on est hors-ligne, le serveur sinon.
-    const retryOnce = () => (navigator.onLine
+    const retryOnce = () => (_netOnline()
       ? shardRef.get({ source: 'server' })
       : shardRef.get({ source: 'cache' }));
     shardFetches.push(
@@ -264,7 +355,7 @@ async function _loadMergedResponses(uid, timeoutMs) {
   // Auto-réparation du compteur du document principal quand il sous-estime la réalité : sans
   // ça, chaque nouveau chargement de page repartirait du même compteur faux et dépendrait à
   // nouveau du listing pour voir les shards oubliés.
-  if (realShardCount > declaredShardCount && navigator.onLine) {
+  if (realShardCount > declaredShardCount && _netOnline()) {
     mainRef.set({ responseShardCount: realShardCount }, { merge: true })
       .then(() => console.log('[offline] responseShardCount réparé :', declaredShardCount, '→', realShardCount))
       .catch(e => console.warn('[offline] Réparation de responseShardCount échouée:', e.message));
@@ -389,6 +480,21 @@ async function _saveResponsesSharded(uid, updates) {
   };
 
   await Promise.all(targetShards.map(writeShard));
+
+  /* HORS-LIGNE : ne surtout PAS tenter la vérification serveur ci-dessous.
+     Firestore met l'écriture en file d'attente locale et la rejouera à la reconnexion — c'est
+     le comportement voulu. Mais la vérification, elle, exige { source: 'server' } : hors-ligne
+     elle ne peut QUE échouer, était réessayée trois fois avec des pauses (d'où les longues
+     secondes d'attente après chaque réponse), puis levait une exception. L'appelant en
+     concluait « sauvegarde échouée » alors que la donnée était bel et bien mise en file.
+     La réponse est enregistrée localement (miroir + file Firestore) et confirmée au retour du
+     réseau ; on note la clé comme « en attente » pour pouvoir l'afficher et la rejouer. */
+  if (typeof _netOnline === 'function' && !_netOnline()) {
+    keys.forEach(k => _markPendingSync(uid, k));
+    console.log('[shard-write] hors-ligne : écriture mise en file, vérification différée à la reconnexion');
+    return { targetShards, newShardCreated, pending: true };
+  }
+
   console.log('[shard-write] Promise.all terminé, vérification directe sur le serveur…');
 
   const unconfirmedShards = [];
