@@ -1304,7 +1304,17 @@
       const el = document.getElementById('cfgImagesStatus');
       if (!el) return;
       const r = await _cfgSendSwMessage({ type: 'imagesStatus' }, 15000);
-      if (!r) { el.textContent = '❔ État indisponible (Service Worker non actif) — recharge la page.'; return; }
+      if (!r) {
+        // Ne PAS accuser le Service Worker sans avoir vérifié : il est le plus souvent actif et
+        // c'est la réponse qui a simplement tardé. Le message précédent envoyait recharger la
+        // page pour un problème inexistant, sans jamais débloquer le téléchargement.
+        const reg = ('serviceWorker' in navigator)
+          ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
+        el.textContent = (reg && reg.active)
+          ? '❔ Le Service Worker n\'a pas répondu à temps — réessaie avec « Vérifier maintenant ».'
+          : '❔ Service Worker inactif — recharge complètement la page.';
+        return;
+      }
       if (r.error) { el.textContent = '⚠️ ' + r.error; return; }
       const allOk = r.cachedAll >= r.totalAll;
       const refOk = r.cachedRef >= r.totalRef;

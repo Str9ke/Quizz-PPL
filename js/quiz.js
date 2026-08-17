@@ -497,18 +497,42 @@ function adjustSrFrequency(questionIdx, button, direction) {
   const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
   const entry = { ...prev, srInterval: newInterval, nextReview: nextReviewMs };
 
-  const applyLocally = () => {
-    currentResponses[key] = entry;
-    _flashQaFeedback(button, (direction === 'easier' ? '✅ ' : '🔴 ') + 'Revoir dans ' + newInterval + ' j');
-    updateModeCounts();
-  };
+  /* L'effet est appliqué et confirmé IMMÉDIATEMENT, avant toute écriture réseau.
+     Auparavant la confirmation attendait la réponse du serveur : hors-ligne, cette écriture
+     mettait une vingtaine de secondes à abandonner, si bien que le bouton semblait n'avoir
+     strictement aucun effet — on recliquait, sans plus de résultat. La décision de l'utilisateur
+     est locale et immédiate ; sa transmission au serveur est un détail d'intendance qui n'a
+     aucune raison de le faire attendre. */
+  currentResponses[key] = entry;
+  const when = new Date(nextReviewMs);
+  const dateLabel = when.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  _flashQaFeedback(button,
+    (direction === 'easier' ? '✅ ' : '🔴 ') + 'Revoir dans ' + newInterval + ' j — le ' + dateLabel);
+  updateModeCounts();
+
+  // Le miroir local doit connaître l'ajustement : sans lui, un rechargement de page reconstruit
+  // currentResponses depuis le miroir, l'ajustement disparaît, et la clé restée « en attente »
+  // n'aurait plus aucune valeur à envoyer à la reconnexion.
+  if (typeof _mirrorApplyDelta === 'function') {
+    _mirrorApplyDelta(uid, { [key]: entry }).catch(() => {});
+  }
 
   _saveResponsesSharded(uid, { [key]: entry })
-    .then(applyLocally)
+    .then(res => {
+      if (res && res.pending) {
+        _flashQaFeedback(button, '📴 Enregistré — synchro à la reconnexion');
+      }
+    })
     .catch(async () => {
-      console.warn('[offline] adjustSrFrequency fallback');
-      try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] adjustSrFrequency retry failed:', e2); }
-      applyLocally();
+      console.warn('[offline] adjustSrFrequency : 2e tentative');
+      try {
+        await _saveResponsesSharded(uid, { [key]: entry });
+      } catch (e2) {
+        console.error('[offline] adjustSrFrequency échec définitif:', e2);
+        // Noter la clé pour rejeu : l'ajustement ne doit pas rester coincé sur cet appareil.
+        if (typeof _markPendingSync === 'function') _markPendingSync(uid, key);
+        _flashQaFeedback(button, '📴 Enregistré ici — synchro à la reconnexion');
+      }
     });
 }
 

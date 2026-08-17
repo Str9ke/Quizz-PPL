@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v129';
+const CACHE_NAME = 'quiz-ppl-v131';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -500,29 +500,52 @@ async function loadAssetManifest() {
   return res.json();
 }
 
+/* Les chemins du manifeste sont bruts et contiennent des espaces (« Symboles/Carte METEO/… »),
+   alors que le cache les indexe sous leur forme encodée (« Carte%20METEO »). Comparer les deux
+   directement ne trouve jamais rien : `cache.match()` faisait cette normalisation lui-même, il
+   faut donc la refaire explicitement maintenant que la comparaison se fait sur un ensemble.
+   `new URL()` produit exactement la même forme que celle stockée par le cache. */
+function normalizeUrl(u) {
+  const url = new URL(u, self.location.href);
+  url.search = '';
+  return url.toString();
+}
+
 function manifestUrls(manifest, which) {
   const list = (which === 'all')
     ? [].concat(manifest.reference || [], manifest.questions || [])
     : (manifest.reference || []);
-  return list.map(p => BASE + p);
+  return list.map(p => normalizeUrl(BASE + p));
 }
 
 /* imagesStatus() — combien d'images sont déjà disponibles hors-ligne. Sert à afficher un état
    honnête ("312 / 710") plutôt qu'un simple "activé/désactivé" qui ne dit rien de ce qui est
    réellement téléchargé. */
+/* cachedUrlSet() — l'ensemble des URL déjà présentes, lu EN UNE FOIS.
+   La version précédente interrogeait le cache image par image (`cache.match`), soit ~710
+   allers-retours enchaînés : une fois toutes les images téléchargées, l'opération dépassait le
+   délai d'attente côté page, qui en concluait « Service Worker non actif » — accusation fausse,
+   et surtout bloquante puisqu'elle empêchait de relancer un téléchargement. Une seule lecture
+   de l'index suffit à répondre à la même question. */
+async function cachedUrlSet() {
+  const cache = await caches.open(ASSETS_CACHE);
+  const keys = await cache.keys();
+  const set = new Set();
+  keys.forEach(req => set.add(normalizeUrl(req.url)));
+  return set;
+}
+
 async function imagesStatus() {
   try {
     const manifest = await loadAssetManifest();
-    const cache = await caches.open(ASSETS_CACHE);
+    const have = await cachedUrlSet();
     const all = manifestUrls(manifest, 'all');
     const ref = manifestUrls(manifest, 'reference');
+    const refSet = new Set(ref);
     let okAll = 0, okRef = 0;
-    for (const u of all) {
-      if (await cache.match(u, { ignoreSearch: true })) {
-        okAll++;
-        if (ref.indexOf(u) !== -1) okRef++;
-      }
-    }
+    all.forEach(u => {
+      if (have.has(u)) { okAll++; if (refSet.has(u)) okRef++; }
+    });
     return { totalAll: all.length, cachedAll: okAll, totalRef: ref.length, cachedRef: okRef };
   } catch (e) {
     return { error: e.message };
@@ -546,10 +569,9 @@ async function downloadImages(which, port) {
   }
 
   const cache = await caches.open(ASSETS_CACHE);
-  const todo = [];
-  for (const u of urls) {
-    if (!(await cache.match(u, { ignoreSearch: true }))) todo.push(u);
-  }
+  // Même raison qu'au-dessus : un seul relevé de l'index plutôt qu'une recherche par fichier.
+  const have = await cachedUrlSet();
+  const todo = urls.filter(u => !have.has(u));
 
   const total = urls.length;
   let done = total - todo.length;
