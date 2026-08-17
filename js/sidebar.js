@@ -201,6 +201,46 @@
       if (e.key === 'Escape') closeSidebar();
     });
 
+    /* ---- Ouverture par glissement depuis le bord gauche ----
+       Geste attendu de toute application Android pour un menu latéral. Le bouton ☰ reste bien
+       sûr en place : ce geste s'ajoute, il ne remplace rien.
+
+       Contraintes retenues pour ne JAMAIS déclencher le menu par accident, en particulier
+       pendant une session de révision où un faux positif ferait perdre le fil :
+         • le doigt doit partir des 24 premiers pixels de l'écran ;
+         • le mouvement doit être franchement horizontal (au moins deux fois plus horizontal
+           que vertical), pour ne pas confisquer un défilement vertical ;
+         • un seul doigt, sinon on laisse passer (pincement pour zoomer sur une image).
+       `passive: true` sur touchmove : on n'appelle jamais preventDefault ici, donc autant ne
+       pas pénaliser la fluidité du défilement. */
+    var EDGE_PX = 24, MIN_DX = 45;
+    var swipe = null;
+
+    document.addEventListener('touchstart', function (e) {
+      if (document.body.classList.contains('sidebar-open')) { swipe = null; return; }
+      if (!e.touches || e.touches.length !== 1) { swipe = null; return; }
+      var t = e.touches[0];
+      swipe = (t.clientX <= EDGE_PX) ? { x: t.clientX, y: t.clientY } : null;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function (e) {
+      if (!swipe || !e.touches || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      var dx = t.clientX - swipe.x;
+      var dy = Math.abs(t.clientY - swipe.y);
+      if (dx > MIN_DX && dx > dy * 2) {
+        openSidebar();
+        swipe = null;
+      } else if (dy > 40) {
+        // Défilement vertical assumé : on abandonne ce geste plutôt que de le surveiller
+        // jusqu'à ce qu'il finisse par ressembler à un glissement horizontal.
+        swipe = null;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function () { swipe = null; }, { passive: true });
+    document.addEventListener('touchcancel', function () { swipe = null; }, { passive: true });
+
     nav.querySelectorAll('a.sidebar-link').forEach(function (a) {
       a.addEventListener('click', function (e) {
         var tab = a.getAttribute('data-navlog-tab');

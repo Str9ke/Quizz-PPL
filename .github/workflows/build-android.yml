@@ -110,7 +110,9 @@ jobs:
         # @capacitor/filesystem + @capacitor-community/file-opener : téléchargement de
         # l'APK et remise à l'installateur d'Android, pour la mise à jour depuis l'appli
         # elle-même (voir js/app-update.js).
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7
+        # capacitor-native-settings : ouvre la fiche système de l'appli — seul chemin permis
+        # par Android pour une désinstallation, une appli ne pouvant pas se supprimer elle-même.
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7
 
       - name: Generate the Android project
         run: npx cap add android

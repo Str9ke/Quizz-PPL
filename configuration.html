@@ -148,12 +148,40 @@
     </p>
     <a class="stats-btn" style="padding:6px 14px;display:inline-block;text-decoration:none"
        href="https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest"
-       target="_blank" rel="noopener">⬇️ Télécharger l'APK (dernière version)</a>
-    <p class="cfg-hint" style="margin-top:8px">
+       target="_blank" rel="noopener" id="cfgApkLink">⬇️ Télécharger l'APK (dernière version)</a>
+    <p class="cfg-hint" style="margin-top:8px" id="cfgApkHint">
       Ouvre ce lien <b>depuis ton téléphone</b>, télécharge le fichier <code>.apk</code> puis
       ouvre-le. Android demandera d'autoriser l'installation depuis cette source : c'est normal
       pour une application distribuée hors Play Store.
     </p>
+
+    <!-- Bloc visible UNIQUEMENT dans l'application Android. Le bouton de mise à jour n'existait
+         jusqu'ici QUE dans l'avertissement affiché lorsqu'une version plus récente était
+         détectée : à jour, il n'y avait donc rien à trouver, et rien pour vérifier à la
+         demande — typiquement juste avant un vol. -->
+    <div id="cfgNativeAppBlock" style="display:none;border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:10px">
+      <div id="cfgNativeUpdateStatus" style="font-size:.86em;margin-bottom:8px">Vérification de la version…</div>
+      <div id="cfgNativeUpdateProgress" style="display:none;margin-bottom:8px">
+        <div style="height:8px;border-radius:6px;background:var(--progressbar-bg);overflow:hidden">
+          <div id="cfgNativeUpdateBar" style="height:100%;width:0;background:linear-gradient(90deg,#14b8a6,#f59e0b);transition:width .2s"></div>
+        </div>
+        <div id="cfgNativeUpdateText" style="font-size:.8em;margin-top:4px;color:var(--text-secondary)"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="stats-btn" id="cfgCheckUpdateBtn" onclick="_cfgCheckUpdateNow()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔄 Vérifier les mises à jour</button>
+        <button type="button" class="stats-btn" id="cfgDoUpdateBtn" onclick="_cfgSelfUpdate('native')" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto;display:none">⬇️ Mettre à jour maintenant</button>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:10px">
+        <button type="button" class="stats-btn" id="cfgUninstallBtn" onclick="_cfgOpenAppSettings()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto;background:var(--delete-bg)">🗑️ Désinstaller l'application</button>
+        <p class="cfg-hint" style="margin-top:6px">
+          Android interdit à une application de se supprimer elle-même : ce bouton ouvre la fiche
+          système de l'appli, d'où la désinstallation se fait en un geste. C'est aussi là que
+          s'accorde l'autorisation « installer des applications inconnues » si une mise à jour
+          est refusée. <b>Désinstaller efface les données locales</b> (copie de secours, images
+          téléchargées) — ta progression, elle, reste sur le serveur et revient à la reconnexion.
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Installation de l'application (PWA) -->
@@ -1176,10 +1204,17 @@
     };
 
     // === Mise à jour intégrée de l'application Android (voir js/app-update.js) ===
-    window._cfgSelfUpdate = async function() {
-      const btn = document.getElementById('cfgSelfUpdateBtn');
-      const status = document.getElementById('cfgSelfUpdateStatus');
+    // `where` = 'native' pour le bloc permanent de la section Android, sinon le bouton
+    // contextuel affiché dans l'avertissement de mise à jour du diagnostic hors-ligne.
+    window._cfgSelfUpdate = async function(where) {
+      const isNative = where === 'native';
+      const btn = document.getElementById(isNative ? 'cfgDoUpdateBtn' : 'cfgSelfUpdateBtn');
+      const status = document.getElementById(isNative ? 'cfgNativeUpdateStatus' : 'cfgSelfUpdateStatus');
+      const wrap = document.getElementById('cfgNativeUpdateProgress');
+      const bar = document.getElementById('cfgNativeUpdateBar');
+      const barText = document.getElementById('cfgNativeUpdateText');
       const say = t => { if (status) status.textContent = t; };
+      if (isNative && wrap) wrap.style.display = 'block';
       if (!window.appSelfUpdate || !window.appSelfUpdate.canSelfUpdate()) {
         say('⚠️ Mise à jour intégrée indisponible — utilise le lien de téléchargement.');
         return;
@@ -1188,9 +1223,15 @@
       say('Préparation du téléchargement…');
       try {
         await window.appSelfUpdate.downloadAndInstall(p => {
-          say(p.percent !== null
+          const txt = p.percent !== null
             ? 'Téléchargement : ' + p.percent + '% (' + p.receivedMb + ' / ' + p.totalMb + ' Mo)'
-            : 'Téléchargement : ' + p.receivedMb + ' Mo…');
+            : 'Téléchargement : ' + p.receivedMb + ' Mo…';
+          if (isNative) {
+            if (bar && p.percent !== null) bar.style.width = p.percent + '%';
+            if (barText) barText.textContent = txt;
+          } else {
+            say(txt);
+          }
         });
         // À partir d'ici c'est Android qui affiche sa propre demande de confirmation : on ne
         // peut pas savoir si l'utilisateur va accepter, donc on n'annonce surtout pas que la
@@ -1202,6 +1243,59 @@
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = '⬇️ Mettre à jour maintenant'; }
       }
+    };
+
+    // Vérification à la demande — le seul moyen de répondre « suis-je à jour ? » au moment où
+    // la question se pose vraiment, c'est-à-dire juste avant de partir, sans attendre le
+    // rafraîchissement automatique (au plus une fois toutes les 6 h).
+    window._cfgCheckUpdateNow = async function() {
+      const btn = document.getElementById('cfgCheckUpdateBtn');
+      const status = document.getElementById('cfgNativeUpdateStatus');
+      const doBtn = document.getElementById('cfgDoUpdateBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Vérification…'; }
+      try {
+        const u = await window.appUpdate.check(true);
+        if (!u.known) {
+          status.innerHTML = navigator.onLine
+            ? '❔ Impossible de vérifier pour le moment.'
+            : '❔ Hors-ligne — impossible de vérifier. Reconnecte-toi pour savoir.';
+          if (doBtn) doBtn.style.display = 'none';
+        } else if (u.upToDate) {
+          status.innerHTML = '✅ <b>Application à jour</b> (' + u.installed + ')';
+          if (doBtn) doBtn.style.display = 'none';
+        } else {
+          status.innerHTML = '⚠️ <b>Mise à jour disponible</b> : ' + u.latest
+            + ' <span style="color:var(--text-secondary)">(installée : ' + u.installed + ')</span>';
+          if (doBtn) doBtn.style.display = window.appSelfUpdate.canSelfUpdate() ? '' : 'none';
+        }
+      } catch (e) {
+        status.textContent = '❔ Vérification impossible : ' + ((e && e.message) || 'erreur');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Vérifier les mises à jour'; }
+      }
+    };
+
+    window._cfgOpenAppSettings = async function() {
+      try {
+        await window.appSelfUpdate.openAppSettings();
+      } catch (e) {
+        alert((e && e.message) || "Impossible d'ouvrir les réglages de l'application.");
+      }
+    };
+
+    // La section « Application Android » ne montre son bloc de mise à jour/désinstallation que
+    // DANS l'appli : sur le site ces boutons ne mèneraient nulle part.
+    window._cfgSetupNativeBlock = function() {
+      const block = document.getElementById('cfgNativeAppBlock');
+      if (!block || !window.appSelfUpdate || !window.appSelfUpdate.isNativeApp()) return;
+      block.style.display = 'block';
+      const link = document.getElementById('cfgApkLink');
+      const hint = document.getElementById('cfgApkHint');
+      if (link) link.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+      const uninstall = document.getElementById('cfgUninstallBtn');
+      if (uninstall && !window.appSelfUpdate.canOpenAppSettings()) uninstall.style.display = 'none';
+      window._cfgCheckUpdateNow();
     };
 
     // === Images hors-ligne ===
@@ -1315,6 +1409,7 @@
       _cfgRenderBackupStatus();
       _cfgRenderPwaStatus();
       window._cfgRefreshImagesStatus();
+      _cfgSetupNativeBlock();
       // Signale d'emblée si le mode entraînement libre est resté actif (voir
       // _cfgClearPracticeMode) sans attendre que l'utilisateur clique "Lancer le diagnostic".
       if (localStorage.getItem('quizPracticeMode') === '1') {
