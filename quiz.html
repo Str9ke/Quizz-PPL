@@ -92,6 +92,19 @@
     })();
   </script>
 
+  <!-- Suivi de session, mis à jour à chaque réponse (voir _updateSessionProgress, js/quiz.js).
+       Collant en haut : l'information n'a d'intérêt que si elle reste sous les yeux pendant
+       qu'on défile parmi les questions. -->
+  <div id="sessionProgress" class="session-progress" style="display:none">
+    <div class="session-progress-row">
+      <span class="session-progress-count" id="sessionProgressCount"></span>
+      <span class="session-progress-score" id="sessionProgressScore"></span>
+    </div>
+    <div class="session-progress-track">
+      <div class="session-progress-fill" id="sessionProgressFill"></div>
+    </div>
+  </div>
+
   <!-- Mode Assistance : bouton d'entrée/sortie, visible dès qu'un quiz est chargé -->
   <div class="assist-mode-bar">
     <button type="button" id="assistModeToggleBtn" class="quiz-btn quiz-btn-assist" style="display:none;" onclick="_toggleAssistMode()">🎧 Mode Assistance</button>

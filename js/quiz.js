@@ -796,6 +796,65 @@ async function initQuiz() {
 /**
  * afficherQuiz() – Affiche les questions du quiz sur quiz.html
  */
+/**
+ * _updateSessionProgress() – Suivi de la série EN COURS, réactualisé à chaque réponse.
+ *
+ * Affiche toujours l'avancement (répondues / total). Le SCORE, lui, n'apparaît qu'en correction
+ * immédiate : en correction différée, l'utilisateur choisit délibérément de ne pas savoir s'il
+ * a juste avant d'avoir tout validé — afficher un compteur de bonnes réponses reviendrait à lui
+ * révéler, question après question, exactement ce qu'il a demandé à ne pas voir, et à lui
+ * permettre de corriger ses réponses précédentes en conséquence.
+ *
+ * Tout est recalculé à partir de `currentQuizAnswers` (localStorage), qui est la source déjà
+ * utilisée pour restaurer une série interrompue : le bandeau reste donc juste après un
+ * rechargement de page, y compris hors-ligne, sans compteur parallèle à tenir à jour.
+ */
+function _updateSessionProgress() {
+  const box = document.getElementById('sessionProgress');
+  if (!box) return;
+
+  const questions = (typeof currentQuestions !== 'undefined' && currentQuestions) ? currentQuestions : [];
+  const total = questions.length;
+  // Pas de série en cours, ou série déjà validée : le récapitulatif de résultat prend le relais.
+  if (!total || window._quizValidated) { box.style.display = 'none'; return; }
+
+  let answers = {};
+  try { answers = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}'); } catch (e) { answers = {}; }
+
+  let answered = 0, ok = 0, ko = 0;
+  questions.forEach((q, i) => {
+    const given = answers[i];
+    if (given === undefined || given === null || given === '') return;
+    answered++;
+    const correct = (q.choix && q.choix[q.bonne_reponse]) || '';
+    if (String(given).trim() === String(correct).trim()) ok++; else ko++;
+  });
+
+  const pct = total ? Math.round((answered / total) * 100) : 0;
+  const fill = document.getElementById('sessionProgressFill');
+  const countEl = document.getElementById('sessionProgressCount');
+  const scoreEl = document.getElementById('sessionProgressScore');
+  if (fill) fill.style.width = pct + '%';
+  if (countEl) {
+    countEl.innerHTML = answered >= total
+      ? `<b>${total}</b> / ${total} — prêt à valider`
+      : `<b>${answered}</b> / ${total} répondues`;
+  }
+  if (scoreEl) {
+    const immediate = localStorage.getItem('correctionImmediate') === '1';
+    if (immediate && answered > 0) {
+      const rate = Math.round((ok / answered) * 100);
+      scoreEl.innerHTML = `<span class="sp-ok">✓ ${ok}</span> · <span class="sp-ko">✗ ${ko}</span> · ${rate} %`;
+    } else if (!immediate && answered > 0) {
+      scoreEl.textContent = (total - answered) + ' restante' + ((total - answered) > 1 ? 's' : '');
+    } else {
+      scoreEl.textContent = '';
+    }
+  }
+  box.style.display = 'block';
+}
+window._updateSessionProgress = _updateSessionProgress;
+
 function afficherQuiz() {
   // Reset validation state pour le nouveau quiz
   window._quizValidated = false;
@@ -925,6 +984,8 @@ function afficherQuiz() {
         saved[qIdx] = q2.choix[parseInt(radio.value)];
         localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
       } catch (e2) { /* localStorage plein, tant pis */ }
+      // Le bandeau se relit depuis currentQuizAnswers : l'appeler APRÈS l'écriture ci-dessus.
+      if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
 
       // Mode normal (correction différée) : persister aussi la progression (statut +
       // planification SR) dès le clic — le mode immédiat le fait déjà dans
@@ -1001,6 +1062,10 @@ function afficherQuiz() {
   if (typeof _wireCorrectOverrideButtons === 'function') {
     _wireCorrectOverrideButtons(cont, key => currentQuestions.find(qq => getKeyFor(qq) === key));
   }
+
+  // État de départ : couvre aussi bien une série neuve qu'une série REPRISE après un
+  // rechargement de page, puisque le compte est relu depuis currentQuizAnswers.
+  _updateSessionProgress();
 }
 
 /**
@@ -1280,6 +1345,11 @@ window.addEventListener('pagehide', _flushBeforeLeaving);
  *   on ne déclenche pas la validation automatique de fin de quiz.
  */
 function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
+  // Le score en direct n'existe que dans ce mode : le tenir à jour ici aussi, et pas seulement
+  // dans le gestionnaire du mode différé.
+  setTimeout(function () {
+    if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
+  }, 0);
   if (typeof _applyStoredCorrectOverride === 'function') {
     _applyStoredCorrectOverride(q, currentResponses[getKeyFor(q)]);
   }
@@ -1694,6 +1764,9 @@ async function validerReponses() {
       return;
     }
     window._quizValidated = true;
+    // La série est close : le bandeau de suivi s'efface au profit du récapitulatif de résultat,
+    // qui occupe la même place en haut de page.
+    if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
     // Quiz soumis : effacer les réponses/position en cours de session mémorisées, ET le jeu
     // de questions lui-même — sinon revenir sur quiz.html via le bouton "Quiz" (au lieu de
     // cliquer "Nouvelles Questions") re-servait le MÊME lot déjà corrigé comme un questionnaire

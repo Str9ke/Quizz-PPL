@@ -2600,3 +2600,56 @@ body.sidebar-open .app-sidebar {
   border-color: transparent;
   box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
 }
+
+/* ----- Suivi de session (quiz.html) -----
+   Bandeau discret indiquant l'avancement DANS la série en cours, actualisé à chaque réponse.
+   Collant en haut : l'information ne sert que si elle reste visible pendant qu'on fait défiler
+   les questions. z-index sous #resultContainer (1000), qui prend le relais une fois la série
+   validée et n'a donc jamais à cohabiter avec ce bandeau. */
+.session-progress {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  max-width: 600px;
+  margin: 0.5rem auto;
+  padding: 8px 14px 10px;
+  background: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px var(--card-shadow);
+  /* Le bouton ☰ est en position fixe au-dessus du contenu : sans cette réserve, il masquerait
+     le début du texte sur téléphone. */
+  padding-left: 62px;
+}
+@media (min-width: 880px) {
+  .session-progress { padding-left: 14px; }
+}
+.session-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+.session-progress-count { color: var(--text-primary); font-weight: 600; }
+.session-progress-count b { font-size: 1.05rem; }
+.session-progress-score { color: var(--text-secondary); white-space: nowrap; }
+.session-progress-score .sp-ok { color: #4caf50; font-weight: 700; }
+.session-progress-score .sp-ko { color: #ef5350; font-weight: 700; }
+.session-progress-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--progressbar-bg);
+  overflow: hidden;
+}
+.session-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.35s ease;
+}
+@media print {
+  .session-progress { display: none !important; }
+}
