@@ -530,7 +530,7 @@ function adjustSrFrequency(questionIdx, button, direction) {
       } catch (e2) {
         console.error('[offline] adjustSrFrequency échec définitif:', e2);
         // Noter la clé pour rejeu : l'ajustement ne doit pas rester coincé sur cet appareil.
-        if (typeof _markPendingSync === 'function') _markPendingSync(uid, key);
+        if (typeof _markPendingSync === 'function') _markPendingSync(uid, key, entry);
         _flashQaFeedback(button, '📴 Enregistré ici — synchro à la reconnexion');
       }
     });
@@ -859,10 +859,13 @@ function _updateSessionProgress() {
   const countEl = document.getElementById('sessionProgressCount');
   const scoreEl = document.getElementById('sessionProgressScore');
   if (fill) fill.style.width = pct + '%';
+  // « 20 / 25 » suivi du pourcentage d'avancement : les deux répondent à la même question sous
+  // deux angles, l'un dénombrable d'un coup d'œil, l'autre immédiatement comparable d'une
+  // session à l'autre quel que soit le nombre de questions.
   if (countEl) {
-    countEl.innerHTML = answered >= total
-      ? `<b>${total}</b> / ${total} — prêt à valider`
-      : `<b>${answered}</b> / ${total} répondues`;
+    countEl.innerHTML = `<b>${answered}</b> / ${total}`
+      + `<span class="sp-pct">${pct} %</span>`
+      + (answered >= total ? '<span class="sp-ready">prêt à valider</span>' : '');
   }
   if (scoreEl) {
     const immediate = localStorage.getItem('correctionImmediate') === '1';

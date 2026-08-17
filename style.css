@@ -2629,16 +2629,24 @@ body.sidebar-open .app-sidebar {
   justify-content: space-between;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 6px;
-  font-size: 0.85rem;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
 }
-.session-progress-count { color: var(--text-primary); font-weight: 600; }
-.session-progress-count b { font-size: 1.05rem; }
+/* Un peu plus généreux qu'un simple libellé : ce bandeau est consulté du coin de l'œil au
+   milieu d'une série, il doit se lire sans qu'on s'arrête dessus. */
+.session-progress-count { color: var(--text-primary); font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+.session-progress-count b { font-size: 1.25rem; letter-spacing: .2px; }
+.session-progress-count .sp-pct {
+  font-size: 0.95rem; font-weight: 700; color: var(--link-color);
+  padding: 1px 8px; border-radius: 10px; background: rgba(102,126,234,.14);
+}
+.session-progress-count .sp-ready { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
 .session-progress-score { color: var(--text-secondary); white-space: nowrap; }
 .session-progress-score .sp-ok { color: #4caf50; font-weight: 700; }
 .session-progress-score .sp-ko { color: #ef5350; font-weight: 700; }
 .session-progress-track {
-  height: 6px;
+  height: 10px;
   border-radius: 4px;
   background: var(--progressbar-bg);
   overflow: hidden;

@@ -32,6 +32,7 @@
 
   // null = pas encore connu (le plugin n'a pas encore répondu) → on retombe sur navigator.onLine
   var _nativeOnline = null;
+  var _nativeType = null;
   var _listeners = [];
 
   function plugin() {
@@ -88,9 +89,12 @@
   if (isNative() && p) {
     try {
       p.getStatus()
-        .then(function (s) { _nativeOnline = !!(s && s.connected); })
+        .then(function (s) { _nativeOnline = !!(s && s.connected); _nativeType = s && s.connectionType; })
         .catch(function (e) { console.warn('[net] état réseau initial indisponible:', e && e.message); });
-      p.addListener('networkStatusChange', function (s) { _setNative(s && s.connected); });
+      p.addListener('networkStatusChange', function (s) {
+        _nativeType = s && s.connectionType;
+        _setNative(s && s.connected);
+      });
     } catch (e) {
       console.warn('[net] plugin réseau inutilisable, repli sur navigator.onLine:', e.message);
     }
@@ -101,7 +105,17 @@
     } catch (e) { /* ignore */ }
   }
 
+  /**
+   * appConnectionType() – 'wifi' | 'cellular' | 'none' | 'unknown'.
+   * Sert à ne PAS déclencher un téléchargement de 74 Mo sur les données mobiles sans y avoir
+   * été invité : la différence entre « pratique » et « facture surprise » tient à ce test.
+   */
+  function appConnectionType() {
+    return _nativeType || 'unknown';
+  }
+
   window.appIsOnline = appIsOnline;
+  window.appConnectionType = appConnectionType;
   // Alias court utilisé dans les chemins critiques (offline.js, helpers.js…), où la question
   // « suis-je en ligne ? » revient à chaque lecture et à chaque écriture.
   window._netOnline = appIsOnline;

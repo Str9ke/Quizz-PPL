@@ -73,28 +73,79 @@ const RESPONSE_SHARD_CAPACITY = 2000;
    locale qui, elle, a survécu. */
 const PENDING_SYNC_KEY = 'pendingSyncKeys_';
 
-function _markPendingSync(uid, key) {
+/* _kindsOf(entry) – De quoi cette modification est-elle faite ?
+   Sert au récapitulatif de Configuration : « 12 réponses, 3 fréquences, 1 note » est autrement
+   plus parlant que « 16 éléments en attente » quand on veut savoir ce qui a réellement été fait
+   hors-ligne, et ce qui partira à la reconnexion. */
+function _kindsOf(entry) {
+  const kinds = [];
+  if (!entry || typeof entry !== 'object') return kinds;
+  if ('status' in entry) kinds.push('reponse');
+  if ('srInterval' in entry || 'nextReview' in entry) kinds.push('frequence');
+  if ('note' in entry) kinds.push('note');
+  if ('marked' in entry) kinds.push('marquee');
+  if ('important' in entry) kinds.push('importante');
+  if ('correctOverride' in entry) kinds.push('correction');
+  return kinds;
+}
+
+/* La file est une MAP clé -> natures, et non plus une simple liste : le format ancien (tableau)
+   est relu sans broncher pour ne rien perdre d'une session déjà en attente au moment de la
+   mise à jour. */
+function _markPendingSync(uid, key, entry) {
   if (!uid || !key) return;
   try {
     const k = PENDING_SYNC_KEY + uid;
-    const set = new Set(JSON.parse(localStorage.getItem(k) || '[]'));
-    set.add(key);
-    localStorage.setItem(k, JSON.stringify([...set]));
+    const map = _getPendingSyncMap(uid);
+    const prev = map[key] || [];
+    const next = new Set(prev.concat(_kindsOf(entry)));
+    map[key] = [...next];
+    localStorage.setItem(k, JSON.stringify(map));
   } catch (e) { console.warn('[sync] impossible de noter la clé en attente:', e.message); }
 }
 
-function _getPendingSync(uid) {
-  try { return JSON.parse(localStorage.getItem(PENDING_SYNC_KEY + uid) || '[]'); }
-  catch (e) { return []; }
+function _getPendingSyncMap(uid) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PENDING_SYNC_KEY + uid) || '{}');
+    if (Array.isArray(raw)) {
+      // Ancien format : liste de clés sans nature connue.
+      const map = {};
+      raw.forEach(k => { map[k] = []; });
+      return map;
+    }
+    return raw && typeof raw === 'object' ? raw : {};
+  } catch (e) { return {}; }
 }
+
+function _getPendingSync(uid) {
+  return Object.keys(_getPendingSyncMap(uid));
+}
+
+/**
+ * _pendingSyncSummary(uid) – Ce qui attend d'être envoyé, par nature.
+ * { total, reponse, frequence, note, marquee, importante, correction }
+ */
+function _pendingSyncSummary(uid) {
+  uid = uid || localStorage.getItem('cachedUid');
+  const map = _getPendingSyncMap(uid);
+  const out = { total: 0, reponse: 0, frequence: 0, note: 0, marquee: 0, importante: 0, correction: 0, inconnu: 0 };
+  Object.keys(map).forEach(key => {
+    out.total++;
+    const kinds = map[key] || [];
+    if (!kinds.length) { out.inconnu++; return; }
+    kinds.forEach(k => { if (k in out) out[k]++; });
+  });
+  return out;
+}
+window._pendingSyncSummary = _pendingSyncSummary;
 
 function _clearPendingSync(uid, keys) {
   try {
     const k = PENDING_SYNC_KEY + uid;
     if (!keys) { localStorage.removeItem(k); return; }
-    const set = new Set(_getPendingSync(uid));
-    keys.forEach(x => set.delete(x));
-    if (set.size) localStorage.setItem(k, JSON.stringify([...set]));
+    const map = _getPendingSyncMap(uid);
+    keys.forEach(x => { delete map[x]; });
+    if (Object.keys(map).length) localStorage.setItem(k, JSON.stringify(map));
     else localStorage.removeItem(k);
   } catch (e) { /* ignore */ }
 }
@@ -490,7 +541,11 @@ async function _saveResponsesSharded(uid, updates) {
      La réponse est enregistrée localement (miroir + file Firestore) et confirmée au retour du
      réseau ; on note la clé comme « en attente » pour pouvoir l'afficher et la rejouer. */
   if (typeof _netOnline === 'function' && !_netOnline()) {
-    keys.forEach(k => _markPendingSync(uid, k));
+    // On note la NATURE de chaque modification en même temps que la clé (réponse, fréquence,
+    // note…), pour que Configuration puisse annoncer précisément ce qui reste à envoyer.
+    targetShards.forEach(shardIdx => {
+      Object.keys(byShard[shardIdx]).forEach(k => _markPendingSync(uid, k, byShard[shardIdx][k]));
+    });
     console.log('[shard-write] hors-ligne : écriture mise en file, vérification différée à la reconnexion');
     return { targetShards, newShardCreated, pending: true };
   }

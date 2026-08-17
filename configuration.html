@@ -38,6 +38,7 @@
   <script src="js/quiz.js?v=20260807k"></script>
   <script src="js/init.js?v=20260807c"></script>
   <script src="js/net.js?v=20260817a"></script>
+  <script src="js/first-run.js?v=20260817b"></script>
   <script src="js/update-check.js?v=20260816b"></script>
   <script src="js/app-update.js?v=20260816c"></script>
   <script src="js/tts.js?v=20260816b"></script>
@@ -92,6 +93,10 @@
       À vérifier AVANT un vol, pendant que tu es encore connecté — pas en plein vol.
     </p>
     <div id="cfgOfflineVerdict" style="padding:10px 12px;border-radius:8px;font-weight:700;font-size:.9em;margin-bottom:10px">Vérification…</div>
+    <!-- Travail fait hors-ligne et pas encore remonté. Répond à « qu'est-ce que j'ai fait sans
+         réseau, et qu'est-ce qui part quand je me reconnecte ? » — question à laquelle rien ne
+         répondait, alors que c'est précisément elle qu'on se pose après une séance en vol. -->
+    <div id="cfgPendingWork" style="display:none;padding:10px 12px;border-radius:8px;font-size:.86em;margin-bottom:10px;line-height:1.5"></div>
     <div id="cfgOfflineDetails" style="font-size:.85em"></div>
     <!-- width:auto est indispensable sur chacun de ces boutons : une règle globale du site
          (@media max-width:600px { button { width:100% } }) les étirerait sinon sur toute la
@@ -1204,6 +1209,51 @@
       window._cfgRunOfflineCheck();
     };
 
+    // === Travail hors-ligne en attente d'envoi ===
+    window._cfgRenderPendingWork = function() {
+      const el = document.getElementById('cfgPendingWork');
+      if (!el || typeof _pendingSyncSummary !== 'function') return;
+      const s = _pendingSyncSummary(uid || localStorage.getItem('cachedUid'));
+      if (!s.total) {
+        // Rien en attente : le dire explicitement plutôt que de masquer le bloc. « Tout est
+        // synchronisé » est une information en soi, et c'est celle qu'on vient chercher.
+        el.style.display = 'block';
+        el.style.background = 'rgba(76,175,80,.15)';
+        el.style.color = '#66bb6a';
+        el.innerHTML = '✅ <b>Tout est synchronisé</b> — rien en attente d\'envoi.';
+        return;
+      }
+      const parts = [];
+      const add = (n, sing, plur) => { if (n) parts.push('<b>' + n + '</b> ' + (n > 1 ? plur : sing)); };
+      add(s.reponse, 'réponse', 'réponses');
+      add(s.frequence, 'fréquence ajustée', 'fréquences ajustées');
+      add(s.note, 'note', 'notes');
+      add(s.marquee, 'marquage', 'marquages');
+      add(s.importante, 'mise en favori', 'mises en favori');
+      add(s.correction, 'correction', 'corrections');
+      add(s.inconnu, 'modification', 'modifications');
+      const online = (typeof appIsOnline === 'function') ? appIsOnline() : navigator.onLine;
+      el.style.display = 'block';
+      el.style.background = 'rgba(255,167,38,.18)';
+      el.style.color = '#ffa726';
+      el.innerHTML = '📴 <b>' + s.total + ' question' + (s.total > 1 ? 's' : '') + '</b> modifiée'
+        + (s.total > 1 ? 's' : '') + ' hors-ligne, en attente d\'envoi'
+        + (parts.length ? '<br><span style="color:var(--text-secondary)">dont ' + parts.join(', ') + '</span>' : '')
+        + '<br>' + (online
+            ? '<span style="color:var(--text-secondary)">Réseau disponible — l\'envoi se fait automatiquement.</span>'
+              + ' <button type="button" class="stats-btn" onclick="_cfgFlushPending()" style="padding:4px 10px;width:auto;margin:4px 0 0;flex:0 0 auto;font-size:.95em">📤 Envoyer maintenant</button>'
+            : '<span style="color:var(--text-secondary)">Sera envoyé dès le retour du réseau.</span>');
+    };
+
+    window._cfgFlushPending = async function() {
+      if (typeof _flushPendingSync !== 'function') return;
+      const el = document.getElementById('cfgPendingWork');
+      if (el) el.innerHTML = '⏳ Envoi en cours…';
+      const r = await _flushPendingSync(uid || localStorage.getItem('cachedUid'));
+      if (r && r.error) alert('Envoi incomplet : ' + r.error + '\n\nRien n\'est perdu, ça sera réessayé.');
+      window._cfgRenderPendingWork();
+    };
+
     // === Mise à jour intégrée de l'application Android (voir js/app-update.js) ===
     // `where` = 'native' pour le bloc permanent de la section Android, sinon le bouton
     // contextuel affiché dans l'avertissement de mise à jour du diagnostic hors-ligne.
@@ -1421,6 +1471,7 @@
       _cfgRenderPwaStatus();
       window._cfgRefreshImagesStatus();
       _cfgSetupNativeBlock();
+      window._cfgRenderPendingWork();
       // Signale d'emblée si le mode entraînement libre est resté actif (voir
       // _cfgClearPracticeMode) sans attendre que l'utilisateur clique "Lancer le diagnostic".
       if (localStorage.getItem('quizPracticeMode') === '1') {
