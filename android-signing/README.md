@@ -18,6 +18,22 @@ Ce sont les identifiants standard d'une clé de débogage Android (`androiddebug
 `android`), ceux-là mêmes que le SDK Android génère sur la machine de chaque développeur. Ce
 n'est donc pas un secret, et rien de sensible ne s'y trouve.
 
+## Pourquoi le chemin est écrit en dur dans build.gradle
+
+Copier ce fichier dans `~/.android/debug.keystore` NE SUFFIT PAS. Selon la configuration du
+runner, Gradle cherche la clé de débogage dans `$ANDROID_SDK_HOME/.android` ou
+`$ANDROID_USER_HOME` ; ne l'y trouvant pas, il en **fabrique une nouvelle**, différente à chaque
+exécution puisque la machine est neuve. Les APK publiés portaient ainsi `CN=Android Debug` — le
+certificat par défaut — au lieu de `CN=Quiz Aviation PPL`, et chaque mise à jour se heurtait à
+« Application non installée », contournable seulement en désinstallant (donc en perdant les
+données locales).
+
+Le workflow inscrit donc le chemin absolu de cette clé dans `android/app/build.gradle`, et
+**compare** ensuite l'empreinte du certificat de l'APK à celle de la clé : en cas d'écart, le
+build échoue et rien n'est publié. La version précédente se contentait d'afficher les deux
+empreintes côte à côte sans les comparer — une vérification qu'on ne fait que regarder n'en est
+pas une.
+
 ## Portée réelle
 
 Cette clé n'ouvre l'accès à rien : elle ne protège aucune donnée, ne donne aucun droit sur le

@@ -119,6 +119,45 @@ jobs:
       - name: Generate the Android project
         run: npx cap add android
 
+      - name: Sign with the repository key, explicitly
+        # Copier la clé dans ~/.android NE SUFFIT PAS : selon la configuration du runner, Gradle
+        # la cherche dans $ANDROID_SDK_HOME/.android ou $ANDROID_USER_HOME, ne l'y trouve pas, et
+        # en FABRIQUE une nouvelle au passage — différente à chaque exécution puisque la machine
+        # est neuve. Chaque APK était donc signé par une clé inédite, et Android refusait
+        # d'installer par-dessus le précédent : « Application non installée », qui n'était
+        # contournable qu'en désinstallant d'abord (donc en perdant les données locales).
+        #
+        # Preuve du défaut : l'APK publié portait « CN=Android Debug », le certificat par défaut
+        # de Gradle, au lieu du « CN=Quiz Aviation PPL » de la clé du dépôt.
+        #
+        # On ne laisse donc plus le choix à Gradle : le chemin est écrit en dur dans build.gradle.
+        run: |
+          set -e
+          GRADLE=android/app/build.gradle
+          KEYSTORE="$GITHUB_WORKSPACE/android-signing/debug.keystore"
+          test -f "$GRADLE" && test -f "$KEYSTORE"
+          python3 - "$GRADLE" "$KEYSTORE" <<'PYEOF'
+          import sys
+          gradle, keystore = sys.argv[1], sys.argv[2]
+          src = open(gradle, encoding='utf-8').read()
+          assert 'signingConfigs' not in src, 'signingConfigs déjà présent — patch à revoir'
+          block = (
+              "android {\n"
+              "    signingConfigs {\n"
+              "        debug {\n"
+              "            storeFile file('%s')\n"
+              "            storePassword 'android'\n"
+              "            keyAlias 'androiddebugkey'\n"
+              "            keyPassword 'android'\n"
+              "        }\n"
+              "    }\n"
+          ) % keystore
+          assert src.count('android {') >= 1, 'bloc android { introuvable'
+          open(gradle, 'w', encoding='utf-8').write(src.replace('android {', block, 1))
+          print('signingConfigs.debug écrit dans build.gradle')
+          PYEOF
+          sed -n '/signingConfigs/,/^    }/p' "$GRADLE"
+
       - name: Allow the app to install an update
         # Sans REQUEST_INSTALL_PACKAGES, Android refuse à l'appli le droit de présenter un APK
         # à son installateur : le bouton « Mettre à jour maintenant » téléchargerait les 95 Mo
@@ -220,11 +259,23 @@ jobs:
         run: |
           set -e
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
-          echo "build-tools : $BT"
           "$BT/apksigner" verify --verbose --print-certs quiz-aviation-ppl.apk
-          echo '--- empreinte attendue (clé du dépôt) ---'
-          keytool -list -v -keystore android-signing/debug.keystore -storepass android \
-            | grep 'SHA256:' | head -1
+
+          # La version précédente se contentait d'AFFICHER les deux empreintes côte à côte, sans
+          # jamais les comparer : le build restait vert alors que l'APK était signé par une clé
+          # inédite, et le défaut n'est apparu que sur le téléphone, à l'installation. Une
+          # vérification qu'on ne fait que regarder n'est pas une vérification.
+          APK_FP="$("$BT/apksigner" verify --print-certs quiz-aviation-ppl.apk \
+            | grep -i 'SHA-256 digest' | head -1 | sed 's/.*: *//' | tr -d ': ' | tr 'A-Z' 'a-z')"
+          KEY_FP="$(keytool -list -v -keystore android-signing/debug.keystore -storepass android \
+            | grep 'SHA256:' | head -1 | sed 's/.*SHA256: *//' | tr -d ': ' | tr 'A-Z' 'a-z')"
+          echo "empreinte APK : $APK_FP"
+          echo "empreinte clé : $KEY_FP"
+          if [ -z "$APK_FP" ] || [ "$APK_FP" != "$KEY_FP" ]; then
+            echo "::error::L'APK n'est PAS signé avec la clé du dépôt. Il ne pourrait pas s'installer par-dessus la version précédente — publication interrompue."
+            exit 1
+          fi
+          echo "Signature conforme à la clé du dépôt : les mises à jour s'installeront par-dessus."
 
       - name: Upload the APK as a build artifact
         uses: actions/upload-artifact@v4
