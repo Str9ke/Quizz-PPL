@@ -993,10 +993,14 @@ function createOfflineIndicator() {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'offlineStatusBar';
+    // top:0 + un padding-top qui réserve la barre de statut Android (env(safe-area-inset-top),
+    // filet de sécurité derrière le réglage natif de js/statusbar.js — vaut 0 sur le web) :
+    // ce bandeau est le plus haut de toute l'appli, c'est lui qui donnait le ton du mélange
+    // avec l'horloge/les icônes système quand il restait affiché en permanence pendant un vol.
     bar.style.cssText = `
       position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
-      padding: 4px 12px; text-align: center; font-size: 13px; font-weight: bold;
-      transition: all 0.3s ease; display: none;
+      padding: calc(4px + env(safe-area-inset-top, 0px)) 12px 4px; text-align: center;
+      font-size: 13px; font-weight: bold; transition: all 0.3s ease; display: none;
     `;
     document.body.prepend(bar);
   }

@@ -120,7 +120,11 @@ jobs:
         # par Android pour une désinstallation, une appli ne pouvant pas se supprimer elle-même.
         # @capacitor/network : état réseau RÉEL. Dans l'APK la page est servie par un serveur
         # local, donc navigator.onLine vaut true même en mode avion — voir js/net.js.
-        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7 @capacitor/network@^7
+        # @capacitor/status-bar : sur Android edge-to-edge (obligatoire depuis Android 15,
+        # targetSdk de ce projet), l'appli dessine sous la barre de statut système par défaut —
+        # horloge et icônes se mélangeaient au menu ☰ et aux résumés de score. Ce greffon
+        # demande au système de réserver la place lui-même — voir js/statusbar.js.
+        run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7 @capacitor/network@^7 @capacitor/status-bar@^7
 
       - name: Generate the Android project
         run: npx cap add android
