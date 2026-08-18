@@ -2305,21 +2305,9 @@ function _computeSrForecast(responses, numDays, validKeys) {
  * réel déjà mesuré (_qt*). `validKeys` (Set) restreint le décompte aux questions actuellement
  * chargées — voir _computeSrForecast().
  */
-function _srForecastIsNativeApp() {
-  try {
-    if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
-      return window.Capacitor.isNativePlatform();
-    }
-    return !!(window.Capacitor && window.Capacitor.isNative);
-  } catch (e) { return false; }
-}
-
 function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
-  // Carte réservée au site web : dans l'app, le haut de l'écran est déjà occupé par
-  // la barre de statut système et la progression de session, pas de place pour ce pavé.
-  if (_srForecastIsNativeApp()) { cont.innerHTML = ''; return; }
   const NUM_DAYS = 28; // 4 semaines
   const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
