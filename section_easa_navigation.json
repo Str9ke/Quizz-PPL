@@ -82,7 +82,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Définition du mille nautique : 1 NM = 1 minute d'arc de méridien.\nCirconférence = 360° × 60 NM/degré = 21 600 NM.\n(≈ 40 000 km, mais l'unité attendue en navigation aérienne est le NM.)"
   },
   {
     "id": 7,
@@ -96,7 +97,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "A et B sont de part et d'autre de l'équateur (N et S) : les latitudes s'additionnent.\n12°53'30''N + 07°34'30''S\n= 12°53'30'' + 7°34'30''\n53'30'' + 34'30'' = 88' = 1°28'  →  12° + 7° + 1°28' = 20°28'00''"
   },
   {
     "id": 8,
@@ -124,7 +126,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "facile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Le long d'un méridien, 1° de latitude = 60 NM, toujours (les méridiens convergent\naux pôles mais gardent le même espacement Nord-Sud).\n48°N → 49°N = 1° = 60 NM."
   },
   {
     "id": 10,
@@ -138,7 +141,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "facile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "1° de latitude = 60 NM le long de n'importe quel méridien : c'est une constante,\ncontrairement à 1° de longitude qui vaut 60 NM seulement à l'équateur et se\nréduit en s'approchant des pôles (× cos(latitude))."
   },
   {
     "id": 11,
@@ -152,7 +156,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "240 NM au nord = 240 / 60 = 4° de latitude en plus (1° = 60 NM le long d'un méridien).\n47°50'27''N + 4°00'00'' = 51°50'27''N"
   },
   {
     "id": 12,
@@ -166,7 +171,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "facile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "À l'équateur, 1° de longitude = 1° de latitude = 60 NM (l'équateur est un grand\ncercle, comme un méridien). 150°E → 151°E = 1° = 60 NM."
   },
   {
     "id": 13,
@@ -180,7 +186,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "facile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "L'équateur est un grand cercle : la distance orthodromique (grand cercle) s'y\nconfond avec la distance mesurée en minutes d'arc, comme sur un méridien.\n1° de longitude à l'équateur = 60 NM."
   },
   {
     "id": 14,
@@ -194,7 +201,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "doublon"
+    "originalite": "doublon",
+    "explication": "Hors équateur, la distance Est-Ouest « rétrécit » avec la latitude :\ndistance = (écart de longitude en minutes) × cos(latitude).\n10° d'écart de longitude → 600 NM SI on était sur l'équateur (cos 0° = 1).\nComme A et B ne sont pas sur l'équateur, cos(latitude) < 1 → distance < 600 NM."
   },
   {
     "id": 15,
@@ -208,7 +216,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "La Terre tourne de 360° en 24h → 15° par heure.\n20° de longitude → 20 / 15 = 1,333 h = 1 h 20 min."
   },
   {
     "id": 16,
@@ -222,7 +231,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "360° / 24 h = 15°/h.\n10° de longitude → 10 / 15 = 0,667 h = 0 h 40."
   },
   {
     "id": 17,
@@ -236,7 +246,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même calcul que pour 10° de longitude : 10 / 15 = 0,667 h.\nExprimé en heures décimales (et non en h min), 0,667 h s'arrondit à 0,66 h,\nnoté ici « 0h66 » — c'est la même valeur que 0h40, juste une autre écriture."
   },
   {
     "id": 18,
@@ -250,7 +261,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "UTC+2 signifie heure locale = UTC + 2 h, donc UTC = heure locale − 2 h.\n1600 (locale) − 2 h = 1400 UTC."
   },
   {
     "id": 19,
@@ -278,7 +290,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "UTC+1 → UTC = heure locale − 1 h.\n1700 (locale) − 1 h = 1600 UTC."
   },
   {
     "id": 21,
@@ -292,7 +305,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "L'écart de longitude entre les deux terrains donne directement l'écart d'heure de\nlever/coucher (à latitude égale, le soleil « voit » chaque méridien l'un après l'autre).\n016°34'E − 013°00'E = 3°34' ≈ 3,57°\nÉcart de temps = 3,57° × 4 min/degré (360°/24h = 15°/h = 4 min/°) ≈ 14 min.\nVienne est plus à l'Est → le soleil s'y lève (et se couche) plus tôt qu'à Salzbourg."
   },
   {
     "id": 22,
@@ -320,7 +334,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Rappel de la chaîne (dans le sens Route → Cap compas) :\nRv --(+ correction de dérive)--> Cv --(− Variation)--> Cm --(− Déviation)--> Cc\nConvention de signe : Variation/Déviation Est = valeur POSITIVE (on retranche),\nOuest = valeur NÉGATIVE (donc on ajoute en pratique). Même règle de l'Est/Ouest\npour convertir une Route vraie en Route magnétique (sans dérive).\n⚠️ Ne pas confondre « dérive » (l'angle dont le vent pousse l'avion, donné parfois\nseul) et « correction de dérive » = WCA (l'angle qu'on AJOUTE pour compenser) :\nce sont deux valeurs de signe opposé.\n\nRv = Cv − correction de dérive = 125° − (−12°) = 137°\nVariation = Rm − Rv = 139° − 137° = +2° → Ouest (Rm > Rv)\nCm = Cv + 2° (Ouest, on ajoute) = 125° + 2° = 127°\nCc = Cm − Déviation(2°E) = 127° − 2° = 125°\n→ Rv 137° ; Cm 127° ; Cc 125°"
   },
   {
     "id": 24,
@@ -334,7 +349,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Rappel de la chaîne (dans le sens Route → Cap compas) :\nRv --(+ correction de dérive)--> Cv --(− Variation)--> Cm --(− Déviation)--> Cc\nConvention de signe : Variation/Déviation Est = valeur POSITIVE (on retranche),\nOuest = valeur NÉGATIVE (donc on ajoute en pratique). Même règle de l'Est/Ouest\npour convertir une Route vraie en Route magnétique (sans dérive).\n⚠️ Ne pas confondre « dérive » (l'angle dont le vent pousse l'avion, donné parfois\nseul) et « correction de dérive » = WCA (l'angle qu'on AJOUTE pour compenser) :\nce sont deux valeurs de signe opposé.\n\nCv = Rv + correction de dérive = 179° + (−12°) = 167°\nVariation 4°E (Est = on retranche) :\nCm = Cv − 4° = 167° − 4° = 163°\nRm = Rv − 4° = 179° − 4° = 175°\n→ Cm 163° ; Rm 175°"
   },
   {
     "id": 25,
@@ -404,7 +420,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Rappel de la chaîne (dans le sens Route → Cap compas) :\nRv --(+ correction de dérive)--> Cv --(− Variation)--> Cm --(− Déviation)--> Cc\nConvention de signe : Variation/Déviation Est = valeur POSITIVE (on retranche),\nOuest = valeur NÉGATIVE (donc on ajoute en pratique). Même règle de l'Est/Ouest\npour convertir une Route vraie en Route magnétique (sans dérive).\n⚠️ Ne pas confondre « dérive » (l'angle dont le vent pousse l'avion, donné parfois\nseul) et « correction de dérive » = WCA (l'angle qu'on AJOUTE pour compenser) :\nce sont deux valeurs de signe opposé.\n\nCv = Rv + correction de dérive = 183° + 11° = 194°\nVariation : Cm − Cv = 198° − 194° = +4° → Ouest (Cm > Cv, on a ajouté)\n→ Cv 194° ; Variation 4°W"
   },
   {
     "id": 30,
@@ -418,7 +435,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Rappel de la chaîne (dans le sens Route → Cap compas) :\nRv --(+ correction de dérive)--> Cv --(− Variation)--> Cm --(− Déviation)--> Cc\nConvention de signe : Variation/Déviation Est = valeur POSITIVE (on retranche),\nOuest = valeur NÉGATIVE (donc on ajoute en pratique). Même règle de l'Est/Ouest\npour convertir une Route vraie en Route magnétique (sans dérive).\n⚠️ Ne pas confondre « dérive » (l'angle dont le vent pousse l'avion, donné parfois\nseul) et « correction de dérive » = WCA (l'angle qu'on AJOUTE pour compenser) :\nce sont deux valeurs de signe opposé.\n\nAttention : l'énoncé donne la « Dérive » (−11°), pas la correction de dérive :\ncorrection de dérive = − Dérive = +11°.\nCv = Rv + 11° = 183° + 11° = 194°\nDéviation = Cm − Cc = 198° − 200° = −2°\n→ Cv 194° ; déviation −2°"
   },
   {
     "id": 31,
@@ -432,7 +450,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Rappel de la chaîne (dans le sens Route → Cap compas) :\nRv --(+ correction de dérive)--> Cv --(− Variation)--> Cm --(− Déviation)--> Cc\nConvention de signe : Variation/Déviation Est = valeur POSITIVE (on retranche),\nOuest = valeur NÉGATIVE (donc on ajoute en pratique). Même règle de l'Est/Ouest\npour convertir une Route vraie en Route magnétique (sans dérive).\n⚠️ Ne pas confondre « dérive » (l'angle dont le vent pousse l'avion, donné parfois\nseul) et « correction de dérive » = WCA (l'angle qu'on AJOUTE pour compenser) :\nce sont deux valeurs de signe opposé.\n\nCv = Rv + correction de dérive = 183° + 11° = 194°\nVariation = Cv − Cm = 194° − 198° = −4° → Ouest → « 4°W »\nDéviation = Cm − Cc = 198° − 200° = −2°\n→ Variation 4°W ; déviation −2°"
   },
   {
     "id": 32,
@@ -530,7 +549,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Règle pratique : 1 pied (ft) ≈ 0,3048 m ≈ 0,3 m.\n1000 ft × 0,3 ≈ 300 m."
   },
   {
     "id": 39,
@@ -544,7 +564,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Règle pratique inverse : 1 m ≈ 3,28 ft.\n5500 m × 3,28 ≈ 18 040 ft ≈ 18 000 pieds."
   },
   {
     "id": 40,
@@ -658,7 +679,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Méthode : convertir l'écart de latitude et de longitude entre les deux points en NM,\npuis calculer le relèvement avec une trigonométrie simple (comme la règle du 60ème).\nBKD (53°02'N, 011°33'E) → Pritzwalk (53°11'N, 12°11'E) :\nÉcart Nord = 9' = 9 NM ; Écart Est = 38' × cos(53°) ≈ 38 × 0,60 ≈ 22,8 NM\nAngle = arctan(Est / Nord) = arctan(22,8 / 9) ≈ 68°\n→ radiale 068° (mesurée depuis le Nord, vers l'Est)."
   },
   {
     "id": 48,
@@ -672,7 +694,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Échelle = distance réelle ÷ distance carte, converties dans la même unité.\n220 NM = 220 × 1852 m = 407 440 m = 40 744 000 cm\n40 744 000 cm ÷ 40,7 cm ≈ 1 000 000\n→ échelle 1/1 000 000"
   },
   {
     "id": 49,
@@ -687,7 +710,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Méthode du point par recoupement (« fix ») : tracer sur la carte la radiale 119° issue\ndu VOR Hambourg et la radiale 320° issue du VOR Brünkendorf. Leur intersection donne\nla position de l'avion — ici 53°20'N, 11°10'E."
   },
   {
     "id": 50,
@@ -701,7 +725,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même méthode que pour trouver une radiale (voir Q47), mais on calcule ici la\ndistance directe (Pythagore) plutôt que l'angle.\nÉcart Nord = 9' = 9 NM ; Écart Est = 38' × cos(53°) ≈ 22,8 NM\nDistance = √(9² + 22,8²) = √(81 + 520) = √601 ≈ 24,5 NM\n→ 24 NM"
   },
   {
     "id": 51,
@@ -715,7 +740,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Méthode (à retenir même si les chiffres de cet énoncé ne « tombent pas rond ») :\néchelle = distance réelle ÷ distance carte, converties dans la même unité (le cm).\ndistance réelle (NM) × 1852 × 100 = distance réelle en cm, puis ÷ distance carte (cm).\n→ on obtient une échelle proche de 1/1 500 000, la plus proche parmi les choix."
   },
   {
     "id": 52,
@@ -729,7 +755,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même règle Est/Ouest que pour la chaîne Cv→Cm : Ouest, on ajoute à la valeur vraie\npour obtenir la valeur magnétique.\nRm = Rv + 7° (déclinaison 7°W) = 245° + 7° = 252°"
   },
   {
     "id": 53,
@@ -743,7 +770,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Règle empirique : TAS ≈ IAS + 2 % d'IAS par tranche de 1000 ft d'altitude.\n8000 ft = 8 tranches → correction = 150 × 0,02 × 8 = 24 kt\nTAS = 150 + 24 = 174 kt"
   },
   {
     "id": 54,
@@ -757,7 +785,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS = TAS − vent de face = 130 − 15 = 115 kt\nTemps = distance / GS = 210 / 115 = 1,826 h ≈ 1 h 50\nETA = 09h15 + 1h50 = 11h05 UTC"
   },
   {
     "id": 55,
@@ -771,7 +800,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS = TAS − vent de face = 105 − 12 = 93 kt\nTemps = 75 / 93 = 0,806 h ≈ 48 min\nETA = 1242 + 0h48 = 1330 UTC"
   },
   {
     "id": 56,
@@ -785,7 +815,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS déjà donnée : 107 kt.\nTemps = 100 / 107 = 0,935 h ≈ 56 min\nETA = 0933 + 0h56 = 1029 UTC"
   },
   {
     "id": 57,
@@ -799,7 +830,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS = distance / temps, avec le temps en heures.\n56 min = 56/60 = 0,933 h\nGS = 100 km / 0,933 h ≈ 107 km/h"
   },
   {
     "id": 58,
@@ -813,7 +845,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "1h25 = 1 + 25/60 = 1,417 h\nGS = 110 NM / 1,417 h ≈ 78 kt"
   },
   {
     "id": 59,
@@ -827,7 +860,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Temps = distance / GS = 236 / 134 = 1,761 h\n0,761 h × 60 ≈ 46 min → 1 h 46"
   },
   {
     "id": 60,
@@ -841,7 +875,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS = TAS + vent arrière = 120 + 35 = 155 kt\nTemps = 185 / 155 = 1,194 h ≈ 1 h 12"
   },
   {
     "id": 61,
@@ -855,7 +890,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "GS = TAS − vent de face = 180 − 25 = 155 kt\n2h25 = 2,417 h\nDistance = GS × temps = 155 × 2,417 ≈ 375 NM"
   },
   {
     "id": 62,
@@ -869,7 +905,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même règle empirique (2 % de la CAS par 1000 ft) : FL80 = 8000 ft.\n155 × 0,02 × 8 = 24,8 kt → TAS ≈ 155 + 25 ≈ 180 kt\n(la température ne fait ici que confirmer un écart proche du standard)."
   },
   {
     "id": 63,
@@ -883,7 +920,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Règle ICAO : altitude vraie = altitude QNH + 4 ft par tranche de 1000 ft QNH et par\ndegré d'écart à la température standard ISA (« air froid, altitude plus basse »).\nTemp. standard à 7500 ft (FL75) : 15 − 2×7,5 = 0°C. Écart = −9 − 0 = −9°C (air froid).\nCorrection = 4 × (6500/1000) × (−9) ≈ −234 ft\nAltitude vraie = 6500 − 234 ≈ 6250 ft"
   },
   {
     "id": 64,
@@ -898,7 +936,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Sur la carte, tracer la droite Uelzen → Neustadt et lire l'angle par rapport au Nord\n(en s'aidant des méridiens verticaux comme référence Nord-Sud) : Neustadt se trouve\nau Nord-Est d'Uelzen → route vraie voisine de 060°, soit 061°."
   },
   {
     "id": 65,
@@ -912,7 +951,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Neustadt (53°22'N, 11°37'E) → Uelzen (52°59'N, 10°28'E) :\nÉcart Nord = 23' = 23 NM ; Écart Est = 69' × cos(53°) ≈ 69 × 0,60 ≈ 41,3 NM\nDistance = √(23² + 41,3²) = √(529 + 1706) = √2235 ≈ 47 NM ≈ 46 NM"
   },
   {
     "id": 66,
@@ -926,7 +966,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même règle : « air chaud, altitude plus haute ».\nTemp. standard à 7000 ft : 15 − 2×7 = 1°C. Écart = 11 − 1 = +10°C (air chaud).\nCorrection = 4 × (6500/1000) × 10 = 260 ft\nAltitude vraie = 6500 + 260 ≈ 6750 ft"
   },
   {
     "id": 67,
@@ -940,7 +981,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même règle, écart plus important.\nTemp. standard à 7000 ft : 15 − 2×7 = 1°C. Écart = 21 − 1 = +20°C (air chaud).\nCorrection = 4 × (6500/1000) × 20 = 520 ft\nAltitude vraie = 6500 + 520 ≈ 7020 ft ≈ 7000 ft"
   },
   {
     "id": 68,
@@ -954,7 +996,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nAngle Rv/Vent = 255° − 200° = 55° (vent de la gauche).\nComposante de travers = 10 × sin(55°) ≈ 8,2 kt\nWCA = arcsin(8,2/100) ≈ 4,7° ≈ 5°, à corriger à gauche.\nCv = 255° − 5° ≈ 250°"
   },
   {
     "id": 69,
@@ -968,7 +1011,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nAngle Rv/Vent = 165° − 130° = 35° (vent de la gauche).\nComposante de travers = 20 × sin(35°) ≈ 11,5 kt\nWCA = arcsin(11,5/90) ≈ 7,3° ≈ 7°, à corriger à gauche.\nCv = 165° − 7° ≈ 158°"
   },
   {
     "id": 70,
@@ -982,7 +1026,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nIci, c'est la GS qui est donnée (pas la TAS) : on résout le triangle vent/route/sol\npar construction vectorielle (route-sol = route-air + vent) plutôt que par la formule\ndirecte. Résultat de la résolution graphique/vectorielle : Cv ≈ 173°."
   },
   {
     "id": 71,
@@ -996,7 +1041,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nIci on cherche la GS : on additionne vectoriellement le vecteur air (Cv, TAS) et le\nvecteur vent pour obtenir le vecteur sol.\nAngle Rv/Vent = 270° − 220° = 50° (vent de la droite).\nComposante de travers = 50 × sin(50°) ≈ 38 kt → WCA ≈ 10°, correction à droite\n→ Cv ≈ 230°. En ajoutant le vecteur vent au vecteur air (230°, 220 kt), on obtient\nun vecteur résultant d'environ 185 kt : GS ≈ 185 kt."
   },
   {
     "id": 72,
@@ -1010,7 +1056,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nAngle Rv/Vent = 040° − 350° = 50° (vent de la gauche, voir Q73/76 pour le WCA).\nWCA ≈ 7° à gauche → Cv ≈ 33°.\nEn ajoutant vectoriellement le vent (350°/30 kt) au vecteur air (33°, 180 kt),\non obtient une GS résultante d'environ 159 kt."
   },
   {
     "id": 73,
@@ -1024,7 +1071,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nAngle Rv/Vent = 040° − 350° = 50° (le vent souffle DE 350°, à gauche de la route 040°).\nComposante de travers = 30 × sin(50°) ≈ 23 kt\nWCA = arcsin(23/180) ≈ 7°. Le vent vient de la gauche → il pousse l'avion à droite,\ndonc on corrige à GAUCHE → WCA négatif par convention : −7°"
   },
   {
     "id": 74,
@@ -1038,7 +1086,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Vent 090°/25 kt exactement dans l'axe de la route 270° : c'est un vent arrière pur\n(pas de composante de travers).\nGS = TAS + vent arrière = 100 + 25 = 125 kt"
   },
   {
     "id": 75,
@@ -1052,7 +1101,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Suite de Q74 : GS = 125 kt (vent arrière pur).\nTemps = distance / GS = 100 / 125 = 0,8 h = 48 min"
   },
   {
     "id": 76,
@@ -1066,7 +1116,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Identique à Q73 (mêmes données) : WCA ≈ 7°, correction à gauche (le vent souffle de\nla gauche de la route, il faut « pointer dans le vent »).\n→ 7° à gauche"
   },
   {
     "id": 77,
@@ -1080,7 +1131,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Triangle des vitesses : la route (Rv) et le vent forment un angle ; la composante\nde travers du vent détermine l'angle de correction (WCA), la composante\nface/arrière détermine la vitesse sol (GS).\nWCA ≈ arcsin( (vitesse du vent × sin(angle Route/Vent)) / TAS )\nOn corrige DANS le vent : si le vent souffle de la gauche de la route, on corrige\nà gauche (Cv < Rv), et inversement.\n\nAngle Rv/Vent = 150° − 120° = 30° (vent de la droite, il pousse l'avion à gauche).\nComposante de travers = 12 × sin(30°) = 6 kt\nWCA = arcsin(6/120) ≈ 2,9° ≈ 3°, à corriger à DROITE (dans le vent)."
   },
   {
     "id": 78,
@@ -1094,7 +1146,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Règle du 60ème en deux temps (rejoindre directement B, pas juste reparer le cap) :\n1) Angle déjà pris : (écart / distance parcourue) × 60 = (7/55) × 60 ≈ 7,6°\n2) Angle pour converger sur B avec la distance restante (120−55=65 NM) :\n   (7/65) × 60 ≈ 6,5°\nCorrection totale = 7,6 + 6,5 ≈ 14°, vers la gauche (l'écart est à droite)."
   },
   {
     "id": 79,
@@ -1108,7 +1161,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Ici le point de vérification est exactement à mi-parcours (45 NM sur 90 NM), donc les\ndeux angles de la règle du 60ème sont égaux :\nAngle déjà pris = (4,5/45) × 60 = 6°\nAngle pour converger sur le reste du trajet (45 NM restants) = (4,5/45) × 60 = 6°\nCorrection totale = 6 + 6 = 12°, vers la droite (l'écart est au Nord de la route)."
   },
   {
     "id": 80,
@@ -1122,7 +1176,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "facile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "La règle du 60ème : à 60 NM de distance parcourue, chaque degré d'écart de cap\nreprésente 1 NM d'écart latéral. C'est la base de la correction de dérive et du\nrecentrage sur une route (voir Q78/Q79)."
   },
   {
     "id": 81,
@@ -1136,7 +1191,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "On recalcule la GS réelle sur le tronçon déjà parcouru, puis on l'applique au reste.\nPrévu pour 70 NM à 120 kt : 70/120 × 60 = 35 min. Avec 5 min d'avance → 30 min réels.\nGS réelle = 70 NM / 0,5 h = 140 kt\nDistance restante = 220 − 70 = 150 NM → temps = 150/140 × 60 ≈ 64 min\nHeure à 70 NM = 1200 + 0h30 = 1230 ; ETA = 1230 + 1h04 ≈ 1335 UTC"
   },
   {
     "id": 82,
@@ -1150,7 +1206,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Temps = différence d'altitude / taux de descente.\n9000 − 1500 = 7500 ft ; 7500 / 1200 ft/min = 6,25 min ≈ 6 min"
   },
   {
     "id": 83,
@@ -1164,7 +1221,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Même méthode ; la TAS donnée ici ne sert pas (on ne demande pas la distance).\n7500 − 1200 = 6300 ft ; 6300 / 800 ft/min ≈ 7,9 min ≈ 8 min"
   },
   {
     "id": 84,
@@ -1179,7 +1237,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Chaîne complète de la ligne à compléter (TC=179°, WCA=+6°, Var=1°) :\nTC 179° --(+WCA +6°)--> TH(Cv) 185°\nTH 185° --(− Var 1°)--> MH(Cm) 184°\nMH 184° --(− WCA +6°, on « retire » la dérive pour retrouver une route)--> MC(Rm) 178°\n→ TH 185° - MH 184° - MC 178°"
   },
   {
     "id": 85,
@@ -1292,7 +1351,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQUJ = QDM + Variation = 138° + 10° (Est) = 148°"
   },
   {
     "id": 93,
@@ -1306,7 +1366,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDM = QTE − Variation = 229° − (−10°) [Ouest] = 239° → QDR = QDM − 180° = 59°"
   },
   {
     "id": 94,
@@ -1320,7 +1381,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQTE = QDR + Variation = 022° + 10° (Est) = 032°"
   },
   {
     "id": 95,
@@ -1334,7 +1396,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDR = QDM − 180° = 248° − 180° = 068°\nQTE = QDR + Variation = 068° + (−10°) [Ouest] = 058°"
   },
   {
     "id": 96,
@@ -1348,7 +1411,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDM et QDR sont tous les deux magnétiques : pas besoin de variation, juste ±180°.\nQDM = QDR + 180° = 067° + 180° = 247°"
   },
   {
     "id": 97,
@@ -1362,7 +1426,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDM = QDR + 180° = 152° + 180° = 332° (la déviation ne s'applique qu'au cap compas,\nelle est inutile ici).\nQUJ = QDM + Variation = 332° + (−5°) [Ouest] = 327°"
   },
   {
     "id": 98,
@@ -1376,7 +1441,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\n« QRD » désigne ici le QDR. QDR = QTE − Variation = 203° − 10° (Est) = 193°"
   },
   {
     "id": 99,
@@ -1390,7 +1456,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDR = QTE − Variation = 248° − (−10°) [Ouest] = 258°"
   },
   {
     "id": 100,
@@ -1404,7 +1471,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Les 4 relèvements forment un petit repère à 2×2 à retenir :\n• Vers la station, magnétique = QDM · vers la station, vrai = QUJ\n• De la station, magnétique = QDR · de la station, vrai = QTE\n• QDM ↔ QDR et QTE ↔ QUJ : on ajoute/retranche 180° (réciproques, même référence).\n• QDR → QTE et QDM → QUJ (passage magnétique → vrai) : on ajoute la Variation\n  (Est = +, Ouest = −).\n\nQDR = QDM + 180° = 134° + 180° = 314°\nQTE = QDR + Variation = 314° + (−5°) [Ouest] = 309°"
   },
   {
     "id": 101,
@@ -1419,7 +1487,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Le QDR est le relèvement (magnétique) DE la station VERS l'avion : l'avion se\ntrouve donc, vu depuis la station, dans la direction indiquée par le QDR.\nQDR 225° = Sud-Ouest → l'avion est au Sud-Ouest de la station."
   },
   {
     "id": 102,
@@ -1461,7 +1530,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Le QDR est le relèvement (magnétique) DE la station VERS l'avion : l'avion se\ntrouve donc, vu depuis la station, dans la direction indiquée par le QDR.\nQDR 135° = Sud-Est → l'avion est au Sud-Est de la station."
   },
   {
     "id": 105,
@@ -1475,7 +1545,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Le QDR est le relèvement (magnétique) DE la station VERS l'avion : l'avion se\ntrouve donc, vu depuis la station, dans la direction indiquée par le QDR.\nQDR 315° = Nord-Ouest → l'avion est au Nord-Ouest de la station."
   },
   {
     "id": 106,
@@ -1531,7 +1602,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "difficile",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Le RBI passe de 355° à 358° (Cm constant à 095°) : le relevé de la station,\nvu du nez de l'avion, se déplace vers la droite.\nQDM réel = Cm + RBI (ramené sous 360°) : 095+355−360=90° puis 095+358−360=93°.\nLe QDM réel s'écarte du QDM voulu (090°) : l'avion dérive, la composante de vent de\ntravers a donc augmenté → il faut augmenter le Cm (corriger davantage dans le vent)."
   },
   {
     "id": 110,
@@ -1545,7 +1617,8 @@
     ],
     "bonne_reponse": 2,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "Sans vent, le cap à suivre pour rejoindre directement la balise EST le QDM. Il suffit\nde lire le QDM affiché par l'instrument (relèvement magnétique vers la station)."
   },
   {
     "id": 111,
@@ -1700,7 +1773,8 @@
     ],
     "bonne_reponse": 0,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "OBS affiché ≈ 210°, drapeau « TO », aiguille centrée : l'avion est donc sur la route\nqui MÈNE au VOR en suivant 210°, ce qui signifie qu'il se trouve sur la radiale\nréciproque, 210° − 180° = 030°, soit au Nord-Est de la station."
   },
   {
     "id": 122,
@@ -1715,7 +1789,8 @@
     ],
     "bonne_reponse": 1,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "OBS affiché ≈ 054°, drapeau « TO », aiguille centrée : la radiale sur laquelle se\ntrouve l'avion est la réciproque de la route affichée, 054° + 180° = 234°."
   },
   {
     "id": 123,
@@ -1771,7 +1846,8 @@
     ],
     "bonne_reponse": 3,
     "difficulte": "moyen",
-    "originalite": "originale"
+    "originalite": "originale",
+    "explication": "La portée oblique DME (distance en ligne droite, incluant l'altitude) est toujours\n≥ à la distance horizontale réelle (Pythagore : oblique² = horizontale² + altitude²).\nPlus l'avion se rapproche de la verticale de la station, plus l'altitude devient\nprépondérante par rapport à la distance horizontale (qui tend vers 0) : l'écart\nrelatif entre portée oblique et distance horizontale est donc maximal à l'approche\nimmédiate de la station (et minimal/négligeable très loin de la station)."
   },
   {
     "id": 127,
