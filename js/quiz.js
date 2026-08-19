@@ -254,11 +254,27 @@ async function demarrerQuiz() {
   await filtrerQuestions(modeQuiz, nbQuestions, filterFlags);
 
   if (!currentQuestions.length) {
-    alert(
-      filterFlags.length
-        ? "Aucune question ne correspond à ce mode combiné à ces filtres (marquées/importantes/notes) en ce moment."
-        : "Aucune question disponible pour ce mode dans cette catégorie en ce moment."
-    );
+    // Piège classique du mode "objectif" (répétition espacée) : « Nouvelles questions/jour »
+    // est un réglage LOCAL (localStorage, non synchronisé entre appareils/navigateurs — voir
+    // getDailyNewTarget()). À 0 sur CET appareil, et sans révision due dans la catégorie
+    // choisie, le total tombe silencieusement à 0 alors que le compte est bien réel ailleurs
+    // (typiquement l'appli Android, où ce réglage local vaut encore 15 par défaut). Le message
+    // générique laissait croire à un bug ; on pointe la cause réelle quand elle s'applique.
+    if (!filterFlags.length && modeQuiz === 'objectif' && typeof getDailyNewTarget === 'function' && getDailyNewTarget() === 0) {
+      alert(
+        "Aucune question disponible : aucune révision n'est due dans cette catégorie pour l'instant, "
+        + "et « Nouvelles questions/jour » est réglé sur 0 sur CET appareil/navigateur (c'est un réglage "
+        + "local, pas synchronisé — un autre appareil peut avoir une valeur différente).\n\n"
+        + "Augmente cette valeur dans la carte « Répétition espacée » de l'accueil, ou choisis "
+        + "une catégorie où des révisions sont dues."
+      );
+    } else {
+      alert(
+        filterFlags.length
+          ? "Aucune question ne correspond à ce mode combiné à ces filtres (marquées/importantes/notes) en ce moment."
+          : "Aucune question disponible pour ce mode dans cette catégorie en ce moment."
+      );
+    }
     return;
   }
 
