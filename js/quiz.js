@@ -18,10 +18,25 @@ function _isPracticeMode() {
  * viewport, où la bannière collante vient justement se repositionner : la cible se
  * retrouverait cachée derrière elle au lieu d'apparaître juste en dessous.
  */
+/**
+ * _scrollBelowStickyBanner(target) – Ne comptait QUE la hauteur de #resultContainer, alors que
+ * plusieurs autres bandeaux collants/fixes peuvent être empilés au-dessus au même moment
+ * (barre "hors-ligne", barre de progression de session `.session-progress`, score en direct
+ * `.immediate-score-bar` en correction immédiate). Sous-estimer leur hauteur cumulée fait
+ * atterrir la cible juste EN DESSOUS du haut visible mais toujours PARTIELLEMENT SOUS ces
+ * bandeaux — repéré en Mode Assistance, où la question (tout en haut de la carte) restait
+ * cachée derrière eux alors que les réponses, plus bas, étaient déjà visibles.
+ */
 function _scrollBelowStickyBanner(target) {
   if (!target) return;
-  const rc = document.getElementById('resultContainer');
-  const bannerH = (rc && rc.style.display !== 'none') ? rc.offsetHeight : 0;
+  let bannerH = 0;
+  const addIfVisible = (el) => {
+    if (el && getComputedStyle(el).display !== 'none') bannerH += el.offsetHeight;
+  };
+  addIfVisible(document.getElementById('offlineStatusBar'));
+  addIfVisible(document.getElementById('resultContainer'));
+  addIfVisible(document.getElementById('sessionProgress'));
+  addIfVisible(document.getElementById('immediateScoreBar'));
   const y = target.getBoundingClientRect().top + window.scrollY - bannerH - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
 }
@@ -1608,6 +1623,24 @@ function _assistNextUnansweredIdx(fromIdx) {
   return -1;
 }
 
+/** _assistSyncSessionProgress(idx, q, choiceIdx) – Le Mode Assistance répond en cochant le
+ * VRAI radio par affectation JS directe (realRadio.checked = true), ce qui ne déclenche PAS
+ * d'évènement "change" natif — or c'est justement cet évènement (écouteur délégué posé sur
+ * #quizContainer, voir afficherQuiz) qui écrit currentQuizAnswers dans localStorage, seule
+ * source lue par _updateSessionProgress() pour la barre de progression collante en haut de
+ * page. Résultat observé : cette barre restait figée pendant toute une session en Mode
+ * Assistance, alors que les réponses étaient bien enregistrées (couleurs/explication visibles
+ * au retour en vue normale). On réplique ici uniquement cette écriture — pas tout l'écouteur,
+ * qui relance aussi le calcul SR en mode différé, déjà fait par handleImmediateAnswer(). */
+function _assistSyncSessionProgress(idx, q, choiceIdx) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}');
+    saved[idx] = q.choix[choiceIdx];
+    localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
+  } catch (e) { /* localStorage plein, tant pis */ }
+  if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
+}
+
 /** _assistSpeak(text) – Lecture TTS inconditionnelle (ignore le toggle ttsEnabled global :
  * la lecture est le principe même du Mode Assistance, pas une option qu'on pourrait couper
  * par mégarde en pleine session). Respecte volume/voix préférée comme le reste de l'app. */
@@ -1781,6 +1814,7 @@ function _assistAnswer(choiceIdx) {
     const realRadio = document.querySelector(`input[name="qidx${idx}"][value="${choiceIdx}"]`);
     if (realRadio) {
       realRadio.checked = true;
+      _assistSyncSessionProgress(idx, q, choiceIdx);
       if (!window._immediateScore) window._immediateScore = { correct: 0, answered: 0, total: currentQuestions.length };
       handleImmediateAnswer(q, realRadio, idx);
     }
@@ -1808,6 +1842,7 @@ function _assistAnswer(choiceIdx) {
   const realRadio = document.querySelector(`input[name="qidx${idx}"][value="${choiceIdx}"]`);
   if (realRadio) {
     realRadio.checked = true;
+    _assistSyncSessionProgress(idx, q, choiceIdx);
     if (!window._immediateScore) window._immediateScore = { correct: 0, answered: 0, total: currentQuestions.length };
     handleImmediateAnswer(q, realRadio, idx);
   }
