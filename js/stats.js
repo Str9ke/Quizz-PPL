@@ -2464,10 +2464,19 @@ function _computeSrForecast(responses, numDays, validKeys) {
   for (let i = 0; i <= numDays; i++) { buckets.push(0); familyBuckets.push({ gligli: 0, easa: 0, classique: 0 }); }
   let beyond = 0;
   let totalEligible = 0;
+  let suspendedCount = 0;
 
   Object.entries(normResponses || {}).forEach(([key, r]) => {
-    if (!r || r.suspended) return;
+    if (!r) return;
+    // `validKeys` est désormais évalué AVANT le filtre "suspendue" (l'ordre était inverse) :
+    // le décompte des questions retirées doit porter exactement sur le même périmètre que
+    // totalEligible — les questions réellement présentes dans le bank actuel. Sinon d'anciennes
+    // clés orphelines (questions supprimées/renommées au fil des mises à jour) gonfleraient le
+    // chiffre affiché, exactement le genre d'écart déjà corrigé pour totalEligible.
+    // Pour les questions NON suspendues, le résultat est inchangé : les deux filtres
+    // s'appliquent toujours, seul leur ordre diffère.
     if (validKeys && !validKeys.has(key)) return;
+    if (r.suspended) { suspendedCount++; return; }
     if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
     totalEligible++;
     const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
@@ -2480,7 +2489,7 @@ function _computeSrForecast(responses, numDays, validKeys) {
     } else beyond++;
   });
 
-  return { buckets, familyBuckets, beyond, totalEligible };
+  return { buckets, familyBuckets, beyond, totalEligible, suspendedCount };
 }
 
 /**
@@ -2508,7 +2517,7 @@ function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
   const NUM_DAYS = 28; // 4 semaines
-  const { buckets, familyBuckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
+  const { buckets, familyBuckets, beyond, totalEligible, suspendedCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
@@ -2579,6 +2588,7 @@ function _renderSrForecast(responses, validKeys) {
       ${rowsHtml}
       ${beyond > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:8px 0 0">+ ${beyond} révision(s) planifiée(s) au-delà de ${NUM_DAYS} jours.</p>` : ''}
       <p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">${totalEligible} question(s) au total dans le cycle de répétition espacée.</p>
+      ${suspendedCount > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">🚫 ${suspendedCount} question(s) retirée(s) du cycle (jugées trop faciles) — elles ne comptent pas dans les chiffres ci-dessus.</p>` : ''}
     </div>
   `;
 }
