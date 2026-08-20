@@ -1102,6 +1102,10 @@ function _dueQuestionsSorted(pool, responses) {
     return r && _isEligibleForSR(r) && _isDueForReview(r, now);
   });
   due.sort((a, b) => {
+    // Tri principal par famille (GLIGLI d'abord, EASA ensuite, classiques en dernier — voir
+    // _srFamilyRank dans js/helpers.js), puis par urgence à l'intérieur de chaque famille.
+    const famDiff = _srFamilyRank(a) - _srFamilyRank(b);
+    if (famDiff !== 0) return famDiff;
     const nrA = responses[getKeyFor(a)].nextReview || 0;
     const nrB = responses[getKeyFor(b)].nextReview || 0;
     return nrA - nrB; // plus petit nextReview = plus en retard
@@ -1222,8 +1226,10 @@ async function filtrerQuestions(mode, nb, filterFlags) {
       const extra = dueSorted.filter(q => !usedKeys.has(getKeyFor(q))).slice(0, nb - mix.length);
       mix = [...mix, ...extra];
     }
-    // Mélanger l'ordre final pour ne pas grouper toutes les révisions en premier
-    currentQuestions = mix.sort(() => 0.5 - Math.random());
+    // Ordre final par famille (GLIGLI d'abord, EASA ensuite, classiques en dernier — voir
+    // _srFamilyRank) : tri STABLE, donc à l'intérieur de chaque famille l'ordre de `mix`
+    // (révisions dues les plus en retard d'abord, puis nouvelles) est conservé tel quel.
+    currentQuestions = mix.sort((a, b) => _srFamilyRank(a) - _srFamilyRank(b));
   }
   else if (mode === "objectif") {
     // Session "Objectif du jour" (bouton un-clic) : les révisions dues sont prioritaires,
@@ -1243,7 +1249,10 @@ async function filtrerQuestions(mode, nb, filterFlags) {
     const newPool = shuffled.filter(q => _isUnseen(responses[getKeyFor(q)]));
     const newTarget = Math.max(0, nb - dueCapped.length);
     const mix = [...dueCapped, ...newPool.slice(0, newTarget)];
-    currentQuestions = mix.sort(() => 0.5 - Math.random());
+    // Ordre final par famille (GLIGLI d'abord, EASA ensuite, classiques en dernier — voir
+    // _srFamilyRank) : tri STABLE, donc à l'intérieur de chaque famille l'ordre de `mix`
+    // (révisions dues les plus en retard d'abord, puis nouvelles) est conservé tel quel.
+    currentQuestions = mix.sort((a, b) => _srFamilyRank(a) - _srFamilyRank(b));
   }
   else if (mode === "difficiles") {
     currentQuestions = shuffled
