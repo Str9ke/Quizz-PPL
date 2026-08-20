@@ -2278,7 +2278,13 @@ function _computeSrForecast(responses, numDays, validKeys) {
   const todayStartMs = todayStart.getTime();
 
   const buckets = [];
-  for (let i = 0; i <= numDays; i++) buckets.push(0);
+  // familyBuckets[i] = { gligli, easa, classique } — répartition par famille de banque du
+  // total buckets[i], pour le dégradé de couleurs de _renderSrForecast(). La clé de réponse
+  // (pas d'objet question ici) contient déjà l'identifiant de catégorie agrégé — voir
+  // _srFamilyFromKey ci-dessous, pendant de _srFamily/_srFamilyRank (js/helpers.js) qui, eux,
+  // opèrent sur un objet question complet.
+  const familyBuckets = [];
+  for (let i = 0; i <= numDays; i++) { buckets.push(0); familyBuckets.push({ gligli: 0, easa: 0, classique: 0 }); }
   let beyond = 0;
   let totalEligible = 0;
 
@@ -2290,11 +2296,27 @@ function _computeSrForecast(responses, numDays, validKeys) {
     const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
     let diffDays = Math.floor((nr - todayStartMs) / dayMs);
     if (diffDays < 0) diffDays = 0;
-    if (diffDays <= numDays) buckets[diffDays]++;
-    else beyond++;
+    if (diffDays <= numDays) {
+      buckets[diffDays]++;
+      const fam = _srFamilyFromKey(key);
+      familyBuckets[diffDays][fam]++;
+    } else beyond++;
   });
 
-  return { buckets, beyond, totalEligible };
+  return { buckets, familyBuckets, beyond, totalEligible };
+}
+
+/**
+ * _srFamilyFromKey(key) – Équivalent de _srFamily()/_srFamilyRank() (js/helpers.js) mais à
+ * partir d'une clé de réponse ("question_<catégorie agrégée>_<id>") plutôt que d'un objet
+ * question complet — _computeSrForecast() n'a accès qu'aux clés du document Firestore
+ * `responses`, pas aux questions elles-mêmes.
+ */
+function _srFamilyFromKey(key) {
+  const k = (key || '').toLowerCase();
+  if (k.includes('gligli')) return 'gligli';
+  if (k.includes('easa')) return 'easa';
+  return 'classique';
 }
 
 /**
@@ -2309,29 +2331,42 @@ function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
   const NUM_DAYS = 28; // 4 semaines
-  const { buckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
+  const { buckets, familyBuckets, beyond, totalEligible } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
 
+  // Mêmes couleurs que l'ordre de présentation en session (GLIGLI d'abord, EASA ensuite,
+  // classiques en dernier — voir _srFamilyRank, js/helpers.js) : orange et bleu/violet
+  // réutilisent les 2 teintes déjà présentes dans cette carte (au lieu d'en ajouter une 3e
+  // et une 4e), seule la couleur "classiques" est nouvelle.
+  const FAM_COLORS = { gligli: '#f59e0b', easa: '#667eea', classique: '#10b981' };
+
   const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  const barMax = Math.max(1, ...buckets);
   let rowsHtml = '';
   for (let i = 0; i <= NUM_DAYS; i++) {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + i);
     const dueCount = buckets[i];
+    const fam = familyBuckets[i];
     const total = dueCount + dailyNewTarget;
     const estSec = dueCount * secPerReview + dailyNewTarget * secPerNew;
     const estMin = Math.round(estSec / 60);
     const dayLabel = i === 0 ? 'Aujourd\'hui' : (i === 1 ? 'Demain' : (dayNames[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1)));
-    const barMax = Math.max(1, ...buckets);
-    const barPct = Math.round((dueCount / barMax) * 100);
+    // Longueur totale de la barre proportionnelle au jour le plus chargé (comme avant), puis
+    // répartie en 3 segments proportionnels au poids de chaque famille CE jour-là.
+    const barPct = (dueCount / barMax) * 100;
+    const segPct = fam0 => dueCount > 0 ? (fam0 / dueCount) * barPct : 0;
+    const segGligli = segPct(fam.gligli), segEasa = segPct(fam.easa), segClassique = segPct(fam.classique);
     rowsHtml += `
       <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05)">
         <span style="flex:0 0 90px;${i === 0 ? 'font-weight:700;color:#f59e0b' : ''}">${dayLabel}</span>
-        <div style="flex:1;min-width:60px;background:rgba(255,255,255,.06);border-radius:4px;height:14px;position:relative;overflow:hidden">
-          <div style="height:100%;width:${barPct}%;background:${i === 0 ? '#f59e0b' : '#667eea'};border-radius:4px"></div>
+        <div style="flex:1;min-width:60px;background:rgba(255,255,255,.06);border-radius:4px;height:14px;position:relative;overflow:hidden;display:flex">
+          <div style="height:100%;width:${segGligli}%;background:${FAM_COLORS.gligli}"></div>
+          <div style="height:100%;width:${segEasa}%;background:${FAM_COLORS.easa}"></div>
+          <div style="height:100%;width:${segClassique}%;background:${FAM_COLORS.classique}"></div>
         </div>
         <span style="flex:0 0 70px;text-align:right">📅 ${dueCount}${i === 0 && dueCount > 0 ? ' (dont retard)' : ''}</span>
         <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">+${dailyNewTarget} nv.</span>
@@ -2351,6 +2386,11 @@ function _renderSrForecast(responses, validKeys) {
         historique de réussite/échec réel), plus ton objectif de nouvelles questions/jour
         (${dailyNewTarget}, modifiable sur l'accueil). Temps estimé à partir de ton rythme réel mesuré.
       </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72em;color:var(--text-secondary);margin:0 0 8px">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.gligli};margin-right:4px"></span>GLIGLI</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.easa};margin-right:4px"></span>EASA</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.classique};margin-right:4px"></span>Classiques</span>
+      </div>
       <div style="display:flex;gap:8px;font-size:.75em;color:var(--text-secondary);padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px">
         <span style="flex:0 0 90px">Jour</span>
         <span style="flex:1;min-width:60px"></span>

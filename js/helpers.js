@@ -664,6 +664,28 @@ function _isDueForReview(r, now) {
 }
 
 /**
+ * _srFamily(q) / _srFamilyRank(q) – Classe une question dans l'une des 3 "familles" de
+ * banques (GLIGLI / EASA / classique), d'après le PRÉFIXE de q.categorie une fois chargée.
+ * chargerQuestions() (js/categories.js) réécrit systématiquement q.categorie avec l'identifiant
+ * de catégorie AGRÉGÉ (ex: "GLIGLI NAVIGATION EASY", "EASA NAVIGATION") — le champ "categorie"
+ * BRUT du JSON source (ex: "NAVIGATION") ne suffirait PAS à distinguer les familles : GLIGLI et
+ * les banques classiques partagent parfois la même valeur brute (ex: "RÉGLEMENTATION" existe à
+ * la fois dans questions_reglementation.json et gligli_reglementation_easy.json). Utilisé pour
+ * l'ordre de présentation en session de révision (GLIGLI d'abord, EASA ensuite, classiques en
+ * dernier) et pour la répartition par famille du programme des prochains jours (js/stats.js).
+ */
+function _srFamily(q) {
+  const cat = (q && q.categorie) || '';
+  if (cat.startsWith('GLIGLI ')) return 'gligli';
+  if (cat.startsWith('EASA ')) return 'easa';
+  return 'classique';
+}
+function _srFamilyRank(q) {
+  const fam = _srFamily(q);
+  return fam === 'gligli' ? 0 : (fam === 'easa' ? 1 : 2);
+}
+
+/**
  * _updateRevisionsBadge() – Affiche/masque le badge "Révisions du jour" sur l'accueil.
  * Rend visible le nombre de questions dues pour répétition espacée (nbRevisionsToday, calculé
  * par updateModeCounts()), pour que le système de révision espacée ne passe plus inaperçu.
@@ -987,10 +1009,18 @@ function _updateObjectifSummary(nbRevisionsTrue, nbRevisions, dailyNewTarget, to
   const revisionsHtml = isCapped
     ? `<b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} (sur <b>${nbRevisionsTrue}</b> dues — plafonné)`
     : `<b>${nbRevisions}</b> révision${nbRevisions > 1 ? 's' : ''} due${nbRevisions > 1 ? 's' : ''}`;
+  // Questions "🚫 Ne plus revoir" (retirées de la rotation, typiquement parce que trop
+  // faciles/déjà maîtrisées) : nbSuspenduesTotal est déjà recalculé par updateModeCounts()
+  // sur ce même sous-ensemble (catégorie + filtres cochés) — juste l'afficher ici, il n'était
+  // exposé nulle part dans l'interface jusqu'ici.
+  const suspHtml = (typeof nbSuspenduesTotal === 'number' && nbSuspenduesTotal > 0)
+    ? ` &nbsp;·&nbsp; 🚫 <b>${nbSuspenduesTotal}</b> retirée${nbSuspenduesTotal > 1 ? 's' : ''} (trop facile${nbSuspenduesTotal > 1 ? 's' : ''})`
+    : '';
   el.innerHTML = `📚 <b>${catLabel}</b><br>`
     + `📅 ${revisionsHtml}`
     + ` + <b>${dailyNewTarget}</b> nouvelle${dailyNewTarget > 1 ? 's' : ''} = <b>${total}</b> question${total > 1 ? 's' : ''}`
-    + ` &nbsp;(~${estMin} min estimées)`;
+    + ` &nbsp;(~${estMin} min estimées)`
+    + suspHtml;
 
   // Garder le menu "Catégorie" de la carte Objectif synchronisé avec le menu principal
   // (utile si la catégorie a été changée depuis la carte "Configuration du Quiz")

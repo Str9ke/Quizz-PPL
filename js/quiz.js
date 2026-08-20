@@ -1302,9 +1302,21 @@ function _recordAnswerNow(q, selectedVal, isCorrect) {
   const key = getKeyFor(q);
   if (!window._immediateSavedEntries) window._immediateSavedEntries = {};
   if (!window._immediatePrevStatus) window._immediatePrevStatus = {};
+  if (!window._immediateOrigSnapshot) window._immediateOrigSnapshot = {};
   if (!(key in window._immediatePrevStatus)) {
     window._immediatePrevStatus[key] = currentResponses[key]?.status;
   }
+  // Changer d'avis : l'utilisateur peut recliquer une autre réponse après avoir déjà répondu
+  // (voir handleImmediateAnswer, qui ne désactive plus les radios). Il faut alors recalculer
+  // depuis l'état d'AVANT la toute première réponse donnée à cette question dans cette page —
+  // jamais depuis l'entrée intermédiaire qu'on vient nous-mêmes d'écrire au clic précédent,
+  // sinon un simple correctif de clic compterait comme une 2e révision distincte (planification
+  // et failCount doublés). Même principe déjà utilisé en mode correction différée, ligne ~1040.
+  if (!(key in window._immediateOrigSnapshot)) {
+    window._immediateOrigSnapshot[key] = currentResponses[key];
+  }
+  const orig = window._immediateOrigSnapshot[key];
+  if (orig === undefined) delete currentResponses[key]; else currentResponses[key] = orig;
   const entry = _computeSrEntry(q, selectedVal);
   window._immediateSavedEntries[key] = entry;
   currentResponses[key] = entry;
@@ -1401,6 +1413,12 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
 
   // Sauvegarder la réponse en mémoire (pour validerReponses) — indexé par position dans le tableau
   if (!window._immediateAnswers) window._immediateAnswers = {};
+  // Changer d'avis : cette question a-t-elle DÉJÀ une réponse enregistrée par ce même
+  // gestionnaire (pas une restauration) ? Si oui, ne pas recompter "répondue" une 2e fois, et
+  // n'ajuster le score juste/faux que si le résultat a réellement changé — sinon corriger une
+  // réponse gonflerait ou dégonflerait le score à tort.
+  const _hadPrevAnswer = !isRestore && window._immediateAnswers[idx] !== undefined;
+  const _prevWasCorrect = _hadPrevAnswer && window._immediateAnswers[idx] === q.bonne_reponse;
   window._immediateAnswers[idx] = selectedVal;
 
   // Persistance immédiate de la réponse (statut + planification SR) : calculée et écrite
@@ -1426,21 +1444,32 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
     _recordAnswerNow(q, selectedVal, isCorrect);
   }
 
-  // Mettre à jour le score
-  window._immediateScore.answered++;
-  if (isCorrect) window._immediateScore.correct++;
+  // Mettre à jour le score (idempotent en cas de changement de réponse — voir plus haut)
+  if (!_hadPrevAnswer) {
+    window._immediateScore.answered++;
+    if (isCorrect) window._immediateScore.correct++;
+  } else if (_prevWasCorrect !== isCorrect) {
+    window._immediateScore.correct += isCorrect ? 1 : -1;
+  }
 
   const scoreVal = document.getElementById('immScoreVal');
   const scoreAnswered = document.getElementById('immScoreAnswered');
   if (scoreVal) scoreVal.textContent = window._immediateScore.correct;
   if (scoreAnswered) scoreAnswered.textContent = window._immediateScore.answered;
 
-  // Désactiver tous les radios de cette question (idx passé en paramètre)
+  // Colorer sans désactiver : l'utilisateur doit pouvoir encore changer de réponse en
+  // recliquant un autre choix (voir _recordAnswerNow, qui recalcule alors depuis l'état
+  // d'avant cette question plutôt que depuis la réponse intermédiaire qu'on vient
+  // d'enregistrer, pour ne pas compter deux révisions). On réinitialise donc la coloration
+  // de TOUS les choix avant de réappliquer celle du choix actuel, plutôt que de l'empiler.
   const allRadios = document.querySelectorAll(`input[name="qidx${idx}"]`);
   allRadios.forEach(r => {
-    r.disabled = true;
     const label = r.closest('label');
     if (!label) return;
+    label.style.background = '';
+    label.style.borderLeft = '';
+    label.style.paddingLeft = '';
+    label.style.borderRadius = '';
     const val = parseInt(r.value);
     if (val === q.bonne_reponse) {
       label.style.background = 'var(--correct-bg, #d4edda)';
@@ -1479,12 +1508,15 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   // Afficher l'explication si disponible
   const questionBlock = selectedRadio.closest('.question-block');
   if (questionBlock) {
-    // Historique ratée/réussie + position dans la répétition espacée — inséré une seule fois
-    if (!questionBlock.querySelector('.sr-stats-badge')) {
-      const statsDiv = document.createElement('div');
-      statsDiv.innerHTML = _srStatsHtml(q);
-      if (statsDiv.firstChild) questionBlock.appendChild(statsDiv.firstChild);
-    }
+    // Historique ratée/réussie + position dans la répétition espacée — reconstruit à chaque
+    // réponse (pas seulement la première) : un changement de réponse modifie ces chiffres
+    // (voir _recordAnswerNow), le badge affiché doit rester exact plutôt que figé sur le
+    // tout premier clic.
+    const oldStatsBadge = questionBlock.querySelector('.sr-stats-badge');
+    if (oldStatsBadge) oldStatsBadge.remove();
+    const statsDiv = document.createElement('div');
+    statsDiv.innerHTML = _srStatsHtml(q);
+    if (statsDiv.firstChild) questionBlock.appendChild(statsDiv.firstChild);
     if (q.explication || (q.explication_images && q.explication_images.length)) {
       // Vérifier qu'on n'a pas déjà ajouté l'explication
       if (!questionBlock.querySelector('.explication-block')) {
