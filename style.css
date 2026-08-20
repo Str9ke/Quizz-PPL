@@ -236,6 +236,52 @@ button:disabled {
   box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 
+/* Images zoomables (question/explication/note) — voir js/img-zoom.js */
+.question-image img,
+.explication-block img,
+.personal-note-block img {
+  cursor: zoom-in;
+}
+
+#imgZoomOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(0, 0, 0, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+#imgZoomOverlay.open {
+  display: flex;
+}
+#imgZoomOverlay img#imgZoomImg {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+}
+#imgZoomClose {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 20001;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 40px;
+  cursor: pointer;
+}
+
 .answer-list {
   margin-left: 20px;
   color: var(--text-secondary);
