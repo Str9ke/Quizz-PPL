@@ -55,7 +55,22 @@ function _stripUndefinedFields(obj) {
 // philosophie que _migrateStatusLogToSubcollection ci-dessous, déjà en place depuis plus
 // longtemps pour l'historique détaillé).
 
-const RESPONSE_SHARD_CAPACITY = 2000;
+/* Firestore impose DEUX plafonds distincts par document, et le dimensionnement ci-dessous doit
+   satisfaire le plus contraignant des deux — c'est précisément ce qui avait été manqué :
+     1. 1 Mio de données  → ~500 octets par entrée, donc 2000 entrées tenaient très large ;
+     2. 40 000 ENTRÉES D'INDEX → c'est ce plafond-là qui saute en premier, et de loin.
+   Chaque réponse est un objet imbriqué d'une dizaine de champs (status, failCount,
+   successCount, srInterval, nextReview, timestamp, marked, important, suspended...) et
+   Firestore indexe automatiquement CHAQUE champ, en ordre croissant ET décroissant, à la fois
+   pour la collection et pour le groupe de collections — soit environ 40 entrées d'index par
+   réponse. À 2000 réponses par shard on dépassait donc largement les 40 000, d'où l'échec
+   d'écriture "too many index entries for entity" sur un shard plein, alors que le document
+   pesait moins de 100 Ko.
+   300 entrées laissent ~3x de marge sous le plafond, y compris pour les entrées les plus
+   fournies. Baisser ce nombre est rétrocompatible : les shards déjà écrits gardent leur
+   contenu (ils sont découverts en LISTANT la sous-collection, pas via une taille supposée),
+   et seule la répartition des NOUVELLES entrées est concernée. */
+const RESPONSE_SHARD_CAPACITY = 300;
 
 /* ============================================================
    File d'attente des réponses données HORS-LIGNE

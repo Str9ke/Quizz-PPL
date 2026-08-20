@@ -27,6 +27,15 @@ jobs:
       - name: Deploy Firestore & Storage rules
         run: npx --yes firebase-tools@13 deploy --only firestore:rules,firestore:indexes,storage --project quizaviation-b79ff --non-interactive
 
+      # Un déploiement qui affiche "deployed indexes successfully" ne prouve PAS qu'une exemption
+      # d'indexation (fieldOverrides) a réellement été appliquée côté projet — la commande peut
+      # réussir en ayant ignoré un override. Or ces exemptions sont le seul rempart contre
+      # l'erreur d'écriture "too many index entries for entity" sur les documents responseShards,
+      # qui contiennent une map `responses` de plusieurs centaines d'entrées imbriquées.
+      # On imprime donc la configuration RÉELLEMENT active, pour pouvoir la vérifier.
+      - name: Show the live Firestore index configuration
+        run: npx --yes firebase-tools@13 firestore:indexes --project quizaviation-b79ff
+
       - name: Clean up credentials
         if: always()
         run: rm -f "$RUNNER_TEMP/firebase-sa.json"
