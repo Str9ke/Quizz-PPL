@@ -104,7 +104,7 @@
          largeur, empilés un par ligne — ce qui repoussait le reste du diagnostic hors de
          l'écran sur téléphone. -->
     <div class="cfg-row" style="border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px;gap:8px;flex-wrap:wrap">
-      <button type="button" class="stats-btn" onclick="_cfgRunOfflineCheck()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔍 Vérifier maintenant</button>
+      <button type="button" class="stats-btn" onclick="_cfgRunOfflineCheck(true)" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔍 Vérifier maintenant</button>
       <button type="button" class="stats-btn" id="cfgPersistStorageBtn" onclick="_cfgRequestPersistentStorage()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">🔒 Protéger le stockage</button>
       <button type="button" class="stats-btn" id="cfgForceRecacheBtn" onclick="_cfgForceRecache()" style="padding:6px 14px;width:auto;margin:0;flex:0 0 auto">📥 Forcer le téléchargement complet</button>
     </div>
@@ -654,7 +654,13 @@
         target.postMessage(data, [channel.port2]);
       });
     }
-    async function _cfgCheckOfflineReadiness() {
+    // `force` : refaire réellement l'appel réseau de vérification de version au lieu de
+    // réutiliser le dernier résultat connu. Sans lui, la ligne « Mise à jour » pouvait annoncer
+    // « à jour » en se basant sur un résultat vieux de plusieurs heures (voir CHECK_INTERVAL_MS
+    // dans js/update-check.js) — y compris juste après un clic sur « Vérifier maintenant »,
+    // c'est-à-dire précisément quand on lui pose la question. Le chargement automatique de la
+    // page, lui, continue de se contenter du cache : inutile d'aller sur le réseau à chaque fois.
+    async function _cfgCheckOfflineReadiness(force) {
       const r = { swActive: false, cacheFileCount: 0, criticalFilesOk: false,
         persistenceStatus: 'checking', storagePersisted: false, quota: null,
         appVersion: null, lastSync: null, lastSyncFromServer: false, mirror: null,
@@ -663,7 +669,7 @@
       // « Suis-je à jour ? » — voir js/update-check.js. Indispensable pour l'APK, qui ne se
       // met jamais à jour tout seul.
       try {
-        if (window.appUpdate) r.update = await window.appUpdate.check(false);
+        if (window.appUpdate) r.update = await window.appUpdate.check(!!force);
       } catch (e) { console.warn('[offline-diag] vérification de version:', e); }
 
       // État du miroir local des réponses (js/localmirror.js)
@@ -852,10 +858,10 @@
       ).join('') + quotaHtml + versionHtml + updateHtml + lastSyncHtml;
     }
 
-    window._cfgRunOfflineCheck = async function() {
+    window._cfgRunOfflineCheck = async function(force) {
       const verdictEl = document.getElementById('cfgOfflineVerdict');
       if (verdictEl) { verdictEl.style.background = 'rgba(255,255,255,.06)'; verdictEl.style.color = ''; verdictEl.textContent = 'Vérification…'; }
-      const r = await _cfgCheckOfflineReadiness();
+      const r = await _cfgCheckOfflineReadiness(force);
       _cfgRenderOfflineDiagnostic(r);
     };
 
@@ -1207,7 +1213,9 @@
       if (btn) { btn.disabled = false; btn.textContent = '📥 Forcer le téléchargement complet'; }
       if (result) alert('✅ ' + result.ok + ' / ' + result.total + ' fichiers téléchargés et mis en cache.');
       else alert('⚠️ Pas de réponse du Service Worker — réessaie, ou recharge la page une fois puis réessaie.');
-      window._cfgRunOfflineCheck();
+      // Re-vérification réelle : on vient justement de retélécharger, le résultat mis en cache
+      // n'a plus aucune raison de faire autorité.
+      window._cfgRunOfflineCheck(true);
     };
 
     // === Travail hors-ligne en attente d'envoi ===
