@@ -427,21 +427,26 @@ function toggleImportantQuestion(questionIdx, button) {
 }
 
 /**
- * toggleSuspendQuestion() – Marque une question "à ne plus revoir" : elle sort de tous les
- * modes de sélection automatique (mixte, révisions, objectif, non vues, ratées, etc.),
- * sauf du mode dédié "🚫 Ne plus revoir" qui permet de la retrouver et de la réactiver.
+ * _persistSuspendToggle(questionIdx) – Bascule et persiste l'état "à ne plus revoir" d'une
+ * question (partie sans DOM de toggleSuspendQuestion/_assistToggleSuspend, réutilisée par les
+ * deux : la vue normale et le Mode Assistance n'ont pas le même bouton à mettre à jour derrière,
+ * mais la même logique d'état/persistance). Effet appliqué IMMÉDIATEMENT, avant l'écriture
+ * réseau (même principe que adjustSrFrequency) — nécessaire en Mode Assistance, où plusieurs
+ * boutons dont celui-ci doivent pouvoir être recliqués rapidement à la suite : attendre la
+ * réponse du serveur avant de mettre à jour currentResponses faisait lire un état encore
+ * périmé par un 2e clic rapproché, et le bouton pouvait sembler ne pas réagir ou basculer dans
+ * le mauvais sens. Renvoie `null` si rien n'a pu être fait (pas connecté / question introuvable).
  */
-function toggleSuspendQuestion(questionIdx, button) {
+function _persistSuspendToggle(questionIdx) {
   const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
   if (!uid) {
     alert("Vous devez être connecté pour ne plus revoir une question.");
-    return;
+    return null;
   }
-
   const question = currentQuestions[questionIdx];
   if (!question) {
     console.error("Question introuvable dans la catégorie sélectionnée.");
-    return;
+    return null;
   }
 
   const key = getKeyFor(question);
@@ -453,27 +458,57 @@ function toggleSuspendQuestion(questionIdx, button) {
   const entry = { marked: prev.marked === true, important: prev.important === true, suspended: newSuspended };
   if (prev.status !== undefined) entry.status = prev.status;
 
+  currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
+  updateModeCounts();
+
+  if (typeof _mirrorApplyDelta === 'function') {
+    _mirrorApplyDelta(uid, { [key]: entry }).catch(() => {});
+  }
+
   _saveResponsesSharded(uid, { [key]: entry })
-    .then(() => {
-      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
-      button.textContent = newSuspended ? "↩️" : "🚫";
-      button.title       = newSuspended
-        ? "Revoir à nouveau (réactiver cette question)"
-        : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
-      button.className   = (newSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
-      updateModeCounts();
-    })
     .catch(async (err) => {
       console.warn('[offline] toggleSuspend fallback');
       try { await _saveResponsesSharded(uid, { [key]: entry }); } catch (e2) { console.error('[offline] toggleSuspend retry failed:', e2); }
-      currentResponses[key] = { ...prev, status: prev.status, marked: prev.marked, important: prev.important, suspended: newSuspended };
-      button.textContent = newSuspended ? "↩️" : "🚫";
-      button.title       = newSuspended
-        ? "Revoir à nouveau (réactiver cette question)"
-        : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
-      button.className   = (newSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
-      updateModeCounts();
     });
+
+  return { newSuspended };
+}
+
+/**
+ * toggleSuspendQuestion() – Marque une question "à ne plus revoir" (vue normale, bouton icône
+ * compact) : elle sort de tous les modes de sélection automatique (mixte, révisions, objectif,
+ * non vues, ratées, etc.), sauf du mode dédié "🚫 Ne plus revoir" qui permet de la retrouver et
+ * de la réactiver.
+ */
+function toggleSuspendQuestion(questionIdx, button) {
+  const result = _persistSuspendToggle(questionIdx);
+  if (!result) return;
+  const { newSuspended } = result;
+  button.textContent = newSuspended ? "↩️" : "🚫";
+  button.title       = newSuspended
+    ? "Revoir à nouveau (réactiver cette question)"
+    : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques (mixte, révisions, objectif du jour, etc.)";
+  button.className   = (newSuspended ? "unimportant-button" : "delete-button") + " qa-icon-btn";
+}
+
+/**
+ * _assistToggleSuspend() – Même bascule, pour le bouton pleine largeur (icône + libellé) du
+ * Mode Assistance : structure DOM différente du bouton icône compact de la vue normale, donc
+ * mise à jour de bouton séparée plutôt que de réutiliser toggleSuspendQuestion() telle quelle
+ * (qui écraserait le <span> du libellé et les classes de mise en page assist-mode-sr-btn).
+ */
+function _assistToggleSuspend(questionIdx, button) {
+  const result = _persistSuspendToggle(questionIdx);
+  if (!result) return;
+  const { newSuspended } = result;
+  button.classList.toggle('assist-mode-sr-suspend-active', newSuspended);
+  button.title = newSuspended
+    ? "Revoir à nouveau (réactiver cette question)"
+    : "Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques";
+  const icon = button.querySelector('.assist-mode-sr-suspend-icon');
+  const label = button.querySelector('span:last-child');
+  if (icon) icon.textContent = newSuspended ? '↩️' : '🚫';
+  if (label) label.textContent = newSuspended ? 'Revoir à nouveau' : 'Ne plus revoir';
 }
 
 /**
@@ -1752,6 +1787,7 @@ function _assistRenderCurrent() {
   const q = currentQuestions[idx];
   const answeredCount = currentQuestions.reduce((n, _, i) => n + (_assistIsAnswered(i) ? 1 : 0), 0);
   const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const isSuspended = currentResponses[getKeyFor(q)]?.suspended === true;
 
   cont.style.display = 'block';
   cont.innerHTML = `
@@ -1780,6 +1816,11 @@ function _assistRenderCurrent() {
                 onclick="adjustSrFrequency(${idx}, this, 'harder')"
                 title="Plus souvent — rapprocher la prochaine révision de cette question (jugée difficile)">
           📈 <span>Plus souvent</span>
+        </button>
+        <button type="button" class="assist-mode-sr-btn assist-mode-sr-suspend${isSuspended ? ' assist-mode-sr-suspend-active' : ''}"
+                onclick="_assistToggleSuspend(${idx}, this)"
+                title="${isSuspended ? 'Revoir à nouveau (réactiver cette question)' : 'Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques'}">
+          <span class="assist-mode-sr-suspend-icon">${isSuspended ? '↩️' : '🚫'}</span> <span>${isSuspended ? 'Revoir à nouveau' : 'Ne plus revoir'}</span>
         </button>
       </div>
       <div class="assist-mode-feedback" id="assistModeFeedback"></div>
@@ -1847,7 +1888,9 @@ function _assistAnswer(choiceIdx) {
     handleImmediateAnswer(q, realRadio, idx);
   }
 
-  const delay = isCorrect ? 1200 : 4000;
+  // +2s par rapport à l'origine (1200/4000) : le temps de cliquer "Moins souvent"/"Plus
+  // souvent"/"Ne plus revoir" (juste en dessous) avant que la question ne change toute seule.
+  const delay = isCorrect ? 3200 : 6000;
   clearTimeout(window._assistAdvanceTimer);
   window._assistAdvanceTimer = setTimeout(() => _assistSkipToNext(), delay);
 }
