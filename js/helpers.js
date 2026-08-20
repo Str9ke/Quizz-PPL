@@ -888,6 +888,9 @@ function _qtAddSessionTime(ms, qIdx) {
   try { localStorage.setItem('qtSessionCountedIdx', JSON.stringify(counted)); } catch (e) { /* ignore */ }
   const total = (parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0) + ms;
   try { localStorage.setItem('qtSessionTotalMs', String(total)); } catch (e) { /* ignore */ }
+  // Cumul par jour (graphique "Temps passé par jour") — placé APRÈS la déduplication par qIdx
+  // ci-dessus, dont il hérite ainsi : recocher la même question ne recompte pas son temps.
+  if (typeof _qtAddDailyTime === 'function') _qtAddDailyTime(ms);
 }
 /**
  * _qtFlushFinalSegment() – À appeler à la validation du quiz : ajoute au total le temps actif
@@ -900,12 +903,46 @@ function _qtFlushFinalSegment() {
   if (!isFinite(ms) || ms <= 0) return;
   const total = (parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0) + ms;
   try { localStorage.setItem('qtSessionTotalMs', String(total)); } catch (e) { /* ignore */ }
+  if (typeof _qtAddDailyTime === 'function') _qtAddDailyTime(ms);
 }
 function _qtGetSessionTotal() {
   const ms = parseFloat(localStorage.getItem('qtSessionTotalMs')) || 0;
   let counted;
   try { counted = JSON.parse(localStorage.getItem('qtSessionCountedIdx') || '[]'); } catch (e) { counted = []; }
   return { ms, count: counted.length };
+}
+
+/**
+ * ===== Temps réel passé PAR JOUR (_qt*DailyTime) =====
+ * Jusqu'ici AUCUN temps par jour n'était conservé nulle part : `qTimeStats` ne retient qu'une
+ * moyenne mobile (sec/question, sans la moindre date) et `qtSessionTotalMs` est remis à zéro à
+ * chaque nouvelle série. Le temps passé les jours précédents était donc définitivement perdu.
+ * On accumule désormais le temps actif réel dans une map { 'AAAA-MM-JJ': ms }.
+ *
+ * Alimentée au fil des réponses (via _qtAddSessionTime ci-dessus) et NON à la validation de la
+ * série : une session abandonnée en cours de route compte donc quand même — même raisonnement
+ * que la persistance immédiate des réponses, où attendre la validation faisait tout perdre.
+ */
+const QTIME_DAILY_KEY = 'dailyTimeMsBackup';
+
+function _qtTodayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function _qtAddDailyTime(ms) {
+  if (!isFinite(ms) || ms <= 0) return;
+  // Même plafond que pour les échantillons de rythme : un segment aberrant (page laissée
+  // ouverte, téléphone qui se réveille tard) ne doit pas gonfler la journée entière.
+  const capped = Math.min(ms, QTIME_MAX_SAMPLE_SEC * 1000);
+  try {
+    const map = JSON.parse(localStorage.getItem(QTIME_DAILY_KEY) || '{}');
+    const k = _qtTodayKey();
+    map[k] = Math.round((map[k] || 0) + capped);
+    localStorage.setItem(QTIME_DAILY_KEY, JSON.stringify(map));
+  } catch (e) { /* quota plein, tant pis */ }
+}
+function _qtGetDailyTimeMap() {
+  try { return JSON.parse(localStorage.getItem(QTIME_DAILY_KEY) || '{}'); } catch (e) { return {}; }
 }
 /**
  * _qtFormatDuration(ms) – "4 min 32 s" / "48 s" pour l'affichage du temps réel de session.
