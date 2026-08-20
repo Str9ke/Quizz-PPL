@@ -79,13 +79,18 @@ async function _mirrorSaveResponses(uid, responses) {
   const count = Object.keys(responses).length;
   if (!count) return false; // ne jamais remplacer un miroir garni par un objet vide
   return new Promise(resolve => {
+    // window._mirrorAvailable — signale aux autres filets de sécurité que CE miroir fonctionne
+    // réellement sur cet appareil. _backupResponsesLocally() (js/offline.js) s'en sert pour ne
+    // PAS dupliquer inutilement le même instantané complet dans localStorage, plafonné à ~5 Mo
+    // et qu'un compte à plusieurs milliers de questions saturait à lui seul.
     try {
       const tx = db.transaction(MIRROR_STORE, 'readwrite');
       tx.objectStore(MIRROR_STORE).put({ uid, responses, savedAt: Date.now(), count });
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => { console.warn('[mirror] Écriture échouée:', tx.error && tx.error.message); resolve(false); };
-      tx.onabort = () => { console.warn('[mirror] Écriture annulée:', tx.error && tx.error.message); resolve(false); };
+      tx.oncomplete = () => { window._mirrorAvailable = true; resolve(true); };
+      tx.onerror = () => { window._mirrorAvailable = false; console.warn('[mirror] Écriture échouée:', tx.error && tx.error.message); resolve(false); };
+      tx.onabort = () => { window._mirrorAvailable = false; console.warn('[mirror] Écriture annulée:', tx.error && tx.error.message); resolve(false); };
     } catch (e) {
+      window._mirrorAvailable = false;
       console.warn('[mirror] Écriture impossible:', e.message);
       resolve(false);
     }

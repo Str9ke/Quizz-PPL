@@ -34,6 +34,49 @@ function _clearRegenerableLocalStorage() {
 }
 
 /**
+ * _clearSecondaryLocalStorage() – DEUXIÈME palier de libération, tenté uniquement si le premier
+ * (caches régénérables du Briefing) n'a pas suffi. Constaté en pratique : « Stockage local plein :
+ * impossible de démarrer le quiz » alors que le Briefing était déjà vide — il n'y avait donc plus
+ * rien à libérer et le message demandait l'impossible.
+ *
+ * localStorage est plafonné à ~5 Mo par origine (indépendamment des ~10 Go d'IndexedDB affichés
+ * dans Configuration, qui ne le concernent pas). Deux postes le saturent :
+ *
+ *  1. `responsesBackup_<uid>` — un instantané COMPLET de toutes les réponses, réécrit à CHAQUE
+ *     réponse (voir _backupResponsesLocally). Sur un compte à plusieurs milliers de questions il
+ *     pèse à lui seul plusieurs centaines de Ko. C'est un doublon : le miroir IndexedDB
+ *     (_mirrorSaveResponses) conserve le même instantané, et c'est LUI que la récupération lit en
+ *     premier (voir _loadMergedResponses). Le supprimer ne perd donc aucune donnée.
+ *
+ *  2. `dailyAnswered_*` / `dailyCountRatchet_*` / `dailyMastered_*` — une clé PAR JOUR, écrite
+ *     depuis toujours et jamais nettoyée. Au-delà de quelques mois, elles ne servent plus à rien :
+ *     les maps `dailyHistoryBackup` / `dailyMasteredBackup` (et Firestore) contiennent déjà le même
+ *     historique sous forme compacte. On ne touche qu'aux clés de plus de 90 jours, pour laisser
+ *     intacte la fenêtre réellement consultée (graphiques 60 jours, séries en cours).
+ */
+function _clearSecondaryLocalStorage() {
+  const cutoffMs = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const toRemove = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (k.startsWith('responsesBackup_')) { toRemove.push(k); continue; }
+      const m = k.match(/^(?:dailyAnswered|dailyCountRatchet|dailyMastered)_(\d{4}-\d{2}-\d{2})$/);
+      if (m) {
+        const t = Date.parse(m[1]);
+        if (isFinite(t) && t < cutoffMs) toRemove.push(k);
+      }
+    }
+  } catch (e) { /* énumération impossible : on fait avec ce qu'on a */ }
+  // Suppression APRÈS l'énumération : retirer des clés pendant qu'on parcourt par index
+  // décale les suivantes et en sauterait une sur deux.
+  toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
+  if (toRemove.length) console.warn('[localStorage] 2e palier : ' + toRemove.length + ' clé(s) libérée(s)');
+  return toRemove.length;
+}
+
+/**
  * _setLocalStorageWithCleanup(key, value) – Écrit dans localStorage ; si le quota est dépassé,
  * libère les caches régénérables (voir _clearRegenerableLocalStorage) puis réessaie une fois.
  * Renvoie true si l'écriture a fini par réussir, false sinon (l'appelant doit alors informer
@@ -52,8 +95,19 @@ function _setLocalStorageWithCleanup(key, value) {
       localStorage.setItem(key, value);
       return true;
     } catch (e2) {
-      console.error('[localStorage] toujours plein après nettoyage:', e2);
-      return false;
+      // Le Briefing était peut-être déjà vide : rien n'a alors été libéré au 1er palier. On tente
+      // le 2e (doublon du miroir + compteurs journaliers périmés) avant d'abandonner et
+      // d'afficher à l'utilisateur un message qui, sinon, lui demanderait l'impossible.
+      console.warn('[localStorage] toujours plein, passage au 2e palier de nettoyage...');
+      const freed = (typeof _clearSecondaryLocalStorage === 'function') ? _clearSecondaryLocalStorage() : 0;
+      if (!freed) { console.error('[localStorage] plus rien à libérer:', e2); return false; }
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (e3) {
+        console.error('[localStorage] toujours plein après le 2e palier:', e3);
+        return false;
+      }
     }
   }
 }
