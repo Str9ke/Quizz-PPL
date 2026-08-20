@@ -343,6 +343,55 @@ async function saveDailyMastered(uid) {
 window.saveDailyMastered = saveDailyMastered;
 
 /**
+ * saveDailyTime(uid) – Synchronise la map { 'AAAA-MM-JJ': ms } du temps passé par jour vers
+ * Firestore, pour que le graphique soit identique sur le site et dans l'app.
+ *
+ * On conserve le MAXIMUM par jour, pas la somme — exactement comme saveDailyMastered()
+ * ci-dessus. Additionner serait plus juste quand deux appareils sont utilisés le même jour,
+ * mais chaque re-synchronisation ré-additionnerait le même temps et la journée gonflerait
+ * indéfiniment. Entre sous-estimer légèrement et inventer du temps, on préfère sous-estimer.
+ */
+async function saveDailyTime(uid) {
+  if (!navigator.onLine) return;
+  try {
+    const local = (typeof _qtGetDailyTimeMap === 'function') ? _qtGetDailyTimeMap() : {};
+    if (!Object.keys(local).length) return;
+    const docRef = db.collection('quizProgress').doc(uid);
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      const server = doc.exists ? (doc.data().dailyTimeMs || {}) : {};
+      const dates = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(local)) {
+        if (v > (server[k] || 0)) { dates[k] = v; changed = true; }
+      }
+      if (!changed) return;
+      transaction.set(docRef, { dailyTimeMs: dates }, { merge: true });
+    });
+  } catch (e) { console.warn('[saveDailyTime] error:', e); }
+}
+window.saveDailyTime = saveDailyTime;
+
+/**
+ * _mergeServerDailyTime(serverMap) – Recopie le temps par jour du serveur dans la sauvegarde
+ * locale (source lue par le graphique), en gardant la valeur la plus élevée pour chaque jour.
+ * Sans ça, un appareil fraîchement installé afficherait un graphique vide alors que le temps
+ * existe bel et bien côté serveur.
+ */
+function _mergeServerDailyTime(serverMap) {
+  if (!serverMap || typeof serverMap !== 'object') return;
+  try {
+    const local = JSON.parse(localStorage.getItem('dailyTimeMsBackup') || '{}');
+    let changed = false;
+    for (const [k, v] of Object.entries(serverMap)) {
+      const n = Number(v) || 0;
+      if (n > (local[k] || 0)) { local[k] = n; changed = true; }
+    }
+    if (changed) localStorage.setItem('dailyTimeMsBackup', JSON.stringify(local));
+  } catch (e) { /* ignore */ }
+}
+
+/**
  * Utilise arrayUnion pour un ajout atomique sans read-modify-write.
  * Cela garantit que les sessions ajoutées sur différents appareils ne s'écrasent pas.
  */
@@ -673,7 +722,11 @@ async function initStats() {
       }
       if (changed) localStorage.setItem('dailyHistoryBackup', JSON.stringify(existingBackup));
     } catch (e) { /* ignore */ }
+    // Temps par jour : fusionner le serveur dans la sauvegarde locale AVANT de dessiner
+    // (le graphique lit la copie locale), puis renvoyer nos propres valeurs au serveur.
+    _mergeServerDailyTime(data.dailyTimeMs);
     afficherDailyChart(dailyHistory);
+    if (typeof saveDailyTime === 'function') saveDailyTime(uid).catch(() => {});
 
     // Mettre à jour la barre quotidienne avec les données enrichies
     // (la barre initiale était depuis localStorage, maintenant on a les données Firestore)
@@ -1687,7 +1740,131 @@ function afficherDailyChart(dailyHistory) {
   });
 
   html += `</div></div>`;
+
+  // ── Deuxième graphique : temps passé par jour, sur le même axe de 60 jours ──
+  html += _buildDailyTimeChartHtml(days);
+
   chartCont.innerHTML = html;
+
+  // Défilement latéral synchronisé entre les deux graphiques : ils partagent exactement le même
+  // axe de dates, les lire décalés n'aurait aucun sens. Le drapeau `syncing` évite la boucle
+  // infinie (A défile → B défile → A défile → ...).
+  const scrollers = chartCont.querySelectorAll('.daily-chart-scroll');
+  if (scrollers.length === 2) {
+    let syncing = false;
+    scrollers.forEach(src => {
+      src.addEventListener('scroll', () => {
+        if (syncing) return;
+        syncing = true;
+        scrollers.forEach(other => { if (other !== src) other.scrollLeft = src.scrollLeft; });
+        // Relâché au frame suivant : pendant ce laps, l'évènement 'scroll' provoqué par
+        // l'affectation ci-dessus est ignoré, au lieu de relancer la synchro en sens inverse.
+        requestAnimationFrame(() => { syncing = false; });
+      }, { passive: true });
+    });
+    // Démarrage sur les jours les plus récents (bord droit) plutôt que sur 60 jours en arrière,
+    // presque toujours la partie la moins intéressante.
+    requestAnimationFrame(() => { scrollers.forEach(s => { s.scrollLeft = s.scrollWidth; }); });
+  }
+}
+
+/**
+ * _qtFormatDayDuration(ms) – Durée compacte pour une journée entière ("1 h 12" / "45 min"),
+ * distincte de _qtFormatDuration() (js/helpers.js) qui vise une session courte et descend à la
+ * seconde ("4 min 32 s") — inutilement précis, et trop long, sur une barre de graphique.
+ */
+function _qtFormatDayDuration(ms) {
+  const totalMin = Math.round(ms / 60000);
+  if (totalMin < 60) return totalMin + ' min';
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
+}
+
+/**
+ * _buildDailyTimeChartHtml(days) – Graphique "Temps passé par jour", construit sur EXACTEMENT
+ * le même tableau `days` que l'activité quotidienne (mêmes 60 jours, même ordre, même géométrie
+ * de colonnes) : c'est ce qui permet de synchroniser le défilement latéral des deux et de les
+ * lire l'un sous l'autre sans décalage.
+ *
+ * Deux natures de barres, volontairement distinguées à l'œil :
+ *  - MESURÉ (plein) : temps réellement chronométré — disponible uniquement depuis la mise en
+ *    place de l'enregistrement (voir _qtAddDailyTime, js/helpers.js) ;
+ *  - ESTIMÉ (hachuré) : pour les jours ANTÉRIEURS, où seul le nombre de questions est connu.
+ *    Reconstitué par « nombre de questions × rythme réel mesuré » (_qtGetEstimateSecPerQuestion).
+ *    C'est un ordre de grandeur, jamais une mesure — d'où la distinction visuelle et la légende,
+ *    pour ne jamais faire passer l'un pour l'autre.
+ */
+function _buildDailyTimeChartHtml(days) {
+  const timeMap = (typeof _qtGetDailyTimeMap === 'function') ? _qtGetDailyTimeMap() : {};
+  const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
+    ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
+  // Sans le détail nouvelles/révisions pour un jour passé, on prend la moyenne des deux rythmes.
+  const avgSecPerQuestion = (secPerNew + secPerReview) / 2;
+
+  const rows = days.map(day => {
+    const measured = timeMap[day.key] || 0;
+    if (measured > 0) return { ...day, ms: measured, estimated: false };
+    const est = day.count > 0 ? day.count * avgSecPerQuestion * 1000 : 0;
+    return { ...day, ms: est, estimated: est > 0 };
+  });
+
+  const maxMs = Math.max(...rows.map(r => r.ms), 1);
+  const maxBarH = 120;
+  const total60 = rows.reduce((s, r) => s + r.ms, 0);
+  const todayMs = rows[rows.length - 1].ms;
+  const daysWithTime = rows.filter(r => r.ms > 0).length;
+  const avgPerActiveDay = daysWithTime ? total60 / daysWithTime : 0;
+  const anyEstimated = rows.some(r => r.estimated);
+
+  const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  let html = `
+    <div style="margin:18px 0 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <strong>Temps passé par jour</strong>
+      <div style="font-size:0.8em;color:var(--text-secondary)">
+        auj: <b>${_qtFormatDayDuration(todayMs)}</b> · 60j: <b>${_qtFormatDayDuration(total60)}</b> · moy/jour actif: <b>${_qtFormatDayDuration(avgPerActiveDay)}</b>
+      </div>
+    </div>`;
+
+  if (anyEstimated) {
+    html += `
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.72em;color:var(--text-secondary);margin-bottom:6px">
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f59e0b;margin-right:4px"></span>Mesuré</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,#f59e0b55,#f59e0b55 2px,transparent 2px,transparent 4px);border:1px solid #f59e0b88;margin-right:4px"></span>Estimé (avant l'enregistrement du temps)</span>
+    </div>`;
+  }
+
+  html += `<div class="daily-chart-scroll"><div class="daily-chart">`;
+
+  rows.forEach((r, idx) => {
+    const h = r.ms ? Math.max(Math.round((r.ms / maxMs) * maxBarH), 6) : 0;
+    const isToday = idx === rows.length - 1;
+    const dayLabel = String(r.date.getDate()).padStart(2, '0') + '/' + String(r.date.getMonth() + 1).padStart(2, '0');
+
+    let bottomLabel = '';
+    if (isToday) bottomLabel = 'Auj.';
+    else if (r.date.getDate() === 1) bottomLabel = monthNames[r.date.getMonth()];
+    else if (idx % 7 === 0) bottomLabel = dayLabel;
+
+    const solid = isToday ? '#667eea' : '#f59e0b';
+    const bg = r.estimated
+      ? `repeating-linear-gradient(45deg, ${solid}55, ${solid}55 3px, transparent 3px, transparent 6px)`
+      : solid;
+    const border = r.estimated ? `border:1px solid ${solid}88;` : '';
+    const titleTxt = r.ms
+      ? `${dayLabel} : ${_qtFormatDayDuration(r.ms)}${r.estimated ? ' (estimé)' : ''} · ${r.count} question(s)`
+      : `${dayLabel} : aucune activité`;
+
+    html += `<div class="daily-bar-col" title="${titleTxt}">
+      <div class="daily-bar-count">${r.ms ? _qtFormatDayDuration(r.ms).replace(/ /g, '') : ''}</div>
+      <div class="daily-bar" style="height:${h}px;background:${bg};${border}"></div>
+      <div class="daily-bar-label">${bottomLabel}</div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  return html;
 }
 
 /**
