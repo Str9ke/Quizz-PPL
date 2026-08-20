@@ -907,6 +907,19 @@ async function _deleteAllResponseShards(uid) {
  */
 function _backupResponsesLocally(uid, responses) {
   if (!uid || !responses) return;
+  // Quand le miroir IndexedDB fonctionne (cas normal), il détient DÉJÀ exactement cet
+  // instantané, avec un quota de plusieurs Go — et c'est lui que la récupération lit en premier
+  // (voir _loadMergedResponses). Dupliquer ici serait donc sans bénéfice, et coûteux : cette
+  // copie complète, réécrite à chaque réponse, saturait à elle seule les ~5 Mo de localStorage
+  // sur un compte à plusieurs milliers de questions, jusqu'à empêcher le simple démarrage d'un
+  // quiz (« Stockage local plein »). On ne conserve donc cette copie de secours que là où elle
+  // est réellement le dernier recours : quand IndexedDB est indisponible (navigation privée,
+  // stockage bloqué), auquel cas _mirrorSaveResponses met le drapeau à false.
+  if (window._mirrorAvailable === true) {
+    // Purge unique d'un éventuel doublon écrit par une version antérieure de l'app.
+    try { localStorage.removeItem('responsesBackup_' + uid); } catch (e) { /* ignore */ }
+    return;
+  }
   const payload = JSON.stringify({ responses, savedAt: Date.now() });
   const ok = (typeof _setLocalStorageWithCleanup === 'function')
     ? _setLocalStorageWithCleanup('responsesBackup_' + uid, payload)
