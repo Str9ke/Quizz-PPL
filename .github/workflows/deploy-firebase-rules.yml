@@ -25,7 +25,7 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
 
       - name: Deploy Firestore & Storage rules
-        run: npx --yes firebase-tools@13 deploy --only firestore:rules,storage --project quizaviation-b79ff --non-interactive
+        run: npx --yes firebase-tools@13 deploy --only firestore:rules,firestore:indexes,storage --project quizaviation-b79ff --non-interactive
 
       - name: Clean up credentials
         if: always()
