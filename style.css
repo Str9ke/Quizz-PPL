@@ -142,11 +142,22 @@ label {
 }
 
 .answer-list label input[type="radio"] {
-  flex: 0 0 auto;
-  margin-right: 8px;
-  vertical-align: middle;
-  width: 20px;
-  height: 20px;
+  /* Masqué visuellement (le rond natif du navigateur) : le <label> englobant reste cliquable
+     sur toute sa largeur (comportement natif input/label), donc rien ne change pour la
+     sélection elle-même — seul l'indicateur "quelle réponse est cochée" change de forme,
+     voir .answer-list label:has(...) ci-dessous. */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.answer-list label:has(input[type="radio"]:checked) {
+  background: rgba(102, 126, 234, 0.12);
+  border-left: 4px solid #667eea;
+  padding-left: 8px !important;
+  border-radius: 4px;
 }
 
 .answer-list label span {
