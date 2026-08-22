@@ -162,7 +162,12 @@
       document.addEventListener('DOMContentLoaded', function() {
         var known = null;
         try { known = localStorage.getItem('lastDeployAt'); } catch (e) { /* ignore */ }
-        window._renderLastUpdate(known || FALLBACK_ISO);
+        // Ne PLUS retomber sur FALLBACK_ISO quand aucun déploiement n'est encore connu : cette
+        // constante figée (15/07/2026) réintroduisait exactement le défaut qu'elle était censée
+        // remplacer — une date inventée, affichée comme si elle était réelle, sur tout navigateur
+        // n'ayant pas encore reçu de réponse de l'API. Mieux vaut ne rien afficher pendant la
+        // seconde d'attente que d'annoncer une date fausse.
+        if (known) window._renderLastUpdate(known);
       });
     })();
   </script>
@@ -193,6 +198,15 @@
         if (run.status !== 'completed') {
           label = '\ud83d\udfe1 D\u00e9ploiement en cours\u2026';
           cls = 'deploy-status-pending';
+          // Pendant un d\u00e9ploiement, "Derni\u00e8re mise \u00e0 jour" continue d'afficher le dernier
+          // d\u00e9ploiement R\u00c9USSI \u2014 ce qui est exact (c'est bien cette version-l\u00e0 qui est en ligne
+          // et que l'on consulte \u00e0 cet instant), mais se lisait comme une heure en retard sans
+          // qu'on puisse faire le lien avec le badge. On l'explicite donc sur la ligne elle-m\u00eame.
+          var liveIso = null;
+          try { liveIso = localStorage.getItem('lastDeployAt'); } catch (e) { /* ignore */ }
+          if (liveIso && typeof window._renderLastUpdate === 'function') {
+            window._renderLastUpdate(liveIso, 'version en ligne \u2014 nouvelle version en cours de publication');
+          }
         } else if (run.conclusion === 'success') {
           label = '\ud83d\udfe2 D\u00e9ploy\u00e9 avec succ\u00e8s \u2014 ' + relativeTime(run.updated_at || run.run_started_at);
           cls = 'deploy-status-ok';
