@@ -356,6 +356,36 @@ async function _saveCorrectOverride(q, choiceText) {
  * `text` optionnel permet aux pages au style plus verbeux (ex. historique.html) de garder leur
  * convention "Marquer"/"Important" plutôt que des boutons purement en icône.
  */
+/**
+ * _jsArg(v) – Échappe une valeur destinée à devenir un ARGUMENT LITTÉRAL entre apostrophes
+ * dans un attribut onclick="..." construit par concaténation de chaînes.
+ *
+ * BUG corrigé : les clés de question valent `question_<CATÉGORIE>_<id>`, et deux catégories
+ * contiennent une véritable apostrophe ASCII — « CONNAISSANCE DE L'AVION » et « EASA
+ * CONNAISSANCE DE L'AVION » (voir getNormalizedCategory, js/categories.js). Injectée telle
+ * quelle, cette apostrophe FERMAIT prématurément la chaîne JavaScript de l'attribut :
+ *     onclick="fn('question_EASA CONNAISSANCE DE L'AVION_12', this)"
+ *                                                 ↑ fin de chaîne ici → SyntaxError
+ * Le navigateur n'exécutait alors rien du tout au clic — silencieusement, sans message.
+ * Toutes les actions des cartes de Recherche/Échecs/Historique (marquer, important, note,
+ * modifier/supprimer/publier une note) étaient donc inertes sur ces deux catégories, alors
+ * qu'elles fonctionnaient partout ailleurs. Le bouton ✏️ y échappait, lui, parce qu'il passe
+ * par un data-attribut (_correctOverrideBtnHtml ci-dessous) au lieu d'un onclick interpolé.
+ *
+ * Échappe d'abord pour JavaScript (\ puis '), ensuite pour l'attribut HTML (& avant " pour ne
+ * pas ré-échapper les entités qu'on vient d'introduire). L'analyseur HTML décode l'attribut
+ * AVANT que JavaScript ne le lise : les deux couches s'appliquent donc bien dans cet ordre.
+ */
+function _jsArg(v) {
+  return String(v)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function _correctOverrideBtnHtml(key, text) {
   const label = text ? ('✏️ ' + text) : '✏️';
   const cls = text ? 'correct-override-btn' : 'correct-override-btn qa-icon-btn';

@@ -309,9 +309,9 @@
 
         // Action buttons
         html += '<div class="question-actions-row">';
-        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="histToggleMarquer(\'' + key + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
-        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="histToggleImportant(\'' + key + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
-        html += '<button class="note-toggle-btn" onclick="histToggleNote(\'' + key + '\', this)">📝 Ma note</button>';
+        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + '" onclick="histToggleMarquer(\'' + _jsArg(key) + '\', this)">' + (isMarked ? 'Supprimer' : 'Marquer') + '</button>';
+        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + '" onclick="histToggleImportant(\'' + _jsArg(key) + '\', this)">' + (isImportant ? 'Retirer Important' : 'Important') + '</button>';
+        html += '<button class="note-toggle-btn" onclick="histToggleNote(\'' + _jsArg(key) + '\', this)">📝 Ma note</button>';
         html += (typeof _correctOverrideBtnHtml === 'function') ? _correctOverrideBtnHtml(key, 'Corriger') : '';
         html += '</div>';
 
@@ -423,7 +423,7 @@
         '<div class="note-actions">' +
           '<label class="note-image-label">🖼️ Image<input type="file" accept="image/*" id="noteImage_' + key + '" style="display:none" /></label>' +
           '<span class="note-image-name" id="noteImageName_' + key + '"></span>' +
-          '<button class="note-publish-btn" onclick="histPublishNote(\'' + key + '\')">Publier</button>' +
+          '<button class="note-publish-btn" onclick="histPublishNote(\'' + _jsArg(key) + '\')">Publier</button>' +
         '</div>' +
         '<div id="noteImagePreview_' + key + '" class="note-image-preview"></div>';
       var block = btn.closest('.question-block');
@@ -520,8 +520,8 @@
       html += '<div class="personal-note-header">';
       html += '<strong>📌 Ma note personnelle :</strong>';
       html += '<span class="personal-note-actions">';
-      html += '<button class="note-edit-btn" onclick="histEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
-      html += '<button class="note-delete-btn" onclick="histDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
+      html += '<button class="note-edit-btn" onclick="histEditNote(\'' + _jsArg(key) + '\')" title="Modifier">✏️</button>';
+      html += '<button class="note-delete-btn" onclick="histDeleteNote(\'' + _jsArg(key) + '\')" title="Supprimer">❌</button>';
       html += '</span></div>';
       if (note.text) html += renderNoteText(note.text);
       if (note.image) html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />';
