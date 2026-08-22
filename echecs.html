@@ -382,9 +382,9 @@
         html += '<div class="personal-note-display" id="noteDisplay_' + key + '"></div>';
 
         html += '<div class="question-actions-row">';
-        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isMarked ? 'Supprimer le marquage' : 'Marquer cette question') + '" onclick="echecsToggleMarquer(\'' + key + '\', \'' + q.id + '\', this)">' + (isMarked ? '🗑️' : '🔖') + '</button>';
-        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isImportant ? 'Retirer Important' : 'Marquer comme important') + '" onclick="echecsToggleImportant(\'' + key + '\', \'' + q.id + '\', this)">' + (isImportant ? '⭐' : '☆') + '</button>';
-        html += '<button class="note-toggle-btn qa-icon-btn" title="Ma note personnelle" onclick="echecsToggleNote(\'' + key + '\', this)">📝</button>';
+        html += '<button class="' + (isMarked ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isMarked ? 'Supprimer le marquage' : 'Marquer cette question') + '" onclick="echecsToggleMarquer(\'' + _jsArg(key) + '\', \'' + q.id + '\', this)">' + (isMarked ? '🗑️' : '🔖') + '</button>';
+        html += '<button class="' + (isImportant ? 'delete-button' : 'mark-button') + ' qa-icon-btn" title="' + (isImportant ? 'Retirer Important' : 'Marquer comme important') + '" onclick="echecsToggleImportant(\'' + _jsArg(key) + '\', \'' + q.id + '\', this)">' + (isImportant ? '⭐' : '☆') + '</button>';
+        html += '<button class="note-toggle-btn qa-icon-btn" title="Ma note personnelle" onclick="echecsToggleNote(\'' + _jsArg(key) + '\', this)">📝</button>';
         html += (typeof _correctOverrideBtnHtml === 'function') ? _correctOverrideBtnHtml(key) : '';
         html += '</div>';
 
@@ -582,8 +582,8 @@
       html += '<div class="personal-note-header">';
       html += '<strong>📌 Ma note personnelle :</strong>';
       html += '<span class="personal-note-actions">';
-      html += '<button class="note-edit-btn" onclick="echecsEditNote(\'' + key + '\')" title="Modifier">✏️</button>';
-      html += '<button class="note-delete-btn" onclick="echecsDeleteNote(\'' + key + '\')" title="Supprimer">❌</button>';
+      html += '<button class="note-edit-btn" onclick="echecsEditNote(\'' + _jsArg(key) + '\')" title="Modifier">✏️</button>';
+      html += '<button class="note-delete-btn" onclick="echecsDeleteNote(\'' + _jsArg(key) + '\')" title="Supprimer">❌</button>';
       html += '</span></div>';
       if (note.text) { html += renderNoteText(note.text); }
       if (note.image) { html += '<br><img src="' + note.image + '" alt="Note illustration" loading="lazy" />'; }
