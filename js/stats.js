@@ -2300,7 +2300,13 @@ const READINESS_POOL_LABELS = {
   GLIGLI_HARD: 'GLIGLI Hard uniquement',
   GLIGLI_EASY: 'GLIGLI Easy uniquement',
   GLIGLI_BOTH: 'GLIGLI Hard + Easy',
-  EASA: 'EASA uniquement'
+  EASA: 'EASA uniquement',
+  // _readinessCategoryPool() classait DÉJÀ les banques classiques (RÉGLEMENTATION,
+  // INSTRUMENTATION, MOTORISATION…) dans le pool 'AUTRES', mais aucun libellé ne lui
+  // correspondait ici : le menu étant construit à partir des clés de cet objet, l'option
+  // n'apparaissait nulle part et ce pool restait donc inatteignable, alors que tout le
+  // filtrage en aval le gérait déjà.
+  AUTRES: 'Classiques uniquement'
 };
 
 /**
