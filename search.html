@@ -444,7 +444,7 @@
             <input type="file" accept="image/*" id="noteImage_${key}" style="display:none" />
           </label>
           <span class="note-image-name" id="noteImageName_${key}"></span>
-          <button class="note-publish-btn" onclick="searchPublishNote('${key}')">Publier</button>
+          <button class="note-publish-btn" onclick="searchPublishNote('${_jsArg(key)}')">Publier</button>
         </div>
         <div id="noteImagePreview_${key}" class="note-image-preview"></div>
       `;
