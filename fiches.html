@@ -738,6 +738,8 @@ const FICHES = [
 <li><b>Inversion</b> : T augmente avec altitude → couche stable, emprisonne → brouillard</li>
 <li><b>Point de rosée</b> : T à laquelle air sature → condensation</li>
 <li>Faible écart T / point de rosée → risque brume/brouillard</li>
+<li class="formula">Base des nuages (ft) ≈ (Température − point de rosée) × 400</li>
+<li>Mnémo : « L'écart × 400, ça donne les pieds tout net »</li>
 <li>T ↓ → humidité relative ↑ (écart diminue)</li>
 <li>Eau atmosphérique : 3 états possibles — <b>liquide, solide, gazeux</b></li>
 <li>Condensation en haute troposphère → libération de <b>chaleur latente</b></li>
@@ -1002,6 +1004,23 @@ const FICHES = [
 <li><b>Vc</b> (vitesse conventionnelle) = Vi corrigée des erreurs d'instrument/position ; écart Vi/Vc jugé négligeable en aviation légère</li>
 <li>Correction Vi→Vp précise : + <b>1% par 600 ft</b> d'altitude-pression, + <b>1% par 5°C</b> au-dessus de la température standard</li>
 <li>Température standard (ISA) : <b>15°C</b> au niveau de la mer, − <b>2°C par 1000 ft</b></li>
+<li>Temps de vol (ETE) = Distance ÷ Vs ; piège classique du plan de vol (case 16) : bien distinguer heure <b>bloc</b> (roulage inclus), heure de <b>décollage</b> et heure <b>verticale destination</b></li>
+</ul>
+<table>
+<tr><th>Angle</th><th>sin</th><th>cos</th></tr>
+<tr><td>10°</td><td>0,17</td><td>0,98</td></tr>
+<tr><td>20°</td><td>0,34</td><td>0,94</td></tr>
+<tr><td>30°</td><td>0,50</td><td>0,87</td></tr>
+<tr><td>40°</td><td>0,64</td><td>0,77</td></tr>
+<tr><td>45°</td><td>0,71</td><td>0,71</td></tr>
+<tr><td>50°</td><td>0,77</td><td>0,64</td></tr>
+<tr><td>60°</td><td>0,87</td><td>0,50</td></tr>
+<tr><td>70°</td><td>0,94</td><td>0,34</td></tr>
+<tr><td>80°</td><td>0,98</td><td>0,17</td></tr>
+<tr><td>90°</td><td>1</td><td>0</td></tr>
+</table>
+<ul>
+<li>Astuce pour retrouver un cosinus sans calculatrice : <b>cos(angle) = sin(90° − angle)</b> (ex : cos 50° = sin 40° = 0,64)</li>
 </ul>`},
 {t:'Altimétrie (QNH, QFE, FL)', html:`
 <table>
@@ -1028,6 +1047,13 @@ const FICHES = [
 <li>Marge réglementaire de franchissement d'obstacle : au moins <b>500 ft</b> au-dessus du point culminant, dans un couloir centré sur la route</li>
 <li>Altitude de transition par défaut en France : <b>5000 ft</b> (indiquée sur carte 1/1 000 000 si différente, ex. « TA:5500 »)</li>
 <li>Pression standard = <b>1013,25 hPa</b> ; un altimètre calé sur 1013,25 hPa indique une <b>altitude-pression</b></li>
+</ul>`},
+{t:'Descente : distance et taux (règle du 3)', html:`
+<ul>
+<li class="formula">Distance de descente (NM) ≈ (altitude à perdre en milliers de ft) × 3</li>
+<li class="formula">Taux de descente (ft/min) pour un plan à 3° ≈ Vs (kt) × 5</li>
+<li>Mnémo : « <b>×3</b> pour la distance, <b>×5</b> pour le taux » (cas particulier du plan à 3°, standard ILS/PAPI)</li>
+<li>Cas général (autre pente) : Vario (ft/min) = Vs (kt) × pente de descente (%)</li>
 </ul>`},
 {t:'Cartes aéronautiques', html:`
 <table>
@@ -1082,6 +1108,18 @@ const FICHES = [
 <li>Rayon d'action = aller-retour max</li>
 <li><b>Délestage</b> = consommation de carburant sur une distance donnée</li>
 <li class="formula">Carburant total ≈ (roulage/intégration) + (temps de vol × conso horaire) + réserve réglementaire</li>
+</ul>`},
+{t:'QDM, QDR, QTE, QUJ', html:`
+<p>Les 4 relèvements forment un carré à 2×2 : lignes = référence (vrai/magnétique), colonnes = sens (vers/depuis la station).</p>
+<table>
+<tr><th></th><th>Vers la station</th><th>Depuis la station</th></tr>
+<tr><td>Vrai</td><td>QUJ</td><td>QTE</td></tr>
+<tr><td>Magnétique</td><td>QDM</td><td>QDR</td></tr>
+</table>
+<ul>
+<li>QUJ ↔ QTE et QDM ↔ QDR : réciproques, ± <b>180°</b> (même référence, pas de conversion de variation)</li>
+<li>QDR → QTE et QDM → QUJ (magnétique → vrai) : appliquer la <b>variation</b> (Est on retire, Ouest on ajoute — même règle que Rv→Rm)</li>
+<li>Mnémo : « <b>Q</b>uel <b>U</b>niversel <b>J</b>oindre » (QUJ = vrai, vers) / « <b>Q</b>uel <b>T</b>rajet <b>E</b>xact » (QTE = vrai, depuis) ; les deux lettres magnétiques (QDM/QDR) se déduisent par élimination</li>
 </ul>`},
 {t:'Radionavigation VOR, ADF, DME, GPS', html:`
 <table>
@@ -1150,6 +1188,7 @@ const FICHES = [
 <li>Radar primaire perturbé par : vol à <b>basse altitude</b>, relief, cumulonimbus, 2 avions proches l'un de l'autre ; portée meilleure si la cible vole <b>haut</b> (relief/rotondité Terre masquent les avions bas)</li>
 <li>Guidage radar (contact VHF obligatoire) : en <b>IFR</b>, le contrôleur assure séparation et franchissement d'obstacles (mode C requis) ; en <b>VFR</b>, il ne donne que des caps, le pilote reste responsable du franchissement d'obstacles</li>
 <li>Fréquence VDF = souvent la même que la fréquence tour</li>
+<li><b>Effet Doppler</b> (principe qualitatif) : ça se rapproche → fréquence qui grimpe ; ça s'éloigne → fréquence qui tombe</li>
 </ul>`},
 {t:'Terre, symboles cartes & NOTAM', html:`
 <ul>
@@ -2080,6 +2119,8 @@ const FICHES = [
 <li>Altitude-pression ↑ → distance de décollage <b>augmente</b>, Vx et Vy (meilleur angle et meilleur taux) <b>diminuent tous les deux</b></li>
 <li>Vitesse <b>indiquée</b> de rotation/décollage inchangée avec l'altitude, mais vitesse <b>vraie</b> correspondante plus élevée → roulement plus long</li>
 <li>« Altitude-densité qui augmente » = <b>densité qui diminue</b> → performances dégradées</li>
+<li class="formula">Altitude densité ≈ Altitude pression + 120 × (T réelle − T ISA)</li>
+<li>Mnémo : « Chaud + Haut (pression) = Densité qui grimpe = Perfs qui plombent »</li>
 <li>À VI constante en montée, la TAS <b>augmente</b> avec l'altitude</li>
 <li>En altitude, appauvrir le mélange avant le décollage (recommandation manuel de vol)</li>
 </ul>`},
@@ -2102,6 +2143,7 @@ const FICHES = [
 <li>Entrées typiques d'un abaque : <b>OAT</b>, <b>altitude pression</b>, <b>masse</b>, <b>vent</b>, <b>% puissance</b></li>
 <li>Sorties : distance décollage/atterrissage, <b>TAS</b>, débit carburant (FF), taux de montée, carburant/distance de montée</li>
 <li>Méthode générale : entrer par la <b>température</b> → rejoindre la courbe d'<b>altitude pression</b> → reporter horizontalement → appliquer les <b>facteurs correctifs</b> successifs (masse, vent, surface de piste) → lire le résultat</li>
+<li>Ordre habituel des facteurs cumulés (chacun multiplie la distance de base) : altitude densité → pente piste → vent → surface (herbe mouillée, etc.) → masse — mnémo « <b>ADP-VSM</b> »</li>
 <li>Abaque masse & centrage (enveloppe) : reporter <b>masse totale</b> (axe vertical) et <b>moment total</b> (axe horizontal) → le point doit tomber <b>à l'intérieur</b> du polygone d'enveloppe</li>
 <li>Abaque en <b>% de CAM/MAC</b> : centrage lu par intersection masse/moment en suivant les lignes obliques</li>
 </ul>`},
