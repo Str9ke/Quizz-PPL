@@ -1926,7 +1926,12 @@ function afficherSessionChart(sessionHistory) {
       String(d.getMonth() + 1).padStart(2, '0');
     const timeLabel = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     const tooltip = `${dayLabel} ${timeLabel} - ${pct}% (${s.correct}/${s.total}) ${s.category || ''}`;
-    const clickInfo = `${dayLabel} à ${timeLabel}\\n${pct}% (${s.correct}/${s.total})\\n${s.category || 'Toutes catégories'}`;
+    // _jsArg() ne s'applique qu'au nom de catégorie (peut contenir une apostrophe, ex. "CONNAISSANCE
+    // DE L'AVION") — PAS à clickInfo dans son ensemble, dont les \n littéraux ci-dessous sont une
+    // séquence d'échappement JS volontaire (interprétée comme un vrai retour à la ligne par alert()) ;
+    // l'échapper via _jsArg doublerait les antislashs et l'afficherait tel quel au lieu d'un saut de ligne.
+    const safeCategory = _jsArg(s.category || 'Toutes catégories');
+    const clickInfo = `${dayLabel} à ${timeLabel}\\n${pct}% (${s.correct}/${s.total})\\n${safeCategory}`;
 
     let bottomLabel = '';
     if (isLast) {
