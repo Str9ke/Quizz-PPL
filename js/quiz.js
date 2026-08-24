@@ -603,6 +603,32 @@ function adjustSrFrequency(questionIdx, button, direction) {
 }
 
 /**
+ * _copyQuestionText(q, btn) – Copie la question et ses propositions dans le presse-papiers
+ * (bouton 📋 de la ligne d'actions). Utilise l'API Clipboard quand elle est disponible, sinon
+ * retombe sur prompt() pour un copier-coller manuel — même stratégie que copyFPL() dans
+ * navlog.html, nécessaire car navigator.clipboard peut être absent/refusé selon le contexte
+ * de sécurité (WebView Android, page non servie en HTTPS, etc.).
+ */
+function _copyQuestionText(q, btn) {
+  if (!q || !q.question) return;
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const parts = [q.question];
+  (q.choix || []).forEach((c, i) => parts.push(`${letters[i] || (i + 1)} : ${c}`));
+  const txt = parts.join('\n');
+  const flash = (label) => {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => flash('✅')).catch(() => { prompt('Copiez ce texte :', txt); });
+  } else {
+    prompt('Copiez ce texte :', txt);
+  }
+}
+
+/**
  * afficherBoutonsMarquer() – Affiche les boutons "Marquer/Supprimer" pour chaque question après validation
  */
 function afficherBoutonsMarquer() {
@@ -643,6 +669,14 @@ function afficherBoutonsMarquer() {
     btnNote.title = 'Ma note personnelle';
     btnNote.onclick = () => _toggleNoteEditor(key, btnNote);
     row.appendChild(btnNote);
+
+    // Bouton 📋 "Copier la question" (texte + propositions, pour coller ailleurs)
+    const btnCopy = document.createElement('button');
+    btnCopy.className = 'note-toggle-btn qa-icon-btn';
+    btnCopy.textContent = '📋';
+    btnCopy.title = 'Copier la question et les réponses';
+    btnCopy.onclick = () => _copyQuestionText(q, btnCopy);
+    row.appendChild(btnCopy);
 
     // Bouton "Ne plus revoir" (suspend) : sort la question de toute sélection automatique
     const btnSuspend = document.createElement('button');
