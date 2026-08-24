@@ -239,8 +239,8 @@ function _buildExplicationHtml(q, includeNote) {
     html += '<div class="personal-note-header">';
     html += '<strong>📌 Ma note personnelle :</strong>';
     html += '<span class="personal-note-actions">';
-    html += `<button class="note-edit-btn" onclick="_editNote('${key}')" title="Modifier">✏️</button>`;
-    html += `<button class="note-delete-btn" onclick="_deleteNote('${key}')" title="Supprimer">❌</button>`;
+    html += `<button class="note-edit-btn" onclick="_editNote('${_jsArg(key)}')" title="Modifier">✏️</button>`;
+    html += `<button class="note-delete-btn" onclick="_deleteNote('${_jsArg(key)}')" title="Supprimer">❌</button>`;
     html += '</span></div>';
     if (note.text) {
       html += _renderNoteText(note.text);
@@ -2503,7 +2503,7 @@ function _toggleNoteEditor(key, btn) {
         <input type="file" accept="image/*" id="noteImage_${key}" style="display:none" />
       </label>
       <span class="note-image-name" id="noteImageName_${key}"></span>
-      <button class="note-publish-btn" onclick="_publishNote('${key}')">Publier</button>
+      <button class="note-publish-btn" onclick="_publishNote('${_jsArg(key)}')">Publier</button>
     </div>
     <div id="noteImagePreview_${key}" class="note-image-preview"></div>
   `;
@@ -2620,8 +2620,8 @@ function _renderNoteDisplay(key, note) {
   html += '<div class="personal-note-header">';
   html += '<strong>📌 Ma note personnelle :</strong>';
   html += '<span class="personal-note-actions">';
-  html += `<button class="note-edit-btn" onclick="_editNote('${key}')" title="Modifier">✏️</button>`;
-  html += `<button class="note-delete-btn" onclick="_deleteNote('${key}')" title="Supprimer">❌</button>`;
+  html += `<button class="note-edit-btn" onclick="_editNote('${_jsArg(key)}')" title="Modifier">✏️</button>`;
+  html += `<button class="note-delete-btn" onclick="_deleteNote('${_jsArg(key)}')" title="Supprimer">❌</button>`;
   html += '</span>';
   html += '</div>';
   if (note.text) {
