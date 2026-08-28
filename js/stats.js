@@ -2534,10 +2534,8 @@ function _renderSrForecast(responses, validKeys) {
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
 
   // Mêmes couleurs que l'ordre de présentation en session (GLIGLI d'abord, EASA ensuite,
-  // classiques en dernier — voir _srFamilyRank, js/helpers.js) : orange et bleu/violet
-  // réutilisent les 2 teintes déjà présentes dans cette carte (au lieu d'en ajouter une 3e
-  // et une 4e), seule la couleur "classiques" est nouvelle.
-  const FAM_COLORS = { gligli: '#f59e0b', easa: '#667eea', classique: '#10b981' };
+  // classiques en dernier — voir _srFamilyRank, js/helpers.js), et que le post-it de couleur
+  // affiché à côté du numéro de question pendant le quiz (voir FAM_COLORS, js/helpers.js).
 
   const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
   const barMax = Math.max(1, ...buckets);
