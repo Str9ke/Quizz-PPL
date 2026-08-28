@@ -1045,7 +1045,7 @@ function afficherQuiz() {
 
     quizHtml += `
       <div class="question-block">
-        <div class="question-title">${idx+1}. ${q.question}</div>
+        <div class="question-title">${typeof _familyBadgeHtml === 'function' ? _familyBadgeHtml(q) : ''}${idx+1}. ${q.question}</div>
         ${ q.image
           ? `<div class="question-image">
                <img src="${q.image}" alt="Question ${q.id} illustration"
@@ -1827,7 +1827,7 @@ function _assistRenderCurrent() {
   cont.innerHTML = `
     <div class="assist-mode-card">
       <button type="button" class="assist-mode-replay-btn" onclick="_assistReplay()" title="Relire la question (et la réponse si déjà répondu)">🔁</button>
-      <div class="assist-mode-progress">Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
+      <div class="assist-mode-progress">${typeof _familyBadgeHtml === 'function' ? _familyBadgeHtml(q) : ''}Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
       <div class="assist-mode-question">${q.question}</div>
       ${ q.image
         ? `<div class="question-image"><img src="${q.image}" alt="illustration" onerror="this.style.display='none';"></div>`
@@ -2276,7 +2276,7 @@ function _buildCorrectionCardHtml(q, idx, checkedVal, anchorId, includeNote) {
   return `
     <div class="question-block"${anchorId ? ` id="${anchorId}"` : ''}>
       <div class="question-title">
-        ${idx + 1}. ${q.question}
+        ${typeof _familyBadgeHtml === 'function' ? _familyBadgeHtml(q) : ''}${idx + 1}. ${q.question}
         ${nonReponduHtml}
       </div>
       ${ q.image

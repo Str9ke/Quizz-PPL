@@ -749,17 +749,23 @@ function _isDueForReview(r, now) {
 
 /**
  * _srFamily(q) / _srFamilyRank(q) – Classe une question dans l'une des 3 "familles" de
- * banques (GLIGLI / EASA / classique), d'après le PRÉFIXE de q.categorie une fois chargée.
- * chargerQuestions() (js/categories.js) réécrit systématiquement q.categorie avec l'identifiant
- * de catégorie AGRÉGÉ (ex: "GLIGLI NAVIGATION EASY", "EASA NAVIGATION") — le champ "categorie"
- * BRUT du JSON source (ex: "NAVIGATION") ne suffirait PAS à distinguer les familles : GLIGLI et
- * les banques classiques partagent parfois la même valeur brute (ex: "RÉGLEMENTATION" existe à
- * la fois dans questions_reglementation.json et gligli_reglementation_easy.json). Utilisé pour
+ * banques (GLIGLI / EASA / classique). Le champ "categorie" BRUT du JSON source (ex:
+ * "NAVIGATION" dans gligli_navigation_easy.json, "EASA_NAVIGATION" dans
+ * section_easa_navigation.json) ne permet PAS de distinguer les familles par un simple préfixe :
+ * GLIGLI et les banques classiques partagent parfois la même valeur brute (ex: "RÉGLEMENTATION"
+ * existe à la fois dans questions_reglementation.json et gligli_reglementation_easy.json), et les
+ * fichiers EASA n'utilisent pas tous le même séparateur ("EASA_..." vs "EASA ..."). On passe donc
+ * par getNormalizedCategory() (js/categories.js), qui détecte "gligli"/"easa" n'importe où dans la
+ * chaîne (insensible à la casse et aux accents) et renvoie systématiquement un identifiant agrégé
+ * préfixé "GLIGLI "/"EASA " pour ces deux familles — un simple startsWith() sur q.categorie brut
+ * classait à tort la quasi-totalité des questions GLIGLI et EASA en "classique". Utilisé pour
  * l'ordre de présentation en session de révision (GLIGLI d'abord, EASA ensuite, classiques en
- * dernier) et pour la répartition par famille du programme des prochains jours (js/stats.js).
+ * dernier), pour la répartition par famille du programme des prochains jours (js/stats.js), et
+ * pour le post-it de couleur affiché à côté du numéro de question.
  */
 function _srFamily(q) {
-  const cat = (q && q.categorie) || '';
+  const raw = (q && q.categorie) || '';
+  const cat = (typeof getNormalizedCategory === 'function') ? getNormalizedCategory(raw) : raw;
   if (cat.startsWith('GLIGLI ')) return 'gligli';
   if (cat.startsWith('EASA ')) return 'easa';
   return 'classique';
@@ -767,6 +773,27 @@ function _srFamily(q) {
 function _srFamilyRank(q) {
   const fam = _srFamily(q);
   return fam === 'gligli' ? 0 : (fam === 'easa' ? 1 : 2);
+}
+
+/**
+ * FAM_COLORS – Couleurs des 3 familles de banques (GLIGLI / EASA / classique), déjà utilisées
+ * pour les segments colorés du "Programme des prochains jours" (js/stats.js). Centralisées ici
+ * pour être réutilisables ailleurs (ex: le post-it de couleur à côté du numéro de question).
+ */
+const FAM_COLORS = { gligli: '#f59e0b', easa: '#667eea', classique: '#10b981' };
+const FAM_LABELS = { gligli: 'GLIGLI', easa: 'EASA', classique: 'Classique' };
+
+/**
+ * _familyBadgeHtml(q) – Petit post-it coloré indiquant la famille de banque (GLIGLI / EASA /
+ * classique) d'une question, à afficher juste à côté de son numéro pendant le quiz — mêmes
+ * couleurs que les barres de progression des stats, pour reconnaître la provenance d'un coup
+ * d'œil sans avoir à lire la catégorie complète.
+ */
+function _familyBadgeHtml(q) {
+  const fam = _srFamily(q);
+  const color = FAM_COLORS[fam];
+  const label = FAM_LABELS[fam];
+  return `<span class="family-badge" title="${label}" aria-label="${label}" style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};margin-right:6px;vertical-align:middle;"></span>`;
 }
 
 /**
