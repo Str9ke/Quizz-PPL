@@ -1,7 +1,24 @@
 {
-  "generated": "Sat, 29 Aug 2026 17:37:25 GMT",
-  "count": 10,
+  "generated": "Sun, 30 Aug 2026 10:24:40 GMT",
+  "count": 14,
   "warnings": [
+    {
+      "ref": "F2658/26",
+      "from": "30 AUG 2026 08:47",
+      "till": "01 SEP 2026 10:00",
+      "schedule": null,
+      "text": "EST TEMPO SEGREGATED AREA (TSA) 'BAELEN' ESTABLISHED 503148N 0060442E RADIUS 05NM UP TO 4500FT AMSL DUE TO FOREST FIRE. ALL TFC EXCLUDED, EXC OOVST, POLICE, SAR, AMBULANCE AND FIREFIGHTING. EDGG FIR EXCLUDED",
+      "lower": "GND",
+      "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.53,
+          6.078333
+        ],
+        "radiusNm": 5.0
+      }
+    },
     {
       "ref": "F2656/26",
       "from": "29 AUG 2026 05:26",
@@ -20,20 +37,15 @@
       }
     },
     {
-      "ref": "F2644/26",
-      "from": "27 AUG 2026 16:48",
-      "till": "30 AUG 2026 10:00",
-      "schedule": null,
-      "text": "EST TEMPO SEGREGATED AREA (TSA) 'BAELEN' ESTABLISHED 503148N 0060442E RADIUS 05NM UP TO 4500FT AMSL DUE TO FOREST FIRE. ALL TFC EXCLUDED, EXC OOVST, POLICE, SAR, AMBULANCE AND FIREFIGHTING. EDGG FIR EXCLUDED",
+      "ref": "F2646/26",
+      "from": "29 AUG 2026 11:15",
+      "till": "30 AUG 2026 10:30",
+      "schedule": "29 1115-1415, 30 0730-1030",
+      "text": "HTA10A- COASTAL HELICOPTER TRAINING AREA ACT",
       "lower": "GND",
-      "upper": "4500FT AMSL",
+      "upper": "500FT AGL",
       "geometry": {
-        "type": "circle",
-        "center": [
-          50.53,
-          6.078333
-        ],
-        "radiusNm": 5.0
+        "type": "unlocated"
       }
     },
     {
@@ -66,20 +78,37 @@
       }
     },
     {
-      "ref": "F1935/26",
-      "from": "29 AUG 2026 07:00",
-      "till": "29 AUG 2026 18:00",
-      "schedule": null,
-      "text": "BULLINGEN UAS ACT 502451N 0061637E RADIUS 400M",
+      "ref": "F2467/26",
+      "from": "14 AUG 2026 09:52",
+      "till": "30 AUG 2026 23:00",
+      "schedule": "14 0500-1700, 15-24 27-28 30 0800-2300",
+      "text": "TEMPO SEGREGATED AREA (TSA) 'WAVRE' ESTABLISHED 504557N 0043630E - 504332N 0043240E - 504118N 0043622E - 504316N 0043947E - 504557N 0043630E FOR POLICE MINI UAS BEYOND VISUAL LINE OF SIGHT",
       "lower": "GND",
-      "upper": "600FT AGL",
+      "upper": "500FT AGL",
       "geometry": {
-        "type": "circle",
-        "center": [
-          50.414167,
-          6.276944
-        ],
-        "radiusNm": 0.216
+        "type": "polygon",
+        "vertices": [
+          [
+            50.765833,
+            4.608333
+          ],
+          [
+            50.725556,
+            4.544444
+          ],
+          [
+            50.688333,
+            4.606111
+          ],
+          [
+            50.721111,
+            4.663056
+          ],
+          [
+            50.765833,
+            4.608333
+          ]
+        ]
       }
     },
     {
@@ -95,6 +124,40 @@
         "center": [
           50.394167,
           4.065556
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
+      "ref": "F1167/26",
+      "from": "29 AUG 2026 07:00",
+      "till": "30 AUG 2026 16:00",
+      "schedule": "DAILY 0700-1600",
+      "text": "ESTINNES 502339N 0040356E UAS ACT RADIUS 400M",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.394167,
+          4.065556
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
+      "ref": "F1035/26",
+      "from": "30 AUG 2026 08:00",
+      "till": "30 AUG 2026 15:00",
+      "schedule": null,
+      "text": "WAREMME PSN 504046N 0051614E MODEL ACFT EVENT RADIUS 400M",
+      "lower": "GND",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.679444,
+          5.270556
         ],
         "radiusNm": 0.216
       }
@@ -129,20 +192,27 @@
       }
     },
     {
-      "ref": "G2046/26",
-      "from": "29 AUG 2026 16:00",
-      "till": "29 AUG 2026 20:00",
-      "schedule": null,
-      "text": "ASSESSE PSN 502249N 0050440E PJE RADIUS 02NM",
-      "lower": "GND",
-      "upper": "FL100",
+      "ref": "G2056/26",
+      "from": "29 AUG 2026 06:30",
+      "till": "30 AUG 2026 15:30",
+      "schedule": "DAILY 0630-1530",
+      "text": "LFA11-KOKSIJDE TRAINING AREA ACT",
+      "lower": "10FT AMSL",
+      "upper": "500FT AMSL",
       "geometry": {
-        "type": "circle",
-        "center": [
-          50.380278,
-          5.077778
-        ],
-        "radiusNm": 2.0
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2055/26",
+      "from": "29 AUG 2026 06:00",
+      "till": "30 AUG 2026 15:00",
+      "schedule": "DAILY 0600-1500",
+      "text": "EBR04-ELSENBORN 01 ACT",
+      "lower": "GND",
+      "upper": "FL105",
+      "geometry": {
+        "type": "unlocated"
       }
     },
     {
