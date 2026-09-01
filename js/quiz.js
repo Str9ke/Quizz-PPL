@@ -23,41 +23,45 @@ function _isSrScheduleFrozen() {
 }
 
 /**
- * Séance de drill "Difficultés" reprenable sur un autre appareil (voir difficultes.html) —
- * un unique petit document Firestore (quizProgress/{uid}/session/difficulty) mémorise la série
- * de questions de la manche en cours et les réponses déjà données (même format idx → texte du
- * choix que currentQuizAnswers en localStorage, réutilisé tel quel par afficherQuiz() pour
- * réafficher automatiquement l'état déjà répondu — voir la restauration ligne ~1035). Ce n'est
- * qu'un CONFORT de reprise : toute erreur d'écriture/lecture ici est non bloquante (avalée),
- * le suivi réel des réponses (failCount/successCount/historique) est déjà assuré ailleurs.
+ * Séance de quiz reprenable sur un autre appareil — un unique petit document Firestore
+ * (quizProgress/{uid}/session/active) mémorise la série de questions de la manche EN COURS
+ * (n'importe quel quiz réel : sélection normale depuis l'Accueil, "Plus ratées", "Historique",
+ * ou drill "Difficultés") et les réponses déjà données (même format idx → texte du choix que
+ * currentQuizAnswers en localStorage, réutilisé tel quel par afficherQuiz() pour réafficher
+ * automatiquement l'état déjà répondu — voir la restauration ligne ~1035). `meta.kind` distingue
+ * un drill "Difficultés" ('difficulty', propose d'enchaîner sur les ratées — voir
+ * difficultes.html) d'une séance normale ('normal', bannière de reprise sur l'Accueil — voir
+ * js/init.js). Ce n'est qu'un CONFORT de reprise, jamais utilisé en mode entraînement libre
+ * (voir _isPracticeMode) : toute erreur d'écriture/lecture ici est non bloquante (avalée), le
+ * suivi réel des réponses (failCount/successCount/historique) est déjà assuré ailleurs.
  */
-function _diffSessionUid() {
+function _activeSessionUid() {
   return (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
 }
-function _diffSessionDocRef() {
-  const uid = _diffSessionUid();
+function _activeSessionDocRef() {
+  const uid = _activeSessionUid();
   if (!uid || typeof db === 'undefined') return null;
-  return db.collection('quizProgress').doc(uid).collection('session').doc('difficulty');
+  return db.collection('quizProgress').doc(uid).collection('session').doc('active');
 }
-async function _diffSessionWrite(questions) {
-  const ref = _diffSessionDocRef();
+async function _activeSessionWrite(questions, meta) {
+  const ref = _activeSessionDocRef();
   if (!ref) return;
   try {
-    await ref.set({ questions, answers: {}, updatedAt: Date.now() });
+    await ref.set(Object.assign({ questions, answers: {}, updatedAt: Date.now() }, meta || {}));
   } catch (e) {
-    console.warn('[difficultés] échec sauvegarde séance reprenable:', e);
+    console.warn('[séance reprenable] échec sauvegarde:', e);
   }
 }
-function _diffSessionSyncAnswer(idx, answerText) {
-  const ref = _diffSessionDocRef();
+function _activeSessionSyncAnswer(idx, answerText) {
+  const ref = _activeSessionDocRef();
   if (!ref) return;
   ref.update({ ['answers.' + idx]: answerText, updatedAt: Date.now() })
-    .catch(e => console.warn('[difficultés] échec sync réponse séance reprenable:', e));
+    .catch(e => console.warn('[séance reprenable] échec sync réponse:', e));
 }
-function _diffSessionDelete() {
-  const ref = _diffSessionDocRef();
+function _activeSessionDelete() {
+  const ref = _activeSessionDocRef();
   if (!ref) return;
-  ref.delete().catch(e => console.warn('[difficultés] échec suppression séance reprenable:', e));
+  ref.delete().catch(e => console.warn('[séance reprenable] échec suppression:', e));
 }
 
 /**
@@ -376,7 +380,16 @@ async function demarrerQuiz() {
 
   // Sauvegarder le mode correction immédiate
   const corrImm = document.getElementById('correctionImmediateCheckbox');
-  localStorage.setItem('correctionImmediate', corrImm && corrImm.checked ? '1' : '0');
+  const correctionImmediateVal = corrImm && corrImm.checked ? '1' : '0';
+  localStorage.setItem('correctionImmediate', correctionImmediateVal);
+
+  // Rend la manche reprenable depuis un autre appareil (voir _activeSessionWrite dans
+  // js/quiz.js) — écrit AVANT de naviguer, sinon le changement de page annulerait la requête
+  // réseau en vol.
+  await _activeSessionWrite(currentQuestions, {
+    kind: 'normal', category: selectedCategory, mode: modeQuiz,
+    correctionImmediate: correctionImmediateVal, freezeSrSchedule: false, difficultyDrill: false
+  });
 
   window.location = 'quiz.html';
 }
@@ -1163,9 +1176,10 @@ function afficherQuiz() {
         saved[qIdx] = _answerText;
         localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
       } catch (e2) { /* localStorage plein, tant pis */ }
-      // Séance "Difficultés" reprenable depuis un autre appareil (voir difficultes.html) :
-      // synchroniser cette réponse dans le document de séance Firestore.
-      if (localStorage.getItem('quizDifficultyDrill') === '1') _diffSessionSyncAnswer(qIdx, _answerText);
+      // Séance reprenable depuis un autre appareil (voir _activeSessionWrite) : synchroniser
+      // cette réponse dans le document de séance Firestore — pour toute séance réelle, pas
+      // seulement le drill "Difficultés" (jamais en mode entraînement libre, voir _isPracticeMode).
+      if (!_isPracticeMode()) _activeSessionSyncAnswer(qIdx, _answerText);
       // Le bandeau se relit depuis currentQuizAnswers : l'appeler APRÈS l'écriture ci-dessus.
       if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
 
@@ -1403,7 +1417,10 @@ async function _diffDrillRelaunch(questionsList) {
   // Écrit AVANT de recharger la page : un rechargement complet annule toute requête réseau
   // encore en vol, donc attendre ici est nécessaire pour que la nouvelle manche soit bien
   // reprenable depuis un autre appareil dès le rechargement.
-  await _diffSessionWrite(selected);
+  await _activeSessionWrite(selected, {
+    kind: 'difficulty', category: 'DIFFICULTÉS', mode: 'toutes',
+    correctionImmediate: '1', freezeSrSchedule: true, difficultyDrill: true
+  });
   window.location.reload();
 }
 
@@ -2215,13 +2232,18 @@ async function validerReponses() {
         p.textContent = '🎉 Aucune erreur sur cette manche !';
         rc.appendChild(p);
         // Plus rien à enchaîner : la séance reprenable n'a plus lieu d'être.
-        _diffSessionDelete();
+        _activeSessionDelete();
       }
       const back = document.createElement('a');
       back.href = 'difficultes.html';
       back.textContent = '⬅️ Retour à Difficultés';
       back.style.cssText = 'display:inline-block;margin-top:10px;font-size:.85em;color:var(--link-color,#8ab4f8);';
       rc.appendChild(back);
+    } else {
+      // Séance normale (pas un drill "Difficultés") validée jusqu'au bout : la séance
+      // reprenable n'a plus lieu d'être, qu'elle ait ou non des questions ratées — celles-ci
+      // sont de toute façon déjà reprogrammées normalement par la répétition espacée.
+      _activeSessionDelete();
     }
 
     // Incrémenter le compteur quotidien direct dans localStorage

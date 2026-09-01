@@ -249,7 +249,7 @@
     }
 
     // === Quiz launch from Révision ===
-    window.launchRevisionQuiz = function() {
+    window.launchRevisionQuiz = async function() {
       var unseen = window._revisionUnseen || [];
       if (!unseen.length) { alert('Aucune question à lancer.'); return; }
       var questionsForQuiz = unseen.map(function(item) {
@@ -270,6 +270,19 @@
       localStorage.removeItem('quizFreezeSrSchedule');
       localStorage.removeItem('quizDifficultyDrill');
       localStorage.removeItem('recentlyAnsweredKeys');
+      // Rend la manche reprenable depuis un autre appareil — même document Firestore que
+      // _activeSessionWrite dans js/quiz.js (non chargé sur cette page). Écrit AVANT de
+      // naviguer, sinon le changement de page annulerait la requête réseau en vol.
+      try {
+        var uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+        if (uid) {
+          await db.collection('quizProgress').doc(uid).collection('session').doc('active').set({
+            questions: questionsForQuiz, answers: {}, updatedAt: Date.now(),
+            kind: 'normal', category: 'RÉVISION', mode: 'toutes',
+            correctionImmediate: '1', freezeSrSchedule: false, difficultyDrill: false
+          });
+        }
+      } catch (e) { console.warn('[séance reprenable] échec sauvegarde:', e); }
       window.location = 'quiz.html';
     };
 

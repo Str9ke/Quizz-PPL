@@ -300,6 +300,10 @@
          sans avoir à naviguer vers Stats. Remplie par initIndex() (js/init.js). -->
     <div id="readinessDashboardContainer"></div>
 
+    <!-- Séance de quiz en cours reprenable depuis un autre appareil (voir _activeSessionWrite
+         dans js/quiz.js et renderActiveSessionBanner() dans js/init.js) -->
+    <div class="home-card" id="activeSessionBanner" style="display:none;border-color:rgba(255,193,7,.4);"></div>
+
     <!-- Répétition espacée : lancer une session en un clic (révisions dues + objectif de nouvelles) -->
     <div class="home-card" style="border-color:rgba(245,158,11,.35)">
       <div class="home-card-header">

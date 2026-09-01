@@ -825,7 +825,7 @@
     };
 
     // === Quiz launch from filters ===
-    window.launchHistQuiz = function() {
+    window.launchHistQuiz = async function() {
       var filtered = _getFilteredQuestions();
       if (!filtered.length) { alert('Aucune question à lancer.'); return; }
       // Mélanger les choix proprement pour chaque question
@@ -848,6 +848,15 @@
       localStorage.removeItem('quizFreezeSrSchedule');
       localStorage.removeItem('quizDifficultyDrill');
       localStorage.removeItem('recentlyAnsweredKeys');
+      // Rend la manche reprenable depuis un autre appareil (voir _activeSessionWrite dans
+      // js/quiz.js) — écrit AVANT de naviguer, sinon le changement de page annulerait la
+      // requête réseau en vol.
+      if (typeof _activeSessionWrite === 'function') {
+        await _activeSessionWrite(questionsForQuiz, {
+          kind: 'normal', category: 'HISTORIQUE', mode: 'toutes',
+          correctionImmediate: '1', freezeSrSchedule: false, difficultyDrill: false
+        });
+      }
       window.location = 'quiz.html';
     };
 
