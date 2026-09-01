@@ -211,13 +211,15 @@
       }
 
       // Séance de drill en cours, éventuellement démarrée sur un autre appareil (voir
-      // _diffSessionWrite dans js/quiz.js) — pure fonctionnalité de confort : une erreur ici
-      // ne doit jamais empêcher le reste de la page de fonctionner.
+      // _activeSessionWrite dans js/quiz.js) — pure fonctionnalité de confort : une erreur ici
+      // ne doit jamais empêcher le reste de la page de fonctionner. Le même document sert aussi
+      // aux séances normales (bannière dédiée sur l'Accueil, voir js/helpers.js) : ne récupérer
+      // ici que s'il s'agit bien d'un drill "Difficultés".
       try {
-        const sDoc = await db.collection('quizProgress').doc(uid).collection('session').doc('difficulty').get();
+        const sDoc = await db.collection('quizProgress').doc(uid).collection('session').doc('active').get();
         if (sDoc.exists) {
           const data = sDoc.data();
-          if (data && Array.isArray(data.questions) && data.questions.length) activeSession = data;
+          if (data && data.kind === 'difficulty' && Array.isArray(data.questions) && data.questions.length) activeSession = data;
         }
       } catch (e) {
         console.warn('[difficultes] chargement séance en cours échoué:', e);
@@ -342,7 +344,7 @@
 
     window.diffAbandonSession = function() {
       if (!activeSession) return;
-      if (typeof _diffSessionDelete === 'function') _diffSessionDelete();
+      if (typeof _activeSessionDelete === 'function') _activeSessionDelete();
       activeSession = null;
       renderResumeBanner();
     };
@@ -472,10 +474,15 @@
       localStorage.removeItem('currentQuizAnswers');
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');
-      // Rend la manche reprenable depuis un autre appareil (voir _diffSessionWrite dans
+      // Rend la manche reprenable depuis un autre appareil (voir _activeSessionWrite dans
       // js/quiz.js) — écrit AVANT de naviguer, sinon le changement de page annulerait la
       // requête réseau en vol.
-      if (typeof _diffSessionWrite === 'function') await _diffSessionWrite(selected);
+      if (typeof _activeSessionWrite === 'function') {
+        await _activeSessionWrite(selected, {
+          kind: 'difficulty', category: 'DIFFICULTÉS', mode: 'toutes',
+          correctionImmediate: '1', freezeSrSchedule: true, difficultyDrill: true
+        });
+      }
       window.location = 'quiz.html';
     };
 

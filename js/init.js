@@ -205,7 +205,25 @@ async function initIndex() {
       _notesCache = JSON.parse(localStorage.getItem(lsNotesKey) || '{}');
     } catch (e2) { _notesCache = {}; }
   }
-  
+
+  // Séance de quiz en cours, éventuellement démarrée sur un autre appareil (voir
+  // _activeSessionWrite dans js/quiz.js) — pure fonctionnalité de confort : une erreur ici ne
+  // doit jamais empêcher le reste de l'Accueil de fonctionner.
+  try {
+    const sDoc = await db.collection('quizProgress').doc(uid).collection('session').doc('active').get();
+    if (sDoc.exists) {
+      const sData = sDoc.data();
+      // Le drill "Difficultés" a sa propre bannière dédiée sur difficultes.html — ne pas la
+      // dupliquer ici.
+      if (sData && Array.isArray(sData.questions) && sData.questions.length && sData.kind !== 'difficulty') {
+        window._activeSession = sData;
+      }
+    }
+  } catch (e) {
+    console.warn('[initIndex] chargement séance en cours échoué:', e);
+  }
+  if (typeof renderActiveSessionBanner === 'function') renderActiveSessionBanner();
+
   await updateModeCounts();
   if (typeof _updateNavDifficultyMenuVisibility === 'function') _updateNavDifficultyMenuVisibility();
   if (typeof _updateOriginalityMenuVisibility === 'function') _updateOriginalityMenuVisibility();

@@ -1422,6 +1422,67 @@ async function _startRevisionsOnly() {
 }
 
 /**
+ * renderActiveSessionBanner() – Affiche (ou masque) la bannière "séance en cours" sur l'Accueil,
+ * à partir de window._activeSession chargée par initIndex() (js/init.js) depuis le document
+ * Firestore quizProgress/{uid}/session/active — voir _activeSessionWrite dans js/quiz.js. Permet
+ * de reprendre une session de répétition espacée démarrée sur un autre appareil (ou laissée en
+ * plan sur celui-ci) exactement là où elle en était, ou de l'abandonner.
+ */
+function renderActiveSessionBanner() {
+  const el = document.getElementById('activeSessionBanner');
+  if (!el) return;
+  const session = window._activeSession;
+  if (!session) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const total = session.questions.length;
+  const answered = Object.keys(session.answers || {}).length;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+      <div style="font-size:.9em;">
+        🔄 <strong>Séance en cours</strong> (${session.category || 'quiz'}) sur cet appareil ou un autre : ${answered}/${total} question${total > 1 ? 's' : ''} répondue${answered > 1 ? 's' : ''}.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="hist-filter-btn hist-filter-quiz" style="font-size:.88em;padding:6px 14px;" onclick="resumeActiveSession()">▶️ Reprendre</button>
+        <button class="hist-filter-btn" style="font-size:.88em;padding:6px 14px;" onclick="abandonActiveSession()">🗑️ Abandonner</button>
+      </div>
+    </div>
+  `;
+}
+
+function resumeActiveSession() {
+  const session = window._activeSession;
+  if (!session) return;
+  const selected = session.questions;
+  const saved = (typeof _setLocalStorageWithCleanup === 'function')
+    ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
+    : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
+  if (!saved) {
+    alert("Stockage local plein : impossible de reprendre.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+    return;
+  }
+  localStorage.setItem('quizCategory', session.category || 'TOUTES');
+  localStorage.setItem('quizMode', session.mode || 'toutes');
+  localStorage.setItem('quizNbQuestions', selected.length.toString());
+  localStorage.setItem('correctionImmediate', session.correctionImmediate || '1');
+  localStorage.removeItem('quizPracticeMode');
+  if (session.freezeSrSchedule) localStorage.setItem('quizFreezeSrSchedule', '1'); else localStorage.removeItem('quizFreezeSrSchedule');
+  if (session.difficultyDrill) localStorage.setItem('quizDifficultyDrill', '1'); else localStorage.removeItem('quizDifficultyDrill');
+  // Réponses déjà données (sur cet appareil ou l'autre) : réutilisées telles quelles par
+  // afficherQuiz() pour réafficher automatiquement l'état de la manche (voir js/quiz.js).
+  try { localStorage.setItem('currentQuizAnswers', JSON.stringify(session.answers || {})); } catch (e) { /* tant pis */ }
+  localStorage.removeItem('currentQuizBatchPos');
+  localStorage.removeItem('recentlyAnsweredKeys');
+  window.location = 'quiz.html';
+}
+
+function abandonActiveSession() {
+  if (!window._activeSession) return;
+  if (typeof _activeSessionDelete === 'function') _activeSessionDelete();
+  window._activeSession = null;
+  renderActiveSessionBanner();
+}
+
+/**
  * voirStats() – Redirige vers la page des statistiques
  */
 function voirStats() {
