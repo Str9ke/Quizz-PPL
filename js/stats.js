@@ -1699,10 +1699,23 @@ function afficherDailyChart(dailyHistory) {
     statsCont.parentNode.insertBefore(chartCont, statsCont);
   }
 
-  // Générer les 60 derniers jours
-  const days = [];
+  // Générer les jours à afficher : au minimum les 60 derniers (fenêtre visible par défaut —
+  // voir le scroll de démarrage sur le bord droit plus bas), étendus vers le passé jusqu'au
+  // jour le plus ancien avec de l'activité RÉELLE dans dailyHistory s'il y en a. dailyHistory
+  // (Firestore) n'est jamais élagué : l'historique peut donc remonter bien plus loin que 60
+  // jours, et ne s'affichait auparavant jamais au-delà — un simple défilement à gauche permet
+  // désormais de le retrouver. Plafond de sécurité (10 ans) contre une clé de date corrompue.
   const today = new Date();
-  for (let i = 59; i >= 0; i--) {
+  const historyKeys = Object.keys(dailyHistory).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && dailyHistory[k] > 0);
+  let totalDays = 60;
+  if (historyKeys.length) {
+    const oldestKey = historyKeys.reduce((a, b) => (a < b ? a : b));
+    const oldestDate = new Date(oldestKey + 'T00:00:00');
+    const spanDays = Math.round((today - oldestDate) / 86400000) + 1;
+    if (spanDays > totalDays) totalDays = Math.min(spanDays, 3650);
+  }
+  const days = [];
+  for (let i = totalDays - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const key = d.getFullYear() + '-' +
@@ -1714,8 +1727,11 @@ function afficherDailyChart(dailyHistory) {
   const maxCount = Math.max(...days.map(d => d.count), 1);
   const maxBarH = 120; // pixels max height
 
-  // Totaux
-  const total60 = days.reduce((s, d) => s + d.count, 0);
+  // Totaux affichés dans l'en-tête : toujours sur la fenêtre des 60 DERNIERS jours, même si
+  // `days` remonte plus loin pour permettre le défilement — l'en-tête reste "60j", pas la
+  // totalité de l'historique.
+  const last60 = days.slice(-60);
+  const total60 = last60.reduce((s, d) => s + d.count, 0);
   // 7 derniers jours COMPLETS (hors aujourd'hui) — même fenêtre que l'objectif journalier
   const last7Complete = days.slice(-8, -1).reduce((s, d) => s + d.count, 0);
   const avg7 = last7Complete ? Math.round(last7Complete / 7) : 0;
@@ -1833,9 +1849,12 @@ function _buildDailyTimeChartHtml(days) {
 
   const maxMs = Math.max(...rows.map(r => r.ms), 1);
   const maxBarH = 120;
-  const total60 = rows.reduce((s, r) => s + r.ms, 0);
+  // En-tête "60j" : toujours sur les 60 DERNIERS jours, même si `rows` remonte plus loin pour
+  // permettre le défilement (voir afficherDailyChart) — cohérent avec le graphique du dessus.
+  const last60Rows = rows.slice(-60);
+  const total60 = last60Rows.reduce((s, r) => s + r.ms, 0);
   const todayMs = rows[rows.length - 1].ms;
-  const daysWithTime = rows.filter(r => r.ms > 0).length;
+  const daysWithTime = last60Rows.filter(r => r.ms > 0).length;
   const avgPerActiveDay = daysWithTime ? total60 / daysWithTime : 0;
   const anyEstimated = rows.some(r => r.estimated);
 
