@@ -106,7 +106,11 @@
         <button class="hist-filter-btn hist-filter-quiz" style="font-size:.95em;padding:8px 20px;" onclick="diffLaunchQuiz()">▶️ Lancer un quiz</button>
       </div>
       <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
-        🛡️ Pur entraînement : n'affecte ni les statistiques, ni la répétition espacée, ni le compteur d'échecs.
+        ✅ Compte pour de vrai (échecs/réussites, historique, statistiques) — mais ne modifie jamais la date de ta
+        prochaine révision programmée, qui reste celle fixée par tes quiz normaux. Une question réussie une fois
+        ici ne redescend pas d'un coup à zéro difficulté : il faut l'enchaîner
+        <span id="diffThresholdEcho">3</span> fois d'affilée (réglable ci-dessus) pour qu'elle disparaisse de cette
+        liste. À la fin d'une manche, tu peux enchaîner directement sur les questions encore ratées.
       </div>
     </div>
 
@@ -230,6 +234,8 @@
     // Recalcule la liste des difficultés actuelles (appelé au chargement et quand le seuil change)
     window.diffRecompute = function() {
       const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || 3);
+      const echo = document.getElementById('diffThresholdEcho');
+      if (echo) echo.textContent = threshold;
       diffItems = [];
 
       allQuestions.forEach(({ q, key }) => {
@@ -381,11 +387,17 @@
         alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
         return;
       }
-      localStorage.setItem('quizCategory', 'DIFFICULTÉS (entraînement)');
+      localStorage.setItem('quizCategory', 'DIFFICULTÉS');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', selected.length.toString());
       localStorage.setItem('correctionImmediate', '1');
-      localStorage.setItem('quizPracticeMode', '1');
+      // Compte pour de vrai (échecs/réussites, historique, statistiques) — voir
+      // _isSrScheduleFrozen dans js/quiz.js : seuls l'intervalle et la date de prochaine
+      // révision restent figés sur leur dernière valeur, pour ne pas faire dériver le
+      // calendrier de répétition espacée au gré de la fréquence de ces séances de drill.
+      localStorage.removeItem('quizPracticeMode');
+      localStorage.setItem('quizFreezeSrSchedule', '1');
+      localStorage.setItem('quizDifficultyDrill', '1');
       localStorage.removeItem('currentQuizAnswers');
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');

@@ -312,6 +312,8 @@
       localStorage.setItem('quizNbQuestions', selected.length.toString());
       localStorage.setItem('correctionImmediate', '1');
       localStorage.setItem('quizPracticeMode', '1');
+      localStorage.removeItem('quizFreezeSrSchedule');
+      localStorage.removeItem('quizDifficultyDrill');
       localStorage.removeItem('currentQuizAnswers');
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');

@@ -267,6 +267,8 @@
       localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());
       localStorage.setItem('correctionImmediate', '1');
       localStorage.removeItem('quizPracticeMode');
+      localStorage.removeItem('quizFreezeSrSchedule');
+      localStorage.removeItem('quizDifficultyDrill');
       localStorage.removeItem('recentlyAnsweredKeys');
       window.location = 'quiz.html';
     };
