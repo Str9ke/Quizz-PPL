@@ -12,6 +12,55 @@ function _isPracticeMode() {
 }
 
 /**
+ * _isSrScheduleFrozen() – Vrai si le quiz en cours vient de la page Difficultés en mode "compte
+ * pour de vrai" (voir difficultes.html / diffLaunchQuiz) : failCount/successCount/historique
+ * sont mis à jour normalement (pas de mode entraînement), MAIS _computeSrEntry n'y touche pas
+ * à l'intervalle ni à la date de prochaine révision — un drill ciblé, même intensif, ne doit
+ * pas faire dériver le calendrier officiel de répétition espacée fixé par les quiz normaux.
+ */
+function _isSrScheduleFrozen() {
+  return localStorage.getItem('quizFreezeSrSchedule') === '1';
+}
+
+/**
+ * Séance de drill "Difficultés" reprenable sur un autre appareil (voir difficultes.html) —
+ * un unique petit document Firestore (quizProgress/{uid}/session/difficulty) mémorise la série
+ * de questions de la manche en cours et les réponses déjà données (même format idx → texte du
+ * choix que currentQuizAnswers en localStorage, réutilisé tel quel par afficherQuiz() pour
+ * réafficher automatiquement l'état déjà répondu — voir la restauration ligne ~1035). Ce n'est
+ * qu'un CONFORT de reprise : toute erreur d'écriture/lecture ici est non bloquante (avalée),
+ * le suivi réel des réponses (failCount/successCount/historique) est déjà assuré ailleurs.
+ */
+function _diffSessionUid() {
+  return (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
+}
+function _diffSessionDocRef() {
+  const uid = _diffSessionUid();
+  if (!uid || typeof db === 'undefined') return null;
+  return db.collection('quizProgress').doc(uid).collection('session').doc('difficulty');
+}
+async function _diffSessionWrite(questions) {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  try {
+    await ref.set({ questions, answers: {}, updatedAt: Date.now() });
+  } catch (e) {
+    console.warn('[difficultés] échec sauvegarde séance reprenable:', e);
+  }
+}
+function _diffSessionSyncAnswer(idx, answerText) {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  ref.update({ ['answers.' + idx]: answerText, updatedAt: Date.now() })
+    .catch(e => console.warn('[difficultés] échec sync réponse séance reprenable:', e));
+}
+function _diffSessionDelete() {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  ref.delete().catch(e => console.warn('[difficultés] échec suppression séance reprenable:', e));
+}
+
+/**
  * _scrollBelowStickyBanner() – Scroll fluide vers un élément en tenant compte de la hauteur
  * ACTUELLE de #resultContainer (position: sticky; top: 0 — hauteur variable selon le texte du
  * score). Un simple target.scrollIntoView() alignerait le haut de la cible sur le haut du
@@ -295,6 +344,8 @@ async function demarrerQuiz() {
 
   // store parameters for quiz page
   localStorage.removeItem('quizPracticeMode');
+  localStorage.removeItem('quizFreezeSrSchedule');
+  localStorage.removeItem('quizDifficultyDrill');
   localStorage.setItem('quizCategory', selectedCategory);
   localStorage.setItem('quizMode', modeQuiz);
   localStorage.setItem('quizFilterFlags', JSON.stringify(filterFlags));
@@ -1106,11 +1157,15 @@ function afficherQuiz() {
         if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
       }
 
+      const _answerText = q2.choix[parseInt(radio.value)];
       try {
         const saved = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}');
-        saved[qIdx] = q2.choix[parseInt(radio.value)];
+        saved[qIdx] = _answerText;
         localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
       } catch (e2) { /* localStorage plein, tant pis */ }
+      // Séance "Difficultés" reprenable depuis un autre appareil (voir difficultes.html) :
+      // synchroniser cette réponse dans le document de séance Firestore.
+      if (localStorage.getItem('quizDifficultyDrill') === '1') _diffSessionSyncAnswer(qIdx, _answerText);
       // Le bandeau se relit depuis currentQuizAnswers : l'appeler APRÈS l'écriture ci-dessus.
       if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
 
@@ -1253,8 +1308,17 @@ function _computeSrEntry(q, selectedVal) {
 
     // Répétition espacée : calculer le prochain intervalle
     const prevInterval = hasExisting ? (currentResponses[key].srInterval || 0) : 0;
+    // Drill ciblé "Difficultés" en mode "compte pour de vrai" (voir _isSrScheduleFrozen) : on
+    // gèle l'intervalle et la date de prochaine révision sur leur dernière valeur réelle plutôt
+    // que de les recalculer — failCount/successCount/historique restent bien mis à jour plus
+    // bas, seul le calendrier de répétition espacée reste inchangé. Ne s'applique que s'il y a
+    // déjà un vrai planning établi (prevInterval > 0) : une question sans planning antérieur en
+    // établit un normalement, sans quoi elle resterait sans date de révision.
+    const freezeSchedule = hasExisting && prevInterval > 0 && _isSrScheduleFrozen();
     let newInterval;
-    if (status === 'réussie') {
+    if (freezeSchedule) {
+      newInterval = prevInterval;
+    } else if (status === 'réussie') {
       // Bonne réponse : augmenter l'intervalle. Le plafond dépend de la fiabilité de la
       // question : une question jamais ratée peut monter jusqu'à 365j (on arrête de vous
       // la ressasher une fois qu'elle est clairement acquise), une question ratée 1-2 fois
@@ -1277,7 +1341,9 @@ function _computeSrEntry(q, selectedVal) {
       // découverte (intervalle 0 ou 1) repart bien à 1 jour.
       newInterval = (prevInterval >= 3) ? Math.max(1, Math.round(prevInterval * 0.3)) : 1;
     }
-    const nextReviewMs = Date.now() + newInterval * 24 * 60 * 60 * 1000;
+    const nextReviewMs = freezeSchedule
+      ? currentResponses[key].nextReview
+      : (Date.now() + newInterval * 24 * 60 * 60 * 1000);
 
     // NOTE : ni `category` ni `questionId` ne sont stockés ici — les deux sont 100% redondants
     // avec la CLÉ de l'entrée (getKeyFor(q) = "question_" + catégorie normalisée + "_" + id) et
@@ -1312,6 +1378,33 @@ function _computeSrEntry(q, selectedVal) {
       entry.retryAfterSession = (_currentSessionCount || 0) + 3;
     }
     return entry;
+}
+
+/**
+ * _diffDrillRelaunch() – Enchaîne immédiatement une nouvelle manche sur les questions passées
+ * en argument (les ratées de la manche qui vient de se terminer, voir validerReponses()) sans
+ * repasser par difficultes.html. Recharge quiz.html avec les mêmes réglages (quizCategory/
+ * quizMode/correctionImmediate/quizFreezeSrSchedule/quizDifficultyDrill déjà en place depuis le
+ * lancement initial) : seul currentQuestions change.
+ */
+async function _diffDrillRelaunch(questionsList) {
+  const selected = questionsList.map(q => JSON.parse(JSON.stringify(q)));
+  const saved = (typeof _setLocalStorageWithCleanup === 'function')
+    ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
+    : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
+  if (!saved) {
+    alert("Stockage local plein : impossible d'enchaîner.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+    return;
+  }
+  localStorage.setItem('quizNbQuestions', selected.length.toString());
+  localStorage.removeItem('currentQuizAnswers');
+  localStorage.removeItem('currentQuizBatchPos');
+  localStorage.removeItem('recentlyAnsweredKeys');
+  // Écrit AVANT de recharger la page : un rechargement complet annule toute requête réseau
+  // encore en vol, donc attendre ici est nécessaire pour que la nouvelle manche soit bien
+  // reprenable depuis un autre appareil dès le rechargement.
+  await _diffSessionWrite(selected);
+  window.location.reload();
 }
 
 /**
@@ -2092,6 +2185,44 @@ async function validerReponses() {
     // Rien n'a été répondu → rien à enregistrer (ne pas polluer l'historique de sessions
     // ni les compteurs quotidiens avec une session vide)
     if (answeredCount === 0) return;
+
+    // Drill ciblé "Difficultés" (voir difficultes.html / diffLaunchQuiz) : proposer d'enchaîner
+    // directement sur les questions ratées de CETTE manche plutôt que de laisser l'utilisateur
+    // les chercher lui-même. Le retrait réel d'une question de la liste des difficultés reste
+    // conditionné à N réussites consécutives dans l'historique RÉEL (voir _trailingSuccessStreak
+    // dans difficultes.html) : réussir une question au 2e passage n'efface donc pas l'échec du
+    // 1er passage, ça ajoute juste une réussie de plus à la suite en cours.
+    if (rc && localStorage.getItem('quizDifficultyDrill') === '1') {
+      const seenKeys = new Set();
+      const wrongQuestions = [];
+      currentQuestions.forEach(q => {
+        const key = getKeyFor(q);
+        if (responsesToSave[key] && responsesToSave[key].status === 'ratée' && !seenKeys.has(key)) {
+          seenKeys.add(key);
+          wrongQuestions.push(q);
+        }
+      });
+      if (wrongQuestions.length) {
+        const btn = document.createElement('button');
+        btn.className = 'hist-filter-btn hist-filter-quiz';
+        btn.style.cssText = 'display:block;margin-top:12px;font-size:.9em;padding:8px 18px;';
+        btn.textContent = `🔁 Refaire les ${wrongQuestions.length} question${wrongQuestions.length > 1 ? 's' : ''} ratée${wrongQuestions.length > 1 ? 's' : ''} de cette séance`;
+        btn.onclick = () => _diffDrillRelaunch(wrongQuestions);
+        rc.appendChild(btn);
+      } else {
+        const p = document.createElement('div');
+        p.style.cssText = 'margin-top:12px;font-size:.9em;color:#4caf50;';
+        p.textContent = '🎉 Aucune erreur sur cette manche !';
+        rc.appendChild(p);
+        // Plus rien à enchaîner : la séance reprenable n'a plus lieu d'être.
+        _diffSessionDelete();
+      }
+      const back = document.createElement('a');
+      back.href = 'difficultes.html';
+      back.textContent = '⬅️ Retour à Difficultés';
+      back.style.cssText = 'display:inline-block;margin-top:10px;font-size:.85em;color:var(--link-color,#8ab4f8);';
+      rc.appendChild(back);
+    }
 
     // Incrémenter le compteur quotidien direct dans localStorage
     // (fiable même si Firestore n'est pas prêt offline)

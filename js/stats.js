@@ -498,6 +498,7 @@ function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
   const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : responses;
   const notes = notesMap || (typeof _notesCache === 'object' && _notesCache) || {};
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0, marqueeVue = 0, importanteVue = 0;
+  let notee = 0, noteeVue = 0;
   let flagged = 0, flaggedVue = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
@@ -510,16 +511,18 @@ function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
     if (eff === 'réussie')      reussie++;
     else if (eff === 'ratée')    ratee++;
     else                               nonvue++;
-    // marquée / importante en supplément
+    // marquée / importante / notée en supplément
     if (r.marked)    { marquee++;    if (seen) marqueeVue++; }
     if (r.important) { importante++; if (seen) importanteVue++; }
+    const note = notes[key];
+    if (note && (note.text || note.image)) { notee++; if (seen) noteeVue++; }
     // marquée OU importante OU notée ("caractérisée") — sert au reset ciblé (garder progression à 0)
     if (r.marked || r.important || !!notes[key]) {
       flagged++;
       if (seen) flaggedVue++;
     }
   });
-  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue, flagged, flaggedVue };
+  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue, notee, noteeVue, flagged, flaggedVue };
 }
 
 /**
@@ -636,16 +639,16 @@ async function initStats() {
           await chargerQuestions(cat.value);
           const catQuestions = [...questions];
           const isEpreuve = cat.value.includes('EPREUVE');
-          const fullStats = computeStatsForFirestore(catQuestions, data.responses);
+          const fullStats = computeStatsForFirestore(catQuestions, data.responses, data.notes);
           // Pour les totaux groupe/global : ne compter que les questions uniques des épreuves
           // (les refs sont déjà comptées dans leurs catégories thématiques)
           const globalContrib = isEpreuve
-            ? computeStatsForFirestore(catQuestions.filter(q => q.categorie === cat.value), data.responses)
+            ? computeStatsForFirestore(catQuestions.filter(q => q.categorie === cat.value), data.responses, data.notes)
             : fullStats;
           catStats.push({ label: cat.label, value: cat.value, stats: fullStats, globalContrib });
         } catch (err) {
           console.error("Stat error for", cat.value, err);
-          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0, marqueeVue: 0, importanteVue: 0, flagged: 0, flaggedVue: 0 };
+          const emptyStats = { reussie: 0, ratee: 0, nonvue: 0, marquee: 0, importante: 0, marqueeVue: 0, importanteVue: 0, notee: 0, noteeVue: 0, flagged: 0, flaggedVue: 0 };
           catStats.push({ label: cat.label, value: cat.value, stats: emptyStats, globalContrib: emptyStats });
         }
       }
@@ -654,7 +657,7 @@ async function initStats() {
 
     // Compute global stats from deduplicated question set (same as home page)
     await loadAllQuestions();
-    const globalStats = computeStatsForFirestore(questions, data.responses);
+    const globalStats = computeStatsForFirestore(questions, data.responses, data.notes);
 
     afficherStats(groupsData, globalStats);
 
@@ -908,6 +911,7 @@ function afficherStats(groupsData, globalStats) {
   const gNv = globalStats.nonvue;
   const gMa = globalStats.marquee;
   const gIm = globalStats.importante || 0;
+  const gNo = globalStats.notee || 0;
   const gTotal = gRe + gRa + gNv;
   const gPerc = gTotal ? (gRe * 100 / gTotal).toFixed(2) : '0.00';
 
@@ -949,8 +953,10 @@ function afficherStats(groupsData, globalStats) {
   // Carte globale
   const gMaV = globalStats.marqueeVue || 0;
   const gImV = globalStats.importanteVue || 0;
+  const gNoV = globalStats.noteeVue || 0;
   const gMaPerc = gMa ? (gMaV * 100 / gMa).toFixed(1) : '0.0';
   const gImPerc = gIm ? (gImV * 100 / gIm).toFixed(1) : '0.0';
+  const gNoPerc = gNo ? (gNoV * 100 / gNo).toFixed(1) : '0.0';
   let html = `
     <div class="stats-global-card">
       <div class="stats-global-row">
@@ -967,6 +973,7 @@ function afficherStats(groupsData, globalStats) {
         <span>👀 ${gNv}</span>
         <span>📌 ${gMa}</span>
         <span>⭐ ${gIm}</span>
+        <span>📝 ${gNo}</span>
       </div>
       <div style="margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;font-size:0.82em;margin-bottom:3px">
@@ -974,10 +981,15 @@ function afficherStats(groupsData, globalStats) {
           <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gMaPerc}%;background:#667eea"></div></div>
           <span style="min-width:60px;text-align:right">${gMaV}/${gMa} (${gMaPerc}%)</span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:0.82em">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.82em;margin-bottom:3px">
           <span>⭐ Importantes</span>
           <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gImPerc}%;background:#f59e0b"></div></div>
           <span style="min-width:60px;text-align:right">${gImV}/${gIm} (${gImPerc}%)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.82em">
+          <span>📝 Notées</span>
+          <div class="progressbar" style="flex:1;height:8px;margin:0"><div class="progress" style="height:8px;width:${gNoPerc}%;background:#26c6da"></div></div>
+          <span style="min-width:60px;text-align:right">${gNoV}/${gNo} (${gNoPerc}%)</span>
         </div>
       </div>
       ${gDaysHtml}
@@ -990,6 +1002,7 @@ function afficherStats(groupsData, globalStats) {
   // Chaque groupe
   groupsData.forEach(group => {
     let grRe = 0, grRa = 0, grNv = 0, grMa = 0, grIm = 0, grMaV = 0, grImV = 0, grFl = 0, grFlV = 0;
+    let grNo = 0, grNoV = 0;
     group.categories.forEach(c => {
       const s = c.globalContrib || c.stats;
       grRe += s.reussie;
@@ -999,6 +1012,8 @@ function afficherStats(groupsData, globalStats) {
       grIm += s.importante || 0;
       grMaV += s.marqueeVue || 0;
       grImV += s.importanteVue || 0;
+      grNo += s.notee || 0;
+      grNoV += s.noteeVue || 0;
       grFl += s.flagged || 0;
       grFlV += s.flaggedVue || 0;
     });
@@ -1006,6 +1021,7 @@ function afficherStats(groupsData, globalStats) {
     const grPerc = grTotal ? Math.round((grRe * 100) / grTotal) : 0;
     const grMaPerc = grMa ? (grMaV * 100 / grMa).toFixed(1) : '0.0';
     const grImPerc = grIm ? (grImV * 100 / grIm).toFixed(1) : '0.0';
+    const grNoPerc = grNo ? (grNoV * 100 / grNo).toFixed(1) : '0.0';
     const grName = (group.name || '').replace(/'/g, "\\'");
 
     html += `<div class="stats-group">`;
@@ -1027,6 +1043,11 @@ function afficherStats(groupsData, globalStats) {
         <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grImPerc}%;background:#f59e0b"></div></div>
         <span>${grImPerc}%</span>
       </div>
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:180px">
+        <span>📝 ${grNoV}/${grNo}</span>
+        <div class="progressbar" style="flex:1;height:6px;margin:0"><div class="progress" style="height:6px;width:${grNoPerc}%;background:#26c6da"></div></div>
+        <span>${grNoPerc}%</span>
+      </div>
       <button class="stats-cat-reset-btn" onclick="_resetGroupStats('${grName}')" title="Réinitialiser la progression ${group.name}" style="font-size:0.95em">🔄 Reset</button>
       <button class="stats-cat-reset-btn" onclick="_resetGroupFlaggedStats('${grName}')" title="Remettre à zéro uniquement les questions 📌⭐📝 déjà vues de ${group.name} (garde le marquage)" style="font-size:0.95em">🎯 Reset 📌⭐📝 (${grFlV}/${grFl} vues)</button>
     </div>`;
@@ -1039,6 +1060,7 @@ function afficherStats(groupsData, globalStats) {
       const markers = [];
       if (s.marquee) markers.push(`📌${s.marquee}`);
       if (s.importante) markers.push(`⭐${s.importante}`);
+      if (s.notee) markers.push(`📝${s.notee}`);
       const markersStr = markers.length ? ` <span class="stats-cat-marks">${markers.join(' ')}</span>` : '';
       const chartId = 'catChart_' + catChartIdx;
       const catVal = (cat.value || '').replace(/'/g, "\\'");

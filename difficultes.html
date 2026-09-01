@@ -91,6 +91,9 @@
     <!-- Résumé global + par famille -->
     <div class="home-card" id="diffSummary"></div>
 
+    <!-- Séance en cours reprenable depuis un autre appareil -->
+    <div class="home-card" id="diffResumeBanner" style="display:none;border-color:rgba(255,193,7,.4);"></div>
+
     <!-- Générateur de quiz -->
     <div class="home-card" id="diffLauncher">
       <h3 style="margin:0 0 10px;">▶️ Travailler ces difficultés</h3>
@@ -106,7 +109,11 @@
         <button class="hist-filter-btn hist-filter-quiz" style="font-size:.95em;padding:8px 20px;" onclick="diffLaunchQuiz()">▶️ Lancer un quiz</button>
       </div>
       <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
-        🛡️ Pur entraînement : n'affecte ni les statistiques, ni la répétition espacée, ni le compteur d'échecs.
+        ✅ Compte pour de vrai (échecs/réussites, historique, statistiques) — mais ne modifie jamais la date de ta
+        prochaine révision programmée, qui reste celle fixée par tes quiz normaux. Une question réussie une fois
+        ici ne redescend pas d'un coup à zéro difficulté : il faut l'enchaîner
+        <span id="diffThresholdEcho">3</span> fois d'affilée (réglable ci-dessus) pour qu'elle disparaisse de cette
+        liste. À la fin d'une manche, tu peux enchaîner directement sur les questions encore ratées.
       </div>
     </div>
 
@@ -155,6 +162,7 @@
     let historyMap = {}; // key -> log [{status, ts}], depuis quizProgress/{uid}/history
     let allQuestions = []; // toutes les questions chargées (dédupliquées par clé)
     let diffItems = []; // [{q, key, failCount, successCount, recentStreak, family, category}]
+    let activeSession = null; // séance de drill en cours (éventuellement démarrée sur un autre appareil)
     let categoryTotals = new Map(); // category -> nb total de questions (toutes, pas que ratées)
     let categoryFamily = new Map(); // category -> family (gligli/easa/classique)
 
@@ -202,6 +210,19 @@
         console.warn('[difficultes] chargement historique échoué (repli sur les compteurs seuls):', e);
       }
 
+      // Séance de drill en cours, éventuellement démarrée sur un autre appareil (voir
+      // _diffSessionWrite dans js/quiz.js) — pure fonctionnalité de confort : une erreur ici
+      // ne doit jamais empêcher le reste de la page de fonctionner.
+      try {
+        const sDoc = await db.collection('quizProgress').doc(uid).collection('session').doc('difficulty').get();
+        if (sDoc.exists) {
+          const data = sDoc.data();
+          if (data && Array.isArray(data.questions) && data.questions.length) activeSession = data;
+        }
+      } catch (e) {
+        console.warn('[difficultes] chargement séance en cours échoué:', e);
+      }
+
       // Dédupliquer par clé (une même question peut apparaître dans plusieurs fichiers)
       const seen = new Set();
       allQuestions = [];
@@ -230,6 +251,8 @@
     // Recalcule la liste des difficultés actuelles (appelé au chargement et quand le seuil change)
     window.diffRecompute = function() {
       const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || 3);
+      const echo = document.getElementById('diffThresholdEcho');
+      if (echo) echo.textContent = threshold;
       diffItems = [];
 
       allQuestions.forEach(({ q, key }) => {
@@ -265,10 +288,64 @@
 
     function diffRender() {
       renderSummary();
+      renderResumeBanner();
       renderCategories();
       renderScopeSelect();
       renderList();
     }
+
+    // Séance de drill en cours (potentiellement démarrée sur un autre appareil) : proposer de
+    // la reprendre exactement là où elle en était, ou de l'abandonner.
+    function renderResumeBanner() {
+      const el = document.getElementById('diffResumeBanner');
+      if (!activeSession) { el.style.display = 'none'; el.innerHTML = ''; return; }
+      const total = activeSession.questions.length;
+      const answered = Object.keys(activeSession.answers || {}).length;
+      el.style.display = 'block';
+      el.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+          <div style="font-size:.9em;">
+            🔄 <strong>Séance en cours</strong> sur cet appareil ou un autre : ${answered}/${total} question${total > 1 ? 's' : ''} répondue${answered > 1 ? 's' : ''}.
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="hist-filter-btn hist-filter-quiz" style="font-size:.88em;padding:6px 14px;" onclick="diffResumeSession()">▶️ Reprendre</button>
+            <button class="hist-filter-btn" style="font-size:.88em;padding:6px 14px;" onclick="diffAbandonSession()">🗑️ Abandonner</button>
+          </div>
+        </div>
+      `;
+    }
+
+    window.diffResumeSession = function() {
+      if (!activeSession) return;
+      const selected = activeSession.questions;
+      const saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
+        : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de reprendre.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
+      localStorage.setItem('quizCategory', 'DIFFICULTÉS');
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', selected.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      localStorage.removeItem('quizPracticeMode');
+      localStorage.setItem('quizFreezeSrSchedule', '1');
+      localStorage.setItem('quizDifficultyDrill', '1');
+      // Réponses déjà données (sur cet appareil ou l'autre) : réutilisées telles quelles par
+      // afficherQuiz() pour réafficher automatiquement l'état de la manche (voir js/quiz.js).
+      try { localStorage.setItem('currentQuizAnswers', JSON.stringify(activeSession.answers || {})); } catch (e) { /* tant pis */ }
+      localStorage.removeItem('currentQuizBatchPos');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      window.location = 'quiz.html';
+    };
+
+    window.diffAbandonSession = function() {
+      if (!activeSession) return;
+      if (typeof _diffSessionDelete === 'function') _diffSessionDelete();
+      activeSession = null;
+      renderResumeBanner();
+    };
 
     function renderSummary() {
       const byFam = { gligli: 0, easa: 0, classique: 0 };
@@ -360,7 +437,7 @@
       return diffItems;
     }
 
-    window.diffLaunchQuiz = function() {
+    window.diffLaunchQuiz = async function() {
       const list = _scopedList();
       if (!list.length) { alert('Aucune question dans ce périmètre.'); return; }
       const nbInput = document.getElementById('diffQuizNb');
@@ -381,14 +458,24 @@
         alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
         return;
       }
-      localStorage.setItem('quizCategory', 'DIFFICULTÉS (entraînement)');
+      localStorage.setItem('quizCategory', 'DIFFICULTÉS');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', selected.length.toString());
       localStorage.setItem('correctionImmediate', '1');
-      localStorage.setItem('quizPracticeMode', '1');
+      // Compte pour de vrai (échecs/réussites, historique, statistiques) — voir
+      // _isSrScheduleFrozen dans js/quiz.js : seuls l'intervalle et la date de prochaine
+      // révision restent figés sur leur dernière valeur, pour ne pas faire dériver le
+      // calendrier de répétition espacée au gré de la fréquence de ces séances de drill.
+      localStorage.removeItem('quizPracticeMode');
+      localStorage.setItem('quizFreezeSrSchedule', '1');
+      localStorage.setItem('quizDifficultyDrill', '1');
       localStorage.removeItem('currentQuizAnswers');
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');
+      // Rend la manche reprenable depuis un autre appareil (voir _diffSessionWrite dans
+      // js/quiz.js) — écrit AVANT de naviguer, sinon le changement de page annulerait la
+      // requête réseau en vol.
+      if (typeof _diffSessionWrite === 'function') await _diffSessionWrite(selected);
       window.location = 'quiz.html';
     };
 
