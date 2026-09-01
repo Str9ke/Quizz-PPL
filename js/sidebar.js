@@ -62,6 +62,7 @@
     mountain: '<path d="M3 20 9 8l4 6 3-4 5 10Z"/>',
     droplet: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11Z"/>',
     checkSquare: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/>',
+    zap: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
     send: '<path d="M4 12 20 4 13 20l-2-7-7-1Z"/>',
     folder: '<path d="M4 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/>'
   };
@@ -81,6 +82,7 @@
       { href: 'quiz.html', icon: 'target', label: 'Quiz' },
       { href: 'rates.html', icon: 'bookOpen', label: 'Révisions' },
       { href: 'echecs.html', icon: 'flame', label: 'Plus ratées' },
+      { href: 'difficultes.html', icon: 'zap', label: 'Difficultés' },
       { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' }
     ] },
     { type: 'group', id: 'suivre', items: [

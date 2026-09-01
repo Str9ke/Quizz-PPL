@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Difficultés</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20260807a" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20260807a"></script>
+  <script src="js/helpers.js?v=20260807d"></script>
+  <script src="js/categories.js?v=20260807c"></script>
+  <script src="js/stats.js?v=20260807i"></script>
+  <script src="js/quiz.js?v=20260807k"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/statusbar.js?v=20260818a"></script>
+  <script src="js/net.js?v=20260817a"></script>
+  <script src="js/first-run.js?v=20260817b"></script>
+  <script src="js/update-check.js?v=20260816b"></script>
+  <script src="js/app-update.js?v=20260816c"></script>
+  <script src="js/tts.js?v=20260816b"></script>
+  <script src="js/localmirror.js?v=20260816a"></script>
+  <script src="js/offline.js?v=20260807i"></script>
+  <script src="js/img-zoom.js?v=20260820a"></script>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light'); else if (saved === 'exotique') document.body.classList.add('exotique');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){var b=document.body;var cur=b.classList.contains('exotique')?'exotique':(b.classList.contains('light')?'light':'dark');var next=cur==='dark'?'light':(cur==='light'?'exotique':'dark');b.classList.remove('light','exotique');if(next!=='dark')b.classList.add(next);localStorage.setItem('theme',next);document.getElementById('themeToggle').textContent=next==='light'?'☀️':(next==='exotique'?'🌴':'🌙')})()">☀️</button>
+  <script>
+    (function(){var b=document.body;document.getElementById('themeToggle').textContent=b.classList.contains('exotique')?'🌴':(b.classList.contains('light')?'☀️':'🌙')})();
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">🎯</div>
+    <h1 class="home-hero-title">Difficultés</h1>
+    <div class="home-hero-subtitle">Uniquement ce qui te pose encore problème, maintenant</div>
+  </div>
+
+  <!-- Explication + réglage du seuil -->
+  <div class="home-card" id="diffExplain">
+    <p style="font-size:.88em;color:var(--text-secondary);margin:0 0 10px;">
+      Une question compte comme <strong>difficulté actuelle</strong> si elle a déjà été ratée au moins une fois
+      <u>et</u> que tu ne l'as pas encore enchaînée assez de fois d'affilée depuis pour la considérer acquise.
+      Une question ratée une fois puis réussie 5 fois de suite après n'apparaît donc plus ici. Les questions
+      jamais vues et celles retirées du cycle (« ne plus revoir », jugées trop faciles) ne sont jamais comptées.
+    </p>
+    <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
+      Nombre de bonnes réponses d'affilée pour considérer une question comme acquise :
+      <input type="number" id="diffThreshold" min="1" max="10" value="3" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">
+      <span style="color:var(--text-secondary);">(défaut : 3)</span>
+    </label>
+  </div>
+
+  <div class="home-card" id="diffLoading">
+    <p style="text-align:center;color:var(--text-secondary);">Chargement…</p>
+  </div>
+
+  <div id="diffBody" style="display:none;">
+
+    <!-- Résumé global + par famille -->
+    <div class="home-card" id="diffSummary"></div>
+
+    <!-- Générateur de quiz -->
+    <div class="home-card" id="diffLauncher">
+      <h3 style="margin:0 0 10px;">▶️ Travailler ces difficultés</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.9em;">
+          Périmètre :
+          <select id="diffScopeSelect" style="padding:5px 8px;border-radius:6px;" onchange="diffOnScopeChange()"></select>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.9em;">
+          Nombre de questions :
+          <input type="number" id="diffQuizNb" min="1" value="10" style="width:70px;padding:4px 6px;border-radius:4px;">
+        </label>
+        <button class="hist-filter-btn hist-filter-quiz" style="font-size:.95em;padding:8px 20px;" onclick="diffLaunchQuiz()">▶️ Lancer un quiz</button>
+      </div>
+      <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
+        🛡️ Pur entraînement : n'affecte ni les statistiques, ni la répétition espacée, ni le compteur d'échecs.
+      </div>
+    </div>
+
+    <!-- Détail par catégorie -->
+    <div class="home-card" id="diffCategories">
+      <h3 style="margin:0 0 10px;">Détail par catégorie</h3>
+      <div id="diffCategoriesBody"></div>
+    </div>
+
+    <!-- Liste des questions concernées (repli par catégorie) -->
+    <div class="home-card" id="diffList">
+      <h3 style="margin:0 0 10px;">📋 Questions concernées</h3>
+      <div id="diffListBody"></div>
+    </div>
+
+  </div>
+
+  <!-- Navigation -->
+  <div class="home-nav-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-rates" onclick="window.location='echecs.html'">
+      <div class="home-nav-icon">🔥</div>
+      <div class="home-nav-label">Plus ratées</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // Page "Difficultés" — questions actuellement problématiques uniquement (voir explication
+  // affichée en haut de page pour la règle exacte de calcul).
+  // ============================================================
+  (function() {
+    let uid = null;
+    let currentResponses = {};
+    let historyMap = {}; // key -> log [{status, ts}], depuis quizProgress/{uid}/history
+    let allQuestions = []; // toutes les questions chargées (dédupliquées par clé)
+    let diffItems = []; // [{q, key, failCount, successCount, recentStreak, family, category}]
+    let categoryTotals = new Map(); // category -> nb total de questions (toutes, pas que ratées)
+    let categoryFamily = new Map(); // category -> family (gligli/easa/classique)
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Combien de "réussie" d'affilée à la fin du journal chronologique (null si journal absent).
+    function _trailingSuccessStreak(log) {
+      if (!Array.isArray(log) || !log.length) return null;
+      const sorted = log.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+      let streak = 0;
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        if (sorted[i].status === 'réussie') streak++;
+        else break;
+      }
+      return streak;
+    }
+
+    async function initDifficultes() {
+      uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      if (!uid) { window.location = 'index.html'; return; }
+
+      document.getElementById('diffLoading').querySelector('p').textContent = 'Chargement des questions…';
+      await prefetchAllJsonFiles();
+      await loadAllQuestions();
+
+      document.getElementById('diffLoading').querySelector('p').textContent = 'Chargement de ta progression…';
+      try {
+        const doc = await _loadMergedResponses(uid, 6000);
+        const data = doc.exists ? doc.data() : {};
+        currentResponses = normalizeResponses(data.responses || {});
+      } catch (e) {
+        console.warn('[difficultes] Firestore load failed:', e);
+      }
+
+      try {
+        const histSnap = await db.collection('quizProgress').doc(uid).collection('history').get();
+        histSnap.forEach(d => {
+          const hData = d.data();
+          if (hData && Array.isArray(hData.log)) historyMap[d.id] = hData.log;
+        });
+      } catch (e) {
+        console.warn('[difficultes] chargement historique échoué (repli sur les compteurs seuls):', e);
+      }
+
+      // Dédupliquer par clé (une même question peut apparaître dans plusieurs fichiers)
+      const seen = new Set();
+      allQuestions = [];
+      questions.forEach(q => {
+        const key = getKeyFor(q);
+        if (seen.has(key)) return;
+        seen.add(key);
+        allQuestions.push({ q, key });
+      });
+
+      // Totaux par catégorie (TOUTES les questions, pas seulement celles vues/difficiles) —
+      // nécessaire pour afficher "X difficiles / Y au total" par catégorie.
+      categoryTotals.clear();
+      categoryFamily.clear();
+      allQuestions.forEach(({ q }) => {
+        const cat = q.categorie || '(sans catégorie)';
+        categoryTotals.set(cat, (categoryTotals.get(cat) || 0) + 1);
+        if (!categoryFamily.has(cat)) categoryFamily.set(cat, _srFamily(q));
+      });
+
+      document.getElementById('diffLoading').style.display = 'none';
+      document.getElementById('diffBody').style.display = 'block';
+      diffRecompute();
+    }
+
+    // Recalcule la liste des difficultés actuelles (appelé au chargement et quand le seuil change)
+    window.diffRecompute = function() {
+      const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || 3);
+      diffItems = [];
+
+      allQuestions.forEach(({ q, key }) => {
+        const r = currentResponses[key];
+        if (!r || r.status === undefined) return; // jamais vue : ignorée
+        if (r.suspended === true) return; // "ne plus revoir" : ignorée
+        const failCount = r.failCount || 0;
+        if (failCount < 1) return; // jamais ratée : pas une difficulté
+
+        const log = historyMap[key] || r.statusLog || null;
+        const streak = _trailingSuccessStreak(log);
+        const recentStreak = (streak === null) ? (r.status === 'réussie' ? 1 : 0) : streak;
+        if (recentStreak >= threshold) return; // suffisamment enchaînée récemment : acquise
+
+        diffItems.push({
+          q, key, failCount,
+          successCount: r.successCount || 0,
+          recentStreak,
+          family: _srFamily(q),
+          category: q.categorie || '(sans catégorie)'
+        });
+      });
+
+      diffRender();
+    };
+
+    function _famLabel(fam) {
+      return fam === 'gligli' ? 'GLIGLI' : (fam === 'easa' ? 'EASA' : 'Classiques');
+    }
+    function _famDot(fam) {
+      return '<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + FAM_COLORS[fam] + ';margin-right:5px;vertical-align:middle;"></span>';
+    }
+
+    function diffRender() {
+      renderSummary();
+      renderCategories();
+      renderScopeSelect();
+      renderList();
+    }
+
+    function renderSummary() {
+      const byFam = { gligli: 0, easa: 0, classique: 0 };
+      diffItems.forEach(it => { byFam[it.family]++; });
+      const el = document.getElementById('diffSummary');
+      if (!diffItems.length) {
+        el.innerHTML = '<h2 style="margin:0;color:#4caf50;">🎉 Aucune difficulté actuelle !</h2>'
+          + '<p style="color:var(--text-secondary);margin:8px 0 0;">Toutes les questions déjà vues sont soit jamais ratées, soit suffisamment enchaînées récemment.</p>';
+        return;
+      }
+      el.innerHTML = `
+        <h2 style="margin:0 0 12px;">${diffItems.length} question${diffItems.length > 1 ? 's' : ''} à travailler</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:.95em;">
+          <span>${_famDot('gligli')}GLIGLI : <strong>${byFam.gligli}</strong></span>
+          <span>${_famDot('easa')}EASA : <strong>${byFam.easa}</strong></span>
+          <span>${_famDot('classique')}Classiques : <strong>${byFam.classique}</strong></span>
+        </div>
+      `;
+    }
+
+    function renderCategories() {
+      const diffByCategory = new Map();
+      diffItems.forEach(it => {
+        diffByCategory.set(it.category, (diffByCategory.get(it.category) || 0) + 1);
+      });
+      const cats = [...diffByCategory.keys()].sort((a, b) => diffByCategory.get(b) - diffByCategory.get(a));
+      const body = document.getElementById('diffCategoriesBody');
+      if (!cats.length) { body.innerHTML = '<p style="color:var(--text-secondary);">—</p>'; return; }
+
+      let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+      cats.forEach(cat => {
+        const nb = diffByCategory.get(cat);
+        const total = categoryTotals.get(cat) || 0;
+        const fam = categoryFamily.get(cat) || 'classique';
+        const pct = total ? Math.round((nb / total) * 100) : 0;
+        html += `
+          <div style="display:flex;align-items:center;gap:10px;font-size:.88em;">
+            <span style="flex:0 0 220px;">${_famDot(fam)}${escapeHtml(cat)}</span>
+            <div class="progressbar" style="flex:1;height:8px;margin:0">
+              <div class="progress" style="height:8px;width:${pct}%;background:${FAM_COLORS[fam]}"></div>
+            </div>
+            <span style="flex:0 0 110px;text-align:right;">${nb}/${total} (${pct}%)</span>
+          </div>
+        `;
+      });
+      html += '</div>';
+      body.innerHTML = html;
+    }
+
+    function renderScopeSelect() {
+      const sel = document.getElementById('diffScopeSelect');
+      const prevValue = sel.value;
+      const diffByCategory = new Map();
+      diffItems.forEach(it => diffByCategory.set(it.category, (diffByCategory.get(it.category) || 0) + 1));
+      const byFam = { gligli: 0, easa: 0, classique: 0 };
+      diffItems.forEach(it => { byFam[it.family]++; });
+
+      let html = `<option value="all">Toutes les difficultés (${diffItems.length})</option>`;
+      if (byFam.gligli) html += `<option value="fam:gligli">GLIGLI seulement (${byFam.gligli})</option>`;
+      if (byFam.easa) html += `<option value="fam:easa">EASA seulement (${byFam.easa})</option>`;
+      if (byFam.classique) html += `<option value="fam:classique">Classiques seulement (${byFam.classique})</option>`;
+      [...diffByCategory.keys()].sort((a, b) => diffByCategory.get(b) - diffByCategory.get(a)).forEach(cat => {
+        html += `<option value="cat:${escapeHtml(cat)}">↳ ${escapeHtml(cat)} (${diffByCategory.get(cat)})</option>`;
+      });
+      sel.innerHTML = html;
+      if ([...sel.options].some(o => o.value === prevValue)) sel.value = prevValue;
+      diffOnScopeChange();
+    }
+
+    window.diffOnScopeChange = function() {
+      const nbInput = document.getElementById('diffQuizNb');
+      const list = _scopedList();
+      nbInput.max = list.length || 1;
+      const current = parseInt(nbInput.value) || 10;
+      nbInput.value = Math.max(1, Math.min(current, list.length || 1));
+    };
+
+    function _scopedList() {
+      const scope = document.getElementById('diffScopeSelect').value;
+      if (!scope || scope === 'all') return diffItems;
+      if (scope.startsWith('fam:')) {
+        const fam = scope.slice(4);
+        return diffItems.filter(it => it.family === fam);
+      }
+      if (scope.startsWith('cat:')) {
+        const cat = scope.slice(4);
+        return diffItems.filter(it => it.category === cat);
+      }
+      return diffItems;
+    }
+
+    window.diffLaunchQuiz = function() {
+      const list = _scopedList();
+      if (!list.length) { alert('Aucune question dans ce périmètre.'); return; }
+      const nbInput = document.getElementById('diffQuizNb');
+      let nb = parseInt(nbInput.value) || 0;
+      nb = Math.max(1, Math.min(nb, list.length));
+
+      const shuffled = list.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const selected = shuffled.slice(0, nb).map(item => JSON.parse(JSON.stringify(item.q)));
+
+      const saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
+        : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
+      localStorage.setItem('quizCategory', 'DIFFICULTÉS (entraînement)');
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', selected.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      localStorage.setItem('quizPracticeMode', '1');
+      localStorage.removeItem('currentQuizAnswers');
+      localStorage.removeItem('currentQuizBatchPos');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      window.location = 'quiz.html';
+    };
+
+    function renderList() {
+      const body = document.getElementById('diffListBody');
+      if (!diffItems.length) { body.innerHTML = ''; return; }
+
+      const byCategory = new Map();
+      diffItems.forEach(it => {
+        if (!byCategory.has(it.category)) byCategory.set(it.category, []);
+        byCategory.get(it.category).push(it);
+      });
+      const cats = [...byCategory.keys()].sort((a, b) => byCategory.get(b).length - byCategory.get(a).length);
+
+      let html = '';
+      cats.forEach(cat => {
+        const items = byCategory.get(cat).slice().sort((a, b) => b.failCount - a.failCount);
+        const fam = categoryFamily.get(cat) || 'classique';
+        html += `<details style="margin-bottom:8px;">
+          <summary style="cursor:pointer;font-weight:600;">${_famDot(fam)}${escapeHtml(cat)} (${items.length})</summary>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">`;
+        items.forEach(it => {
+          html += `<div style="padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.04);font-size:.85em;">
+            <div>${escapeHtml(it.q.question)}</div>
+            <div style="margin-top:4px;color:var(--text-secondary);">
+              ❌×${it.failCount} · ✅×${it.successCount} · ${it.recentStreak} bonne${it.recentStreak > 1 ? 's' : ''} d'affilée récemment
+            </div>
+          </div>`;
+        });
+        html += '</div></details>';
+      });
+      body.innerHTML = html;
+    }
+
+    // === Auth ===
+    let initDone = false;
+    function doInit() {
+      if (initDone) return;
+      initDone = true;
+      initDifficultes();
+    }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
+      else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      if (!initDone && localStorage.getItem('cachedUid')) doInit();
+    }, 2500);
+  })();
+  </script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
+</body>
+</html>
