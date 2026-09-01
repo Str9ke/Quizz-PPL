@@ -23,6 +23,44 @@ function _isSrScheduleFrozen() {
 }
 
 /**
+ * Séance de drill "Difficultés" reprenable sur un autre appareil (voir difficultes.html) —
+ * un unique petit document Firestore (quizProgress/{uid}/session/difficulty) mémorise la série
+ * de questions de la manche en cours et les réponses déjà données (même format idx → texte du
+ * choix que currentQuizAnswers en localStorage, réutilisé tel quel par afficherQuiz() pour
+ * réafficher automatiquement l'état déjà répondu — voir la restauration ligne ~1035). Ce n'est
+ * qu'un CONFORT de reprise : toute erreur d'écriture/lecture ici est non bloquante (avalée),
+ * le suivi réel des réponses (failCount/successCount/historique) est déjà assuré ailleurs.
+ */
+function _diffSessionUid() {
+  return (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
+}
+function _diffSessionDocRef() {
+  const uid = _diffSessionUid();
+  if (!uid || typeof db === 'undefined') return null;
+  return db.collection('quizProgress').doc(uid).collection('session').doc('difficulty');
+}
+async function _diffSessionWrite(questions) {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  try {
+    await ref.set({ questions, answers: {}, updatedAt: Date.now() });
+  } catch (e) {
+    console.warn('[difficultés] échec sauvegarde séance reprenable:', e);
+  }
+}
+function _diffSessionSyncAnswer(idx, answerText) {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  ref.update({ ['answers.' + idx]: answerText, updatedAt: Date.now() })
+    .catch(e => console.warn('[difficultés] échec sync réponse séance reprenable:', e));
+}
+function _diffSessionDelete() {
+  const ref = _diffSessionDocRef();
+  if (!ref) return;
+  ref.delete().catch(e => console.warn('[difficultés] échec suppression séance reprenable:', e));
+}
+
+/**
  * _scrollBelowStickyBanner() – Scroll fluide vers un élément en tenant compte de la hauteur
  * ACTUELLE de #resultContainer (position: sticky; top: 0 — hauteur variable selon le texte du
  * score). Un simple target.scrollIntoView() alignerait le haut de la cible sur le haut du
@@ -1119,11 +1157,15 @@ function afficherQuiz() {
         if (typeof _qtResetElapsed === 'function') _qtResetElapsed();
       }
 
+      const _answerText = q2.choix[parseInt(radio.value)];
       try {
         const saved = JSON.parse(localStorage.getItem('currentQuizAnswers') || '{}');
-        saved[qIdx] = q2.choix[parseInt(radio.value)];
+        saved[qIdx] = _answerText;
         localStorage.setItem('currentQuizAnswers', JSON.stringify(saved));
       } catch (e2) { /* localStorage plein, tant pis */ }
+      // Séance "Difficultés" reprenable depuis un autre appareil (voir difficultes.html) :
+      // synchroniser cette réponse dans le document de séance Firestore.
+      if (localStorage.getItem('quizDifficultyDrill') === '1') _diffSessionSyncAnswer(qIdx, _answerText);
       // Le bandeau se relit depuis currentQuizAnswers : l'appeler APRÈS l'écriture ci-dessus.
       if (typeof _updateSessionProgress === 'function') _updateSessionProgress();
 
@@ -1345,7 +1387,7 @@ function _computeSrEntry(q, selectedVal) {
  * quizMode/correctionImmediate/quizFreezeSrSchedule/quizDifficultyDrill déjà en place depuis le
  * lancement initial) : seul currentQuestions change.
  */
-function _diffDrillRelaunch(questionsList) {
+async function _diffDrillRelaunch(questionsList) {
   const selected = questionsList.map(q => JSON.parse(JSON.stringify(q)));
   const saved = (typeof _setLocalStorageWithCleanup === 'function')
     ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
@@ -1358,6 +1400,10 @@ function _diffDrillRelaunch(questionsList) {
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
   localStorage.removeItem('recentlyAnsweredKeys');
+  // Écrit AVANT de recharger la page : un rechargement complet annule toute requête réseau
+  // encore en vol, donc attendre ici est nécessaire pour que la nouvelle manche soit bien
+  // reprenable depuis un autre appareil dès le rechargement.
+  await _diffSessionWrite(selected);
   window.location.reload();
 }
 
@@ -2168,6 +2214,8 @@ async function validerReponses() {
         p.style.cssText = 'margin-top:12px;font-size:.9em;color:#4caf50;';
         p.textContent = '🎉 Aucune erreur sur cette manche !';
         rc.appendChild(p);
+        // Plus rien à enchaîner : la séance reprenable n'a plus lieu d'être.
+        _diffSessionDelete();
       }
       const back = document.createElement('a');
       back.href = 'difficultes.html';

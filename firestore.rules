@@ -27,6 +27,14 @@ service cloud.firestore {
       match /responseShards/{shardId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+      // Sous-collection dédiée à la séance de drill ciblé en cours sur la page Difficultés
+      // (voir js/quiz.js — _diffSessionWrite/_diffSessionSyncAnswer/_diffSessionDelete) : un
+      // seul petit document ("difficulty"), synchronisé pour pouvoir reprendre la même série
+      // de questions et les réponses déjà données depuis un autre appareil. Même remarque que
+      // ci-dessus : les règles ne sont pas héritées du document parent.
+      match /session/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
     match /navlogNotes/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
