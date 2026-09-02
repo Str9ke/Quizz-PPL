@@ -74,9 +74,12 @@
       <u>et</u> que tu ne l'as pas encore enchaînée assez de fois d'affilée depuis pour la considérer acquise.
       Une question ratée une fois puis réussie 5 fois de suite après n'apparaît donc plus ici. Les questions
       jamais vues et celles retirées du cycle (« ne plus revoir », jugées trop faciles) ne sont jamais comptées.
+      <br><strong>Question souvent ratée</strong> (4, 10 fois...) : l'exigence monte automatiquement à au moins
+      50&nbsp;% de réussites d'affilée EN PLUS que son nombre total de ratées, pour ne pas la laisser disparaître
+      trop vite — un nouvel échec entre-temps remet le compteur à zéro et relève encore la barre.
     </p>
     <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
-      Nombre de bonnes réponses d'affilée pour considérer une question comme acquise :
+      Nombre de bonnes réponses d'affilée pour considérer une question comme acquise (plancher) :
       <input type="number" id="diffThreshold" min="1" max="10" value="3" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">
       <span style="color:var(--text-secondary);">(défaut : 3)</span>
     </label>
@@ -111,9 +114,10 @@
       <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
         ✅ Compte pour de vrai (échecs/réussites, historique, statistiques) — mais ne modifie jamais la date de ta
         prochaine révision programmée, qui reste celle fixée par tes quiz normaux. Une question réussie une fois
-        ici ne redescend pas d'un coup à zéro difficulté : il faut l'enchaîner
-        <span id="diffThresholdEcho">3</span> fois d'affilée (réglable ci-dessus) pour qu'elle disparaisse de cette
-        liste. À la fin d'une manche, tu peux enchaîner directement sur les questions encore ratées.
+        ici ne redescend pas d'un coup à zéro difficulté : il faut l'enchaîner au moins
+        <span id="diffThresholdEcho">3</span> fois d'affilée (plus si elle a été ratée un grand nombre de fois)
+        pour qu'elle disparaisse de cette liste. À la fin d'une manche, tu peux enchaîner directement sur les
+        questions encore ratées.
       </div>
     </div>
 
@@ -250,6 +254,18 @@
       diffRecompute();
     }
 
+    // _diffRequiredStreak(base, failCount) – Nombre de réussites CONSÉCUTIVES exigées avant de
+    // considérer une question comme acquise. Une question rarement ratée se contente du seuil
+    // réglable ci-dessus (3 par défaut) ; une question ratée un grand nombre de fois (4, 10...)
+    // doit au contraire enchaîner au moins 50 % de réussites EN PLUS que son total de ratées
+    // avant de disparaître de cette liste — sinon 3 réussites suffisaient à faire disparaître
+    // une question ratée 10 fois, ce qui ne prouvait pas grand-chose. Un nouvel échec après coup
+    // remet le compteur à zéro (voir _trailingSuccessStreak) ET augmente lui-même l'exigence
+    // (failCount monte), rendant la barre encore plus haute la fois suivante.
+    function _diffRequiredStreak(base, failCount) {
+      return Math.max(base, Math.ceil(failCount * 1.5));
+    }
+
     // Recalcule la liste des difficultés actuelles (appelé au chargement et quand le seuil change)
     window.diffRecompute = function() {
       const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || 3);
@@ -267,12 +283,15 @@
         const log = historyMap[key] || r.statusLog || null;
         const streak = _trailingSuccessStreak(log);
         const recentStreak = (streak === null) ? (r.status === 'réussie' ? 1 : 0) : streak;
-        if (recentStreak >= threshold) return; // suffisamment enchaînée récemment : acquise
+        const requiredStreak = _diffRequiredStreak(threshold, failCount);
+        if (recentStreak >= requiredStreak) return; // suffisamment enchaînée récemment : acquise
 
         diffItems.push({
           q, key, failCount,
           successCount: r.successCount || 0,
           recentStreak,
+          requiredStreak,
+          elevated: requiredStreak > threshold, // exigence relevée au-delà du seuil réglable (question très souvent ratée)
           family: _srFamily(q),
           category: q.categorie || '(sans catégorie)'
         });
@@ -505,10 +524,13 @@
           <summary style="cursor:pointer;font-weight:600;">${_famDot(fam)}${escapeHtml(cat)} (${items.length})</summary>
           <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">`;
         items.forEach(it => {
+          const streakNote = it.elevated
+            ? ` <span style="color:#f59e0b;">(exigence relevée : très souvent ratée)</span>`
+            : '';
           html += `<div style="padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.04);font-size:.85em;">
             <div>${escapeHtml(it.q.question)}</div>
             <div style="margin-top:4px;color:var(--text-secondary);">
-              ❌×${it.failCount} · ✅×${it.successCount} · ${it.recentStreak} bonne${it.recentStreak > 1 ? 's' : ''} d'affilée récemment
+              ❌×${it.failCount} · ✅×${it.successCount} · ${it.recentStreak}/${it.requiredStreak} bonnes d'affilée nécessaires${streakNote}
             </div>
           </div>`;
         });

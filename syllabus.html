@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Syllabus</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20260807a" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20260807a"></script>
+  <script src="js/helpers.js?v=20260807d"></script>
+  <script src="js/categories.js?v=20260807c"></script>
+  <script src="js/stats.js?v=20260807i"></script>
+  <script src="js/quiz.js?v=20260807k"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/statusbar.js?v=20260818a"></script>
+  <script src="js/net.js?v=20260817a"></script>
+  <script src="js/first-run.js?v=20260817b"></script>
+  <script src="js/update-check.js?v=20260816b"></script>
+  <script src="js/app-update.js?v=20260816c"></script>
+  <script src="js/tts.js?v=20260816b"></script>
+  <script src="js/localmirror.js?v=20260816a"></script>
+  <script src="js/offline.js?v=20260807i"></script>
+  <script src="js/img-zoom.js?v=20260820a"></script>
+  <script src="js/syllabus.js?v=20260902a"></script>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light'); else if (saved === 'exotique') document.body.classList.add('exotique');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){var b=document.body;var cur=b.classList.contains('exotique')?'exotique':(b.classList.contains('light')?'light':'dark');var next=cur==='dark'?'light':(cur==='light'?'exotique':'dark');b.classList.remove('light','exotique');if(next!=='dark')b.classList.add(next);localStorage.setItem('theme',next);document.getElementById('themeToggle').textContent=next==='light'?'☀️':(next==='exotique'?'🌴':'🌙')})()">☀️</button>
+  <script>
+    (function(){var b=document.body;document.getElementById('themeToggle').textContent=b.classList.contains('exotique')?'🌴':(b.classList.contains('light')?'☀️':'🌙')})();
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">📖</div>
+    <h1 class="home-hero-title">Syllabus</h1>
+    <div class="home-hero-subtitle">Ton temps de lecture et d'étude, en dehors des quiz</div>
+  </div>
+
+  <div class="home-card" id="syllTimerCard">
+    <h3 style="margin:0 0 10px;">⏱️ Chronomètre</h3>
+    <div id="syllTimerDisplay" style="font-size:2.4em;font-weight:700;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums;">00:00:00</div>
+    <div id="syllTimerWarning" style="display:none;text-align:center;font-size:.82em;color:#f59e0b;margin-bottom:8px;">
+      ⚠️ Chronomètre en cours depuis plus de 3 h — pense à l'arrêter si tu as terminé.
+    </div>
+    <button type="button" id="syllTimerBtn" class="home-btn-start" onclick="syllToggleTimer()">▶️ Démarrer le chronomètre</button>
+    <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;text-align:center;">
+      Le même bouton démarre puis arrête le chronomètre. Le temps s'ajoute à celui déjà compté aujourd'hui —
+      plusieurs séances dans la même journée s'additionnent, elles ne s'écrasent pas.
+    </div>
+  </div>
+
+  <div class="home-card">
+    <h3 style="margin:0 0 10px;">✏️ Ajouter du temps manuellement</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:.85em;">
+        Date
+        <input type="date" id="syllManualDate" class="home-input" style="width:auto;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:.85em;">
+        Heures
+        <input type="number" id="syllManualHours" min="0" max="23" value="0" class="home-input" style="width:70px;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:.85em;">
+        Minutes
+        <input type="number" id="syllManualMinutes" min="0" max="59" value="30" class="home-input" style="width:70px;">
+      </label>
+      <button type="button" class="hist-filter-btn hist-filter-quiz" style="padding:10px 20px;" onclick="syllAddManual()">➕ Ajouter</button>
+    </div>
+    <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
+      Utile pour une session lue au calme sans le chronomètre, ou pour rattraper un jour oublié — s'ajoute
+      au temps déjà compté ce jour-là, ne l'écrase pas.
+    </div>
+  </div>
+
+  <div class="home-card" id="syllStatsCard">
+    <div id="syllChartContainer"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="home-nav-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 1rem; margin-bottom: 2rem;">
+    <div class="home-nav-card home-nav-stats" onclick="window.location='stats.html'">
+      <div class="home-nav-icon">📊</div>
+      <div class="home-nav-label">Statistiques</div>
+    </div>
+    <div class="home-nav-card home-nav-history" onclick="window.location='historique.html'">
+      <div class="home-nav-icon">📅</div>
+      <div class="home-nav-label">Historique</div>
+    </div>
+    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+      <div class="home-nav-icon">🏠</div>
+      <div class="home-nav-label">Accueil</div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    let initDone = false;
+    function doInit(uid) {
+      if (initDone) return;
+      initDone = true;
+      if (typeof initSyllabus === 'function') initSyllabus(uid);
+    }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); doInit(user.uid); }
+      else if (localStorage.getItem('cachedUid')) { doInit(localStorage.getItem('cachedUid')); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() {
+      const cachedUid = localStorage.getItem('cachedUid');
+      if (!initDone && cachedUid) doInit(cachedUid);
+    }, 2500);
+  })();
+  </script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
+</body>
+</html>

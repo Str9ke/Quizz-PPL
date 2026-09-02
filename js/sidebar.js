@@ -64,7 +64,8 @@
     checkSquare: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/>',
     zap: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
     send: '<path d="M4 12 20 4 13 20l-2-7-7-1Z"/>',
-    folder: '<path d="M4 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/>'
+    folder: '<path d="M4 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>'
   };
 
   function iconSvg(key) {
@@ -88,7 +89,8 @@
     { type: 'group', id: 'suivre', items: [
       { href: 'stats.html', icon: 'barChart', label: 'Stats' },
       { href: 'historique.html', icon: 'calendar', label: 'Historique' },
-      { href: 'search.html', icon: 'search', label: 'Recherche' }
+      { href: 'search.html', icon: 'search', label: 'Recherche' },
+      { href: 'syllabus.html', icon: 'clock', label: 'Syllabus' }
     ] },
     { type: 'group', id: 'references', items: [
       { href: 'fiches.html', icon: 'fileText', label: 'Fiches' },
