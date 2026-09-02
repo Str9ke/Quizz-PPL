@@ -1490,6 +1490,15 @@ body.light .home-card-header {
   transform: none;
 }
 
+/* Chronomètre Syllabus en cours (syllabus.html) : variante rouge du bouton "Démarrer" pour que
+   l'état "ça enregistre en ce moment" soit visible d'un coup d'œil, pas seulement dans le texte. */
+.syll-timer-running {
+  background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+}
+.syll-timer-running:hover {
+  box-shadow: 0 6px 20px rgba(229, 57, 53, 0.45);
+}
+
 /* Navigation grid */
 .home-nav-grid {
   display: grid;
