@@ -2540,7 +2540,15 @@ function _computeSrForecast(responses, numDays, validKeys) {
   // _srFamilyFromKey ci-dessous, pendant de _srFamily/_srFamilyRank (js/helpers.js) qui, eux,
   // opèrent sur un objet question complet.
   const familyBuckets = [];
-  for (let i = 0; i <= numDays; i++) { buckets.push(0); familyBuckets.push({ gligli: 0, easa: 0, classique: 0 }); }
+  // failedFamilyBuckets[i] = même répartition, mais restreinte aux questions dont le DERNIER
+  // statut enregistré est "ratée" (r.status), pour signaler dans le programme des prochains
+  // jours combien des révisions dues ce jour-là portent sur une difficulté actuelle.
+  const failedFamilyBuckets = [];
+  for (let i = 0; i <= numDays; i++) {
+    buckets.push(0);
+    familyBuckets.push({ gligli: 0, easa: 0, classique: 0 });
+    failedFamilyBuckets.push({ gligli: 0, easa: 0, classique: 0 });
+  }
   let beyond = 0;
   let totalEligible = 0;
   let suspendedCount = 0;
@@ -2565,10 +2573,11 @@ function _computeSrForecast(responses, numDays, validKeys) {
       buckets[diffDays]++;
       const fam = _srFamilyFromKey(key);
       familyBuckets[diffDays][fam]++;
+      if (r.status === 'ratée') failedFamilyBuckets[diffDays][fam]++;
     } else beyond++;
   });
 
-  return { buckets, familyBuckets, beyond, totalEligible, suspendedCount };
+  return { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount };
 }
 
 /**
@@ -2596,7 +2605,7 @@ function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
   const NUM_DAYS = 28; // 4 semaines
-  const { buckets, familyBuckets, beyond, totalEligible, suspendedCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
+  const { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
@@ -2614,6 +2623,7 @@ function _renderSrForecast(responses, validKeys) {
     d.setDate(d.getDate() + i);
     const dueCount = buckets[i];
     const fam = familyBuckets[i];
+    const failedFam = failedFamilyBuckets[i];
     const total = dueCount + dailyNewTarget;
     const estSec = dueCount * secPerReview + dailyNewTarget * secPerNew;
     const estMin = Math.round(estSec / 60);
@@ -2623,6 +2633,14 @@ function _renderSrForecast(responses, validKeys) {
     const barPct = (dueCount / barMax) * 100;
     const segPct = fam0 => dueCount > 0 ? (fam0 / dueCount) * barPct : 0;
     const segGligli = segPct(fam.gligli), segEasa = segPct(fam.easa), segClassique = segPct(fam.classique);
+    // Parmi les révisions dues CE jour-là, combien portent sur une question actuellement
+    // ratée (r.status === 'ratée') — une par famille, dans sa couleur, uniquement les familles
+    // concernées (jamais de "0" affiché) ; rien du tout si aucune des trois n'en a.
+    const failedParts = [];
+    if (failedFam.gligli > 0) failedParts.push(`<span style="color:${FAM_COLORS.gligli}">${failedFam.gligli}</span>`);
+    if (failedFam.easa > 0) failedParts.push(`<span style="color:${FAM_COLORS.easa}">${failedFam.easa}</span>`);
+    if (failedFam.classique > 0) failedParts.push(`<span style="color:${FAM_COLORS.classique}">${failedFam.classique}</span>`);
+    const failedHtml = failedParts.length ? failedParts.join(' · ') : '';
     rowsHtml += `
       <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.85em;border-bottom:1px solid rgba(255,255,255,.05)">
         <span style="flex:0 0 90px;${i === 0 ? 'font-weight:700;color:#f59e0b' : ''}">${dayLabel}</span>
@@ -2631,6 +2649,7 @@ function _renderSrForecast(responses, validKeys) {
           <div style="height:100%;width:${segEasa}%;background:${FAM_COLORS.easa}"></div>
           <div style="height:100%;width:${segClassique}%;background:${FAM_COLORS.classique}"></div>
         </div>
+        <span style="flex:0 0 56px;text-align:right;font-weight:700;white-space:nowrap" title="Ratées parmi les révisions dues ce jour-là">${failedHtml}</span>
         <span style="flex:0 0 70px;text-align:right">📅 ${dueCount}${i === 0 && dueCount > 0 ? ' (dont retard)' : ''}</span>
         <span style="flex:0 0 60px;text-align:right;color:var(--text-secondary)">+${dailyNewTarget} nv.</span>
         <span style="flex:0 0 50px;text-align:right;font-weight:700">${total}</span>
@@ -2657,6 +2676,7 @@ function _renderSrForecast(responses, validKeys) {
       <div style="display:flex;gap:8px;font-size:.75em;color:var(--text-secondary);padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px">
         <span style="flex:0 0 90px">Jour</span>
         <span style="flex:1;min-width:60px"></span>
+        <span style="flex:0 0 56px;text-align:right" title="Ratées parmi les révisions dues ce jour-là">Ratées</span>
         <span style="flex:0 0 70px;text-align:right">Révisions</span>
         <span style="flex:0 0 60px;text-align:right">Nouvelles</span>
         <span style="flex:0 0 50px;text-align:right">Total</span>
