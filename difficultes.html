@@ -495,12 +495,21 @@
       let nb = parseInt(nbInput.value) || 0;
       nb = Math.max(1, Math.min(nb, list.length));
 
-      const shuffled = list.slice();
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      const selected = shuffled.slice(0, nb).map(item => JSON.parse(JSON.stringify(item.q)));
+      // Les plus difficiles en premier : la SÉLECTION (si le périmètre contient plus de
+      // questions que `nb`) privilégie déjà les plus dures plutôt qu'un tirage au hasard qui
+      // pouvait très bien ne prendre que des difficultés "faciles", et l'ORDRE dans le quiz
+      // généré les place en tête. Tri par nombre de ratées décroissant, puis par écart à la
+      // maîtrise décroissant (requiredStreak - recentStreak, voir diffRecompute) pour départager
+      // les questions à fail count égal ; un départage aléatoire final évite un ordre figé entre
+      // questions strictement à égalité.
+      const sorted = list.slice().sort((a, b) => {
+        if (b.failCount !== a.failCount) return b.failCount - a.failCount;
+        const gapA = a.requiredStreak - a.recentStreak;
+        const gapB = b.requiredStreak - b.recentStreak;
+        if (gapB !== gapA) return gapB - gapA;
+        return Math.random() - 0.5;
+      });
+      const selected = sorted.slice(0, nb).map(item => JSON.parse(JSON.stringify(item.q)));
 
       const saved = (typeof _setLocalStorageWithCleanup === 'function')
         ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
