@@ -74,9 +74,10 @@
       <u>et</u> que tu ne l'as pas encore enchaînée assez de fois d'affilée depuis pour la considérer acquise.
       Une question ratée une fois puis réussie 5 fois de suite après n'apparaît donc plus ici. Les questions
       jamais vues et celles retirées du cycle (« ne plus revoir », jugées trop faciles) ne sont jamais comptées.
-      <br><strong>Question souvent ratée</strong> (4, 10 fois...) : l'exigence monte automatiquement à au moins
-      50&nbsp;% de réussites d'affilée EN PLUS que son nombre total de ratées, pour ne pas la laisser disparaître
-      trop vite — un nouvel échec entre-temps remet le compteur à zéro et relève encore la barre.
+      <br><strong>Question souvent ratée</strong> : à partir de 4 ratées (5, 6, 7... peu importe le nombre exact),
+      l'exigence monte automatiquement à au moins 50&nbsp;% de réussites d'affilée EN PLUS que son nombre total de
+      ratées, pour ne pas la laisser disparaître trop vite — un nouvel échec entre-temps remet le compteur à zéro
+      et relève encore la barre.
     </p>
     <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
       Nombre de bonnes réponses d'affilée pour considérer une question comme acquise (plancher) :
@@ -254,15 +255,23 @@
       diffRecompute();
     }
 
+    // Nombre de ratées à partir duquel l'exigence de maîtrise commence à grimper au-delà du
+    // seuil réglable — PAS un cas particulier limité à cette seule valeur : la formule
+    // ci-dessous s'applique en continu à TOUTE question ayant AU MOINS ce nombre de ratées
+    // (4, 5, 6, 7... 10... peu importe), jamais seulement à 4 et 10 pris isolément.
+    const DIFF_ELEVATED_FROM_FAILCOUNT = 4;
+
     // _diffRequiredStreak(base, failCount) – Nombre de réussites CONSÉCUTIVES exigées avant de
-    // considérer une question comme acquise. Une question rarement ratée se contente du seuil
-    // réglable ci-dessus (3 par défaut) ; une question ratée un grand nombre de fois (4, 10...)
-    // doit au contraire enchaîner au moins 50 % de réussites EN PLUS que son total de ratées
-    // avant de disparaître de cette liste — sinon 3 réussites suffisaient à faire disparaître
-    // une question ratée 10 fois, ce qui ne prouvait pas grand-chose. Un nouvel échec après coup
-    // remet le compteur à zéro (voir _trailingSuccessStreak) ET augmente lui-même l'exigence
-    // (failCount monte), rendant la barre encore plus haute la fois suivante.
+    // considérer une question comme acquise. En dessous de DIFF_ELEVATED_FROM_FAILCOUNT ratées,
+    // le seuil réglable ci-dessus (3 par défaut) suffit. À PARTIR de ce nombre de ratées, la
+    // question doit au contraire enchaîner au moins 50 % de réussites EN PLUS que son total de
+    // ratées avant de disparaître de cette liste — sinon 3 réussites suffisaient à faire
+    // disparaître une question ratée 10 fois, ce qui ne prouvait pas grand-chose. Un nouvel
+    // échec après coup remet le compteur à zéro (voir _trailingSuccessStreak) ET augmente
+    // lui-même l'exigence (failCount monte), rendant la barre encore plus haute la fois
+    // suivante.
     function _diffRequiredStreak(base, failCount) {
+      if (failCount < DIFF_ELEVATED_FROM_FAILCOUNT) return base;
       return Math.max(base, Math.ceil(failCount * 1.5));
     }
 
