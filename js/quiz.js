@@ -2254,6 +2254,12 @@ async function validerReponses() {
       const wrongQuestions = [];
       currentQuestions.forEach(q => {
         const key = getKeyFor(q);
+        // Une question mise "🚫 Ne plus revoir" PENDANT cette même manche (bouton disponible sur
+        // chaque question, voir toggleSuspendQuestion) ne doit jamais revenir en boucle ici,
+        // même ratée à l'instant — currentResponses est déjà à jour à ce stade (mise à jour
+        // synchrone dans _persistSuspendToggle), contrairement à responsesToSave qui ne porte
+        // pas ce champ.
+        if (currentResponses[key]?.suspended === true) return;
         if (responsesToSave[key] && responsesToSave[key].status === 'ratée' && !seenKeys.has(key)) {
           seenKeys.add(key);
           wrongQuestions.push(q);

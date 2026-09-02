@@ -338,7 +338,28 @@
 
     window.diffResumeSession = function() {
       if (!activeSession) return;
-      const selected = activeSession.questions;
+      // Une question de cette manche a pu être retirée ("🚫 Ne plus revoir") depuis son
+      // lancement — sur cet appareil ou un autre — sans que la séance figée en Firestore n'en
+      // soit informée : la retirer ici plutôt que de la représenter. Les réponses déjà données
+      // sont réindexées en conséquence (currentQuizAnswers est cléé par POSITION dans le
+      // tableau, pas par question).
+      const rawAnswers = activeSession.answers || {};
+      const selected = [];
+      const remappedAnswers = {};
+      activeSession.questions.forEach((q, oldIdx) => {
+        const key = getKeyFor(q);
+        if (currentResponses[key]?.suspended === true) return;
+        const newIdx = selected.length;
+        selected.push(q);
+        if (rawAnswers[oldIdx] !== undefined) remappedAnswers[newIdx] = rawAnswers[oldIdx];
+      });
+      if (!selected.length) {
+        alert('Toutes les questions de cette séance ont depuis été retirées ("Ne plus revoir"). Séance abandonnée.');
+        if (typeof _activeSessionDelete === 'function') _activeSessionDelete();
+        activeSession = null;
+        renderResumeBanner();
+        return;
+      }
       const saved = (typeof _setLocalStorageWithCleanup === 'function')
         ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
         : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
@@ -355,7 +376,7 @@
       localStorage.setItem('quizDifficultyDrill', '1');
       // Réponses déjà données (sur cet appareil ou l'autre) : réutilisées telles quelles par
       // afficherQuiz() pour réafficher automatiquement l'état de la manche (voir js/quiz.js).
-      try { localStorage.setItem('currentQuizAnswers', JSON.stringify(activeSession.answers || {})); } catch (e) { /* tant pis */ }
+      try { localStorage.setItem('currentQuizAnswers', JSON.stringify(remappedAnswers)); } catch (e) { /* tant pis */ }
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');
       window.location = 'quiz.html';
