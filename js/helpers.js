@@ -1033,8 +1033,21 @@ function _qtGetSessionTotal() {
  * Alimentée au fil des réponses (via _qtAddSessionTime ci-dessus) et NON à la validation de la
  * série : une session abandonnée en cours de route compte donc quand même — même raisonnement
  * que la persistance immédiate des réponses, où attendre la validation faisait tout perdre.
+ *
+ * MULTI-APPAREIL : dailyTimeMsBackup ne contient QUE la mesure propre à CET appareil — jamais
+ * mélangée avec le serveur (voir _qtGetDisplayDailyTimeMap ci-dessous et saveDailyTime dans
+ * js/stats.js). Avant, le graphique lisait directement cette map après un merge "garder le plus
+ * grand des deux" avec le serveur : une session sur le téléphone puis une autre le même jour sur
+ * le PC ne s'additionnaient jamais, seul le plus gros des deux totaux survivait — le temps de
+ * l'appareil "perdant" disparaissait purement et simplement du total affiché.
  */
 const QTIME_DAILY_KEY = 'dailyTimeMsBackup';
+// Part de dailyTimeMsBackup déjà transmise au serveur (par incrément, voir saveDailyTime) par
+// CET appareil — sert à calculer le delta à pousser sans jamais renvoyer une part déjà comptée.
+const QTIME_PUSHED_KEY = 'dailyTimeMsPushed';
+// Dernier total serveur connu par jour (somme de TOUS les appareils) — simple cache local pour
+// l'affichage, jamais réinjecté dans dailyTimeMsBackup.
+const QTIME_SERVER_KEY = 'dailyTimeMsServer';
 
 function _qtTodayKey() {
   const d = new Date();
@@ -1052,8 +1065,30 @@ function _qtAddDailyTime(ms) {
     localStorage.setItem(QTIME_DAILY_KEY, JSON.stringify(map));
   } catch (e) { /* quota plein, tant pis */ }
 }
+/** _qtGetDailyTimeMap() – Mesure BRUTE propre à cet appareil (jamais mélangée au serveur) : sert
+ * de base au calcul du delta à pousser dans saveDailyTime(). Pour l'AFFICHAGE (graphique), voir
+ * _qtGetDisplayDailyTimeMap() ci-dessous. */
 function _qtGetDailyTimeMap() {
   try { return JSON.parse(localStorage.getItem(QTIME_DAILY_KEY) || '{}'); } catch (e) { return {}; }
+}
+/**
+ * _qtGetDisplayDailyTimeMap() – Map combinée utilisée pour le graphique "Temps passé par jour" :
+ * pour chaque jour, le dernier total SERVEUR connu (somme de tous les appareils, voir
+ * _mergeServerDailyTime dans js/stats.js) plus la part encore purement locale de CET appareil pas
+ * encore transmise (dailyTimeMsBackup - dailyTimeMsPushed). Additionner les deux évite d'avoir à
+ * attendre le prochain saveDailyTime() pour voir apparaître le temps qu'on vient de passer.
+ */
+function _qtGetDisplayDailyTimeMap() {
+  let backup, pushed, server;
+  try { backup = JSON.parse(localStorage.getItem(QTIME_DAILY_KEY) || '{}'); } catch (e) { backup = {}; }
+  try { pushed = JSON.parse(localStorage.getItem(QTIME_PUSHED_KEY) || '{}'); } catch (e) { pushed = {}; }
+  try { server = JSON.parse(localStorage.getItem(QTIME_SERVER_KEY) || '{}'); } catch (e) { server = {}; }
+  const combined = { ...server };
+  for (const [k, v] of Object.entries(backup)) {
+    const pending = Math.max(0, v - (pushed[k] || 0));
+    if (pending > 0) combined[k] = (combined[k] || 0) + pending;
+  }
+  return combined;
 }
 /**
  * _qtFormatDuration(ms) – "4 min 32 s" / "48 s" pour l'affichage du temps réel de session.
