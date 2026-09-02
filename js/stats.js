@@ -343,51 +343,75 @@ async function saveDailyMastered(uid) {
 window.saveDailyMastered = saveDailyMastered;
 
 /**
- * saveDailyTime(uid) – Synchronise la map { 'AAAA-MM-JJ': ms } du temps passé par jour vers
- * Firestore, pour que le graphique soit identique sur le site et dans l'app.
+ * saveDailyTime(uid) – Transmet au serveur, PAR INCRÉMENT, le temps mesuré par CET appareil
+ * depuis la dernière transmission, pour que le total quotidien soit une vraie SOMME entre tous
+ * les appareils utilisés le même jour (voir dailyTimeMsPushed dans js/helpers.js).
  *
- * On conserve le MAXIMUM par jour, pas la somme — exactement comme saveDailyMastered()
- * ci-dessus. Additionner serait plus juste quand deux appareils sont utilisés le même jour,
- * mais chaque re-synchronisation ré-additionnerait le même temps et la journée gonflerait
- * indéfiniment. Entre sous-estimer légèrement et inventer du temps, on préfère sous-estimer.
+ * AVANT ce mécanisme, on ne conservait que le MAXIMUM par jour entre local et serveur (comme
+ * saveDailyMastered()) : une session sur le téléphone puis une autre le même jour sur le PC ne
+ * s'additionnaient jamais, seul le plus gros des deux survivait — le temps de l'appareil
+ * "perdant" disparaissait du total. Avec un delta + FieldValue.increment(), chaque appareil ne
+ * transmet jamais deux fois la même part de temps (dailyTimeMsPushed retient ce qu'il a déjà
+ * transmis), donc pas de risque de gonflement en rappelant cette fonction plusieurs fois.
+ *
+ * MIGRATION : au tout premier appel après le passage à ce mécanisme (dailyTimeMsPushed absent),
+ * on initialise le curseur sur l'historique déjà mesuré SANS rien transmettre — l'historique
+ * passé restait déjà approximativement correct sous l'ancien schéma "max", seul le temps
+ * accumulé À PARTIR DE MAINTENANT doit s'additionner ; sans cette graine, ce premier appel
+ * pousserait d'un coup tout l'historique local en incrément, doublant le total déjà présent côté
+ * serveur pour les jours où un autre appareil avait déjà contribué.
  */
 async function saveDailyTime(uid) {
   if (!navigator.onLine) return;
   try {
     const local = (typeof _qtGetDailyTimeMap === 'function') ? _qtGetDailyTimeMap() : {};
     if (!Object.keys(local).length) return;
+
+    const pushedRaw = localStorage.getItem('dailyTimeMsPushed');
+    if (pushedRaw === null) {
+      localStorage.setItem('dailyTimeMsPushed', JSON.stringify(local));
+      return;
+    }
+    let pushed;
+    try { pushed = JSON.parse(pushedRaw) || {}; } catch (e) { pushed = {}; }
+
+    const incrementObj = {};
+    let any = false;
+    for (const [k, v] of Object.entries(local)) {
+      const delta = v - (pushed[k] || 0);
+      if (delta > 0) { incrementObj[k] = firebase.firestore.FieldValue.increment(delta); any = true; }
+    }
+    if (!any) return;
+
     const docRef = db.collection('quizProgress').doc(uid);
-    await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(docRef);
-      const server = doc.exists ? (doc.data().dailyTimeMs || {}) : {};
-      const dates = {};
-      let changed = false;
-      for (const [k, v] of Object.entries(local)) {
-        if (v > (server[k] || 0)) { dates[k] = v; changed = true; }
-      }
-      if (!changed) return;
-      transaction.set(docRef, { dailyTimeMs: dates }, { merge: true });
-    });
+    await docRef.set({ dailyTimeMs: incrementObj }, { merge: true });
+    // Marquer comme transmis SEULEMENT après le succès de l'écriture : si elle échoue, le
+    // delta sera simplement retenté au prochain appel plutôt que perdu.
+    for (const k of Object.keys(local)) pushed[k] = local[k];
+    localStorage.setItem('dailyTimeMsPushed', JSON.stringify(pushed));
   } catch (e) { console.warn('[saveDailyTime] error:', e); }
 }
 window.saveDailyTime = saveDailyTime;
 
 /**
- * _mergeServerDailyTime(serverMap) – Recopie le temps par jour du serveur dans la sauvegarde
- * locale (source lue par le graphique), en gardant la valeur la plus élevée pour chaque jour.
- * Sans ça, un appareil fraîchement installé afficherait un graphique vide alors que le temps
- * existe bel et bien côté serveur.
+ * _mergeServerDailyTime(serverMap) – Met en cache localement le dernier total SERVEUR connu par
+ * jour (somme de tous les appareils), pour l'affichage du graphique — voir
+ * _qtGetDisplayDailyTimeMap() dans js/helpers.js. Ne touche JAMAIS dailyTimeMsBackup (la mesure
+ * brute propre à CET appareil, qui sert de base au calcul des deltas dans saveDailyTime) : le
+ * mélanger au serveur ferait repousser en incrément une part de temps déjà comptée par un autre
+ * appareil, donc la doublonner côté serveur.
  */
 function _mergeServerDailyTime(serverMap) {
   if (!serverMap || typeof serverMap !== 'object') return;
   try {
-    const local = JSON.parse(localStorage.getItem('dailyTimeMsBackup') || '{}');
+    let cache;
+    try { cache = JSON.parse(localStorage.getItem('dailyTimeMsServer') || '{}'); } catch (e) { cache = {}; }
     let changed = false;
     for (const [k, v] of Object.entries(serverMap)) {
       const n = Number(v) || 0;
-      if (n > (local[k] || 0)) { local[k] = n; changed = true; }
+      if (n > (cache[k] || 0)) { cache[k] = n; changed = true; }
     }
-    if (changed) localStorage.setItem('dailyTimeMsBackup', JSON.stringify(local));
+    if (changed) localStorage.setItem('dailyTimeMsServer', JSON.stringify(cache));
   } catch (e) { /* ignore */ }
 }
 
@@ -1834,7 +1858,10 @@ function _qtFormatDayDuration(ms) {
  *    pour ne jamais faire passer l'un pour l'autre.
  */
 function _buildDailyTimeChartHtml(days) {
-  const timeMap = (typeof _qtGetDailyTimeMap === 'function') ? _qtGetDailyTimeMap() : {};
+  // Map d'AFFICHAGE (total serveur multi-appareils + part locale pas encore transmise) — PAS
+  // _qtGetDailyTimeMap(), qui ne renvoie que la mesure brute propre à CET appareil. Voir
+  // _qtGetDisplayDailyTimeMap() dans js/helpers.js.
+  const timeMap = (typeof _qtGetDisplayDailyTimeMap === 'function') ? _qtGetDisplayDailyTimeMap() : {};
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
   // Sans le détail nouvelles/révisions pour un jour passé, on prend la moyenne des deux rythmes.

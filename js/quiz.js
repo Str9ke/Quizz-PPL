@@ -776,6 +776,20 @@ function afficherBoutonsMarquer() {
       row.insertAdjacentHTML('beforeend', _correctOverrideBtnHtml(key));
     }
 
+    // Bouton 🚗 "Entrer en Mode Voiture à partir d'ici" — masqué une fois la série validée
+    // (plus rien à répondre, voir _updateAssistBtnVisibility) : cette même fonction est
+    // rappelée par afficherCorrection() pour reconstruire cette ligne de boutons sur l'écran
+    // de correction, où les vrais radios n'existent plus (remplacés par des <span> statiques),
+    // donc _assistAnswer() n'y aurait aucun radio à cocher.
+    if (!window._quizValidated) {
+      const btnCar = document.createElement('button');
+      btnCar.textContent = '🚗';
+      btnCar.className = 'mark-button qa-icon-btn';
+      btnCar.title = 'Entrer en Mode Voiture à partir d\'ici';
+      btnCar.onclick = () => _enterAssistMode(idx);
+      row.appendChild(btnCar);
+    }
+
     block.appendChild(row);
   });
 }
@@ -1580,6 +1594,14 @@ function _flushBeforeLeaving() {
     _markResponsesReady();
   }
   _flushImmPersist();
+  // Transmettre le temps passé aujourd'hui AVANT de quitter/mettre en arrière-plan — sinon,
+  // changer d'appareil en cours de session (téléphone -> PC) laisse ce temps bloqué en local
+  // jusqu'à la prochaine visite de la page Statistiques SUR CET appareil précis, qui peut ne
+  // jamais arriver (voir saveDailyTime dans js/stats.js).
+  if (typeof saveDailyTime === 'function') {
+    const uid = (typeof auth !== 'undefined' && auth.currentUser?.uid) || localStorage.getItem('cachedUid');
+    if (uid) saveDailyTime(uid).catch(() => {});
+  }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') _flushBeforeLeaving();
@@ -1870,12 +1892,24 @@ function _toggleAssistMode() {
   else _enterAssistMode();
 }
 
-/** _enterAssistMode() – Bascule vers la vue une-question-à-la-fois, positionnée sur la
- * première question sans réponse (= "la question à laquelle il faut répondre dans la
- * progression"), dans l'ordre d'apparition de la page quiz normale. */
-function _enterAssistMode() {
+/** _enterAssistMode(fromIdx) – Bascule vers la vue une-question-à-la-fois. Sans argument,
+ * démarre sur la première question sans réponse (= "la question à laquelle il faut répondre
+ * dans la progression"), dans l'ordre d'apparition de la page quiz normale — comportement du
+ * bouton d'entrée global. Avec `fromIdx` (bouton 🚗 posé sur une question précise, voir
+ * afficherBoutonsMarquer) : démarre sur CETTE question si elle n'a pas encore de réponse, sinon
+ * sur la première sans réponse APRÈS elle — jamais littéralement sur une question déjà
+ * répondue, dont les boutons de choix seraient inertes en Mode Voiture (voir _assistAnswer,
+ * qui ignore un clic sur une question déjà répondue) et qui laisserait donc l'utilisateur
+ * bloqué sans aucun moyen d'avancer. */
+function _enterAssistMode(fromIdx) {
   if (!currentQuestions || !currentQuestions.length) return;
-  const startIdx = _assistNextUnansweredIdx(-1);
+  let startIdx;
+  if (typeof fromIdx === 'number' && fromIdx >= 0 && fromIdx < currentQuestions.length) {
+    startIdx = _assistIsAnswered(fromIdx) ? _assistNextUnansweredIdx(fromIdx) : fromIdx;
+    if (startIdx === -1) startIdx = _assistNextUnansweredIdx(-1); // repli : chercher depuis le début
+  } else {
+    startIdx = _assistNextUnansweredIdx(-1);
+  }
   if (startIdx === -1) {
     alert('Toutes les questions de ce quiz ont déjà une réponse.');
     return;
@@ -1889,7 +1923,7 @@ function _enterAssistMode() {
   if (actionsBar) actionsBar.style.display = 'none';
 
   const btn = document.getElementById('assistModeToggleBtn');
-  if (btn) btn.textContent = '✕ Quitter le mode assistance';
+  if (btn) btn.textContent = '✕ Quitter le mode voiture';
 
   _assistRenderCurrent();
 }
@@ -1913,7 +1947,7 @@ function _exitAssistMode(skipScroll) {
   if (assistCont) { assistCont.style.display = 'none'; assistCont.innerHTML = ''; }
 
   const btn = document.getElementById('assistModeToggleBtn');
-  if (btn) btn.textContent = '🎧 Mode Assistance';
+  if (btn) btn.textContent = '🚗 Mode Voiture';
 
   if (!skipScroll && wasActive) {
     const idx = window._assistCurrentIdx;
@@ -2202,6 +2236,12 @@ async function validerReponses() {
     // Rien n'a été répondu → rien à enregistrer (ne pas polluer l'historique de sessions
     // ni les compteurs quotidiens avec une session vide)
     if (answeredCount === 0) return;
+
+    // Transmettre le temps de CETTE série dès la validation (voir saveDailyTime dans
+    // js/stats.js), sans attendre une visite de la page Statistiques sur cet appareil — sinon
+    // le temps mesuré ici resterait invisible sur un autre appareil tant que celui-ci n'ouvre
+    // pas Stats lui-même.
+    if (typeof saveDailyTime === 'function') saveDailyTime(uid).catch(() => {});
 
     // Drill ciblé "Difficultés" (voir difficultes.html / diffLaunchQuiz) : proposer d'enchaîner
     // directement sur les questions ratées de CETTE manche plutôt que de laisser l'utilisateur
