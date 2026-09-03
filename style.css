@@ -1773,6 +1773,29 @@ body.light .quiz-hero-title {
 .assist-mode-replay-btn:active {
   transform: scale(0.92);
 }
+/* Bouton "⏭️ Passer" (Mode Voiture) : passe la question sans y répondre — voir
+   _assistSkipQuestion() dans js/quiz.js. Positionné en haut à gauche, symétrique du bouton de
+   relecture 🔁 en haut à droite. */
+.assist-mode-skip-question-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 12px;
+  border: 2px solid var(--input-border);
+  border-radius: 20px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.assist-mode-skip-question-btn:active {
+  transform: scale(0.96);
+}
+.assist-mode-skip-question-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .assist-mode-progress {
   font-size: 0.85rem;
   font-weight: 700;

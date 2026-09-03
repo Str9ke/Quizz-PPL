@@ -388,6 +388,11 @@
       try { localStorage.setItem('currentQuizAnswers', JSON.stringify(remappedAnswers)); } catch (e) { /* tant pis */ }
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');
+      // Les questions "passées" en Mode Voiture (voir ASSIST_SKIPPED_KEY dans js/quiz.js) ne
+      // sont pas conservées dans la séance reprenable — reparties de zéro plutôt que de risquer
+      // un index qui, après le filtrage/réindexation ci-dessus, ne désignerait plus la même
+      // question qu'avant.
+      localStorage.removeItem('assistSkippedIdx');
       window.location = 'quiz.html';
     };
 
@@ -532,6 +537,7 @@
       localStorage.removeItem('currentQuizAnswers');
       localStorage.removeItem('currentQuizBatchPos');
       localStorage.removeItem('recentlyAnsweredKeys');
+      localStorage.removeItem('assistSkippedIdx');
       // Rend la manche reprenable depuis un autre appareil (voir _activeSessionWrite dans
       // js/quiz.js) — écrit AVANT de naviguer, sinon le changement de page annulerait la
       // requête réseau en vol.
