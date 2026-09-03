@@ -1507,6 +1507,9 @@ function resumeActiveSession() {
   try { localStorage.setItem('currentQuizAnswers', JSON.stringify(session.answers || {})); } catch (e) { /* tant pis */ }
   localStorage.removeItem('currentQuizBatchPos');
   localStorage.removeItem('recentlyAnsweredKeys');
+  // Questions "passées" en Mode Voiture (voir ASSIST_SKIPPED_KEY dans js/quiz.js) : indices
+  // positionnels propres à une série précise, jamais conservés d'une reprise à l'autre.
+  localStorage.removeItem('assistSkippedIdx');
   window.location = 'quiz.html';
 }
 

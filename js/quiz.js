@@ -364,6 +364,10 @@ async function demarrerQuiz() {
   // Nouveau quiz : effacer les réponses/position en cours d'une session précédente
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
+  // Questions "passées" en Mode Voiture (voir ASSIST_SKIPPED_KEY) : indices positionnels dans
+  // currentQuestions, à vider sur tout NOUVEAU lot sous peine de "passer" par erreur une
+  // question sans rapport de ce nouveau lot qui aurait le même index.
+  localStorage.removeItem('assistSkippedIdx');
   if (typeof _qtResetSessionTotal === 'function') _qtResetSessionTotal();
 
   // Nettoyer les recently answered quand on démarre un nouveau quiz depuis l'accueil
@@ -1428,6 +1432,7 @@ async function _diffDrillRelaunch(questionsList) {
   localStorage.removeItem('currentQuizAnswers');
   localStorage.removeItem('currentQuizBatchPos');
   localStorage.removeItem('recentlyAnsweredKeys');
+  localStorage.removeItem('assistSkippedIdx');
   // Écrit AVANT de recharger la page : un rechargement complet annule toute requête réseau
   // encore en vol, donc attendre ici est nécessaire pour que la nouvelle manche soit bien
   // reprenable depuis un autre appareil dès le rechargement.
@@ -1815,11 +1820,30 @@ function _assistIsAnswered(idx) {
   return !!document.querySelector(`input[name="qidx${idx}"]:checked`);
 }
 
-/** _assistNextUnansweredIdx(fromIdx) – Première question sans réponse après fromIdx, dans
- * l'ordre d'apparition de currentQuestions (même ordre que la page quiz normale). -1 si fini. */
+/** Questions "passées" en Mode Voiture (bouton ⏭️, voir _assistSkipQuestion) : PAS répondues
+ * (toujours proposées normalement dans la vue classique et dans les autres modes), seulement
+ * exclues du DÉFILEMENT du Mode Voiture pour CETTE série de questions précise — indices
+ * positionnels dans currentQuestions, donc à vider à chaque nouveau lot (voir les
+ * localStorage.removeItem('assistSkippedIdx') à côté de chaque removeItem('currentQuizAnswers')
+ * existant), sous peine de "passer" par erreur une question sans rapport d'une série ultérieure
+ * qui aurait le même index. */
+const ASSIST_SKIPPED_KEY = 'assistSkippedIdx';
+function _assistGetSkippedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(ASSIST_SKIPPED_KEY) || '[]')); } catch (e) { return new Set(); }
+}
+function _assistMarkSkipped(idx) {
+  const s = _assistGetSkippedSet();
+  s.add(idx);
+  try { localStorage.setItem(ASSIST_SKIPPED_KEY, JSON.stringify([...s])); } catch (e) { /* tant pis */ }
+}
+
+/** _assistNextUnansweredIdx(fromIdx) – Première question ni répondue ni passée après fromIdx,
+ * dans l'ordre d'apparition de currentQuestions (même ordre que la page quiz normale). -1 si
+ * fini. */
 function _assistNextUnansweredIdx(fromIdx) {
+  const skipped = _assistGetSkippedSet();
   for (let i = fromIdx + 1; i < currentQuestions.length; i++) {
-    if (!_assistIsAnswered(i)) return i;
+    if (!_assistIsAnswered(i) && !skipped.has(i)) return i;
   }
   return -1;
 }
@@ -1971,6 +1995,7 @@ function _assistRenderCurrent() {
   cont.innerHTML = `
     <div class="assist-mode-card">
       <button type="button" class="assist-mode-replay-btn" onclick="_assistReplay()" title="Relire la question (et la réponse si déjà répondu)">🔁</button>
+      <button type="button" id="assistModeSkipQuestionBtn" class="assist-mode-skip-question-btn" onclick="_assistSkipQuestion()" title="Passer cette question sans y répondre — elle ne reviendra plus en Mode Voiture pour cette série, mais reste disponible dans la vue normale et les autres modes">⏭️ Passer</button>
       <div class="assist-mode-progress">${typeof _familyBadgeHtml === 'function' ? _familyBadgeHtml(q) : ''}Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
       <div class="assist-mode-question">${q.question}</div>
       ${ q.image
@@ -2026,7 +2051,11 @@ function _assistAnswer(choiceIdx) {
   const q = currentQuestions[idx];
   if (!q || _assistIsAnswered(idx)) return; // déjà répondu (double-clic) → ignorer
 
-  const isLastOfBatch = !currentQuestions.some((_, i) => i !== idx && !_assistIsAnswered(i));
+  // Une question passée (⏭️, voir _assistSkipQuestion) ne bloque pas la détection de fin de
+  // lot : elle reste répondable dans la vue normale, mais n'a plus rien à faire dans le
+  // décompte du Mode Voiture.
+  const skippedNow = _assistGetSkippedSet();
+  const isLastOfBatch = !currentQuestions.some((_, i) => i !== idx && !_assistIsAnswered(i) && !skippedNow.has(i));
 
   if (isLastOfBatch) {
     _exitAssistMode(true);
@@ -2049,6 +2078,9 @@ function _assistAnswer(choiceIdx) {
       if (bIdx === q.bonne_reponse) b.classList.add('assist-correct');
       else if (bIdx === choiceIdx) b.classList.add('assist-wrong');
     });
+    // "Passer" n'a plus de sens une fois répondu.
+    const skipBtn = document.getElementById('assistModeSkipQuestionBtn');
+    if (skipBtn) skipBtn.disabled = true;
     const fb = document.getElementById('assistModeFeedback');
     if (fb) {
       fb.innerHTML = (isCorrect
@@ -2086,6 +2118,28 @@ function _assistSkipToNext() {
   _assistRenderCurrent();
 }
 
+/** _assistSkipQuestion() – Bouton "⏭️ Passer" : passe à la question suivante SANS répondre à
+ * la question courante (contrairement à _assistSkipToNext, qui n'avance qu'APRÈS une réponse
+ * déjà donnée). La question n'est pas marquée répondue — elle reste normalement proposable
+ * dans la vue classique et les autres modes — seulement exclue du défilement du Mode Voiture
+ * pour CETTE série de questions (voir ASSIST_SKIPPED_KEY). */
+function _assistSkipQuestion() {
+  if (!window._assistModeActive) return;
+  const idx = window._assistCurrentIdx;
+  if (idx < 0) return;
+  clearTimeout(window._assistAdvanceTimer);
+  if (window.appTts) window.appTts.stop();
+  _assistMarkSkipped(idx);
+  const next = _assistNextUnansweredIdx(idx);
+  if (next === -1) {
+    _exitAssistMode(true);
+    alert("Il ne reste plus que des questions déjà répondues ou passées dans ce lot — tu peux retrouver celles que tu as passées dans la vue normale du quiz.");
+    return;
+  }
+  window._assistCurrentIdx = next;
+  _assistRenderCurrent();
+}
+
 /**
  * validerReponses() – Traite les réponses de l'utilisateur, affiche la correction et sauvegarde la progression
  */
@@ -2107,6 +2161,7 @@ async function validerReponses() {
     localStorage.removeItem('currentQuizAnswers');
     localStorage.removeItem('currentQuizBatchPos');
     localStorage.removeItem('currentQuestions');
+    localStorage.removeItem('assistSkippedIdx');
 
     let correctCount = 0;
     const uid = auth.currentUser?.uid || localStorage.getItem('cachedUid');
