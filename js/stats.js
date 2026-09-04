@@ -522,6 +522,7 @@ function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
   let reussie = 0, ratee = 0, nonvue = 0, marquee = 0, importante = 0, marqueeVue = 0, importanteVue = 0;
   let notee = 0, noteeVue = 0;
   let flagged = 0, flaggedVue = 0;
+  let suspendedRatee = 0;
   categoryQuestions.forEach(q => {
     const key = getKeyFor(q);
     const r = normResponses[key] || {};
@@ -533,6 +534,12 @@ function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
     if (eff === 'réussie')      reussie++;
     else if (eff === 'ratée')    ratee++;
     else                               nonvue++;
+    // Repérer, séparément, les questions mises de côté ("Ne plus revoir") alors que leur
+    // dernière réponse réelle était un échec : _effectiveStatus() les compte en "réussie"
+    // ci-dessus (comportement voulu, pour ne pas les faire remonter dans les révisions), mais
+    // ça veut dire que le pourcentage global ne pourra jamais atteindre 100% tant qu'elles
+    // restent ratées sous le capot — sans ce compteur, ce blocage resterait invisible.
+    if (r.suspended === true && r.status === 'ratée') suspendedRatee++;
     // marquée / importante / notée en supplément
     if (r.marked)    { marquee++;    if (seen) marqueeVue++; }
     if (r.important) { importante++; if (seen) importanteVue++; }
@@ -544,7 +551,7 @@ function computeStatsForFirestore(categoryQuestions, responses, notesMap) {
       if (seen) flaggedVue++;
     }
   });
-  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue, notee, noteeVue, flagged, flaggedVue };
+  return { reussie, ratee, nonvue, marquee, importante, marqueeVue, importanteVue, notee, noteeVue, flagged, flaggedVue, suspendedRatee };
 }
 
 /**
@@ -1044,6 +1051,13 @@ function afficherStats(groupsData, globalStats) {
   const gMaPerc = gMa ? (gMaV * 100 / gMa).toFixed(1) : '0.0';
   const gImPerc = gIm ? (gImV * 100 / gIm).toFixed(1) : '0.0';
   const gNoPerc = gNo ? (gNoV * 100 / gNo).toFixed(1) : '0.0';
+  // Questions mises de côté ("Ne plus revoir") alors que ratées : elles comptent en ✅ dans le
+  // total ci-dessus (voir _effectiveStatus()), donc le 100% est hors d'atteinte tant qu'elles
+  // restent ratées sous le capot. Affiché seulement s'il y en a — rien à voir sinon.
+  const gSuspRatee = globalStats.suspendedRatee || 0;
+  const gSuspRateeHtml = gSuspRatee > 0
+    ? `<div style="margin-top:6px;font-size:0.82em;color:#f59e0b">🚫 ${gSuspRatee} question${gSuspRatee > 1 ? 's' : ''} ratée${gSuspRatee > 1 ? 's' : ''} mise${gSuspRatee > 1 ? 's' : ''} de côté ("Ne plus revoir") — compte${gSuspRatee > 1 ? 'nt' : ''} en ✅ ci-dessus mais reste${gSuspRatee > 1 ? 'nt' : ''} ratée${gSuspRatee > 1 ? 's' : ''} sous le capot, le 100% ne pourra pas être atteint tant qu'elle${gSuspRatee > 1 ? 's y restent' : ' y reste'}.</div>`
+    : '';
   let html = `
     <div class="stats-global-card">
       <div class="stats-global-row">
@@ -1079,6 +1093,7 @@ function afficherStats(groupsData, globalStats) {
           <span style="min-width:60px;text-align:right">${gNoV}/${gNo} (${gNoPerc}%)</span>
         </div>
       </div>
+      ${gSuspRateeHtml}
       ${gDaysHtml}
     </div>
   `;
