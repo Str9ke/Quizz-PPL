@@ -736,6 +736,37 @@ async function initStats() {
     for (const [k, v] of Object.entries(enrichedHistory)) {
       dailyHistory[k] = Math.max(dailyHistory[k] || 0, v);
     }
+
+    // AUTORITÉ DU JOUR : le compteur d'aujourd'hui est recalculé depuis les sessions réellement
+    // enregistrées (Firestore + backup local), et REMPLACE le résultat des fusions max()
+    // ci-dessus au lieu de se faire absorber par elles. Sans ça, une valeur trop haute déjà
+    // écrite pour aujourd'hui restait affichée toute la journée : tous les chemins fusionnent
+    // en max(), donc un compteur ne pouvait jamais redescendre vers sa vraie valeur, même une
+    // fois la cause corrigée. Limité à aujourd'hui : les jours passés gardent leur valeur
+    // historique (l'historique des sessions est plafonné et ne remonte pas assez loin pour
+    // faire autorité sur les jours anciens).
+    const _sessionHistoryMerged = _mergeSessionHistories(data.sessionHistory || [], _getLocalSessionBackup());
+    const _todayFromSessions = _dailyCountsFromSessions(_sessionHistoryMerged)[todayKeyLocal];
+    if (_todayFromSessions !== undefined && _todayFromSessions !== dailyHistory[todayKeyLocal]) {
+      console.log('[initStats] compteur du jour recalculé depuis les sessions : '
+        + dailyHistory[todayKeyLocal] + ' -> ' + _todayFromSessions);
+      dailyHistory[todayKeyLocal] = _todayFromSessions;
+      // Réaligner les compteurs locaux, sinon ils ré-injectent l'ancienne valeur au prochain max()
+      try {
+        localStorage.setItem('dailyAnswered_' + todayKeyLocal, _todayFromSessions);
+        localStorage.setItem('dailyCountRatchet_' + todayKeyLocal, _todayFromSessions);
+        const _dhb = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
+        _dhb[todayKeyLocal] = _todayFromSessions;
+        localStorage.setItem('dailyHistoryBackup', JSON.stringify(_dhb));
+      } catch (e) { /* localStorage plein — rare */ }
+      // Corriger aussi le serveur : la transaction de synchro plus bas n'écrit QUE les valeurs
+      // supérieures au serveur, elle ne peut donc pas corriger une valeur trop haute.
+      if (navigator.onLine) {
+        db.collection('quizProgress').doc(uid)
+          .set({ dailyHistory: { [todayKeyLocal]: _todayFromSessions } }, { merge: true })
+          .catch(e => console.warn('[initStats] correction du compteur du jour non écrite:', e.message));
+      }
+    }
     // Sauvegarder le dailyHistory fusionné dans localStorage pour les futures visites
     // (agit comme seed : si Firestore fonctionne maintenant, on capture les données existantes)
     try {
@@ -769,9 +800,17 @@ async function initStats() {
           const serverDH = freshDoc.exists ? (freshDoc.data().dailyHistory || {}) : {};
           const updateDates = {};
           let hasUpdates = false;
+          // Aujourd'hui fait exception à la règle "la valeur la plus haute gagne" quand elle a
+          // été recalculée depuis les sessions juste au-dessus : le serveur peut encore porter
+          // l'ancienne valeur trop haute, et la laisser gagner annulerait la correction.
+          const authoritativeToday = (_todayFromSessions !== undefined) ? todayKeyLocal : null;
           // Écrire seulement les valeurs locales SUPÉRIEURES au serveur
           for (const [dateKey, localVal] of Object.entries(dailyHistory)) {
             const serverVal = serverDH[dateKey] || 0;
+            if (dateKey === authoritativeToday) {
+              if (localVal !== serverVal) { updateDates[dateKey] = localVal; hasUpdates = true; }
+              continue;
+            }
             if (localVal > serverVal) {
               updateDates[dateKey] = localVal;
               hasUpdates = true;
@@ -783,6 +822,7 @@ async function initStats() {
           }
           // Vérifier aussi les dates présentes sur le serveur mais pas en local
           for (const [dateKey, serverVal] of Object.entries(serverDH)) {
+            if (dateKey === authoritativeToday) continue;
             if (serverVal > (dailyHistory[dateKey] || 0)) {
               dailyHistory[dateKey] = serverVal;
             }
@@ -797,6 +837,12 @@ async function initStats() {
           let changed2 = false;
           for (const [k, v] of Object.entries(dailyHistory)) {
             if (v > (reconciledBackup[k] || 0)) { reconciledBackup[k] = v; changed2 = true; }
+          }
+          // Le backup se fusionne aussi en max() : sans écriture forcée, il garderait l'ancienne
+          // valeur trop haute d'aujourd'hui et la réinjecterait au prochain chargement.
+          if (_todayFromSessions !== undefined && reconciledBackup[todayKeyLocal] !== dailyHistory[todayKeyLocal]) {
+            reconciledBackup[todayKeyLocal] = dailyHistory[todayKeyLocal];
+            changed2 = true;
           }
           if (changed2) localStorage.setItem('dailyHistoryBackup', JSON.stringify(reconciledBackup));
         } catch (e) { /* ignore */ }
@@ -830,9 +876,7 @@ async function initStats() {
     }
 
     // Afficher l'historique des sessions (fusionner Firestore + backup localStorage)
-    const firestoreHistory = data.sessionHistory || [];
-    const localBackup = _getLocalSessionBackup();
-    const sessionHistory = _mergeSessionHistories(firestoreHistory, localBackup);
+    const sessionHistory = _sessionHistoryMerged;
     // Trier par date (arrayUnion ne garantit pas l'ordre)
     sessionHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     // Stocker globalement pour les graphiques par catégorie
@@ -877,6 +921,28 @@ function _getLocalSessionBackup() {
   try {
     return JSON.parse(localStorage.getItem('offlineSessionBackup') || '[]');
   } catch { return []; }
+}
+
+/**
+ * _dailyCountsFromSessions() – Totaux quotidiens RÉELS, reconstruits depuis l'historique des
+ * sessions ({ date: ISO complet, correct }). C'est la seule source fiable pour ce chiffre :
+ *  - chaque session enregistre `correct`, exactement ce que validerReponses() ajoute au
+ *    compteur du jour (les deux écritures sont dans le même bloc, donc toujours d'accord) ;
+ *  - la date est un instant ISO complet, converti ici en jour LOCAL sans ambiguïté, alors que
+ *    les compteurs dailyAnswered_/dailyCountRatchet_ sont des cumuls par clé de date qui, eux,
+ *    ne savent pas se corriger (fusionnés partout en max(), ils ne redescendent jamais).
+ * Retourne { "YYYY-MM-DD": total }.
+ */
+function _dailyCountsFromSessions(sessionHistory) {
+  const out = {};
+  (sessionHistory || []).forEach(s => {
+    if (!s || !s.date) return;
+    const d = new Date(s.date);
+    if (isNaN(d.getTime())) return;
+    const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    out[k] = (out[k] || 0) + (parseInt(s.correct) || 0);
+  });
+  return out;
 }
 
 /** Fusionne les sessions Firestore et localStorage (déduplique par date) */

@@ -217,24 +217,6 @@
     <div id="cfgRestoreBackupStatus" style="font-size:.82em;color:var(--text-secondary);margin-top:8px"></div>
   </div>
 
-  <!-- Correction manuelle du compteur "aujourd'hui" -->
-  <div class="home-card cfg-section">
-    <div class="cfg-section-title">🔢 Corriger le compteur "aujourd'hui"</div>
-    <p class="cfg-hint" style="margin:0 0 8px">
-      Si le nombre de questions vues « aujourd'hui » sur la page Statistiques ne correspond pas
-      à ton activité réelle (par exemple à la suite d'une anomalie ponctuelle déjà corrigée),
-      tu peux le remettre à la bonne valeur ici. Le changement s'applique immédiatement sur cet
-      appareil et sur le serveur.
-    </p>
-    <div id="cfgTodayCounterCurrent" style="font-size:.85em;margin-bottom:8px">Vérification…</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="number" id="cfgTodayCounterInput" min="0" step="1" placeholder="Nouvelle valeur"
-             style="width:120px;padding:6px 10px;border-radius:8px;border:2px solid var(--input-border);background:var(--input-bg);color:var(--input-text)">
-      <button type="button" class="stats-btn" onclick="_cfgFixTodayCounter()" style="padding:6px 14px" id="cfgFixTodayCounterBtn">✅ Appliquer</button>
-    </div>
-    <div id="cfgFixTodayCounterStatus" style="font-size:.82em;margin-top:8px"></div>
-  </div>
-
   <!-- Diagnostic des shards de réponses -->
   <div class="home-card cfg-section">
     <div class="cfg-section-title">🔍 Diagnostic de la sauvegarde serveur</div>
@@ -952,62 +934,6 @@
       el.textContent = '✅ ' + info.count + ' question(s) sur cet appareil — dernière mise à jour : ' + abs + ' (' + rel + ')';
     }
 
-    // === Correction manuelle du compteur "aujourd'hui" ===
-    function _cfgTodayLocalKey() {
-      const d = new Date();
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
-    window._cfgRefreshTodayCounterDisplay = async function() {
-      const el = document.getElementById('cfgTodayCounterCurrent');
-      if (!el) return;
-      const k = _cfgTodayLocalKey();
-      const localVal = Math.max(
-        parseInt(localStorage.getItem('dailyAnswered_' + k)) || 0,
-        parseInt(localStorage.getItem('dailyCountRatchet_' + k)) || 0
-      );
-      let serverVal = null;
-      try {
-        if (uid) {
-          const doc = await db.collection('quizProgress').doc(uid).get({ source: 'server' });
-          serverVal = doc.exists ? ((doc.data().dailyHistory || {})[k] || 0) : 0;
-        }
-      } catch (e) { /* hors ligne ou erreur : on n'affiche que la valeur locale */ }
-      const current = Math.max(localVal, serverVal || 0);
-      el.textContent = serverVal !== null
-        ? ('Valeur actuelle du ' + k + ' : ' + current + ' (serveur : ' + serverVal + ', cet appareil : ' + localVal + ')')
-        : ('Valeur actuelle du ' + k + ' (cet appareil, hors ligne) : ' + localVal);
-    };
-    window._cfgFixTodayCounter = async function() {
-      const input = document.getElementById('cfgTodayCounterInput');
-      const statusEl = document.getElementById('cfgFixTodayCounterStatus');
-      const btn = document.getElementById('cfgFixTodayCounterBtn');
-      const val = parseInt(input.value, 10);
-      if (!Number.isFinite(val) || val < 0) {
-        if (statusEl) { statusEl.textContent = '⚠️ Entre un nombre valide (0 ou plus).'; statusEl.style.color = '#e53935'; }
-        return;
-      }
-      if (!uid) { alert('Vous devez être connecté.'); return; }
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Application…'; }
-      if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; }
-      try {
-        const k = _cfgTodayLocalKey();
-        localStorage.setItem('dailyAnswered_' + k, val);
-        localStorage.setItem('dailyCountRatchet_' + k, val);
-        const backup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
-        backup[k] = val;
-        localStorage.setItem('dailyHistoryBackup', JSON.stringify(backup));
-        await db.collection('quizProgress').doc(uid).set({ dailyHistory: { [k]: val } }, { merge: true });
-        if (statusEl) { statusEl.textContent = '✅ Compteur du ' + k + ' remis à ' + val + '.'; statusEl.style.color = '#43a047'; }
-        input.value = '';
-        await window._cfgRefreshTodayCounterDisplay();
-      } catch (e) {
-        console.error('[_cfgFixTodayCounter]', e);
-        if (statusEl) { statusEl.textContent = '❌ Erreur : ' + (e.message || e); statusEl.style.color = '#e53935'; }
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '✅ Appliquer'; }
-      }
-    };
-
     window._cfgRestoreFromBackup = async function() {
       const btn = document.getElementById('cfgRestoreBackupBtn');
       const statusEl = document.getElementById('cfgRestoreBackupStatus');
@@ -1551,7 +1477,6 @@
       window._cfgRunOfflineCheck();
       _cfgRenderLocalStorageUsage();
       _cfgRenderBackupStatus();
-      window._cfgRefreshTodayCounterDisplay();
       _cfgRenderPwaStatus();
       window._cfgRefreshImagesStatus();
       _cfgSetupNativeBlock();
