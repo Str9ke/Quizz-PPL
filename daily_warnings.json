@@ -1,7 +1,147 @@
 {
-  "generated": "Wed, 02 Sep 2026 19:40:21 GMT",
-  "count": 9,
+  "generated": "Fri, 04 Sep 2026 09:25:18 GMT",
+  "count": 35,
   "warnings": [
+    {
+      "ref": "F2722/26",
+      "from": "04 SEP 2026 12:30",
+      "till": "04 SEP 2026 13:45",
+      "schedule": null,
+      "text": "EBD26-ARDENNES 05 ACT",
+      "lower": "1000FT AGL",
+      "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2720/26",
+      "from": "04 SEP 2026 06:30",
+      "till": "04 SEP 2026 15:30",
+      "schedule": null,
+      "text": "EBD37-TRAINING SECTOR ACT",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2719/26",
+      "from": "04 SEP 2026 08:00",
+      "till": "04 SEP 2026 14:30",
+      "schedule": "0800-1030 1100-1430",
+      "text": "HTA13-WESTERLO HELICOPTER TRAINING AREA ACT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2718/26",
+      "from": "04 SEP 2026 06:00",
+      "till": "04 SEP 2026 16:30",
+      "schedule": null,
+      "text": "HTA08-HANNUT HELICOPTER TRAINING AREA ACT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2717/26",
+      "from": "04 SEP 2026 13:30",
+      "till": "04 SEP 2026 16:00",
+      "schedule": null,
+      "text": "HTA02-ARDENNES 02 ACT",
+      "lower": "GND",
+      "upper": "250FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2716/26",
+      "from": "04 SEP 2026 06:00",
+      "till": "04 SEP 2026 16:30",
+      "schedule": null,
+      "text": "HTA01-ARDENNES 01 ACT",
+      "lower": "GND",
+      "upper": "250FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2709/26",
+      "from": "04 SEP 2026 07:00",
+      "till": "04 SEP 2026 15:00",
+      "schedule": null,
+      "text": "TEMPO SEGREGATED AREA (TSA) 'MIL UAS TRAINING' ESTABLISHED 510329N 0052825E - 510406N 0053046E - 510333N 0053101E - 510305N 0052834E - 510329N 0052825E FOR MIL UAS ACT, WITHIN VISUAL LINE OF SIGHT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.058056,
+            5.473611
+          ],
+          [
+            51.068333,
+            5.512778
+          ],
+          [
+            51.059167,
+            5.516944
+          ],
+          [
+            51.051389,
+            5.476111
+          ],
+          [
+            51.058056,
+            5.473611
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2691/26",
+      "from": "04 SEP 2026 11:00",
+      "till": "06 SEP 2026 19:30",
+      "schedule": "04 1100-1930, 05 0400-0800 1500-1930, 06 0400-0800 1500-1930",
+      "text": "SINT-NIKLAAS ASCENTS AND EVOLUTIONS OF ABOUT 100 BALLOONS 510952N 0040825E RADIUS 10NM.",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          51.164444,
+          4.140278
+        ],
+        "radiusNm": 10.0
+      }
+    },
+    {
+      "ref": "F2690/26",
+      "from": "04 SEP 2026 15:00",
+      "till": "06 SEP 2026 19:00",
+      "schedule": "04 1500-1900, 05 0400-0800 1400-1900, 06 0400-0800 1400-1900",
+      "text": "TEMPO SEGREGATED AREA (TSA)'SINT-NIKLAAS' ESTABLISHED 510952N 0040825E RADIUS 3NM FOR ACFT PARTICIPATING TO THE HOT AIR BALLOON EVENT. SAR, STATE, MEDICAL, HUMANITARIAN AND MIL FLT ALLOWED. ALL OTHER ACFT AND REMOTELY PILOTED ACFT SYSTEM (RPAS) PROHIBITED.",
+      "lower": "GND",
+      "upper": "2500FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          51.164444,
+          4.140278
+        ],
+        "radiusNm": 3.0
+      }
+    },
     {
       "ref": "F2680/26",
       "from": "01 SEP 2026 10:27",
@@ -17,6 +157,60 @@
           6.078333
         ],
         "radiusNm": 5.0
+      }
+    },
+    {
+      "ref": "F2662/26",
+      "from": "31 AUG 2026 07:00",
+      "till": "04 SEP 2026 15:00",
+      "schedule": "AUG 31 0700-1500, SEP 01 0700-1700, 02-04 0700-1500",
+      "text": "EBR62-SINT-TRUIDEN 2 ACT",
+      "lower": "GND",
+      "upper": "2000FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F2635/26",
+      "from": "03 SEP 2026 07:00",
+      "till": "06 SEP 2026 18:00",
+      "schedule": "DAILY 0700-1800",
+      "text": "EXTENSION EBR03 SPACC REF SA2026.0368 ESTABLISHED 510423N 0050600E - AN ARC OF A CIRCLE, RADIUS 03NM, CENTRED ON 510152N 0050836E TRACED CLOCKWISE TO 505920N 0051111E - 505815N 0050830E - AN ARC OF A CIRCLE, RADIUS 03NM, CENTRED ON 510046N 0050555E TRACED CLOCKWISE TO 510317N 0050319E - 510423N 0050600E FOR PJE. ENTRY PROHIBITED UNLESS AUTHORIZED BY 0032 475 400 563",
+      "lower": "4000FT AMSL",
+      "upper": "FL135",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.073056,
+            5.1
+          ],
+          [
+            51.031111,
+            5.143333
+          ],
+          [
+            50.988889,
+            5.186389
+          ],
+          [
+            50.970833,
+            5.141667
+          ],
+          [
+            51.012778,
+            5.098611
+          ],
+          [
+            51.054722,
+            5.055278
+          ],
+          [
+            51.073056,
+            5.1
+          ]
+        ]
       }
     },
     {
@@ -83,6 +277,387 @@
       }
     },
     {
+      "ref": "F2630/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 1 LOW' ESTABLISHED 510700N 0020000E - 510604N 0021913E - 511141N 0021951E - 511327N 0022546E - 511853N 0021900E - 511948N 0020000E - 510700N 0020000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.116667,
+            2.0
+          ],
+          [
+            51.101111,
+            2.320278
+          ],
+          [
+            51.194722,
+            2.330833
+          ],
+          [
+            51.224167,
+            2.429444
+          ],
+          [
+            51.314722,
+            2.316667
+          ],
+          [
+            51.33,
+            2.0
+          ],
+          [
+            51.116667,
+            2.0
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2629/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 1 HIGH' ESTABLISHED 510700N 0020000E - 510604N 0021913E - 511141N 0021951E - 511327N 0022546E - 511853N 0021900E - 511948N 0020000E - 510700N 0020000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 032/2026",
+      "lower": "1500FT AMSL",
+      "upper": "3000FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.116667,
+            2.0
+          ],
+          [
+            51.101111,
+            2.320278
+          ],
+          [
+            51.194722,
+            2.330833
+          ],
+          [
+            51.224167,
+            2.429444
+          ],
+          [
+            51.314722,
+            2.316667
+          ],
+          [
+            51.33,
+            2.0
+          ],
+          [
+            51.116667,
+            2.0
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2628/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 2 LOW' ESTABLISHED 513000N 0020000E - 511948N 0020000E - 511853N 0021900E - 512819N 0021900E - 513000N 0020000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.5,
+            2.0
+          ],
+          [
+            51.33,
+            2.0
+          ],
+          [
+            51.314722,
+            2.316667
+          ],
+          [
+            51.471944,
+            2.316667
+          ],
+          [
+            51.5,
+            2.0
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2627/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 3 LOW' ESTABLISHED 512819N 0021900E - 512719N 0023000E - 511820N 0023000E - 511853N 0021900E - 512819N 0021900E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.471944,
+            2.316667
+          ],
+          [
+            51.455278,
+            2.5
+          ],
+          [
+            51.305556,
+            2.5
+          ],
+          [
+            51.314722,
+            2.316667
+          ],
+          [
+            51.471944,
+            2.316667
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2626/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 4 LOW' ESTABLISHED 512719N 0023000E - 512521N 0025114E - 512114N 0024957E - AN ARC OF CIRCLE, 12.8 NM RADIUS, CENTERED ON 510839N 0024601E AND 2 of 04/09/2026 4 TRACED COUNTER CLOCKWISE TO 511637N 0023000E - 512719N 0023000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon_arc",
+        "vertices": [
+          [
+            51.455278,
+            2.5
+          ],
+          [
+            51.4225,
+            2.853889
+          ],
+          [
+            51.353889,
+            2.8325
+          ],
+          [
+            51.144167,
+            2.766944
+          ],
+          [
+            51.276944,
+            2.5
+          ],
+          [
+            51.455278,
+            2.5
+          ]
+        ],
+        "arcRadiusNm": 12.8
+      }
+    },
+    {
+      "ref": "F2625/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 5 LOW' ESTABLISHED 511351N 0022721E AN ARC OF CIRCLE, 12.8 NM RADIUS, CENTERED ON 510839N 0024601E AND TRACED CLOCKWISE TO 511637N 0023000E - 511820N 0023000E - 511853N 0021900E - 511327N 0022546E - 511351N 0022721E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon_arc",
+        "vertices": [
+          [
+            51.230833,
+            2.455833
+          ],
+          [
+            51.144167,
+            2.766944
+          ],
+          [
+            51.276944,
+            2.5
+          ],
+          [
+            51.305556,
+            2.5
+          ],
+          [
+            51.314722,
+            2.316667
+          ],
+          [
+            51.224167,
+            2.429444
+          ],
+          [
+            51.230833,
+            2.455833
+          ]
+        ],
+        "arcRadiusNm": 12.8
+      }
+    },
+    {
+      "ref": "F2624/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 6 HIGH' ESTABLISHED 511141N 0021951E - 510604N 0021913E - 510523N 0023224E - 510905N 0024239E - 511145N 0023423E - 511124N 0022612E - 511351N 0022721E - 511327N 0022546E - 511141N 0021951E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 032/2026",
+      "lower": "2500FT AMSL",
+      "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.194722,
+            2.330833
+          ],
+          [
+            51.101111,
+            2.320278
+          ],
+          [
+            51.089722,
+            2.54
+          ],
+          [
+            51.151389,
+            2.710833
+          ],
+          [
+            51.195833,
+            2.573056
+          ],
+          [
+            51.19,
+            2.436667
+          ],
+          [
+            51.230833,
+            2.455833
+          ],
+          [
+            51.224167,
+            2.429444
+          ],
+          [
+            51.194722,
+            2.330833
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2623/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 7 LOW' ESTABLISHED 512023N 0024941E - 512114N 0024957E - 512521N 0025114E - 512227N 0032103E - 512142N 0031707E - 512231N 0030941E - 512022N 0030851E - 511910N 0030450E - 512101N 0025708E - 512023N 0024941E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.339722,
+            2.828056
+          ],
+          [
+            51.353889,
+            2.8325
+          ],
+          [
+            51.4225,
+            2.853889
+          ],
+          [
+            51.374167,
+            3.350833
+          ],
+          [
+            51.361667,
+            3.285278
+          ],
+          [
+            51.375278,
+            3.161389
+          ],
+          [
+            51.339444,
+            3.1475
+          ],
+          [
+            51.319444,
+            3.080556
+          ],
+          [
+            51.350278,
+            2.952222
+          ],
+          [
+            51.339722,
+            2.828056
+          ]
+        ]
+      }
+    },
+    {
+      "ref": "F2622/26",
+      "from": "31 AUG 2026 07:30",
+      "till": "04 SEP 2026 17:30",
+      "schedule": "DAILY 0730-1730",
+      "text": "TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 8 LOW' ESTABLISHED 511316N 0022924E - 511351N 0022721E AN ARC OF CIRCLE, 12.8 NM RADIUS, CENTERED ON 510839N 0024601E AND TRACED CLOCKWISE TO 512114N 0024957E - 512023N 0024941E - 511958N 0024448E - 511316N 0022924E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026",
+      "lower": "500FT AMSL",
+      "upper": "1500FT AMSL",
+      "geometry": {
+        "type": "polygon_arc",
+        "vertices": [
+          [
+            51.221111,
+            2.49
+          ],
+          [
+            51.230833,
+            2.455833
+          ],
+          [
+            51.144167,
+            2.766944
+          ],
+          [
+            51.353889,
+            2.8325
+          ],
+          [
+            51.339722,
+            2.828056
+          ],
+          [
+            51.332778,
+            2.746667
+          ],
+          [
+            51.221111,
+            2.49
+          ]
+        ],
+        "arcRadiusNm": 12.8
+      }
+    },
+    {
       "ref": "F2532/26",
       "from": "19 AUG 2026 14:30",
       "till": "13 SEP 2026 19:00",
@@ -112,27 +687,109 @@
       }
     },
     {
-      "ref": "G2078/26",
-      "from": "02 SEP 2026 06:00",
-      "till": "02 SEP 2026 22:00",
-      "schedule": null,
-      "text": "EBR04-ELSENBORN 01 ACT",
+      "ref": "F1770/26",
+      "from": "04 SEP 2026 07:00",
+      "till": "06 SEP 2026 16:00",
+      "schedule": "DAILY 0700-1600",
+      "text": "BASTOGNE PSN 0500240N 0054715E MODEL ACFT EVENT RADIUS 400M",
       "lower": "GND",
-      "upper": "FL170",
+      "upper": "600FT AGL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.044444,
+          5.7875
+        ],
+        "radiusNm": 0.216
+      }
+    },
+    {
+      "ref": "G2107/26",
+      "from": "04 SEP 2026 12:30",
+      "till": "04 SEP 2026 13:45",
+      "schedule": null,
+      "text": "TSA26A - ARDENNES 01 AND TSA26B - ARDENNES 04 ACT GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER COOR BTN BELGA RADAR AND CRNA/NORD",
+      "lower": "4500FT AMSL",
+      "upper": "FL140",
       "geometry": {
         "type": "unlocated"
       }
     },
     {
-      "ref": "G2077/26",
-      "from": "02 SEP 2026 13:30",
-      "till": "02 SEP 2026 20:30",
-      "schedule": "1330-1600 1930-2030",
-      "text": "TSA26A - ARDENNES 01 AND TSA26B - ARDENNES 04 ACT GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER COOR BTN BELGA RADAR AND CRNA/NORD",
+      "ref": "G2105/26",
+      "from": "04 SEP 2026 09:00",
+      "till": "04 SEP 2026 15:30",
+      "schedule": null,
+      "text": "EBBUGLD13-GLIDER AREA MALMEDY ACT",
       "lower": "4500FT AMSL",
-      "upper": "UNL",
+      "upper": "FL065",
       "geometry": {
         "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2104/26",
+      "from": "04 SEP 2026 09:00",
+      "till": "04 SEP 2026 15:30",
+      "schedule": null,
+      "text": "EBBUGLD12-GLIDER AREA LA ROCHE ACT",
+      "lower": "4500FT AMSL",
+      "upper": "FL065",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2103/26",
+      "from": "04 SEP 2026 09:00",
+      "till": "04 SEP 2026 15:30",
+      "schedule": null,
+      "text": "EBBUGLD11-GLIDER AREA SAINT-HUBERT ACT",
+      "lower": "4500FT AMSL",
+      "upper": "FL065",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2102/26",
+      "from": "04 SEP 2026 06:30",
+      "till": "04 SEP 2026 15:30",
+      "schedule": null,
+      "text": "LFA11-KOKSIJDE TRAINING AREA ACT",
+      "lower": "10FT AMSL",
+      "upper": "500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2101/26",
+      "from": "04 SEP 2026 06:00",
+      "till": "04 SEP 2026 15:00",
+      "schedule": null,
+      "text": "EBR04-ELSENBORN 01 ACT",
+      "lower": "GND",
+      "upper": "FL105",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G1924/26",
+      "from": "24 AUG 2026 06:00",
+      "till": "25 SEP 2026 15:00",
+      "schedule": "MON-FRI 0600-1500",
+      "text": "TEMPO SEGREGATED AREA (TSA) 'PEUTIE' ESTABLISHED 505607N 0042813E RADIUS 500M FOR UAS ACT IN VISUAL LINE OF SIGHT. STATUS OF THE AREA 3 of 04/09/2026 4 CAN BE CHECKED WITH BRUSSELS TWR.",
+      "lower": "GND",
+      "upper": "310FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.935278,
+          4.470278
+        ],
+        "radiusNm": 0.27
       }
     }
   ]
