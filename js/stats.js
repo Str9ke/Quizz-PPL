@@ -1056,7 +1056,7 @@ function afficherStats(groupsData, globalStats) {
   // restent ratées sous le capot. Affiché seulement s'il y en a — rien à voir sinon.
   const gSuspRatee = globalStats.suspendedRatee || 0;
   const gSuspRateeHtml = gSuspRatee > 0
-    ? `<div style="margin-top:6px;font-size:0.82em;color:#f59e0b">🚫 ${gSuspRatee} question${gSuspRatee > 1 ? 's' : ''} ratée${gSuspRatee > 1 ? 's' : ''} mise${gSuspRatee > 1 ? 's' : ''} de côté ("Ne plus revoir") — compte${gSuspRatee > 1 ? 'nt' : ''} en ✅ ci-dessus mais reste${gSuspRatee > 1 ? 'nt' : ''} ratée${gSuspRatee > 1 ? 's' : ''} sous le capot, le 100% ne pourra pas être atteint tant qu'elle${gSuspRatee > 1 ? 's y restent' : ' y reste'}.</div>`
+    ? `<span title="Comptées en ✅ ci-dessus (« Ne plus revoir »), mais ratées sous le capot — le 100% ne pourra pas être atteint tant qu'elles y restent.">🚫 ${gSuspRatee}</span>`
     : '';
   let html = `
     <div class="stats-global-card">
@@ -1075,6 +1075,7 @@ function afficherStats(groupsData, globalStats) {
         <span>📌 ${gMa}</span>
         <span>⭐ ${gIm}</span>
         <span>📝 ${gNo}</span>
+        ${gSuspRateeHtml}
       </div>
       <div style="margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;font-size:0.82em;margin-bottom:3px">
@@ -1093,7 +1094,6 @@ function afficherStats(groupsData, globalStats) {
           <span style="min-width:60px;text-align:right">${gNoV}/${gNo} (${gNoPerc}%)</span>
         </div>
       </div>
-      ${gSuspRateeHtml}
       ${gDaysHtml}
     </div>
   `;
