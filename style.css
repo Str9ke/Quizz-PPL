@@ -1773,29 +1773,6 @@ body.light .quiz-hero-title {
 .assist-mode-replay-btn:active {
   transform: scale(0.92);
 }
-/* Bouton "⏭️ Passer" (Mode Voiture) : passe la question sans y répondre — voir
-   _assistSkipQuestion() dans js/quiz.js. Positionné en haut à gauche, symétrique du bouton de
-   relecture 🔁 en haut à droite. */
-.assist-mode-skip-question-btn {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 6px 12px;
-  border: 2px solid var(--input-border);
-  border-radius: 20px;
-  background: var(--input-bg);
-  color: var(--input-text);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.assist-mode-skip-question-btn:active {
-  transform: scale(0.96);
-}
-.assist-mode-skip-question-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 .assist-mode-progress {
   font-size: 0.85rem;
   font-weight: 700;
@@ -1874,11 +1851,12 @@ body.light .quiz-hero-title {
    (marquer / important / note / ne plus revoir / corriger) serait impossible à viser. */
 .assist-mode-sr-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1rem;
 }
 .assist-mode-sr-btn {
-  flex: 1;
+  flex: 1 1 130px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1897,6 +1875,10 @@ body.light .quiz-hero-title {
 .assist-mode-sr-btn:active {
   transform: scale(0.97);
 }
+.assist-mode-sr-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .assist-mode-sr-less:hover { border-color: #28a745; }
 .assist-mode-sr-more:hover { border-color: #dc3545; }
 .assist-mode-sr-suspend:hover { border-color: #f59e0b; }
@@ -1904,6 +1886,7 @@ body.light .quiz-hero-title {
   background: rgba(245, 158, 11, 0.15);
   border-color: #f59e0b;
 }
+.assist-mode-sr-skip:hover { border-color: #3b82f6; }
 
 .assist-mode-feedback {
   margin-top: 1rem;

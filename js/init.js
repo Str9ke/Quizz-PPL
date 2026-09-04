@@ -185,12 +185,11 @@ async function initIndex() {
       // Mettre à jour le ratchet d'aujourd'hui avec la valeur serveur
       const _now = new Date();
       const todayKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
-      const todayUtcKey = _now.toISOString().slice(0, 10);
       const serverToday = _dailyHist[todayKey] || 0;
-      const localRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayUtcKey)) || 0;
+      const localRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKey)) || 0;
       if (serverToday > localRatchet) {
-        localStorage.setItem('dailyCountRatchet_' + todayUtcKey, serverToday);
-        localStorage.setItem('dailyAnswered_' + todayUtcKey, serverToday);
+        localStorage.setItem('dailyCountRatchet_' + todayKey, serverToday);
+        localStorage.setItem('dailyAnswered_' + todayKey, serverToday);
       }
       // Re-render daily stats bar with Firestore data (fixes cross-device sync)
       const displayToday = Math.max(serverToday, localRatchet);

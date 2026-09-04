@@ -68,9 +68,8 @@ async function displayDailyStats(forcedUid) {
     
     // Compteur aujourd'hui : max de toutes les sources + ratchet
     const todayLocal = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
-    const todayUtc = _now.toISOString().slice(0, 10);
     let answeredToday = enrichedDH[todayLocal] || 0;
-    const todayRatchetKey = 'dailyCountRatchet_' + todayUtc;
+    const todayRatchetKey = 'dailyCountRatchet_' + todayLocal;
     const previousMax = parseInt(localStorage.getItem(todayRatchetKey)) || 0;
     if (answeredToday < previousMax) {
       answeredToday = previousMax;
@@ -81,7 +80,7 @@ async function displayDailyStats(forcedUid) {
     // pour que le prochain quiz sur ce navigateur incrémente depuis la bonne base.
     // Sans cela, un PC avec dailyAnswered_=136 qui reçoit 196 du serveur
     // ajouterait +5 à 136 (=141) au lieu de +5 à 196 (=201).
-    const todayAnsweredKey = 'dailyAnswered_' + todayUtc;
+    const todayAnsweredKey = 'dailyAnswered_' + todayLocal;
     const prevAnswered = parseInt(localStorage.getItem(todayAnsweredKey)) || 0;
     if (answeredToday > prevAnswered) {
       localStorage.setItem(todayAnsweredKey, answeredToday);
@@ -265,12 +264,11 @@ async function saveDailyCount(uid) {
     const dateKey = today.getFullYear() + '-' +
       String(today.getMonth() + 1).padStart(2, '0') + '-' +
       String(today.getDate()).padStart(2, '0');
-    const utcKey = today.toISOString().slice(0, 10);
-    
+
     // Lire la valeur absolue depuis localStorage (source de vérité locale)
     const absoluteCount = Math.max(
-      parseInt(localStorage.getItem('dailyCountRatchet_' + utcKey)) || 0,
-      parseInt(localStorage.getItem('dailyAnswered_' + utcKey)) || 0
+      parseInt(localStorage.getItem('dailyCountRatchet_' + dateKey)) || 0,
+      parseInt(localStorage.getItem('dailyAnswered_' + dateKey)) || 0
     );
     if (absoluteCount <= 0) return;
     
@@ -287,7 +285,7 @@ async function saveDailyCount(uid) {
           transaction.set(docRef, { dailyHistory: { [dateKey]: newVal } }, { merge: true });
           // Mettre à jour le ratchet local si le serveur avait plus
           if (serverVal > absoluteCount) {
-            localStorage.setItem('dailyCountRatchet_' + utcKey, serverVal);
+            localStorage.setItem('dailyCountRatchet_' + dateKey, serverVal);
           }
         });
         return; // Transaction réussie
@@ -303,8 +301,8 @@ async function saveDailyCount(uid) {
         const currentServerVal = (currentDoc.data().dailyHistory || {})[dateKey] || 0;
         fallbackVal = Math.max(absoluteCount, currentServerVal);
         if (currentServerVal > absoluteCount) {
-          localStorage.setItem('dailyCountRatchet_' + utcKey, currentServerVal);
-          localStorage.setItem('dailyAnswered_' + utcKey, currentServerVal);
+          localStorage.setItem('dailyCountRatchet_' + dateKey, currentServerVal);
+          localStorage.setItem('dailyAnswered_' + dateKey, currentServerVal);
         }
       }
     } catch (readErr) { /* use absoluteCount as-is */ }
@@ -727,11 +725,10 @@ async function initStats() {
         dailyHistory[localKey] = Math.max(dailyHistory[localKey] || 0, lsVal);
       }
     }
-    // Pour aujourd'hui : réconcilier aussi avec les compteurs UTC de localStorage
+    // Pour aujourd'hui : réconcilier aussi avec les compteurs de localStorage
     const todayKeyLocal = _today.getFullYear() + '-' + String(_today.getMonth() + 1).padStart(2, '0') + '-' + String(_today.getDate()).padStart(2, '0');
-    const todayKeyUtc = _today.toISOString().slice(0, 10);
-    const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKeyUtc)) || 0;
-    const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
+    const lsDailyCount = parseInt(localStorage.getItem('dailyAnswered_' + todayKeyLocal)) || 0;
+    const ratchetCount = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyLocal)) || 0;
     dailyHistory[todayKeyLocal] = Math.max(dailyHistory[todayKeyLocal] || 0, lsDailyCount, ratchetCount);
     // Enrichir avec les timestamps des réponses (comble les jours sans données incrémentales)
     const enrichedHistory = enrichDailyHistoryFromResponses(dailyHistory, data.responses);
@@ -805,10 +802,10 @@ async function initStats() {
         } catch (e) { /* ignore */ }
         // Mettre à jour les clés ratchet/dailyAnswered pour aujourd'hui
         const freshTodayVal = dailyHistory[todayKeyLocal] || 0;
-        const currentRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyUtc)) || 0;
+        const currentRatchet = parseInt(localStorage.getItem('dailyCountRatchet_' + todayKeyLocal)) || 0;
         if (freshTodayVal > currentRatchet) {
-          localStorage.setItem('dailyCountRatchet_' + todayKeyUtc, freshTodayVal);
-          localStorage.setItem('dailyAnswered_' + todayKeyUtc, freshTodayVal);
+          localStorage.setItem('dailyCountRatchet_' + todayKeyLocal, freshTodayVal);
+          localStorage.setItem('dailyAnswered_' + todayKeyLocal, freshTodayVal);
         }
         // Re-render le chart et la barre avec les données réconciliées
         afficherDailyChart(dailyHistory);

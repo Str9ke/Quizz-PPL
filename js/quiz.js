@@ -936,12 +936,11 @@ async function initQuiz() {
       try {
         const _n = new Date();
         const _tk = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
-        const _utk = _n.toISOString().slice(0,10);
         const _sv = _dailyHist[_tk] || 0;
-        const _lr = parseInt(localStorage.getItem('dailyCountRatchet_'+_utk)) || 0;
+        const _lr = parseInt(localStorage.getItem('dailyCountRatchet_'+_tk)) || 0;
         if (_sv > _lr) {
-          localStorage.setItem('dailyCountRatchet_'+_utk, _sv);
-          localStorage.setItem('dailyAnswered_'+_utk, _sv);
+          localStorage.setItem('dailyCountRatchet_'+_tk, _sv);
+          localStorage.setItem('dailyAnswered_'+_tk, _sv);
         }
         // Sync backup history
         const _dhb = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
@@ -1995,7 +1994,6 @@ function _assistRenderCurrent() {
   cont.innerHTML = `
     <div class="assist-mode-card">
       <button type="button" class="assist-mode-replay-btn" onclick="_assistReplay()" title="Relire la question (et la réponse si déjà répondu)">🔁</button>
-      <button type="button" id="assistModeSkipQuestionBtn" class="assist-mode-skip-question-btn" onclick="_assistSkipQuestion()" title="Passer cette question sans y répondre — elle ne reviendra plus en Mode Voiture pour cette série, mais reste disponible dans la vue normale et les autres modes">⏭️ Passer</button>
       <div class="assist-mode-progress">${typeof _familyBadgeHtml === 'function' ? _familyBadgeHtml(q) : ''}Question ${idx + 1} / ${currentQuestions.length} — ${answeredCount} répondue(s)</div>
       <div class="assist-mode-question">${q.question}</div>
       ${ q.image
@@ -2024,6 +2022,11 @@ function _assistRenderCurrent() {
                 onclick="_assistToggleSuspend(${idx}, this)"
                 title="${isSuspended ? 'Revoir à nouveau (réactiver cette question)' : 'Ne plus revoir — cette question ne réapparaîtra plus dans les modes automatiques'}">
           <span class="assist-mode-sr-suspend-icon">${isSuspended ? '↩️' : '🚫'}</span> <span>${isSuspended ? 'Revoir à nouveau' : 'Ne plus revoir'}</span>
+        </button>
+        <button type="button" id="assistModeSkipQuestionBtn" class="assist-mode-sr-btn assist-mode-sr-skip"
+                onclick="_assistSkipQuestion()"
+                title="Passer cette question sans y répondre — elle ne reviendra plus en Mode Voiture pour cette série, mais reste disponible dans la vue normale et les autres modes">
+          ⏭️ <span>Passer</span>
         </button>
       </div>
       <div class="assist-mode-feedback" id="assistModeFeedback"></div>
@@ -2353,17 +2356,20 @@ async function validerReponses() {
     if (modeQuiz !== 'revisions') {
       try {
         const _now = new Date();
-        const dayKeyUtc = 'dailyAnswered_' + _now.toISOString().slice(0, 10);
-        const prev = parseInt(localStorage.getItem(dayKeyUtc)) || 0;
-        const newTotal = prev + correctCount;
-        localStorage.setItem(dayKeyUtc, newTotal);
-        // Ratchet
-        const ratchetKeyUtc = 'dailyCountRatchet_' + _now.toISOString().slice(0, 10);
-        const prevRatchet = parseInt(localStorage.getItem(ratchetKeyUtc)) || 0;
-        const display = Math.max(newTotal, prevRatchet);
-        localStorage.setItem(ratchetKeyUtc, display);
-        // Backup persistant en date LOCALE (même format que Firestore/chart)
+        // Clé en date LOCALE partout (même format que Firestore/dailyHistory/le graphique) —
+        // une clé UTC diverge de la date locale ~2h par nuit en été (la France est en UTC+2),
+        // ce qui faisait continuer à incrémenter le compteur de LA VEILLE juste après minuit
+        // local, puis cette valeur gonflée était relue comme celle du jour suivant.
         const localDateKey = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+        const dayKey = 'dailyAnswered_' + localDateKey;
+        const prev = parseInt(localStorage.getItem(dayKey)) || 0;
+        const newTotal = prev + correctCount;
+        localStorage.setItem(dayKey, newTotal);
+        // Ratchet
+        const ratchetKey = 'dailyCountRatchet_' + localDateKey;
+        const prevRatchet = parseInt(localStorage.getItem(ratchetKey)) || 0;
+        const display = Math.max(newTotal, prevRatchet);
+        localStorage.setItem(ratchetKey, display);
         const dhBackup = JSON.parse(localStorage.getItem('dailyHistoryBackup') || '{}');
         dhBackup[localDateKey] = (dhBackup[localDateKey] || 0) + correctCount;
         localStorage.setItem('dailyHistoryBackup', JSON.stringify(dhBackup));
@@ -2439,8 +2445,7 @@ async function validerReponses() {
             const _fsBase = 'https://firestore.googleapis.com/v1/projects/quizaviation-b79ff/databases/(default)/documents/quizProgress/';
             const _now2 = new Date();
             const _tk = _now2.getFullYear()+'-'+String(_now2.getMonth()+1).padStart(2,'0')+'-'+String(_now2.getDate()).padStart(2,'0');
-            const _utcK = _now2.toISOString().slice(0,10);
-            const _cnt = Math.max(parseInt(localStorage.getItem('dailyCountRatchet_'+_utcK))||0, parseInt(localStorage.getItem('dailyAnswered_'+_utcK))||0);
+            const _cnt = Math.max(parseInt(localStorage.getItem('dailyCountRatchet_'+_tk))||0, parseInt(localStorage.getItem('dailyAnswered_'+_tk))||0);
             if(_cnt > 0){
               try {
                 const _idTok = await auth.currentUser.getIdToken();
