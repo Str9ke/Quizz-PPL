@@ -388,10 +388,33 @@
         });
       });
 
+      // Nettoyer la rotation anti-répétition (voir diffLaunchQuiz) des clés qui ne sont plus des
+      // difficultés (résolues, ou disparues suite à un changement de réglage) — sinon le tour ne
+      // pourrait jamais "se compléter" à cause de clés fantômes qu'on ne reverra plus.
+      try {
+        const seen = _diffRotationSeenKeys();
+        const currentKeys = new Set(diffItems.map(it => it.key));
+        let changed = false;
+        for (const k of [...seen]) { if (!currentKeys.has(k)) { seen.delete(k); changed = true; } }
+        if (changed) _diffRotationSaveSeenKeys(seen);
+      } catch (e) { /* tant pis */ }
+
       diffRender();
       _diffRecordDailyCount(diffItems.length);
       _diffRunProjection();
     };
+
+    // _diffRotationSeenKeys()/_diffRotationSaveSeenKeys() – Anti-répétition entre générations
+    // successives de quiz (voir diffLaunchQuiz) : mémorise, en localStorage, les clés déjà
+    // tirées dans le "tour" en cours, pour ne les reproposer qu'une fois tout le reste couvert.
+    function _diffRotationSeenKeys() {
+      try { return new Set(JSON.parse(localStorage.getItem('diffRotationSeenKeys') || '[]')); }
+      catch (e) { return new Set(); }
+    }
+    function _diffRotationSaveSeenKeys(set) {
+      try { localStorage.setItem('diffRotationSeenKeys', JSON.stringify([...set])); }
+      catch (e) { /* tant pis */ }
+    }
 
     // _diffRecordDailyCount(count) – Enregistre l'instantané du jour (nombre de difficultés
     // actuelles) en localStorage ET Firestore, puis redessine le graphique. PAS un compteur
@@ -688,6 +711,53 @@
       renderResumeBanner();
     };
 
+    function _diffTodayLocalKey() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    // _diffTodaySnapshotKeys() – Fige, à la PREMIÈRE consultation de la page dans la journée,
+    // la liste des questions actuellement en difficulté : c'est le dénominateur de la barre de
+    // progression du jour, et il ne doit JAMAIS être réduit ensuite dans la même journée — même
+    // si certaines de ces questions se résolvent entre-temps — sinon résoudre des difficultés
+    // ferait automatiquement remonter le pourcentage sans rapport avec le travail réel fourni.
+    // Se remet naturellement à zéro le lendemain (nouvelle clé de date).
+    function _diffTodaySnapshotKeys() {
+      const todayKey = _diffTodayLocalKey();
+      const storageKey = 'diffDailySnapshotKeys_' + todayKey;
+      try {
+        const existing = localStorage.getItem(storageKey);
+        if (existing) return JSON.parse(existing);
+      } catch (e) { /* repli sur un nouveau snapshot */ }
+      const snapshot = diffItems.map(it => it.key);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(snapshot));
+        // Ne garder que le snapshot du jour courant — comme answeredTodayKeys_* dans js/quiz.js,
+        // cette info ne sert qu'à la journée en cours, aucune raison de l'accumuler indéfiniment.
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.indexOf('diffDailySnapshotKeys_') === 0 && k !== storageKey) localStorage.removeItem(k);
+        }
+      } catch (e) { /* tant pis */ }
+      return snapshot;
+    }
+
+    // _diffTodayReviewedPct() – Compare ce snapshot du jour à answeredTodayKeys_* (voir
+    // js/quiz.js, alimenté par CHAQUE réponse donnée aujourd'hui, tous modes de quiz confondus)
+    // pour savoir combien de ces difficultés-là ont déjà été retravaillées aujourd'hui — qu'elles
+    // aient fini résolues ou non. Limite connue : answeredTodayKeys_* est en localStorage, donc
+    // propre à CET appareil ; changer d'appareil en cours de journée sous-estime ce pourcentage.
+    function _diffTodayReviewedPct() {
+      const snapshot = _diffTodaySnapshotKeys();
+      if (!snapshot.length) return { reviewed: 0, total: 0, pct: 100 };
+      let reviewedMap = {};
+      try {
+        reviewedMap = JSON.parse(localStorage.getItem('answeredTodayKeys_' + _diffTodayLocalKey()) || '{}');
+      } catch (e) { /* aucune réponse enregistrée aujourd'hui sur cet appareil */ }
+      const reviewed = snapshot.filter(k => reviewedMap[k]).length;
+      return { reviewed, total: snapshot.length, pct: Math.min(100, Math.round((reviewed / snapshot.length) * 100)) };
+    }
+
     function renderSummary() {
       const byFam = { gligli: 0, easa: 0, classique: 0 };
       diffItems.forEach(it => { byFam[it.family]++; });
@@ -697,12 +767,18 @@
           + '<p style="color:var(--text-secondary);margin:8px 0 0;">Toutes les questions déjà vues sont soit jamais ratées, soit suffisamment enchaînées récemment.</p>';
         return;
       }
+      const progress = _diffTodayReviewedPct();
       el.innerHTML = `
         <h2 style="margin:0 0 12px;">${diffItems.length} question${diffItems.length > 1 ? 's' : ''} à travailler</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:.95em;">
+        <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:.95em;margin-bottom:14px;">
           <span>${_famDot('gligli')}GLIGLI : <strong>${byFam.gligli}</strong></span>
           <span>${_famDot('easa')}EASA : <strong>${byFam.easa}</strong></span>
           <span>${_famDot('classique')}Classiques : <strong>${byFam.classique}</strong></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:.85em;" title="Sur les ${progress.total} difficultés de début de journée — se remet à 0% chaque nouveau jour, et ne redescend jamais dans la même journée même si tu en résous.">
+          <span style="flex:0 0 auto;">📅 Aujourd'hui :</span>
+          <div class="progressbar" style="flex:1;height:10px;margin:0"><div class="progress" style="height:10px;width:${progress.pct}%;background:#667eea"></div></div>
+          <span style="flex:0 0 auto;white-space:nowrap;">${progress.reviewed}/${progress.total} revues (${progress.pct}%)</span>
         </div>
       `;
     }
@@ -845,14 +921,29 @@
       // maîtrise décroissant (requiredStreak - recentStreak, voir diffRecompute) pour départager
       // les questions à fail count égal ; un départage aléatoire final évite un ordre figé entre
       // questions strictement à égalité.
-      const sorted = list.slice().sort((a, b) => {
+      const sortHardestFirst = (a, b) => {
         if (b.failCount !== a.failCount) return b.failCount - a.failCount;
         const gapA = a.requiredStreak - a.recentStreak;
         const gapB = b.requiredStreak - b.recentStreak;
         if (gapB !== gapA) return gapB - gapA;
         return Math.random() - 0.5;
-      });
-      const selected = sorted.slice(0, nb).map(item => JSON.parse(JSON.stringify(item.q)));
+      };
+      // Anti-répétition entre générations successives : pour travailler ~700 difficultés par
+      // lots de 100 sans retomber sur les mêmes, on exclut en priorité celles déjà tirées lors
+      // d'un lot précédent de ce "tour" (voir _diffRotationSeenKeys). Une fois TOUT le périmètre
+      // actuel couvert, le tour recommence de zéro — sinon, une fois épuisées, plus aucune
+      // question ne serait jamais reproposée. Un lot dont `nb` dépasse ce qu'il reste à voir
+      // complète malgré tout avec des questions déjà vues, plutôt que de renvoyer un quiz
+      // incomplet.
+      const seen = _diffRotationSeenKeys();
+      const notSeen = list.filter(it => !seen.has(it.key)).sort(sortHardestFirst);
+      const alreadySeen = list.filter(it => seen.has(it.key)).sort(sortHardestFirst);
+      const sorted = notSeen.concat(alreadySeen);
+      const selectedItems = sorted.slice(0, nb);
+      selectedItems.forEach(it => seen.add(it.key));
+      if (list.every(it => seen.has(it.key))) seen.clear(); // tour complet : tout redevient éligible
+      _diffRotationSaveSeenKeys(seen);
+      const selected = selectedItems.map(item => JSON.parse(JSON.stringify(item.q)));
 
       const saved = (typeof _setLocalStorageWithCleanup === 'function')
         ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))

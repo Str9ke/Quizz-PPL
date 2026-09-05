@@ -1328,8 +1328,36 @@ function _updateAssistBtnVisibility(show) {
  * (mode normal) et handleImmediateAnswer() (mode correction immédiate, persistance au clic).
  * NE modifie PAS currentResponses — c'est à l'appelant de décider quand l'appliquer.
  */
+let _trackAnsweredTodayCleanupDone = false;
+/* _trackAnsweredToday(key) – Note qu'une question a été répondue aujourd'hui (localStorage,
+ * clé locale, indépendant de l'appareil). Sert uniquement à la barre de progression "difficultés
+ * revues aujourd'hui" de difficultes.html — pas un historique comme dailyAnswered_ ou dailyHistory
+ * dans js/stats.js, donc pas besoin de synchro Firestore ni de conservation au-delà du jour
+ * courant : la liste d'un autre jour est purement et simplement supprimée dès qu'on en croise
+ * une, plutôt que de laisser des clés de date s'accumuler indéfiniment en localStorage.
+ */
+function _trackAnsweredToday(key) {
+  try {
+    const now = new Date();
+    const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const storageKey = 'answeredTodayKeys_' + todayKey;
+    if (!_trackAnsweredTodayCleanupDone) {
+      _trackAnsweredTodayCleanupDone = true;
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('answeredTodayKeys_') === 0 && k !== storageKey) localStorage.removeItem(k);
+      }
+    }
+    const map = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    if (!map[key]) {
+      map[key] = 1;
+      localStorage.setItem(storageKey, JSON.stringify(map));
+    }
+  } catch (e) { /* tant pis, la barre de progression sous-estimera juste le jour */ }
+}
 function _computeSrEntry(q, selectedVal) {
     const key = getKeyFor(q);
+    _trackAnsweredToday(key);
     const hasExisting = !!currentResponses[key];
     const wasMarked = hasExisting ? (currentResponses[key].marked === true) : undefined;
     const wasImportant = hasExisting ? (currentResponses[key].important === true) : undefined;
@@ -1345,10 +1373,22 @@ function _computeSrEntry(q, selectedVal) {
     // bas, seul le calendrier de répétition espacée reste inchangé. Ne s'applique que s'il y a
     // déjà un vrai planning établi (prevInterval > 0) : une question sans planning antérieur en
     // établit un normalement, sans quoi elle resterait sans date de révision.
-    const freezeSchedule = hasExisting && prevInterval > 0 && _isSrScheduleFrozen();
+    // EXCEPTION au gel : si la question était déjà due aujourd'hui (ou en retard) dans le
+    // calendrier normal ET que la réponse donnée ici est correcte, la geler la laisserait
+    // "due" indéfiniment alors qu'elle vient tout juste d'être validée — le drill ne l'aurait
+    // alors jamais réellement traitée du point de vue du calendrier. Dans ce cas précis, on
+    // avance quand même la date de révision, mais de façon conservatrice (+3 jours fixes)
+    // plutôt que la formule de croissance complète réservée aux révisions normales, pour
+    // rester dans l'esprit "ne pas faire dériver le calendrier au gré de ces séances de drill".
+    const prevNextReview = hasExisting ? (currentResponses[key].nextReview || 0) : 0;
+    const wasDueToday = prevNextReview > 0 && prevNextReview <= Date.now();
+    const inDrillMode = _isSrScheduleFrozen();
+    const freezeSchedule = hasExisting && prevInterval > 0 && inDrillMode && !(wasDueToday && status === 'réussie');
     let newInterval;
     if (freezeSchedule) {
       newInterval = prevInterval;
+    } else if (inDrillMode && wasDueToday && status === 'réussie') {
+      newInterval = 3;
     } else if (status === 'réussie') {
       // Bonne réponse : augmenter l'intervalle. Le plafond dépend de la fiabilité de la
       // question : une question jamais ratée peut monter jusqu'à 365j (on arrête de vous
