@@ -161,8 +161,12 @@ window.syllToggleTimer = async function() {
     _syllUpdateTimerUi();
     const warn = document.getElementById('syllTimerWarning');
     if (warn) warn.style.display = 'none';
-    await _syllSave(_syllUid());
+    // Afficher AVANT d'attendre la transmission serveur : le temps local est déjà écrit
+    // (_syllAddDailyTime ci-dessus), donc le graphique n'a aucune raison d'attendre un
+    // aller-retour réseau pour refléter le changement — un réseau lent donnait l'impression
+    // qu'il fallait recharger la page pour le voir apparaître.
     _syllRenderChart();
+    await _syllSave(_syllUid());
   } else {
     localStorage.setItem(SYLL_TIMER_KEY, String(Date.now()));
     if (btn) { btn.textContent = '⏹️ Arrêter le chronomètre'; btn.classList.add('syll-timer-running'); }
@@ -199,10 +203,12 @@ window.syllAddManual = async function() {
   if (ms <= 0) { alert('Indique une durée supérieure à 0.'); return; }
 
   _syllAddDailyTime(ms, dateVal);
-  await _syllSave(_syllUid());
+  // Afficher AVANT d'attendre la transmission serveur — voir le commentaire équivalent dans
+  // syllToggleTimer().
   if (hoursInput) hoursInput.value = 0;
   if (minInput) minInput.value = 0;
   _syllRenderChart();
+  await _syllSave(_syllUid());
 };
 
 // ============================================================
