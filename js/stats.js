@@ -688,7 +688,23 @@ async function initStats() {
     await loadAllQuestions();
     const globalStats = computeStatsForFirestore(questions, data.responses, data.notes);
 
-    afficherStats(groupsData, globalStats);
+    // Historique par question (log chronologique des réussites/échecs) — nécessaire pour
+    // calculer la série de réussites consécutives du camembert "Répartition par maîtrise"
+    // (voir _computeMasteryBreakdown). Chargé séparément : difficultes.html fait la même chose
+    // pour son propre usage, mais stats.js et difficultes.html ne partagent pas d'état entre pages.
+    let masteryHistoryMap = {};
+    try {
+      const histSnap = await db.collection('quizProgress').doc(uid).collection('history').get();
+      histSnap.forEach(d => {
+        const hData = d.data();
+        if (hData && Array.isArray(hData.log)) masteryHistoryMap[d.id] = hData.log;
+      });
+    } catch (e) {
+      console.warn('[initStats] chargement historique (répartition maîtrise) échoué:', e);
+    }
+    const masteryBreakdown = _computeMasteryBreakdown(questions, data.responses, masteryHistoryMap);
+
+    afficherStats(groupsData, globalStats, masteryBreakdown);
 
     // Estimation du temps pour tout maîtriser : garder les réponses/notes déjà chargées
     // (évite un 2e appel Firestore) et construire la carte de sélection en bas de page.
@@ -787,7 +803,7 @@ async function initStats() {
     // Temps par jour : fusionner le serveur dans la sauvegarde locale AVANT de dessiner
     // (le graphique lit la copie locale), puis renvoyer nos propres valeurs au serveur.
     _mergeServerDailyTime(data.dailyTimeMs);
-    afficherDailyChart(dailyHistory);
+    afficherDailyChart(dailyHistory, data.syllabusTimeMs);
     if (typeof saveDailyTime === 'function') saveDailyTime(uid).catch(() => {});
 
     // Mettre à jour la barre quotidienne avec les données enrichies
@@ -861,7 +877,7 @@ async function initStats() {
           localStorage.setItem('dailyAnswered_' + todayKeyLocal, freshTodayVal);
         }
         // Re-render le chart et la barre avec les données réconciliées
-        afficherDailyChart(dailyHistory);
+        afficherDailyChart(dailyHistory, data.syllabusTimeMs);
         const reconciledToday = dailyHistory[todayKeyLocal] || 0;
         updateDailyStatsBar(reconciledToday, dailyHistory);
         console.log('[initStats] sync transactionnelle OK, today=' + reconciledToday);
@@ -982,8 +998,128 @@ function _cleanLocalSessionBackup(firestoreSessions) {
   } catch (e) { /* ignore */ }
 }
 
+/** _trailingSuccessStreakForStats(log) – Combien de "réussie" d'affilée à la fin du journal
+ * chronologique (null si journal absent). Duplication volontaire de _trailingSuccessStreak
+ * (difficultes.html) — même raisonnement que documenté en tête de js/syllabus.js : petit calcul
+ * indépendant, pas besoin de coupler les deux pages pour ça. */
+function _trailingSuccessStreakForStats(log) {
+  if (!Array.isArray(log) || !log.length) return null;
+  const sorted = log.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  let streak = 0;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i].status === 'réussie') streak++;
+    else break;
+  }
+  return streak;
+}
+
+/**
+ * _computeMasteryBreakdown() – Répartit TOUTES les questions déjà vues en 4 catégories
+ * MUTUELLEMENT EXCLUSIVES (leur somme fait exactement `totalSeen`, jamais plus) pour le
+ * camembert "Répartition par maîtrise" affiché juste sous la carte GLOBAL :
+ *  - "Très faciles" : suspendues ("Ne plus revoir"), retirées du cycle de révision.
+ *  - "Difficiles"   : présentes sur la page Difficultés — MÊMES critères exacts, y compris les
+ *    réglages personnalisés de cette page (diffCfgBase/diffCfgElevatedFrom/diffCfgElevatedPct
+ *    en localStorage — voir _diffRequiredStreak dans difficultes.html), pour que les deux pages
+ *    donnent des nombres cohérents entre eux.
+ *  - "Faciles"      : ni l'un ni l'autre, réussies au moins 3 fois consécutives.
+ *  - "Moyennes"     : ni l'un ni l'autre, réussies moins de 3 fois consécutives.
+ * Les questions jamais vues ne comptent dans AUCUNE des 4 (dénominateur = questions déjà vues
+ * uniquement) — un niveau de maîtrise n'a pas de sens pour une question jamais tentée.
+ */
+function _computeMasteryBreakdown(allQuestions, responses, historyMap) {
+  const normResponses = (typeof normalizeResponses === 'function') ? normalizeResponses(responses) : (responses || {});
+  const readInt = (key, def, allowZero) => {
+    const v = parseInt(localStorage.getItem(key));
+    return Number.isFinite(v) && (allowZero ? v >= 0 : v > 0) ? v : def;
+  };
+  const base = readInt('diffCfgBase', 3);
+  const elevatedFrom = readInt('diffCfgElevatedFrom', 4);
+  const elevatedPct = readInt('diffCfgElevatedPct', 50, true);
+
+  let tresFacile = 0, facile = 0, moyenne = 0, difficile = 0, totalSeen = 0;
+  (allQuestions || []).forEach(q => {
+    const key = getKeyFor(q);
+    const r = normResponses[key];
+    if (!r || r.status === undefined) return; // jamais vue : hors répartition
+    totalSeen++;
+    if (r.suspended === true) { tresFacile++; return; }
+    const failCount = r.failCount || 0;
+    const log = (historyMap && historyMap[key]) || r.statusLog || null;
+    const streak = _trailingSuccessStreakForStats(log);
+    const recentStreak = (streak === null) ? (r.status === 'réussie' ? 1 : 0) : streak;
+    if (failCount >= 1) {
+      const required = (failCount < elevatedFrom) ? base : Math.max(base, Math.ceil(failCount * (1 + elevatedPct / 100)));
+      if (recentStreak < required) { difficile++; return; }
+    }
+    if (recentStreak >= 3) facile++; else moyenne++;
+  });
+
+  return { tresFacile, facile, moyenne, difficile, totalSeen };
+}
+
+/** _renderMasteryPieHtml(breakdown) – Camembert SVG (pas de librairie externe) des 4 catégories
+ * de _computeMasteryBreakdown(). Angles calculés directement en pourcentage du total — la somme
+ * des 4 parts égale toujours 360°, jamais de chevauchement possible par construction (catégories
+ * mutuellement exclusives en amont). Cas particulier à un seul segment non vide : un simple arc
+ * SVG ne se dessine pas correctement à 100% (point de départ = point d'arrivée), un cercle plein
+ * est utilisé à la place. */
+function _renderMasteryPieHtml(breakdown) {
+  const b = breakdown || {};
+  const totalSeen = b.totalSeen || 0;
+  if (!totalSeen) return '';
+
+  const segments = [
+    { label: 'Très faciles', desc: 'Ne plus revoir', value: b.tresFacile || 0, color: '#78909c' },
+    { label: 'Faciles', desc: '≥ 3 réussies d\'affilée', value: b.facile || 0, color: '#4caf50' },
+    { label: 'Moyennes', desc: '< 3 réussies d\'affilée', value: b.moyenne || 0, color: '#f59e0b' },
+    { label: 'Difficiles', desc: 'Page Difficultés', value: b.difficile || 0, color: '#f44336' }
+  ].filter(s => s.value > 0);
+
+  const R = 70, CX = 80, CY = 80;
+  const toRad = a => (a * Math.PI) / 180;
+  let angleStart = -90; // départ en haut du cercle, sens horaire
+  let paths = '';
+  let legendHtml = '';
+
+  segments.forEach(seg => {
+    const pct = seg.value / totalSeen;
+    const pctRound = Math.round(pct * 100);
+    if (segments.length === 1) {
+      paths += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="${seg.color}"><title>${seg.label} : ${seg.value} (${pctRound}%)</title></circle>`;
+    } else {
+      const angleSpan = pct * 360;
+      const angleEnd = angleStart + angleSpan;
+      const largeArc = angleSpan > 180 ? 1 : 0;
+      const x1 = (CX + R * Math.cos(toRad(angleStart))).toFixed(2);
+      const y1 = (CY + R * Math.sin(toRad(angleStart))).toFixed(2);
+      const x2 = (CX + R * Math.cos(toRad(angleEnd))).toFixed(2);
+      const y2 = (CY + R * Math.sin(toRad(angleEnd))).toFixed(2);
+      paths += `<path d="M${CX},${CY} L${x1},${y1} A${R},${R} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${seg.color}"><title>${seg.label} : ${seg.value} (${pctRound}%)</title></path>`;
+      angleStart = angleEnd;
+    }
+    legendHtml += `
+      <div style="display:flex;align-items:center;gap:6px;font-size:.85em;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${seg.color};flex:0 0 auto;"></span>
+        <span style="flex:1;">${seg.label} <span style="color:var(--text-secondary);font-size:.9em;">(${seg.desc})</span></span>
+        <span style="font-weight:700;white-space:nowrap;">${seg.value} · ${pctRound}%</span>
+      </div>`;
+  });
+
+  return `
+    <div class="home-card" id="statsMasteryPieCard" style="margin-top:14px;">
+      <h3 style="margin:0 0 4px;">🥧 Répartition par maîtrise</h3>
+      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 12px;">Sur les ${totalSeen} question${totalSeen > 1 ? 's' : ''} déjà vue${totalSeen > 1 ? 's' : ''} au moins une fois.</p>
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <svg viewBox="0 0 160 160" style="width:160px;height:160px;flex:0 0 auto;">${paths}</svg>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px;">${legendHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
 /** afficherStats — Affiche les statistiques par groupe */
-function afficherStats(groupsData, globalStats) {
+function afficherStats(groupsData, globalStats, masteryBreakdown) {
   const cont = document.getElementById('statsContainer');
   if (!cont) return;
 
@@ -1098,6 +1234,7 @@ function afficherStats(groupsData, globalStats) {
       ${gDaysHtml}
     </div>
   `;
+  html += _renderMasteryPieHtml(masteryBreakdown);
 
   // Compteur unique pour les IDs de graphiques
   let catChartIdx = 0;
@@ -1789,7 +1926,7 @@ async function _resetCategoryFlaggedField(catValue, catLabel) {
 /**
  * afficherDailyChart() – Affiche un graphique en barres de l'activité quotidienne (60 derniers jours)
  */
-function afficherDailyChart(dailyHistory) {
+function afficherDailyChart(dailyHistory, syllabusTimeMs) {
   // Trouver ou créer le conteneur du graphique
   let chartCont = document.getElementById('dailyChartContainer');
   if (!chartCont) {
@@ -1883,7 +2020,7 @@ function afficherDailyChart(dailyHistory) {
   html += `</div></div>`;
 
   // ── Deuxième graphique : temps passé par jour, sur le même axe de 60 jours ──
-  html += _buildDailyTimeChartHtml(days);
+  html += _buildDailyTimeChartHtml(days, syllabusTimeMs);
 
   chartCont.innerHTML = html;
 
@@ -1936,11 +2073,29 @@ function _qtFormatDayDuration(ms) {
  *    C'est un ordre de grandeur, jamais une mesure — d'où la distinction visuelle et la légende,
  *    pour ne jamais faire passer l'un pour l'autre.
  */
-function _buildDailyTimeChartHtml(days) {
+/** _statsGetSyllabusDailyTimeMap(serverMap) – Même principe de fusion que
+ * _syllGetDisplayDailyTimeMap() dans js/syllabus.js (non chargé sur cette page, d'où la
+ * duplication assumée — voir l'en-tête de js/syllabus.js) : `serverMap` (data.syllabusTimeMs,
+ * déjà chargé par initStats(), pas besoin d'un 2e appel Firestore) + la part purement locale de
+ * CET appareil pas encore transmise (syllabusTimeMsBackup - syllabusTimeMsPushed). */
+function _statsGetSyllabusDailyTimeMap(serverMap) {
+  const combined = { ...(serverMap || {}) };
+  let backup = {}, pushed = {};
+  try { backup = JSON.parse(localStorage.getItem('syllabusTimeMsBackup') || '{}'); } catch (e) { /* ignore */ }
+  try { pushed = JSON.parse(localStorage.getItem('syllabusTimeMsPushed') || '{}'); } catch (e) { /* ignore */ }
+  for (const [k, v] of Object.entries(backup)) {
+    const pending = Math.max(0, v - (pushed[k] || 0));
+    if (pending > 0) combined[k] = (combined[k] || 0) + pending;
+  }
+  return combined;
+}
+
+function _buildDailyTimeChartHtml(days, syllabusTimeMs) {
   // Map d'AFFICHAGE (total serveur multi-appareils + part locale pas encore transmise) — PAS
   // _qtGetDailyTimeMap(), qui ne renvoie que la mesure brute propre à CET appareil. Voir
   // _qtGetDisplayDailyTimeMap() dans js/helpers.js.
   const timeMap = (typeof _qtGetDisplayDailyTimeMap === 'function') ? _qtGetDisplayDailyTimeMap() : {};
+  const syllMap = _statsGetSyllabusDailyTimeMap(syllabusTimeMs);
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
   // Sans le détail nouvelles/révisions pour un jour passé, on prend la moyenne des deux rythmes.
@@ -1948,21 +2103,27 @@ function _buildDailyTimeChartHtml(days) {
 
   const rows = days.map(day => {
     const measured = timeMap[day.key] || 0;
-    if (measured > 0) return { ...day, ms: measured, estimated: false };
+    const syllMs = syllMap[day.key] || 0;
+    if (measured > 0) return { ...day, ms: measured, estimated: false, syllMs };
     const est = day.count > 0 ? day.count * avgSecPerQuestion * 1000 : 0;
-    return { ...day, ms: est, estimated: est > 0 };
+    return { ...day, ms: est, estimated: est > 0, syllMs };
   });
 
-  const maxMs = Math.max(...rows.map(r => r.ms), 1);
+  // maxMs porte sur le TOTAL empilé (quiz + syllabus) — sinon un jour à forte activité syllabus
+  // dépasserait le haut du graphique au lieu d'être mis à l'échelle avec le reste.
+  const maxMs = Math.max(...rows.map(r => r.ms + r.syllMs), 1);
   const maxBarH = 120;
   // En-tête "60j" : toujours sur les 60 DERNIERS jours, même si `rows` remonte plus loin pour
   // permettre le défilement (voir afficherDailyChart) — cohérent avec le graphique du dessus.
   const last60Rows = rows.slice(-60);
-  const total60 = last60Rows.reduce((s, r) => s + r.ms, 0);
-  const todayMs = rows[rows.length - 1].ms;
-  const daysWithTime = last60Rows.filter(r => r.ms > 0).length;
+  const total60 = last60Rows.reduce((s, r) => s + r.ms + r.syllMs, 0);
+  const todayRow = rows[rows.length - 1];
+  const todayMs = todayRow.ms + todayRow.syllMs;
+  const daysWithTime = last60Rows.filter(r => (r.ms + r.syllMs) > 0).length;
   const avgPerActiveDay = daysWithTime ? total60 / daysWithTime : 0;
   const anyEstimated = rows.some(r => r.estimated);
+  const anySyllabus = rows.some(r => r.syllMs > 0);
+  const SYLL_COLOR = '#26c6da';
 
   const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
@@ -1974,18 +2135,21 @@ function _buildDailyTimeChartHtml(days) {
       </div>
     </div>`;
 
-  if (anyEstimated) {
-    html += `
+  html += `
     <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.72em;color:var(--text-secondary);margin-bottom:6px">
-      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f59e0b;margin-right:4px"></span>Mesuré</span>
-      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,#f59e0b55,#f59e0b55 2px,transparent 2px,transparent 4px);border:1px solid #f59e0b88;margin-right:4px"></span>Estimé (avant l'enregistrement du temps)</span>
-    </div>`;
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f59e0b;margin-right:4px"></span>Quiz</span>`;
+  if (anyEstimated) {
+    html += `<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,#f59e0b55,#f59e0b55 2px,transparent 2px,transparent 4px);border:1px solid #f59e0b88;margin-right:4px"></span>Quiz estimé (avant l'enregistrement du temps)</span>`;
   }
+  if (anySyllabus) {
+    html += `<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${SYLL_COLOR};margin-right:4px"></span>Syllabus</span>`;
+  }
+  html += `</div>`;
 
   html += `<div class="daily-chart-scroll"><div class="daily-chart">`;
 
   rows.forEach((r, idx) => {
-    const h = r.ms ? Math.max(Math.round((r.ms / maxMs) * maxBarH), 6) : 0;
+    const total = r.ms + r.syllMs;
     const isToday = idx === rows.length - 1;
     const dayLabel = String(r.date.getDate()).padStart(2, '0') + '/' + String(r.date.getMonth() + 1).padStart(2, '0');
 
@@ -1994,18 +2158,30 @@ function _buildDailyTimeChartHtml(days) {
     else if (r.date.getDate() === 1) bottomLabel = monthNames[r.date.getMonth()];
     else if (idx % 7 === 0) bottomLabel = dayLabel;
 
+    const quizH = r.ms ? Math.max(Math.round((r.ms / maxMs) * maxBarH), 6) : 0;
+    const syllH = r.syllMs ? Math.max(Math.round((r.syllMs / maxMs) * maxBarH), 4) : 0;
+
     const solid = isToday ? '#667eea' : '#f59e0b';
-    const bg = r.estimated
+    const quizBg = r.estimated
       ? `repeating-linear-gradient(45deg, ${solid}55, ${solid}55 3px, transparent 3px, transparent 6px)`
       : solid;
-    const border = r.estimated ? `border:1px solid ${solid}88;` : '';
-    const titleTxt = r.ms
-      ? `${dayLabel} : ${_qtFormatDayDuration(r.ms)}${r.estimated ? ' (estimé)' : ''} · ${r.count} question(s)`
-      : `${dayLabel} : aucune activité`;
+    const quizBorder = r.estimated ? `border:1px solid ${solid}88;` : '';
+    // Le segment syllabus est au-dessus (DOM avant le segment quiz, colonne en flex-column +
+    // justify-content:flex-end plus bas) : lui seul garde les coins arrondis du haut s'il existe,
+    // sinon c'est le segment quiz qui les garde.
+    const quizRadius = syllH > 0 ? '0' : '2px 2px 0 0';
+
+    const titleParts = [];
+    if (r.ms) titleParts.push('Quiz : ' + _qtFormatDayDuration(r.ms) + (r.estimated ? ' (estimé)' : '') + ' · ' + r.count + ' question(s)');
+    if (r.syllMs) titleParts.push('Syllabus : ' + _qtFormatDayDuration(r.syllMs));
+    const titleTxt = titleParts.length ? (dayLabel + ' : ' + titleParts.join(' · ')) : (dayLabel + ' : aucune activité');
 
     html += `<div class="daily-bar-col" title="${titleTxt}">
-      <div class="daily-bar-count">${r.ms ? _qtFormatDayDuration(r.ms).replace(/ /g, '') : ''}</div>
-      <div class="daily-bar" style="height:${h}px;background:${bg};${border}"></div>
+      <div class="daily-bar-count">${total ? _qtFormatDayDuration(total).replace(/ /g, '') : ''}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+        ${syllH > 0 ? `<div class="daily-bar" style="height:${syllH}px;background:${SYLL_COLOR};border-radius:2px 2px 0 0;"></div>` : ''}
+        <div class="daily-bar" style="height:${quizH}px;background:${quizBg};${quizBorder}border-radius:${quizRadius};"></div>
+      </div>
       <div class="daily-bar-label">${bottomLabel}</div>
     </div>`;
   });
