@@ -1051,12 +1051,13 @@ function afficherStats(groupsData, globalStats) {
   const gMaPerc = gMa ? (gMaV * 100 / gMa).toFixed(1) : '0.0';
   const gImPerc = gIm ? (gImV * 100 / gIm).toFixed(1) : '0.0';
   const gNoPerc = gNo ? (gNoV * 100 / gNo).toFixed(1) : '0.0';
-  // Questions mises de côté ("Ne plus revoir") alors que ratées : elles comptent en ✅ dans le
-  // total ci-dessus (voir _effectiveStatus()), donc le 100% est hors d'atteinte tant qu'elles
-  // restent ratées sous le capot. Affiché seulement s'il y en a — rien à voir sinon.
+  // Questions mises de côté ("Ne plus revoir") alors que leur dernière réponse réelle était un
+  // échec : voulues comme des "déchets" à l'écart du cycle de révision, donc DÉJÀ comptées en ✅
+  // dans le total ci-dessus par _effectiveStatus() — elles ne bloquent PAS le 100%, seules les
+  // vraies ratées restantes (❌) l'empêchent. Affiché seulement s'il y en a, à titre informatif.
   const gSuspRatee = globalStats.suspendedRatee || 0;
   const gSuspRateeHtml = gSuspRatee > 0
-    ? `<span title="Comptées en ✅ ci-dessus (« Ne plus revoir »), mais ratées sous le capot — le 100% ne pourra pas être atteint tant qu'elles y restent.">🚫 ${gSuspRatee}</span>`
+    ? `<span title="Mises de côté (« Ne plus revoir ») alors que ratées — déjà comptées en ✅ ci-dessus, comme des déchets qui n'empêchent pas d'atteindre 100%.">🚫 ${gSuspRatee}</span>`
     : '';
   let html = `
     <div class="stats-global-card">
