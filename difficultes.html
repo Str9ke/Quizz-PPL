@@ -74,16 +74,29 @@
       <u>et</u> que tu ne l'as pas encore enchaînée assez de fois d'affilée depuis pour la considérer acquise.
       Une question ratée une fois puis réussie 5 fois de suite après n'apparaît donc plus ici. Les questions
       jamais vues et celles retirées du cycle (« ne plus revoir », jugées trop faciles) ne sont jamais comptées.
-      <br><strong>Question souvent ratée</strong> : à partir de 4 ratées (5, 6, 7... peu importe le nombre exact),
-      l'exigence monte automatiquement à au moins 50&nbsp;% de réussites d'affilée EN PLUS que son nombre total de
+      <br><strong>Question souvent ratée</strong> : à partir de <span id="diffElevatedFromEcho">4</span> ratées
+      (peu importe le nombre exact au-delà), l'exigence monte automatiquement à au moins
+      <span id="diffElevatedPctEcho">50</span>&nbsp;% de réussites d'affilée EN PLUS que son nombre total de
       ratées, pour ne pas la laisser disparaître trop vite — un nouvel échec entre-temps remet le compteur à zéro
       et relève encore la barre.
     </p>
-    <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
-      Nombre de bonnes réponses d'affilée pour considérer une question comme acquise (plancher) :
-      <input type="number" id="diffThreshold" min="1" max="10" value="3" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">
-      <span style="color:var(--text-secondary);">(défaut : 3)</span>
-    </label>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
+        Nombre de bonnes réponses d'affilée pour considérer une question comme acquise (plancher) :
+        <input type="number" id="diffThreshold" min="1" max="10" value="3" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">
+        <span style="color:var(--text-secondary);">(défaut : 3)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
+        À partir de combien de ratées l'exigence commence à monter :
+        <input type="number" id="diffElevatedFrom" min="1" max="50" value="4" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">
+        <span style="color:var(--text-secondary);">(défaut : 4)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.85em;flex-wrap:wrap;">
+        Pourcentage de réussites supplémentaires exigées au-delà de ce seuil :
+        <input type="number" id="diffElevatedPct" min="0" max="500" value="50" style="width:60px;padding:4px 6px;border-radius:4px;" onchange="diffRecompute()">%
+        <span style="color:var(--text-secondary);">(défaut : 50%)</span>
+      </label>
+    </div>
   </div>
 
   <div class="home-card" id="diffLoading">
@@ -94,6 +107,15 @@
 
     <!-- Résumé global + par famille -->
     <div class="home-card" id="diffSummary"></div>
+
+    <!-- Évolution du nombre de difficultés dans le temps -->
+    <div class="home-card" id="diffHistoryChart">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <h3 style="margin:0;">📈 Évolution des difficultés</h3>
+        <span style="font-size:.78em;color:var(--text-secondary);">Nombre de questions à travailler, chaque jour</span>
+      </div>
+      <div id="diffHistoryChartBody"><p style="color:var(--text-secondary);font-size:.85em;margin:0;">Chargement…</p></div>
+    </div>
 
     <!-- Séance en cours reprenable depuis un autre appareil -->
     <div class="home-card" id="diffResumeBanner" style="display:none;border-color:rgba(255,193,7,.4);"></div>
@@ -112,6 +134,7 @@
         </label>
         <button class="hist-filter-btn hist-filter-quiz" style="font-size:.95em;padding:8px 20px;" onclick="diffLaunchQuiz()">▶️ Lancer un quiz</button>
       </div>
+      <div id="diffScopeStatus" style="font-size:.8em;color:var(--text-secondary);margin-top:8px;"></div>
       <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
         ✅ Compte pour de vrai (échecs/réussites, historique, statistiques) — mais ne modifie jamais la date de ta
         prochaine révision programmée, qui reste celle fixée par tes quiz normaux. Une question réussie une fois
@@ -170,6 +193,8 @@
     let activeSession = null; // séance de drill en cours (éventuellement démarrée sur un autre appareil)
     let categoryTotals = new Map(); // category -> nb total de questions (toutes, pas que ratées)
     let categoryFamily = new Map(); // category -> family (gligli/easa/classique)
+    let diffSelectedCategories = new Set(); // catégories cochées dans "Détail par catégorie" (filtre du quiz)
+    let diffCountHistoryServer = {}; // { "YYYY-MM-DD": count } — historique du nombre de difficultés, depuis Firestore
 
     function escapeHtml(str) {
       if (!str) return '';
@@ -201,6 +226,7 @@
         const doc = await _loadMergedResponses(uid, 6000);
         const data = doc.exists ? doc.data() : {};
         currentResponses = normalizeResponses(data.responses || {});
+        diffCountHistoryServer = data.diffCountHistory || {};
       } catch (e) {
         console.warn('[difficultes] Firestore load failed:', e);
       }
@@ -252,34 +278,58 @@
 
       document.getElementById('diffLoading').style.display = 'none';
       document.getElementById('diffBody').style.display = 'block';
+      _diffLoadConfig();
       diffRecompute();
     }
 
-    // Nombre de ratées à partir duquel l'exigence de maîtrise commence à grimper au-delà du
-    // seuil réglable — PAS un cas particulier limité à cette seule valeur : la formule
-    // ci-dessous s'applique en continu à TOUTE question ayant AU MOINS ce nombre de ratées
-    // (4, 5, 6, 7... 10... peu importe), jamais seulement à 4 et 10 pris isolément.
-    const DIFF_ELEVATED_FROM_FAILCOUNT = 4;
+    // Réglages par défaut de l'exigence adaptative (voir _diffRequiredStreak) — modifiables
+    // directement sur la page (champs #diffElevatedFrom / #diffElevatedPct), persistés en
+    // localStorage pour être repris tels quels à la prochaine visite.
+    const DIFF_CONFIG_DEFAULTS = { base: 3, elevatedFrom: 4, elevatedPct: 50 };
 
-    // _diffRequiredStreak(base, failCount) – Nombre de réussites CONSÉCUTIVES exigées avant de
-    // considérer une question comme acquise. En dessous de DIFF_ELEVATED_FROM_FAILCOUNT ratées,
-    // le seuil réglable ci-dessus (3 par défaut) suffit. À PARTIR de ce nombre de ratées, la
-    // question doit au contraire enchaîner au moins 50 % de réussites EN PLUS que son total de
-    // ratées avant de disparaître de cette liste — sinon 3 réussites suffisaient à faire
-    // disparaître une question ratée 10 fois, ce qui ne prouvait pas grand-chose. Un nouvel
-    // échec après coup remet le compteur à zéro (voir _trailingSuccessStreak) ET augmente
-    // lui-même l'exigence (failCount monte), rendant la barre encore plus haute la fois
-    // suivante.
-    function _diffRequiredStreak(base, failCount) {
-      if (failCount < DIFF_ELEVATED_FROM_FAILCOUNT) return base;
-      return Math.max(base, Math.ceil(failCount * 1.5));
+    // Applique les réglages sauvegardés (ou les défauts) aux champs, avant le tout premier calcul.
+    function _diffLoadConfig() {
+      const readInt = (key, def, allowZero) => {
+        const v = parseInt(localStorage.getItem(key));
+        return Number.isFinite(v) && (allowZero ? v >= 0 : v > 0) ? v : def;
+      };
+      document.getElementById('diffThreshold').value = readInt('diffCfgBase', DIFF_CONFIG_DEFAULTS.base);
+      document.getElementById('diffElevatedFrom').value = readInt('diffCfgElevatedFrom', DIFF_CONFIG_DEFAULTS.elevatedFrom);
+      document.getElementById('diffElevatedPct').value = readInt('diffCfgElevatedPct', DIFF_CONFIG_DEFAULTS.elevatedPct, true);
     }
 
-    // Recalcule la liste des difficultés actuelles (appelé au chargement et quand le seuil change)
+    // _diffRequiredStreak(base, failCount, elevatedFrom, elevatedPct) – Nombre de réussites
+    // CONSÉCUTIVES exigées avant de considérer une question comme acquise. En dessous de
+    // `elevatedFrom` ratées, le seuil réglable `base` suffit. À PARTIR de ce nombre de ratées, la
+    // question doit au contraire enchaîner au moins `elevatedPct` % de réussites EN PLUS que son
+    // total de ratées avant de disparaître de cette liste — sinon 3 réussites suffisaient à faire
+    // disparaître une question ratée 10 fois, ce qui ne prouvait pas grand-chose. Un nouvel échec
+    // après coup remet le compteur à zéro (voir _trailingSuccessStreak) ET augmente lui-même
+    // l'exigence (failCount monte), rendant la barre encore plus haute la fois suivante. S'applique
+    // en continu à TOUTE question ayant AU MOINS `elevatedFrom` ratées, jamais à un cas isolé.
+    function _diffRequiredStreak(base, failCount, elevatedFrom, elevatedPct) {
+      if (failCount < elevatedFrom) return base;
+      return Math.max(base, Math.ceil(failCount * (1 + elevatedPct / 100)));
+    }
+
+    // Recalcule la liste des difficultés actuelles (appelé au chargement et quand un réglage change)
     window.diffRecompute = function() {
-      const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || 3);
+      const threshold = Math.max(1, parseInt(document.getElementById('diffThreshold').value) || DIFF_CONFIG_DEFAULTS.base);
+      const elevatedFrom = Math.max(1, parseInt(document.getElementById('diffElevatedFrom').value) || DIFF_CONFIG_DEFAULTS.elevatedFrom);
+      const pctRaw = parseInt(document.getElementById('diffElevatedPct').value);
+      const elevatedPct = (Number.isFinite(pctRaw) && pctRaw >= 0) ? pctRaw : DIFF_CONFIG_DEFAULTS.elevatedPct;
+      try {
+        localStorage.setItem('diffCfgBase', threshold);
+        localStorage.setItem('diffCfgElevatedFrom', elevatedFrom);
+        localStorage.setItem('diffCfgElevatedPct', elevatedPct);
+      } catch (e) { /* tant pis, retombera sur les défauts la prochaine fois */ }
+
       const echo = document.getElementById('diffThresholdEcho');
       if (echo) echo.textContent = threshold;
+      const echoFrom = document.getElementById('diffElevatedFromEcho');
+      if (echoFrom) echoFrom.textContent = elevatedFrom;
+      const echoPct = document.getElementById('diffElevatedPctEcho');
+      if (echoPct) echoPct.textContent = elevatedPct;
       diffItems = [];
 
       allQuestions.forEach(({ q, key }) => {
@@ -292,7 +342,7 @@
         const log = historyMap[key] || r.statusLog || null;
         const streak = _trailingSuccessStreak(log);
         const recentStreak = (streak === null) ? (r.status === 'réussie' ? 1 : 0) : streak;
-        const requiredStreak = _diffRequiredStreak(threshold, failCount);
+        const requiredStreak = _diffRequiredStreak(threshold, failCount, elevatedFrom, elevatedPct);
         if (recentStreak >= requiredStreak) return; // suffisamment enchaînée récemment : acquise
 
         diffItems.push({
@@ -307,7 +357,92 @@
       });
 
       diffRender();
+      _diffRecordDailyCount(diffItems.length);
     };
+
+    // _diffRecordDailyCount(count) – Enregistre l'instantané du jour (nombre de difficultés
+    // actuelles) en localStorage ET Firestore, puis redessine le graphique. PAS un compteur
+    // cumulatif comme le temps d'étude ou les questions vues (voir js/stats.js) : c'est une
+    // JAUGE qui doit pouvoir redescendre (les difficultés résolues font baisser le total), donc
+    // écrasement direct de la valeur du jour plutôt que fusion en max().
+    function _diffRecordDailyCount(count) {
+      const now = new Date();
+      const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      try {
+        const backup = JSON.parse(localStorage.getItem('diffCountHistoryBackup') || '{}');
+        backup[todayKey] = count;
+        localStorage.setItem('diffCountHistoryBackup', JSON.stringify(backup));
+      } catch (e) { /* tant pis */ }
+      diffCountHistoryServer[todayKey] = count;
+      if (uid && navigator.onLine) {
+        db.collection('quizProgress').doc(uid)
+          .set({ diffCountHistory: { [todayKey]: count } }, { merge: true })
+          .catch(e => console.warn('[difficultes] écriture historique difficultés échouée:', e.message));
+      }
+      _diffRenderHistoryChart();
+    }
+
+    // _diffRenderHistoryChart() – Même famille visuelle que le graphique "Activité quotidienne"
+    // de js/stats.js (classes .daily-chart-* déjà globales dans style.css), en plus simple : une
+    // seule série, pas de distinction mesuré/estimé. Fonctionnalité neuve : aucune donnée
+    // n'existe avant sa mise en service, donc seuls les jours depuis aujourd'hui se rempliront —
+    // les jours antérieurs sans donnée restent affichés en gris clair plutôt que masqués, pour
+    // que l'axe des dates reste continu.
+    function _diffRenderHistoryChart() {
+      const cont = document.getElementById('diffHistoryChartBody');
+      if (!cont) return;
+      let history = {};
+      try {
+        const backup = JSON.parse(localStorage.getItem('diffCountHistoryBackup') || '{}');
+        history = { ...diffCountHistoryServer, ...backup };
+      } catch (e) {
+        history = { ...diffCountHistoryServer };
+      }
+
+      const today = new Date();
+      const historyKeys = Object.keys(history).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+      let totalDays = 60;
+      if (historyKeys.length) {
+        const oldestKey = historyKeys.reduce((a, b) => (a < b ? a : b));
+        const oldestDate = new Date(oldestKey + 'T00:00:00');
+        const spanDays = Math.round((today - oldestDate) / 86400000) + 1;
+        if (spanDays > totalDays) totalDays = Math.min(spanDays, 3650);
+      }
+      const days = [];
+      for (let i = totalDays - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        days.push({ key, date: d, count: (key in history) ? history[key] : null });
+      }
+      const known = days.filter(d => d.count !== null);
+      const maxCount = Math.max(...known.map(d => d.count), 1);
+      const maxBarH = 120;
+      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+      let html = '<div class="daily-chart-scroll"><div class="daily-chart">';
+      days.forEach((day, idx) => {
+        const has = day.count !== null;
+        const isToday = idx === days.length - 1;
+        const h = has ? Math.max(Math.round((day.count / maxCount) * maxBarH), day.count > 0 ? 6 : 2) : 2;
+        const dayLabel = String(day.date.getDate()).padStart(2, '0') + '/' + String(day.date.getMonth() + 1).padStart(2, '0');
+        let bottomLabel = '';
+        if (isToday) bottomLabel = 'Auj.';
+        else if (day.date.getDate() === 1) bottomLabel = monthNames[day.date.getMonth()];
+        else if (idx % 7 === 0) bottomLabel = dayLabel;
+        const barColor = isToday ? '#667eea' : (has ? '#ff7043' : '#3a3a42');
+        const title = has ? (dayLabel + ' : ' + day.count + ' difficulté' + (day.count > 1 ? 's' : '')) : (dayLabel + ' : pas de donnée');
+        html += `<div class="daily-bar-col" title="${title}">
+          <div class="daily-bar-count">${has ? day.count : ''}</div>
+          <div class="daily-bar" style="height:${h}px;background:${barColor}"></div>
+          <div class="daily-bar-label">${bottomLabel}</div>
+        </div>`;
+      });
+      html += '</div></div>';
+      cont.innerHTML = html;
+      const scroller = cont.querySelector('.daily-chart-scroll');
+      if (scroller) requestAnimationFrame(() => { scroller.scrollLeft = scroller.scrollWidth; });
+    }
 
     function _famLabel(fam) {
       return fam === 'gligli' ? 'GLIGLI' : (fam === 'easa' ? 'EASA' : 'Classiques');
@@ -427,19 +562,34 @@
       diffItems.forEach(it => {
         diffByCategory.set(it.category, (diffByCategory.get(it.category) || 0) + 1);
       });
+      // Une catégorie sélectionnée qui n'a plus de difficulté (ex: réglage du seuil changé,
+      // toutes résolues depuis) ne doit pas rester cochée sans plus jamais apparaître.
+      for (const cat of [...diffSelectedCategories]) {
+        if (!diffByCategory.has(cat)) diffSelectedCategories.delete(cat);
+      }
       const cats = [...diffByCategory.keys()].sort((a, b) => diffByCategory.get(b) - diffByCategory.get(a));
       const body = document.getElementById('diffCategoriesBody');
       if (!cats.length) { body.innerHTML = '<p style="color:var(--text-secondary);">—</p>'; return; }
 
-      let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+      let html = diffSelectedCategories.size
+        ? `<div style="display:flex;align-items:center;gap:10px;font-size:.82em;color:var(--text-secondary);margin-bottom:8px;flex-wrap:wrap;">
+             <span>📌 ${diffSelectedCategories.size} catégorie${diffSelectedCategories.size > 1 ? 's' : ''} sélectionnée${diffSelectedCategories.size > 1 ? 's' : ''} pour le quiz</span>
+             <button type="button" class="hist-filter-btn" style="font-size:.85em;padding:3px 10px;" onclick="diffClearCategorySelection()">✕ Effacer</button>
+           </div>`
+        : `<p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px;">Clique sur une ou plusieurs catégories pour limiter le quiz généré à celles-ci (dans le désordre, autant que tu veux).</p>`;
+      html += '<div style="display:flex;flex-direction:column;gap:8px;">';
       cats.forEach(cat => {
         const nb = diffByCategory.get(cat);
         const total = categoryTotals.get(cat) || 0;
         const fam = categoryFamily.get(cat) || 'classique';
         const pct = total ? Math.round((nb / total) * 100) : 0;
+        const selected = diffSelectedCategories.has(cat);
         html += `
-          <div style="display:flex;align-items:center;gap:10px;font-size:.88em;">
-            <span style="flex:0 0 220px;">${_famDot(fam)}${escapeHtml(cat)}</span>
+          <div class="diff-cat-clickrow" data-cat="${escapeHtml(cat)}"
+               style="display:flex;align-items:center;gap:10px;font-size:.88em;cursor:pointer;padding:5px 8px;border-radius:8px;border:1px solid ${selected ? 'var(--button-bg)' : 'transparent'};background:${selected ? 'rgba(102,126,234,0.12)' : 'transparent'};"
+               title="Cliquer pour ${selected ? 'retirer' : 'ajouter'} cette catégorie du filtre du quiz">
+            <span style="flex:0 0 18px;text-align:center;">${selected ? '✅' : '▫️'}</span>
+            <span style="flex:0 0 200px;">${_famDot(fam)}${escapeHtml(cat)}</span>
             <div class="progressbar" style="flex:1;height:8px;margin:0">
               <div class="progress" style="height:8px;width:${pct}%;background:${FAM_COLORS[fam]}"></div>
             </div>
@@ -449,6 +599,11 @@
       });
       html += '</div>';
       body.innerHTML = html;
+      // Délégation via dataset plutôt qu'un nom de catégorie inline dans onclick="" : évite tout
+      // souci d'échappement si un libellé contient un jour une apostrophe ou un guillemet.
+      body.querySelectorAll('.diff-cat-clickrow').forEach(el => {
+        el.onclick = () => diffToggleCategory(el.dataset.cat);
+      });
     }
 
     function renderScopeSelect() {
@@ -477,9 +632,29 @@
       nbInput.max = list.length || 1;
       const current = parseInt(nbInput.value) || 10;
       nbInput.value = Math.max(1, Math.min(current, list.length || 1));
+
+      const statusEl = document.getElementById('diffScopeStatus');
+      const selectEl = document.getElementById('diffScopeSelect');
+      if (statusEl && selectEl) {
+        if (diffSelectedCategories.size) {
+          selectEl.disabled = true;
+          statusEl.textContent = '📌 Filtre par catégorie(s) actif (voir "Détail par catégorie" ci-dessous) : '
+            + [...diffSelectedCategories].join(', ') + ' — ' + list.length + ' question' + (list.length > 1 ? 's' : '');
+        } else {
+          selectEl.disabled = false;
+          statusEl.textContent = '';
+        }
+      }
     };
 
+    // Le filtre par catégorie(s) cochées (voir renderCategories/diffToggleCategory) prime sur le
+    // menu déroulant "Périmètre" dès qu'au moins une catégorie est cochée — un seul champ
+    // d'application effectif à la fois, pour ne jamais lancer un quiz sur un périmètre différent
+    // de celui affiché à l'écran.
     function _scopedList() {
+      if (diffSelectedCategories.size) {
+        return diffItems.filter(it => diffSelectedCategories.has(it.category));
+      }
       const scope = document.getElementById('diffScopeSelect').value;
       if (!scope || scope === 'all') return diffItems;
       if (scope.startsWith('fam:')) {
@@ -492,6 +667,19 @@
       }
       return diffItems;
     }
+
+    window.diffToggleCategory = function(cat) {
+      if (diffSelectedCategories.has(cat)) diffSelectedCategories.delete(cat);
+      else diffSelectedCategories.add(cat);
+      renderCategories();
+      diffOnScopeChange();
+    };
+
+    window.diffClearCategorySelection = function() {
+      diffSelectedCategories.clear();
+      renderCategories();
+      diffOnScopeChange();
+    };
 
     window.diffLaunchQuiz = async function() {
       const list = _scopedList();
