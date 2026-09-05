@@ -1,1 +1,2850 @@
-<p>No NOTAMs found / Parsing failed</p>
+<body class="innerFrame">
+<table>
+<tr>
+<td style="padding:10px;">
+<h1>Notam Summary</h1>
+<div style="margin: 15px 0; text-align: center;">
+<input id="notamSearch" onkeyup="filterNotams()" placeholder="Rechercher un mot clé (ex: EBCI, TRA, etc.)..." style="padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" type="text"/>
+</div>
+<script>
+                // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
+                // terme recherché en évidence dans ceux qui restaient affichés — sans retour
+                // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
+                // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
+                // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
+                // pas casser les liens/images imbriqués dans les paragraphes.
+                function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+                function _notamHighlightHtml(html, term) {
+                    var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
+                    var parts = html.split(/(<[^>]+>)/);
+                    for (var j = 0; j < parts.length; j++) {
+                        if (parts[j].charAt(0) !== '<') {
+                            parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                        }
+                    }
+                    return parts.join('');
+                }
+                function filterNotams() {
+                    var filter = document.getElementById('notamSearch').value.trim();
+                    var filterUpper = filter.toUpperCase();
+                    var paragraphs = document.querySelectorAll('p');
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var p = paragraphs[i];
+                        if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
+                        if (!filter) {
+                            p.innerHTML = p.dataset.origHtml;
+                            p.style.display = "";
+                            continue;
+                        }
+                        var txt = p.innerText || p.textContent;
+                        if (txt.toUpperCase().indexOf(filterUpper) > -1) {
+                            p.style.display = "";
+                            p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
+                        } else {
+                            p.style.display = "none";
+                        }
+                    }
+                }
+                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                function highlightNotamTerms(termsStr) {
+                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                    var paragraphs = document.querySelectorAll('p');
+                    var firstMatch = null;
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                        paragraphs[i].style.background = matched ? '#fff59d' : '';
+                        paragraphs[i].style.color = matched ? '#000' : '';
+                        paragraphs[i].style.display = '';
+                        if (matched && !firstMatch) firstMatch = paragraphs[i];
+                    }
+                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return !!firstMatch;
+                }
+            </script>
+
+<button accesskey="P" onclick="window.open('aisPdfAction.do?cmd=summaryToPdf')" type="button"><u>P</u>rint this page 
+				</button>
+<div id="snowfalls"></div>
+<table border="1">
+<tr>
+<td align="center"><font color="red">SKEYES SHALL NOT ACCEPT RESPONSIBILITY FOR ANY CORRUPTION OR CHANGES TO DATA THAT MIGHT BE CAUSED BY OR DURING THE INTERNET TRANSPORT </font>
+<br/>Summary of NOTAM in force on Saturday 05/09/2026 at 08:53 UTC<br/>Your kind remarks about the layout of the summary are appreciated at the NOTAM office <br/>Phone: +32 (0)2 206 25 30<br/>AFTN: EBBRYNYN<br/>Email: <a href="mailto://notam@skeyes.be">notam@skeyes.be</a>
+<br/>Address: Tervuursesteenweg 303 B-1820 Steenokkerzeel</td>
+</tr>
+</table>
+<p>Now there are NOTAM for: <br/>
+<a name="top"></a>
+<br/>
+<br/>
+<b>Series </b><b>A</b> - Services and facilities of public aerodromes (incl ILS)<br/>
+<a href="#EBBUA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series A</a>
+<br/>
+<a href="#EBAWA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>ANTWERPEN / DEURNE</a>
+<br/>
+<a href="#EBBRA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS / BRUSSELS-NATIONAL</a>
+<br/>
+<a href="#EBCIA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHARLEROI / BRUSSELS SOUTH</a>
+<br/>
+<a href="#EBKTA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KORTRIJK / WEVELGEM</a>
+<br/>
+<a href="#EBLGA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LIEGE / LIEGE</a>
+<br/>
+<a href="#EBNMA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>NAMUR / SUARLEE</a>
+<br/>
+<a href="#EBOSA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>OOSTENDE-BRUGGE / OOSTENDE</a>
+<br/>
+<a href="#ELLXA"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LUXEMBOURG / LUXEMBOURG</a>
+<br/>
+<br/>
+<b>Series </b><b>B</b> - Services and facilities of private aerodromes / heliports<br/>
+<a href="#EBBUB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series B</a>
+<br/>
+<a href="#EBDYB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/></a>
+<br/>
+<a href="#EBDZB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>DEINZE / DE GROOTE</a>
+<br/>
+<a href="#EBLEB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LEOPOLDSBURG / BEVERLO</a>
+<br/>
+<a href="#EBMMB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>MAASMECHELEN</a>
+<br/>
+<a href="#EBNMB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>NAMUR / SUARLEE</a>
+<br/>
+<a href="#EBSTB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>SINT-TRUIDEN / BRUSTEM</a>
+<br/>
+<a href="#EBVSB"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>VEURNE / SINT-AUGUSTINUS</a>
+<br/>
+<br/>
+<b>Series </b><b>C</b> - Services and facilities of military aerodromes / heliports (incl ILS and PAR)<br/>
+<a href="#EBBUC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series C</a>
+<br/>
+<a href="#EBBEC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BEAUVECHAIN</a>
+<br/>
+<a href="#EBBLC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KLEINE-BROGEL</a>
+<br/>
+<a href="#EBCVC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHIEVRES</a>
+<br/>
+<a href="#EBFNC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KOKSIJDE</a>
+<br/>
+<a href="#EBFSC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>FLORENNES</a>
+<br/>
+<a href="#EBWEC"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>WEELDE</a>
+<br/>
+<br/>
+<b>Series </b><b>D</b> - ATS, AIM and MET services and procedures<br/>
+<a href="#EBBUD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series D</a>
+<br/>
+<a href="#EBAWD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>ANTWERPEN / DEURNE</a>
+<br/>
+<a href="#EBBED"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BEAUVECHAIN</a>
+<br/>
+<a href="#EBBRD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS / BRUSSELS-NATIONAL</a>
+<br/>
+<a href="#EBCID"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHARLEROI / BRUSSELS SOUTH</a>
+<br/>
+<a href="#EBFND"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KOKSIJDE</a>
+<br/>
+<a href="#EBFSD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>FLORENNES</a>
+<br/>
+<a href="#EBLGD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LIEGE / LIEGE</a>
+<br/>
+<a href="#ELLXD"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LUXEMBOURG / LUXEMBOURG</a>
+<br/>
+<br/>
+<b>Series </b><b>E</b> - Communication, navigation and surveillance (excl ILS and PAR)<br/>
+<a href="#EBBUE"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series E</a>
+<br/>
+<a href="#EBAWE"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>ANTWERPEN / DEURNE</a>
+<br/>
+<a href="#EBCVE"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHIEVRES</a>
+<br/>
+<a href="#EBOSE"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>OOSTENDE-BRUGGE / OOSTENDE</a>
+<br/>
+<br/>
+<b>Series </b><b>F</b> - Navigational warnings outside civil controlled airspace and up to 4 500 FT AMSL (incl)<br/>
+<a href="#EBBUF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series F</a>
+<br/>
+<a href="#EBCVF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>CHIEVRES</a>
+<br/>
+<a href="#EBDTF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>DIEST / SCHAFFEN</a>
+<br/>
+<a href="#EBFNF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KOKSIJDE</a>
+<br/>
+<a href="#EBTNF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>GOETSENHOVEN</a>
+<br/>
+<a href="#EBWEF"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>WEELDE</a>
+<br/>
+<br/>
+<b>Series </b><b>G</b> - Navigational warnings in civil controlled airspace or extending/entirely above 4 500 FT AMSL<br/>
+<a href="#EBBUG"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series G</a>
+<br/>
+<a href="#EBBRG"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS / BRUSSELS-NATIONAL</a>
+<br/>
+<a href="#EBLEG"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>LEOPOLDSBURG / BEVERLO</a>
+<br/>
+<br/>
+<b>Series </b><b>M</b> - Information for military users only<br/>
+<a href="#EBBUM"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series M</a>
+<br/>
+<a href="#EBFNM"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>KOKSIJDE</a>
+<br/>
+<br/>
+<b>Series </b><b>Z</b> - BIRDTAM (see ENR 5.6, § 4)<br/>
+<a href="#EBBUZ"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>BRUSSELS FIR Series Z</a>
+</p>
+<br/>
+<a href="#airacamdt"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>Latest AIRAC Amdt</a>
+<br/>
+<a href="#aipamdt"><img border="0" height="7" src="/opersite/resources/images/linkbleu.gif" width="11"/>Latest AIP Amdt</a>
+<br/>
+<a name="EBBUA"></a>
+<br/>
+<b>BRUSSELS FIR Series A</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2998/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:10  <i>Till:</i>01 OCT 26 05:10 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 1869 2045 2072 2148 2261 2262 2431 2455 2476 2477 2488 2494
+          2516 2517 2518 2519 2520 2521 2522 2523 2524 2611 2646 2659
+          2660 2678 2691 2710 2711 2712 2729 2732 2765 2769 2773 2781
+          2784 2809 2814 2817 2818 2820 2822 2824 2833 2837 2841 2865
+          2877 2881 2901 2902 2919 2932 2935 2944 2952 2956 2965 2966
+          2975 2976 2982 2986 2987 2988 2989 2994 2995 2996
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<a name="EBAWA"></a>
+<br/>
+<b>ANTWERPEN / DEURNE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A1869/26</font>
+<br/>
+<i>From:</i>04 JUN 26 13:55  <i>Till:</i>31 OCT 27 22:00 EST<br/>
+<i>Text:</i>CRANE 511307N 0042446E AT 4660M FRM ARP BRG 315 DEG. 259FT AGL /
+284FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2261/26</font>
+<br/>
+<i>From:</i>01 OCT 26 05:00  <i>Till:</i>31 DEC 26 21:00 EST<br/>
+<i>Text:</i>CRANE 511130N 042308E, BRG 272DEG 5328M FM ARP, 
+78M AGL / 276FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2262/26</font>
+<br/>
+<i>From:</i>26 SEP 26 05:00  <i>Till:</i>01 OCT 26 21:00 <br/>
+<i>Text:</i>MOBILE CRANE 511130N 0042308E, BRG 272DEG 5328M FM ARP, 
+89M AGL / 312FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2455/26</font>
+<br/>
+<i>From:</i>14 JUL 26 09:30  <i>Till:</i>14 OCT 26 21:00 <br/>
+<i>Text:</i>ACFT STAND 112 CLSD DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2494/26</font>
+<br/>
+<i>From:</i>16 JUL 26 17:40  <i>Till:</i>PERM<br/>
+<i>Text:</i>RWY 11, AFTER LDG, ALL MEDIUM OR HVY TFC REQUIRING A BACKTRACK 
+MUST INITIATE THE BACKTRACK BEHIND TWY J.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2691/26</font>
+<br/>
+<i>From:</i>29 SEP 26 05:00  <i>Till:</i>29 SEP 26 15:00 <br/>
+<i>Text:</i>MOBILE CRANE 511314N 0042500E AT 4678M FM ARP BRG 318DEG. 194FT 
+AGL / 219 FT AMSL. ICAO MARKINGS INSTALLED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2710/26</font>
+<br/>
+<i>From:</i>22 SEP 26 05:00  <i>Till:</i>23 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0500-1600<br/>
+<i>Text:</i>MOBILE CRANE 511249N 0042529E AT 3743M FM ARP BRG 317DEG. 199FT
+AGL/216FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2711/26</font>
+<br/>
+<i>From:</i>19 OCT 26 05:00  <i>Till:</i>21 OCT 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0500-1600<br/>
+<i>Text:</i>MOBILE CRANE 511249N 0042529E AT 3816M FM ARP BRG 317DEG. 307FT 
+AGL/322FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2712/26</font>
+<br/>
+<i>From:</i>23 SEP 26 05:00  <i>Till:</i>25 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0500-1600<br/>
+<i>Text:</i>MOBILE CRANE 511252N 0042527E AT 3841M FM ARP BRG 318DEG. 268FT
+AGL/284FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2784/26</font>
+<br/>
+<i>From:</i>17 AUG 26 09:30  <i>Till:</i>17 NOV 26 22:00 <br/>
+<i>Text:</i>ALL FLT ON AVGAS 100LL PPR. PPR CTC
+INSPECTION(AT)ANTWERPAIRPORT.AERO<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2817/26</font>
+<br/>
+<i>From:</i>19 AUG 26 11:15  <i>Till:</i>19 NOV 26 22:00 <br/>
+<i>Text:</i>RWY 29 PAPI AND TDZ LGT U/S.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2824/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026. PBN
+IMPLEMENTATION. HLDG ANT UPDATED. IAP RNP RWY 11, RNP RWY 29
+UPDATED. RNAV TRANSITIONS TO RWY 29 ANT1A, ANT1B ADDED. IAP ILS Z
+RWY 29 ADDED. ALL STAR PROCEDURES UPDATED. ALL SID PROCEDURES
+UPDATED. SID PUTTY1D ADDED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2841/26</font>
+<br/>
+<i>From:</i>25 AUG 26 05:00  <i>Till:</i>25 NOV 27 16:00 <br/>
+<i>Text:</i>CRANE 511225N 0042807E AT 2085M FM ARP BRG 016DEG. 171FT AGL /
+197FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2952/26</font>
+<br/>
+<i>From:</i>20 OCT 26 05:00  <i>Till:</i>20 OCT 26 21:00 <br/>
+<i>Text:</i>CRANE 511229N 042725E AT 2036M FM ARP BRG 353DEG. 180FT AGL /
+201FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2965/26</font>
+<br/>
+<i>From:</i>29 SEP 26 05:00  <i>Till:</i>02 OCT 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0500-1600<br/>
+<i>Text:</i>MOBILE CRANE 511211N 0042905E AT 2260M FM ARP BRG 047DEG. 226FT
+AGL / 252FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2966/26</font>
+<br/>
+<i>From:</i>30 SEP 26 05:00  <i>Till:</i>30 SEP 28 21:00 <br/>
+<i>Text:</i>CRANE 511211N 0042905E AT 2260M FM ARP BRG 047DEG. 189FT AGL /
+215FT AMSL. ICAO MARKINGS INSTALLED.<br/>
+</p>
+<hr/>
+<a name="EBBRA"></a>
+<br/>
+<b>BRUSSELS / BRUSSELS-NATIONAL</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2431/26</font>
+<br/>
+<i>From:</i>12 JUL 26 21:59  <i>Till:</i>31 OCT 26 21:59 <br/>
+<i>Text:</i>ACFT STAND 400,402,404 HANDLING ONLY ALLOWED BY DAY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2516/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>TWY OUT-7, B1, E6, E7 AND INT BTN THESE TWY CLSD DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2517/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>TWY OUT-6, B3 AND INT BTN THESE TWY RESTRICTED TO ACFT WITH
+WINGSPAN OF MAX 68.6M<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2518/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>EDGE LGT AND SIGNS PARTLY U/S ON NORTH PART OF INT INN-7 WITH 
+OUT-7<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2519/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>MOV OBST AS FM 90M SOUTH OF RWY 07L/25R AXIS BTN RWY 01/19 AND
+TWY B3, EXC IN CAT II/III OPS. MAX 20FT AGL. ICAO DAY AND NIGHT
+MARKED WORK AREA<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2520/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>MOV OBST AS FM 106M SOUTH OF RWY 07L/25R AXIS BTN RWY 01/19 AND
+TWY B3 EXC IN CAT II/III OPS. MAX 40FT AGL. ICAO DAY AND NIGHT
+MARKED WORK AREA<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2521/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>UNSERVICEABILITY MARKERS AS FM 90M SOUTH OF RWY 07L/25R AXIS
+BTN RWY 01/19 AND TWY B3. MAX 3FT AGL. ICAO DAY AND NIGHT MARKED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2522/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>MOV OBST AS FM 90M WEST OF RWY 01/19 AXIS BTN RWY 07L/25R AND TWY
+E5, EXC IN CAT II/III OPS. MAX 20FT AGL. ICAO DAY AND NIGHT MARKED
+WORK AREA<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2523/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>MOV OBST AS FM 106M WEST OF RWY 01/19 AXIS BTN RWY 07L/25R AND
+TWY E5 EXC IN CAT II/III OPS. MAX 40FT AGL. ICAO DAY AND NIGHT
+MARKED WORK AREA<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2524/26</font>
+<br/>
+<i>From:</i>19 JUL 26 03:30  <i>Till:</i>19 SEP 26 22:00 <br/>
+<i>Text:</i>UNSERVICEABILITY MARKERS AS FM 90M WEST OF RWY 01/19 AXIS BTN
+RWY 07L/25R AND TWY E5. MAX 3FT AGL. ICAO DAY AND NIGHT MARKED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2678/26</font>
+<br/>
+<i>From:</i>01 AUG 26 04:10  <i>Till:</i>31 OCT 26 21:59 <br/>
+<i>Text:</i>INT BTN TWY OUT-5, OUT-6, INN-5 AND INN-6 CL LIGHTS U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2732/26</font>
+<br/>
+<i>From:</i>06 AUG 26 12:24  <i>Till:</i>16 SEP 26 15:00 <br/>
+<i>Text:</i>RWY 25R ILS U/S DUE TO MAINT. DO NOT USE. FALSE INDICATIONS 
+POSSIBLE. NO IDENT CODE RADIATED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2773/26</font>
+<br/>
+<i>From:</i>14 AUG 26 06:45  <i>Till:</i>PERM<br/>
+<i>Text:</i>NEW COORDINATES AVAILABLE FOR STAND 170: 505417.45N 0042920.65E<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2809/26</font>
+<br/>
+<i>From:</i>19 AUG 26 04:45  <i>Till:</i>PERM<br/>
+<i>Text:</i>TWY A5 RESTRICTED TO MAX ACFT CODE E<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2881/26</font>
+<br/>
+<i>From:</i>24 AUG 26 17:00  <i>Till:</i>09 SEP 26 17:00 <br/>
+<i>Text:</i>TWY A1 RESTRICTED TO MAX ACFT TYPE CODE D. NO PPR.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2902/26</font>
+<br/>
+<i>From:</i>25 AUG 26 10:30  <i>Till:</i>05 OCT 26 22:00 <br/>
+<i>Text:</i>RWY 07L WDI NOT AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2975/26</font>
+<br/>
+<i>From:</i>30 AUG 26 03:30  <i>Till:</i>05 SEP 26 16:00 <br/>
+<i>Text:</i>TWY OUT-5 AND OUT-6 AND INT TWY OUT-5 AND OUT-6 CL 50 PCT U/S.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2982/26</font>
+<br/>
+<i>From:</i>06 SEP 26 07:30  <i>Till:</i>06 SEP 26 12:00 <br/>
+<i>Text:</i>RWY 19 ILS IBM U/S. DO NOT USE, FALSE INDICATIONS POSSIBLE. NO 
+IDENT COD RADIATED<br/>
+</p>
+<hr/>
+<a name="EBCIA"></a>
+<br/>
+<b>CHARLEROI / BRUSSELS SOUTH</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2659/26</font>
+<br/>
+<i>From:</i>30 JUL 26 12:08  <i>Till:</i>30 OCT 26 05:30 EST<br/>
+<i>Text:</i>BUILDING AT 1550M FROM ARP BRG 082DEG, 25M AGL/696FT AMSL. OBST
+LGT U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2865/26</font>
+<br/>
+<i>From:</i>31 AUG 26 04:30  <i>Till:</i>31 OCT 26 04:30 <br/>
+<i>Schedule:</i>MON TUE WED THU H24<br/>
+<i>Text:</i>LATE ARRIVALS EXEMPTIONS NOT PERMITTED AFTER 2230 DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3058/26</font>
+<br/>
+<i>From:</i>14 SEP 26 07:00  <i>Till:</i>14 SEP 26 13:00 <br/>
+<i>Text:</i>VDF CHARLEROI U/S DUE TO MAINT<br/>
+</p>
+<hr/>
+<a name="EBKTA"></a>
+<br/>
+<b>KORTRIJK / WEVELGEM</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2611/26</font>
+<br/>
+<i>From:</i>10 AUG 26 06:00  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>MOBILE CRANE, SOUTH OF RWY, JUST OUTSIDE AD PERIMETER, 120M FM
+CENTERLINE. PSN 504856N 0031220E, 400M FM ARP BRG 210DEG. MAX
+HGT
+30M AGL. ICAO DAY MARKINGS INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2660/26</font>
+<br/>
+<i>From:</i>12 AUG 26 04:00  <i>Till:</i>11 SEP 26 19:00 <br/>
+<i>Text:</i>2 FIXED CRANES BISSEGEM APPROACH RWY24, 504945N 0031503E, BRG
+066DEG 3255M FM ARP, MAX HGT 74M AGL. ICAO DAY AND NIGHT MARKINGS
+INSTALLED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3073/26</font>
+<br/>
+<i>From:</i>05 SEP 26 09:00  <i>Till:</i>05 SEP 26 11:00 <br/>
+<i>Text:</i>ALL ACFT MOV AND FUELING PPR DUE TO LARGE ACFT OPS. CTC EBKT AFIS
+BY TEL +3256362044 OR FREQ 120.255MHZ<br/>
+</p>
+<hr/>
+<a name="EBLGA"></a>
+<br/>
+<b>LIEGE / LIEGE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2148/26</font>
+<br/>
+<i>From:</i>24 JUN 26 10:03  <i>Till:</i>24 SEP 26 10:00 EST<br/>
+<i>Text:</i>RWY 04R/22L SURFACE FRICTION IS 0.5 AT 65KM/H AND 0.45 AT 95KM/H 
+BTN S2 AND S3<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2837/26</font>
+<br/>
+<i>From:</i>20 AUG 26 11:13  <i>Till:</i>31 JAN 27 14:00 <br/>
+<i>Schedule:</i>DAILY 0500-1400<br/>
+<i>Text:</i>E)MOBILE CRANE B14 503808N 0052531E 50M AGL MAX ICAO LGT
+AVBL INSTALLED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3067/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:00  <i>Till:</i>09 SEP 26 13:00 <br/>
+<i>Text:</i>TWY A3 ABM STAND 51E CLSD DUE TO WIP EXC LVP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3071/26</font>
+<br/>
+<i>From:</i>08 SEP 26 05:00  <i>Till:</i>08 SEP 26 13:00 <br/>
+<i>Text:</i>TWY A3 ABM STAND 54 CLSD DUE TO WIP EXC LVP<br/>
+</p>
+<hr/>
+<a name="EBNMA"></a>
+<br/>
+<b>NAMUR / SUARLEE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2935/26</font>
+<br/>
+<i>From:</i>04 SEP 26 07:00  <i>Till:</i>06 SEP 26 20:00 <br/>
+<i>Schedule:</i>DAILY 0700-2000<br/>
+<i>Text:</i>AD CLSD EXCEPT FOR BEST IN SKY<br/>
+</p>
+<hr/>
+<a name="EBOSA"></a>
+<br/>
+<b>OOSTENDE-BRUGGE / OOSTENDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2833/26</font>
+<br/>
+<i>From:</i>17 SEP 26 07:00  <i>Till:</i>17 SEP 26 11:00 EST<br/>
+<i>Text:</i>TRAINING FLT NOT ALLOWED DUE TO ILS MEASUREMENTS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2976/26</font>
+<br/>
+<i>From:</i>30 AUG 26 15:05  <i>Till:</i>30 SEP 26 10:00 EST<br/>
+<i>Text:</i>NO-BREAK SECONDARY SUPPLY NOT AVBL. MAX SWITCH-OVER TIME 15 SEC.<br/>
+</p>
+<hr/>
+<a name="ELLXA"></a>
+<br/>
+<b>LUXEMBOURG / LUXEMBOURG</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">A2072/26</font>
+<br/>
+<i>From:</i>19 JUN 26 07:00  <i>Till:</i>11 SEP 26 17:00 <br/>
+<i>Text:</i>MOBILE CRANE NORTH OF AIRPORT TERMINAL 493833N 0061256E
+030DEG/1.24NM FM ARP. MAX 115FT AGL / 1390FT AMSL. OBSTACLE
+LIMITATION SURFACE PENETRATION 27FT. NO MARKINGS. RED LIGHT AT
+NIGHT.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2476/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:57  <i>Till:</i>PERM<br/>
+<i>Text:</i>RWY 24 LOC ILW 110.700MHZ COVERAGE UP TO 17NM IN SECTOR
+035DEG (LEFT) TO 030DEG (RIGHT) IN RELATION TO RCL AND 
+DISTANCE TO LOC, MNM INTERCEPTION ALT IN THIS AREA 
+3200FT AMSL. REF ELLX AD 2.19. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2477/26</font>
+<br/>
+<i>From:</i>16 JUL 26 09:40  <i>Till:</i>PERM<br/>
+<i>Text:</i>RWY 24 DME ILW CH44X COVERAGE UP TO 17NM IN SECTOR 016DEG 
+(LEFT) TO 035DEG (RIGHT) IN RELATION TO RCL AND DISTANCE 
+TO LOC, MNM INTERCEPTION ALT IN THIS AREA 3200FT AMSL. 
+REF ELLX AD 2.19. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2488/26</font>
+<br/>
+<i>From:</i>16 JUL 26 13:46  <i>Till:</i>15 OCT 26 23:59 EST<br/>
+<i>Text:</i>IDENTS OF RWY 24 LOC ILW 110.700MHZ AND DME ILW CH44X NOT 
+SYNCHRONIZED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2646/26</font>
+<br/>
+<i>From:</i>30 JUL 26 04:00  <i>Till:</i>15 OCT 26 22:00 <br/>
+<i>Schedule:</i>MON THU FRI 0400-2200<br/>
+<i>Text:</i>ELLX NOT AVBL AS EN-ROUTE OR DEST ALTN EXC FOR HOME-BASED
+CARRIERS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2765/26</font>
+<br/>
+<i>From:</i>12 AUG 26 12:10  <i>Till:</i>PERM<br/>
+<i>Text:</i>APN P1 STAND COORDINATES CHANGED DUE TO REVISED STAND MARKINGS:
+V41 493757.71N 0061307.79E
+V43B 493757.57N 0061309.66E
+V43 493756.34N 0061309.83E
+REF AD 2.ELLX-APDC.01. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2814/26</font>
+<br/>
+<i>From:</i>25 AUG 26 06:00  <i>Till:</i>10 SEP 26 14:00 <br/>
+<i>Schedule:</i>DAILY 0600-1400<br/>
+<i>Text:</i>MOBILE CRANE KIRCHBERG 493726N 0060908E 270DEG/2NM FM ARP. MAX
+296FT AGL/1408FT AMSL. OBSTACLE LIMITATION SURFACE PENETRATION 14M.
+RED AND WHITE MARKINGS AND/OR FLAG.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2822/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026.  STAND
+MARKINGS AND COORDINATES ON APRON P1 UPDATED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2901/26</font>
+<br/>
+<i>From:</i>31 AUG 26 21:00  <i>Till:</i>12 SEP 26 04:00 <br/>
+<i>Schedule:</i>MON-FRI 2100-0400<br/>
+<i>Text:</i>TWY B2, E AND F LIMITED DUE TO WIP, AVBL O/R. PN 1HR<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2944/26</font>
+<br/>
+<i>From:</i>27 AUG 26 14:21  <i>Till:</i>27 SEP 26 17:00 <br/>
+<i>Text:</i>RWY 06 ILS U/S DUE WIP. DISREGARD ALL SIGNALS, FALSE INDICATION
+POSSIBLE<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A2989/26</font>
+<br/>
+<i>From:</i>07 SEP 26 05:00  <i>Till:</i>09 SEP 26 19:00 <br/>
+<i>Schedule:</i>DAILY 0500-1900<br/>
+<i>Text:</i>UAS OPERATIONS ABOVE APN P1 FOR AERIAL PHOTOGRAPHY. AVOID
+OVERFLYING APN P1. UAS OPERATIONS SUBJECT TO ATC APPROVAL. MAX UAS
+ALT 132FT AGL.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>1365FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3062/26</font>
+<br/>
+<i>From:</i>04 SEP 26 10:24  <i>Till:</i>23 OCT 26 14:00 <br/>
+<i>Schedule:</i>MON-FRI 0500-1400<br/>
+<i>Text:</i>RWY 24 WIP IN VCY THR24, PRESENCE OF MEN AND EQUIPMENT. SUP WILL
+BE ISSUED ACCORDINGLY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3063/26</font>
+<br/>
+<i>From:</i>26 OCT 26 06:00  <i>Till:</i>30 JUN 28 15:00 <br/>
+<i>Schedule:</i>MON-FRI 0600-1500<br/>
+<i>Text:</i>RWY 24 WIP IN VCY THR24, PRESENCE OF MEN AND EQUIPMENT. SUP WILL
+BE ISSUED ACCORDINGLY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3072/26</font>
+<br/>
+<i>From:</i>04 SEP 26 13:17  <i>Till:</i>02 OCT 26 15:00 EST<br/>
+<i>Text:</i>RWY 06 PALS CAT I SEQUENCED FLG LGT U/S DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3074/26</font>
+<br/>
+<i>From:</i>04 SEP 26 14:23  <i>Till:</i>09 SEP 26 15:00 <br/>
+<i>Schedule:</i>DAILY 0500-1500<br/>
+<i>Text:</i>2 MOBILE CRANES VCY APN P7 493833N 0061304E 024DEG/1.27NM FM ARP.
+MAX 1445FT AMSL/175FT AGL. OBST LIMITATION SFC PENETRATION 82FT.
+MARKINGS: RED AND WHITE PAINTING AND/OR FLAG. RED FIX LGT AT NIGHT.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3075/26</font>
+<br/>
+<i>From:</i>05 SEP 26 05:00  <i>Till:</i>05 SEP 26 14:00 <br/>
+<i>Text:</i>CRANE ERECTED AT CENTS 493718N 0061104E 180DEG/0.81NM FM ARP. MAX
+1329FT AMSL/197FT AGL. OBST LIMITATION SFC PENETRATION 23FT. TYPE A
+WHITE FLASHING LGT INSTALLED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3079/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>02 OCT 26 14:00 EST<br/>
+<i>Schedule:</i>MON-FRI 0600-1400<br/>
+<i>Text:</i>RWY 06 WIP IN VCY OF THR06. PRESENCE OF MEN AND EQUIPMENT.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3090/26</font>
+<br/>
+<i>From:</i>07 SEP 26 08:00  <i>Till:</i>11 SEP 26 16:00 <br/>
+<i>Text:</i>MOBILE CRANE KIRCHBERG NORTH 493814N 0060946E (1.5NM/320DEG FM 
+THR06), 1528FT AMSL/315FT AGL. OBST LIMITATION SFC PENETRATION 
+167FT. NO MARKINGS. LGT DAY FLG WHITE, NIGHT FIX RED<br/>
+</p>
+<hr/>
+<a name="EBBUB"></a>
+<br/>
+<b>BRUSSELS FIR Series B</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0352/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:11  <i>Till:</i>01 OCT 26 05:11 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0232 0253 0306 0308 0310 0311 0323 0347 0348 0349
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<a name="EBDYB"></a>
+<br/>
+<b></b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0323/26</font>
+<br/>
+<i>From:</i>19 AUG 26 15:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>HELIPORT PERM CLSD. AIP WILL BE AMDT ACCORDINGLY.<br/>
+</p>
+<hr/>
+<a name="EBDZB"></a>
+<br/>
+<b>DEINZE / DE GROOTE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0253/26</font>
+<br/>
+<i>From:</i>13 JUL 26 08:28  <i>Till:</i>13 OCT 26 08:30 EST<br/>
+<i>Text:</i>HLP CLSD<br/>
+</p>
+<hr/>
+<a name="EBLEB"></a>
+<br/>
+<b>LEOPOLDSBURG / BEVERLO</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0310/26</font>
+<br/>
+<i>From:</i>15 SEP 26 06:06  <i>Till:</i>25 SEP 26 12:00 EST<br/>
+<i>Text:</i>CRANES ERECTED 510702N 0051718E, BRG 255DEG 600M FM THR 08, UP TO 
+60M AGL/400FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">B0311/26</font>
+<br/>
+<i>From:</i>12 AUG 26 09:56  <i>Till:</i>08 SEP 26 18:00 <br/>
+<i>Text:</i>CRANES ERECTED 510702N 0051718E, BRG 255DEG 600M FM THR 08, UP TO 
+60M AGL/400FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBMMB"></a>
+<br/>
+<b>MAASMECHELEN</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0308/26</font>
+<br/>
+<i>From:</i>12 AUG 26 07:56  <i>Till:</i>14 OCT 26 23:59 <br/>
+<i>Text:</i>EBMM MAASMECHELEN HELIPORT - AD PERM CLSD. AIP WILL BE AMENDED 
+ACCORDINGLY<br/>
+</p>
+<hr/>
+<a name="EBNMB"></a>
+<br/>
+<b>NAMUR / SUARLEE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0354/26</font>
+<br/>
+<i>From:</i>10 SEP 26 13:00  <i>Till:</i>10 SEP 26 18:00 <br/>
+<i>Text:</i>RWY 06R/24L CLSD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">B0355/26</font>
+<br/>
+<i>From:</i>10 SEP 26 16:30  <i>Till:</i>10 SEP 26 18:06 <br/>
+<i>Text:</i>RWY 06L/24R CLSD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">B0360/26</font>
+<br/>
+<i>From:</i>10 SEP 26 07:00  <i>Till:</i>10 SEP 26 18:00 <br/>
+<i>Text:</i>PRKG AREA 1 CLSD<br/>
+</p>
+<hr/>
+<a name="EBSTB"></a>
+<br/>
+<b>SINT-TRUIDEN / BRUSTEM</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0306/26</font>
+<br/>
+<i>From:</i>15 NOV 26 09:00  <i>Till:</i>15 NOV 26 12:00 <br/>
+<i>Text:</i>AD CLSD<br/>
+</p>
+<hr/>
+<a name="EBVSB"></a>
+<br/>
+<b>VEURNE / SINT-AUGUSTINUS</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">B0232/26</font>
+<br/>
+<i>From:</i>24 JUN 26 07:37  <i>Till:</i>24 SEP 26 10:00 <br/>
+<i>Text:</i>HLP CLSD DUE TO WIP<br/>
+</p>
+<hr/>
+<a name="EBBUC"></a>
+<br/>
+<b>BRUSSELS FIR Series C</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C1212/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:12  <i>Till:</i>01 OCT 26 05:12 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0222 0223 0224 0225 0227 0228 0640 0726 0727 0728 0759 0767
+          0785 0841 0842 0844 0845 0887 0888 0889 0913 0914 0921 0935
+          0978 1065 1072 1073 1074 1075 1076 1077 1109 1143 1144 1150
+          1153 1159 1160 1166 1167 1177 1179 1180 1181 1182 1183 1184
+          1185 1186 1187 1188 1197 1200 1205 1206 1209 1210 1211
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<a name="EBBEC"></a>
+<br/>
+<b>BEAUVECHAIN</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C0759/26</font>
+<br/>
+<i>From:</i>09 JUN 26 07:24  <i>Till:</i>09 SEP 26 09:00 EST<br/>
+<i>Text:</i>TWY S6 AND N1 CLSD TO FOD SENSITIVE ACFT. GENERAL POOR STATE OF 
+TAXIWAYS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0913/26</font>
+<br/>
+<i>From:</i>07 JUL 26 07:01  <i>Till:</i>07 OCT 26 12:00 EST<br/>
+<i>Text:</i>APRON M DEGRADED USE CAUTION<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0914/26</font>
+<br/>
+<i>From:</i>07 JUL 26 07:22  <i>Till:</i>07 OCT 26 12:00 EST<br/>
+<i>Text:</i>CRANE 504441N 0044613E ELEVATION 60 METERS AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0921/26</font>
+<br/>
+<i>From:</i>08 JUL 26 07:06  <i>Till:</i>PERM<br/>
+<i>Text:</i>RWY 04L/22R AIRCRAFT ARRESTING SYSTEM 4M6 AERAZUR CABLES OK F35 
+OPS WITH BELOW LIMITATIONS 
+MAXIMUM WEIGHT: 45000 LBS
+MAXIMUM ENGAGEMENT SPEED: 150 KTS GS
+AERAZUR 4M6-C CAM SETTING: RED CAM<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0935/26</font>
+<br/>
+<i>From:</i>13 JUL 26 08:53  <i>Till:</i>13 OCT 26 08:30 EST<br/>
+<i>Text:</i>ALL TWY LIGHTS U/S EXC TWY S1 S2 S3 S6 AND S7<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1160/26</font>
+<br/>
+<i>From:</i>09 SEP 26 06:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>AD OPR HR: 09 0630-1700, 10 0630-1730, 11 0630-1730<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1167/26</font>
+<br/>
+<i>From:</i>26 AUG 26 07:00  <i>Till:</i>27 SEP 26 16:00 <br/>
+<i>Text:</i>TWY C3, C4, C5 AND LINE OSCAR CLSD DUE TO WIP<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1233/26</font>
+<br/>
+<i>From:</i>08 SEP 26 06:45  <i>Till:</i>08 SEP 26 08:15 <br/>
+<i>Text:</i>RWY 22R/04L CLS DUE TO OBSTRUCTION<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1234/26</font>
+<br/>
+<i>From:</i>08 SEP 26 06:45  <i>Till:</i>08 SEP 26 08:15 <br/>
+<i>Text:</i>NO STAND-BY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1235/26</font>
+<br/>
+<i>From:</i>12 SEP 26 07:00  <i>Till:</i>12 SEP 26 19:00 <br/>
+<i>Text:</i>AD OPS HR: 0700-1900<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1236/26</font>
+<br/>
+<i>From:</i>13 SEP 26 06:30  <i>Till:</i>13 SEP 26 18:00 <br/>
+<i>Text:</i>AD OPS HR: 0630-1800<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1237/26</font>
+<br/>
+<i>From:</i>10 SEP 26 06:30  <i>Till:</i>14 SEP 26 16:30 <br/>
+<i>Text:</i>NO STAND-BY DUE TO ISA PARKING LIMITATION<br/>
+</p>
+<hr/>
+<a name="EBBLC"></a>
+<br/>
+<b>KLEINE-BROGEL</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C1072/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:32  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>RWY 23L 05R ILS U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1073/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:33  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>RWY 23L/05R ALS U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1074/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:33  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>TWY C4/C2 CLSD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1075/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:33  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>RWY 05R/23L LTD. RWY 05R LDA IS 6374 FT. RWY 23L LDA IS 6377 FT<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1076/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:34  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>RWY 05R/23L DISTANCE MARKERS INCORRECT. RWY 05R SUBTRACT 400FT. 
+RWY 23L SUBTRACT 500FT<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1077/26</font>
+<br/>
+<i>From:</i>04 AUG 26 06:34  <i>Till:</i>04 NOV 26 06:30 EST<br/>
+<i>Text:</i>RWY 05R/23L MOBILE AIRCRAFT ARRESTING SYSTEM INSTALLED. RWY 05R 
+TYPE S500. RWY 23L TYPE BAK12<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1109/26</font>
+<br/>
+<i>From:</i>10 AUG 26 09:45  <i>Till:</i>31 DEC 26 15:30 <br/>
+<i>Text:</i>RWY 23R/05L CLSD DUE TO WORKS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1143/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026.  RWY 05R/23L
+ACFT ARRESTING SYSTEM UPDATED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1144/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026.  RWY 05R/23L
+DECLARED DISTANCES TORA AND LDA UPDATED.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1222/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:30  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>AD STRICTLY PPR.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1223/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:30  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>AD NOT ALLOWED FOR DIV OF NON-BELGIAN ACFT.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1224/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:30  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>AD NO X-SERVICING.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1225/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:30  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>AD NO PRACTICE DIV.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1226/26</font>
+<br/>
+<i>From:</i>09 SEP 26 05:30  <i>Till:</i>09 SEP 26 18:00 <br/>
+<i>Text:</i>KLEINE-BROGEL OVERFLYING PROHIBITED ARP 1NM.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1241/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:30  <i>Till:</i>13 SEP 26 18:00 <br/>
+<i>Text:</i>AD OPR HRS: 07 0630-1530, 08 0630-1530, 09 0630-1700, 10 
+0630-1730, 11 0630-1730, 12 0700-1900 AND 13 0630-1800<br/>
+</p>
+<hr/>
+<a name="EBCVC"></a>
+<br/>
+<b>CHIEVRES</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C0842/26</font>
+<br/>
+<i>From:</i>25 JUN 26 06:28  <i>Till:</i>22 SEP 26 23:59 <br/>
+<i>Text:</i>SPOT 3 CLSD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0844/26</font>
+<br/>
+<i>From:</i>25 JUN 26 06:30  <i>Till:</i>22 SEP 26 23:59 <br/>
+<i>Text:</i>MEN AND EQUIPMENT WORKING ON SPOT 3, 91 FEET (28 METERS) FROM TWY 
+ALPHA CENTERLINE<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0845/26</font>
+<br/>
+<i>From:</i>25 JUN 26 06:32  <i>Till:</i>22 SEP 26 23:59 <br/>
+<i>Text:</i>LOW PROFILE BARRIERS LOCATED ON SPOT 3, 91 FEET (28 METERS) FROM
+TWY ALPHA CENTERLINE<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0887/26</font>
+<br/>
+<i>From:</i>01 JUL 26 08:02  <i>Till:</i>28 SEP 26 23:59 <br/>
+<i>Text:</i>TWY A CLSD.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0888/26</font>
+<br/>
+<i>From:</i>01 JUL 26 08:03  <i>Till:</i>28 SEP 26 23:59 <br/>
+<i>Text:</i>DIRT MOUNDS 10-12FT TALL LOCATED 100FT FROM RWY EDGE ON TWY A.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0889/26</font>
+<br/>
+<i>From:</i>01 JUL 26 08:03  <i>Till:</i>28 SEP 26 23:59 <br/>
+<i>Text:</i>CONSTRUCTION FENCE 6FT TALL LOCATED 100FT FROM RWY EDGE ON TWY A.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0978/26</font>
+<br/>
+<i>From:</i>20 JUL 26 11:53  <i>Till:</i>17 OCT 26 23:59 <br/>
+<i>Text:</i>LANDING ZONE CHARLIE AND CHIEVRES DROP ZONE CLSD UFN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1180/26</font>
+<br/>
+<i>From:</i>05 SEP 26 07:25  <i>Till:</i>05 SEP 26 09:55 <br/>
+<i>Text:</i>AD OPR HRS: 0725-0955<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1210/26</font>
+<br/>
+<i>From:</i>31 AUG 26 11:30  <i>Till:</i>28 NOV 26 23:59 <br/>
+<i>Text:</i>FOLLOW-ME VEHICLE NOT AVAILABLE. ACFT MARSHALLING AVAILABLE.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1213/26</font>
+<br/>
+<i>From:</i>01 SEP 26 08:15  <i>Till:</i>02 OCT 26 10:00 EST<br/>
+<i>Text:</i>DE-ICING NOT AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1216/26</font>
+<br/>
+<i>From:</i>21 SEP 26 07:00  <i>Till:</i>22 SEP 26 23:59 <br/>
+<i>Text:</i>ACFT RESCUE FIREFIGHTING STATUS DOWNGRADED: CAT 1-10 ACFT RED
+(A-10, BQM-34, C-12, C-21, CV-22, C-38, F-15, F-16, F-22, F-117,
+HH-60, T-1, T-37, T-38, T-6, UH-1, UV-18, U-2, C-20, E-9A, B-1,
+C-9, C-22, C-32, C-37, C-40, C-130, E-3, E-8, MH-53, 737, B-2,
+B-52, C-17, E-3A, KC-135, 767, KC-46, E-4, VC-25, 747, 777, KC-10,
+C-5A/B/M, 747 8I).<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1217/26</font>
+<br/>
+<i>From:</i>17 SEP 26 07:00  <i>Till:</i>18 SEP 26 23:59 <br/>
+<i>Text:</i>ACFT RESCUE FIREFIGHTING STATUS DOWNGRADED: CAT 1-10 ACFT RED
+(A-10, BQM-34, C-12, C-21, CV-22, C-38, F-15, F-16, F-22, F-117,
+HH-60, T-1, T-37, T-38, T-6, UH-1, UV-18, U-2, C-20, E-9A, B-1,
+C-9, C-22, C-32, C-37, C-40, C-130, E-3, E-8, MH-53, 737, B-2,
+B-52, C-17, E-3A, KC-135, 767, KC-46, E-4, VC-25, 747, 777, KC-10,
+C-5A/B/M, 747 8I).<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1218/26</font>
+<br/>
+<i>From:</i>24 SEP 26 07:00  <i>Till:</i>24 SEP 26 23:59 <br/>
+<i>Text:</i>ACFT RESCUE FIREFIGHTING STATUS DOWNGRADED: CAT 1-10 ACFT RED
+(A-10, BQM-34, C-12, C-21, CV-22, C-38, F-15, F-16, F-22, F-117,
+HH-60, T-1, T-37, T-38, T-6, UH-1, UV-18, U-2, C-20, E-9A, B-1,
+C-9, C-22, C-32, C-37, C-40, C-130, E-3, E-8, MH-53, 737, B-2,
+B-52, C-17, E-3A, KC-135, 767, KC-46, E-4, VC-25, 747, 777, KC-10,
+C-5A/B/M, 747 8I).<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1219/26</font>
+<br/>
+<i>From:</i>27 SEP 26 07:00  <i>Till:</i>27 SEP 26 23:59 <br/>
+<i>Text:</i>ACFT RESCUE FIREFIGHTING STATUS DOWNGRADED: CAT 1-10 ACFT RED
+(A-10, BQM-34, C-12, C-21, CV-22, C-38, F-15, F-16, F-22, F-117,
+HH-60, T-1, T-37, T-38, T-6, UH-1, UV-18, U-2, C-20, E-9A, B-1,
+C-9, C-22, C-32, C-37, C-40, C-130, E-3, E-8, MH-53, 737, B-2,
+B-52, C-17, E-3A, KC-135, 767, KC-46, E-4, VC-25, 747, 777, KC-10,
+C-5A/B/M, 747 8I).<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1230/26</font>
+<br/>
+<i>From:</i>09 SEP 26 07:00  <i>Till:</i>09 SEP 26 18:10 <br/>
+<i>Text:</i>AD OPR HRS: 1540-1810<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1231/26</font>
+<br/>
+<i>From:</i>11 SEP 26 07:00  <i>Till:</i>11 SEP 26 10:00 <br/>
+<i>Text:</i>AD CLSD. NO SER AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1232/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:00  <i>Till:</i>07 SEP 26 13:30 <br/>
+<i>Text:</i>AD CLSD. NO SER AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1239/26</font>
+<br/>
+<i>From:</i>03 SEP 26 13:47  <i>Till:</i>02 DEC 26 23:59 <br/>
+<i>Text:</i>NO FUEL AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1249/26</font>
+<br/>
+<i>From:</i>08 SEP 26 06:00  <i>Till:</i>08 SEP 26 16:00 <br/>
+<i>Text:</i>AD OPR HR: 0600-1600<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1250/26</font>
+<br/>
+<i>From:</i>10 SEP 26 06:30  <i>Till:</i>10 SEP 26 13:30 <br/>
+<i>Text:</i>AD OPR HR: 0630-1100<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1251/26</font>
+<br/>
+<i>From:</i>05 SEP 26 07:48  <i>Till:</i>05 SEP 26 09:55 <br/>
+<i>Text:</i>RWY 08/26 WET WITH LESS THAN 1/10TH INCH STANDING WATER<br/>
+</p>
+<hr/>
+<a name="EBFNC"></a>
+<br/>
+<b>KOKSIJDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C0640/26</font>
+<br/>
+<i>From:</i>01 AUG 26 04:00  <i>Till:</i>30 OCT 26 18:00 <br/>
+<i>Text:</i>KOKSIJDE CRANE 510544N 0023721E 35M AGL. ICAO DAY AND NGT MARKING
+UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0767/26</font>
+<br/>
+<i>From:</i>01 SEP 26 08:00  <i>Till:</i>30 NOV 26 18:00 <br/>
+<i>Text:</i>DE PANNE CRANE 510544N 0023722E 35M AGL. ICAO DAY AND NIGHT 
+MARKING UNKNOWN<br/>
+</p>
+<hr/>
+<a name="EBFSC"></a>
+<br/>
+<b>FLORENNES</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C0785/26</font>
+<br/>
+<i>From:</i>15 JUN 26 09:58  <i>Till:</i>15 SEP 26 06:30 <br/>
+<i>Text:</i>AIRCRAFT OF 76,000 LBS OR MORE ARE REQUESTED TO USE RWY 26R/08L
+CONCRETE SURFACE FOR 180 TURNS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1065/26</font>
+<br/>
+<i>From:</i>10 SEP 26 06:30  <i>Till:</i>13 SEP 26 18:00 <br/>
+<i>Text:</i>AD OPR HR: 10-11 0630-1730, 12 0700-1900, 13 0630-1800<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1153/26</font>
+<br/>
+<i>From:</i>21 AUG 26 09:11  <i>Till:</i>27 OCT 26 09:00 EST<br/>
+<i>Text:</i>FIRST 200FT OF RWY 26R DEGRADED, RECOMMEND TO AIM FOR THE RWY 
+NUMBER<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1181/26</font>
+<br/>
+<i>From:</i>31 AUG 26 09:00  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>NO TRAINING/PRACTICE DIVERSION ALLOWED DUE TO MILITARY EXERCISE
+DURING EBFS OPENING HOURS<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1183/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>AD OPR HRS: 07 08 0630-1530, 09 0630-1700, 10 11 0630-1730<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1184/26</font>
+<br/>
+<i>From:</i>13 SEP 26 06:30  <i>Till:</i>13 SEP 26 18:00 <br/>
+<i>Text:</i>AD OPR HRS: 0630-1800<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1185/26</font>
+<br/>
+<i>From:</i>12 SEP 26 07:00  <i>Till:</i>12 SEP 26 19:00 <br/>
+<i>Text:</i>AD OPR HRS: 0700-1900<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1186/26</font>
+<br/>
+<i>From:</i>14 SEP 26 06:30  <i>Till:</i>18 SEP 26 15:30 <br/>
+<i>Text:</i>AD OPR HRS: 14 15 0630-2200, 16 17 18 0630-1530<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1187/26</font>
+<br/>
+<i>From:</i>21 SEP 26 06:30  <i>Till:</i>22 SEP 26 22:00 <br/>
+<i>Text:</i>AD OPR HRS 21 22 0630-1530<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1188/26</font>
+<br/>
+<i>From:</i>23 SEP 26 06:30  <i>Till:</i>23 SEP 26 15:30 <br/>
+<i>Text:</i>AD CLSD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1242/26</font>
+<br/>
+<i>From:</i>04 SEP 26 08:49  <i>Till:</i>04 DEC 26 09:00 EST<br/>
+<i>Text:</i>FIXED CRANE 501413N 0043858E AT MAX HEIGHT OF 30M. NO ICAO MARKING<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1244/26</font>
+<br/>
+<i>From:</i>04 SEP 26 13:52  <i>Till:</i>18 SEP 26 15:30 <br/>
+<i>Text:</i>RWY 26L/08R CLSD DUE TO WIP<br/>
+</p>
+<hr/>
+<a name="EBWEC"></a>
+<br/>
+<b>WEELDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">C0223/26</font>
+<br/>
+<i>From:</i>07 SEP 26 05:00  <i>Till:</i>07 SEP 26 17:00 <br/>
+<i>Text:</i>AD CLSD. HIGH-SPEED DRIVING EXERCISE ON BOTH RWY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0224/26</font>
+<br/>
+<i>From:</i>10 SEP 26 05:00  <i>Till:</i>10 SEP 26 17:00 <br/>
+<i>Text:</i>AD CLSD. HIGH-SPEED DRIVING EXERCISE ON BOTH RWY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0225/26</font>
+<br/>
+<i>From:</i>14 SEP 26 05:00  <i>Till:</i>23 SEP 26 17:00 <br/>
+<i>Schedule:</i>MON-WED 0500-1700<br/>
+<i>Text:</i>AD CLSD. HIGH-SPEED DRIVING EXERCISE ON BOTH RWY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0227/26</font>
+<br/>
+<i>From:</i>28 SEP 26 05:00  <i>Till:</i>27 OCT 26 17:00 <br/>
+<i>Schedule:</i>MON-FRI 0500-1700<br/>
+<i>Text:</i>AD CLSD. HIGH-SPEED DRIVING EXERCISE ON BOTH RWY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C0228/26</font>
+<br/>
+<i>From:</i>02 NOV 26 00:00  <i>Till:</i>20 NOV 26 23:59 <br/>
+<i>Schedule:</i>MON-FRI H24<br/>
+<i>Text:</i>AD AVBL FOR PARTICIPATING ACFT ONLY DUE TO MIL EXERCISE.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">C1150/26</font>
+<br/>
+<i>From:</i>01 NOV 26 06:30  <i>Till:</i>01 NOV 26 12:00 <br/>
+<i>Text:</i>AD CLSD. CYCLING EVENT CROSSING BOTH RWY.<br/>
+</p>
+<hr/>
+<a name="EBBUD"></a>
+<br/>
+<b>BRUSSELS FIR Series D</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0420/26</font>
+<br/>
+<i>From:</i>15 JUL 26 15:35  <i>Till:</i>PERM<br/>
+<i>Text:</i>MINIMUM RADAR VECTORING ALTITUDE RAISED TO 4000 FT AMSL PSN
+494841N 0055052E RADIUS 3 NM WITHIN LUXEMBOURG TMA ONE A. REF ELLX
+AD 2.24 AD 2.ELLX-ATCSMAC.01. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0467/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026. REF GEN 1.7
+DATA NON-COMPLIANT WITH EUROPEAN COMMISSION REGULATION (EU)
+2017/373: DATA LIMITATIONS REGARDING AERONAUTICAL DATA PUBLISHED
+UNDER THE RESPONSIBILITY OF AIS LUXEMBOURG UPDATED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0476/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:12  <i>Till:</i>01 OCT 26 05:12 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0351 0420 0426 0427 0428 0432 0445 0449 0450 0451 0455 0456
+          0459 0460 0461 0462 0465 0466 0467 0472 0473 0475
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0477/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>STEENOKKERZEEL ATCC OPR HR: MON-TUE 0630-1530, WED 0630-1700,
+THU-FRI 0630-1730<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0479/26</font>
+<br/>
+<i>From:</i>07 SEP 26 23:00  <i>Till:</i>08 SEP 26 00:30 <br/>
+<i>Text:</i>CPDLC (CONTROLLER-PILOT DATALINK COMMUNICATION) AT MAASTRICHT UAC
+NOT AVBL.<br/>
+</p>
+<hr/>
+<a name="EBAWD"></a>
+<br/>
+<b>ANTWERPEN / DEURNE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0455/26</font>
+<br/>
+<i>From:</i>11 AUG 26 11:52  <i>Till:</i>01 OCT 26 00:00 <br/>
+<i>Text:</i>IAP RWY11 LPV INCREASED OCA CAT A: 354FT, CAT B: 366FT, CAT C: 
+378FT<br/>
+</p>
+<hr/>
+<a name="EBBED"></a>
+<br/>
+<b>BEAUVECHAIN</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0432/26</font>
+<br/>
+<i>From:</i>29 JUL 26 09:16  <i>Till:</i>07 OCT 26 08:00 EST<br/>
+<i>Text:</i>IAP RWY 22L INCREASED MINIMA FOR:
+TACAN CAT A 730-1,5 414 (500-1,5/2,2)LNAV CAT A,B,H 720-1,5 404 
+(500-1,5/2,1) LNAV CAT C 720-1,8 404 (500-1,8/2,1)
+ASR CAT A, B 800-1,5 484 (500-1,5/2,6)
+ASR CAT C 800-2,3 484 (500-2,3/2,6) DUE TO CRANES ON AD<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0449/26</font>
+<br/>
+<i>From:</i>10 AUG 26 10:30  <i>Till:</i>28 OCT 26 10:00 EST<br/>
+<i>Text:</i>IAP RNP RWY04L NOT AVBL FOR LPV, LNAV/VNAV APCH<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0450/26</font>
+<br/>
+<i>From:</i>10 AUG 26 10:31  <i>Till:</i>28 OCT 26 10:00 EST<br/>
+<i>Text:</i>IAP RNP RWY04R NOT AVBL FOR LPV, LNAV/VNAV APCH<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0451/26</font>
+<br/>
+<i>From:</i>10 AUG 26 10:32  <i>Till:</i>28 OCT 26 10:00 EST<br/>
+<i>Text:</i>IAP RNP RWY22L NOT AVBL FOR LPV, LNAV/VNAV APCH<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0459/26</font>
+<br/>
+<i>From:</i>19 AUG 26 13:01  <i>Till:</i>07 OCT 26 08:00 EST<br/>
+<i>Text:</i>IAP RWY 04L INCREASED MINIMA FOR:
+LOC CAT A, B, C, D, HPMA 850-1,7 501 (600-1,7/2,7)
+TACAN Y CAT A 850-1,5 501 (600-1,5/2,7)
+TACAN Z CAT A, B, C, D, HPMA 850-1,7 501 (600-1,7/2,7)
+LNAV CAT A, B, C, H 830 - 1,6 481 (500-1,6/2,6)
+ASR CAT A, B ,C, D 850 - 1,7 501 (600-1,7/2,7) DUE TO CRANES ON AD<br/>
+</p>
+<hr/>
+<a name="EBBRD"></a>
+<br/>
+<b>BRUSSELS / BRUSSELS-NATIONAL</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0351/26</font>
+<br/>
+<i>From:</i>23 JUN 26 20:42  <i>Till:</i>30 SEP 26 20:00 EST<br/>
+<i>Text:</i>IAP VOR RWY 07L NOT AVBL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0426/26</font>
+<br/>
+<i>From:</i>28 JUL 26 13:30  <i>Till:</i>25 OCT 26 07:00 EST<br/>
+<i>Schedule:</i>DAILY 1500-0700<br/>
+<i>Text:</i>IAP RNP RWY07L LPV INCREASED OCA CAT A: 428FT, CAT B: 438FT, CAT 
+C: 447FT, CAT D: 457FT<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0427/26</font>
+<br/>
+<i>From:</i>28 JUL 26 13:37  <i>Till:</i>25 OCT 26 07:00 EST<br/>
+<i>Schedule:</i>DAILY 1500-0700<br/>
+<i>Text:</i>IAP RNP RWY07L LNAV/VNAV INCREASED OCA CAT A: 428FT, CAT B: 
+438FT, CAT C: 447FT, CAT D: 457FT.
+REF AIP SUP 044/2026, INCREASED OCA IAP RNP RWY07L LNAV/VNAV 
+DEPICTED IN THE SUP REFER ONLY TO THE PERIOD 1500-0700<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0428/26</font>
+<br/>
+<i>From:</i>28 JUL 26 13:49  <i>Till:</i>25 OCT 26 15:00 EST<br/>
+<i>Schedule:</i>DAILY 0700-1500<br/>
+<i>Text:</i>IAP RNP RWY07L LNAV/VNAV INCREASED OCA CAT A: 456FT, CAT B: 
+466FT, CAT C: 475FT, CAT D: 485FT.
+IAP RNP RWY07L LPV INCREASED OCA CAT A: 456FT, CAT B: 466FT, CAT C: 
+475FT, CAT D: 485FT<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0465/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026.  SID CIV2R,
+CIV3U, CIV3Q WITHDRAWN.<br/>
+</p>
+<hr/>
+<a name="EBCID"></a>
+<br/>
+<b>CHARLEROI / BRUSSELS SOUTH</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0456/26</font>
+<br/>
+<i>From:</i>11 AUG 26 11:53  <i>Till:</i>01 OCT 26 00:00 <br/>
+<i>Text:</i>IAP RNP RWY06 INCREASED OCA LPV CAT A: 894FT, CAT B: 902FT, CAT 
+C: 910FT, CAT D: 919FT<br/>
+</p>
+<hr/>
+<a name="EBFND"></a>
+<br/>
+<b>KOKSIJDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0462/26</font>
+<br/>
+<i>From:</i>19 AUG 26 13:30  <i>Till:</i>19 NOV 26 10:00 EST<br/>
+<i>Text:</i>IAP RWY 29 INCREASED MINIMA FOR: LPV CAT A, B, C 338 -1,3 327
+(400-1,3/1,8) GLIDE SLOPE 3.00DEG<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0466/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026. REF IAC.02,
+IAC.04 CAUTION UPDATED. REF IAC.03 EBR24B, EBR25, LFR616L AND
+LFR616H ADDED.<br/>
+</p>
+<hr/>
+<a name="EBFSD"></a>
+<br/>
+<b>FLORENNES</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0460/26</font>
+<br/>
+<i>From:</i>19 AUG 26 13:30  <i>Till:</i>19 NOV 26 10:00 EST<br/>
+<i>Text:</i>IAP RWY 08R INCREASED MINIMA FOR: LPV CAT A, B, C, D 1376 -2,2 
+475(500-2,2/2,5) GLIDE SLOPE 3.00DEG<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0461/26</font>
+<br/>
+<i>From:</i>19 AUG 26 13:30  <i>Till:</i>19 NOV 26 10:00 EST<br/>
+<i>Text:</i>IAP RWY 26L INCREASED MINIMA FOR: LPV CAT A, B, C, D 1229 -1,4
+326(400-1,4/1,7) GLIDE SLOPE 3.00DEG<br/>
+</p>
+<hr/>
+<a name="EBLGD"></a>
+<br/>
+<b>LIEGE / LIEGE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0445/26</font>
+<br/>
+<i>From:</i>10 AUG 26 07:00  <i>Till:</i>01 JUN 27 16:00 EST<br/>
+<i>Schedule:</i>DAILY 0700-1600<br/>
+<i>Text:</i>IAP RNP RWY04R LNAV/VNAV INCREASED OCA CAT A: 910FT, CAT B: 
+920FT, CAT C: 930FT, CAT D: 940FT. IAP RNP RWY04R LPV INCREASED OCA 
+CAT A: 910FT, CAT B: 920FT, CAT C: 930FT, CAT D: 940FT. AIP SUP WILL 
+BE ISSUED ACCORDINGLY<br/>
+</p>
+<hr/>
+<a name="ELLXD"></a>
+<br/>
+<b>LUXEMBOURG / LUXEMBOURG</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">D0472/26</font>
+<br/>
+<i>From:</i>21 AUG 26 13:18  <i>Till:</i>PERM<br/>
+<i>Text:</i>IAP RNP LNAV/VNAV RWY 06 INCREASED OCA (OCH). CAT D: 1546FT
+(387FT), CAT C: 1536FT (377FT), CAT B: 1470FT (311FT), CAT A:
+1460FT (301FT). REF ELLX AD 2.24 AD 2.ELLX-IAC.05. AIP WILL BE
+AMENDED ACCORDINGLY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0480/26</font>
+<br/>
+<i>From:</i>05 SEP 26 05:00  <i>Till:</i>05 SEP 26 14:00 <br/>
+<i>Text:</i>IAP RNP LNAV/VNAV RWY 06 INCREASED OCA (OCH). CAT B: 1483FT
+(325FT), CAT A: 1474 (316FT). REF NOTAM D0472/26.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0481/26</font>
+<br/>
+<i>From:</i>05 SEP 26 05:00  <i>Till:</i>05 SEP 26 14:00 <br/>
+<i>Text:</i>IAP LOC RWY 06 INCREASED OCA (OCH). ALL CAT: 1510FT (350FT).<br/>
+</p>
+<hr/>
+<a name="EBBUE"></a>
+<br/>
+<b>BRUSSELS FIR Series E</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">E0045/26</font>
+<br/>
+<i>From:</i>16 APR 26 00:00  <i>Till:</i>31 DEC 26 23:59 <br/>
+<i>Text:</i>RADIO ALTIMETER INTERFERENCE POSS DUE TO EMSA UAS FLT. REF SUP
+011/2026 AND SUP 020/2026. CHECK ACT WITH OOSTENDE APP AND BRUSSELS
+FIC.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">E0146/26</font>
+<br/>
+<i>From:</i>24 SEP 26 07:30  <i>Till:</i>24 SEP 26 13:00 <br/>
+<i>Text:</i>COSTA DVOR/DME COA FREQ 110.05MHZ/CH37Y U/S. FALSE RADIATIONS 
+POSSIBLE. DO NO USE.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">E0149/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:13  <i>Till:</i>01 OCT 26 05:13 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0045 0133 0139 0143 0144 0146 0147
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<a name="EBAWE"></a>
+<br/>
+<b>ANTWERPEN / DEURNE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">E0143/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026. ANTWERPEN
+NDB ONW WITHDRAWN.<br/>
+</p>
+<hr/>
+<a name="EBCVE"></a>
+<br/>
+<b>CHIEVRES</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">E0139/26</font>
+<br/>
+<i>From:</i>11 AUG 26 13:35  <i>Till:</i>08 NOV 26 23:59 <br/>
+<i>Text:</i>CHIEVRES AD DOES NOT HAVE AN ATIS FREQ. DISREGARD ATIS FREQ 
+MENTIONNED IN FLIGHT INFORMATION PUBLICATION 'FLIP'<br/>
+</p>
+<hr/>
+<a name="EBOSE"></a>
+<br/>
+<b>OOSTENDE-BRUGGE / OOSTENDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">E0147/26</font>
+<br/>
+<i>From:</i>28 SEP 26 07:00  <i>Till:</i>28 SEP 26 10:00 <br/>
+<i>Text:</i>EBOS ATIS 126.130 MHZ U/S DUE TO MAINT<br/>
+</p>
+<hr/>
+<a name="EBBUF"></a>
+<br/>
+<b>BRUSSELS FIR Series F</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F1770/26</font>
+<br/>
+<i>From:</i>04 SEP 26 07:00  <i>Till:</i>06 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0700-1600<br/>
+<i>Text:</i>BASTOGNE PSN 0500240N 0054715E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F1858/26</font>
+<br/>
+<i>From:</i>23 JUN 26 12:00  <i>Till:</i>22 SEP 26 18:00 <br/>
+<i>Text:</i>SAINT-LUC MAST 505113N 0042656E 97M AGL. ICAO DAY AND NGT MARKING
+UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F1861/26</font>
+<br/>
+<i>From:</i>05 SEP 26 07:00  <i>Till:</i>05 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0700-1600<br/>
+<i>Text:</i>HAVAY PSN 502110N 0035953E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F1863/26</font>
+<br/>
+<i>From:</i>12 SEP 26 07:00  <i>Till:</i>13 SEP 26 17:00 <br/>
+<i>Schedule:</i>DAILY 0700-1700<br/>
+<i>Text:</i>HAVAY PSN 502110N 0035953E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2010/26</font>
+<br/>
+<i>From:</i>12 SEP 26 07:00  <i>Till:</i>13 SEP 26 17:00 <br/>
+<i>Schedule:</i>DAILY 0700-1700<br/>
+<i>Text:</i>BOUGNIES PSN 502335N 0035623E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2110/26</font>
+<br/>
+<i>From:</i>13 JUL 26 12:02  <i>Till:</i>13 OCT 26 12:00 EST<br/>
+<i>Text:</i>KRUISEM BEAULIEU WIND TURBINE 505401N 0032837E 200M AGL OBST LGT 
+U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2141/26</font>
+<br/>
+<i>From:</i>27 SEP 26 08:00  <i>Till:</i>27 SEP 26 17:00 <br/>
+<i>Text:</i>MACON 500336N 0041313E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2175/26</font>
+<br/>
+<i>From:</i>02 SEP 26 06:00  <i>Till:</i>11 SEP 26 14:00 <br/>
+<i>Schedule:</i>02 07 11 0600-1400<br/>
+<i>Text:</i>TSA36-FLAWINNE ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2259/26</font>
+<br/>
+<i>From:</i>07 SEP 26 11:00  <i>Till:</i>08 SEP 26 06:59 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'BOX SPA' ESTABLISHED 502846N 
+0055009E RADIUS 01NM FOR MIL UAS ACT, WITHIN VISUAL LINE OF SIGHT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2354/26</font>
+<br/>
+<i>From:</i>10 AUG 26 00:00  <i>Till:</i>06 NOV 26 23:59 <br/>
+<i>Schedule:</i>EVERY MON-FRI H24<br/>
+<i>Text:</i>EBR67 NIVELLES ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>400FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2382/26</font>
+<br/>
+<i>From:</i>17 AUG 26 06:00  <i>Till:</i>PERM<br/>
+<i>Text:</i>LOMMEL CHIMNEY 511246N 0051736E 100M AGL. AIP WILL BE AMENDED 
+ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2384/26</font>
+<br/>
+<i>From:</i>12 AUG 26 06:00  <i>Till:</i>PERM<br/>
+<i>Text:</i>MOURCOURT THREE WIND TURBINES 503908N 0032739E - 503913N 0032808E 
+- 503915N 0032829E 150M AGL. AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2385/26</font>
+<br/>
+<i>From:</i>16 AUG 26 06:00  <i>Till:</i>PERM<br/>
+<i>Text:</i>CHASTRES FOUR WIND TURBINES 501643N 0042720E - 501643N 
+0042749E - 501634N 0042738E - 501633N 0042707E 130M AGL.
+AIP WILL BE AMENDED ACCORDINGLY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2397/26</font>
+<br/>
+<i>From:</i>06 AUG 26 15:07  <i>Till:</i>05 NOV 26 23:59 EST<br/>
+<i>Text:</i>WAVRE TV MAST 504427N 0043517E 243M AGL, OBST LGT U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2463/26</font>
+<br/>
+<i>From:</i>06 SEP 26 04:12  <i>Till:</i>20 SEP 26 17:41 <br/>
+<i>Schedule:</i>SEP 06 13 20 SR-SS<br/>
+<i>Text:</i>EBR71-ANTHISNES ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2400FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2464/26</font>
+<br/>
+<i>From:</i>17 OCT 26 06:04  <i>Till:</i>17 OCT 26 16:42 <br/>
+<i>Text:</i>EBR71-ANTHISNES ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2400FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2509/26</font>
+<br/>
+<i>From:</i>10 SEP 26 06:30  <i>Till:</i>10 SEP 26 15:30 <br/>
+<i>Text:</i>TEMPORARY RESERVED AREA (TRA) ESTABLISHED FOR SAR EXERCISE (SAR
+EXER) ABOVE TERRITORIAL WATERS. ACTIVITIES CONDUCTED BY MARITIME
+RESCUE COORDINATION CENTRE (MRCC) IN CLOSE COORDINATION WITH OSTEND
+(EBOS). TRA BOUNDED BY THE FOLLOWING COORDINATES:
+511318N 0022548E - 512457N 0025527E - 512537N 0024818E - 
+512830N 0021648E - 511818N 0022210E - 511606N 0022320E - 
+511318N 0022548E.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2522/26</font>
+<br/>
+<i>From:</i>22 SEP 26 07:50  <i>Till:</i>23 SEP 26 12:15 <br/>
+<i>Schedule:</i>DAILY 0750-0915 1050-1215<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'SINT-JOZEF-OLEN' ESTABLISHED 511500N 
+0045300E - 511500N 0050000E - 510730N 0050000E - 511000N 0045000E - 
+511400N 0045000E - 511500N 0045300E FOR MILITARY CAS
+EXER. AREA PROHIBITED TO NON-PARTICIPATING ACFT.<br/>
+<i>Lower limit:</i>500FT AGL <i>Upper limit:</i>2400FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2529/26</font>
+<br/>
+<i>From:</i>12 SEP 26 08:00  <i>Till:</i>13 SEP 26 17:00 <br/>
+<i>Schedule:</i>DAILY 0800-1700<br/>
+<i>Text:</i>ORP-JAUCHE MODEL ACFT EVENT 503920N 0045721E RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2532/26</font>
+<br/>
+<i>From:</i>19 AUG 26 14:30  <i>Till:</i>13 SEP 26 19:00 <br/>
+<i>Text:</i>WOMMELGEM 511206N 0043043E INCREASED HEL ACT RADIUS 01NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>1000FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2544/26</font>
+<br/>
+<i>From:</i>03 SEP 26 00:00  <i>Till:</i>16 SEP 26 23:59 <br/>
+<i>Text:</i>TRIGGER NOTAM. PERM AIRAC AMDT 009/2026 03 SEP 2026. GLIDER AREA
+WEELDE UPPER LIMIT CHANGED TO 4500 FT AMSL.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2580/26</font>
+<br/>
+<i>From:</i>22 AUG 26 16:48  <i>Till:</i>15 SEP 26 16:00 EST<br/>
+<i>Text:</i>EAST OF SCHIEREN WIND TURBINE CONST SITE HIGH CRANE 494940N
+0060719E. MAX 610FT AGL/1710FT AMSL, RADIUS 0.1NM. MARKINGS NOT 
+AVBL. FIXED RED LGT AT NIGHT, FLASHING WHITE LGT DURING DAY<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2582/26</font>
+<br/>
+<i>From:</i>24 AUG 26 08:11  <i>Till:</i>24 SEP 26 08:00 EST<br/>
+<i>Text:</i>RIEMST ALL WIND TURBINES 504922N 0053341E - 504929N 0053406E - 
+504920N 0053401E 200M AGL, OBST LGT U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2604/26</font>
+<br/>
+<i>From:</i>20 SEP 26 07:00  <i>Till:</i>20 SEP 26 16:00 <br/>
+<i>Text:</i>HAMME MILLE 504751N 0044402E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>900FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2605/26</font>
+<br/>
+<i>From:</i>19 SEP 26 14:00  <i>Till:</i>20 SEP 26 19:00 <br/>
+<i>Schedule:</i>DAILY 1400-1900<br/>
+<i>Text:</i>LOCHRISTI 510527N 0034953E ASCENTS AND EVOLUTIONS OF ABOUT 24
+HOT AIR BALLOONS RADIUS 10NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2631/26</font>
+<br/>
+<i>From:</i>31 AUG 26 09:00  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPORARY SEGREGATED AREA (TSA) 'EBFS1' ESTABLISHED
+501431N 0043844E RADIUS 5NM , DURING EBFS OPENING HOURS, 
+FOR MILITARY EXERCISE. TACTICAL ACTIVATION CAN BE CHECKED 
+WITH EBFS ATC<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2632/26</font>
+<br/>
+<i>From:</i>31 AUG 26 09:00  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPORARY SEGREGATED AREA (TSA) 'EBFS2' ESTABLISHED
+501055N 0043946E RADIUS 3NM, DURING EBFS OPENING HOURS, 
+FOR MILITARY EXERCISE. TACTICAL ACTIVATION CAN BE CHECKED 
+WITH EBFS ATC<br/>
+<i>Lower limit:</i>2500FT AMSL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2633/26</font>
+<br/>
+<i>From:</i>31 AUG 26 09:00  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPORARY SEGREGATED AREA (TSA) 'EBFS3' ESTABLISHED
+501048N 0044708E RADIUS 3NM, DURING EBFS OPENING HOURS, 
+FOR MILITARY EXERCISE. TACTICAL ACTIVATION CAN BE CHECKED 
+WITH EBFS ATC<br/>
+<i>Lower limit:</i>3000FT AMSL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2634/26</font>
+<br/>
+<i>From:</i>31 AUG 26 09:00  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPORARY SEGREGATED AREA (TSA) 'EBFS4' ESTABLISHED
+501040N0045430E RADIUS 03NM, DURING EBFS OPENING HOURS, 
+FOR MILITARY EXERCISE. TACTICAL ACTIVATION CAN BE CHECKED 
+WITH EBFS ATC<br/>
+<i>Lower limit:</i>3000FT AMSL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2635/26</font>
+<br/>
+<i>From:</i>03 SEP 26 07:00  <i>Till:</i>06 SEP 26 18:00 <br/>
+<i>Schedule:</i>DAILY 0700-1800<br/>
+<i>Text:</i>EXTENSION EBR03 SPACC REF SA2026.0368 ESTABLISHED 510423N 
+0050600E - AN ARC OF A CIRCLE, RADIUS 03NM, CENTRED ON 510152N 
+0050836E TRACED CLOCKWISE TO 505920N 0051111E - 505815N 0050830E - 
+AN ARC OF A CIRCLE, RADIUS 03NM, CENTRED ON 510046N 0050555E TRACED 
+CLOCKWISE TO 510317N 0050319E - 510423N 0050600E FOR PJE. ENTRY 
+PROHIBITED UNLESS AUTHORIZED BY 0032 475 400 563<br/>
+<i>Lower limit:</i>4000FT AMSL <i>Upper limit:</i>FL135<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2664/26</font>
+<br/>
+<i>From:</i>16 SEP 26 06:30  <i>Till:</i>17 SEP 26 07:30 <br/>
+<i>Schedule:</i>DAILY 0630-0730<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'RUPT'HURE NORTH ' ESTABLISHED 
+504312N 0055748E RADIUS 02NM FOR MILITARY CAS DRONE EXER. AREA 
+PROHIBITED TO NON-PARTICIPATING ACFT.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>3500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2665/26</font>
+<br/>
+<i>From:</i>16 SEP 26 06:30  <i>Till:</i>17 SEP 26 07:30 <br/>
+<i>Schedule:</i>DAILY 0630-0730<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'RUPT'HURE SOUTH' ESTABLISHED 
+503512N 0055818E RADIUS 02NM FOR MILITARY CAS DRONE EXER. AREA 
+PROHIBITED TO NON-PARTICIPATING ACFT.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>3500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2674/26</font>
+<br/>
+<i>From:</i>31 AUG 26 13:48  <i>Till:</i>21 SEP 26 12:00 EST<br/>
+<i>Text:</i>ASSENEDE ALL WIND TURBINES 511238N 0033959E - 511230N 0034039E - 
+511221N 0034125E - 511213N 0034205E - 511204N 0034251E - 511158N 
+0034324E - 511226N 0034202E - 511215N 0034307E 200M AGL, OBST LGT U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2675/26</font>
+<br/>
+<i>From:</i>05 SEP 26 05:06  <i>Till:</i>06 SEP 26 18:21 <br/>
+<i>Schedule:</i>DAILY SR-SS<br/>
+<i>Text:</i>EBR70-POTTES ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2676/26</font>
+<br/>
+<i>From:</i>02 SEP 26 00:00  <i>Till:</i>05 OCT 26 23:59 EST<br/>
+<i>Text:</i>MOMPACH 494528N 0062923E WIND TURBINES EL0051, EL0052, EL0053,
+EL0054, OBST LGT U/S.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2678/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:13  <i>Till:</i>01 OCT 26 05:13 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0409 1564 1583 1682 1732 1770 1858 1861 1863 2010 2110 2141
+          2175 2259 2354 2382 2384 2385 2397 2455 2463 2464 2509 2522
+          2529 2532 2544 2580 2582 2604 2605 2608 2622 2623 2624 2625
+          2626 2627 2628 2629 2630 2631 2632 2633 2634 2635 2654 2658
+          2662 2664 2665 2667 2668 2669 2670 2671 2672 2673 2674 2675
+          2676
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2679/26</font>
+<br/>
+<i>From:</i>06 SEP 26 08:00  <i>Till:</i>06 SEP 26 18:00 <br/>
+<i>Text:</i>LANDEN PSN 504425N 0050641E MODEL ACFT EVENT RADIUS 400M<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>600FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2680/26</font>
+<br/>
+<i>From:</i>01 SEP 26 10:27  <i>Till:</i>06 SEP 26 12:00 EST<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'BAELEN' ESTABLISHED 503148N 0060442E 
+RADIUS 05NM UP TO 4500FT AMSL DUE TO FOREST FIRE. ALL TFC EXCLUDED, 
+EXC OOVST, POLICE, SAR, AMBULANCE AND FIREFIGHTING. EDGG FIR EXCLUDED<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2690/26</font>
+<br/>
+<i>From:</i>04 SEP 26 15:00  <i>Till:</i>06 SEP 26 19:00 <br/>
+<i>Schedule:</i>04 1500-1900, 05 0400-0800 1400-1900, 06 0400-0800 1400-1900<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA)'SINT-NIKLAAS' ESTABLISHED 510952N 
+0040825E RADIUS 3NM FOR ACFT PARTICIPATING TO THE HOT AIR BALLOON 
+EVENT. SAR, STATE, MEDICAL, HUMANITARIAN AND MIL FLT ALLOWED. ALL 
+OTHER ACFT AND REMOTELY PILOTED ACFT SYSTEM (RPAS) PROHIBITED.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2691/26</font>
+<br/>
+<i>From:</i>04 SEP 26 11:00  <i>Till:</i>06 SEP 26 19:30 <br/>
+<i>Schedule:</i>04 1100-1930, 05 0400-0800 1500-1930, 06 0400-0800 1500-1930<br/>
+<i>Text:</i>SINT-NIKLAAS ASCENTS AND EVOLUTIONS OF ABOUT 100 BALLOONS 510952N 
+0040825E RADIUS 10NM.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2698/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 1 LOW' 
+ESTABLISHED 510700N 0020000E - 510604N 0021913E - 511141N 0021951E - 
+511327N 0022546E - 511853N 0021900E - 511948N 0020000E - 510700N 
+0020000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS 
+FLT PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2699/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 1 HIGH' 
+ESTABLISHED 510700N 0020000E - 510604N 0021913E - 511141N 0021951E - 
+511327N 0022546E - 511853N 0021900E - 511948N 0020000E - 510700N 
+0020000E FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS 
+FLT PROHIBITED. REF AIP SUP 032/2026<br/>
+<i>Lower limit:</i>1500FT AMSL <i>Upper limit:</i>3000FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2700/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 2 LOW' 
+ESTABLISHED 513000N 0020000E - 511948N 0020000E - 511853N 0021900E - 
+512819N 0021900E - 513000N 0020000E FOR UAS BEYOND VISUAL LINE OF 
+SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2701/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 3 LOW' 
+ESTABLISHED 512819N 0021900E - 512719N 0023000E - 511820N 0023000E - 
+511853N 0021900E - 512819N 0021900E FOR UAS BEYOND VISUAL LINE OF 
+SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2702/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 4 LOW' 
+ESTABLISHED 512719N 0023000E - 512521N 0025114E - 512114N 0024957E - 
+AN ARC OF CIRCLE, 12.8 NM RADIUS, CENTERED ON 510839N 0024601E AND 
+TRACED COUNTER CLOCKWISE TO 511637N 0023000E - 512719N 0023000E
+FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT 
+PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2703/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 5 LOW' 
+ESTABLISHED 511351N 0022721E AN ARC OF CIRCLE, 12.8 NM RADIUS, 
+CENTERED ON 510839N 0024601E AND TRACED CLOCKWISE TO 511637N 
+0023000E - 511820N 0023000E - 511853N 0021900E - 511327N 0022546E -
+511351N 0022721E FOR UAS BEYOND VISUAL LINE OF SIGHT. 
+NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2705/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 7 LOW' 
+ESTABLISHED 512023N 0024941E - 512114N 0024957E - 512521N 0025114E - 
+512227N 0032103E - 512142N 0031707E - 512231N 0030941E - 512022N 
+0030851E - 511910N 0030450E - 512101N 0025708E - 512023N 0024941E  
+FOR UAS BEYOND VISUAL LINE OF SIGHT. NON-PARTICIPATING UAS FLT 
+PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2706/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 8 LOW' 
+ESTABLISHED 511316N 0022924E - 511351N 0022721E AN ARC OF CIRCLE, 
+12.8 NM RADIUS, CENTERED ON 510839N 0024601E AND 
+TRACED CLOCKWISE TO 512114N 0024957E - 512023N 0024941E - 511958N 
+0024448E - 511316N 0022924E FOR UAS BEYOND VISUAL LINE OF SIGHT. 
+NON-PARTICIPATING UAS FLT PROHIBITED. REF AIP SUP 033/2026<br/>
+<i>Lower limit:</i>500FT AMSL <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2710/26</font>
+<br/>
+<i>From:</i>02 OCT 26 07:00  <i>Till:</i>23 OCT 26 15:00 <br/>
+<i>Schedule:</i>02 09 16 23 0700-1500<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'MIL UAS TRAINING' ESTABLISHED 
+510329N 0052825E - 510406N 0053046E - 510333N 0053101E - 510305N 
+0052834E - 510329N 0052825E FOR MIL UAS ACT, WITHIN VISUAL LINE OF 
+SIGHT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2711/26</font>
+<br/>
+<i>From:</i>05 SEP 26 08:00  <i>Till:</i>06 SEP 26 17:00 <br/>
+<i>Schedule:</i>DAILY 0800-1700<br/>
+<i>Text:</i>EBR68-TONGEREN ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2712/26</font>
+<br/>
+<i>From:</i>03 SEP 26 10:53  <i>Till:</i>05 OCT 26 12:00 EST<br/>
+<i>Text:</i>BEVEREN WIND TURBINE 511631N 0041536E 177M AGL, OBST LGT U/S<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2713/26</font>
+<br/>
+<i>From:</i>17 SEP 26 07:00  <i>Till:</i>17 SEP 26 09:00 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'MARCHE-EN-FAMENNE' ESTABLISHED 
+501630N 0052336E RADIUS 05NM FOR MIL CAS EXERCISE AREA COHEX MEF. 
+PROHIBITED TO NON-PARTICIPATING ACFT. REAL TIME 
+ACTIVATION/COORDINATION VIA AREA MANAGER<br/>
+<i>Lower limit:</i>3500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2723/26</font>
+<br/>
+<i>From:</i>03 SEP 26 15:20  <i>Till:</i>PERM<br/>
+<i>Text:</i>HOSTERT 5 WIND TURBINES: 494832N 0054912E 752FT AGL/2326FT AMSL.
+494833N 0055016E 752FT AGL/2346FT AMSL. 494907N 0055008E 752FT 
+AGL/2369FT AMSL. 494910N 0054813E 752FT AGL/2320FT AMSL. 494806N
+0055308E 683FT AGL/1965FT AMSL. FIXED RED LGT AT NIGHT. REF AIP ENR
+5.4 PARAGRAPH 2. AIP WILL BE AMENDED ACCORDINGLY.<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2724/26</font>
+<br/>
+<i>From:</i>21 SEP 26 06:00  <i>Till:</i>25 SEP 26 18:00 <br/>
+<i>Schedule:</i>DAILY 0600-1800<br/>
+<i>Text:</i>EBR72 - SINT-TRUIDEN 6 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2000FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2725/26</font>
+<br/>
+<i>From:</i>29 SEP 26 06:00  <i>Till:</i>28 DEC 26 16:00 <br/>
+<i>Text:</i>ZELZATE TWO MOBILE CRANES 511207N 0034851E, 511208N 0034856E 40M
+AGL. ICAO DAY AND NGT MARKING UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2726/26</font>
+<br/>
+<i>From:</i>01 OCT 26 06:00  <i>Till:</i>01 OCT 26 18:00 <br/>
+<i>Text:</i>TORHOUT CRANE 510307N 0030613E 60M AGL. ICAO DAY AND NGT MARKING
+UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2727/26</font>
+<br/>
+<i>From:</i>28 SEP 26 06:00  <i>Till:</i>28 SEP 26 18:00 <br/>
+<i>Text:</i>DIEST MOBILE CRANE 505935N 0050558E 95M AGL. ICAO DAY AND NGT
+MARKING UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2728/26</font>
+<br/>
+<i>From:</i>05 SEP 26 07:30  <i>Till:</i>06 SEP 26 10:30 <br/>
+<i>Schedule:</i>DAILY 0730-1030<br/>
+<i>Text:</i>HTA10A- COASTAL HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2729/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>07 SEP 26 12:30 <br/>
+<i>Schedule:</i>0730-0845 1130-1230<br/>
+<i>Text:</i>EBD26-ARDENNES 05 ACT<br/>
+<i>Lower limit:</i>1000FT AGL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2730/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>07 SEP 26 16:30 <br/>
+<i>Text:</i>HTA01-ARDENNES 01 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>250FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2731/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>07 SEP 26 16:30 <br/>
+<i>Text:</i>HTA08-HANNUT HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2732/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>07 SEP 26 22:00 <br/>
+<i>Schedule:</i>0730-1030 1830-2200<br/>
+<i>Text:</i>HTA10A- COASTAL HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2733/26</font>
+<br/>
+<i>From:</i>07 SEP 26 18:30  <i>Till:</i>07 SEP 26 21:00 <br/>
+<i>Text:</i>HTA12A-HERK-DE-STAD HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2734/26</font>
+<br/>
+<i>From:</i>07 SEP 26 18:30  <i>Till:</i>07 SEP 26 21:00 <br/>
+<i>Text:</i>HTA12B-SINT-TRUIDEN HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2735/26</font>
+<br/>
+<i>From:</i>07 SEP 26 18:30  <i>Till:</i>07 SEP 26 21:00 <br/>
+<i>Text:</i>HTA13-WESTERLO HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2736/26</font>
+<br/>
+<i>From:</i>07 SEP 26 18:30  <i>Till:</i>07 SEP 26 21:00 <br/>
+<i>Text:</i>HTA14B-GEEL HELICOPTER TRAINING AREA ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2737/26</font>
+<br/>
+<i>From:</i>05 SEP 26 08:00  <i>Till:</i>06 SEP 26 17:00 <br/>
+<i>Schedule:</i>DAILY 0800-1700<br/>
+<i>Text:</i>EBR69-WIEKEVORST ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>1500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2738/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:00  <i>Till:</i>11 SEP 26 17:00 <br/>
+<i>Schedule:</i>07 11 0700-1700<br/>
+<i>Text:</i>EBR62-SINT-TRUIDEN 2 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2000FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">F2739/26</font>
+<br/>
+<i>From:</i>09 SEP 26 07:00  <i>Till:</i>09 SEP 26 17:00 <br/>
+<i>Text:</i>EBR72- SINT-TRUIDEN 6 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2000FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBCVF"></a>
+<br/>
+<b>CHIEVRES</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F2455/26</font>
+<br/>
+<i>From:</i>13 AUG 26 08:09  <i>Till:</i>14 SEP 26 12:00 EST<br/>
+<i>Text:</i>CAMBRON CASTEAU MAST 503455N 0035344E 54M AGL. ICAO DAY AND NGT
+MARKING UNKNOWN<br/>
+</p>
+<hr/>
+<a name="EBDTF"></a>
+<br/>
+<b>DIEST / SCHAFFEN</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F2608/26</font>
+<br/>
+<i>From:</i>01 OCT 26 06:00  <i>Till:</i>04 JAN 27 18:00 EST<br/>
+<i>Text:</i>DIEST MILITARY BARRACKS (PEGAGSUS KAZERNE) TOWER CRANE 505958N 
+0050356E MAX 104FT AGL/31.7M AGL RADIUS 164FT/50M. CRANE JIB WILL 
+NOT INFRINGE ACTIVE DEFENSE DROP ZONE DURING OPERATION. ICAO 
+DAY/NIGHT MARKINGS INSTALLED.<br/>
+</p>
+<hr/>
+<a name="EBFNF"></a>
+<br/>
+<b>KOKSIJDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F2704/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>11 SEP 26 17:30 <br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) OVER NORTH SEA 'AREA 6 HIGH' 
+ESTABLISHED 511141N 0021951E - 510604N 0021913E - 510523N 0023224E - 
+510905N 0024239E - 511145N 0023423E - 511124N 0022612E - 511351N 
+0022721E - 511327N 0022546E - 511141N 0021951E FOR UAS BEYOND VISUAL 
+LINE OF SIGHT. NON-PARTICIPATING UAS FLT PROHIBITED. 
+REF AIP SUP 032/2026<br/>
+<i>Lower limit:</i>2500FT AMSL <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBTNF"></a>
+<br/>
+<b>GOETSENHOVEN</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F1682/26</font>
+<br/>
+<i>From:</i>05 SEP 26 08:00  <i>Till:</i>06 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0800-1600<br/>
+<i>Text:</i>TRA 'GOETSENHOVEN' ESTABLISHED 504654N 0045728E RADIUS 03NM FOR 
+FLY IN GOESTENHOVEN. ENTRY PROHIBITED, UNLESS AUTHORISED BY 
+GOETSENHOVEN RADIO 125.380MHZ.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2500FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBWEF"></a>
+<br/>
+<b>WEELDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">F0409/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:00  <i>Till:</i>11 SEP 26 18:04 <br/>
+<i>Schedule:</i>DAILY 0700-SS<br/>
+<i>Text:</i>GLIDER ACT RADIUS 05NM EXC EHAA FIR. CROSSING OVERHEAD BELOW
+3000FT AGL MUST BE AVOIDED DUE TO WINCH LAUNCHING. CONTACT PRIOR
+ENTERING IS REQUESTED VIA WEELDE RADIO 119.605 MHZ OR WEELDE AIR
+CADETS 118.015 MHZ.<br/>
+<i>Lower limit:</i>SFC <i>Upper limit:</i>4500FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBBUG"></a>
+<br/>
+<b>BRUSSELS FIR Series G</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">G1856/26</font>
+<br/>
+<i>From:</i>26 SEP 26 07:00  <i>Till:</i>27 SEP 26 18:00 <br/>
+<i>Schedule:</i>DAILY 0700-1800<br/>
+<i>Text:</i>MEEUWEN GRUITRODE PJE 510212N 0053121E  RADIUS 04NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL155<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G1957/26</font>
+<br/>
+<i>From:</i>16 SEP 26 08:00  <i>Till:</i>18 SEP 26 16:00 <br/>
+<i>Schedule:</i>DAILY 0800-1600<br/>
+<i>Text:</i>HECHTELSE HEIDE PJE 510620N 0052018E RADIUS 03NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>3500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2076/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:13  <i>Till:</i>01 OCT 26 05:13 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 1856 1924 1957 2020 2028 2070 2071 2072 2073 2074 2075
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2083/26</font>
+<br/>
+<i>From:</i>06 SEP 26 09:15  <i>Till:</i>06 SEP 26 10:15 <br/>
+<i>Text:</i>PLAINE SAPIN PJE 502140N 0052337E RADIUS 02NM<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL075<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2109/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>08 SEP 26 14:00 <br/>
+<i>Schedule:</i>DAILY 0600-1400<br/>
+<i>Text:</i>UAS ZONE - AMAY 503233N 0051848E - 503220N 0051740E - 503144N 
+0051750E - 503154N 0051845E - 503207N 0051854E - 503212N 0051907E - 
+503233N 0051848E ACT WITHIN VISUAL LINE OF SIGHT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>400FT AGL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2110/26</font>
+<br/>
+<i>From:</i>05 SEP 26 06:00  <i>Till:</i>06 SEP 26 15:00 <br/>
+<i>Schedule:</i>DAILY 0600-1500<br/>
+<i>Text:</i>EBR04-ELSENBORN 01 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL105<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2111/26</font>
+<br/>
+<i>From:</i>05 SEP 26 06:30  <i>Till:</i>06 SEP 26 15:30 <br/>
+<i>Schedule:</i>DAILY 0630-1530<br/>
+<i>Text:</i>LFA11-KOKSIJDE TRAINING AREA ACT<br/>
+<i>Lower limit:</i>10FT AMSL <i>Upper limit:</i>500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2112/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>07 SEP 26 12:30 <br/>
+<i>Schedule:</i>0730-0845 1130-1230<br/>
+<i>Text:</i>TSA26A - ARDENNES 01 ACT. 
+GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER 
+COOR BTN BELGA RADAR AND CRNA/NORD<br/>
+<i>Lower limit:</i>FL095 <i>Upper limit:</i>UNL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2113/26</font>
+<br/>
+<i>From:</i>07 SEP 26 07:30  <i>Till:</i>07 SEP 26 12:30 <br/>
+<i>Schedule:</i>0730-0845 1130-1230<br/>
+<i>Text:</i>TSA26B - ARDENNES 04 ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL095<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2114/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>07 SEP 26 15:00 <br/>
+<i>Text:</i>EBR04-ELSENBORN 01 ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL105<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2115/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:00  <i>Till:</i>07 SEP 26 13:00 <br/>
+<i>Text:</i>EBR20-BRASSCHAAT ACT<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL070<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2116/26</font>
+<br/>
+<i>From:</i>07 SEP 26 06:30  <i>Till:</i>07 SEP 26 22:00 <br/>
+<i>Schedule:</i>0630-1530 1830-2200<br/>
+<i>Text:</i>LFA11-KOKSIJDE TRAINING AREA ACT<br/>
+<i>Lower limit:</i>10FT AMSL <i>Upper limit:</i>500FT AMSL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2117/26</font>
+<br/>
+<i>From:</i>07 SEP 26 09:00  <i>Till:</i>07 SEP 26 15:30 <br/>
+<i>Text:</i>EBBUGLD11-GLIDER AREA SAINT-HUBERT ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2118/26</font>
+<br/>
+<i>From:</i>07 SEP 26 09:00  <i>Till:</i>07 SEP 26 15:30 <br/>
+<i>Text:</i>EBBUGLD12-GLIDER AREA LA ROCHE ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<p>
+<font class="ssstitle-bold">G2119/26</font>
+<br/>
+<i>From:</i>07 SEP 26 09:00  <i>Till:</i>07 SEP 26 15:30 <br/>
+<i>Text:</i>EBBUGLD13-GLIDER AREA MALMEDY ACT<br/>
+<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL065<br/>
+</p>
+<hr/>
+<a name="EBBRG"></a>
+<br/>
+<b>BRUSSELS / BRUSSELS-NATIONAL</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">G1924/26</font>
+<br/>
+<i>From:</i>24 AUG 26 06:00  <i>Till:</i>25 SEP 26 15:00 <br/>
+<i>Schedule:</i>MON-FRI 0600-1500<br/>
+<i>Text:</i>TEMPO SEGREGATED AREA (TSA) 'PEUTIE' ESTABLISHED 505607N 0042813E 
+RADIUS 500M FOR UAS ACT IN VISUAL LINE OF SIGHT. STATUS OF THE AREA 
+CAN BE CHECKED WITH BRUSSELS TWR.<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>310FT AMSL<br/>
+</p>
+<hr/>
+<a name="EBLEG"></a>
+<br/>
+<b>LEOPOLDSBURG / BEVERLO</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">G2028/26</font>
+<br/>
+<i>From:</i>09 SEP 26 06:30  <i>Till:</i>13 SEP 26 17:00 <br/>
+<i>Schedule:</i>09-11 0630-1700, 12 0630-2000, 13 0630-1700<br/>
+<i>Text:</i>TRA 'SANICOLE' ESTABLISHED AROUND ARP RADIUS 07NM FOR 
+INTERNATIONAL SANICOLE AIRSHOW 2026. ONLY FOR PARTICIPATING ACFT OR 
+AT ATC DISCRETION. REF SUP 045/2026<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>FL155<br/>
+</p>
+<hr/>
+<a name="EBBUM"></a>
+<br/>
+<b>BRUSSELS FIR Series M</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">M0019/26</font>
+<br/>
+<i>From:</i>10 JUN 26 12:00  <i>Till:</i>09 SEP 26 12:00 <br/>
+<i>Text:</i>WALCOURT MEASUREMENT MAST 501436N 0041939E 56M AGL. ICAO DAY AND 
+NIGHT MARKING UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">M0020/26</font>
+<br/>
+<i>From:</i>16 JUN 26 08:00  <i>Till:</i>15 SEP 26 18:00 <br/>
+<i>Text:</i>ZEEBRUGGE CRANE 512000N 0031313E 27M AGL. ICAO DAY AND NIGHT 
+MARKING UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">M0022/26</font>
+<br/>
+<i>From:</i>13 JUL 26 15:00  <i>Till:</i>12 OCT 26 15:00 <br/>
+<i>Text:</i>OPGLABEEK CRANE 510141N 0053153E 29M AGL. ICAO DAY AND NGT
+MARKING UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">M0030/26</font>
+<br/>
+<i>From:</i>06 SEP 26 00:00  <i>Till:</i>19 SEP 26 23:59 <br/>
+<i>Text:</i>MARCHE-EN-FAMENNE MAST 501735N 0052239E 33M AGL. ICAO NGT MARKING 
+INSTALLED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">M0032/26</font>
+<br/>
+<i>From:</i>31 AUG 26 06:00  <i>Till:</i>30 SEP 26 20:00 <br/>
+<i>Text:</i>TORHOUT CRANE 510307N 0030613E 59M AGL. ICAO DAY AND NGT MARKING
+UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">M0033/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:14  <i>Till:</i>01 OCT 26 05:14 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 0017 0019 0020 0022 0030 0032
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<a name="EBFNM"></a>
+<br/>
+<b>KOKSIJDE</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">M0017/26</font>
+<br/>
+<i>From:</i>17 JUN 26 05:00  <i>Till:</i>PERM<br/>
+<i>Text:</i>PERVIJZE WIND TURBINE 510417N 0024630E 28M AGL. ICAO DAY AND NGT
+MARKING UNKNOWN. AIP WILL BE AMENDED ACCORDINGLY.<br/>
+</p>
+<hr/>
+<br/>
+<table border="0">
+<tr>
+<td><a name="airacamdt"></a>Latest published AIRAC Amdt: /10</td><td> Effective date:-1/26/20</td>
+</tr>
+<tr>
+<td><a name="aipamdt"></a>Latest published AIP Amdt: /9</td><td> Effective date:-0/26/20</td>
+</tr>
+</table>
+<a name="EBBUZ"></a>
+<br/>
+<b>BRUSSELS FIR Series Z</b><a class="sssstitle-bold" href="#top"><img border="0" src="/opersite/resources/images/toparrow2.gif"/></a>
+<p>
+<font class="ssstitle-bold">Z0060/26</font>
+<br/>
+<i>From:</i>01 SEP 26 05:14  <i>Till:</i>01 OCT 26 05:14 EST<br/>
+<i>Text:</i>CHECKLIST
+YEAR=2026 NIL
+ 
+LATEST PUBLICATIONS
+AIP AIRAC AMDT 010/2026 EFFECTIVE DATE 01 OCT 26
+AIP AMDT 009/2026 EFFECTIVE DATE 03 SEP 26
+AIP SUP 055/2026 EFFECTIVE DATE 03 SEP 26
+AIC 006/2026 EFFECTIVE DATE 06 AUG 26
+ 
+AIC CHECKLIST
+AIP IFR
+007/2010 005/2012 013/2012 001/2014 004/2014 006/2014
+007/2014 012/2017 003/2020 001/2021 002/2024 006/2024
+007/2024 010/2024 013/2024 008/2025 009/2025 001/2026
+005/2026 006/2026
+AIP VFR
+NIL
+AIP MIL
+NIL
+ 
+SUP CHECKLIST
+AIP IFR
+001/2022 008/2022 009/2022 013/2022 014/2022 016/2022
+060/2022 019/2023 028/2023 033/2023 070/2023 011/2024
+019/2024 023/2024 039/2024 057/2024 063/2024 003/2025
+005/2025 008/2025 009/2025 010/2025 011/2025 012/2025
+013/2025 024/2025 031/2025 034/2025 036/2025 038/2025
+043/2025 044/2025 045/2025 046/2025 049/2025 050/2025
+054/2025 057/2025 065/2025 074/2025 075/2025 076/2025
+078/2025 079/2025 080/2025 081/2025 084/2025 001/2026
+007/2026 008/2026 011/2026 013/2026 014/2026 016/2026
+017/2026 018/2026 019/2026 020/2026 021/2026 022/2026
+025/2026 026/2026 027/2026 028/2026 029/2026 030/2026
+031/2026 032/2026 033/2026 034/2026 035/2026 036/2026
+037/2026 038/2026 040/2026 041/2026 042/2026 044/2026
+045/2026 046/2026 047/2026 048/2026 049/2026 050/2026
+051/2026 052/2026 053/2026 054/2026 055/2026
+AIP VFR
+NIL
+AIP MIL
+NIL<br/>
+</p>
+<hr/>
+<br/>Please click <a href="/opersite/eaip.forward.main.do" target="_blank">here </a>to consult eAIP</td>
+</tr>
+</table>
+</body>
