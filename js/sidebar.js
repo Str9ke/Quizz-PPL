@@ -86,11 +86,11 @@
       { href: 'difficultes.html', icon: 'zap', label: 'Difficultés' },
       { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' }
     ] },
+    { type: 'link', href: 'syllabus.html', icon: 'clock', label: 'Syllabus' },
     { type: 'group', id: 'suivre', items: [
       { href: 'stats.html', icon: 'barChart', label: 'Stats' },
       { href: 'historique.html', icon: 'calendar', label: 'Historique' },
-      { href: 'search.html', icon: 'search', label: 'Recherche' },
-      { href: 'syllabus.html', icon: 'clock', label: 'Syllabus' }
+      { href: 'search.html', icon: 'search', label: 'Recherche' }
     ] },
     { type: 'group', id: 'references', items: [
       { href: 'fiches.html', icon: 'fileText', label: 'Fiches' },
@@ -136,6 +136,8 @@
 
   function buildHtml(cur) {
     var html = '';
+    var briefingEntry = STRUCTURE.filter(function (e) { return e.type === 'group' && e.id === 'briefing'; })[0];
+    var onBriefing = !!briefingEntry && briefingEntry.items.some(function (it) { return hrefFile(it.href) === cur; });
     STRUCTURE.forEach(function (entry) {
       if (entry.type === 'link') {
         html += linkHtml(entry, cur);
@@ -143,10 +145,15 @@
         html += '<hr class="sidebar-sep">';
       } else if (entry.type === 'group') {
         var containsCurrent = entry.items.some(function (it) { return hrefFile(it.href) === cur; });
+        // "Réviser" et "Suivre" restent dépliés en permanence pour un accès direct à leurs
+        // sous-pages sans clic supplémentaire — sauf sur une page de Briefing, où sa propre
+        // liste (11 onglets) suffit déjà à remplir le menu sans y ajouter le reste.
+        var alwaysOpen = (entry.id === 'reviser' || entry.id === 'suivre') && !onBriefing;
+        var isOpen = containsCurrent || alwaysOpen;
         html += '<details class="sidebar-group"'
           + (entry.featured ? ' data-featured="1"' : '')
           + ' data-group="' + entry.id + '"'
-          + (containsCurrent ? ' open' : '') + '>'
+          + (isOpen ? ' open' : '') + '>'
           + '<summary>' + iconSvg(GROUP_ICONS[entry.id]) + '<span>' + GROUP_LABELS[entry.id] + '</span></summary>'
           + '<div class="sidebar-group-items">'
           + entry.items.map(function (it) { return linkHtml(it, cur); }).join('')
