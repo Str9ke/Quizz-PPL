@@ -117,6 +117,33 @@
       <div id="diffHistoryChartBody"><p style="color:var(--text-secondary);font-size:.85em;margin:0;">Chargement…</p></div>
     </div>
 
+    <!-- Projection statistique du nombre de difficultés restantes -->
+    <div class="home-card" id="diffProjection">
+      <h3 style="margin:0 0 4px;">🔮 Projection</h3>
+      <p style="font-size:.78em;color:var(--text-secondary);margin:0 0 10px;">
+        Simulation (pas une simple règle de trois) : chaque question suit exactement les mêmes règles qu'en vrai —
+        plancher, exigence relevée après 4 ratées, remise à zéro sur un nouvel échec. Estime combien il en resterait
+        chaque jour si tu maintenais ce rythme.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85em;">
+          Questions revues par jour :
+          <input type="number" id="diffProjReviewsPerDay" min="0" value="20" style="width:70px;padding:4px 6px;border-radius:4px;">
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85em;">
+          Taux de réussite estimé :
+          <input type="number" id="diffProjSuccessRate" min="0" max="100" value="75" style="width:60px;padding:4px 6px;border-radius:4px;">%
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.85em;">
+          Jours à projeter :
+          <input type="number" id="diffProjDays" min="1" max="365" value="30" style="width:60px;padding:4px 6px;border-radius:4px;">
+        </label>
+        <button type="button" class="hist-filter-btn hist-filter-quiz" style="font-size:.88em;padding:6px 16px;" onclick="_diffRunProjection()">🔮 Calculer</button>
+      </div>
+      <div id="diffProjResult" style="font-size:.88em;font-weight:600;margin-bottom:10px;"></div>
+      <div id="diffProjChartBody"></div>
+    </div>
+
     <!-- Séance en cours reprenable depuis un autre appareil -->
     <div class="home-card" id="diffResumeBanner" style="display:none;border-color:rgba(255,193,7,.4);"></div>
 
@@ -195,6 +222,7 @@
     let categoryFamily = new Map(); // category -> family (gligli/easa/classique)
     let diffSelectedCategories = new Set(); // catégories cochées dans "Détail par catégorie" (filtre du quiz)
     let diffCountHistoryServer = {}; // { "YYYY-MM-DD": count } — historique du nombre de difficultés, depuis Firestore
+    let diffCfg = { base: 3, elevatedFrom: 4, elevatedPct: 50 }; // mis à jour par diffRecompute(), réutilisé par _diffRunProjection()
 
     function escapeHtml(str) {
       if (!str) return '';
@@ -296,6 +324,9 @@
       document.getElementById('diffThreshold').value = readInt('diffCfgBase', DIFF_CONFIG_DEFAULTS.base);
       document.getElementById('diffElevatedFrom').value = readInt('diffCfgElevatedFrom', DIFF_CONFIG_DEFAULTS.elevatedFrom);
       document.getElementById('diffElevatedPct').value = readInt('diffCfgElevatedPct', DIFF_CONFIG_DEFAULTS.elevatedPct, true);
+      document.getElementById('diffProjReviewsPerDay').value = readInt('diffProjReviewsPerDay', 20, true);
+      document.getElementById('diffProjSuccessRate').value = readInt('diffProjSuccessRate', 75, true);
+      document.getElementById('diffProjDays').value = readInt('diffProjDays', 30);
     }
 
     // _diffRequiredStreak(base, failCount, elevatedFrom, elevatedPct) – Nombre de réussites
@@ -323,6 +354,7 @@
         localStorage.setItem('diffCfgElevatedFrom', elevatedFrom);
         localStorage.setItem('diffCfgElevatedPct', elevatedPct);
       } catch (e) { /* tant pis, retombera sur les défauts la prochaine fois */ }
+      diffCfg = { base: threshold, elevatedFrom, elevatedPct };
 
       const echo = document.getElementById('diffThresholdEcho');
       if (echo) echo.textContent = threshold;
@@ -358,6 +390,7 @@
 
       diffRender();
       _diffRecordDailyCount(diffItems.length);
+      _diffRunProjection();
     };
 
     // _diffRecordDailyCount(count) – Enregistre l'instantané du jour (nombre de difficultés
@@ -442,6 +475,123 @@
       cont.innerHTML = html;
       const scroller = cont.querySelector('.daily-chart-scroll');
       if (scroller) requestAnimationFrame(() => { scroller.scrollLeft = scroller.scrollWidth; });
+    }
+
+    // window._diffRunProjection() – Simulation Monte-Carlo (pas une simple règle de trois) du
+    // nombre de difficultés restantes chaque jour, à rythme de révision et taux de réussite
+    // donnés. Chaque question suit exactement les mêmes règles qu'en vrai (voir
+    // _diffRequiredStreak) : un échec pendant la simulation remet SON compteur à zéro et peut
+    // relever SON exigence, comme un vrai échec le ferait. Moyenne sur plusieurs simulations
+    // indépendantes pour lisser le bruit d'un tirage aléatoire unique — une seule simulation
+    // donnerait une courbe qui saute d'un rechargement à l'autre sans que rien n'ait changé.
+    const DIFF_PROJECTION_RUNS = 150;
+    window._diffRunProjection = function() {
+      const reviewsPerDay = Math.max(0, parseInt(document.getElementById('diffProjReviewsPerDay').value) || 0);
+      const successRatePct = Math.min(100, Math.max(0, parseInt(document.getElementById('diffProjSuccessRate').value) || 0));
+      const days = Math.max(1, Math.min(365, parseInt(document.getElementById('diffProjDays').value) || 30));
+      try {
+        localStorage.setItem('diffProjReviewsPerDay', reviewsPerDay);
+        localStorage.setItem('diffProjSuccessRate', successRatePct);
+        localStorage.setItem('diffProjDays', days);
+      } catch (e) { /* tant pis */ }
+
+      const resultEl = document.getElementById('diffProjResult');
+      const chartEl = document.getElementById('diffProjChartBody');
+
+      if (!diffItems.length) {
+        if (resultEl) resultEl.textContent = '🎉 Aucune difficulté actuelle — rien à projeter.';
+        if (chartEl) chartEl.innerHTML = '';
+        return;
+      }
+      if (reviewsPerDay <= 0) {
+        if (resultEl) resultEl.textContent = 'Indique un nombre de questions revues par jour supérieur à 0.';
+        if (chartEl) chartEl.innerHTML = '';
+        return;
+      }
+
+      const p = successRatePct / 100;
+      // sumRemaining[d] = somme, sur toutes les simulations, du nombre de difficultés restantes
+      // après d jours (d=0 → aujourd'hui, avant toute révision).
+      const sumRemaining = new Array(days + 1).fill(0);
+
+      for (let run = 0; run < DIFF_PROJECTION_RUNS; run++) {
+        const state = diffItems.map(it => ({ failCount: it.failCount, recentStreak: it.recentStreak, cleared: false }));
+        let remaining = state.length;
+        sumRemaining[0] += remaining;
+
+        for (let day = 1; day <= days; day++) {
+          if (remaining > 0) {
+            const pool = [];
+            for (let i = 0; i < state.length; i++) { if (!state[i].cleared) pool.push(i); }
+            const nReview = Math.min(reviewsPerDay, pool.length);
+            // Fisher-Yates partiel : ne mélange que les nReview premières positions nécessaires
+            // pour tirer nReview index DISTINCTS au hasard parmi les difficultés restantes.
+            for (let k = 0; k < nReview; k++) {
+              const j = k + Math.floor(Math.random() * (pool.length - k));
+              const tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+              const s = state[pool[k]];
+              const required = _diffRequiredStreak(diffCfg.base, s.failCount, diffCfg.elevatedFrom, diffCfg.elevatedPct);
+              if (Math.random() < p) {
+                s.recentStreak++;
+                if (s.recentStreak >= required) { s.cleared = true; remaining--; }
+              } else {
+                s.failCount++;
+                s.recentStreak = 0;
+              }
+            }
+          }
+          sumRemaining[day] += remaining;
+        }
+      }
+
+      const avgRemaining = sumRemaining.map(s => s / DIFF_PROJECTION_RUNS);
+
+      // Premier jour où la moyenne passe sous 1 — proxy pour "terminé" (pas forcément dans la
+      // fenêtre projetée si le rythme est insuffisant).
+      let zeroDay = null;
+      for (let d = 0; d <= days; d++) { if (avgRemaining[d] < 1) { zeroDay = d; break; } }
+      if (resultEl) {
+        resultEl.textContent = zeroDay !== null
+          ? `📉 À ce rythme (${reviewsPerDay}/jour, ${successRatePct}% de réussite), plus aucune difficulté d'ici environ ${zeroDay} jour${zeroDay > 1 ? 's' : ''}.`
+          : `📉 À ce rythme, il resterait encore environ ${Math.round(avgRemaining[days])} difficulté(s) après ${days} jours — augmente le rythme ou le taux de réussite pour finir plus vite.`;
+      }
+
+      _diffRenderProjectionChart(avgRemaining);
+    };
+
+    // _diffRenderProjectionChart() – Même famille visuelle que les graphiques d'historique
+    // (classes .daily-chart-* globales dans style.css), mais orientée vers le FUTUR : jour 0
+    // (aujourd'hui) au bord gauche plutôt qu'au bord droit, puisqu'on lit une projection de
+    // gauche (présent) à droite (avenir), à l'inverse d'un historique.
+    function _diffRenderProjectionChart(avgRemaining) {
+      const cont = document.getElementById('diffProjChartBody');
+      if (!cont) return;
+      const maxCount = Math.max(...avgRemaining, 1);
+      const maxBarH = 120;
+      const today = new Date();
+
+      let html = '<div class="daily-chart-scroll"><div class="daily-chart">';
+      avgRemaining.forEach((val, day) => {
+        const rounded = Math.round(val);
+        const h = rounded > 0 ? Math.max(Math.round((rounded / maxCount) * maxBarH), 4) : 2;
+        const d = new Date(today); d.setDate(d.getDate() + day);
+        const dayLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+        let bottomLabel = '';
+        if (day === 0) bottomLabel = 'Auj.';
+        else if (day % 7 === 0) bottomLabel = 'J+' + day;
+        const barColor = day === 0 ? '#667eea' : '#4caf50';
+        const title = (day === 0 ? "Aujourd'hui" : ('Dans ' + day + ' jour' + (day > 1 ? 's' : '') + ' (' + dayLabel + ')'))
+          + ' : ~' + rounded + ' difficulté' + (rounded > 1 ? 's' : '');
+        html += `<div class="daily-bar-col" title="${title}">
+          <div class="daily-bar-count">${rounded}</div>
+          <div class="daily-bar" style="height:${h}px;background:${barColor}"></div>
+          <div class="daily-bar-label">${bottomLabel}</div>
+        </div>`;
+      });
+      html += '</div></div>';
+      cont.innerHTML = html;
+      // Pas de scroll-vers-la-droite ici : jour 0 (aujourd'hui) est déjà au bord gauche, point de
+      // départ naturel de lecture d'une projection.
     }
 
     function _famLabel(fam) {
