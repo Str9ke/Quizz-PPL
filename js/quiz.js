@@ -957,6 +957,20 @@ async function initQuiz() {
       const lsNotes = JSON.parse(localStorage.getItem(lsKey) || '{}');
       Object.keys(lsNotes).forEach(k => { if (!_notesCache[k]) _notesCache[k] = lsNotes[k]; });
     } catch (e) { /* ignore */ }
+    // Rattraper les questions déjà répondues AVANT que ce cache ne soit prêt : afficherQuiz()
+    // affiche la page immédiatement sans attendre Firestore (voir plus haut), donc répondre à
+    // une question pendant que ce chargement réseau est encore en vol laissait sa zone de note
+    // vide — la note existait pourtant bien (l'éditeur, lui, la relit directement depuis
+    // _notesCache et la retrouvait sans problème), elle restait juste jamais affichée tant qu'on
+    // ne cliquait pas de nouveau sur "Publier". Un seul passage suffit : les questions pas
+    // encore répondues au moment où ce cache arrive n'ont pas encore leur noteDisplay créé, donc
+    // rien à rattraper pour elles (handleImmediateAnswer les traitera normalement, cache déjà prêt).
+    Object.keys(_notesCache).forEach(key => {
+      const note = _notesCache[key];
+      if (!note || (!note.text && !note.image)) return;
+      const div = document.getElementById('noteDisplay_' + key);
+      if (div && !div.innerHTML.trim()) _renderNoteDisplay(key, note);
+    });
     afficherBoutonsMarquer();
     updateMarkedCount();
 
