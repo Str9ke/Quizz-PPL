@@ -699,6 +699,79 @@ function initAutoStartCheckbox() {
 // ============================================================
 
 /**
+ * getSrMasteredStreak() – Seuil de réussites CONSÉCUTIVES à partir duquel une question est
+ * considérée acquise et sort du cycle de répétition espacée. Réglable sur la carte
+ * "Programme des prochains jours" de stats.html. Comme getMaxRevisionsPerDay(), l'absence de
+ * réglage (champ vide, ou 0) signifie "désactivé" : aucune question n'est retirée, c'est le
+ * comportement historique, qu'on ne change pas par défaut.
+ * @returns {number|null} le seuil, ou null si désactivé.
+ */
+function getSrMasteredStreak() {
+  const raw = localStorage.getItem('srMasteredStreak');
+  const v = parseInt(raw);
+  return (Number.isFinite(v) && v > 0) ? v : null;
+}
+
+/**
+ * _srStreakCache() – Table {clé: série de réussites consécutives} calculée sur l'historique
+ * chronologique RÉEL (sous-collection history/{key}) et mise en cache par js/stats.js à chaque
+ * visite de la page Statistiques — voir _srRefreshStreakCache() là-bas.
+ *
+ * Pourquoi un cache : l'historique par question est une sous-collection Firestore que seules
+ * stats.js / difficultes.html / historique.html chargent. Le quiz et l'accueil, eux, n'ont que
+ * le document `responses` : sans ce cache ils ne pourraient pas connaître la série réelle d'une
+ * question ratée autrefois puis réussie N fois depuis. Le cache est volontairement local à
+ * l'appareil, exactement comme le réglage srMasteredStreak lui-même (et comme dailyNewTarget,
+ * maxRevisionsPerDay, diffCfg* : tous les réglages de ce type sont per-device dans cette app).
+ */
+function _srStreakCache() {
+  try {
+    const raw = localStorage.getItem('srStreakCache');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : null;
+  } catch (e) { return null; }
+}
+
+/**
+ * _srTrailingStreak(r, key) – Nombre de réussites consécutives à la fin de l'historique d'une
+ * question, par ordre de fiabilité décroissante des sources disponibles :
+ *  1. r.streak — maintenu à chaque réponse par _computeSrEntry() (js/quiz.js) : toujours exact
+ *     et immédiatement à jour, mais absent des entrées répondues avant l'ajout de ce champ ;
+ *  2. le cache d'historique réel rempli par la page Statistiques (voir _srStreakCache) ;
+ *  3. dérivation depuis les compteurs cumulés : une question JAMAIS ratée (failCount === 0) a
+ *     forcément une série égale à son nombre total de réussites — c'est mathématiquement exact,
+ *     et c'est justement le cas de figure le plus courant pour les questions bien acquises.
+ *     Faute de mieux, une question déjà ratée au moins une fois retombe sur 1 (dernière réponse
+ *     réussie) ou 0 : volontairement PRUDENT — sous-estimer la série garde la question dans le
+ *     cycle de révision plutôt que de l'en retirer à tort, et la valeur devient exacte dès sa
+ *     prochaine réponse (r.streak) ou dès la prochaine visite de la page Statistiques (cache).
+ */
+function _srTrailingStreak(r, key) {
+  if (!r) return 0;
+  if (Number.isFinite(r.streak)) return r.streak;
+  if (key) {
+    const cache = _srStreakCache();
+    if (cache && Number.isFinite(cache[key])) return cache[key];
+  }
+  if ((r.failCount || 0) === 0) return r.successCount || 0;
+  return r.status === 'réussie' ? 1 : 0;
+}
+
+/**
+ * _srIsMastered(r, key) – La question a-t-elle atteint le seuil de réussites consécutives
+ * au-delà duquel l'utilisateur ne veut plus la revoir du tout ? Utilisé comme critère de sortie
+ * du cycle SR (voir _isEligibleForSR) : elle disparaît donc à la fois des révisions proposées
+ * ET du programme des prochains jours (js/stats.js), les deux passant par ce même filtre.
+ * Rien n'est écrit ni supprimé : baisser/vider le seuil les fait toutes revenir telles quelles.
+ */
+function _srIsMastered(r, key) {
+  const threshold = getSrMasteredStreak();
+  if (!threshold || !r) return false;
+  return _srTrailingStreak(r, key) >= threshold;
+}
+
+/**
  * _isEligibleForSR() – Une question est éligible à la répétition espacée si :
  * 1) Elle a déjà un nextReview programmé (= elle est dans le cycle SR), OU
  * 2) Elle a déjà été RÉPONDUE (status présent) et est marquée, importante, ou difficile
@@ -709,9 +782,13 @@ function initAutoStartCheckbox() {
  * marked/important conservés) comptait comme "révision due" immédiatement et pour
  * toujours, gonflant artificiellement le compteur "N dues" de l'Objectif du jour avec
  * des questions qui ne sont pas de vraies révisions planifiées.
+ * ... et, depuis le réglage "réussies N fois d'affilée", à condition de ne pas avoir atteint ce
+ * seuil (voir _srIsMastered) : c'est LE point de passage unique qui retire ces questions aussi
+ * bien des sessions de révision que du programme des prochains jours.
  */
-function _isEligibleForSR(r) {
+function _isEligibleForSR(r, key) {
   if (!r) return false;
+  if (_srIsMastered(r, key)) return false;
   // Déjà dans le cycle SR (a été répondue depuis l'activation du SR)
   if (r.nextReview !== undefined && r.nextReview !== null) return true;
   // Répondue par le passé (pré-SR) et marquée/importante/difficile → entre dans le cycle
@@ -737,10 +814,11 @@ function _isDueForReview(r, now) {
   if (!r) return false;
   // Pas encore de nextReview → question éligible jamais planifiée → due immédiatement
   if (r.nextReview === undefined || r.nextReview === null) return true;
-  // nextReview peut être un timestamp Firestore ou un nombre ; _srCapNextReview() normalise et
-  // applique en plus le plafond réglable (getSrMaxIntervalDays), calculé depuis la dernière
-  // réponse réelle (r.timestamp) et non depuis aujourd'hui — voir sa doc.
-  const reviewMs = _srCapNextReview(r);
+  // nextReview peut être un timestamp Firestore ou un nombre
+  let reviewMs = r.nextReview;
+  if (typeof reviewMs === 'object' && reviewMs.seconds) {
+    reviewMs = reviewMs.seconds * 1000;
+  }
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
   return reviewMs <= endOfToday.getTime();
@@ -849,70 +927,6 @@ function getMaxRevisionsPerDay() {
   const raw = localStorage.getItem('maxRevisionsPerDay');
   const v = parseInt(raw);
   return (Number.isFinite(v) && v > 0) ? v : null;
-}
-
-/**
- * getSrMaxIntervalDays() – Plafond volontaire (en jours à partir d'aujourd'hui) sur la date de
- * prochaine révision en répétition espacée, réglable sur la carte "Programme des prochains
- * jours" de stats.html. Comme getMaxRevisionsPerDay(), l'absence de réglage (champ vide ou 0)
- * signifie "illimité" — comportement historique inchangé tant que l'utilisateur ne règle rien.
- * @returns {number|null} le plafond en jours, ou null si illimité.
- */
-function getSrMaxIntervalDays() {
-  const raw = localStorage.getItem('srMaxIntervalDays');
-  const v = parseInt(raw);
-  return (Number.isFinite(v) && v > 0) ? v : null;
-}
-
-/**
- * _srCapNextReview(r) – Applique getSrMaxIntervalDays() à une entrée de réponse complète :
- * si un plafond est réglé et que sa prochaine révision (r.nextReview) dépasse SA DERNIÈRE
- * RÉPONSE RÉELLE (r.timestamp) + N jours, la ramène à cette limite.
- *
- * ATTENTION : le plafond se compte à partir de la dernière réponse, PAS à partir
- * d'aujourd'hui — c'est le point qui a été raté dans une première version de cette fonction.
- * Une question répondue il y a 20 jours avec un plafond de 7 jours doit être considérée en
- * retard DEPUIS 13 jours (20 - 7), donc due DÈS MAINTENANT — pas seulement "due dans 7 jours
- * à partir d'aujourd'hui", ce qui repousserait artificiellement une question déjà ancienne au
- * lieu de la faire remonter immédiatement dans le paquet du jour. C'est exactement le
- * mécanisme qui doit faire apparaître les "vieilles questions" déjà cachées dans les jours à
- * venir (ou déjà en retard) une fois qu'un plafond plus court que leur intervalle réel est réglé.
- *
- * Lecture "effective" uniquement, n'écrit rien nulle part : utilisée à la fois par
- * _isDueForReview() (pour que ces questions redeviennent dues sans attendre leur vraie date),
- * _computeSrForecast() (js/stats.js, mêmes prévisions) et _dueQuestionsSorted() (js/categories.js,
- * même tri). Ne pas réécrire en masse les entrées Firestore existantes garde la manœuvre
- * réversible : si le plafond est augmenté ou retiré plus tard, la planification d'origine
- * (srInterval/nextReview/timestamp réels) est toujours intacte, rien n'a été perdu.
- *
- * Sans timestamp de dernière réponse exploitable (ancienne entrée incomplète), on retombe sur
- * aujourd'hui + N jours faute de mieux — mais c'est le cas résiduel, pas le cas normal.
- */
-function _srCapNextReview(r) {
-  if (!r || r.nextReview === undefined || r.nextReview === null) return r ? r.nextReview : undefined;
-  const maxDays = getSrMaxIntervalDays();
-  if (!maxDays) return r.nextReview;
-  let nextReviewMs = r.nextReview;
-  if (typeof nextReviewMs === 'object' && nextReviewMs.seconds !== undefined) {
-    nextReviewMs = nextReviewMs.seconds * 1000;
-  }
-  const dayMs = 24 * 60 * 60 * 1000;
-  let lastAnsweredMs = null;
-  if (r.timestamp && typeof r.timestamp === 'object' && r.timestamp.seconds !== undefined) {
-    lastAnsweredMs = r.timestamp.seconds * 1000;
-  } else if (typeof r.timestamp === 'number') {
-    lastAnsweredMs = r.timestamp;
-  }
-  let base;
-  if (lastAnsweredMs !== null) {
-    base = lastAnsweredMs;
-  } else {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    base = todayStart.getTime();
-  }
-  const maxAllowed = base + maxDays * dayMs;
-  return Math.min(nextReviewMs, maxAllowed);
 }
 
 /**

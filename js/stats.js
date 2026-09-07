@@ -702,6 +702,10 @@ async function initStats() {
     } catch (e) {
       console.warn('[initStats] chargement historique (répartition maîtrise) échoué:', e);
     }
+    // Rafraîchir le cache des séries de réussites consécutives pendant qu'on a l'historique réel
+    // sous la main : c'est ce qui permet au réglage "ne plus revoir après N réussites d'affilée"
+    // de s'appliquer aussi au quiz et à l'accueil, qui ne chargent pas cette sous-collection.
+    if (typeof _srRefreshStreakCache === 'function') _srRefreshStreakCache(masteryHistoryMap);
     const masteryBreakdown = _computeMasteryBreakdown(questions, data.responses, masteryHistoryMap);
 
     afficherStats(groupsData, globalStats, masteryBreakdown);
@@ -1011,6 +1015,35 @@ function _trailingSuccessStreakForStats(log) {
     else break;
   }
   return streak;
+}
+
+/**
+ * _srRefreshStreakCache(historyMap) – Enregistre en localStorage la série de réussites
+ * consécutives RÉELLE de chaque question, calculée sur la sous-collection history/{key} que
+ * cette page vient de charger de toute façon (pour le camembert de maîtrise).
+ *
+ * Le quiz et l'accueil ne chargent PAS cette sous-collection : sans ce cache, ils ne pourraient
+ * pas savoir qu'une question ratée autrefois enchaîne N réussites depuis, et le réglage "ne plus
+ * revoir après N réussites d'affilée" ne s'appliquerait qu'ici, pas aux sessions de révision —
+ * les deux se contrediraient. Voir _srTrailingStreak() (js/helpers.js) pour l'ordre des sources.
+ * Les séries nulles ne sont pas stockées (inutile : c'est déjà la valeur par défaut) pour garder
+ * le cache le plus petit possible.
+ */
+function _srRefreshStreakCache(historyMap) {
+  if (!historyMap || typeof historyMap !== 'object') return;
+  try {
+    const cache = {};
+    Object.keys(historyMap).forEach(key => {
+      const streak = _trailingSuccessStreakForStats(historyMap[key]);
+      if (Number.isFinite(streak) && streak > 0) cache[key] = streak;
+    });
+    localStorage.setItem('srStreakCache', JSON.stringify(cache));
+  } catch (e) {
+    // Quota localStorage dépassé sur un très gros compte : le réglage reste fonctionnel via
+    // r.streak (mis à jour à chaque réponse) et la dérivation failCount === 0 — juste moins
+    // complet pour les questions ratées autrefois. Pas de raison de casser la page pour ça.
+    console.warn('[stats] cache des séries de réussites non enregistré:', e);
+  }
 }
 
 /**
@@ -2807,6 +2840,7 @@ function _computeSrForecast(responses, numDays, validKeys) {
   let beyond = 0;
   let totalEligible = 0;
   let suspendedCount = 0;
+  let masteredCount = 0;
 
   Object.entries(normResponses || {}).forEach(([key, r]) => {
     if (!r) return;
@@ -2819,15 +2853,13 @@ function _computeSrForecast(responses, numDays, validKeys) {
     // s'appliquent toujours, seul leur ordre diffère.
     if (validKeys && !validKeys.has(key)) return;
     if (r.suspended) { suspendedCount++; return; }
-    if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
+    // Seuil "réussies N fois d'affilée" : ces questions sortent du cycle, elles ne doivent donc
+    // apparaître dans AUCUN jour du programme. Comptées à part (masteredCount) pour expliquer
+    // sous le tableau d'où vient la baisse, comme on le fait déjà pour les suspendues.
+    if (typeof _srIsMastered === 'function' && _srIsMastered(r, key)) { masteredCount++; return; }
+    if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r, key)) return;
     totalEligible++;
-    // _srCapNextReview(r) applique le plafond réglable (getSrMaxIntervalDays), calculé depuis la
-    // dernière réponse réelle (r.timestamp) : une question déjà répondue il y a plus de N jours
-    // doit apparaître en retard dès aujourd'hui, exactement comme _isDueForReview() (js/helpers.js)
-    // la considère due pour de vrai — pas seulement "due dans N jours à partir d'aujourd'hui".
-    const nr = (r.nextReview !== undefined && r.nextReview !== null)
-      ? ((typeof _srCapNextReview === 'function') ? _srCapNextReview(r) : r.nextReview)
-      : now;
+    const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
     let diffDays = Math.floor((nr - todayStartMs) / dayMs);
     if (diffDays < 0) diffDays = 0;
     if (diffDays <= numDays) {
@@ -2838,7 +2870,7 @@ function _computeSrForecast(responses, numDays, validKeys) {
     } else beyond++;
   });
 
-  return { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount };
+  return { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount, masteredCount };
 }
 
 /**
@@ -2865,12 +2897,12 @@ function _srFamilyFromKey(key) {
 function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
-  // Mémorisés pour que _srApplyMaxIntervalDays() puisse re-générer la carte après un
-  // changement de plafond sans dépendre d'un rechargement complet de la page.
+  // Mémorisés pour que _srApplyMasteredStreak() puisse re-générer la carte immédiatement après
+  // un changement de seuil, sans recharger la page ni refaire un appel Firestore.
   window._srForecastLastResponses = responses;
   window._srForecastLastValidKeys = validKeys;
   const NUM_DAYS = 28; // 4 semaines
-  const { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
+  const { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount, masteredCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
   const { secPerNew, secPerReview } = (typeof _qtGetEstimateSecPerQuestion === 'function')
     ? _qtGetEstimateSecPerQuestion() : { secPerNew: 35, secPerReview: 22 };
@@ -2922,7 +2954,7 @@ function _renderSrForecast(responses, validKeys) {
       </div>`;
   }
 
-  const srMaxDays = (typeof getSrMaxIntervalDays === 'function') ? getSrMaxIntervalDays() : null;
+  const srMasteredStreak = (typeof getSrMasteredStreak === 'function') ? getSrMasteredStreak() : null;
   cont.innerHTML = `
     <div class="home-card" id="srForecastCard">
       <div class="home-card-header">
@@ -2936,11 +2968,13 @@ function _renderSrForecast(responses, validKeys) {
       </p>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82em;margin:0 0 8px;padding:6px 8px;background:rgba(255,255,255,.04);border-radius:8px">
         <label style="display:flex;align-items:center;gap:6px;margin:0">
-          <span>⏱️ Ne plus revoir au-delà de&nbsp;:</span>
-          <input type="number" id="srMaxIntervalDaysInput" class="home-input" style="width:64px" min="1" placeholder="illimité" value="${srMaxDays !== null ? srMaxDays : ''}" onchange="_srApplyMaxIntervalDays()">
-          <span>jour(s)</span>
+          <span>✅ Ne plus revoir après&nbsp;:</span>
+          <input type="number" id="srMasteredStreakInput" class="home-input" style="width:64px" min="1" placeholder="désactivé" value="${srMasteredStreak !== null ? srMasteredStreak : ''}" onchange="_srApplyMasteredStreak()">
+          <span>réussite(s) d'affilée</span>
         </label>
-        ${srMaxDays ? `<span style="color:var(--text-secondary)">Toute question déjà répondue depuis plus de ${srMaxDays} jour(s) redevient due immédiatement ci-dessous, même si sa planification d'origine allait plus loin.</span>` : `<span style="color:var(--text-secondary)">Laisser vide = illimité (comportement par défaut).</span>`}
+        ${srMasteredStreak
+          ? `<span style="color:var(--text-secondary)">${masteredCount} question(s) réussie(s) ${srMasteredStreak} fois de suite sont retirées du cycle et de tous les jours ci-dessous.</span>`
+          : `<span style="color:var(--text-secondary)">Laisser vide = aucune question retirée (comportement par défaut).</span>`}
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72em;color:var(--text-secondary);margin:0 0 8px">
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.gligli};margin-right:4px"></span>GLIGLI</span>
@@ -2960,26 +2994,28 @@ function _renderSrForecast(responses, validKeys) {
       ${beyond > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:8px 0 0">+ ${beyond} révision(s) planifiée(s) au-delà de ${NUM_DAYS} jours.</p>` : ''}
       <p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">${totalEligible} question(s) au total dans le cycle de répétition espacée.</p>
       ${suspendedCount > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">🚫 ${suspendedCount} question(s) retirée(s) du cycle (jugées trop faciles) — elles ne comptent pas dans les chiffres ci-dessus.</p>` : ''}
+      ${masteredCount > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">✅ ${masteredCount} question(s) réussie(s) au moins ${srMasteredStreak} fois d'affilée — retirées du cycle de révision, elles ne comptent pas non plus ci-dessus.</p>` : ''}
     </div>
   `;
 }
 
 /**
- * _srApplyMaxIntervalDays() – Gestionnaire du champ "Ne plus revoir au-delà de… jour(s)" de la
- * carte "Programme des prochains jours" : sauvegarde le plafond (localStorage, lu par
- * getSrMaxIntervalDays()/_srCapNextReview(), js/helpers.js), puis reconstruit la carte à partir
- * des dernières données déjà chargées (window._srForecastLastResponses/...ValidKeys, mémorisées
- * par _renderSrForecast() elle-même) pour un retour visuel immédiat, sans recharger la page.
- * Une valeur vide ou invalide efface le réglage → retour au comportement illimité par défaut.
+ * _srApplyMasteredStreak() – Gestionnaire du champ "Ne plus revoir après N réussite(s)
+ * d'affilée" : enregistre le seuil (localStorage, lu par getSrMasteredStreak()/_srIsMastered(),
+ * js/helpers.js) puis reconstruit la carte à partir des données déjà chargées
+ * (window._srForecastLastResponses, mémorisées par _renderSrForecast) pour que la baisse des
+ * chiffres soit visible immédiatement, sans rechargement. Le même seuil s'applique aussitôt aux
+ * sessions de révision et au compteur de l'accueil, qui passent par le même _isEligibleForSR().
+ * Une valeur vide ou invalide efface le réglage → plus aucune question retirée.
  */
-function _srApplyMaxIntervalDays() {
-  const input = document.getElementById('srMaxIntervalDaysInput');
+function _srApplyMasteredStreak() {
+  const input = document.getElementById('srMasteredStreakInput');
   if (!input) return;
   const v = parseInt(input.value);
   if (Number.isFinite(v) && v > 0) {
-    localStorage.setItem('srMaxIntervalDays', v);
+    localStorage.setItem('srMasteredStreak', v);
   } else {
-    localStorage.removeItem('srMaxIntervalDays');
+    localStorage.removeItem('srMasteredStreak');
     input.value = '';
   }
   if (window._srForecastLastResponses) {

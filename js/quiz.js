@@ -1415,13 +1415,7 @@ function _computeSrEntry(q, selectedVal) {
       else if (prevInterval === 1) newInterval = 3;
       else {
         const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
-        let cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
-        // Plafond réglable (voir getSrMaxIntervalDays, js/helpers.js) : un utilisateur qui
-        // trouve les révisions repoussées trop loin (ex. 466 jours) peut fixer une limite
-        // globale, appliquée ici à toute NOUVELLE planification, en plus du plafond fixe
-        // habituel ci-dessus.
-        const maxDays = (typeof getSrMaxIntervalDays === 'function') ? getSrMaxIntervalDays() : null;
-        if (maxDays) cap = Math.min(cap, maxDays);
+        const cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
         newInterval = Math.min(Math.round(prevInterval * growthFactor), cap);
       }
     } else {
@@ -1443,10 +1437,22 @@ function _computeSrEntry(q, selectedVal) {
     // ~15-45 caractères) pesaient un poids mort non négligeable dans le document Firestore
     // quizProgress/{uid}, plafonné à 1 Mio — voir _stripRedundantFields() (js/stats.js) pour
     // le nettoyage rétroactif des entrées déjà existantes.
+    // `streak` : réussites CONSÉCUTIVES (remis à 0 dès une ratée), à ne pas confondre avec
+    // successCount qui, lui, cumule sans jamais redescendre. Sert au réglage "ne plus revoir
+    // après N réussites d'affilée" (voir _srIsMastered, js/helpers.js) : le calculer ici, au
+    // seul endroit où chaque réponse réelle est enregistrée, évite d'avoir à relire la
+    // sous-collection history/{key} depuis le quiz et l'accueil, qui ne la chargent pas.
+    // Un ancien enregistrement sans ce champ est rattrapé par _srTrailingStreak().
+    const prevStreak = hasExisting
+      ? ((typeof _srTrailingStreak === 'function')
+          ? _srTrailingStreak(currentResponses[key], key)
+          : (Number.isFinite(currentResponses[key].streak) ? currentResponses[key].streak : 0))
+      : 0;
     const entry = {
         status,
         failCount: status === 'ratée' ? prevFailCount + 1 : prevFailCount,
         successCount: status === 'réussie' ? prevSuccessCount + 1 : prevSuccessCount,
+        streak: status === 'réussie' ? prevStreak + 1 : 0,
         srInterval: newInterval,
         nextReview: nextReviewMs,
         timestamp: firebase.firestore.Timestamp.now()
