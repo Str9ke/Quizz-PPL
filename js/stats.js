@@ -2821,7 +2821,11 @@ function _computeSrForecast(responses, numDays, validKeys) {
     if (r.suspended) { suspendedCount++; return; }
     if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
     totalEligible++;
-    const nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
+    const rawNr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
+    // _srCapNextReview applique le plafond réglable (getSrMaxIntervalDays) sur cette carte : une
+    // question déjà planifiée au-delà de N jours doit apparaître comme due dans les N jours,
+    // exactement comme _isDueForReview() (js/helpers.js) la considère due pour de vrai.
+    const nr = (typeof _srCapNextReview === 'function') ? _srCapNextReview(rawNr) : rawNr;
     let diffDays = Math.floor((nr - todayStartMs) / dayMs);
     if (diffDays < 0) diffDays = 0;
     if (diffDays <= numDays) {
@@ -2859,6 +2863,10 @@ function _srFamilyFromKey(key) {
 function _renderSrForecast(responses, validKeys) {
   const cont = document.getElementById('srForecastContainer');
   if (!cont) return;
+  // Mémorisés pour que _srApplyMaxIntervalDays() puisse re-générer la carte après un
+  // changement de plafond sans dépendre d'un rechargement complet de la page.
+  window._srForecastLastResponses = responses;
+  window._srForecastLastValidKeys = validKeys;
   const NUM_DAYS = 28; // 4 semaines
   const { buckets, familyBuckets, failedFamilyBuckets, beyond, totalEligible, suspendedCount } = _computeSrForecast(responses, NUM_DAYS, validKeys);
   const dailyNewTarget = (typeof getDailyNewTarget === 'function') ? getDailyNewTarget() : 15;
@@ -2912,6 +2920,7 @@ function _renderSrForecast(responses, validKeys) {
       </div>`;
   }
 
+  const srMaxDays = (typeof getSrMaxIntervalDays === 'function') ? getSrMaxIntervalDays() : null;
   cont.innerHTML = `
     <div class="home-card" id="srForecastCard">
       <div class="home-card-header">
@@ -2923,6 +2932,14 @@ function _renderSrForecast(responses, validKeys) {
         historique de réussite/échec réel), plus ton objectif de nouvelles questions/jour
         (${dailyNewTarget}, modifiable sur l'accueil). Temps estimé à partir de ton rythme réel mesuré.
       </p>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82em;margin:0 0 8px;padding:6px 8px;background:rgba(255,255,255,.04);border-radius:8px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0">
+          <span>⏱️ Ne plus revoir au-delà de&nbsp;:</span>
+          <input type="number" id="srMaxIntervalDaysInput" class="home-input" style="width:64px" min="1" placeholder="illimité" value="${srMaxDays !== null ? srMaxDays : ''}" onchange="_srApplyMaxIntervalDays()">
+          <span>jour(s)</span>
+        </label>
+        ${srMaxDays ? `<span style="color:var(--text-secondary)">Les révisions déjà planifiées plus loin sont ramenées à ${srMaxDays} jour(s) ci-dessous et deviennent dues à cette date.</span>` : `<span style="color:var(--text-secondary)">Laisser vide = illimité (comportement par défaut).</span>`}
+      </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72em;color:var(--text-secondary);margin:0 0 8px">
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.gligli};margin-right:4px"></span>GLIGLI</span>
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.easa};margin-right:4px"></span>EASA</span>
@@ -2943,6 +2960,29 @@ function _renderSrForecast(responses, validKeys) {
       ${suspendedCount > 0 ? `<p style="font-size:.78em;color:var(--text-secondary);margin:4px 0 0">🚫 ${suspendedCount} question(s) retirée(s) du cycle (jugées trop faciles) — elles ne comptent pas dans les chiffres ci-dessus.</p>` : ''}
     </div>
   `;
+}
+
+/**
+ * _srApplyMaxIntervalDays() – Gestionnaire du champ "Ne plus revoir au-delà de… jour(s)" de la
+ * carte "Programme des prochains jours" : sauvegarde le plafond (localStorage, lu par
+ * getSrMaxIntervalDays()/_srCapNextReview(), js/helpers.js), puis reconstruit la carte à partir
+ * des dernières données déjà chargées (window._srForecastLastResponses/...ValidKeys, mémorisées
+ * par _renderSrForecast() elle-même) pour un retour visuel immédiat, sans recharger la page.
+ * Une valeur vide ou invalide efface le réglage → retour au comportement illimité par défaut.
+ */
+function _srApplyMaxIntervalDays() {
+  const input = document.getElementById('srMaxIntervalDaysInput');
+  if (!input) return;
+  const v = parseInt(input.value);
+  if (Number.isFinite(v) && v > 0) {
+    localStorage.setItem('srMaxIntervalDays', v);
+  } else {
+    localStorage.removeItem('srMaxIntervalDays');
+    input.value = '';
+  }
+  if (window._srForecastLastResponses) {
+    _renderSrForecast(window._srForecastLastResponses, window._srForecastLastValidKeys);
+  }
 }
 
 /**

@@ -1106,8 +1106,8 @@ function _dueQuestionsSorted(pool, responses) {
     // _srFamilyRank dans js/helpers.js), puis par urgence à l'intérieur de chaque famille.
     const famDiff = _srFamilyRank(a) - _srFamilyRank(b);
     if (famDiff !== 0) return famDiff;
-    const nrA = responses[getKeyFor(a)].nextReview || 0;
-    const nrB = responses[getKeyFor(b)].nextReview || 0;
+    const nrA = (typeof _srCapNextReview === 'function' ? _srCapNextReview(responses[getKeyFor(a)].nextReview) : responses[getKeyFor(a)].nextReview) || 0;
+    const nrB = (typeof _srCapNextReview === 'function' ? _srCapNextReview(responses[getKeyFor(b)].nextReview) : responses[getKeyFor(b)].nextReview) || 0;
     return nrA - nrB; // plus petit nextReview = plus en retard
   });
   return due;

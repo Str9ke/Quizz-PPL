@@ -742,6 +742,7 @@ function _isDueForReview(r, now) {
   if (typeof reviewMs === 'object' && reviewMs.seconds) {
     reviewMs = reviewMs.seconds * 1000;
   }
+  reviewMs = _srCapNextReview(reviewMs);
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
   return reviewMs <= endOfToday.getTime();
@@ -850,6 +851,38 @@ function getMaxRevisionsPerDay() {
   const raw = localStorage.getItem('maxRevisionsPerDay');
   const v = parseInt(raw);
   return (Number.isFinite(v) && v > 0) ? v : null;
+}
+
+/**
+ * getSrMaxIntervalDays() – Plafond volontaire (en jours à partir d'aujourd'hui) sur la date de
+ * prochaine révision en répétition espacée, réglable sur la carte "Programme des prochains
+ * jours" de stats.html. Comme getMaxRevisionsPerDay(), l'absence de réglage (champ vide ou 0)
+ * signifie "illimité" — comportement historique inchangé tant que l'utilisateur ne règle rien.
+ * @returns {number|null} le plafond en jours, ou null si illimité.
+ */
+function getSrMaxIntervalDays() {
+  const raw = localStorage.getItem('srMaxIntervalDays');
+  const v = parseInt(raw);
+  return (Number.isFinite(v) && v > 0) ? v : null;
+}
+
+/**
+ * _srCapNextReview(nextReviewMs) – Applique getSrMaxIntervalDays() à un timestamp nextReview :
+ * si un plafond est réglé et que la date dépasse aujourd'hui + N jours, la ramène à cette
+ * limite. Lecture "effective" uniquement, n'écrit rien nulle part : utilisée à la fois par
+ * _isDueForReview() (pour que les questions déjà planifiées trop loin redeviennent dues sans
+ * attendre leur vraie date) et par _computeSrForecast() (js/stats.js, mêmes prévisions). Ne pas
+ * réécrire en masse les entrées Firestore existantes garde la manœuvre réversible : si le
+ * plafond est augmenté ou retiré plus tard, la planification d'origine (srInterval/nextReview
+ * réels) est toujours intacte, rien n'a été perdu.
+ */
+function _srCapNextReview(nextReviewMs) {
+  const maxDays = getSrMaxIntervalDays();
+  if (!maxDays || nextReviewMs === undefined || nextReviewMs === null) return nextReviewMs;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const maxAllowed = todayStart.getTime() + maxDays * 24 * 60 * 60 * 1000;
+  return Math.min(nextReviewMs, maxAllowed);
 }
 
 /**

@@ -1415,7 +1415,13 @@ function _computeSrEntry(q, selectedVal) {
       else if (prevInterval === 1) newInterval = 3;
       else {
         const growthFactor = Math.max(1.3, 2.5 / (1 + prevFailCount * 0.25));
-        const cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
+        let cap = prevFailCount === 0 ? 365 : (prevFailCount <= 2 ? 120 : 60);
+        // Plafond réglable (voir getSrMaxIntervalDays, js/helpers.js) : un utilisateur qui
+        // trouve les révisions repoussées trop loin (ex. 466 jours) peut fixer une limite
+        // globale, appliquée ici à toute NOUVELLE planification, en plus du plafond fixe
+        // habituel ci-dessus.
+        const maxDays = (typeof getSrMaxIntervalDays === 'function') ? getSrMaxIntervalDays() : null;
+        if (maxDays) cap = Math.min(cap, maxDays);
         newInterval = Math.min(Math.round(prevInterval * growthFactor), cap);
       }
     } else {
