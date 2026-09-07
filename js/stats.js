@@ -2821,11 +2821,13 @@ function _computeSrForecast(responses, numDays, validKeys) {
     if (r.suspended) { suspendedCount++; return; }
     if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r)) return;
     totalEligible++;
-    const rawNr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
-    // _srCapNextReview applique le plafond réglable (getSrMaxIntervalDays) sur cette carte : une
-    // question déjà planifiée au-delà de N jours doit apparaître comme due dans les N jours,
-    // exactement comme _isDueForReview() (js/helpers.js) la considère due pour de vrai.
-    const nr = (typeof _srCapNextReview === 'function') ? _srCapNextReview(rawNr) : rawNr;
+    // _srCapNextReview(r) applique le plafond réglable (getSrMaxIntervalDays), calculé depuis la
+    // dernière réponse réelle (r.timestamp) : une question déjà répondue il y a plus de N jours
+    // doit apparaître en retard dès aujourd'hui, exactement comme _isDueForReview() (js/helpers.js)
+    // la considère due pour de vrai — pas seulement "due dans N jours à partir d'aujourd'hui".
+    const nr = (r.nextReview !== undefined && r.nextReview !== null)
+      ? ((typeof _srCapNextReview === 'function') ? _srCapNextReview(r) : r.nextReview)
+      : now;
     let diffDays = Math.floor((nr - todayStartMs) / dayMs);
     if (diffDays < 0) diffDays = 0;
     if (diffDays <= numDays) {
@@ -2938,7 +2940,7 @@ function _renderSrForecast(responses, validKeys) {
           <input type="number" id="srMaxIntervalDaysInput" class="home-input" style="width:64px" min="1" placeholder="illimité" value="${srMaxDays !== null ? srMaxDays : ''}" onchange="_srApplyMaxIntervalDays()">
           <span>jour(s)</span>
         </label>
-        ${srMaxDays ? `<span style="color:var(--text-secondary)">Les révisions déjà planifiées plus loin sont ramenées à ${srMaxDays} jour(s) ci-dessous et deviennent dues à cette date.</span>` : `<span style="color:var(--text-secondary)">Laisser vide = illimité (comportement par défaut).</span>`}
+        ${srMaxDays ? `<span style="color:var(--text-secondary)">Toute question déjà répondue depuis plus de ${srMaxDays} jour(s) redevient due immédiatement ci-dessous, même si sa planification d'origine allait plus loin.</span>` : `<span style="color:var(--text-secondary)">Laisser vide = illimité (comportement par défaut).</span>`}
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72em;color:var(--text-secondary);margin:0 0 8px">
         <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${FAM_COLORS.gligli};margin-right:4px"></span>GLIGLI</span>

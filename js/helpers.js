@@ -737,12 +737,10 @@ function _isDueForReview(r, now) {
   if (!r) return false;
   // Pas encore de nextReview → question éligible jamais planifiée → due immédiatement
   if (r.nextReview === undefined || r.nextReview === null) return true;
-  // nextReview peut être un timestamp Firestore ou un nombre
-  let reviewMs = r.nextReview;
-  if (typeof reviewMs === 'object' && reviewMs.seconds) {
-    reviewMs = reviewMs.seconds * 1000;
-  }
-  reviewMs = _srCapNextReview(reviewMs);
+  // nextReview peut être un timestamp Firestore ou un nombre ; _srCapNextReview() normalise et
+  // applique en plus le plafond réglable (getSrMaxIntervalDays), calculé depuis la dernière
+  // réponse réelle (r.timestamp) et non depuis aujourd'hui — voir sa doc.
+  const reviewMs = _srCapNextReview(r);
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
   return reviewMs <= endOfToday.getTime();
@@ -867,21 +865,53 @@ function getSrMaxIntervalDays() {
 }
 
 /**
- * _srCapNextReview(nextReviewMs) – Applique getSrMaxIntervalDays() à un timestamp nextReview :
- * si un plafond est réglé et que la date dépasse aujourd'hui + N jours, la ramène à cette
- * limite. Lecture "effective" uniquement, n'écrit rien nulle part : utilisée à la fois par
- * _isDueForReview() (pour que les questions déjà planifiées trop loin redeviennent dues sans
- * attendre leur vraie date) et par _computeSrForecast() (js/stats.js, mêmes prévisions). Ne pas
- * réécrire en masse les entrées Firestore existantes garde la manœuvre réversible : si le
- * plafond est augmenté ou retiré plus tard, la planification d'origine (srInterval/nextReview
- * réels) est toujours intacte, rien n'a été perdu.
+ * _srCapNextReview(r) – Applique getSrMaxIntervalDays() à une entrée de réponse complète :
+ * si un plafond est réglé et que sa prochaine révision (r.nextReview) dépasse SA DERNIÈRE
+ * RÉPONSE RÉELLE (r.timestamp) + N jours, la ramène à cette limite.
+ *
+ * ATTENTION : le plafond se compte à partir de la dernière réponse, PAS à partir
+ * d'aujourd'hui — c'est le point qui a été raté dans une première version de cette fonction.
+ * Une question répondue il y a 20 jours avec un plafond de 7 jours doit être considérée en
+ * retard DEPUIS 13 jours (20 - 7), donc due DÈS MAINTENANT — pas seulement "due dans 7 jours
+ * à partir d'aujourd'hui", ce qui repousserait artificiellement une question déjà ancienne au
+ * lieu de la faire remonter immédiatement dans le paquet du jour. C'est exactement le
+ * mécanisme qui doit faire apparaître les "vieilles questions" déjà cachées dans les jours à
+ * venir (ou déjà en retard) une fois qu'un plafond plus court que leur intervalle réel est réglé.
+ *
+ * Lecture "effective" uniquement, n'écrit rien nulle part : utilisée à la fois par
+ * _isDueForReview() (pour que ces questions redeviennent dues sans attendre leur vraie date),
+ * _computeSrForecast() (js/stats.js, mêmes prévisions) et _dueQuestionsSorted() (js/categories.js,
+ * même tri). Ne pas réécrire en masse les entrées Firestore existantes garde la manœuvre
+ * réversible : si le plafond est augmenté ou retiré plus tard, la planification d'origine
+ * (srInterval/nextReview/timestamp réels) est toujours intacte, rien n'a été perdu.
+ *
+ * Sans timestamp de dernière réponse exploitable (ancienne entrée incomplète), on retombe sur
+ * aujourd'hui + N jours faute de mieux — mais c'est le cas résiduel, pas le cas normal.
  */
-function _srCapNextReview(nextReviewMs) {
+function _srCapNextReview(r) {
+  if (!r || r.nextReview === undefined || r.nextReview === null) return r ? r.nextReview : undefined;
   const maxDays = getSrMaxIntervalDays();
-  if (!maxDays || nextReviewMs === undefined || nextReviewMs === null) return nextReviewMs;
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const maxAllowed = todayStart.getTime() + maxDays * 24 * 60 * 60 * 1000;
+  if (!maxDays) return r.nextReview;
+  let nextReviewMs = r.nextReview;
+  if (typeof nextReviewMs === 'object' && nextReviewMs.seconds !== undefined) {
+    nextReviewMs = nextReviewMs.seconds * 1000;
+  }
+  const dayMs = 24 * 60 * 60 * 1000;
+  let lastAnsweredMs = null;
+  if (r.timestamp && typeof r.timestamp === 'object' && r.timestamp.seconds !== undefined) {
+    lastAnsweredMs = r.timestamp.seconds * 1000;
+  } else if (typeof r.timestamp === 'number') {
+    lastAnsweredMs = r.timestamp;
+  }
+  let base;
+  if (lastAnsweredMs !== null) {
+    base = lastAnsweredMs;
+  } else {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    base = todayStart.getTime();
+  }
+  const maxAllowed = base + maxDays * dayMs;
   return Math.min(nextReviewMs, maxAllowed);
 }
 
