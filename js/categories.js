@@ -480,7 +480,7 @@ async function updateModeCounts(filterFlags) {
         if ((r.failCount || 0) >= 2) nbDifficiles++;
         // Révisions du jour : question éligible SR et due (jamais une question suspendue,
         // désormais toujours "réussie" et donc hors du cycle de révision)
-        if (!r.suspended && _isEligibleForSR(r) && _isDueForReview(r, now)) nbRevisions++;
+        if (!r.suspended && _isEligibleForSR(r, key) && _isDueForReview(r, now)) nbRevisions++;
       }
     });
 
@@ -1098,16 +1098,17 @@ function _orderByFailCountRoundRobin(pool, responses) {
 function _dueQuestionsSorted(pool, responses) {
   const now = Date.now();
   const due = pool.filter(q => {
-    const r = responses[getKeyFor(q)];
-    return r && _isEligibleForSR(r) && _isDueForReview(r, now);
+    const key = getKeyFor(q);
+    const r = responses[key];
+    return r && _isEligibleForSR(r, key) && _isDueForReview(r, now);
   });
   due.sort((a, b) => {
     // Tri principal par famille (GLIGLI d'abord, EASA ensuite, classiques en dernier — voir
     // _srFamilyRank dans js/helpers.js), puis par urgence à l'intérieur de chaque famille.
     const famDiff = _srFamilyRank(a) - _srFamilyRank(b);
     if (famDiff !== 0) return famDiff;
-    const nrA = (typeof _srCapNextReview === 'function' ? _srCapNextReview(responses[getKeyFor(a)]) : responses[getKeyFor(a)].nextReview) || 0;
-    const nrB = (typeof _srCapNextReview === 'function' ? _srCapNextReview(responses[getKeyFor(b)]) : responses[getKeyFor(b)].nextReview) || 0;
+    const nrA = responses[getKeyFor(a)].nextReview || 0;
+    const nrB = responses[getKeyFor(b)].nextReview || 0;
     return nrA - nrB; // plus petit nextReview = plus en retard
   });
   return due;
