@@ -13,6 +13,15 @@
 //   syllabusTimeMsServer — dernier total serveur connu par jour (somme de tous les appareils),
 //                           simple cache pour l'affichage.
 //   syllabusTimerStart   — horodatage de démarrage si un chronomètre est en cours (absent sinon).
+//   syllabusSessionsLog  — [{id, dayKey, ms, ts, source, cumulativeAfter}, ...] : journal (le plus
+//                          récent en dernier) de chaque ajout effectué par CET appareil, pour
+//                          pouvoir en supprimer un précis a posteriori (voir syllDeleteSession) —
+//                          par exemple un chronomètre resté lancé par oubli. `cumulativeAfter` =
+//                          valeur de syllabusTimeMsBackup[dayKey] juste après cet ajout : c'est ce
+//                          qui permet de savoir, au moment d'une suppression, si CET ajout précis
+//                          avait déjà été transmis au serveur ou non (voir syllDeleteSession).
+//                          Purement local à l'appareil, comme le reste de ce fichier — un ajout
+//                          fait sur un autre appareil n'apparaît pas dans cette liste.
 // Stockage serveur : quizProgress/{uid}.syllabusTimeMs = { 'AAAA-MM-JJ': ms } — champ de plus sur
 // le document déjà couvert par la règle Firestore existante, pas de nouvelle règle nécessaire.
 
@@ -20,12 +29,12 @@ const SYLL_BACKUP_KEY = 'syllabusTimeMsBackup';
 const SYLL_PUSHED_KEY = 'syllabusTimeMsPushed';
 const SYLL_SERVER_KEY = 'syllabusTimeMsServer';
 const SYLL_TIMER_KEY = 'syllabusTimerStart';
-// syllabusLastSession — { dayKey, ms, ts } : dernier ajout effectué par CET appareil (chrono
-// arrêté OU temps saisi manuellement), pour permettre de l'annuler d'un clic (voir
-// syllUndoLastSession) en cas d'oubli d'arrêter le chronomètre. Écrasé à chaque nouvel ajout —
-// un seul niveau d'annulation, pas une pile complète : suffisant pour l'usage visé ("je viens
-// d'arrêter et ce chiffre est n'importe quoi"), pas pour rattraper une erreur plus ancienne.
-const SYLL_LAST_SESSION_KEY = 'syllabusLastSession';
+const SYLL_SESSIONS_LOG_KEY = 'syllabusSessionsLog';
+// Nombre d'entrées conservées dans le journal — largement suffisant pour retrouver "la session
+// d'il y a 2 jours" tout en gardant le stockage borné ; les plus anciennes sont abandonnées au
+// fil de l'eau (voir _syllLogSession), sans impact sur syllabusTimeMsBackup qui, lui, n'oublie
+// jamais rien : seule la possibilité de supprimer UNE session précise s'éteint avec le temps.
+const SYLL_SESSIONS_LOG_MAX = 30;
 // Plafond de sécurité sur UNE session de chronomètre continue : un oubli d'arrêter (téléphone
 // resté allumé toute la nuit) ne doit pas gonfler démesurément le total du jour.
 const SYLL_MAX_SESSION_MS = 6 * 60 * 60 * 1000;
@@ -50,85 +59,113 @@ function _syllFormatHMS(ms) {
   return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
-/** _syllAddDailyTime(ms, dayKey) – Point de passage UNIQUE pour tout ajout de temps (chrono
- * arrêté ou saisie manuelle) : c'est ici, et seulement ici, qu'on sait exactement quel montant
- * (après plafond) vient d'être ajouté à quel jour — condition nécessaire pour pouvoir l'annuler
- * précisément ensuite (voir syllUndoLastSession). */
-function _syllAddDailyTime(ms, dayKey) {
+/** _syllAddDailyTime(ms, dayKey, source) – Point de passage UNIQUE pour tout ajout de temps
+ * (chrono arrêté ou saisie manuelle) : c'est ici, et seulement ici, qu'on sait exactement quel
+ * montant (après plafond) vient d'être ajouté à quel jour — condition nécessaire pour pouvoir en
+ * supprimer un précisément ensuite (voir syllDeleteSession). `source` ('chrono'|'manuel') n'est
+ * là que pour l'affichage du journal. */
+function _syllAddDailyTime(ms, dayKey, source) {
   if (!isFinite(ms) || ms <= 0) return;
   const capped = Math.min(ms, SYLL_MAX_SESSION_MS);
   try {
     const map = JSON.parse(localStorage.getItem(SYLL_BACKUP_KEY) || '{}');
     const k = dayKey || _syllTodayKey();
-    map[k] = Math.round((map[k] || 0) + capped);
+    const cumulativeAfter = Math.round((map[k] || 0) + capped);
+    map[k] = cumulativeAfter;
     localStorage.setItem(SYLL_BACKUP_KEY, JSON.stringify(map));
-    localStorage.setItem(SYLL_LAST_SESSION_KEY, JSON.stringify({ dayKey: k, ms: capped, ts: Date.now() }));
+    _syllLogSession(k, capped, source || 'manuel', cumulativeAfter);
   } catch (e) { /* quota plein, tant pis */ }
 }
 
-function _syllGetLastSession() {
+/** _syllLogSession() – Ajoute une entrée au journal des sessions (voir SYLL_SESSIONS_LOG_KEY en
+ * tête de fichier pour le rôle de `cumulativeAfter`), et purge les plus anciennes au-delà de
+ * SYLL_SESSIONS_LOG_MAX pour garder un stockage borné. */
+function _syllLogSession(dayKey, ms, source, cumulativeAfter) {
   try {
-    const raw = JSON.parse(localStorage.getItem(SYLL_LAST_SESSION_KEY) || 'null');
-    return (raw && raw.dayKey && raw.ms > 0) ? raw : null;
-  } catch (e) { return null; }
+    const log = _syllGetSessionsLog();
+    log.push({ id: Date.now() + '-' + Math.floor(Math.random() * 1e6), dayKey, ms, ts: Date.now(), source, cumulativeAfter });
+    while (log.length > SYLL_SESSIONS_LOG_MAX) log.shift();
+    localStorage.setItem(SYLL_SESSIONS_LOG_KEY, JSON.stringify(log));
+  } catch (e) { /* quota plein, tant pis — pas grave, juste plus rien à supprimer précisément */ }
 }
 
-function _syllClearLastSession() {
-  localStorage.removeItem(SYLL_LAST_SESSION_KEY);
+function _syllGetSessionsLog() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SYLL_SESSIONS_LOG_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
 }
 
-/** _syllRenderLastSessionUndo() – Affiche/masque le bandeau "Annuler la dernière session" sous
- * le chronomètre, selon qu'un ajout récent (chrono ou manuel) reste annulable. Appelé après
- * chaque ajout, après une annulation, et au chargement de la page. */
-function _syllRenderLastSessionUndo() {
-  const cont = document.getElementById('syllUndoLastSession');
+/** _syllRenderSessionsList() – Liste (la plus récente en haut) des sessions encore présentes
+ * dans le journal, chacune avec un bouton de suppression individuelle. Appelée après chaque
+ * ajout, après chaque suppression, et au chargement de la page. */
+function _syllRenderSessionsList() {
+  const cont = document.getElementById('syllSessionsLog');
   if (!cont) return;
-  const rec = _syllGetLastSession();
-  if (!rec) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+  const log = _syllGetSessionsLog();
+  if (!log.length) { cont.innerHTML = '<p style="font-size:.8em;color:var(--text-secondary,#aaa);margin:0;">Aucune session récente à afficher.</p>'; return; }
   const fmt = (typeof _qtFormatDayDuration === 'function') ? _qtFormatDayDuration : (ms => Math.round(ms / 60000) + ' min');
-  const d = new Date(rec.dayKey + 'T00:00:00');
-  const dateLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
-  cont.style.display = 'block';
-  cont.innerHTML = `
-    Dernière session ajoutée : <b>+${fmt(rec.ms)}</b> le ${dateLabel}.
-    <button type="button" class="hist-filter-btn" style="margin-left:8px;padding:4px 12px;font-size:.95em;" onclick="syllUndoLastSession()">🗑️ Annuler cette session</button>
-  `;
+  const rows = log.slice().reverse().map(rec => {
+    const d = new Date(rec.ts);
+    const dateLabel = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')
+      + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const icon = rec.source === 'chrono' ? '⏱️' : '✏️';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85em;">
+        <span>${icon} <b>+${fmt(rec.ms)}</b> <span style="color:var(--text-secondary,#aaa);">le ${dateLabel}</span></span>
+        <button type="button" class="hist-filter-btn" style="padding:3px 10px;font-size:.9em;" onclick="syllDeleteSession('${rec.id}')">🗑️</button>
+      </div>`;
+  }).join('');
+  cont.innerHTML = rows;
 }
 
-/** syllUndoLastSession() – Retire précisément le dernier ajout (chrono arrêté ou saisie
- * manuelle) sur CET appareil : utile quand le chronomètre est resté lancé par oubli et que le
- * temps ajouté n'a aucun sens. Ne conserve qu'UN seul niveau d'annulation (voir
- * SYLL_LAST_SESSION_KEY) : un 2e clic sans nouvel ajout entre-temps ne fait rien.
+/** syllDeleteSession(id) – Retire précisément UNE session du journal (chrono arrêté ou saisie
+ * manuelle passée), quel que soit son rang — pas seulement la plus récente. Utile quand le
+ * chronomètre est resté lancé par oubli et que le temps ajouté n'a aucun sens, y compris si on
+ * ne s'en aperçoit qu'après avoir ajouté d'autres sessions depuis.
  *
- * Corrige le total local (backup) ET son pendant "déjà transmis" (pushed) du même montant, pour
- * ne pas fausser le calcul du delta des PROCHAINS ajouts du même jour (voir _syllSave) — sans
- * ça, un ajout légitime ultérieur le même jour pourrait ne jamais être retransmis.
+ * Corrige le total local (backup) du jour concerné, ET son pendant "déjà transmis" (pushed) —
+ * mais UNIQUEMENT de la part de `ms` qui avait effectivement déjà été transmise (voir
+ * `sentPortion` ci-dessous), pas forcément la totalité : `pushed` grimpe toujours par bonds
+ * jusqu'à égaler `backup` au moment d'une synchronisation réussie (voir _syllSave), donc la part
+ * "transmise" de CETTE session précise est l'intersection entre son propre intervalle
+ * [cumulativeAvant, cumulativeAprès[ et [0, pushedAvant[. Sans ce calcul (qui généralise le cas
+ * simple "tout ou rien" au cas où on supprime une session au milieu d'autres, dont certaines
+ * plus récentes ont pu être transmises depuis), on risquerait de compenser le serveur d'un
+ * montant jamais réellement envoyé là-bas pour CETTE session.
  *
- * Compense aussi le serveur d'un increment négatif égal, MAIS seulement si tout indique que
- * l'ajout erroné avait déjà été transmis (pushed >= backup AVANT annulation, seul cas où
- * l'invariant pushed <= backup peut être à l'égalité) : sinon l'ajout n'a jamais quitté cet
- * appareil (hors-ligne, ou transmission pas encore lancée) et il n'y a rien à annuler côté
- * serveur — en envoyer quand même soustrairait à tort un montant jamais ajouté là-bas.
- * Cas résiduel non couvert (accepté, extrêmement improbable en pratique) : annuler dans la
- * fraction de seconde où la transmission de CETTE session est en vol mais pas encore résolue. */
-window.syllUndoLastSession = async function() {
-  const rec = _syllGetLastSession();
-  if (!rec) return;
-  const { dayKey, ms } = rec;
+ * Décale aussi `cumulativeAfter` de toutes les AUTRES entrées du même jour survenues APRÈS celle
+ * supprimée (leur repère de cumul glisse de `ms` vers le bas), pour que ce même calcul reste
+ * exact si l'une d'elles est supprimée plus tard à son tour. */
+window.syllDeleteSession = async function(id) {
+  const log = _syllGetSessionsLog();
+  const idx = log.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  const rec = log[idx];
+  const { dayKey, ms, cumulativeAfter } = rec;
   const fmt = (typeof _qtFormatDayDuration === 'function') ? _qtFormatDayDuration : (v => Math.round(v / 60000) + ' min');
-  if (!confirm(`Annuler la dernière session (+${fmt(ms)} le ${dayKey}) ?`)) return;
+  if (!confirm(`Supprimer cette session (+${fmt(ms)}) ?`)) return;
 
-  _syllClearLastSession(); // empêche un double-clic de soustraire deux fois
+  log.splice(idx, 1);
+  // Décalage par POSITION dans le tableau (append-only, donc toujours chronologique), pas par
+  // comparaison de `ts` : deux ajouts synchrones peuvent partager le même horodatage à la
+  // milliseconde près, ce qu'un `other.ts > rec.ts` manquerait silencieusement. Après la
+  // suppression ci-dessus, tout ce qui était après `rec` a glissé d'un cran vers l'index `idx`.
+  for (let i = idx; i < log.length; i++) {
+    if (log[i].dayKey === dayKey) log[i].cumulativeAfter -= ms;
+  }
+  try { localStorage.setItem(SYLL_SESSIONS_LOG_KEY, JSON.stringify(log)); } catch (e) { /* tant pis */ }
 
   let backup, pushed;
   try { backup = JSON.parse(localStorage.getItem(SYLL_BACKUP_KEY) || '{}'); } catch (e) { backup = {}; }
   try { pushed = JSON.parse(localStorage.getItem(SYLL_PUSHED_KEY) || '{}') || {}; } catch (e) { pushed = {}; }
-  const backupBefore = backup[dayKey] || 0;
   const pushedBefore = pushed[dayKey] || 0;
-  const wasFullyPushed = pushedBefore >= backupBefore;
+  const cumulativeBefore = cumulativeAfter - ms;
+  // Intersection entre l'intervalle de CETTE session et la part déjà transmise du jour.
+  const sentPortion = Math.max(0, Math.min(cumulativeAfter, pushedBefore) - cumulativeBefore);
 
-  backup[dayKey] = Math.max(0, backupBefore - ms);
-  pushed[dayKey] = Math.max(0, pushedBefore - ms);
+  backup[dayKey] = Math.max(0, (backup[dayKey] || 0) - ms);
+  pushed[dayKey] = Math.max(0, pushedBefore - sentPortion);
   try {
     localStorage.setItem(SYLL_BACKUP_KEY, JSON.stringify(backup));
     localStorage.setItem(SYLL_PUSHED_KEY, JSON.stringify(pushed));
@@ -137,16 +174,16 @@ window.syllUndoLastSession = async function() {
   // Affichage immédiat, avant toute confirmation serveur — même logique que syllToggleTimer/
   // syllAddManual : le local est déjà corrigé, pas de raison d'attendre le réseau pour le voir.
   _syllRenderChart();
-  _syllRenderLastSessionUndo();
+  _syllRenderSessionsList();
 
   const uid = _syllUid();
-  if (wasFullyPushed && uid && navigator.onLine) {
+  if (sentPortion > 0 && uid && navigator.onLine) {
     try {
       await db.collection('quizProgress').doc(uid).set(
-        { syllabusTimeMs: { [dayKey]: firebase.firestore.FieldValue.increment(-ms) } },
+        { syllabusTimeMs: { [dayKey]: firebase.firestore.FieldValue.increment(-sentPortion) } },
         { merge: true }
       );
-    } catch (e) { console.warn('[syllabus] échec annulation serveur:', e); }
+    } catch (e) { console.warn('[syllabus] échec suppression côté serveur:', e); }
   }
 };
 
@@ -251,7 +288,7 @@ window.syllToggleTimer = async function() {
     localStorage.removeItem(SYLL_TIMER_KEY);
     clearInterval(_syllTimerInterval);
     _syllTimerInterval = null;
-    _syllAddDailyTime(elapsed);
+    _syllAddDailyTime(elapsed, null, 'chrono');
     if (btn) { btn.textContent = '▶️ Démarrer le chronomètre'; btn.classList.remove('syll-timer-running'); }
     _syllUpdateTimerUi();
     const warn = document.getElementById('syllTimerWarning');
@@ -261,7 +298,7 @@ window.syllToggleTimer = async function() {
     // aller-retour réseau pour refléter le changement — un réseau lent donnait l'impression
     // qu'il fallait recharger la page pour le voir apparaître.
     _syllRenderChart();
-    _syllRenderLastSessionUndo();
+    _syllRenderSessionsList();
     await _syllSave(_syllUid());
   } else {
     localStorage.setItem(SYLL_TIMER_KEY, String(Date.now()));
@@ -298,13 +335,13 @@ window.syllAddManual = async function() {
   if (!dateVal) { alert('Choisis une date.'); return; }
   if (ms <= 0) { alert('Indique une durée supérieure à 0.'); return; }
 
-  _syllAddDailyTime(ms, dateVal);
+  _syllAddDailyTime(ms, dateVal, 'manuel');
   // Afficher AVANT d'attendre la transmission serveur — voir le commentaire équivalent dans
   // syllToggleTimer().
   if (hoursInput) hoursInput.value = 0;
   if (minInput) minInput.value = 0;
   _syllRenderChart();
-  _syllRenderLastSessionUndo();
+  _syllRenderSessionsList();
   await _syllSave(_syllUid());
 };
 
@@ -417,7 +454,7 @@ window.initSyllabus = async function(uid) {
   }
 
   _syllRenderChart();
-  _syllRenderLastSessionUndo();
+  _syllRenderSessionsList();
   // Transmettre tout delta local en attente (ex. temps ajouté hors-ligne la dernière fois).
   await _syllSave(uid);
 };

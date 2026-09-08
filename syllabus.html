@@ -79,7 +79,6 @@
       Le même bouton démarre puis arrête le chronomètre. Le temps s'ajoute à celui déjà compté aujourd'hui —
       plusieurs séances dans la même journée s'additionnent, elles ne s'écrasent pas.
     </div>
-    <div id="syllUndoLastSession" style="display:none;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(244,67,54,.08);text-align:center;font-size:.82em;"></div>
   </div>
 
   <div class="home-card">
@@ -102,6 +101,15 @@
     <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
       Utile pour une session lue au calme sans le chronomètre, ou pour rattraper un jour oublié — s'ajoute
       au temps déjà compté ce jour-là, ne l'écrase pas.
+    </div>
+  </div>
+
+  <div class="home-card">
+    <h3 style="margin:0 0 10px;">🗒️ Sessions récentes</h3>
+    <div id="syllSessionsLog"></div>
+    <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:8px;">
+      Les 30 derniers ajouts (chrono ou manuel) sur cet appareil. Supprime celle qui n'a pas lieu
+      d'être — par exemple un chronomètre resté lancé par oubli.
     </div>
   </div>
 
