@@ -117,6 +117,15 @@
       <div id="diffHistoryChartBody"><p style="color:var(--text-secondary);font-size:.85em;margin:0;">Chargement…</p></div>
     </div>
 
+    <!-- Répartition par effort restant (nombre de réussites d'affilée encore nécessaires) -->
+    <div class="home-card" id="diffRemainingChart">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <h3 style="margin:0;">🎯 Effort restant</h3>
+        <span style="font-size:.78em;color:var(--text-secondary);">Combien de réussites d'affilée manquent encore, question par question</span>
+      </div>
+      <div id="diffRemainingChartBody"><p style="color:var(--text-secondary);font-size:.85em;margin:0;">Chargement…</p></div>
+    </div>
+
     <!-- Projection statistique du nombre de difficultés restantes -->
     <div class="home-card" id="diffProjection">
       <h3 style="margin:0 0 4px;">🔮 Projection</h3>
@@ -401,6 +410,7 @@
 
       diffRender();
       _diffRecordDailyCount(diffItems.length);
+      _diffRenderRemainingChart();
       _diffRunProjection();
     };
 
@@ -615,6 +625,47 @@
       cont.innerHTML = html;
       // Pas de scroll-vers-la-droite ici : jour 0 (aujourd'hui) est déjà au bord gauche, point de
       // départ naturel de lecture d'une projection.
+    }
+
+    // _diffRenderRemainingChart() – Répartit les difficultés ACTUELLES (diffItems) selon le
+    // nombre de réussites d'affilée qu'il leur manque encore pour disparaître de cette page :
+    // remaining = requiredStreak - recentStreak (toujours >= 1, sinon la question serait déjà
+    // sortie de diffItems — voir diffRecompute). Contrairement à la Projection ci-dessous (qui
+    // SIMULE l'avenir en tenant compte des échecs possibles), ce graphique est un simple
+    // instantané de l'état actuel : "si je réussissais chacune de ces questions sans plus jamais
+    // me tromper à partir de maintenant, en combien de bonnes réponses d'affilée chacune
+    // disparaîtrait-elle ?". Les valeurs à partir de 5 sont regroupées ("5+") pour ne pas étaler
+    // le graphique sur des dizaines de colonnes quand une question très souvent ratée a une
+    // exigence relevée (voir _diffRequiredStreak) très supérieure au plancher réglable.
+    function _diffRenderRemainingChart() {
+      const cont = document.getElementById('diffRemainingChartBody');
+      if (!cont) return;
+      if (!diffItems.length) { cont.innerHTML = '<p style="color:var(--text-secondary);font-size:.85em;margin:0;">Aucune difficulté actuellement.</p>'; return; }
+
+      const BUCKETS = 5; // 1,2,3,4,"5+"
+      const counts = new Array(BUCKETS).fill(0);
+      diffItems.forEach(it => {
+        const remaining = Math.max(1, it.requiredStreak - it.recentStreak);
+        const idx = Math.min(remaining, BUCKETS) - 1;
+        counts[idx]++;
+      });
+
+      const maxCount = Math.max(...counts, 1);
+      const maxBarH = 120;
+      let html = '<div class="daily-chart-scroll"><div class="daily-chart">';
+      counts.forEach((count, i) => {
+        const label = (i === BUCKETS - 1) ? (BUCKETS + '+') : String(i + 1);
+        const h = count > 0 ? Math.max(Math.round((count / maxCount) * maxBarH), 4) : 2;
+        const title = count + ' question' + (count > 1 ? 's' : '') + ' à réussir encore ' + label
+          + ' fois d\'affilée sans se tromper pour disparaître de cette page.';
+        html += `<div class="daily-bar-col" title="${title}">
+          <div class="daily-bar-count">${count}</div>
+          <div class="daily-bar" style="height:${h}px;background:#667eea"></div>
+          <div class="daily-bar-label">${label}</div>
+        </div>`;
+      });
+      html += '</div></div>';
+      cont.innerHTML = html;
     }
 
     function _famLabel(fam) {
