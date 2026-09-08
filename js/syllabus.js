@@ -174,6 +174,7 @@ window.syllDeleteSession = async function(id) {
   // Affichage immédiat, avant toute confirmation serveur — même logique que syllToggleTimer/
   // syllAddManual : le local est déjà corrigé, pas de raison d'attendre le réseau pour le voir.
   _syllRenderChart();
+  _syllRenderClearTodayBar();
   _syllRenderSessionsList();
 
   const uid = _syllUid();
@@ -184,6 +185,84 @@ window.syllDeleteSession = async function(id) {
         { merge: true }
       );
     } catch (e) { console.warn('[syllabus] échec suppression côté serveur:', e); }
+  }
+};
+
+/** _syllRenderClearTodayBar() – Bouton "Supprimer tout le temps d'aujourd'hui" au-dessus du
+ * journal des sessions : filet de rattrapage pour tout ce que le journal ne peut PAS couvrir —
+ * en particulier les sessions déjà enregistrées AVANT la mise en place de syllabusSessionsLog
+ * (PR #87), qui n'y apparaissent jamais puisqu'elles n'ont simplement jamais été journalisées.
+ * N'affiche le bouton que si le total du jour est non nul. */
+function _syllRenderClearTodayBar() {
+  const cont = document.getElementById('syllClearTodayBar');
+  if (!cont) return;
+  const todayKey = _syllTodayKey();
+  const todayMs = _syllGetDisplayDailyTimeMap()[todayKey] || 0;
+  if (todayMs <= 0) { cont.innerHTML = ''; return; }
+  const fmt = (typeof _qtFormatDayDuration === 'function') ? _qtFormatDayDuration : (ms => Math.round(ms / 60000) + ' min');
+  cont.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:6px 4px 10px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:6px;font-size:.88em;">
+      <span>Aujourd'hui : <b>${fmt(todayMs)}</b></span>
+      <button type="button" class="hist-filter-btn" style="padding:5px 14px;font-size:.9em;color:#f44336;" onclick="syllClearToday()">🗑️ Supprimer tout le temps d'aujourd'hui</button>
+    </div>`;
+}
+
+/** syllClearToday() – Remet à zéro la totalité du temps d'étude d'AUJOURD'HUI, contrairement à
+ * syllDeleteSession() qui ne peut retirer qu'une session précisément journalisée. Sert de filet
+ * de rattrapage pour du temps entré avant la mise en place du journal (ou sur un autre appareil,
+ * jamais journalisé ici non plus) : quand on n'a aucune session individuelle à pointer du doigt
+ * mais qu'on veut repartir de zéro pour la journée.
+ *
+ * Contrairement à syllDeleteSession() (qui ne compense le serveur que de la part exacte déjà
+ * transmise), ici on écrase directement le champ du jour à 0 côté serveur — pas un increment :
+ * "tout le temps d'aujourd'hui" inclut par définition ce que d'AUTRES appareils ont pu y
+ * ajouter, un increment local ne pourrait de toute façon jamais viser ce montant-là précisément.
+ *
+ * Si le chronomètre est en cours, le relance à zéro à partir de maintenant plutôt que de le
+ * laisser tourner : sans ça, la prochaine fois qu'il serait arrêté, son temps déjà écoulé
+ * viendrait immédiatement réalimenter le total qu'on vient pourtant de vider. */
+window.syllClearToday = async function() {
+  const todayKey = _syllTodayKey();
+  const fmt = (typeof _qtFormatDayDuration === 'function') ? _qtFormatDayDuration : (ms => Math.round(ms / 60000) + ' min');
+  const todayMs = _syllGetDisplayDailyTimeMap()[todayKey] || 0;
+  if (!confirm(`Supprimer tout le temps d'étude d'aujourd'hui (${fmt(todayMs)}) ? Cette action est irréversible.`)) return;
+
+  try {
+    const backup = JSON.parse(localStorage.getItem(SYLL_BACKUP_KEY) || '{}');
+    delete backup[todayKey];
+    localStorage.setItem(SYLL_BACKUP_KEY, JSON.stringify(backup));
+
+    const pushed = JSON.parse(localStorage.getItem(SYLL_PUSHED_KEY) || '{}');
+    delete pushed[todayKey];
+    localStorage.setItem(SYLL_PUSHED_KEY, JSON.stringify(pushed));
+
+    const server = JSON.parse(localStorage.getItem(SYLL_SERVER_KEY) || '{}');
+    delete server[todayKey];
+    localStorage.setItem(SYLL_SERVER_KEY, JSON.stringify(server));
+
+    // Les sessions journalisées d'aujourd'hui n'ont plus lieu d'être : les laisser aurait permis
+    // de les "supprimer" une seconde fois (sentPortion recalculé sur un total qui n'existe plus).
+    const log = _syllGetSessionsLog().filter(r => r.dayKey !== todayKey);
+    localStorage.setItem(SYLL_SESSIONS_LOG_KEY, JSON.stringify(log));
+  } catch (e) { /* quota plein, tant pis */ }
+
+  if (_syllIsRunning()) {
+    localStorage.setItem(SYLL_TIMER_KEY, String(Date.now()));
+    _syllUpdateTimerUi();
+  }
+
+  _syllRenderChart();
+  _syllRenderClearTodayBar();
+  _syllRenderSessionsList();
+
+  const uid = _syllUid();
+  if (uid && navigator.onLine) {
+    try {
+      await db.collection('quizProgress').doc(uid).set(
+        { syllabusTimeMs: { [todayKey]: 0 } },
+        { merge: true }
+      );
+    } catch (e) { console.warn('[syllabus] échec de la remise à zéro côté serveur:', e); }
   }
 };
 
@@ -298,6 +377,7 @@ window.syllToggleTimer = async function() {
     // aller-retour réseau pour refléter le changement — un réseau lent donnait l'impression
     // qu'il fallait recharger la page pour le voir apparaître.
     _syllRenderChart();
+    _syllRenderClearTodayBar();
     _syllRenderSessionsList();
     await _syllSave(_syllUid());
   } else {
@@ -341,6 +421,7 @@ window.syllAddManual = async function() {
   if (hoursInput) hoursInput.value = 0;
   if (minInput) minInput.value = 0;
   _syllRenderChart();
+  _syllRenderClearTodayBar();
   _syllRenderSessionsList();
   await _syllSave(_syllUid());
 };
@@ -454,6 +535,7 @@ window.initSyllabus = async function(uid) {
   }
 
   _syllRenderChart();
+  _syllRenderClearTodayBar();
   _syllRenderSessionsList();
   // Transmettre tout delta local en attente (ex. temps ajouté hors-ligne la dernière fois).
   await _syllSave(uid);
