@@ -230,6 +230,7 @@
     let categoryTotals = new Map(); // category -> nb total de questions (toutes, pas que ratées)
     let categoryFamily = new Map(); // category -> family (gligli/easa/classique)
     let diffSelectedCategories = new Set(); // catégories cochées dans "Détail par catégorie" (filtre du quiz)
+    let diffSelectedEffort = new Set(); // lignes cochées dans "Effort restant" (filtre du quiz, voir DIFF_EFFORT_BUCKETS)
     let diffCountHistoryServer = {}; // { "YYYY-MM-DD": count } — historique du nombre de difficultés, depuis Firestore
     let diffCfg = { base: 3, elevatedFrom: 4, elevatedPct: 50 }; // mis à jour par diffRecompute(), réutilisé par _diffRunProjection()
 
@@ -627,46 +628,102 @@
       // départ naturel de lecture d'une projection.
     }
 
-    // _diffRenderRemainingChart() – Répartit les difficultés ACTUELLES (diffItems) selon le
-    // nombre de réussites d'affilée qu'il leur manque encore pour disparaître de cette page :
-    // remaining = requiredStreak - recentStreak (toujours >= 1, sinon la question serait déjà
-    // sortie de diffItems — voir diffRecompute). Contrairement à la Projection ci-dessous (qui
-    // SIMULE l'avenir en tenant compte des échecs possibles), ce graphique est un simple
-    // instantané de l'état actuel : "si je réussissais chacune de ces questions sans plus jamais
-    // me tromper à partir de maintenant, en combien de bonnes réponses d'affilée chacune
-    // disparaîtrait-elle ?". Les valeurs à partir de 5 sont regroupées ("5+") pour ne pas étaler
-    // le graphique sur des dizaines de colonnes quand une question très souvent ratée a une
-    // exigence relevée (voir _diffRequiredStreak) très supérieure au plancher réglable.
+    // DIFF_EFFORT_BUCKETS / _diffEffortBucketLabel() – Bucket ("1".."4","5+") de réussites
+    // CONSÉCUTIVES qu'il manque encore à une question pour sortir de cette page
+    // (remaining = requiredStreak - recentStreak, toujours >= 1, sinon la question serait déjà
+    // sortie de diffItems — voir diffRecompute). "5+" regroupe tout au-delà pour ne pas étaler la
+    // liste sur des dizaines de lignes quand une question très souvent ratée a une exigence
+    // relevée (voir _diffRequiredStreak) très supérieure au plancher réglable.
+    // Point de calcul UNIQUE, partagé par _diffRenderRemainingChart() (l'affichage) ET
+    // _scopedList() (le filtre du quiz, voir diffToggleEffort) : les deux doivent toujours
+    // s'accorder, sinon le nombre affiché sur une ligne ne correspondrait pas au nombre
+    // réellement inclus dans le quiz généré en cliquant dessus.
+    const DIFF_EFFORT_BUCKETS = 5;
+    function _diffEffortBucketLabel(it) {
+      const remaining = Math.max(1, it.requiredStreak - it.recentStreak);
+      const idx = Math.min(remaining, DIFF_EFFORT_BUCKETS) - 1;
+      return (idx === DIFF_EFFORT_BUCKETS - 1) ? (DIFF_EFFORT_BUCKETS + '+') : String(idx + 1);
+    }
+
+    // _diffRenderRemainingChart() – Liste ligne par ligne (pas un graphique en barres) des
+    // difficultés ACTUELLES regroupées par effort restant (voir _diffEffortBucketLabel).
+    // Contrairement à la Projection plus bas (qui SIMULE l'avenir en tenant compte des échecs
+    // possibles), c'est un simple instantané de l'état actuel : "si je réussissais chacune de ces
+    // questions sans plus jamais me tromper à partir de maintenant, en combien de bonnes réponses
+    // d'affilée chacune disparaîtrait-elle ?".
+    // Chaque ligne est cliquable pour restreindre le quiz généré plus bas à cet effort restant
+    // précis (voir diffToggleEffort/_scopedList) — même mécanisme de sélection que "Détail par
+    // catégorie" juste en dessous. Sans clic, le générateur reste en mode normal (menu "Périmètre").
     function _diffRenderRemainingChart() {
       const cont = document.getElementById('diffRemainingChartBody');
       if (!cont) return;
       if (!diffItems.length) { cont.innerHTML = '<p style="color:var(--text-secondary);font-size:.85em;margin:0;">Aucune difficulté actuellement.</p>'; return; }
 
-      const BUCKETS = 5; // 1,2,3,4,"5+"
-      const counts = new Array(BUCKETS).fill(0);
+      const counts = new Map(); // label -> nombre de questions
       diffItems.forEach(it => {
-        const remaining = Math.max(1, it.requiredStreak - it.recentStreak);
-        const idx = Math.min(remaining, BUCKETS) - 1;
-        counts[idx]++;
+        const label = _diffEffortBucketLabel(it);
+        counts.set(label, (counts.get(label) || 0) + 1);
       });
+      const labels = [];
+      for (let i = 1; i < DIFF_EFFORT_BUCKETS; i++) labels.push(String(i));
+      labels.push(DIFF_EFFORT_BUCKETS + '+');
 
-      const maxCount = Math.max(...counts, 1);
-      const maxBarH = 120;
-      let html = '<div class="daily-chart-scroll"><div class="daily-chart">';
-      counts.forEach((count, i) => {
-        const label = (i === BUCKETS - 1) ? (BUCKETS + '+') : String(i + 1);
-        const h = count > 0 ? Math.max(Math.round((count / maxCount) * maxBarH), 4) : 2;
-        const title = count + ' question' + (count > 1 ? 's' : '') + ' à réussir encore ' + label
-          + ' fois d\'affilée sans se tromper pour disparaître de cette page.';
-        html += `<div class="daily-bar-col" title="${title}">
-          <div class="daily-bar-count">${count}</div>
-          <div class="daily-bar" style="height:${h}px;background:#667eea"></div>
-          <div class="daily-bar-label">${label}</div>
-        </div>`;
+      // Une ligne cochée retombée à 0 (questions résolues, réglage du seuil changé) ne doit pas
+      // rester sélectionnée sans plus jamais apparaître — même raisonnement que renderCategories.
+      for (const b of [...diffSelectedEffort]) {
+        if (!counts.get(b)) diffSelectedEffort.delete(b);
+      }
+
+      const maxCount = Math.max(...labels.map(l => counts.get(l) || 0), 1);
+
+      let html = diffSelectedEffort.size
+        ? `<div style="display:flex;align-items:center;gap:10px;font-size:.82em;color:var(--text-secondary);margin-bottom:8px;flex-wrap:wrap;">
+             <span>📌 ${diffSelectedEffort.size} ligne${diffSelectedEffort.size > 1 ? 's' : ''} sélectionnée${diffSelectedEffort.size > 1 ? 's' : ''} pour le quiz</span>
+             <button type="button" class="hist-filter-btn" style="font-size:.85em;padding:3px 10px;" onclick="diffClearEffortSelection()">✕ Effacer</button>
+           </div>`
+        : `<p style="font-size:.78em;color:var(--text-secondary);margin:0 0 8px;">Clique sur une ou plusieurs lignes pour limiter le quiz généré ci-dessous à cet effort restant (sinon, périmètre normal).</p>`;
+
+      html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+      labels.forEach(label => {
+        const count = counts.get(label) || 0;
+        if (!count) return;
+        const selected = diffSelectedEffort.has(label);
+        const pct = Math.round((count / maxCount) * 100);
+        const wording = (label === DIFF_EFFORT_BUCKETS + '+') ? `${DIFF_EFFORT_BUCKETS} réussites d'affilée ou plus`
+          : (label === '1' ? '1 réussite d\'affilée' : `${label} réussites d'affilée`);
+        html += `
+          <div class="diff-effort-clickrow" data-effort="${label}"
+               style="display:flex;align-items:center;gap:10px;font-size:.88em;cursor:pointer;padding:5px 8px;border-radius:8px;border:1px solid ${selected ? 'var(--button-bg)' : 'transparent'};background:${selected ? 'rgba(102,126,234,0.12)' : 'transparent'};"
+               title="Cliquer pour ${selected ? 'retirer' : 'ajouter'} cet effort restant du filtre du quiz">
+            <span style="flex:0 0 18px;text-align:center;">${selected ? '✅' : '▫️'}</span>
+            <span style="flex:0 0 220px;">Encore ${wording}</span>
+            <div class="progressbar" style="flex:1;height:8px;margin:0">
+              <div class="progress" style="height:8px;width:${pct}%;background:#667eea"></div>
+            </div>
+            <span style="flex:0 0 60px;text-align:right;">${count}</span>
+          </div>`;
       });
-      html += '</div></div>';
+      html += '</div>';
       cont.innerHTML = html;
+      // Délégation via dataset plutôt qu'un libellé inline dans onclick="" — même raisonnement
+      // que renderCategories().
+      cont.querySelectorAll('.diff-effort-clickrow').forEach(el => {
+        el.onclick = () => diffToggleEffort(el.dataset.effort);
+      });
     }
+
+    window.diffToggleEffort = function(label) {
+      if (diffSelectedEffort.has(label)) diffSelectedEffort.delete(label);
+      else diffSelectedEffort.add(label);
+      _diffRenderRemainingChart();
+      diffOnScopeChange();
+    };
+
+    window.diffClearEffortSelection = function() {
+      diffSelectedEffort.clear();
+      _diffRenderRemainingChart();
+      diffOnScopeChange();
+    };
 
     function _famLabel(fam) {
       return fam === 'gligli' ? 'GLIGLI' : (fam === 'easa' ? 'EASA' : 'Classiques');
@@ -913,10 +970,13 @@
       const statusEl = document.getElementById('diffScopeStatus');
       const selectEl = document.getElementById('diffScopeSelect');
       if (statusEl && selectEl) {
-        if (diffSelectedCategories.size) {
+        const parts = [];
+        if (diffSelectedCategories.size) parts.push('catégorie(s) : ' + [...diffSelectedCategories].join(', '));
+        if (diffSelectedEffort.size) parts.push('effort restant : ' + [...diffSelectedEffort].sort().join(', '));
+        if (parts.length) {
           selectEl.disabled = true;
-          statusEl.textContent = '📌 Filtre par catégorie(s) actif (voir "Détail par catégorie" ci-dessous) : '
-            + [...diffSelectedCategories].join(', ') + ' — ' + list.length + ' question' + (list.length > 1 ? 's' : '');
+          statusEl.textContent = '📌 Filtre actif (' + parts.join(' — ') + ') — '
+            + list.length + ' question' + (list.length > 1 ? 's' : '');
         } else {
           selectEl.disabled = false;
           statusEl.textContent = '';
@@ -924,13 +984,17 @@
       }
     };
 
-    // Le filtre par catégorie(s) cochées (voir renderCategories/diffToggleCategory) prime sur le
-    // menu déroulant "Périmètre" dès qu'au moins une catégorie est cochée — un seul champ
-    // d'application effectif à la fois, pour ne jamais lancer un quiz sur un périmètre différent
-    // de celui affiché à l'écran.
+    // Les filtres par catégorie(s) (renderCategories/diffToggleCategory) ET par effort restant
+    // (_diffRenderRemainingChart/diffToggleEffort) priment sur le menu déroulant "Périmètre" dès
+    // que l'un ou l'autre a au moins une ligne cochée — combinables entre eux (intersection), mais
+    // le menu déroulant ne s'applique QUE si aucun des deux n'est actif ("mode normal"), pour ne
+    // jamais lancer un quiz sur un périmètre différent de celui affiché à l'écran.
     function _scopedList() {
-      if (diffSelectedCategories.size) {
-        return diffItems.filter(it => diffSelectedCategories.has(it.category));
+      if (diffSelectedCategories.size || diffSelectedEffort.size) {
+        return diffItems.filter(it =>
+          (!diffSelectedCategories.size || diffSelectedCategories.has(it.category)) &&
+          (!diffSelectedEffort.size || diffSelectedEffort.has(_diffEffortBucketLabel(it)))
+        );
       }
       const scope = document.getElementById('diffScopeSelect').value;
       if (!scope || scope === 'all') return diffItems;
