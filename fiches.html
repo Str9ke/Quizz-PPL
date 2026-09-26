@@ -2608,6 +2608,17 @@ buildContent();
     }
     return chunks.length?chunks:[txt];
   }
+  /* _maxChunkLen() — Chrome (desktop ET Android) a un bug ancien et jamais corrigé : passé
+     environ 15 secondes de parole CONTINUE sur un seul SpeechSynthesisUtterance, la synthèse
+     s'arrête net, SANS que "onend" ni "onerror" ne se déclenchent jamais — silence total, sans
+     la moindre erreur à observer. Avec l'ancienne limite fixe de 1500 caractères (~100 s à
+     vitesse normale, encore plus long à vitesse réduite jusqu'à 0.5x), quasi CHAQUE fiche un
+     peu longue dépassait ce seuil et la lecture s'interrompait après quelques secondes sans
+     jamais enchaîner sur le morceau suivant — donnant l'impression que "la lecture ne marche
+     pas". Cible ~9 s par morceau (marge de sécurité sous les ~15 s observés), recalculée à
+     chaque lancement selon la vitesse EN COURS (plus rapide → morceaux plus longs, plus lent →
+     plus courts), pour que "onend" ait toujours une chance de se déclencher avant le couperet. */
+  function _maxChunkLen(rate){return Math.max(60,Math.round(9*_CPS*(rate||1)));}
   function _speakChunk(pid){
     if(!_S.playing||_S.chunkIdx>=_S.chunks.length){
       _S.playing=false;_S.paused=false;_S.charOffset=0;
@@ -2618,6 +2629,17 @@ buildContent();
     utt.lang='fr-FR';utt.rate=_S.rate;utt.volume=_S.vol;
     if(_S.voiceName){var _vv=window.speechSynthesis.getVoices().find(function(v){return v.name===_S.voiceName;});if(_vv)utt.voice=_vv;}
     var sc=_S.chunkBase;
+    var _done=false;
+    /* Garde-fou : si Chrome tue la synthèse en silence (voir _maxChunkLen ci-dessus), ni
+       "onend" ni "onerror" ne se déclenchent — sans ce filet, la lecture resterait bloquée là
+       indéfiniment. Passé la durée attendue du morceau + marge, on force l'enchaînement comme
+       si le morceau était terminé. */
+    var _watchdog=setTimeout(function(){
+      if(_done)return;_done=true;
+      if(!_S.playing)return;
+      _S.chunkBase+=chunk.length;_S.charOffset=_S.chunkBase;
+      _S.chunkIdx++;_speakChunk(pid);
+    },(chunk.length/(_CPS*_S.rate))*1000+4000);
     utt.onboundary=function(e){
       if(_seeking)return;
       var abs=sc+(e.charIndex||0);_S.charOffset=abs;
@@ -2625,11 +2647,15 @@ buildContent();
       _setProg(pid,pct,abs/(_CPS*_S.rate),_S.dur);
     };
     utt.onend=function(){
+      if(_done)return;_done=true;clearTimeout(_watchdog);
       if(!_S.playing)return;
       _S.chunkBase+=chunk.length;_S.charOffset=_S.chunkBase;
       _S.chunkIdx++;_speakChunk(pid);
     };
-    utt.onerror=function(){_S.playing=false;_setBtn(pid,'stopped');};
+    utt.onerror=function(){
+      if(_done)return;_done=true;clearTimeout(_watchdog);
+      _S.playing=false;_setBtn(pid,'stopped');
+    };
     window.speechSynthesis.speak(utt);
   }
   function _speak(pid){
@@ -2637,7 +2663,7 @@ buildContent();
     window.speechSynthesis.cancel();
     var rem=_S.text.substring(_S.charOffset);
     if(!rem.trim()){_S.charOffset=0;rem=_S.text;}
-    _S.chunks=_splitChunks(rem,1500);_S.chunkIdx=0;_S.chunkBase=_S.charOffset;
+    _S.chunks=_splitChunks(rem,_maxChunkLen(_S.rate));_S.chunkIdx=0;_S.chunkBase=_S.charOffset;
     _S.playing=true;_S.paused=false;
     _setBtn(pid,'playing');
     _speakChunk(pid);
