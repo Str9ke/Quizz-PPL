@@ -863,7 +863,26 @@ def do_login(session, username, password):
     init_resp = session.get(f"{base}/opersite/login.do")
     print(f"GET login.do: status={init_resp.status_code}, url={init_resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
-    
+    if init_resp.status_code == 403:
+        # Diagnostic du blocage : en-têtes (serveur, WAF) + début de la page renvoyée.
+        print("BLOCK headers:", dict(init_resp.headers))
+        body = re.sub(r'\s+', ' ', init_resp.text)
+        print("BLOCK body:", body[:2500])
+        try:
+            ip = requests.get("https://api.ipify.org", timeout=10).text
+            print("Runner public IP:", ip)
+        except Exception as e:
+            print("Runner IP lookup failed:", e)
+        try:
+            plain = requests.get(f"{base}/opersite/login.do", timeout=20, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
+            })
+            print(f"Plain requests login.do: status={plain.status_code}")
+        except Exception as e:
+            print("Plain requests failed:", e)
+
     # Step 2: Follow the actual login form link: login.forward.do?cmd=init
     login_resp = session.get(f"{base}/opersite/login.forward.do?cmd=init",
                              headers={"Referer": init_resp.url})
