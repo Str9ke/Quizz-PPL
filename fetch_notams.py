@@ -854,6 +854,79 @@ def fetch_sfc_analysis(session, manifest):
         print("  -> No SFC Analysis images obtained")
 
 
+SKEYES_BASE = "https://ops.skeyes.be"
+BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
+_FAILURES = []
+
+
+def _record_failure(what, detail):
+    _FAILURES.append(f"{what}: {detail}")
+
+
+def write_status_file(path="_skeyes_status.txt"):
+    """Fichier lu par le workflow : s'il contient des échecs, le job est marqué en échec à la
+    fin (après le commit des données partielles) — GitHub envoie alors un e-mail. Sans ça, une
+    panne Skeyes passait inaperçue des semaines : le script tourne avec `|| true` et le job
+    restait vert."""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("ok\n" if not _FAILURES else "\n".join("FAIL " + x for x in _FAILURES) + "\n")
+
+
+def _waf_clearance_cookies():
+    """Depuis début septembre 2026, ops.skeyes.be est derrière un Azure Application Gateway
+    WAF qui renvoie 403 + un défi JavaScript à tout client qui n'exécute pas de JS (requests,
+    cloudscraper) — y compris sur la page de connexion, avant toute authentification. Un vrai
+    Chromium (Playwright) résout ce défi en quelques secondes et reçoit le cookie
+    `appgw_azwaf_jsclearance` ; on le transfère ensuite dans la session requests, avec le MÊME
+    User-Agent, pour que tout le reste du script fonctionne sans changement."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+        ctx = browser.new_context(locale="fr-BE", user_agent=BROWSER_UA)
+        page = ctx.new_page()
+        page.goto(f"{SKEYES_BASE}/opersite/login.do", wait_until="domcontentloaded", timeout=60000)
+        ok = False
+        for _ in range(16):
+            page.wait_for_timeout(2000)
+            if page.locator("form[name=loginForm], input[type=password]").count():
+                ok = True
+                break
+        cookies = ctx.cookies()
+        browser.close()
+    names = [c["name"] for c in cookies]
+    print(f"WAF browser bootstrap: login_form_reached={ok}, cookies={names}")
+    return cookies if ok else None
+
+
+def make_skeyes_session():
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
+    })
+    probe = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
+    if probe.status_code != 403:
+        return session
+    print(f"Skeyes WAF detected (Server={probe.headers.get('Server')}), solving JS challenge with Chromium...")
+    try:
+        cookies = _waf_clearance_cookies()
+    except Exception as e:
+        cookies = None
+        print(f"WAF browser bootstrap crashed: {e}")
+    if not cookies:
+        _record_failure("waf", "défi JavaScript du WAF Azure non résolu par Chromium")
+        return session
+    for c in cookies:
+        session.cookies.set(c["name"], c["value"], domain=c["domain"], path=c.get("path", "/"))
+    check = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
+    print(f"After WAF clearance: login.do status={check.status_code}")
+    if check.status_code == 403:
+        _record_failure("waf", "cookie de dégagement WAF refusé par requests (403)")
+    return session
+
+
 def do_login(session, username, password):
     """Authenticate to the Skeyes opersite. Returns True if login succeeded."""
     print("--- Login ---")
@@ -863,26 +936,6 @@ def do_login(session, username, password):
     init_resp = session.get(f"{base}/opersite/login.do")
     print(f"GET login.do: status={init_resp.status_code}, url={init_resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
-    if init_resp.status_code == 403:
-        # Diagnostic du blocage : en-têtes (serveur, WAF) + début de la page renvoyée.
-        print("BLOCK headers:", dict(init_resp.headers))
-        body = re.sub(r'\s+', ' ', init_resp.text)
-        print("BLOCK body:", body[:2500])
-        try:
-            ip = requests.get("https://api.ipify.org", timeout=10).text
-            print("Runner public IP:", ip)
-        except Exception as e:
-            print("Runner IP lookup failed:", e)
-        try:
-            plain = requests.get(f"{base}/opersite/login.do", timeout=20, headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
-            })
-            print(f"Plain requests login.do: status={plain.status_code}")
-        except Exception as e:
-            print("Plain requests failed:", e)
-
     # Step 2: Follow the actual login form link: login.forward.do?cmd=init
     login_resp = session.get(f"{base}/opersite/login.forward.do?cmd=init",
                              headers={"Referer": init_resp.url})
@@ -960,9 +1013,13 @@ def do_login(session, username, password):
     is_login_page = 'login.jsp' in verify.url or 'login.do' in verify.url
     print(f"Auth verify: status={verify.status_code}, url={verify.url}, is_login={is_login_page}")
     
-    if not is_login_page:
+    if verify.status_code == 200 and not is_login_page:
         print("Login successful!")
         return True
+    if verify.status_code == 403:
+        print("WARNING: Skeyes WAF still blocking after login (HTTP 403)")
+        _record_failure("login", f"WAF 403 sur opmeteoindex.do (Server={verify.headers.get('Server')})")
+        return False
     
     # Login failed - dump debug info
     print("WARNING: Login failed")
@@ -984,9 +1041,7 @@ def main():
         print("Missing credentials")
         return
 
-    session = cloudscraper.create_scraper(
-        browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
-    )
+    session = make_skeyes_session()
     
     logged_in = do_login(session, username, password)
     
@@ -995,6 +1050,7 @@ def main():
         fetch_opmet(session)
     except Exception as e:
         print(f"Error fetching OPMET: {e}")
+        _record_failure("opmet", str(e))
         generate_error_html("opmet.html", "OPMET", session, str(e))
     
     # Remote sensing images (fetch via detail pages)
@@ -1132,21 +1188,23 @@ def main_opmet_only():
         print("Missing credentials")
         return
 
-    session = cloudscraper.create_scraper(
-        browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
-    )
+    session = make_skeyes_session()
     do_login(session, username, password)
 
     try:
         fetch_opmet(session)
     except Exception as e:
         print(f"Error fetching OPMET (fast): {e}")
+        _record_failure("opmet", str(e))
         generate_error_html("opmet.html", "OPMET", session, str(e))
 
 
 if __name__ == "__main__":
     import sys
-    if '--opmet-only' in sys.argv:
-        main_opmet_only()
-    else:
-        main()
+    try:
+        if '--opmet-only' in sys.argv:
+            main_opmet_only()
+        else:
+            main()
+    finally:
+        write_status_file()

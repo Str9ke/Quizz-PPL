@@ -34,6 +34,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # Chromium sert UNIQUEMENT à résoudre le défi JavaScript du WAF Azure placé devant
+          # ops.skeyes.be depuis début septembre 2026 (voir make_skeyes_session dans
+          # fetch_notams.py) — sans lui, toutes les requêtes Skeyes renvoient 403.
+          python -m playwright install --with-deps chromium
 
       - name: Run script
         env:
@@ -119,3 +123,19 @@ jobs:
             -d '{"ref":"main"}' \
           && echo "Déploiement Pages déclenché." \
           || echo "::warning::Échec du déclenchement du déploiement Pages — le site restera périmé jusqu'au prochain déploiement manuel."
+
+      - name: Alert if Skeyes retrieval failed
+        if: always()
+        run: |
+          # Les données partielles (NOTAMs, TEMSI…) ont déjà été publiées ci-dessus. Ici on rend
+          # le job ROUGE si Skeyes a échoué, pour que GitHub envoie un e-mail d'alerte : la panne
+          # de septembre 2026 est restée invisible 3 semaines parce que le job restait vert.
+          if [ ! -f _skeyes_status.txt ]; then
+            echo "::error::Statut Skeyes absent — le script a probablement planté."
+            exit 1
+          fi
+          cat _skeyes_status.txt
+          if grep -q '^FAIL' _skeyes_status.txt; then
+            echo "::error::Récupération Skeyes en échec : $(grep '^FAIL' _skeyes_status.txt | tr '\n' ' ')"
+            exit 1
+          fi
