@@ -31,11 +31,11 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20260807a"></script>
-  <script src="js/helpers.js?v=20260807d"></script>
+  <script src="js/globals.js?v=20261005a"></script>
+  <script src="js/helpers.js?v=20261005a"></script>
   <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807i"></script>
-  <script src="js/quiz.js?v=20260807k"></script>
+  <script src="js/quiz.js?v=20261005a"></script>
   <script src="js/init.js?v=20260807c"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/net.js?v=20260817a"></script>
@@ -840,6 +840,7 @@
         alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
         return;
       }
+      localStorage.removeItem('quizFinalReview');
       localStorage.setItem('quizCategory', 'HISTORIQUE');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());

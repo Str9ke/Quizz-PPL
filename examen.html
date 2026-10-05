@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121218">
+  <title>Quiz Aviation - Révisions finales</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20260807a" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(() => {
+      window._persistenceStatus = 'ok';
+    }).catch(err => {
+      window._persistenceStatus = (err.code === 'failed-precondition' || err.code === 'unimplemented') ? 'unavailable' : 'error';
+      if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
+    });
+  </script>
+  <script src="js/globals.js?v=20261005a"></script>
+  <script src="js/helpers.js?v=20261005a"></script>
+  <script src="js/categories.js?v=20260807c"></script>
+  <script src="js/stats.js?v=20260807i"></script>
+  <script src="js/quiz.js?v=20261005a"></script>
+  <script src="js/init.js?v=20260807c"></script>
+  <script src="js/statusbar.js?v=20260818a"></script>
+  <script src="js/net.js?v=20260817a"></script>
+  <script src="js/first-run.js?v=20260817b"></script>
+  <script src="js/update-check.js?v=20260816b"></script>
+  <script src="js/app-update.js?v=20260816c"></script>
+  <script src="js/tts.js?v=20260816b"></script>
+  <script src="js/localmirror.js?v=20260816a"></script>
+  <script src="js/offline.js?v=20260807i"></script>
+  <script src="js/img-zoom.js?v=20260820a"></script>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light'); else if (saved === 'exotique') document.body.classList.add('exotique');
+    })();
+  </script>
+  <button id="themeToggle" onclick="(function(){var b=document.body;var cur=b.classList.contains('exotique')?'exotique':(b.classList.contains('light')?'light':'dark');var next=cur==='dark'?'light':(cur==='light'?'exotique':'dark');b.classList.remove('light','exotique');if(next!=='dark')b.classList.add(next);localStorage.setItem('theme',next);document.getElementById('themeToggle').textContent=next==='light'?'☀️':(next==='exotique'?'🌴':'🌙')})()">☀️</button>
+  <div class="tts-container" id="ttsContainer" onclick="(function(e){if(e.target.id==='ttsVolume')return;document.getElementById('ttsContainer').classList.toggle('open')})(event)"><div class="tts-volume-track"><input type="range" id="ttsVolume" min="0" max="100" value="100" orient="vertical" oninput="(function(v){localStorage.setItem('ttsVolume',v);document.getElementById('ttsPct').textContent=v+'%'})(this.value)"><div class="tts-volume-pct" id="ttsPct">100%</div></div><button id="ttsToggle" onclick="(function(e){e.stopPropagation();var on=localStorage.getItem('ttsEnabled')==='1';localStorage.setItem('ttsEnabled',on?'0':'1');document.getElementById('ttsToggle').textContent=on?'🔇':'🔊';document.getElementById('ttsToggle').title=on?'TTS désactivé':'TTS activé'})(event)" title="TTS désactivé">🔇</button></div>
+  <script>
+    (function(){var b=document.body;document.getElementById('themeToggle').textContent=b.classList.contains('exotique')?'🌴':(b.classList.contains('light')?'☀️':'🌙')})();
+    if(localStorage.getItem('ttsEnabled')==='1'){document.getElementById('ttsToggle').textContent='🔊';document.getElementById('ttsToggle').title='TTS activé';}(function(){var v=localStorage.getItem('ttsVolume');if(v!==null){document.getElementById('ttsVolume').value=v;document.getElementById('ttsPct').textContent=v+'%';}})();
+  </script>
+
+  <!-- Hero banner -->
+  <div class="home-hero">
+    <div class="home-hero-icon">🎓</div>
+    <h1 class="home-hero-title">Révisions finales</h1>
+    <div class="home-hero-subtitle">GLIGLI uniquement — compteur indépendant de tous les autres</div>
+  </div>
+
+  <style>
+    .fr-bar{height:8px;border-radius:4px;background:rgba(127,127,127,.2);overflow:hidden;display:flex;margin-top:5px}
+    .fr-bar>.fr-ok{background:#4caf50}
+    .fr-bar>.fr-ko{background:#e57373}
+    .fr-sec{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border-color,rgba(255,255,255,.08))}
+    .fr-sec:last-child{border-bottom:none}
+    .fr-sec input[type=checkbox]{margin-top:3px;transform:scale(1.15)}
+    .fr-sec-main{flex:1;min-width:0}
+    .fr-sec-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:600}
+    .fr-sec-nums{font-size:.78em;color:var(--text-secondary,#aaa);margin-top:3px}
+    .fr-pct{font-variant-numeric:tabular-nums}
+    .fr-group-title{font-size:.8em;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary,#aaa);margin:14px 0 2px}
+    .fr-global-num{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;text-align:center}
+    .fr-global-num div{background:rgba(127,127,127,.08);border-radius:8px;padding:8px 4px}
+    .fr-global-num b{display:block;font-size:1.35em}
+    .fr-global-num span{font-size:.72em;color:var(--text-secondary,#aaa)}
+    .fr-opts label{display:flex;align-items:center;gap:8px;font-size:.88em;margin:6px 0}
+    .fr-small-btn{font-size:.8em;padding:5px 10px}
+    @media (max-width:480px){.fr-global-num{grid-template-columns:repeat(2,1fr)}}
+  </style>
+
+  <p id="frLoading" class="home-card" style="text-align:center;color:var(--text-secondary);">Chargement…</p>
+
+  <div id="frBody" style="display:none;">
+    <!-- Progression globale -->
+    <div class="home-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <strong>📈 Progression globale</strong>
+        <span class="fr-pct" id="frGlobalPct"></span>
+      </div>
+      <div class="fr-bar" id="frGlobalBar"></div>
+      <div class="fr-global-num">
+        <div><b id="frGTotal">0</b><span>à faire (uniques)</span></div>
+        <div><b id="frGOk" style="color:#4caf50">0</b><span>✅ maîtrisées</span></div>
+        <div><b id="frGKo" style="color:#e57373">0</b><span>❌ à reprendre</span></div>
+        <div><b id="frGNew">0</b><span>⏳ pas encore vues</span></div>
+      </div>
+      <div style="font-size:.75em;color:var(--text-secondary,#aaa);margin-top:10px;line-height:1.45">
+        Une question présente dans plusieurs sections n'est comptée <strong>qu'une seule fois</strong> ici,
+        et sa progression avance dans <strong>toutes</strong> ses sections à la fois.
+        « Maîtrisée » = dernière réponse donnée en révisions finales correcte ; une erreur la remet dans « à reprendre ».
+      </div>
+    </div>
+
+    <!-- Sections -->
+    <div class="home-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <strong>📚 Sections</strong>
+        <span style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="hist-filter-btn fr-small-btn" onclick="frSelectAll(true)">Tout cocher</button>
+          <button class="hist-filter-btn fr-small-btn" onclick="frSelectAll(false)">Tout décocher</button>
+        </span>
+      </div>
+      <div id="frSections"></div>
+      <div id="frSnapInfo" style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:10px;line-height:1.45"></div>
+    </div>
+
+    <!-- Lancement -->
+    <div class="home-card fr-opts">
+      <strong>▶️ Générer un questionnaire</strong>
+      <div id="frSelInfo" style="font-size:.85em;margin:8px 0;color:var(--text-secondary,#aaa)"></div>
+      <label><input type="checkbox" id="frOnlyRemaining" checked onchange="frRenderSelection()"> Seulement les questions pas encore maîtrisées</label>
+      <label><input type="checkbox" id="frMostFailedFirst" checked> Les plus ratées en priorité (puis importantes, puis marquées)</label>
+      <label><input type="checkbox" id="frPractice"> 🛡️ Entraînement pur : ne touche ni aux statistiques ni à la répétition espacée (seul ce compteur avance)</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <label style="margin:0">Nombre de questions :
+          <input type="number" id="frNb" min="1" value="20" style="width:75px;padding:4px 6px;border-radius:4px;">
+        </label>
+        <button class="hist-filter-btn fr-small-btn" onclick="frSetMax()">Max</button>
+        <button class="hist-filter-btn hist-filter-quiz" id="frLaunchBtn" style="font-size:.95em;padding:8px 20px;" onclick="frLaunch()">▶️ Lancer</button>
+      </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="home-card" style="font-size:.85em">
+      <strong>⚙️ Liste des révisions finales</strong>
+      <div id="frMaintInfo" style="margin:6px 0 10px;color:var(--text-secondary,#aaa);line-height:1.45"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="hist-filter-btn fr-small-btn" id="frAddNewBtn" onclick="frAddNewFailed()">➕ Intégrer les nouvelles ratées</button>
+        <button class="hist-filter-btn fr-small-btn" onclick="frReset()">♻️ Tout remettre à zéro</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // Page "Révisions finales" — GLIGLI uniquement, compteur indépendant.
+  //
+  // Sections :
+  //   • Importantes : important === true
+  //   • Marquées    : marked === true ET pas importante (une question à la fois marquée et
+  //                   importante n'apparaît QUE dans Importantes)
+  //   • Ratées N×   : nombre d'échecs N figé dans une "photo" (snap) prise au premier passage
+  //                   — sinon une erreur commise pendant les révisions finales ferait sauter la
+  //                   question d'une section à l'autre en cours de route. Le bouton "Intégrer
+  //                   les nouvelles ratées" ajoute à la photo celles ratées depuis.
+  //   Importantes/Marquées sont lues en direct (un (dé)marquage se reflète tout de suite).
+  //
+  // Progression : par question (quizProgress/{uid}/finalReview/state → items), donc partagée
+  // par toutes les sections qui la contiennent ; le total global est l'union dédupliquée.
+  // Les réponses sont enregistrées par js/quiz.js (_finalReviewRecord) quand quizFinalReview=1.
+  // ============================================================
+  (function() {
+    let uid = null;
+    let pool = new Map();       // key -> q (GLIGLI, non suspendues)
+    let responses = {};
+    let snap = {};              // key -> failCount figé
+    let snapAt = null;
+    let items = {};             // key -> {ok, n, c, ts}
+    let sections = [];          // [{id, label, group, keys:Set}]
+    let checked = new Set();    // ids de sections cochées
+    const SEL_LS = 'finalReviewSel';
+
+    function stateRef() {
+      return db.collection('quizProgress').doc(uid).collection('finalReview').doc('state');
+    }
+    function lsKey() { return 'finalReview_' + uid; }
+
+    async function readState() {
+      const ref = stateRef();
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000));
+      try {
+        const d = await Promise.race([ref.get(), timeout]);
+        return d.exists ? d.data() : null;
+      } catch (e) {
+        try { const d = await ref.get({ source: 'cache' }); return d.exists ? d.data() : null; }
+        catch (e2) { return undefined; } // inconnu (hors-ligne sans cache)
+      }
+    }
+
+    function mergeLocalMirror() {
+      let m = {};
+      try { m = JSON.parse(localStorage.getItem(lsKey()) || '{}'); } catch (e) {}
+      Object.keys(m).forEach(k => {
+        const a = items[k], b = m[k];
+        if (!a || (b.ts || 0) > (a.ts || 0)) items[k] = Object.assign({}, a || {}, b);
+      });
+    }
+
+    function liveFail(key) {
+      const r = responses[key];
+      return (r && r.failCount) || 0;
+    }
+
+    function computeNewFailed() {
+      const out = [];
+      pool.forEach((q, key) => { if (liveFail(key) >= 1 && !(key in snap)) out.push(key); });
+      return out;
+    }
+
+    function buildSections() {
+      const imp = new Set(), mk = new Set(), byFail = new Map();
+      pool.forEach((q, key) => {
+        const r = responses[key] || {};
+        if (r.important === true) imp.add(key);
+        else if (r.marked === true) mk.add(key);
+        const fc = snap[key] || 0;
+        if (fc >= 1) {
+          if (!byFail.has(fc)) byFail.set(fc, new Set());
+          byFail.get(fc).add(key);
+        }
+      });
+      sections = [
+        { id: 'imp', label: '⭐ Importantes', group: 'Prioritaires', keys: imp },
+        { id: 'mk', label: '📌 Marquées (hors importantes)', group: 'Prioritaires', keys: mk }
+      ];
+      [...byFail.keys()].sort((a, b) => b - a).forEach(fc => {
+        sections.push({ id: 'f' + fc, label: '🔥 Ratées ' + fc + '×', group: 'Ratées (nombre d\'échecs figé à la photo)', keys: byFail.get(fc), fc });
+      });
+    }
+
+    function stats(keys) {
+      let ok = 0, ko = 0, nw = 0;
+      keys.forEach(k => {
+        const it = items[k];
+        if (!it || !(it.n > 0 || it.ok !== undefined)) nw++;
+        else if (it.ok) ok++;
+        else ko++;
+      });
+      return { total: keys.size, ok, ko, nw };
+    }
+
+    function barHtml(s) {
+      if (!s.total) return '';
+      return '<div class="fr-ok" style="width:' + (100 * s.ok / s.total) + '%"></div>'
+           + '<div class="fr-ko" style="width:' + (100 * s.ko / s.total) + '%"></div>';
+    }
+    function pct(s) { return s.total ? Math.round(100 * s.ok / s.total) + ' %' : '—'; }
+
+    function render() {
+      // Global : union dédupliquée de TOUTES les sections
+      const all = new Set();
+      sections.forEach(s => s.keys.forEach(k => all.add(k)));
+      const g = stats(all);
+      document.getElementById('frGTotal').textContent = g.total;
+      document.getElementById('frGOk').textContent = g.ok;
+      document.getElementById('frGKo').textContent = g.ko;
+      document.getElementById('frGNew').textContent = g.nw;
+      document.getElementById('frGlobalPct').textContent = g.ok + ' / ' + g.total + ' (' + pct(g) + ') — reste ' + (g.total - g.ok);
+      document.getElementById('frGlobalBar').innerHTML = barHtml(g);
+
+      let html = '', lastGroup = null;
+      sections.forEach(sec => {
+        if (sec.group !== lastGroup) { html += '<div class="fr-group-title">' + sec.group + '</div>'; lastGroup = sec.group; }
+        const s = stats(sec.keys);
+        const dis = s.total ? '' : ' disabled';
+        html += '<label class="fr-sec">'
+          + '<input type="checkbox" data-sec="' + sec.id + '"' + (checked.has(sec.id) && s.total ? ' checked' : '') + dis + ' onchange="frToggle(\'' + sec.id + '\', this.checked)">'
+          + '<div class="fr-sec-main">'
+          + '<div class="fr-sec-head"><span>' + sec.label + '</span><span class="fr-pct">' + s.ok + ' / ' + s.total + ' · ' + pct(s) + '</span></div>'
+          + '<div class="fr-bar">' + barHtml(s) + '</div>'
+          + '<div class="fr-sec-nums">✅ ' + s.ok + ' maîtrisées · ❌ ' + s.ko + ' à reprendre · ⏳ ' + s.nw + ' pas vues · reste <strong>' + (s.total - s.ok) + '</strong></div>'
+          + '</div></label>';
+      });
+      if (sections.length <= 2 && !Object.keys(snap).length) {
+        html += '<div class="fr-group-title">Ratées</div><div style="font-size:.85em;color:var(--text-secondary)">Aucune question GLIGLI ratée 🎉</div>';
+      }
+      document.getElementById('frSections').innerHTML = html;
+
+      const nSnap = Object.keys(snap).length;
+      document.getElementById('frSnapInfo').innerHTML = snapAt
+        ? 'Sections « Ratées » : photo du ' + new Date(snapAt).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' }) + ' (' + nSnap + ' questions). Importantes/Marquées : en direct.'
+        : '';
+      const nNew = computeNewFailed().length;
+      document.getElementById('frMaintInfo').innerHTML =
+        (nNew ? '<strong>' + nNew + '</strong> question' + (nNew > 1 ? 's' : '') + ' GLIGLI ratée' + (nNew > 1 ? 's' : '') + ' depuis la photo ne figure' + (nNew > 1 ? 'nt' : '') + ' pas encore dans les sections « Ratées ».'
+              : 'Toutes les questions GLIGLI ratées sont déjà dans les sections.')
+        + '<br>« Tout remettre à zéro » efface la progression des révisions finales et reprend une nouvelle photo (n\'affecte aucun autre compteur).';
+      document.getElementById('frAddNewBtn').disabled = !nNew;
+      frRenderSelection();
+    }
+
+    function selectedKeys() {
+      const set = new Set();
+      sections.forEach(sec => { if (checked.has(sec.id)) sec.keys.forEach(k => set.add(k)); });
+      if (document.getElementById('frOnlyRemaining').checked) {
+        [...set].forEach(k => { if (items[k] && items[k].ok) set.delete(k); });
+      }
+      return set;
+    }
+
+    window.frRenderSelection = function() {
+      const n = selectedKeys().size;
+      const nSec = sections.filter(s => checked.has(s.id) && s.keys.size).length;
+      document.getElementById('frSelInfo').innerHTML = nSec
+        ? nSec + ' section' + (nSec > 1 ? 's' : '') + ' cochée' + (nSec > 1 ? 's' : '') + ' → <strong>' + n + '</strong> question' + (n > 1 ? 's' : '') + ' unique' + (n > 1 ? 's' : '') + ' disponible' + (n > 1 ? 's' : '')
+        : 'Coche une ou plusieurs sections ci-dessus.';
+      const nb = document.getElementById('frNb');
+      nb.max = Math.max(1, n);
+      document.getElementById('frLaunchBtn').disabled = !n;
+    };
+
+    function saveSel() { try { localStorage.setItem(SEL_LS, JSON.stringify([...checked])); } catch (e) {} }
+
+    window.frToggle = function(id, on) {
+      if (on) checked.add(id); else checked.delete(id);
+      saveSel(); frRenderSelection();
+    };
+    window.frSelectAll = function(on) {
+      checked = new Set(on ? sections.filter(s => s.keys.size).map(s => s.id) : []);
+      saveSel(); render();
+    };
+    window.frSetMax = function() {
+      document.getElementById('frNb').value = Math.max(1, selectedKeys().size);
+    };
+
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+
+    window.frLaunch = async function() {
+      const keys = [...selectedKeys()];
+      if (!keys.length) { alert('Aucune question à lancer.'); return; }
+      let nb = parseInt(document.getElementById('frNb').value) || 0;
+      nb = Math.max(1, Math.min(nb, keys.length));
+
+      let ordered = shuffle(keys.slice());
+      if (document.getElementById('frMostFailedFirst').checked) {
+        const prio = k => {
+          const r = responses[k] || {};
+          return (snap[k] || 0) * 10 + (r.important ? 2 : 0) + (r.marked ? 1 : 0);
+        };
+        ordered.sort((a, b) => prio(b) - prio(a)); // tri stable : l'ordre aléatoire départage les égalités
+      }
+      const selected = shuffle(ordered.slice(0, nb)).map(k => JSON.parse(JSON.stringify(pool.get(k))));
+
+      const saved = (typeof _setLocalStorageWithCleanup === 'function')
+        ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
+        : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
+      if (!saved) {
+        alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
+        return;
+      }
+      const practice = document.getElementById('frPractice').checked;
+      const category = 'RÉVISIONS FINALES (GLIGLI)';
+      localStorage.setItem('quizFinalReview', '1');
+      localStorage.setItem('quizCategory', category);
+      localStorage.setItem('quizMode', 'toutes');
+      localStorage.setItem('quizNbQuestions', selected.length.toString());
+      localStorage.setItem('correctionImmediate', '1');
+      if (practice) localStorage.setItem('quizPracticeMode', '1'); else localStorage.removeItem('quizPracticeMode');
+      localStorage.removeItem('quizFreezeSrSchedule');
+      localStorage.removeItem('quizDifficultyDrill');
+      localStorage.removeItem('currentQuizAnswers');
+      localStorage.removeItem('currentQuizBatchPos');
+      localStorage.removeItem('recentlyAnsweredKeys');
+      localStorage.removeItem('assistSkippedIdx');
+      if (!practice && typeof _activeSessionWrite === 'function') {
+        await _activeSessionWrite(selected, {
+          kind: 'normal', category, mode: 'toutes', correctionImmediate: '1',
+          freezeSrSchedule: false, difficultyDrill: false, finalReview: true
+        });
+      }
+      window.location = 'quiz.html';
+    };
+
+    async function saveSnap(newEntries, reset) {
+      const payload = { snap: newEntries };
+      if (reset || !snapAt) { snapAt = Date.now(); payload.snapAt = snapAt; }
+      try { await stateRef().set(payload, { merge: true }); }
+      catch (e) { console.warn('[révisions finales] échec sauvegarde photo:', e); }
+    }
+
+    window.frAddNewFailed = async function() {
+      const keys = computeNewFailed();
+      if (!keys.length) return;
+      const add = {};
+      keys.forEach(k => { add[k] = liveFail(k); snap[k] = add[k]; });
+      buildSections(); render();
+      await saveSnap(add, false);
+    };
+
+    window.frReset = async function() {
+      if (!confirm('Remettre à zéro la progression des révisions finales et reprendre une nouvelle photo des questions ratées ?\n\n(Aucun autre compteur n\'est touché.)')) return;
+      items = {};
+      try { localStorage.removeItem(lsKey()); } catch (e) {}
+      snap = {};
+      pool.forEach((q, key) => { const fc = liveFail(key); if (fc >= 1) snap[key] = fc; });
+      try { await stateRef().delete(); } catch (e) { console.warn(e); }
+      snapAt = null;
+      await saveSnap(snap, true);
+      buildSections(); render();
+    };
+
+    async function init() {
+      uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
+      if (!uid) { window.location = 'index.html'; return; }
+      const loading = document.getElementById('frLoading');
+      loading.textContent = 'Chargement des questions GLIGLI…';
+
+      await prefetchAllJsonFiles();
+      await chargerQuestions('GLIGLI ALL');
+
+      try {
+        const doc = await _loadMergedResponses(uid, 6000);
+        const data = doc.exists ? doc.data() : {};
+        responses = normalizeResponses(data.responses || {});
+      } catch (e) { console.warn('[révisions finales] chargement réponses:', e); }
+
+      pool = new Map();
+      (questions || []).forEach(q => {
+        if (!/^GLIGLI/i.test(getModeCategory(q.categorie))) return;
+        const key = getKeyFor(q);
+        if (pool.has(key)) return;
+        const r = responses[key];
+        if (r && r.suspended) return;
+        pool.set(key, q);
+      });
+
+      loading.textContent = 'Chargement de la progression…';
+      const st = await readState();
+      if (st) {
+        snap = st.snap || {};
+        snapAt = st.snapAt || null;
+        items = st.items || {};
+      }
+      mergeLocalMirror();
+
+      // Premier passage : prendre la photo des questions ratées
+      if (st === null || (st && !st.snapAt)) {
+        pool.forEach((q, key) => { const fc = liveFail(key); if (fc >= 1 && !(key in snap)) snap[key] = fc; });
+        await saveSnap(Object.assign({}, snap), false);
+      }
+
+      buildSections();
+      let sel = null;
+      try { sel = JSON.parse(localStorage.getItem(SEL_LS) || 'null'); } catch (e) {}
+      checked = new Set(Array.isArray(sel) ? sel : sections.filter(s => s.keys.size).map(s => s.id));
+
+      loading.style.display = 'none';
+      document.getElementById('frBody').style.display = 'block';
+      render();
+    }
+
+    // Retour depuis le quiz via le bouton Précédent (bfcache) : rafraîchir la progression locale
+    window.addEventListener('pageshow', e => {
+      if (e.persisted && uid && sections.length) { mergeLocalMirror(); render(); }
+    });
+
+    let initDone = false;
+    function doInit() { if (initDone) return; initDone = true; init(); }
+    auth.onAuthStateChanged(function(user) {
+      if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
+      else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else { window.location = 'index.html'; }
+    });
+    setTimeout(function() { if (!initDone && localStorage.getItem('cachedUid')) doInit(); }, 2500);
+  })();
+  </script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
+</body>
+</html>

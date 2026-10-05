@@ -12,6 +12,42 @@ function _isPracticeMode() {
 }
 
 /**
+ * Révisions finales (examen.html) – compteur INDÉPENDANT de tous les autres : chaque réponse
+ * donnée dans un quiz lancé depuis la page "Révisions finales" (flag quizFinalReview) est
+ * enregistrée dans quizProgress/{uid}/finalReview/state → items.{clé} = { ok (dernier résultat),
+ * n (tentatives), c (réussites), ts }, plus un miroir localStorage (finalReview_{uid}) pour un
+ * affichage immédiat même hors-ligne. Écriture en objet imbriqué + merge (jamais de clé
+ * pointée avec set()). Indépendant de _isPracticeMode : le compteur avance dans les deux cas.
+ */
+function _isFinalReview() {
+  return localStorage.getItem('quizFinalReview') === '1';
+}
+function _finalReviewRecord(q, isCorrect, isRetry) {
+  const uid = _activeSessionUid();
+  if (!uid) return;
+  const key = getKeyFor(q);
+  const ts = Date.now();
+  const dn = isRetry ? 0 : 1;
+  const dc = (!isRetry && isCorrect) ? 1 : 0;
+  try {
+    const lsKey = 'finalReview_' + uid;
+    const m = JSON.parse(localStorage.getItem(lsKey) || '{}');
+    const prev = m[key] || {};
+    m[key] = { ok: !!isCorrect, n: (prev.n || 0) + dn, c: (prev.c || 0) + dc, ts };
+    localStorage.setItem(lsKey, JSON.stringify(m));
+  } catch (e) { /* miroir local facultatif */ }
+  if (typeof db === 'undefined') return;
+  try {
+    const inc = firebase.firestore.FieldValue.increment;
+    db.collection('quizProgress').doc(uid).collection('finalReview').doc('state')
+      .set({ items: { [key]: { ok: !!isCorrect, n: inc(dn), c: inc(dc), ts } } }, { merge: true })
+      .catch(e => console.warn('[révisions finales] échec sauvegarde:', e));
+  } catch (e) {
+    console.warn('[révisions finales] échec sauvegarde:', e);
+  }
+}
+
+/**
  * _isSrScheduleFrozen() – Vrai si le quiz en cours vient de la page Difficultés en mode "compte
  * pour de vrai" (voir difficultes.html / diffLaunchQuiz) : failCount/successCount/historique
  * sont mis à jour normalement (pas de mode entraînement), MAIS _computeSrEntry n'y touche pas
@@ -348,6 +384,7 @@ async function demarrerQuiz() {
 
   // store parameters for quiz page
   localStorage.removeItem('quizPracticeMode');
+  localStorage.removeItem('quizFinalReview');
   localStorage.removeItem('quizFreezeSrSchedule');
   localStorage.removeItem('quizDifficultyDrill');
   localStorage.setItem('quizCategory', selectedCategory);
@@ -1714,6 +1751,7 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   if (!window._immediateSavedEntries) window._immediateSavedEntries = {};
   if (!window._immediatePrevStatus) window._immediatePrevStatus = {};
   const _pKey = getKeyFor(q);
+  if (!isRestore && _isFinalReview()) _finalReviewRecord(q, isCorrect, _hadPrevAnswer);
   if (isRestore) {
     // Réponse restaurée après un rechargement : elle a déjà été persistée au moment du
     // clic d'origine — relier l'entrée existante pour éviter tout double comptage.

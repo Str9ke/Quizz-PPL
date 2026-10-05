@@ -44,6 +44,7 @@
     home: '<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
     target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none"/>',
     bookOpen: '<path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><path d="M12 6v13"/>',
+    flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
     flame: '<path d="M12 21c3.5 0 6-2.3 6-5.8 0-2.7-1.7-4.6-2.8-6.4-.3 1.8-1.4 2.6-2.3 2.6.6-1.8-.3-3.6-2.1-4.6C10.6 9.3 8 11 8 14.5A5 5 0 0 0 12 21Z"/>',
     clipboardCheck: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 13l2 2 4-4"/>',
     barChart: '<path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/>',
@@ -84,7 +85,8 @@
       { href: 'rates.html', icon: 'bookOpen', label: 'Révisions' },
       { href: 'echecs.html', icon: 'flame', label: 'Plus ratées' },
       { href: 'difficultes.html', icon: 'zap', label: 'Difficultés' },
-      { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' }
+      { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' },
+      { href: 'examen.html', icon: 'flag', label: 'Révisions finales' }
     ] },
     { type: 'link', href: 'syllabus.html', icon: 'clock', label: 'Syllabus' },
     { type: 'group', id: 'suivre', items: [

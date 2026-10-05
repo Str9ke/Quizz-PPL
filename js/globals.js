@@ -30,6 +30,7 @@ function resetQuiz() {
   // (score affiché normalement) sans jamais réellement atteindre le serveur. Un nouveau lot de
   // questions via ce bouton doit redevenir un quiz normal, sauvegardé.
   localStorage.removeItem('quizPracticeMode');
+  localStorage.removeItem('quizFinalReview');
   if (typeof _qtResetSessionTotal === 'function') _qtResetSessionTotal();
 
   // Décrémenter le compteur de la file de ré-interrogation (reaskQueue)
