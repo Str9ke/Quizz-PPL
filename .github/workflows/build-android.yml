@@ -62,6 +62,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Par défaut l'action installe aussi le paquet SDK "tools", retiré par Google : sdkmanager
+          # échoue alors ("Failed to find package 'tools'") et AUCUN APK n'est plus produit (cas
+          # depuis le 26/09/2026). platform-tools suffit, Gradle récupère le reste lui-même.
+          packages: 'platform-tools'
 
       - name: Install the stable signing key
         # Android REFUSE d'installer une mise à jour signée par une clé différente de celle de
