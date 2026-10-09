@@ -263,6 +263,7 @@
         return;
       }
       localStorage.removeItem('quizFinalReview');
+      localStorage.removeItem('quizExamAhead');
       localStorage.setItem('quizCategory', 'RÉVISION');
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', questionsForQuiz.length.toString());

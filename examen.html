@@ -31,11 +31,11 @@
       if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.error(err);
     });
   </script>
-  <script src="js/globals.js?v=20261005a"></script>
-  <script src="js/helpers.js?v=20261005a"></script>
+  <script src="js/globals.js?v=20261009a"></script>
+  <script src="js/helpers.js?v=20261009a"></script>
   <script src="js/categories.js?v=20260807c"></script>
   <script src="js/stats.js?v=20260807i"></script>
-  <script src="js/quiz.js?v=20261005a"></script>
+  <script src="js/quiz.js?v=20261009a"></script>
   <script src="js/init.js?v=20260807c"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/net.js?v=20260817a"></script>
@@ -96,6 +96,7 @@
     .sra-day{flex:0 0 100px;white-space:nowrap}
     .sra-bar{flex:1;min-width:40px;height:12px;border-radius:4px;background:rgba(127,127,127,.15);overflow:hidden;display:flex}
     .sra-n{flex:0 0 44px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+    .sra-seen{flex:0 0 58px;text-align:right;font-size:.85em;color:var(--text-secondary,#aaa);white-space:nowrap}
     @media (max-width:480px){.fr-global-num{grid-template-columns:repeat(2,1fr)}}
   </style>
 
@@ -161,8 +162,9 @@
         </span>
       </div>
       <div style="font-size:.75em;color:var(--text-secondary,#aaa);margin:6px 0 4px;line-height:1.45">
-        Le programme de répétition espacée de la page Stats, toutes banques confondues : coche les familles et les jours à réviser dès maintenant.
-        Les réponses comptent normalement (statistiques et nouvelle planification), mais pas dans le compteur des révisions finales ci-dessus.
+        Le programme de répétition espacée de la page Stats, toutes banques confondues : coche les familles et les jours à revoir pour l'examen.
+        Chaque question n'est tirée qu'une fois : réussie, elle est marquée « vue » (hachurée) et repoussée à sa date normale ; ratée, elle reste à revoir.
+        Les réponses comptent dans les statistiques, mais pas dans le compteur des révisions finales ci-dessus.
       </div>
       <p id="srAheadLoading" style="font-size:.85em;color:var(--text-secondary)">Chargement du programme…</p>
       <div id="srAheadBody" style="display:none">
@@ -171,6 +173,12 @@
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color,rgba(255,255,255,.1))">
           <span id="srAheadCount" style="font-size:.9em"></span>
           <button class="hist-filter-btn hist-filter-quiz" id="srAheadLaunchBtn" style="font-size:.95em;padding:8px 20px;margin-left:auto" onclick="srAheadLaunch()">▶️ Réviser maintenant</button>
+        </div>
+        <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:10px;line-height:1.5">
+          <span style="display:inline-block;width:22px;height:10px;border-radius:2px;vertical-align:middle;background:repeating-linear-gradient(135deg, rgba(160,160,160,.55) 0 4px, rgba(160,160,160,.18) 4px 8px)"></span>
+          = vue pour l'examen et réussie : plus tirée d'ici (sa prochaine révision est replanifiée normalement). Ratée, elle reste à revoir.
+          <br><span id="srAheadSnapInfo"></span>
+          <button class="hist-filter-btn fr-small-btn" style="margin-top:6px" onclick="srAheadReset()">♻️ Effacer les marques « vue pour l'examen »</button>
         </div>
       </div>
     </div>
@@ -399,6 +407,7 @@
       const practice = document.getElementById('frPractice').checked;
       const category = 'RÉVISIONS FINALES (GLIGLI)';
       localStorage.setItem('quizFinalReview', '1');
+      localStorage.removeItem('quizExamAhead');
       localStorage.setItem('quizCategory', category);
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', selected.length.toString());
@@ -441,7 +450,10 @@
       try { localStorage.removeItem(lsKey()); } catch (e) {}
       snap = {};
       pool.forEach((q, key) => { const fc = liveFail(key); if (fc >= 1) snap[key] = fc; });
-      try { await stateRef().delete(); } catch (e) { console.warn(e); }
+      try {
+        const del = firebase.firestore.FieldValue.delete();
+        await stateRef().update({ items: del, snap: del, snapAt: del });
+      } catch (e) { /* document absent : rien à effacer */ }
       snapAt = null;
       await saveSnap(snap, true);
       buildSections(); render();
@@ -495,7 +507,7 @@
       loading.style.display = 'none';
       document.getElementById('frBody').style.display = 'block';
       render();
-      srAheadInit();
+      srAheadInit(st);
     }
 
     // ============================================================
@@ -504,14 +516,36 @@
     // questions actuellement chargées, non suspendues, éligibles au cycle (_isEligibleForSR,
     // qui exclut aussi celles "réussies N fois d'affilée"), réparties par jour civil de
     // nextReview (retard compris dans Aujourd'hui), au-delà de 28 jours regroupées.
+    //
+    // Préparation de l'examen : chaque question est affichée au jour qu'elle avait dans la
+    // PHOTO du programme (aheadSnap, prise au premier passage et complétée ensuite), pas à sa
+    // nouvelle date — une question réussie ici est bien replanifiée normalement (_computeSrEntry
+    // dans le quiz), mais elle reste visible à sa place d'origine, hachurée "vue pour l'examen"
+    // (ahead.{clé}.ok, voir _examAheadRecord dans js/quiz.js), et n'est plus tirée par
+    // "Réviser maintenant". Ratée, elle reste à revoir et peut être retirée.
     // ============================================================
     const SRA_DAYS = 28;
     const SRA_FAMS = [
       { id: 'gligli', label: 'GLIGLI' }, { id: 'easa', label: 'EASA' }, { id: 'classique', label: 'Classiques' }
     ];
+    const HATCH = 'repeating-linear-gradient(135deg, rgba(160,160,160,.55) 0 4px, rgba(160,160,160,.18) 4px 8px)';
     let sraItems = [];             // [{key, q, day (0..SRA_DAYS, SRA_DAYS+1 = au-delà), fam, nr}]
     let sraFams = new Set(SRA_FAMS.map(f => f.id));
     let sraDays = null;            // Set des jours cochés (null = pas encore initialisé → tous)
+    let aheadSnap = {};            // clé -> nextReview (ms) au moment de la photo
+    let aheadSnapAt = null;
+    let ahead = {};                // clé -> { ok, ts } (révisée depuis cette carte)
+    let sraByKey = null;
+
+    function aheadLsKey() { return 'examAhead_' + uid; }
+    function mergeAheadMirror() {
+      let m = {};
+      try { m = JSON.parse(localStorage.getItem(aheadLsKey()) || '{}'); } catch (e) {}
+      Object.keys(m).forEach(k => {
+        if (!ahead[k] || (m[k].ts || 0) > (ahead[k].ts || 0)) ahead[k] = m[k];
+      });
+    }
+    function isSeen(key) { return !!(ahead[key] && ahead[key].ok); }
 
     function sraNextMs(r, now) {
       let nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
@@ -519,26 +553,59 @@
       return nr;
     }
 
-    async function srAheadInit() {
+    function sraBuildItems() {
+      const now = Date.now();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const dayMs = 86400000;
+      const added = {};
+      const keys = new Set(Object.keys(aheadSnap));
+      Object.keys(responses || {}).forEach(k => keys.add(k));
+      sraItems = [];
+      keys.forEach(key => {
+        const r = responses[key];
+        if (!sraByKey.has(key) || !r || r.suspended) return;
+        const eligible = (typeof _isEligibleForSR !== 'function') || _isEligibleForSR(r, key);
+        let nr;
+        if (key in aheadSnap) {
+          // Dans la photo : on garde son jour d'origine. Sortie du cycle depuis (ex. 3e réussite
+          // d'affilée) : on ne la garde que si c'est ici qu'elle a été revue (affichée hachurée).
+          if (!eligible && !ahead[key]) return;
+          nr = aheadSnap[key];
+        } else {
+          if (!eligible) return;
+          nr = sraNextMs(r, now);
+          aheadSnap[key] = nr; added[key] = nr;
+        }
+        let day = Math.floor((nr - today.getTime()) / dayMs);
+        if (day < 0) day = 0;
+        if (day > SRA_DAYS) day = SRA_DAYS + 1;
+        sraItems.push({ key, q: sraByKey.get(key), day, fam: _srFamilyFromKey(key), nr });
+      });
+      return added;
+    }
+
+    async function saveAheadSnap(entries, reset) {
+      const payload = { aheadSnap: entries };
+      if (reset || !aheadSnapAt) { aheadSnapAt = Date.now(); payload.aheadSnapAt = aheadSnapAt; }
+      try { await stateRef().set(payload, { merge: true }); }
+      catch (e) { console.warn('[révisions anticipées] échec sauvegarde photo:', e); }
+    }
+
+    async function srAheadInit(st) {
       try {
+        if (st) {
+          aheadSnap = st.aheadSnap || {};
+          aheadSnapAt = st.aheadSnapAt || null;
+          ahead = st.ahead || {};
+        }
+        mergeAheadMirror();
         // Toutes les banques (comme stats.html) — la liste GLIGLI des révisions finales est
         // déjà construite (pool), on peut donc écraser la variable globale `questions`.
         await loadAllQuestions();
-        const byKey = new Map();
-        (questions || []).forEach(q => { const k = getKeyFor(q); if (!byKey.has(k)) byKey.set(k, q); });
-        const now = Date.now();
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const dayMs = 86400000;
-        sraItems = [];
-        Object.entries(responses || {}).forEach(([key, r]) => {
-          if (!r || !byKey.has(key) || r.suspended) return;
-          if (typeof _isEligibleForSR === 'function' && !_isEligibleForSR(r, key)) return;
-          const nr = sraNextMs(r, now);
-          let day = Math.floor((nr - today.getTime()) / dayMs);
-          if (day < 0) day = 0;
-          if (day > SRA_DAYS) day = SRA_DAYS + 1;
-          sraItems.push({ key, q: byKey.get(key), day, fam: _srFamilyFromKey(key), nr });
-        });
+        sraByKey = new Map();
+        (questions || []).forEach(q => { const k = getKeyFor(q); if (!sraByKey.has(k)) sraByKey.set(k, q); });
+        const added = sraBuildItems();
+        if (Object.keys(added).length && st !== undefined) await saveAheadSnap(added, false);
         document.getElementById('srAheadLoading').style.display = 'none';
         document.getElementById('srAheadBody').style.display = 'block';
         srAheadRender();
@@ -557,53 +624,79 @@
     }
 
     function srAheadRender() {
-      // Comptes par jour et par famille
+      // Comptes par jour : à revoir par famille + déjà vues pour l'examen (hachurées)
       const perDay = [];
-      for (let i = 0; i <= SRA_DAYS + 1; i++) perDay.push({ gligli: 0, easa: 0, classique: 0 });
-      const famTotals = { gligli: 0, easa: 0, classique: 0 };
-      sraItems.forEach(it => { perDay[it.day][it.fam]++; });
-      // Jours affichés : ceux qui ont au moins une révision (toutes familles confondues)
-      const shownDays = perDay.map((c, i) => (c.gligli + c.easa + c.classique) ? i : -1).filter(i => i >= 0);
+      for (let i = 0; i <= SRA_DAYS + 1; i++) perDay.push({ gligli: 0, easa: 0, classique: 0, seen: { gligli: 0, easa: 0, classique: 0 } });
+      const famTodo = { gligli: 0, easa: 0, classique: 0 }, famSeen = { gligli: 0, easa: 0, classique: 0 };
+      sraItems.forEach(it => { if (isSeen(it.key)) perDay[it.day].seen[it.fam]++; else perDay[it.day][it.fam]++; });
+      const allCount = c => c.gligli + c.easa + c.classique + c.seen.gligli + c.seen.easa + c.seen.classique;
+      const shownDays = perDay.map((c, i) => allCount(c) ? i : -1).filter(i => i >= 0);
       if (sraDays === null) sraDays = new Set(shownDays);
-      sraItems.forEach(it => { if (sraDays.has(it.day)) famTotals[it.fam]++; });
+      sraItems.forEach(it => { if (sraDays.has(it.day)) { if (isSeen(it.key)) famSeen[it.fam]++; else famTodo[it.fam]++; } });
 
       document.getElementById('srAheadFams').innerHTML = SRA_FAMS.map(f =>
         '<label class="sra-fam"><input type="checkbox"' + (sraFams.has(f.id) ? ' checked' : '')
         + ' onchange="srAheadToggleFam(\'' + f.id + '\', this.checked)"> <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + FAM_COLORS[f.id] + ';margin-right:4px"></span>'
-        + f.label + ' <span class="filter-count">(' + famTotals[f.id] + ')</span></span></label>'
+        + f.label + ' <span class="filter-count">(' + famTodo[f.id] + (famSeen[f.id] ? ' + ' + famSeen[f.id] + ' vues' : '') + ')</span></span></label>'
       ).join('');
 
-      const famCount = c => [...sraFams].reduce((s, f) => s + c[f], 0);
-      const barMax = Math.max(1, ...shownDays.map(i => famCount(perDay[i])));
+      const fams = SRA_FAMS.filter(f => sraFams.has(f.id)).map(f => f.id);
+      const todo = c => fams.reduce((s, f) => s + c[f], 0);
+      const seen = c => fams.reduce((s, f) => s + c.seen[f], 0);
+      const barMax = Math.max(1, ...shownDays.map(i => todo(perDay[i]) + seen(perDay[i])));
       let html = '';
       if (!shownDays.length) html = '<div style="font-size:.85em;color:var(--text-secondary)">Aucune révision planifiée.</div>';
       shownDays.forEach(i => {
-        const c = perDay[i], n = famCount(c);
-        const segs = SRA_FAMS.filter(f => sraFams.has(f.id)).map(f =>
-          '<div style="height:100%;width:' + (100 * c[f.id] / barMax) + '%;background:' + FAM_COLORS[f.id] + '"></div>').join('');
-        html += '<label class="sra-row' + (n ? '' : ' sra-zero') + '">'
+        const c = perDay[i], n = todo(c), v = seen(c);
+        const segs = fams.map(f => '<div style="height:100%;width:' + (100 * c[f] / barMax) + '%;background:' + FAM_COLORS[f] + '"></div>').join('')
+          + (v ? '<div title="Vues pour l\'examen" style="height:100%;width:' + (100 * v / barMax) + '%;background:' + HATCH + '"></div>' : '');
+        html += '<label class="sra-row' + ((n + v) ? '' : ' sra-zero') + '">'
           + '<input type="checkbox"' + (sraDays.has(i) ? ' checked' : '') + ' onchange="srAheadToggleDay(' + i + ', this.checked)">'
           + '<span class="sra-day"' + (i === 0 ? ' style="font-weight:700;color:#f59e0b"' : '') + '>' + sraDayLabel(i) + '</span>'
           + '<div class="sra-bar">' + segs + '</div>'
-          + '<span class="sra-n">' + n + '</span></label>';
+          + '<span class="sra-n">' + (n ? n : '✓') + '</span>'
+          + '<span class="sra-seen">' + (v ? v + ' vue' + (v > 1 ? 's' : '') : '') + '</span></label>';
       });
       document.getElementById('srAheadDays').innerHTML = html;
 
-      const n = srAheadSelected().length;
+      const sel = sraItems.filter(it => sraFams.has(it.fam) && sraDays.has(it.day));
+      const nSeen = sel.filter(it => isSeen(it.key)).length;
+      const n = sel.length - nSeen;
       const nDays = shownDays.filter(i => sraDays.has(i)).length;
       document.getElementById('srAheadCount').innerHTML = '<strong>' + n + '</strong> question' + (n > 1 ? 's' : '')
-        + ' concernée' + (n > 1 ? 's' : '') + ' (' + nDays + ' jour' + (nDays > 1 ? 's' : '') + ', ' + sraFams.size + ' famille' + (sraFams.size > 1 ? 's' : '') + ')';
+        + ' à revoir (' + nDays + ' jour' + (nDays > 1 ? 's' : '') + ', ' + sraFams.size + ' famille' + (sraFams.size > 1 ? 's' : '') + ')'
+        + (nSeen ? ' · <span style="color:var(--text-secondary)">' + nSeen + ' déjà vue' + (nSeen > 1 ? 's' : '') + ' pour l\'examen</span>' : '');
       document.getElementById('srAheadLaunchBtn').disabled = !n;
+      document.getElementById('srAheadSnapInfo').innerHTML = aheadSnapAt
+        ? 'Programme photographié le ' + new Date(aheadSnapAt).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' })
+          + ' : chaque question reste à son jour d\'origine même après avoir été replanifiée.'
+        : '';
     }
 
     function srAheadSelected() {
-      return sraItems.filter(it => sraFams.has(it.fam) && sraDays && sraDays.has(it.day));
+      return sraItems.filter(it => sraFams.has(it.fam) && sraDays && sraDays.has(it.day) && !isSeen(it.key));
     }
 
     window.srAheadToggleFam = function(f, on) { if (on) sraFams.add(f); else sraFams.delete(f); srAheadRender(); };
     window.srAheadToggleDay = function(i, on) { if (on) sraDays.add(i); else sraDays.delete(i); srAheadRender(); };
     window.srAheadAllDays = function(on) {
       sraDays = new Set(on ? [...new Set(sraItems.map(it => it.day))] : []);
+      srAheadRender();
+    };
+
+    window.srAheadReset = async function() {
+      if (!confirm('Effacer les marques « vue pour l\'examen » et reprendre une nouvelle photo du programme actuel ?\n\n(La planification réelle des questions n\'est pas touchée.)')) return;
+      ahead = {};
+      aheadSnap = {};
+      aheadSnapAt = null;
+      try { localStorage.removeItem(aheadLsKey()); } catch (e) {}
+      try {
+        const del = firebase.firestore.FieldValue.delete();
+        await stateRef().update({ ahead: del, aheadSnap: del, aheadSnapAt: del });
+      } catch (e) { /* document absent : rien à effacer */ }
+      const added = sraBuildItems();
+      await saveAheadSnap(added, true);
+      sraDays = null;
       srAheadRender();
     };
 
@@ -623,6 +716,7 @@
       }
       const category = 'RÉVISIONS ANTICIPÉES';
       localStorage.removeItem('quizFinalReview');
+      localStorage.setItem('quizExamAhead', '1');
       localStorage.setItem('quizCategory', category);
       localStorage.setItem('quizMode', 'toutes');
       localStorage.setItem('quizNbQuestions', selected.length.toString());
@@ -637,7 +731,7 @@
       if (typeof _activeSessionWrite === 'function') {
         await _activeSessionWrite(selected, {
           kind: 'normal', category, mode: 'toutes', correctionImmediate: '1',
-          freezeSrSchedule: false, difficultyDrill: false
+          freezeSrSchedule: false, difficultyDrill: false, examAhead: true
         });
       }
       window.location = 'quiz.html';
@@ -646,6 +740,7 @@
     // Retour depuis le quiz via le bouton Précédent (bfcache) : rafraîchir la progression locale
     window.addEventListener('pageshow', e => {
       if (e.persisted && uid && sections.length) { mergeLocalMirror(); render(); }
+      if (e.persisted && uid && sraByKey) { mergeAheadMirror(); srAheadRender(); }
     });
 
     let initDone = false;

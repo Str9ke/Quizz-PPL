@@ -1578,6 +1578,7 @@ function resumeActiveSession() {
   localStorage.setItem('correctionImmediate', session.correctionImmediate || '1');
   localStorage.removeItem('quizPracticeMode');
   if (session.finalReview) localStorage.setItem('quizFinalReview', '1'); else localStorage.removeItem('quizFinalReview');
+  if (session.examAhead) localStorage.setItem('quizExamAhead', '1'); else localStorage.removeItem('quizExamAhead');
   if (session.freezeSrSchedule) localStorage.setItem('quizFreezeSrSchedule', '1'); else localStorage.removeItem('quizFreezeSrSchedule');
   if (session.difficultyDrill) localStorage.setItem('quizDifficultyDrill', '1'); else localStorage.removeItem('quizDifficultyDrill');
   // Réponses déjà données (sur cet appareil ou l'autre) : réutilisées telles quelles par

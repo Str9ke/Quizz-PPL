@@ -48,6 +48,34 @@ function _finalReviewRecord(q, isCorrect, isRetry) {
 }
 
 /**
+ * Révisions anticipées pour l'examen (examen.html, carte "Avancer les révisions planifiées",
+ * flag quizExamAhead) : la réponse est enregistrée NORMALEMENT (stats + replanification par
+ * _computeSrEntry), et EN PLUS marquée "vue pour l'examen" dans
+ * quizProgress/{uid}/finalReview/state → ahead.{clé} = { ok (dernier résultat), ts } + miroir
+ * localStorage (examAhead_{uid}). La page s'en sert pour hachurer la question à sa place
+ * d'origine et ne plus la proposer tant que la dernière réponse est juste.
+ */
+function _isExamAhead() {
+  return localStorage.getItem('quizExamAhead') === '1';
+}
+function _examAheadRecord(q, isCorrect) {
+  const uid = _activeSessionUid();
+  if (!uid) return;
+  const key = getKeyFor(q);
+  const val = { ok: !!isCorrect, ts: Date.now() };
+  try {
+    const lsKey = 'examAhead_' + uid;
+    const m = JSON.parse(localStorage.getItem(lsKey) || '{}');
+    m[key] = val;
+    localStorage.setItem(lsKey, JSON.stringify(m));
+  } catch (e) { /* miroir local facultatif */ }
+  if (typeof db === 'undefined') return;
+  db.collection('quizProgress').doc(uid).collection('finalReview').doc('state')
+    .set({ ahead: { [key]: val } }, { merge: true })
+    .catch(e => console.warn('[révisions anticipées] échec sauvegarde:', e));
+}
+
+/**
  * _isSrScheduleFrozen() – Vrai si le quiz en cours vient de la page Difficultés en mode "compte
  * pour de vrai" (voir difficultes.html / diffLaunchQuiz) : failCount/successCount/historique
  * sont mis à jour normalement (pas de mode entraînement), MAIS _computeSrEntry n'y touche pas
@@ -385,6 +413,7 @@ async function demarrerQuiz() {
   // store parameters for quiz page
   localStorage.removeItem('quizPracticeMode');
   localStorage.removeItem('quizFinalReview');
+  localStorage.removeItem('quizExamAhead');
   localStorage.removeItem('quizFreezeSrSchedule');
   localStorage.removeItem('quizDifficultyDrill');
   localStorage.setItem('quizCategory', selectedCategory);
@@ -1752,6 +1781,7 @@ function handleImmediateAnswer(q, selectedRadio, idx, isRestore) {
   if (!window._immediatePrevStatus) window._immediatePrevStatus = {};
   const _pKey = getKeyFor(q);
   if (!isRestore && _isFinalReview()) _finalReviewRecord(q, isCorrect, _hadPrevAnswer);
+  if (!isRestore && _isExamAhead()) _examAheadRecord(q, isCorrect);
   if (isRestore) {
     // Réponse restaurée après un rechargement : elle a déjà été persistée au moment du
     // clic d'origine — relier l'entrée existante pour éviter tout double comptage.
