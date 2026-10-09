@@ -183,6 +183,35 @@
       </div>
     </div>
 
+    <!-- Revoir les questions déjà réussies N fois -->
+    <div class="home-card" id="okAgainCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <strong>✅ Revoir les questions déjà réussies</strong>
+        <span class="sra-tools">
+          <button class="hist-filter-btn fr-small-btn" onclick="okAllCounts(true)">Tout cocher</button>
+          <button class="hist-filter-btn fr-small-btn" onclick="okAllCounts(false)">Tout décocher</button>
+        </span>
+      </div>
+      <div style="font-size:.75em;color:var(--text-secondary,#aaa);margin:6px 0 4px;line-height:1.45">
+        Toutes banques confondues (hors questions retirées « trop faciles »), groupées par nombre total de réussites.
+        Les questions déjà vues et réussies sur cette page (ici, dans les sections ou dans les révisions planifiées) ne sont plus proposées ;
+        réussie ici, une question est marquée « vue » (hachurée) et sa prochaine révision est replanifiée normalement. Ratée, elle reste à revoir.
+      </div>
+      <p id="okLoading" style="font-size:.85em;color:var(--text-secondary)">Chargement…</p>
+      <div id="okBody" style="display:none">
+        <div id="okFams" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0"></div>
+        <div id="okRows"></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-color,rgba(255,255,255,.1))">
+          <span id="okCount" style="font-size:.9em;flex:1 1 100%"></span>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.85em;margin:0">Nombre de questions :
+            <input type="number" id="okNb" min="1" value="30" style="width:75px;padding:4px 6px;border-radius:4px;">
+          </label>
+          <button class="hist-filter-btn fr-small-btn" style="width:auto" onclick="okSetMax()">Max</button>
+          <button class="hist-filter-btn hist-filter-quiz" id="okLaunchBtn" style="font-size:.95em;padding:8px 20px;margin-left:auto;width:auto" onclick="okLaunch()">▶️ Revoir</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Maintenance -->
     <div class="home-card" style="font-size:.85em">
       <strong>⚙️ Liste des révisions finales</strong>
@@ -616,6 +645,15 @@
         document.getElementById('srAheadLoading').style.display = 'none';
         document.getElementById('srAheadBody').style.display = 'block';
         srAheadRender();
+        okSnap = (st && st.okSnap) || {};
+        const okAdded = okBuild();
+        if (Object.keys(okAdded).length && st !== undefined) {
+          try { await stateRef().set({ okSnap: okAdded }, { merge: true }); }
+          catch (e) { console.warn('[réussies] échec sauvegarde photo:', e); }
+        }
+        document.getElementById('okLoading').style.display = 'none';
+        document.getElementById('okBody').style.display = 'block';
+        okRender();
       } catch (e) {
         console.warn('[révisions anticipées]', e);
         document.getElementById('srAheadLoading').textContent = 'Programme indisponible pour le moment.';
@@ -692,19 +730,115 @@
     };
 
     window.srAheadReset = async function() {
-      if (!confirm('Effacer les marques « vue pour l\'examen » et reprendre une nouvelle photo du programme actuel ?\n\n(La planification réelle des questions n\'est pas touchée.)')) return;
+      if (!confirm('Effacer les marques « vue pour l\'examen » et reprendre une nouvelle photo du programme et des réussites ?\n\n(La planification réelle des questions n\'est pas touchée.)')) return;
       ahead = {};
       aheadSnap = {};
       aheadSnapAt = null;
       try { localStorage.removeItem(aheadLsKey()); } catch (e) {}
       try {
         const del = firebase.firestore.FieldValue.delete();
-        await stateRef().update({ ahead: del, aheadSnap: del, aheadSnapAt: del });
+        await stateRef().update({ ahead: del, aheadSnap: del, aheadSnapAt: del, okSnap: del });
       } catch (e) { /* document absent : rien à effacer */ }
       const added = sraBuildItems();
       await saveAheadSnap(added, true);
       sraDays = null;
       srAheadRender();
+      okSnap = {};
+      const okAdded = okBuild();
+      try { await stateRef().set({ okSnap: okAdded }, { merge: true }); } catch (e) {}
+      okCounts = null;
+      okRender();
+    };
+
+    // ============================================================
+    // Revoir les questions déjà réussies N fois (successCount), toutes banques, hors suspendues.
+    // Même marquage que la carte des révisions planifiées (flag quizExamAhead → ahead.{clé}) :
+    // isSeen() les exclut dès que la dernière réponse donnée sur cette page est juste.
+    // ============================================================
+    const OK_MAX = 10;             // groupe "10× et plus"
+    let okItems = [];              // [{key, q, n, fam}]
+    let okFams = new Set(SRA_FAMS.map(f => f.id));
+    let okCounts = null;           // Set des groupes cochés (null = tous)
+    let okSnap = {};               // clé -> nombre de réussites au moment de la photo
+
+    // Le groupe (N×) est figé dans une photo (okSnap) : réussir la question ici augmente son
+    // successCount, mais elle reste affichée hachurée dans son groupe d'origine.
+    function okBuild() {
+      okItems = [];
+      const added = {};
+      sraByKey.forEach((q, key) => {
+        const r = responses[key];
+        if (!r || r.suspended) return;
+        let sc;
+        if (key in okSnap) sc = okSnap[key];
+        else {
+          sc = r.successCount || 0;
+          if (sc < 1) return;
+          okSnap[key] = sc; added[key] = sc;
+        }
+        okItems.push({ key, q, n: Math.min(sc, OK_MAX), fam: _srFamilyFromKey(key) });
+      });
+      return added;
+    }
+
+    function okRender() {
+      const groups = new Map();      // n -> {todo:{fam}, seen:{fam}}
+      okItems.forEach(it => {
+        if (!groups.has(it.n)) groups.set(it.n, { todo: { gligli: 0, easa: 0, classique: 0 }, seen: { gligli: 0, easa: 0, classique: 0 } });
+        groups.get(it.n)[isSeen(it.key) ? 'seen' : 'todo'][it.fam]++;
+      });
+      const ns = [...groups.keys()].sort((a, b) => b - a);
+      if (okCounts === null) okCounts = new Set(ns);
+      const famTodo = { gligli: 0, easa: 0, classique: 0 }, famSeen = { gligli: 0, easa: 0, classique: 0 };
+      okItems.forEach(it => { if (okCounts.has(it.n)) (isSeen(it.key) ? famSeen : famTodo)[it.fam]++; });
+      document.getElementById('okFams').innerHTML = SRA_FAMS.map(f =>
+        '<label class="sra-fam"><input type="checkbox"' + (okFams.has(f.id) ? ' checked' : '')
+        + ' onchange="okToggleFam(\'' + f.id + '\', this.checked)"> <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + FAM_COLORS[f.id] + ';margin-right:4px"></span>'
+        + f.label + ' <span class="filter-count">(' + famTodo[f.id] + (famSeen[f.id] ? ' + ' + famSeen[f.id] + ' vues' : '') + ')</span></span></label>'
+      ).join('');
+
+      const fams = SRA_FAMS.filter(f => okFams.has(f.id)).map(f => f.id);
+      const sum = o => fams.reduce((a, f) => a + o[f], 0);
+      const barMax = Math.max(1, ...ns.map(n => sum(groups.get(n).todo) + sum(groups.get(n).seen)));
+      let html = ns.length ? '' : '<div style="font-size:.85em;color:var(--text-secondary)">Aucune question réussie.</div>';
+      ns.forEach(n => {
+        const g = groups.get(n), t = sum(g.todo), v = sum(g.seen);
+        const segs = fams.map(f => '<div style="height:100%;width:' + (100 * g.todo[f] / barMax) + '%;background:' + FAM_COLORS[f] + '"></div>').join('')
+          + (v ? '<div style="height:100%;width:' + (100 * v / barMax) + '%;background:' + HATCH + '"></div>' : '');
+        html += '<label class="sra-row' + ((t + v) ? '' : ' sra-zero') + '">'
+          + '<input type="checkbox"' + (okCounts.has(n) ? ' checked' : '') + ' onchange="okToggleCount(' + n + ', this.checked)">'
+          + '<span class="sra-day">✅ ' + (n >= OK_MAX ? OK_MAX + '× et +' : n + '×') + '</span>'
+          + '<div class="sra-bar">' + segs + '</div>'
+          + '<span class="sra-n">' + (t ? t : '✓') + '</span>'
+          + '<span class="sra-seen">' + (v ? v + ' vue' + (v > 1 ? 's' : '') : '') + '</span></label>';
+      });
+      document.getElementById('okRows').innerHTML = html;
+
+      const sel = okItems.filter(it => okFams.has(it.fam) && okCounts.has(it.n));
+      const nSeen = sel.filter(it => isSeen(it.key)).length, n = sel.length - nSeen;
+      document.getElementById('okCount').innerHTML = '<strong>' + n + '</strong> question' + (n > 1 ? 's' : '') + ' à revoir'
+        + (nSeen ? ' · <span style="color:var(--text-secondary)">' + nSeen + ' déjà vue' + (nSeen > 1 ? 's' : '') + ' pour l\'examen</span>' : '');
+      document.getElementById('okNb').max = Math.max(1, n);
+      document.getElementById('okLaunchBtn').disabled = !n;
+    }
+
+    function okSelected() {
+      return okItems.filter(it => okFams.has(it.fam) && okCounts && okCounts.has(it.n) && !isSeen(it.key));
+    }
+    window.okToggleFam = function(f, on) { if (on) okFams.add(f); else okFams.delete(f); okRender(); };
+    window.okToggleCount = function(n, on) { if (on) okCounts.add(n); else okCounts.delete(n); okRender(); };
+    window.okAllCounts = function(on) { okCounts = new Set(on ? okItems.map(it => it.n) : []); okRender(); };
+    window.okSetMax = function() { document.getElementById('okNb').value = Math.max(1, okSelected().length); };
+
+    window.okLaunch = async function() {
+      const sel = okSelected();
+      if (!sel.length) { alert('Aucune question à lancer.'); return; }
+      let nb = parseInt(document.getElementById('okNb').value) || 0;
+      nb = Math.max(1, Math.min(nb, sel.length));
+      const picked = shuffle(sel.slice()).slice(0, nb);
+      const rank = { gligli: 0, easa: 1, classique: 2 };
+      picked.sort((a, b) => rank[a.fam] - rank[b.fam]);
+      await launchExamAhead(picked.map(it => JSON.parse(JSON.stringify(it.q))), 'RÉVISION DES RÉUSSIES');
     };
 
     window.srAheadLaunch = async function() {
@@ -713,7 +847,10 @@
       // Même ordre qu'une session de révision : par échéance, GLIGLI puis EASA puis classiques
       const rank = { gligli: 0, easa: 1, classique: 2 };
       sel.sort((a, b) => (a.day - b.day) || (rank[a.fam] - rank[b.fam]) || (a.nr - b.nr));
-      const selected = sel.map(it => JSON.parse(JSON.stringify(it.q)));
+      await launchExamAhead(sel.map(it => JSON.parse(JSON.stringify(it.q))), 'RÉVISIONS ANTICIPÉES');
+    };
+
+    async function launchExamAhead(selected, category) {
       const saved = (typeof _setLocalStorageWithCleanup === 'function')
         ? _setLocalStorageWithCleanup('currentQuestions', JSON.stringify(selected))
         : (() => { try { localStorage.setItem('currentQuestions', JSON.stringify(selected)); return true; } catch (e) { return false; } })();
@@ -721,7 +858,6 @@
         alert("Stockage local plein : impossible de lancer le quiz.\n\nLibère de la place (par exemple sur la page Briefing : vide le PDF OPMET ou les cartes météo importées) puis réessaie.");
         return;
       }
-      const category = 'RÉVISIONS ANTICIPÉES';
       localStorage.removeItem('quizFinalReview');
       localStorage.setItem('quizExamAhead', '1');
       localStorage.setItem('quizCategory', category);
@@ -742,12 +878,12 @@
         });
       }
       window.location = 'quiz.html';
-    };
+    }
 
     // Retour depuis le quiz via le bouton Précédent (bfcache) : rafraîchir la progression locale
     window.addEventListener('pageshow', e => {
       if (e.persisted && uid && sections.length) { mergeLocalMirror(); render(); }
-      if (e.persisted && uid && sraByKey) { mergeLocalMirror(); mergeAheadMirror(); srAheadRender(); }
+      if (e.persisted && uid && sraByKey) { mergeLocalMirror(); mergeAheadMirror(); srAheadRender(); okRender(); }
     });
 
     let initDone = false;
