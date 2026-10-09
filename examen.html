@@ -176,7 +176,7 @@
         </div>
         <div style="font-size:.72em;color:var(--text-secondary,#aaa);margin-top:10px;line-height:1.5">
           <span style="display:inline-block;width:22px;height:10px;border-radius:2px;vertical-align:middle;background:repeating-linear-gradient(135deg, rgba(160,160,160,.55) 0 4px, rgba(160,160,160,.18) 4px 8px)"></span>
-          = vue pour l'examen et réussie : plus tirée d'ici (sa prochaine révision est replanifiée normalement). Ratée, elle reste à revoir.
+          = vue pour l'examen et réussie (ici ou dans les sections Révisions finales ci-dessus) : plus tirée d'ici (sa prochaine révision est replanifiée normalement). Ratée, elle reste à revoir.
           <br><span id="srAheadSnapInfo"></span>
           <button class="hist-filter-btn fr-small-btn" style="margin-top:6px" onclick="srAheadReset()">♻️ Effacer les marques « vue pour l'examen »</button>
         </div>
@@ -545,7 +545,14 @@
         if (!ahead[k] || (m[k].ts || 0) > (ahead[k].ts || 0)) ahead[k] = m[k];
       });
     }
-    function isSeen(key) { return !!(ahead[key] && ahead[key].ok); }
+    // "Vue pour l'examen" = DERNIÈRE réponse donnée depuis cette page juste, qu'elle vienne de
+    // cette carte (ahead) ou des sections Révisions finales au-dessus (items) — la plus récente
+    // des deux l'emporte : réussie en haut puis ratée ici (ou l'inverse) = à revoir.
+    function isSeen(key) {
+      const a = ahead[key], f = items[key];
+      const last = (a && f) ? (((a.ts || 0) >= (f.ts || 0)) ? a : f) : (a || f);
+      return !!(last && last.ok);
+    }
 
     function sraNextMs(r, now) {
       let nr = (r.nextReview !== undefined && r.nextReview !== null) ? r.nextReview : now;
@@ -740,7 +747,7 @@
     // Retour depuis le quiz via le bouton Précédent (bfcache) : rafraîchir la progression locale
     window.addEventListener('pageshow', e => {
       if (e.persisted && uid && sections.length) { mergeLocalMirror(); render(); }
-      if (e.persisted && uid && sraByKey) { mergeAheadMirror(); srAheadRender(); }
+      if (e.persisted && uid && sraByKey) { mergeLocalMirror(); mergeAheadMirror(); srAheadRender(); }
     });
 
     let initDone = false;
