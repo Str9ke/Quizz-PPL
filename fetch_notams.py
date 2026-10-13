@@ -914,6 +914,11 @@ def _waf_clearance_cookies():
             ok = True
         except Exception:
             ok = False
+            try:
+                txt = " ".join(page.inner_text("body").split())[:400]
+            except Exception:
+                txt = "?"
+            print(f"::notice title=WAF Skeyes::défi non résolu — url={page.url} titre={page.title()!r} texte={txt!r}")
         cookies = ctx.cookies()
         browser.close()
     names = [c["name"] for c in cookies]
