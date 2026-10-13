@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import json
+import time
 import re
 
 
@@ -895,12 +896,13 @@ def _waf_clearance_cookies():
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         args = ["--disable-blink-features=AutomationControlled"]
+        # Chromium de Playwright (mis en cache par le workflow). NB : le Google Chrome
+        # préinstallé du runner (channel="chrome") a été essayé le 13/10/2026 : il ne passe
+        # PAS le défi du WAF Skeyes — ne pas y revenir.
         try:
-            # Google Chrome est préinstallé sur les runners GitHub : pas besoin de télécharger
-            # le Chromium de Playwright (~300 Mo + dépendances système, ~20 s par exécution).
-            browser = p.chromium.launch(channel="chrome", headless=True, args=args)
+            browser = p.chromium.launch(headless=True, args=args)
         except Exception as e:
-            print(f"Chrome système indisponible ({e.__class__.__name__}), installation de Chromium Playwright…")
+            print(f"Chromium indisponible ({e.__class__.__name__}), installation avec dépendances…")
             import subprocess, sys as _sys
             subprocess.run([_sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"], check=False)
             browser = p.chromium.launch(headless=True, args=args)
@@ -1149,6 +1151,15 @@ def do_login(session, username, password):
     return False
 
 
+_T0 = time.time()
+_TIMINGS = []
+def _lap(label):
+    """Temps écoulé depuis le début du script, publié en annotation GitHub (::notice::) pour
+    pouvoir mesurer chaque étape sans fouiller les journaux."""
+    _TIMINGS.append(f"{label} {time.time() - _T0:.1f}s")
+    print(f"[t+{time.time() - _T0:.1f}s] {label}")
+
+
 def main():
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
@@ -1158,8 +1169,10 @@ def main():
         return
 
     session = make_skeyes_session()
+    _lap("waf")
     
     logged_in = do_login(session, username, password)
+    _lap("login")
     
     # OPMET (requires auth)
     try:
@@ -1169,11 +1182,14 @@ def main():
         _record_failure("opmet", str(e))
         generate_error_html("opmet.html", "OPMET", session, str(e))
     
+    _lap("opmet")
     # Remote sensing images (fetch via detail pages)
     manifest = fetch_remote_sensing_images(session)
+    _lap("images")
 
     # SFC Analysis charts
     fetch_sfc_analysis(session, manifest)
+    _lap("sfc")
 
     print("--- Extracting NOTAMs ---")
     try:
@@ -1323,4 +1339,6 @@ if __name__ == "__main__":
         else:
             main()
     finally:
+        _lap("fin")
+        print("::notice title=Durées Skeyes::" + " · ".join(_TIMINGS))
         write_status_file()

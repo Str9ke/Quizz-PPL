@@ -38,11 +38,20 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        # Plus de « playwright install --with-deps chromium » (~20 s, 300 Mo) : le défi
-        # JavaScript du WAF Skeyes est résolu avec Google Chrome, déjà installé sur les
-        # runners GitHub (channel="chrome", voir _waf_clearance_cookies dans fetch_notams.py,
-        # qui installe Chromium lui-même en secours si Chrome manquait).
         run: pip install -r requirements.txt
+
+      # Chromium (défi JS du WAF Skeyes, voir _waf_clearance_cookies) : mis en cache entre les
+      # exécutions et installé SANS « --with-deps » (les bibliothèques système nécessaires sont
+      # déjà sur le runner, qui embarque Chrome) — auparavant ~20 s à chaque fois. Si le
+      # lancement échouait quand même, fetch_notams.py réinstalle avec les dépendances.
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}-v1
+
+      - name: Install Chromium (headless shell)
+        run: python -m playwright install --only-shell chromium
 
       - name: Run script
         env:
