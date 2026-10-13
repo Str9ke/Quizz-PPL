@@ -88,6 +88,9 @@ def main():
         out[ep] = [slim(x) for x in fetch_all(ep)]
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, separators=(",", ":"), ensure_ascii=False)
+    # Petit résumé lu par la page au chargement (évite de télécharger le gros fichier pour rien)
+    with open("openaip_meta.json", "w", encoding="utf-8") as f:
+        json.dump({"ts": out["ts"], **{ep: len(out[ep]) for ep in ENDPOINTS}}, f)
     size = os.path.getsize(OUT) / 1e6
     msg = " · ".join(f"{ep} {len(out[ep])}" for ep in ENDPOINTS)
     print(f"::notice title=OpenAIP::{msg} — {size:.1f} Mo en {time.time() - t0:.0f}s", flush=True)

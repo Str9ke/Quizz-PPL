@@ -1173,6 +1173,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       <button class="meteo-action-btn" onclick="window.refreshBriefingDisplay()" style="background:rgba(127,127,127,.25);color:var(--text-primary,#fff)" title="Recharge l'affichage avec les derni&#xe8;res donn&#xe9;es d&#xe9;j&#xe0; r&#xe9;cup&#xe9;r&#xe9;es, sans relancer de r&#xe9;cup&#xe9;ration">&#x1F504; Rafra&#xee;chir l'affichage</button>
       <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
       <span id="ghaStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
+      <div id="fetchProgress" style="display:none;flex-basis:100%;max-width:560px;margin:6px auto 0">
+        <div style="height:10px;border-radius:5px;background:rgba(127,127,127,.25);overflow:hidden"><div id="fetchProgressFill" style="height:100%;width:0;background:linear-gradient(90deg,#f59e0b,#e53935);border-radius:5px;transition:width 2.8s linear"></div></div>
+        <div id="fetchProgressLabel" style="display:flex;justify-content:space-between;font-size:.75em;color:var(--text-secondary);margin-top:3px"><span></span><span></span></div>
+      </div>
       <div id="lastFetchInfo" style="flex-basis:100%;text-align:center;font-size:.75em;color:var(--text-secondary);margin-top:4px"></div>
     </div>
 
@@ -2155,6 +2159,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <p style="font-size:.8em;color:var(--text-secondary);margin:2px 0 8px">T&#xe9;l&#xe9;charge un fichier .kml avec tous les volumes d'espace a&#xe9;rien de la zone (Belgique, Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord vers le sud-est de l'Angleterre) en vrais blocs 3D plancher/plafond, plus les a&#xe9;rodromes et les VOR/NDB/DME de la zone, &#xe0; ouvrir dans Google Earth pour voler dedans et les inspecter. Le type de chaque zone (CTR/TMA/DANGER/RESTRICTED...) est lu directement dans son nom officiel — v&#xe9;rifie toujours l'AIP/carte VFR avant de pr&#xe9;parer un vol.</p>
         <button onclick="window.exportAirspacesKML()" class="navlog-btn success" id="kmlExportBtn">&#x1F30D; T&#xe9;l&#xe9;charger le KML (zone &#xe9;largie)</button>
         <div id="kmlExportStatus" style="font-size:.8em;color:var(--text-secondary);margin-top:8px"></div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button onclick="window.triggerOpenaipUpdate()" class="navlog-btn" id="openaipUpdateBtn" style="font-size:.8em">&#x1F504; Mettre &#xe0; jour les donn&#xe9;es OpenAIP</button>
+          <span id="openaipDataInfo" style="font-size:.75em;color:var(--text-secondary)"></span>
+        </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;font-size:.8em;color:var(--text-secondary)">
         <span>&#x1F4CF; &#xc9;chelle du graphique :</span>
@@ -11518,154 +11526,72 @@ function _navaidToKmlPlacemark(item){
   var label=typeLabel+' '+(ident?ident+' — ':'')+name+(freq?(' ('+freq+')'):'');
   return _pointKmlPlacemark(label,desc,c.lon,c.lat,'ff00d7ff','http://maps.google.com/mapfiles/kml/shapes/heliport.png');
 }
-/* Récupère toutes les pages d'un endpoint OpenAIP paginé (même heuristique "page pleine
-   = probablement une suite" que pour /airspaces, voir plus haut). Ne lève jamais d'exception
-   pour un endpoint absent/erroné : renvoie {items:[], failed:true, status} pour que l'appelant
-   décide comment réagir (échec silencieux ET PARTIEL, pas un blocage de tout l'export). */
-async function _fetchOpenAipPaginated(pathName,bbox,key){
-  var items=[],page=1,limitPerPage=1000,keepPaging=true;
-  try{
-    while(keepPaging && page<=40){
-      var url='https://api.core.openaip.net/api/'+pathName+'?bbox='+bbox.west+','+bbox.south+','+bbox.east+','+bbox.north+'&limit='+limitPerPage+'&page='+page;
-      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
-      if(!resp||!resp.ok) return {items:items,failed:true,status:resp?resp.status:null};
-      var data=await resp.json();
-      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
-      items=items.concat(pageItems);
-      keepPaging=pageItems.length>=limitPerPage;
-      page++;
-    }
-    return {items:items,failed:false,status:null};
-  }catch(e){
-    return {items:items,failed:true,status:null,error:e.message};
-  }
-}
-
 window.exportAirspacesKML = async function(){
   var statusEl=document.getElementById('kmlExportStatus');
   var btn=document.getElementById('kmlExportBtn');
-  var key=window.OPENAIP_API_KEY||'';
-  if(!key){
-    if(statusEl) statusEl.textContent='❌ Clé OpenAIP indisponible — vérifie la configuration de déploiement.';
-    return;
-  }
-  /* Belgique + ~1h de vol (≈110NM à vitesse de croisière PPL classique) tout autour :
-     Nord de la France, Pays-Bas, ouest de l'Allemagne, Manche/mer du Nord et sud-est de
-     l'Angleterre. Ajuste ces 4 valeurs si tu veux une zone plus grande/petite. */
-  var south=47.3, north=53.7, west=-0.5, east=9.4;
-  var WIDE_CACHE_KEY='navlogAirspacesWideCache_v1';
-
   if(btn) btn.disabled=true;
-  if(statusEl) statusEl.textContent='⏳ Téléchargement des espaces aériens OpenAIP pour toute la zone (Belgique + ~1h de vol)… ceci peut prendre une minute, la zone est grande.';
+  if(statusEl) statusEl.textContent='⏳ Préparation de l\'export…';
 
   try{
-    var items=[],page=1,limitPerPage=1000;
-    var fetchFailed=false, fetchFailStatus=null;
-    var keepPaging=true;
-    while(keepPaging && page<=40){
-      var url='https://api.core.openaip.net/api/airspaces?bbox='+west+','+south+','+east+','+north+'&limit='+limitPerPage+'&page='+page;
-      if(statusEl) statusEl.textContent='⏳ Téléchargement… page '+page+' ('+items.length+' zones reçues jusqu\'ici)';
-      var resp=await _fetchWithRetry(url,{headers:{'x-openaip-api-key':key}});
-      if(!resp||!resp.ok){
-        fetchFailed=true; fetchFailStatus=resp?resp.status:null;
-        break;
-      }
-      var data=await resp.json();
-      var pageItems=data.items||data.data||(Array.isArray(data)?data:[]);
-      items=items.concat(pageItems);
-      /* Ne pas se fier à un champ "totalPages" dont le nom/emplacement exact dans la réponse
-         OpenAIP n'a pas pu être vérifié (documentation inaccessible) — heuristique robuste,
-         indépendante du format exact : tant qu'une page revient PLEINE (autant d'items que la
-         limite demandée), il y a probablement une suite. Une page reçue incomplète = dernière
-         page, quel que soit le nom du champ de pagination réel. */
-      keepPaging=pageItems.length>=limitPerPage;
-      page++;
+    /* Données publiées avec le site (téléchargées côté serveur, voir _loadOpenaipStatic) :
+       plus aucun appel direct à OpenAIP ici — la zone de l'export (~500 000 km²) dépasse
+       désormais la limite de l'API et ses requêtes en rafale étaient refusées. */
+    var stat=await _loadOpenaipStatic(true);
+    if(!stat){
+      if(statusEl) statusEl.textContent='❌ Les données OpenAIP n\'ont pas encore été récupérées : clique sur « Mettre à jour les données OpenAIP » ci-dessous (environ 10 min), puis réessaie.';
+      return;
     }
-
-    if(fetchFailed){
-      /* OpenAIP indisponible : proposer le dernier export complet réussi en cache (s'il
-         existe) plutôt que d'abandonner sans rien — même logique que pour les zones de
-         la route (voir _loadAirspacesCache), mais dans un slot séparé car la zone est
-         beaucoup plus large ici (toute la Belgique + 1h de vol, pas juste la route). */
-      var wideCached=null;
-      try{
-        var rawWide=localStorage.getItem(WIDE_CACHE_KEY);
-        if(rawWide){ var pw=JSON.parse(rawWide); if(pw&&Array.isArray(pw.items)&&pw.items.length) wideCached=pw; }
-      }catch(e3){}
-      if(!wideCached){
-        if(statusEl) statusEl.textContent='❌ OpenAIP a répondu '+(fetchFailStatus||'(pas de réponse)')+' — réessaie dans une minute. (Aucun export précédent en cache à proposer.)';
-        if(btn) btn.disabled=false;
-        return;
-      }
-      items=wideCached.items;
-      if(statusEl) statusEl.textContent='⚠️ OpenAIP indisponible ('+(fetchFailStatus||'pas de réponse')+') — génération du KML à partir du dernier export réussi, du '+_formatCacheDate(wideCached.ts)+'…';
-    } else {
-      try{ localStorage.setItem(WIDE_CACHE_KEY,JSON.stringify({items:items,ts:Date.now()})); }catch(e4){ console.warn('[KML export] Cache local indisponible (quota ?)',e4); }
-    }
-
-    if(statusEl) statusEl.textContent=(fetchFailed?'⚠️ (cache) ':'⏳ ')+items.length+' zone(s) '+(fetchFailed?'(en cache) ':'reçue(s) ')+'— génération du fichier KML…';
-    await new Promise(function(r){ setTimeout(r,10); }); // laisse le statut s'afficher avant le calcul lourd
-
-    var byClass={};
-    var skipped=0;
-    items.forEach(function(item){
-      var pm=_airspaceToKmlPlacemark(item);
-      if(!pm){ skipped++; return; }
-      var cl=_openaipClassLabel(item);
-      if(!byClass[cl]) byClass[cl]=[];
-      byClass[cl].push(pm);
-    });
-
-    var foldersXml='';
-    Object.keys(byClass).sort().forEach(function(cl){
-      foldersXml+='<Folder><name>'+escHTML(cl)+' ('+byClass[cl].length+')</name>'+byClass[cl].join('')+'</Folder>';
-    });
-
-    // Aérodromes + VOR/NDB/DME, en plus des espaces aériens (voir _fetchOpenAipPaginated
-    // plus haut : chaque source échoue indépendamment, sans bloquer les autres).
-    var bboxObj={south:south,north:north,west:west,east:east};
-    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s) — téléchargement des aérodromes…';
-    var airportsResult=await _fetchOpenAipPaginated('airports',bboxObj,key);
-    if(statusEl) statusEl.textContent='⏳ '+items.length+' zone(s), '+airportsResult.items.length+' aérodrome(s) — téléchargement des VOR/NDB/DME…';
-    var navaidsResult=await _fetchOpenAipPaginated('navaids',bboxObj,key);
-
-    var airportsPm=[]; var navaidsPm=[];
-    airportsResult.items.forEach(function(it){ var pm=_airportToKmlPlacemark(it); if(pm) airportsPm.push(pm); });
-    navaidsResult.items.forEach(function(it){ var pm=_navaidToKmlPlacemark(it); if(pm) navaidsPm.push(pm); });
-    if(airportsPm.length) foldersXml+='<Folder><name>✈️ Aérodromes ('+airportsPm.length+')</name>'+airportsPm.join('')+'</Folder>';
-    if(navaidsPm.length) foldersXml+='<Folder><name>📡 VOR/NDB/DME ('+navaidsPm.length+')</name>'+navaidsPm.join('')+'</Folder>';
-
-    var kml='<?xml version="1.0" encoding="UTF-8"?>'+
-      '<kml xmlns="http://www.opengis.net/kml/2.2">'+
-      '<Document><name>Espaces aériens — Belgique + 1h de vol</name>'+
-      '<description>Généré depuis Quiz Aviation PPL — données OpenAIP. Chaque dossier ci-contre (CTR, TMA, DANGER, RESTRICTED, Aérodromes, VOR/NDB/DME…) peut être coché/décoché individuellement dans le panneau de gauche de Google Earth.</description>'+
-      foldersXml+'</Document></kml>';
-
-    var blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='espaces_aeriens_belgique_1h_vol.kml';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
-
-    var nbZones=items.length-skipped;
-    var extraBits=[];
-    if(airportsPm.length) extraBits.push(airportsPm.length+' aérodrome(s)');
-    else if(airportsResult.failed) extraBits.push('aérodromes indisponibles (endpoint /airports en échec'+(airportsResult.status?(' HTTP '+airportsResult.status):'')+')');
-    if(navaidsPm.length) extraBits.push(navaidsPm.length+' VOR/NDB/DME');
-    else if(navaidsResult.failed) extraBits.push('VOR/NDB/DME indisponibles (endpoint /navaids en échec'+(navaidsResult.status?(' HTTP '+navaidsResult.status):'')+')');
-    if(statusEl) statusEl.textContent=(fetchFailed?'⚠️ Fichier téléchargé depuis le cache (OpenAIP indisponible, données du '+_formatCacheDate(wideCached.ts)+') : ':'✅ Fichier téléchargé : ')+nbZones+' volume(s) exporté(s)'+(skipped?(' ('+skipped+' ignoré(s), géométrie non gérée)'):'')+
-      (extraBits.length?(', '+extraBits.join(', ')):'')+
-      '. Ouvre-le avec Google Earth (voir mes instructions).';
+    var kmlRes=_buildAirspacesKml(stat.airspaces, stat.airports||[], stat.navaids||[]);
+    _downloadKml(kmlRes.kml);
+    if(statusEl) statusEl.textContent='✅ Fichier téléchargé : '+kmlRes.nbZones+' volume(s)'+(kmlRes.skipped?(' ('+kmlRes.skipped+' ignoré(s), géométrie non gérée)'):'')+
+      ', '+kmlRes.nbAirports+' aérodrome(s), '+kmlRes.nbNavaids+' VOR/NDB/DME — données OpenAIP du '+_formatCacheDate(stat.ts)+'. Ouvre-le avec Google Earth.';
+    return;
   }catch(e){
     console.error('[KML export] Erreur', e);
     if(statusEl) statusEl.textContent='❌ Erreur pendant l\'export : '+e.message+' (détail en console F12).';
+    return;
   } finally {
     if(btn) btn.disabled=false;
   }
 };
+
+/* Construit le KML à partir des zones, aérodromes et balises OpenAIP (mêmes dossiers et
+   mêmes placemarks que l'ancien export en direct). */
+function _buildAirspacesKml(items, airports, navaids){
+  var byClass={}, skipped=0;
+  items.forEach(function(item){
+    var pm=_airspaceToKmlPlacemark(item);
+    if(!pm){ skipped++; return; }
+    var cl=_openaipClassLabel(item);
+    if(!byClass[cl]) byClass[cl]=[];
+    byClass[cl].push(pm);
+  });
+  var foldersXml='';
+  Object.keys(byClass).sort().forEach(function(cl){
+    foldersXml+='<Folder><name>'+escHTML(cl)+' ('+byClass[cl].length+')</name>'+byClass[cl].join('')+'</Folder>';
+  });
+  var airportsPm=[], navaidsPm=[];
+  airports.forEach(function(it){ var pm=_airportToKmlPlacemark(it); if(pm) airportsPm.push(pm); });
+  navaids.forEach(function(it){ var pm=_navaidToKmlPlacemark(it); if(pm) navaidsPm.push(pm); });
+  if(airportsPm.length) foldersXml+='<Folder><name>✈️ Aérodromes ('+airportsPm.length+')</name>'+airportsPm.join('')+'</Folder>';
+  if(navaidsPm.length) foldersXml+='<Folder><name>📡 VOR/NDB/DME ('+navaidsPm.length+')</name>'+navaidsPm.join('')+'</Folder>';
+  var kml='<?xml version="1.0" encoding="UTF-8"?>'+
+    '<kml xmlns="http://www.opengis.net/kml/2.2">'+
+    '<Document><name>Espaces aériens — Belgique + 1h de vol</name>'+
+    '<description>Généré depuis Quiz Aviation PPL — données OpenAIP. Chaque dossier ci-contre (CTR, TMA, DANGER, RESTRICTED, Aérodromes, VOR/NDB/DME…) peut être coché/décoché individuellement dans le panneau de gauche de Google Earth.</description>'+
+    foldersXml+'</Document></kml>';
+  return {kml:kml, nbZones:items.length-skipped, skipped:skipped, nbAirports:airportsPm.length, nbNavaids:navaidsPm.length};
+}
+function _downloadKml(kml){
+  var blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='espaces_aeriens_belgique_1h_vol.kml';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
+}
 
 /* Cache des zones brutes renvoyées par OpenAIP (indépendant de la route),
    + signature de la route utilisée pour le dernier calcul de croisements.
@@ -11835,6 +11761,92 @@ function _formatCacheDate(ts){
   return d.toLocaleDateString('fr-FR')+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
 
+/* ===== Données OpenAIP publiées avec le site (openaip_data.json) =====
+   Téléchargées côté serveur par le workflow « Update OpenAIP » (tools/fetch_openaip.py) :
+   depuis l'automne 2026, l'API OpenAIP refuse les zones > 250 000 km² et limite très
+   fortement le débit, si bien que les appels directs depuis le navigateur échouaient presque
+   toujours (503/429/400). La page lit donc d'abord ce fichier ; l'appel direct à OpenAIP ne
+   sert plus que de secours (route hors zone, fichier absent). */
+var _openaipStaticPromise=null;
+function _loadOpenaipStatic(force){
+  if(!_openaipStaticPromise||force){
+    _openaipStaticPromise=fetch('openaip_data.json'+(force?('?t='+Date.now()):''),{cache:force?'no-store':'default'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){ return (d&&Array.isArray(d.airspaces)&&d.airspaces.length)?d:null; })
+      .catch(function(){ return null; });
+  }
+  return _openaipStaticPromise;
+}
+function _geomBBox(item){
+  if(item._bb) return item._bb;
+  var g=item.geometry||{}, bb=[Infinity,Infinity,-Infinity,-Infinity];
+  (function walk(c){
+    if(!Array.isArray(c)) return;
+    if(typeof c[0]==='number'){ if(c[0]<bb[0])bb[0]=c[0]; if(c[1]<bb[1])bb[1]=c[1]; if(c[0]>bb[2])bb[2]=c[0]; if(c[1]>bb[3])bb[3]=c[1]; return; }
+    c.forEach(walk);
+  })(g.coordinates);
+  try{ Object.defineProperty(item,'_bb',{value:bb,enumerable:false}); }catch(e){}
+  return bb;
+}
+/* Zones (ou points) du fichier publié qui recoupent la bbox demandée, ou null si la bbox
+   déborde de la zone couverte par le fichier. */
+function _openaipStaticFor(data,list,b){
+  var z=data.bbox;
+  if(!z||b.south<z.south||b.north>z.north||b.west<z.west||b.east>z.east) return null;
+  return (data[list]||[]).filter(function(it){
+    var bb=_geomBBox(it);
+    return !(bb[2]<b.west||bb[0]>b.east||bb[3]<b.south||bb[1]>b.north);
+  });
+}
+
+function _showOpenaipDataInfo(){
+  var el=document.getElementById('openaipDataInfo'); if(!el) return;
+  fetch('openaip_meta.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }).then(function(d){
+    el.textContent=d
+      ? 'Données du '+_formatCacheDate(d.ts)+' : '+d.airspaces+' zones, '+d.airports+' aérodromes, '+d.navaids+' balises. À mettre à jour à chaque cycle AIRAC (28 jours).'
+      : 'Données OpenAIP pas encore récupérées.';
+  });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_showOpenaipDataInfo); else _showOpenaipDataInfo();
+
+/* Lance le workflow « Update OpenAIP » (même jeton GitHub que la récupération météo), puis
+   attend que le nouveau openaip_data.json soit en ligne pour l'utiliser aussitôt. */
+window.triggerOpenaipUpdate=async function(){
+  var el=document.getElementById('openaipDataInfo'), btn=document.getElementById('openaipUpdateBtn');
+  var token=localStorage.getItem('github_pat');
+  if(!token){
+    token=prompt("Pour lancer la mise à jour depuis le site, entre ton GitHub Personal Access Token (PAT) avec l'autorisation 'repo' :");
+    if(!token) return;
+    localStorage.setItem('github_pat',token);
+  }
+  var before=await fetch('openaip_meta.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
+  var beforeTs=before?before.ts:0, t0=Date.now();
+  try{
+    var r=await fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_openaip.yml/dispatches',{
+      method:'POST',
+      headers:{'Accept':'application/vnd.github.v3+json','Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({ref:'main'})
+    });
+    if(!(r.ok||r.status===204)){ alert('❌ Erreur '+r.status+' — vérifie ton jeton GitHub.'); if(r.status===401) localStorage.removeItem('github_pat'); return; }
+  }catch(e){ alert('❌ Erreur de connexion : '+e); return; }
+  if(btn) btn.disabled=true;
+  (function tick(){
+    var sec=Math.round((Date.now()-t0)/1000);
+    fetch('openaip_meta.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }).then(function(d){
+      if(d&&d.ts>beforeTs){
+        if(btn) btn.disabled=false;
+        _loadOpenaipStatic(true);
+        _showOpenaipDataInfo();
+        if(typeof _toast==='function') _toast('✅ Données OpenAIP à jour','success',3000);
+        return;
+      }
+      if(el) el.textContent='⏳ Mise à jour OpenAIP en cours… '+sec+' s (environ 10 min : OpenAIP impose des pauses entre requêtes)';
+      if(sec>15*60){ if(el) el.textContent='⚠️ Toujours rien après 15 min — vérifie l’onglet Actions de GitHub.'; if(btn) btn.disabled=false; return; }
+      setTimeout(tick,6000);
+    });
+  })();
+};
+
 async function loadRouteAirspaces(){
   var status=document.getElementById('altitudesStatus');
   var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
@@ -11856,7 +11868,26 @@ async function loadRouteAirspaces(){
   var south=Math.min.apply(null,lats)-pad, north=Math.max.apply(null,lats)+pad;
   var west=Math.min.apply(null,lons)-pad, east=Math.max.apply(null,lons)+pad;
 
-  /* Appliquer immédiatement le cache local (s'il existe) pendant que la requête réseau
+  /* 1) Données OpenAIP publiées avec le site (voir _loadOpenaipStatic) : immédiat et fiable. */
+  if(status) status.textContent='⏳ Chargement des espaces aériens…';
+  var _static=await _loadOpenaipStatic();
+  var _staticItems=_static?_openaipStaticFor(_static,'airspaces',{south:south,north:north,west:west,east:east}):null;
+  if(_staticItems){
+    _lastOpenaipItems=_staticItems;
+    _routeAirspaces=_computeAirspaceCrossings(_staticItems);
+    _altitudesRouteSig=_currentRouteSig();
+    if(status) status.textContent=(_routeAirspaces.length
+      ? '✅ '+_routeAirspaces.length+' espace(s) aérien(s) croisé(s) par la route ('+_staticItems.length+' zone(s) analysée(s))'
+      : 'ℹ️ Aucun espace aérien sur le tracé horizontal de la route ('+_staticItems.length+' zone(s) analysée(s))')
+      +' — données OpenAIP du '+_formatCacheDate(_static.ts)+'.';
+    renderAltitudesProfile();
+    renderAltitudesCrossingsList();
+    if(typeof renderAltProfile==='function') renderAltProfile();
+    return;
+  }
+
+  /* 2) Secours : route hors de la zone couverte (ou fichier absent) → appel direct à OpenAIP.
+     Appliquer immédiatement le cache local (s'il existe) pendant que la requête réseau
      tourne en arrière-plan, pour ne jamais laisser l'utilisateur sans rien si OpenAIP est
      indisponible — remplacé automatiquement dès que le chargement réseau réussit. */
   var _airspacesCached=_loadAirspacesCache();
@@ -16290,45 +16321,105 @@ document.addEventListener('visibilitychange', function() {
   });
 });
 
-function _waitForFreshData(sinceMs, token, statusEl) {
-  var started = Date.now(), runDoneAt = 0, lastApiCheck = 0, runConclusion = null;
+/* Barre de progression : suit les étapes RÉELLES du job GitHub (API jobs, déjà interrogée
+   pour détecter un échec — aucun travail ajouté côté serveur, donc aucun ralentissement).
+   Poids = durées typiques mesurées (en s) ; à l'intérieur d'une étape en cours, on avance
+   avec le temps écoulé, plafonné à 90 % de l'étape. */
+var _FETCH_STEPS = {
+  'Set up job': [2, 'Démarrage du serveur'],
+  'Checkout repository': [15, 'Préparation'],
+  'Set up Python': [1, 'Préparation'],
+  'Install dependencies': [4, 'Préparation'],
+  'Cache Playwright Chromium': [2, 'Préparation'],
+  'Install Chromium (headless shell)': [3, 'Préparation'],
+  'Run script': [20, 'Récupération Skeyes + Météo-France'],
+  'Prepare site': [1, 'Publication du site'],
+  'Upload artifact for GitHub Pages': [10, 'Publication du site'],
+  'Deploy to GitHub Pages': [7, 'Mise en ligne']
+};
+var _fetchProgressMax = 0;
+function _setFetchProgress(pct, label, right) {
+  var box = document.getElementById('fetchProgress'); if (!box) return;
+  box.style.display = '';
+  pct = Math.max(_fetchProgressMax, Math.min(100, pct)); // jamais en arrière
+  _fetchProgressMax = pct;
+  document.getElementById('fetchProgressFill').style.width = pct + '%';
+  var spans = document.getElementById('fetchProgressLabel').children;
+  spans[0].textContent = label || '';
+  spans[1].textContent = right || (Math.round(pct) + ' %');
+}
+function _jobProgress(job, opmetOnly) {
+  var total = 0, done = 0, label = 'Démarrage du serveur';
+  (job.steps || []).forEach(function(st) {
+    var def = _FETCH_STEPS[st.name]; if (!def) return;
+    var w = def[0]; if (opmetOnly && st.name === 'Run script') w = 8;
+    total += w;
+    if (st.status === 'completed') done += w;
+    else if (st.status === 'in_progress') {
+      var el = st.started_at ? (Date.now() - new Date(st.started_at).getTime()) / 1000 : 0;
+      done += Math.min(el / w, 0.9) * w; label = def[1];
+    }
+  });
+  if (!total) return { pct: 5, label: label };
+  if (done >= total) label = 'Mise en ligne';
+  return { pct: 5 + 90 * done / total, label: label };
+}
+
+function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
+  var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
+  _fetchProgressMax = 0;
+  _setFetchProgress(1, 'En attente d’un serveur GitHub…');
+  function apiGet(url) {
+    return fetch(url, { headers: token ? { "Authorization": "Bearer " + token } : {} })
+      .then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+  }
+  function hideSoon() { setTimeout(function() { var b = document.getElementById('fetchProgress'); if (b) b.style.display = 'none'; }, 6000); }
   function tick() {
     var elapsed = Math.round((Date.now() - started) / 1000);
     _readFetchStamp().then(function(st) {
       if (st && st.ts && st.ts > sinceMs - 5000) {
         _lastStampTs = st.ts;
+        _setFetchProgress(100, 'Terminé — données affichées', elapsed + ' s');
+        hideSoon();
         if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
         if (statusEl) statusEl.textContent = '🟢 Données à jour (' + elapsed + ' s) — affichage actualisé.';
         _toast('✅ Nouvelles données chargées', 'success', 3000);
-        // Signaler une récupération partielle (ex. Skeyes en échec) une fois le run terminé
         setTimeout(function() { _showLastFetchInfo(); }, 15000);
         return;
       }
       if (statusEl) statusEl.textContent = '🟡 Récupération en cours… ' + elapsed + ' s';
-      // Toutes les ~15 s : le run a-t-il échoué sans rien publier ?
-      if (Date.now() - lastApiCheck > 15000) {
-        lastApiCheck = Date.now();
-        fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3', {
-          headers: token ? { "Authorization": "Bearer " + token } : {}
-        }).then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
-          var run = ((d && d.workflow_runs) || []).find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; });
-          if (run && run.status === 'completed' && !runDoneAt) { runDoneAt = Date.now(); runConclusion = run.conclusion; }
-        }).catch(function() {});
-      }
-      // Run terminé depuis 90 s sans nouvelles données en ligne → échec
-      if (runDoneAt && Date.now() - runDoneAt > 90000) {
-        if (statusEl) statusEl.textContent = '🔴 Échec de la récupération' + (runConclusion ? ' (' + runConclusion + ')' : '') + ' — voir le lien « détails ».';
-        _showLastFetchInfo();
-        return;
-      }
-      if (Date.now() - started > 15 * 60000) {
-        if (statusEl) statusEl.textContent = '⚠️ Toujours rien après 15 min — vérifie sur GitHub Actions.';
-        return;
-      }
-      setTimeout(tick, 3000);
+      // Étapes réelles du job (pour la barre) + détection d'un échec sans publication
+      var runP = runId ? Promise.resolve({ id: runId }) :
+        apiGet('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3').then(function(d) {
+          return ((d && d.workflow_runs) || []).find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; }) || null;
+        });
+      runP.then(function(run) {
+        if (!run) { _setFetchProgress(Math.min(4, 1 + elapsed / 4), 'En attente d’un serveur GitHub…', elapsed + ' s'); return; }
+        runId = run.id;
+        return apiGet('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/runs/' + run.id + '/jobs').then(function(j) {
+          var job = j && j.jobs && j.jobs[0];
+          if (!job) return;
+          var p = _jobProgress(job, opmetOnly);
+          _setFetchProgress(p.pct, p.label, elapsed + ' s');
+          if (job.status === 'completed' && !runDoneAt) { runDoneAt = Date.now(); runConclusion = job.conclusion; }
+        });
+      }).then(function() {
+        // Job terminé depuis 90 s sans nouvelles données en ligne → échec
+        if (runDoneAt && Date.now() - runDoneAt > 90000) {
+          _setFetchProgress(_fetchProgressMax, 'Échec de la récupération', '');
+          if (statusEl) statusEl.textContent = '🔴 Échec de la récupération' + (runConclusion ? ' (' + runConclusion + ')' : '') + ' — voir le lien « détails ».';
+          _showLastFetchInfo();
+          return;
+        }
+        if (Date.now() - started > 15 * 60000) {
+          if (statusEl) statusEl.textContent = '⚠️ Toujours rien après 15 min — vérifie sur GitHub Actions.';
+          return;
+        }
+        setTimeout(tick, 3000);
+      });
     });
   }
-  setTimeout(tick, 3000);
+  setTimeout(tick, 2000);
 }
 
 async function _dispatchUpdateWorkflow(inputs, statusEl) {
@@ -16356,7 +16447,7 @@ async function _dispatchUpdateWorkflow(inputs, statusEl) {
         });
         if (response.ok || response.status === 204) {
             if (statusEl) statusEl.textContent = '🟡 Lancée — récupération en cours…';
-            _waitForFreshData(dispatchedAtMs, token, statusEl);
+            _waitForFreshData(dispatchedAtMs, token, statusEl, !!(inputs && inputs.opmet_only));
         } else {
             if (statusEl) statusEl.style.display = 'none';
             alert("❌ Erreur: " + response.status + " " + response.statusText + "\n Vérifiez votre token PAT (il doit avoir les droits 'repo').");
