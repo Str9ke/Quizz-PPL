@@ -16220,6 +16220,40 @@ window.applyPerformance=function(tas, fuel){
 
 /* D\u00E9clenche le workflow complet (NOTAMs + images + OPMET complet + TEMSI/WINTEM) \u2014 plusieurs
    minutes. Voir triggerOpmetOnlyAction ci-dessous pour la version rapide OPMET seul. */
+/* Rafraîchit l'affichage avec les données déjà récupérées (aucune récupération lancée) :
+   cartes météo, images Skeyes, OPMET, NOTAM, Daily Warnings. */
+window.refreshBriefingDisplay = function() {
+  if (typeof window.refreshAllMeteo === 'function') window.refreshAllMeteo();
+  if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
+  if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
+  ['autoOpmetFrame', 'autoNotamFrame', 'autoDailyWarnFrame'].forEach(function(id) {
+    var f = document.getElementById(id);
+    if (f && f.src) f.src = f.src.split('?')[0] + '?t=' + Date.now();
+  });
+  _showLastFetchInfo();
+};
+
+/* Affiche la date et le résultat de la dernière récupération (dernier run du workflow,
+   API publique GitHub) sous la barre de boutons. */
+function _showLastFetchInfo() {
+  var el = document.getElementById('lastFetchInfo');
+  if (!el) return;
+  var token = localStorage.getItem('github_pat');
+  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=1', {
+    headers: token ? { "Authorization": "Bearer " + token } : {}
+  }).then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
+    var run = d && d.workflow_runs && d.workflow_runs[0];
+    if (!run) { el.textContent = ''; return; }
+    var when = new Date(run.run_started_at || run.created_at).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' });
+    var state = run.status !== 'completed' ? '\uD83D\uDFE1 en cours'
+      : (run.conclusion === 'success' ? '\u2705 r\u00E9ussie' : '\u26A0\uFE0F en \u00E9chec (une partie des donn\u00E9es n\u2019a pas pu \u00EAtre r\u00E9cup\u00E9r\u00E9e)');
+    el.innerHTML = 'Derni\u00E8re r\u00E9cup\u00E9ration : ' + when + ' \u2014 ' + state
+      + ' \u00B7 <a href="' + run.html_url + '" target="_blank" rel="noopener">d\u00E9tails</a>';
+  }).catch(function() {});
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showLastFetchInfo);
+else _showLastFetchInfo();
+
 window.triggerGithubAction = function() {
   return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'));
 };
