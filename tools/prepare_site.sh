@@ -5,8 +5,13 @@
 set -e
 rm -rf site
 mkdir -p site
-# copy files but exclude .git, .github and local-only config.js
-rsync -a --exclude='.git' --exclude='.github' --exclude='config.js' --exclude='node_modules' --exclude='site' ./ site/
+# copy files but exclude .git, .github and local-only config.js — ainsi que les fichiers de
+# travail jamais servis par le site (~200 Mo : archives mhtml des questionnaires, captures
+# réseau .har, documents .docx, scripts) : envoi et déploiement nettement plus rapides, et
+# les captures .har (qui peuvent contenir des données de session) ne sont plus publiées.
+rsync -a --exclude='.git' --exclude='.github' --exclude='config.js' --exclude='node_modules' --exclude='site' \
+  --exclude='mhtml/' --exclude='HAR METEO/' --exclude='*.har' --exclude='*.docx' --exclude='*.py' \
+  ./ site/
 
 # version.json : sert à répondre à « suis-je à jour ? » (voir js/update-check.js).
 # La version vient du CACHE_NAME du Service Worker, pas du commit — la météo est
