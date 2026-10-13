@@ -10,12 +10,12 @@ jobs:
         run: |
           echo "key length: ${#K}"
           probe() { code=$(curl -s -o out.txt -D hdr.txt -w '%{http_code} %{time_total}s' --max-time 90 -H "x-openaip-api-key: $K" "$1"); echo "::notice title=$code::$1 :: $(grep -i -E '^(retry-after|x-ratelimit|ratelimit)' hdr.txt | tr '\r\n' '  ') :: $(head -c 160 out.txt | tr '\n' ' ')"; }
-          probe "https://api.core.openaip.net/api/airspaces?bbox=-0.5,47.3,9.4,53.7&limit=1000&page=1"
-          sleep 10
-          probe "https://api.core.openaip.net/api/airspaces?bbox=-0.5,47.3,9.4,53.7&limit=200&page=1"
-          sleep 10
+          sleep 60
+          curl -s -o /dev/null -D h0.txt -w '' -X OPTIONS --max-time 30 -H "Origin: https://str9ke.github.io" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: x-openaip-api-key" "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=10"
+          echo "::notice title=OPTIONS::$(head -1 h0.txt) $(grep -i '^access-control' h0.txt | tr '\r\n' '  ')"
+          sleep 30
+          probe "https://api.core.openaip.net/api/airspaces?bbox=-0.5,47.3,4.5,53.7&limit=1000&page=1"
+          sleep 30
+          probe "https://api.core.openaip.net/api/airspaces?bbox=4.5,47.3,9.4,53.7&limit=1000&page=1"
+          sleep 60
           probe "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=10&page=1"
-          sleep 2
-          probe "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=10&page=2"
-          sleep 5
-          probe "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=10&page=3"
