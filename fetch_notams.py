@@ -909,11 +909,26 @@ def _waf_clearance_cookies():
         ctx = browser.new_context(locale="fr-BE", user_agent=BROWSER_UA)
         page = ctx.new_page()
         page.goto(f"{SKEYES_BASE}/opersite/login.do", wait_until="domcontentloaded", timeout=60000)
-        try:
-            page.wait_for_selector("form[name=loginForm], input[type=password]", timeout=32000)
-            ok = True
-        except Exception:
-            ok = False
+        # Défi résolu = cookie de dégagement du WAF reçu ET vraie page Skeyes affichée.
+        # (Depuis le 13/10/2026, login.do n'affiche plus le formulaire mais un bouton
+        # « LOGIN » : attendre le formulaire faisait conclure à tort à un échec.)
+        ok = False
+        deadline = time.time() + 30
+        while time.time() < deadline:
+            names = [c["name"] for c in ctx.cookies()]
+            try:
+                title = (page.title() or "").lower()
+            except Exception:
+                title = ""
+            try:
+                has_form = page.locator("form[name=loginForm], input[type=password]").count() > 0
+            except Exception:
+                has_form = False
+            if "appgw_azwaf_jsclearance" in names and ("skeyes" in title or has_form):
+                ok = True
+                break
+            page.wait_for_timeout(300)
+        if not ok:
             try:
                 txt = " ".join(page.inner_text("body").split())[:400]
             except Exception:
