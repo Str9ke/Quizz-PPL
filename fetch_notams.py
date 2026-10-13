@@ -927,6 +927,81 @@ def make_skeyes_session():
     return session
 
 
+def _accept_skeyes_policy(session, resp):
+    """Accepte la page « nouvelle politique » que Skeyes intercale après le login.
+
+    Depuis le 11/10/2026, POST login.do redirige vers /opersite/jsp/newpolicy.jsp : tant que
+    cette politique n'est pas acceptée, la session N'EST PAS authentifiée (toute page protégée
+    renvoie vers login.jsp) — d'où l'échec OPMET/images/SFC alors que la connexion semblait
+    réussir. On soumet le formulaire de la page en cochant ses cases et en choisissant le
+    bouton d'acceptation. Le contenu de la page est journalisé (sans données sensibles) pour
+    pouvoir adapter ce code si Skeyes change encore le format.
+    """
+    soup = BeautifulSoup(resp.text, "html.parser")
+    text = " ".join(soup.get_text(" ").split())
+    print(f"Policy page detected ({resp.url}) — texte: {text[:600]}")
+    accept_words = ("accept", "agree", "accord", "valid", "continu", "ok", "yes", "oui", "confirm", "submit")
+    reject_words = ("refus", "decline", "reject", "cancel", "annul", "logout", "non", "no ")
+    forms = soup.find_all("form")
+    for i, form in enumerate(forms):
+        action = form.get("action") or resp.url
+        method = (form.get("method") or "get").lower()
+        print(f"  Policy form #{i}: method={method} action={action}")
+        data = {}
+        submits = []
+        for el in form.find_all(["input", "button", "select", "textarea"]):
+            name = el.get("name")
+            typ = (el.get("type") or ("submit" if el.name == "button" else "text")).lower()
+            val = el.get("value", "")
+            label = (val or el.get_text(" ").strip() or el.get("id") or "")
+            print(f"    field <{el.name}> name={name} type={typ} value={val[:40]!r} label={label[:40]!r} onclick={(el.get('onclick') or '')[:80]!r}")
+            if typ in ("submit", "button", "image"):
+                submits.append((name, val or "on", label.lower()))
+                continue
+            if not name:
+                continue
+            if typ in ("checkbox", "radio"):
+                lab = (val + " " + label).lower()
+                if typ == "checkbox" or any(w in lab for w in accept_words):
+                    data[name] = val or "on"
+            elif el.name == "select":
+                opt = el.find("option")
+                data[name] = opt.get("value", "") if opt else ""
+            else:
+                data[name] = val
+        chosen = None
+        for name, val, label in submits:
+            if any(w in label for w in accept_words) and not any(w in label for w in reject_words):
+                chosen = (name, val)
+                break
+        if chosen is None and submits and not any(w in submits[0][2] for w in reject_words):
+            chosen = submits[0][:2]
+        if chosen and chosen[0]:
+            data[chosen[0]] = chosen[1]
+        url = urljoin(resp.url, action.replace("&amp;", "&"))
+        print(f"  -> Submitting policy form #{i} to {url} with keys {list(data.keys())}")
+        if method == "post":
+            r = session.post(url, data=data, headers={"Referer": resp.url}, allow_redirects=True)
+        else:
+            r = session.get(url, params=data, headers={"Referer": resp.url}, allow_redirects=True)
+        print(f"  Policy submit: status={r.status_code}, url={r.url}")
+        if "newpolicy" not in r.url and "login.jsp" not in r.url:
+            return True
+    # Pas de formulaire exploitable : chercher un lien d'acceptation
+    for a in soup.find_all("a", href=True):
+        label = a.get_text(" ").strip().lower()
+        if any(w in label for w in accept_words) and not any(w in label for w in reject_words):
+            url = urljoin(resp.url, a["href"])
+            print(f"  -> Following policy link {label!r}: {url}")
+            r = session.get(url, headers={"Referer": resp.url}, allow_redirects=True)
+            print(f"  Policy link: status={r.status_code}, url={r.url}")
+            if "newpolicy" not in r.url and "login.jsp" not in r.url:
+                return True
+    with open("_debug_policy_page.html", "w", encoding="utf-8") as f:
+        f.write(resp.text)
+    return False
+
+
 def do_login(session, username, password):
     """Authenticate to the Skeyes opersite. Returns True if login succeeded."""
     print("--- Login ---")
@@ -1003,8 +1078,15 @@ def do_login(session, username, password):
     print(f"Response: status={resp.status_code}, url={resp.url}")
     print(f"Cookies: {session.cookies.get_dict()}")
     
+    # Nouvelle politique d'utilisation à accepter (voir _accept_skeyes_policy)
+    if 'policy' in resp.url.lower() or re.search(r'newpolicy', resp.text[:20000], re.I):
+        if _accept_skeyes_policy(session, resp):
+            print("Skeyes policy accepted")
+        else:
+            print("WARNING: could not accept Skeyes policy page")
+            _record_failure("login", f"page de politique Skeyes non acceptée ({resp.url}) — voir _debug_policy_page.html")
     # Check if we got redirected to a non-login page (success)
-    if 'login' not in resp.url.lower().split('/')[-1]:
+    elif 'login' not in resp.url.lower().split('/')[-1]:
         print("Login redirect indicates success")
     
     # Verify: try accessing a protected resource
@@ -1023,6 +1105,7 @@ def do_login(session, username, password):
     
     # Login failed - dump debug info
     print("WARNING: Login failed")
+    _record_failure("login", f"session non authentifiée après connexion (redirigé vers {verify.url}, réponse login: {resp.url})")
     error_match = re.search(r'class="[^"]*error[^"]*"[^>]*>([^<]+)', resp.text, re.IGNORECASE)
     if error_match:
         print(f"Error message on page: {error_match.group(1).strip()}")

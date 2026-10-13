@@ -1,8 +1,9 @@
 name: Update NOTAMs
 
 on:
-  schedule:
-    - cron: '0 5-19/3 * * 0,3,5,6' # Toutes les 3h (5h,8h,11h,14h,17h UTC), uniquement Mer, Ven, Sam, Dim
+  # Plus de déclenchement planifié (supprimé le 13/10/2026 à la demande de l'utilisateur) :
+  # la récupération ne se lance QUE manuellement, depuis la page Briefing (bouton
+  # « Récupérer tout » / « OPMET seul ») ou l'onglet Actions de GitHub.
   workflow_dispatch: # Lancement manuel
     inputs:
       opmet_only:
