@@ -1,0 +1,24 @@
+name: OpenAIP probe (temporaire)
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe
+        env:
+          K: ${{ secrets.OPENAIP_API_KEY }}
+        run: |
+          echo "key length: ${#K}"
+          for u in \
+            "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=10&page=1" \
+            "https://api.core.openaip.net/api/airspaces?bbox=-0.5,47.3,9.4,53.7&limit=1000&page=1" \
+            "https://api.core.openaip.net/api/airspaces?pos=50.5,4.5&dist=50000&limit=10" \
+            "https://api.core.openaip.net/api/navaids?bbox=4,50,5,51&limit=10" \
+            "https://api.core.openaip.net/api/airports?bbox=4,50,5,51&limit=10"; do
+            code=$(curl -s -o out.txt -w '%{http_code} %{time_total}s' --max-time 60 -H "x-openaip-api-key: $K" "$u")
+            echo "::notice title=$code::$u :: $(head -c 300 out.txt | tr '\n' ' ')"
+          done
+          code=$(curl -s -o out.txt -w '%{http_code}' --max-time 30 "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=1")
+          echo "::notice title=sans clé $code::$(head -c 200 out.txt)"
+          code=$(curl -s -o out.txt -w '%{http_code}' --max-time 30 "https://api.core.openaip.net/api/airspaces?bbox=4,50,5,51&limit=1&apiKey=$K")
+          echo "::notice title=clé en paramètre $code::$(head -c 200 out.txt)"
