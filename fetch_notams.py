@@ -176,10 +176,11 @@ def generate_error_html(filename, title, session, exception_str):
         f"<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
         f"<style>body{{font-family:monospace;font-size:12px;padding:10px;margin:0;background:#ffeeee;}}</style>"
         f"</head><body><h3>Erreur {title} Skeyes</h3>"
-        f"<p><strong>Session perdue ou erreur technique.</strong></p>"
-        f"<p>Exception: {exception_str}</p>"
+        + (f"<p style='font-size:14px'><strong>{_LOGIN_PROBLEM}</strong></p>" if _LOGIN_PROBLEM
+           else f"<p><strong>Session perdue ou erreur technique.</strong></p>")
+        + f"<p>Exception: {exception_str}</p>"
         f"<p>Date/Heure: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "</p>"
-        f"<p><strong>Cookies lors de la tentative :</strong> {session.cookies.get_dict()}</p>"
+        # Les cookies de session ne sont plus affichés : cette page est publique.
         f"</body></html>"
     )
     with open(filename, "w", encoding="utf-8") as f:
@@ -265,7 +266,7 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
 def fetch_opmet(session):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
-    print(f"Cookies before OPMET: {session.cookies.get_dict()}")
+    print(f"Cookies before OPMET: {list(session.cookies.get_dict().keys())}")
     
     # Step 1: Initialize the OPMET form page
     init_url_1 = "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
@@ -858,6 +859,9 @@ SKEYES_BASE = "https://ops.skeyes.be"
 BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
 _FAILURES = []
+# Problème de compte identifié à la connexion (ex. mot de passe expiré), affiché tel quel
+# sur les pages d'erreur publiées pour que la cause soit lisible sans ouvrir les journaux.
+_LOGIN_PROBLEM = ""
 
 
 def _record_failure(what, detail):
@@ -937,9 +941,19 @@ def _accept_skeyes_policy(session, resp):
     bouton d'acceptation. Le contenu de la page est journalisé (sans données sensibles) pour
     pouvoir adapter ce code si Skeyes change encore le format.
     """
+    global _LOGIN_PROBLEM
     soup = BeautifulSoup(resp.text, "html.parser")
     text = " ".join(soup.get_text(" ").split())
     print(f"Policy page detected ({resp.url}) — texte: {text[:600]}")
+    # JAMAIS de soumission d'un formulaire contenant un champ mot de passe : c'est un
+    # changement de mot de passe (cas réel du 11/10/2026 : « Your password has expired »),
+    # qui doit être fait par le titulaire du compte, puis reporté dans le secret SKEYES_PASS.
+    if soup.find("input", attrs={"type": re.compile("^password$", re.I)}) or re.search(r"password has expired", text, re.I):
+        _LOGIN_PROBLEM = ("Mot de passe Skeyes expiré : connecte-toi sur ops.skeyes.be pour en choisir un nouveau, "
+                          "puis mets à jour le secret SKEYES_PASS du dépôt GitHub (Settings → Secrets → Actions).")
+        print("ERROR: " + _LOGIN_PROBLEM)
+        _record_failure("login", _LOGIN_PROBLEM)
+        return False
     accept_words = ("accept", "agree", "accord", "valid", "continu", "ok", "yes", "oui", "confirm", "submit")
     reject_words = ("refus", "decline", "reject", "cancel", "annul", "logout", "non", "no ")
     forms = soup.find_all("form")
@@ -1010,7 +1024,7 @@ def do_login(session, username, password):
     # Step 1: GET login.do to obtain JSESSIONID
     init_resp = session.get(f"{base}/opersite/login.do")
     print(f"GET login.do: status={init_resp.status_code}, url={init_resp.url}")
-    print(f"Cookies: {session.cookies.get_dict()}")
+    print(f"Cookies: {list(session.cookies.get_dict().keys())}")
     # Step 2: Follow the actual login form link: login.forward.do?cmd=init
     login_resp = session.get(f"{base}/opersite/login.forward.do?cmd=init",
                              headers={"Referer": init_resp.url})
@@ -1076,15 +1090,15 @@ def do_login(session, username, password):
     print(f"POST data keys: {list(data.keys())}")
     resp = session.post(post_url, data=data, allow_redirects=True)
     print(f"Response: status={resp.status_code}, url={resp.url}")
-    print(f"Cookies: {session.cookies.get_dict()}")
+    print(f"Cookies: {list(session.cookies.get_dict().keys())}")
     
     # Nouvelle politique d'utilisation à accepter (voir _accept_skeyes_policy)
     if 'policy' in resp.url.lower() or re.search(r'newpolicy', resp.text[:20000], re.I):
         if _accept_skeyes_policy(session, resp):
             print("Skeyes policy accepted")
-        else:
+        elif not _LOGIN_PROBLEM:
             print("WARNING: could not accept Skeyes policy page")
-            _record_failure("login", f"page de politique Skeyes non acceptée ({resp.url}) — voir _debug_policy_page.html")
+            _record_failure("login", f"page intercalée par Skeyes non gérée ({resp.url}) — voir _debug_policy_page.html")
     # Check if we got redirected to a non-login page (success)
     elif 'login' not in resp.url.lower().split('/')[-1]:
         print("Login redirect indicates success")
@@ -1105,7 +1119,8 @@ def do_login(session, username, password):
     
     # Login failed - dump debug info
     print("WARNING: Login failed")
-    _record_failure("login", f"session non authentifiée après connexion (redirigé vers {verify.url}, réponse login: {resp.url})")
+    if not _LOGIN_PROBLEM:
+        _record_failure("login", f"session non authentifiée après connexion (redirigé vers {verify.url}, réponse login: {resp.url})")
     error_match = re.search(r'class="[^"]*error[^"]*"[^>]*>([^<]+)', resp.text, re.IGNORECASE)
     if error_match:
         print(f"Error message on page: {error_match.group(1).strip()}")
