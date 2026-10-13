@@ -940,6 +940,16 @@ def make_skeyes_session():
         cookies = None
         print(f"WAF browser bootstrap crashed: {e}")
     if not cookies:
+        # Repli : installer Chromium complet + dépendances système (polices…) et réessayer.
+        print("WAF non résolu — installation de Chromium avec dépendances système, nouvel essai…")
+        import subprocess, sys as _sys
+        subprocess.run([_sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"], check=False,
+                       stdout=subprocess.DEVNULL)
+        try:
+            cookies = _waf_clearance_cookies()
+        except Exception as e:
+            print(f"WAF browser bootstrap crashed (2e essai): {e}")
+    if not cookies:
         _record_failure("waf", "défi JavaScript du WAF Azure non résolu par Chromium")
         return session
     for c in cookies:
