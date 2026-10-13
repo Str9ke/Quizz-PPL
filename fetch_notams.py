@@ -673,53 +673,61 @@ def fetch_remote_sensing_images(session):
         ("windfl100",      "numwx", "skeyes_numwx_windfl100"),
         ("numprec",        "numwx", "skeyes_numwx_prec"),
     ]
-    manifest = {}
+    # 1) Pages de détail : séquentiel (16 requêtes légères, côté serveur la navigation est
+    #    liée à la session — on garde l'ordre d'origine).
+    # 2) Images : TOUTES téléchargées en parallèle (≈350 fichiers statiques). Elles l'étaient
+    #    une par une, ce qui représentait l'essentiel des ~75 s du script.
+    from concurrent.futures import ThreadPoolExecutor
+    jobs = []      # (prefix, index, img_url, detail_url, filename, path)
+    order = []     # prefixes dans l'ordre d'origine
     for html_param, type_param, prefix in pages:
         try:
             detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
             referer = "https://ops.skeyes.be/opersite/meteonumwxStart.do" if type_param == "numwx" else "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-            print(f"Fetching {prefix} from {html_param}...")
-            resp = session.get(detail_url, headers={"Referer": referer})
+            resp = session.get(detail_url, headers={"Referer": referer}, timeout=30)
             if resp.status_code != 200:
-                print(f"  -> HTTP {resp.status_code}")
+                print(f"{prefix}: HTTP {resp.status_code}")
                 continue
-            
             # Extract ALL image URLs from the page (from preloadImages JS and img tags)
             img_paths = []
             for m in re.finditer(r"['\"](/(?:remotesensing|modeloutput)/[^'\"]+\.(gif|jpg|jpeg|png))['\"]", resp.text, re.IGNORECASE):
                 path = m.group(1)
                 if 'animation_buttons' not in path and 'roads' not in path and path not in img_paths:
                     img_paths.append(path)
-            
             if not img_paths:
-                print(f"  -> No images found")
+                print(f"{prefix}: no images found")
                 continue
-            
-            print(f"  -> Found {len(img_paths)} images")
-            filenames = []
-            timestamps = []
+            order.append(prefix)
             for i, path in enumerate(img_paths):
-                img_url = f"https://ops.skeyes.be{path}"
                 ext = path.rsplit('.', 1)[-1].lower()
                 if ext == 'jpeg':
                     ext = 'jpg'
-                filename = f"{prefix}_{i:02d}.{ext}"
-                img_resp = session.get(img_url, headers={"Referer": detail_url})
-                if img_resp.status_code == 200 and len(img_resp.content) > 500:
-                    with open(filename, 'wb') as f:
-                        f.write(img_resp.content)
-                    filenames.append(filename)
-                    ts = _extract_utc_timestamp(path)
-                    timestamps.append(ts)
-                else:
-                    print(f"  -> Failed {filename}: status={img_resp.status_code}, size={len(img_resp.content)}")
-            
-            if filenames:
-                manifest[prefix] = {"files": filenames, "times": timestamps}
-                print(f"  -> Saved {len(filenames)} images for {prefix}")
+                jobs.append((prefix, i, f"https://ops.skeyes.be{path}", detail_url, f"{prefix}_{i:02d}.{ext}", path))
         except Exception as e:
-            print(f"  -> Error: {e}")
-    
+            print(f"{prefix}: error {e}")
+
+    def _dl(job):
+        prefix, i, img_url, detail_url, filename, path = job
+        try:
+            r = session.get(img_url, headers={"Referer": detail_url}, timeout=30)
+            if r.status_code == 200 and len(r.content) > 500:
+                with open(filename, 'wb') as f:
+                    f.write(r.content)
+                return job, True
+            print(f"  -> Failed {filename}: status={r.status_code}, size={len(r.content)}")
+        except Exception as e:
+            print(f"  -> Failed {filename}: {e}")
+        return job, False
+
+    with ThreadPoolExecutor(max_workers=24) as pool:
+        results = list(pool.map(_dl, jobs))
+    manifest = {}
+    for prefix in order:
+        ok = sorted((job for job, good in results if good and job[0] == prefix), key=lambda j: j[1])
+        if ok:
+            manifest[prefix] = {"files": [j[4] for j in ok], "times": [_extract_utc_timestamp(j[5]) for j in ok]}
+            print(f"{prefix}: saved {len(ok)} images")
+
     # Write manifest JSON
     with open("skeyes_images.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f)
@@ -886,16 +894,24 @@ def _waf_clearance_cookies():
     User-Agent, pour que tout le reste du script fonctionne sans changement."""
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+        args = ["--disable-blink-features=AutomationControlled"]
+        try:
+            # Google Chrome est préinstallé sur les runners GitHub : pas besoin de télécharger
+            # le Chromium de Playwright (~300 Mo + dépendances système, ~20 s par exécution).
+            browser = p.chromium.launch(channel="chrome", headless=True, args=args)
+        except Exception as e:
+            print(f"Chrome système indisponible ({e.__class__.__name__}), installation de Chromium Playwright…")
+            import subprocess, sys as _sys
+            subprocess.run([_sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"], check=False)
+            browser = p.chromium.launch(headless=True, args=args)
         ctx = browser.new_context(locale="fr-BE", user_agent=BROWSER_UA)
         page = ctx.new_page()
         page.goto(f"{SKEYES_BASE}/opersite/login.do", wait_until="domcontentloaded", timeout=60000)
-        ok = False
-        for _ in range(16):
-            page.wait_for_timeout(2000)
-            if page.locator("form[name=loginForm], input[type=password]").count():
-                ok = True
-                break
+        try:
+            page.wait_for_selector("form[name=loginForm], input[type=password]", timeout=32000)
+            ok = True
+        except Exception:
+            ok = False
         cookies = ctx.cookies()
         browser.close()
     names = [c["name"] for c in cookies]
@@ -905,6 +921,8 @@ def _waf_clearance_cookies():
 
 def make_skeyes_session():
     session = requests.Session()
+    _adapter = requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=32)
+    session.mount("https://", _adapter)
     session.headers.update({
         "User-Agent": BROWSER_UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

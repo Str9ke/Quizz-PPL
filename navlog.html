@@ -312,6 +312,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .skeyes-carousel .zoom-wrap,.model-carousel .zoom-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;border-radius:8px;overscroll-behavior:contain}
 .skeyes-carousel .zoom-wrap.dragging,.model-carousel .zoom-wrap.dragging{cursor:grabbing}
 .zoom-wrap .skeyes-carousel-img,.zoom-wrap .model-carousel-img{transform-origin:0 0;transition:none;will-change:transform;user-select:none;-webkit-user-drag:none}
+/* Bande de navigation temporelle en bas des images multiples : glisser (tactile) / molette (PC) */
+.zoom-wrap .scrub-strip{position:absolute;left:0;right:0;bottom:0;display:none;flex-direction:column;justify-content:flex-end;gap:3px;padding:0 10px 7px;background:linear-gradient(transparent,rgba(0,0,0,.38));pointer-events:none;z-index:2;border-radius:0 0 8px 8px;transition:background .15s}
+.zoom-wrap .scrub-strip.on{display:flex}
+.zoom-wrap .scrub-strip.active{background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.zoom-wrap .scrub-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);opacity:.85}
+.zoom-wrap .scrub-track{height:6px;border-radius:3px;background:rgba(255,255,255,.35);position:relative;overflow:hidden}
+.zoom-wrap .scrub-strip.active .scrub-track{height:9px}
+.zoom-wrap .scrub-fill{position:absolute;left:0;top:0;bottom:0;background:#f59e0b;border-radius:3px}
+.zoom-wrap.in-scrub{cursor:ew-resize}
 .skeyes-carousel .zoom-badge,.model-carousel .zoom-badge{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:4px;align-items:center}
 .skeyes-carousel .zoom-badge button,.model-carousel .zoom-badge button{padding:3px 8px;font-size:.72em;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(4px);transition:all .2s}
 .skeyes-carousel .zoom-badge button:hover,.model-carousel .zoom-badge button:hover{background:rgba(0,0,0,.8);border-color:#667eea}
@@ -3964,6 +3973,90 @@ window.refreshAllMeteo=function(){
     badge.className='zoom-badge';
     badge.innerHTML='<span class="zoom-level">1.0×</span><button title="Zoom +">+</button><button title="Zoom −">−</button><button title="R\u00e9initialiser">↺</button>';
     wrap.appendChild(badge);
+    /* Bande de navigation dans le temps (bas de l'image) : barre de progression + glisser /
+       molette pour passer à l'image précédente/suivante. Elle pilote le curseur existant du
+       carrousel (input range dans sa barre de navigation) : rien à dupliquer par type. */
+    var strip=document.createElement('div');
+    strip.className='scrub-strip';
+    strip.innerHTML='<div class="scrub-row"><span>\u25C0 pass\u00e9</span><span class="scrub-cnt"></span><span>futur \u25B6</span></div><div class="scrub-track"><div class="scrub-fill"></div></div>';
+    wrap.appendChild(strip);
+    var sFill=strip.querySelector('.scrub-fill'), sCnt=strip.querySelector('.scrub-cnt');
+    function frameInfo(){
+      var sl=container.querySelector('input.skeyes-slider, input.model-slider');
+      if(!sl) return null;
+      return {sl:sl, n:(+sl.max)+1, i:+sl.value};
+    }
+    function updateStrip(){
+      var f=frameInfo();
+      if(!f||f.n<=1){strip.classList.remove('on');return;}
+      strip.classList.add('on');
+      placeStrip();
+      var w=((f.i+1)/f.n*100)+'%', t=(f.i+1)+' / '+f.n;
+      // N'écrire que si ça change : le compteur est observé (MutationObserver ci-dessous)
+      if(sFill.style.width!==w) sFill.style.width=w;
+      if(sCnt.textContent!==t) sCnt.textContent=t;
+    }
+    function stepTo(i){
+      var f=frameInfo(); if(!f) return;
+      i=Math.max(0,Math.min(f.n-1,i));
+      if(i!==f.i){ f.sl.value=i; f.sl.dispatchEvent(new Event('input',{bubbles:true})); }
+      updateStrip();
+    }
+    /* La bande suit le bas de la PARTIE VISIBLE de l'image : sur une carte plus haute que
+       l'écran (WINTEM, TEMSI…), le vrai bas de l'image est hors de vue. */
+    function visBottom(r){ return Math.min(r.bottom, window.innerHeight); }
+    function zoneH(r){ var vh=visBottom(r)-Math.max(r.top,0); return Math.min(90,Math.max(48,vh*0.25)); }
+    function placeStrip(){
+      if(!strip.classList.contains('on')) return;
+      var r=wrap.getBoundingClientRect();
+      if(r.bottom<0||r.top>window.innerHeight) return;
+      var off=Math.max(0, Math.min(r.bottom-visBottom(r), r.height-zoneH(r)));
+      var v=off+'px';
+      if(strip.style.bottom!==v) strip.style.bottom=v;
+    }
+    var _placeQueued=false;
+    window.addEventListener('scroll',function(){
+      if(_placeQueued) return; _placeQueued=true;
+      requestAnimationFrame(function(){ _placeQueued=false; placeStrip(); });
+    },{passive:true, capture:true});
+    window.addEventListener('resize',placeStrip,{passive:true});
+    function inZone(clientY){
+      if(!strip.classList.contains('on')) return false;
+      var r=wrap.getBoundingClientRect();
+      var vb=visBottom(r);
+      return clientY>=vb-zoneH(r) && clientY<=vb && clientY>=r.top;
+    }
+    var scrub=null; // {x, start, stepPx}
+    function scrubStart(x){
+      var f=frameInfo(); if(!f) return;
+      var r=wrap.getBoundingClientRect();
+      // Toute la largeur de l'image ≈ toute la série (entre 10 et 40 px par image)
+      scrub={x:x, start:f.i, stepPx:Math.max(10,Math.min(40,r.width/f.n))};
+      strip.classList.add('active');
+    }
+    function scrubMove(x){ if(scrub) stepTo(scrub.start+Math.round((x-scrub.x)/scrub.stepPx)); }
+    function scrubEnd(){ scrub=null; strip.classList.remove('active'); }
+    var wheelAcc=0;
+    wrap._scrubWheel=function(e){
+      if(!inZone(e.clientY)) return false;
+      var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+      if(e.deltaMode===1) d*=40;
+      var f=frameInfo(); if(!f) return true;
+      var steps=0;
+      if(Math.abs(d)>=50){ steps=d>0?1:-1; wheelAcc=0; }   // molette : 1 cran = 1 image
+      else {                                                // pavé tactile : petits deltas cumulés
+        wheelAcc+=d;
+        while(wheelAcc>=50){steps++;wheelAcc-=50;}
+        while(wheelAcc<=-50){steps--;wheelAcc+=50;}
+      }
+      if(steps) stepTo(f.i+steps);
+      strip.classList.add('active');
+      clearTimeout(wrap._scrubT); wrap._scrubT=setTimeout(function(){strip.classList.remove('active');},400);
+      return true;
+    };
+    wrap.addEventListener('mousemove',function(e){ wrap.classList.toggle('in-scrub',inZone(e.clientY)); });
+    wrap.addEventListener('mouseleave',function(){ wrap.classList.remove('in-scrub'); });
+    wrap._updateStrip=updateStrip;
     var zLabel=badge.querySelector('.zoom-level');
     var btnPlus=badge.children[1], btnMinus=badge.children[2], btnReset=badge.children[3];
     var scale=1, tx=0, ty=0, minScale=1, maxScale=6;
@@ -3998,18 +4091,26 @@ window.refreshAllMeteo=function(){
     /* Mouse drag */
     var drag=false, sx=0, sy=0, stx=0, sty=0;
     wrap.addEventListener('mousedown',function(e){
+      if(inZone(e.clientY)){ e.preventDefault(); e.stopPropagation(); scrubStart(e.clientX); return; }
       if(scale<=1) return; e.preventDefault(); e.stopPropagation();
       drag=true; sx=e.clientX; sy=e.clientY; stx=tx; sty=ty; wrap.classList.add('dragging');
     });
     window.addEventListener('mousemove',function(e){
+      if(scrub){ scrubMove(e.clientX); return; }
       if(!drag) return;
       tx=stx+(e.clientX-sx); ty=sty+(e.clientY-sy);
       clampPan(); applyTransform();
     });
-    window.addEventListener('mouseup',function(){drag=false;wrap.classList.remove('dragging');});
+    window.addEventListener('mouseup',function(){if(scrub) scrubEnd(); drag=false;wrap.classList.remove('dragging');});
     /* Touch pinch & pan */
     var touches0=null, initDist=0, initScale=1, initTx=0, initTy=0;
     wrap.addEventListener('touchstart',function(e){
+      // Un doigt dans la bande du bas : navigation dans le temps (le pincement à deux doigts
+      // reste prioritaire : le 2e doigt annule la navigation et lance le zoom).
+      if(e.touches.length===1 && inZone(e.touches[0].clientY)){
+        e.preventDefault(); scrubStart(e.touches[0].clientX); return;
+      }
+      if(scrub) scrubEnd();
       if(e.touches.length===2){
         e.preventDefault();
         var dx=e.touches[0].clientX-e.touches[1].clientX;
@@ -4022,6 +4123,7 @@ window.refreshAllMeteo=function(){
       }
     },{passive:false});
     wrap.addEventListener('touchmove',function(e){
+      if(scrub && e.touches.length===1){ e.preventDefault(); scrubMove(e.touches[0].clientX); return; }
       if(e.touches.length===2){
         e.preventDefault();
         var dx=e.touches[0].clientX-e.touches[1].clientX;
@@ -4042,11 +4144,13 @@ window.refreshAllMeteo=function(){
       }
     },{passive:false});
     wrap.addEventListener('touchend',function(e){
+      if(scrub && !e.touches.length) scrubEnd();
       drag=false; initDist=0;
     });
     /* Double-click reset */
     wrap.addEventListener('dblclick',function(e){
       e.preventDefault();
+      if(inZone(e.clientY)) return;
       if(scale>1.05) reset(); else zoomAt(e.clientX,e.clientY,2.5);
     });
     /* Buttons */
@@ -4059,10 +4163,16 @@ window.refreshAllMeteo=function(){
     var observer=new MutationObserver(function(mutations){
       mutations.forEach(function(m){if(m.attributeName==='src'){
         if(isModel) applyTransform(); else reset();
+        updateStrip();
       }});
     });
     observer.observe(img,{attributes:true,attributeFilter:['src']});
+    /* La barre de navigation (et son curseur) est construite après le chargement du manifeste :
+       on suit aussi ses changements, ainsi que le curseur manipulé directement. */
+    new MutationObserver(updateStrip).observe(container,{childList:true,subtree:true});
+    container.addEventListener('input',function(e){ if(e.target && e.target.type==='range') updateStrip(); });
     applyTransform();
+    updateStrip();
   }
   /* Document-level wheel handler: intercepts scroll on zoom-wrap elements
      at the highest level so Chrome's compositor cannot bypass it. */
@@ -4072,6 +4182,8 @@ window.refreshAllMeteo=function(){
     if(!wrap || !wrap._zoomAt) return;
     e.preventDefault();
     e.stopPropagation();
+    // Molette dans la bande du bas : image précédente/suivante au lieu du zoom
+    if(wrap._scrubWheel && wrap._scrubWheel(e)) return;
     var f=e.deltaY<0?1.15:1/1.15;
     wrap._zoomAt(e.clientX,e.clientY,f);
   },{passive:false});
@@ -16106,106 +16218,86 @@ window.applyPerformance=function(tas, fuel){
   }
 };
 
-/* Suit l'avancement du workflow apr\u00E8s d\u00E9clenchement (d\u00E9p\u00F4t public \u2192 API GitHub
-   lisible sans authentification) au lieu de laisser l'utilisateur deviner s'il
-   s'est pass\u00E9 quelque chose ("je ne vois pas l'\u00E9volution"). Une fois termin\u00E9
-   avec succ\u00E8s, recharge automatiquement les cartes m\u00E9t\u00E9o affich\u00E9es. */
-/* Interroge l'API GitHub (authentifi\u00E9e avec le PAT stock\u00E9 \u2014 un appel non authentifi\u00E9 est
-   plafonn\u00E9 \u00E0 60 requ\u00EAtes/heure PAR IP, largement \u00E9puisable en quelques cycles de suivi ; le
-   statut restait alors bloqu\u00E9 sur "En cours d'ex\u00E9cution\u2026" ind\u00E9finiment sans jamais signaler
-   d'erreur, donnant l'impression que le bouton "ne marche pas" alors que tout se passait bien
-   c\u00F4t\u00E9 serveur) pour suivre un run du workflow indiqu\u00E9 d\u00E9clench\u00E9 apr\u00E8s sinceMs. */
-function _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt, onSuccess) {
-  attempt = attempt || 0;
-  if (attempt > 45) { // ~9 min max de suivi automatique
-    if (statusEl) statusEl.textContent = '\u26A0\uFE0F Toujours en attente apr\u00E8s plusieurs minutes \u2014 v\u00E9rifie directement sur GitHub Actions.';
-    return;
-  }
-  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/' + workflowFile + '/runs?per_page=3', {
-      headers: token ? { "Authorization": "Bearer " + token } : {}
-    })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(data) {
-      var runs = (data && data.workflow_runs) || [];
-      var run = runs.find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; });
-      if (!run) {
-        if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En attente du d\u00E9marrage\u2026';
-        setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
-        return;
-      }
-      if (run.status !== 'completed') {
-        if (statusEl) statusEl.textContent = '\uD83D\uDFE1 En cours d\u2019ex\u00E9cution\u2026';
-        setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
-        return;
-      }
-      if (run.conclusion === 'success') {
-        if (onSuccess) onSuccess();
-      } else {
-        if (statusEl) statusEl.textContent = '\uD83D\uDD34 \u00C9chec (voir GitHub Actions pour le d\u00E9tail).';
-        if (typeof _showLastFetchInfo === 'function') _showLastFetchInfo();
-      }
-    })
-    .catch(function() {
-      setTimeout(function() { _pollWorkflowStatus(workflowFile, sinceMs, token, statusEl, attempt + 1, onSuccess); }, 8000);
-    });
-}
-
-/* Rafraîchit l'affichage avec les données déjà récupérées (aucune récupération lancée) :
-   cartes météo, images Skeyes, OPMET, NOTAM, Daily Warnings. */
-window.refreshBriefingDisplay = function() {
-  if (typeof window.refreshAllMeteo === 'function') window.refreshAllMeteo();
-  if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
-  ['autoOpmetFrame', 'autoNotamFrame', 'autoDailyWarnFrame'].forEach(function(id) {
-    var f = document.getElementById(id);
-    if (f && f.src) f.src = f.src.split('?')[0] + '?t=' + Date.now();
-  });
-  _showLastFetchInfo();
-};
-
-/* Affiche la date et le résultat de la dernière récupération (dernier run du workflow,
-   API publique GitHub) sous la barre de boutons. */
-function _showLastFetchInfo() {
-  var el = document.getElementById('lastFetchInfo');
-  if (!el) return;
-  var token = localStorage.getItem('github_pat');
-  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=1', {
-    headers: token ? { "Authorization": "Bearer " + token } : {}
-  }).then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
-    var run = d && d.workflow_runs && d.workflow_runs[0];
-    if (!run) { el.textContent = ''; return; }
-    var when = new Date(run.run_started_at || run.created_at).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' });
-    var state = run.status !== 'completed' ? '\uD83D\uDFE1 en cours'
-      : (run.conclusion === 'success' ? '\u2705 r\u00E9ussie' : '\u26A0\uFE0F en \u00E9chec (une partie des donn\u00E9es n\u2019a pas pu \u00EAtre r\u00E9cup\u00E9r\u00E9e)');
-    el.innerHTML = 'Derni\u00E8re r\u00E9cup\u00E9ration : ' + when + ' \u2014 ' + state
-      + ' \u00B7 <a href="' + run.html_url + '" target="_blank" rel="noopener">d\u00E9tails</a>';
-  }).catch(function() {});
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showLastFetchInfo);
-else _showLastFetchInfo();
-
 /* D\u00E9clenche le workflow complet (NOTAMs + images + OPMET complet + TEMSI/WINTEM) \u2014 plusieurs
    minutes. Voir triggerOpmetOnlyAction ci-dessous pour la version rapide OPMET seul. */
 window.triggerGithubAction = function() {
-  return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'), function() {
-    if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
-    if (typeof window.refreshAllSkeyesImages === 'function') window.refreshAllSkeyesImages();
-  });
+  return _dispatchUpdateWorkflow(null, document.getElementById('ghaStatus'));
 };
 
-/* Version rapide : ne d\u00E9clenche que fetch_notams.py --opmet-only c\u00F4t\u00E9 serveur (voir
-   update_notams.yml + fetch_opmet()/main_opmet_only() dans fetch_notams.py) \u2014 r\u00E9cup\u00E8re et
-   remplace la TOTALIT\u00C9 de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET, comme sur la page Skeyes),
-   mais ignore NOTAMs, images radar/satellite et TEMSI/WINTEM pour un run aussi court que
-   possible. Recharge le M\u00CAME iframe autoOpmetFrame que le pipeline complet. */
+/* Version rapide : ne déclenche que fetch_notams.py --opmet-only côté serveur — récupère et
+   remplace la TOTALITÉ de l'OPMET (METAR+TAF+SIGMET+GAMET/AIRMET) sans NOTAMs/images/TEMSI. */
 window.triggerOpmetOnlyAction = function() {
-  var statusEl = document.getElementById('opmetFastStatus');
-  return _dispatchUpdateWorkflow({ opmet_only: 'true' }, statusEl, function() {
-    var f = document.getElementById('autoOpmetFrame');
-    if (f) f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();
-  });
+  return _dispatchUpdateWorkflow({ opmet_only: 'true' }, document.getElementById('opmetFastStatus'));
 };
 
-async function _dispatchUpdateWorkflow(inputs, statusEl, onFullyDeployed) {
+/* Rafraîchissement automatique à l'arrivée des données : le workflow publie fetch_stamp.json
+   ({ts}) AVEC les données, dans le même déploiement. On l'interroge (cache contourné) toutes
+   les 3 s : dès que son horodatage est postérieur au lancement, les nouvelles données sont
+   en ligne → tout est rechargé immédiatement. Auparavant on attendait la fin du workflow puis
+   celle d'un second workflow de déploiement, détecté par horodatage approximatif : la page ne
+   se rafraîchissait souvent pas d'elle-même. L'API GitHub ne sert plus qu'à signaler un échec. */
+var _lastStampTs = 0;
+function _readFetchStamp() {
+  return fetch('fetch_stamp.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function() { return null; });
+}
+_readFetchStamp().then(function(st) { if (st && st.ts) _lastStampTs = st.ts; });
+/* Données récupérées depuis un autre appareil pendant que la page était ouverte : rafraîchir
+   au retour sur l'onglet. */
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState !== 'visible') return;
+  _readFetchStamp().then(function(st) {
+    if (st && st.ts && _lastStampTs && st.ts > _lastStampTs) {
+      _lastStampTs = st.ts;
+      if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
+      _toast('✅ Nouvelles données chargées', 'success', 2500);
+    }
+  });
+});
+
+function _waitForFreshData(sinceMs, token, statusEl) {
+  var started = Date.now(), runDoneAt = 0, lastApiCheck = 0, runConclusion = null;
+  function tick() {
+    var elapsed = Math.round((Date.now() - started) / 1000);
+    _readFetchStamp().then(function(st) {
+      if (st && st.ts && st.ts > sinceMs - 5000) {
+        _lastStampTs = st.ts;
+        if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
+        if (statusEl) statusEl.textContent = '🟢 Données à jour (' + elapsed + ' s) — affichage actualisé.';
+        _toast('✅ Nouvelles données chargées', 'success', 3000);
+        // Signaler une récupération partielle (ex. Skeyes en échec) une fois le run terminé
+        setTimeout(function() { _showLastFetchInfo(); }, 15000);
+        return;
+      }
+      if (statusEl) statusEl.textContent = '🟡 Récupération en cours… ' + elapsed + ' s';
+      // Toutes les ~15 s : le run a-t-il échoué sans rien publier ?
+      if (Date.now() - lastApiCheck > 15000) {
+        lastApiCheck = Date.now();
+        fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3', {
+          headers: token ? { "Authorization": "Bearer " + token } : {}
+        }).then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
+          var run = ((d && d.workflow_runs) || []).find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; });
+          if (run && run.status === 'completed' && !runDoneAt) { runDoneAt = Date.now(); runConclusion = run.conclusion; }
+        }).catch(function() {});
+      }
+      // Run terminé depuis 90 s sans nouvelles données en ligne → échec
+      if (runDoneAt && Date.now() - runDoneAt > 90000) {
+        if (statusEl) statusEl.textContent = '🔴 Échec de la récupération' + (runConclusion ? ' (' + runConclusion + ')' : '') + ' — voir le lien « détails ».';
+        _showLastFetchInfo();
+        return;
+      }
+      if (Date.now() - started > 15 * 60000) {
+        if (statusEl) statusEl.textContent = '⚠️ Toujours rien après 15 min — vérifie sur GitHub Actions.';
+        return;
+      }
+      setTimeout(tick, 3000);
+    });
+  }
+  setTimeout(tick, 3000);
+}
+
+async function _dispatchUpdateWorkflow(inputs, statusEl) {
     let token = localStorage.getItem("github_pat");
     if (!token) {
         token = prompt("Pour lancer l'actualisation depuis le site, veuillez entrer votre GitHub Personal Access Token (PAT) avec l'autorisation 'repo' :\n\nPour en obtenir un : github.com/settings/tokens");
@@ -16213,7 +16305,7 @@ async function _dispatchUpdateWorkflow(inputs, statusEl, onFullyDeployed) {
         localStorage.setItem("github_pat", token);
     }
 
-    if (statusEl) { statusEl.style.display = ''; statusEl.textContent = '\u23F3 D\u00E9clenchement\u2026'; }
+    if (statusEl) { statusEl.style.display = ''; statusEl.textContent = '⏳ Déclenchement…'; }
     var dispatchedAtMs = Date.now();
 
     try {
@@ -16228,34 +16320,17 @@ async function _dispatchUpdateWorkflow(inputs, statusEl, onFullyDeployed) {
             },
             body: JSON.stringify(body)
         });
-        if(response.ok || response.status === 204) {
-             console.log("Action d\u00E9clench\u00E9e avec succ\u00E8s");
-             if (statusEl) statusEl.textContent = '\uD83D\uDFE1 Lanc\u00E9e \u2014 suivi en cours\u2026';
-             setTimeout(function() {
-               _pollWorkflowStatus('update_notams.yml', dispatchedAtMs, token, statusEl, 0, function() {
-                 // La donn\u00E9e est fetch\u00E9e et pouss\u00E9e sur main, mais pas encore visible sur le
-                 // site tant que le d\u00E9ploiement Pages (d\u00E9clench\u00E9 automatiquement en fin de
-                 // workflow, voir update_notams.yml) n'a pas lui-m\u00EAme termin\u00E9 \u2014 sans cette
-                 // 2e \u00E9tape, recharger l'iframe ici montrait encore l'ancienne version.
-                 if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Donn\u00E9e r\u00E9cup\u00E9r\u00E9e \u2014 d\u00E9ploiement du site\u2026';
-                 var deployStartMs = Date.now();
-                 setTimeout(function() {
-                   _pollWorkflowStatus('deploy-pages.yml', deployStartMs, token, statusEl, 0, function() {
-                     if (onFullyDeployed) onFullyDeployed();
-                     if (statusEl) statusEl.textContent = '\uD83D\uDFE2 Termin\u00E9 et actualis\u00E9.';
-                     _showLastFetchInfo();
-                   });
-                 }, 4000);
-               });
-             }, 4000);
+        if (response.ok || response.status === 204) {
+            if (statusEl) statusEl.textContent = '🟡 Lancée — récupération en cours…';
+            _waitForFreshData(dispatchedAtMs, token, statusEl);
         } else {
             if (statusEl) statusEl.style.display = 'none';
-            alert("\u274C Erreur: " + response.status + " " + response.statusText + "\n V\u00E9rifiez votre token PAT (il doit avoir les droits 'repo').");
+            alert("❌ Erreur: " + response.status + " " + response.statusText + "\n Vérifiez votre token PAT (il doit avoir les droits 'repo').");
             localStorage.removeItem("github_pat"); // Token invalide
         }
     } catch(e) {
         if (statusEl) statusEl.style.display = 'none';
-        alert("\u274C Erreur de connexion : " + e);
+        alert("❌ Erreur de connexion : " + e);
     }
 }
 

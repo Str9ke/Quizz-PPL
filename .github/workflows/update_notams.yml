@@ -21,6 +21,11 @@ jobs:
     permissions:
       contents: write
       actions: write
+      pages: write
+      id-token: write
+    # Déploiement GitHub Pages fait DANS ce job (voir plus bas) : il faut l'environnement Pages.
+    environment:
+      name: github-pages
 
     steps:
       - name: Checkout repository
@@ -30,15 +35,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          # Chromium sert UNIQUEMENT à résoudre le défi JavaScript du WAF Azure placé devant
-          # ops.skeyes.be depuis début septembre 2026 (voir make_skeyes_session dans
-          # fetch_notams.py) — sans lui, toutes les requêtes Skeyes renvoient 403.
-          python -m playwright install --with-deps chromium
+        # Plus de « playwright install --with-deps chromium » (~20 s, 300 Mo) : le défi
+        # JavaScript du WAF Skeyes est résolu avec Google Chrome, déjà installé sur les
+        # runners GitHub (channel="chrome", voir _waf_clearance_cookies dans fetch_notams.py,
+        # qui installe Chromium lui-même en secours si Chrome manquait).
+        run: pip install -r requirements.txt
 
       - name: Run script
         env:
@@ -47,11 +51,36 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             echo "OPMET-only fast run: full METAR+TAF+SIGMET+GAMET/AIRMET, skipping NOTAMs/images/TEMSI-WINTEM"
-            python fetch_notams.py --opmet-only || true
+            python -u fetch_notams.py --opmet-only || true
           else
-            python fetch_notams.py || true
-            python fetch_meteo.py || true
+            # Skeyes et TEMSI/WINTEM (Météo-France) sont indépendants : en parallèle.
+            python -u fetch_meteo.py > _meteo.log 2>&1 &
+            METEO_PID=$!
+            python -u fetch_notams.py || true
+            wait $METEO_PID || true
+            cat _meteo.log; rm -f _meteo.log
           fi
+          # Horodatage de cette récupération : la page Briefing l'interroge pour se rafraîchir
+          # d'elle-même dès que les nouvelles données sont en ligne.
+          python3 -c "import json,time; json.dump({'ts': int(time.time()*1000), 'run': '${{ github.run_id }}', 'opmet_only': '${{ github.event.inputs.opmet_only }}' == 'true'}, open('fetch_stamp.json','w'))"
+
+      # Déploiement immédiat du site avec les nouvelles données, AVANT le commit : c'est ce que
+      # l'utilisateur attend. Auparavant, on poussait d'abord puis on déclenchait le workflow
+      # deploy-pages.yml (nouveau runner, nouveau checkout) : ~45 s de plus.
+      - name: Prepare site
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          OPENAIP_API_KEY: ${{ secrets.OPENAIP_API_KEY }}
+        run: bash tools/prepare_site.sh
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Commit and push changes
         id: commit
@@ -64,6 +93,8 @@ jobs:
           # ("You have unstaged changes") sur TOUTES les exécutions depuis son ajout — bloquant
           # au passage la mise à jour des NOTAMs/OPMET/cartes météo, pas seulement des avis du
           # jour. .gitignore exclut déjà tout ce qui ne doit pas être suivi (_debug_*, etc.).
+          rm -rf site
+          git checkout -- version.json 2>/dev/null || true
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit"
@@ -102,28 +133,6 @@ jobs:
           done
           echo "::error::Échec du push après plusieurs tentatives."
           exit 1
-
-      - name: Trigger GitHub Pages redeploy
-        if: steps.commit.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Un push effectué avec le GITHUB_TOKEN par défaut ne déclenche PAS les autres
-          # workflows du dépôt (protection anti-boucle infinie de GitHub Actions) — le
-          # "push: branches: [main]" de deploy-pages.yml ne se déclenchait donc JAMAIS après
-          # ce job, malgré des commits automatiques réguliers (toutes les ~3h) : le site en
-          # ligne restait figé sur la dernière donnée déployée par un push humain, parfois
-          # périmée de plusieurs heures voire jours (NOTAMs, METAR/TAF/OPMET, TEMSI/WINTEM).
-          # On déclenche donc explicitement le déploiement via l'API workflow_dispatch, qui
-          # n'est PAS soumise à cette restriction (c'est un déclenchement direct, pas un
-          # événement "push" indirect).
-          curl -sS -f -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-pages.yml/dispatches" \
-            -d '{"ref":"main"}' \
-          && echo "Déploiement Pages déclenché." \
-          || echo "::warning::Échec du déclenchement du déploiement Pages — le site restera périmé jusqu'au prochain déploiement manuel."
 
       - name: Alert if Skeyes retrieval failed
         if: always()
