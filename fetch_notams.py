@@ -1337,7 +1337,7 @@ class _Publisher:
             with self.cond:
                 self.free_since = time.time()
             if r.returncode == 0:
-                _lap(f"publié {'+'.join(names)} en {time.time() - t0:.1f}s")
+                _lap(f"publié {'+'.join(names)} en {time.time() - t0:.1f}s ({r.stdout.strip()})")
             else:
                 print(f"Publication de {names} en échec : {r.stderr[-400:]}")
 
