@@ -5,7 +5,8 @@ name: Update NOTAMs
 # Job « fetch » (chemin critique) :
 #   - copie PARTIELLE du dépôt (scripts seulement, sans les ~380 Mo d'images du site) ;
 #   - environnement Python + Chromium restauré d'un seul cache (plus d'installation) ;
-#   - défi WAF Skeyes résolu avec le Chrome préinstallé du runner ;
+#   - défi WAF Skeyes résolu par le Chromium de Playwright, restauré du cache (le Chrome
+#     préinstallé du runner a été essayé : 22 s au lieu de 6, abandonné) ;
 #   - récupération (Skeyes et Météo-France en parallèle) puis commit + push des seules données.
 #   Dès le push, la page Briefing lit les nouveaux fichiers sur raw.githubusercontent.com à
 #   l'adresse exacte de ce commit (voir js/remote-assets.js) : pas besoin d'attendre Pages.
@@ -77,7 +78,6 @@ jobs:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
         run: |
-          export SKEYES_BROWSER=chrome   # Chrome préinstallé du runner (repli : Chromium)
           PY=~/venv/bin/python
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             $PY -u fetch_notams.py --opmet-only || true
