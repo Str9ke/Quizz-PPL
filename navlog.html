@@ -9,7 +9,7 @@
   <!-- Doit être chargé AVANT tout le reste : dans l'APK Android, il redirige les fichiers météo
        (non embarqués car régénérés toutes les ~3 h) vers le site en ligne. Sur le web, sans
        effet. Voir js/remote-assets.js. -->
-  <script src="js/remote-assets.js?v=20260816a"></script>
+  <script src="js/remote-assets.js?v=20261014a"></script>
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16253,6 +16253,18 @@ window.applyPerformance=function(tas, fuel){
    minutes. Voir triggerOpmetOnlyAction ci-dessous pour la version rapide OPMET seul. */
 /* Rafraîchit l'affichage avec les données déjà récupérées (aucune récupération lancée) :
    cartes météo, images Skeyes, OPMET, NOTAM, Daily Warnings. */
+/* Mode de récupération : « rapide » (update_notams.yml : données lisibles dès le push, site
+   redéployé ensuite) ou « classique » (update_notams_classic.yml : l'ancien workflow en un seul
+   job, conservé comme solution de repli). Réglage local à l'appareil. */
+function _fetchWorkflow() {
+  try { return localStorage.getItem('briefingFetchMode') === 'classic' ? 'update_notams_classic.yml' : 'update_notams.yml'; }
+  catch (e) { return 'update_notams.yml'; }
+}
+window.setBriefingFetchMode = function(v) {
+  try { localStorage.setItem('briefingFetchMode', v === 'classic' ? 'classic' : 'fast'); } catch (e) {}
+  _showLastFetchInfo();
+};
+
 window.refreshBriefingDisplay = function() {
   if (typeof window.refreshAllMeteo === 'function') window.refreshAllMeteo();
   if (typeof window.initTemsiCarousels === 'function') window.initTemsiCarousels(true);
@@ -16265,22 +16277,29 @@ window.refreshBriefingDisplay = function() {
 };
 
 /* Affiche la date et le résultat de la dernière récupération (dernier run du workflow,
-   API publique GitHub) sous la barre de boutons. */
+   API GitHub) sous la barre de boutons, avec le choix du mode de récupération. */
 function _showLastFetchInfo() {
   var el = document.getElementById('lastFetchInfo');
   if (!el) return;
+  var classic = _fetchWorkflow() === 'update_notams_classic.yml';
+  var modeHtml = ' · <label style="white-space:nowrap">Mode : <select onchange="setBriefingFetchMode(this.value)" style="font-size:1em;padding:1px 4px;border-radius:5px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border)">'
+    + '<option value="fast"' + (classic ? '' : ' selected') + '>⚡ rapide</option>'
+    + '<option value="classic"' + (classic ? ' selected' : '') + '>classique (ancien)</option></select></label>';
+  var fresh = window.freshDataInfo && window.freshDataInfo();
+  var freshHtml = fresh ? ' · <span title="Le site se met à jour en arrière-plan ; en attendant, les nouvelles données sont lues directement sur GitHub.">⚡ données lues sur GitHub</span>' : '';
   var token = localStorage.getItem('github_pat');
-  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=1', {
+  fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/' + _fetchWorkflow() + '/runs?per_page=1', {
+    cache: 'no-store',
     headers: token ? { "Authorization": "Bearer " + token } : {}
-  }).then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
+  }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }).then(function(d) {
     var run = d && d.workflow_runs && d.workflow_runs[0];
-    if (!run) { el.textContent = ''; return; }
+    if (!run) { el.innerHTML = 'Aucune récupération récente' + freshHtml + modeHtml; return; }
     var when = new Date(run.run_started_at || run.created_at).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' });
-    var state = run.status !== 'completed' ? '\uD83D\uDFE1 en cours'
-      : (run.conclusion === 'success' ? '\u2705 r\u00E9ussie' : '\u26A0\uFE0F en \u00E9chec (une partie des donn\u00E9es n\u2019a pas pu \u00EAtre r\u00E9cup\u00E9r\u00E9e)');
-    el.innerHTML = 'Derni\u00E8re r\u00E9cup\u00E9ration : ' + when + ' \u2014 ' + state
-      + ' \u00B7 <a href="' + run.html_url + '" target="_blank" rel="noopener">d\u00E9tails</a>';
-  }).catch(function() {});
+    var state = run.status !== 'completed' ? '🟡 en cours'
+      : (run.conclusion === 'success' ? '✅ réussie' : '⚠️ en échec (une partie des données n’a pas pu être récupérée)');
+    el.innerHTML = 'Dernière récupération : ' + when + ' — ' + state
+      + ' · <a href="' + run.html_url + '" target="_blank" rel="noopener">détails</a>' + freshHtml + modeHtml;
+  });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showLastFetchInfo);
 else _showLastFetchInfo();
@@ -16295,19 +16314,58 @@ window.triggerOpmetOnlyAction = function() {
   return _dispatchUpdateWorkflow({ opmet_only: 'true' }, document.getElementById('opmetFastStatus'));
 };
 
-/* Rafraîchissement automatique à l'arrivée des données : le workflow publie fetch_stamp.json
-   ({ts}) AVEC les données, dans le même déploiement. On l'interroge (cache contourné) toutes
-   les 3 s : dès que son horodatage est postérieur au lancement, les nouvelles données sont
-   en ligne → tout est rechargé immédiatement. Auparavant on attendait la fin du workflow puis
-   celle d'un second workflow de déploiement, détecté par horodatage approximatif : la page ne
-   se rafraîchissait souvent pas d'elle-même. L'API GitHub ne sert plus qu'à signaler un échec. */
+/* ===== Détection de l'arrivée des données =====
+   Chaque récupération publie fetch_stamp.json ({ts}) avec les données.
+   - Voie rapide : on surveille le dernier commit de main (API GitHub, toutes les 1,5 s) ; dès
+     qu'un nouveau commit porte un fetch_stamp.json postérieur au lancement, ses fichiers sont
+     lus directement sur raw.githubusercontent.com à l'adresse de ce commit (voir
+     setFreshDataBase dans js/remote-assets.js) — sans attendre le redéploiement du site.
+   - Voie normale (et repli) : le fetch_stamp.json du site déployé. Quand il a rattrapé les
+     données fraîches, la page revient à la copie du site (clearFreshDataBase). */
 var _lastStampTs = 0;
 function _readFetchStamp() {
-  return fetch('fetch_stamp.json?t=' + Date.now(), { cache: 'no-store' })
+  var url = (window.pagesDataUrl ? window.pagesDataUrl('fetch_stamp.json') : 'fetch_stamp.json');
+  return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .catch(function() { return null; });
 }
-_readFetchStamp().then(function(st) { if (st && st.ts) _lastStampTs = st.ts; });
+function _headSha(token) {
+  var h = { 'Accept': 'application/vnd.github.sha' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return fetch('https://api.github.com/repos/Str9ke/Quizz-PPL/commits/main', { cache: 'no-store', headers: h })
+    .then(function(r) { return r.ok ? r.text() : null; })
+    .then(function(t) { t = (t || '').trim(); return /^[0-9a-f]{40}$/.test(t) ? t : null; })
+    .catch(function() { return null; });
+}
+function _rawStamp(sha) {
+  return fetch('https://raw.githubusercontent.com/Str9ke/Quizz-PPL/' + sha + '/fetch_stamp.json', { cache: 'force-cache' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function() { return null; });
+}
+/* Données fraîches lues sur GitHub : dès que le site déployé les a rattrapées, y revenir. */
+var _freshCatchUpTimer = null;
+function _watchFreshCatchUp() {
+  if (_freshCatchUpTimer || !window.freshDataInfo) return;
+  function check() {
+    var f = window.freshDataInfo();
+    if (!f) { clearInterval(_freshCatchUpTimer); _freshCatchUpTimer = null; return; }
+    _readFetchStamp().then(function(st) {
+      if (st && st.ts && st.ts >= f.ts) {
+        window.clearFreshDataBase();
+        clearInterval(_freshCatchUpTimer); _freshCatchUpTimer = null;
+        _showLastFetchInfo();
+      }
+    });
+  }
+  _freshCatchUpTimer = setInterval(check, 20000);
+  check();
+}
+_readFetchStamp().then(function(st) {
+  if (st && st.ts) _lastStampTs = st.ts;
+  var f = window.freshDataInfo && window.freshDataInfo();
+  if (f && f.ts > _lastStampTs) _lastStampTs = f.ts;
+});
+_watchFreshCatchUp();
 /* Données récupérées depuis un autre appareil pendant que la page était ouverte : rafraîchir
    au retour sur l'onglet. */
 document.addEventListener('visibilitychange', function() {
@@ -16321,18 +16379,24 @@ document.addEventListener('visibilitychange', function() {
   });
 });
 
-/* Barre de progression : suit les étapes RÉELLES du job GitHub (API jobs, déjà interrogée
-   pour détecter un échec — aucun travail ajouté côté serveur, donc aucun ralentissement).
-   Poids = durées typiques mesurées (en s) ; à l'intérieur d'une étape en cours, on avance
-   avec le temps écoulé, plafonné à 90 % de l'étape. */
+/* Barre de progression : suit les étapes RÉELLES du job GitHub (API jobs — aucun travail
+   ajouté côté serveur, donc aucun ralentissement). Poids = durées typiques mesurées (en s) ;
+   à l'intérieur d'une étape en cours, on avance avec le temps écoulé, plafonné à 90 %. */
 var _FETCH_STEPS = {
-  'Set up job': [2, 'Démarrage du serveur'],
+  // Workflow rapide (job « fetch »)
+  'Set up job': [1, 'Démarrage du serveur'],
+  'Checkout (scripts uniquement)': [2, 'Préparation'],
+  'Restore Python env + Chromium': [3, 'Préparation'],
+  'Build env (first run only)': [1, 'Préparation'],
+  'Save env cache (first run only)': [1, 'Préparation'],
+  'Run script': [12, 'Récupération Skeyes + Météo-France'],
+  'Publish data (commit + push)': [6, 'Publication des données'],
+  // Workflow classique
   'Checkout repository': [15, 'Préparation'],
   'Set up Python': [1, 'Préparation'],
   'Install dependencies': [4, 'Préparation'],
   'Cache Playwright Chromium': [2, 'Préparation'],
   'Install Chromium (headless shell)': [3, 'Préparation'],
-  'Run script': [20, 'Récupération Skeyes + Météo-France'],
   'Prepare site': [1, 'Publication du site'],
   'Upload artifact for GitHub Pages': [10, 'Publication du site'],
   'Deploy to GitHub Pages': [7, 'Mise en ligne']
@@ -16348,11 +16412,12 @@ function _setFetchProgress(pct, label, right) {
   spans[0].textContent = label || '';
   spans[1].textContent = right || (Math.round(pct) + ' %');
 }
-function _jobProgress(job, opmetOnly) {
+function _jobProgress(job, opmetOnly, classic) {
   var total = 0, done = 0, label = 'Démarrage du serveur';
   (job.steps || []).forEach(function(st) {
     var def = _FETCH_STEPS[st.name]; if (!def) return;
-    var w = def[0]; if (opmetOnly && st.name === 'Run script') w = 8;
+    var w = def[0];
+    if (st.name === 'Run script') w = opmetOnly ? 6 : (classic ? 20 : 12);
     total += w;
     if (st.status === 'completed') done += w;
     else if (st.status === 'in_progress') {
@@ -16367,58 +16432,87 @@ function _jobProgress(job, opmetOnly) {
 
 function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
+  var workflow = _fetchWorkflow(), classic = workflow === 'update_notams_classic.yml';
+  var finished = false, lastSha = null;
   _fetchProgressMax = 0;
   _setFetchProgress(1, 'En attente d’un serveur GitHub…');
   function apiGet(url) {
-    return fetch(url, { headers: token ? { "Authorization": "Bearer " + token } : {} })
+    return fetch(url, { cache: 'no-store', headers: token ? { "Authorization": "Bearer " + token } : {} })
       .then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
   }
   function hideSoon() { setTimeout(function() { var b = document.getElementById('fetchProgress'); if (b) b.style.display = 'none'; }, 6000); }
+  function elapsedS() { return Math.round((Date.now() - started) / 1000); }
+  function done(sha, st) {
+    if (finished) return;
+    finished = true;
+    if (sha && window.setFreshDataBase) { window.setFreshDataBase(sha, st.ts); _watchFreshCatchUp(); }
+    _lastStampTs = st.ts;
+    var e = elapsedS();
+    _setFetchProgress(100, 'Terminé — données affichées', e + ' s');
+    hideSoon();
+    if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
+    if (statusEl) statusEl.textContent = '🟢 Données à jour (' + e + ' s) — affichage actualisé.';
+    _toast('✅ Nouvelles données chargées', 'success', 3000);
+    setTimeout(function() { _showLastFetchInfo(); }, 15000);
+  }
+  // Voie rapide : nouveau commit sur main (toutes les 1,5 s)
+  function shaTick() {
+    if (finished) return;
+    _headSha(token).then(function(sha) {
+      if (finished || !sha || sha === lastSha) return;
+      lastSha = sha;
+      return _rawStamp(sha).then(function(st) {
+        if (st && st.ts && st.ts > sinceMs - 5000) done(sha, st);
+      });
+    }).then(function() {
+      if (!finished && Date.now() - started < 15 * 60000) setTimeout(shaTick, 1500);
+    });
+  }
+  // Barre de progression + voie normale (site déployé) + détection d'échec (toutes les 3 s)
   function tick() {
-    var elapsed = Math.round((Date.now() - started) / 1000);
+    if (finished) return;
+    var elapsed = elapsedS();
     _readFetchStamp().then(function(st) {
-      if (st && st.ts && st.ts > sinceMs - 5000) {
-        _lastStampTs = st.ts;
-        _setFetchProgress(100, 'Terminé — données affichées', elapsed + ' s');
-        hideSoon();
-        if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
-        if (statusEl) statusEl.textContent = '🟢 Données à jour (' + elapsed + ' s) — affichage actualisé.';
-        _toast('✅ Nouvelles données chargées', 'success', 3000);
-        setTimeout(function() { _showLastFetchInfo(); }, 15000);
-        return;
-      }
+      if (finished) return;
+      if (st && st.ts && st.ts > sinceMs - 5000) { done(null, st); return; }
       if (statusEl) statusEl.textContent = '🟡 Récupération en cours… ' + elapsed + ' s';
-      // Étapes réelles du job (pour la barre) + détection d'un échec sans publication
       var runP = runId ? Promise.resolve({ id: runId }) :
-        apiGet('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/runs?per_page=3').then(function(d) {
+        apiGet('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/' + workflow + '/runs?per_page=3').then(function(d) {
           return ((d && d.workflow_runs) || []).find(function(r) { return new Date(r.created_at).getTime() >= sinceMs - 15000; }) || null;
         });
-      runP.then(function(run) {
+      return runP.then(function(run) {
+        if (finished) return;
         if (!run) { _setFetchProgress(Math.min(4, 1 + elapsed / 4), 'En attente d’un serveur GitHub…', elapsed + ' s'); return; }
         runId = run.id;
         return apiGet('https://api.github.com/repos/Str9ke/Quizz-PPL/actions/runs/' + run.id + '/jobs').then(function(j) {
-          var job = j && j.jobs && j.jobs[0];
+          if (finished) return;
+          var jobs = (j && j.jobs) || [];
+          var job = jobs.find(function(x) { return x.name === 'fetch'; }) || jobs[0];
           if (!job) return;
-          var p = _jobProgress(job, opmetOnly);
+          var p = _jobProgress(job, opmetOnly, classic);
           _setFetchProgress(p.pct, p.label, elapsed + ' s');
           if (job.status === 'completed' && !runDoneAt) { runDoneAt = Date.now(); runConclusion = job.conclusion; }
         });
-      }).then(function() {
-        // Job terminé depuis 90 s sans nouvelles données en ligne → échec
-        if (runDoneAt && Date.now() - runDoneAt > 90000) {
-          _setFetchProgress(_fetchProgressMax, 'Échec de la récupération', '');
-          if (statusEl) statusEl.textContent = '🔴 Échec de la récupération' + (runConclusion ? ' (' + runConclusion + ')' : '') + ' — voir le lien « détails ».';
-          _showLastFetchInfo();
-          return;
-        }
-        if (Date.now() - started > 15 * 60000) {
-          if (statusEl) statusEl.textContent = '⚠️ Toujours rien après 15 min — vérifie sur GitHub Actions.';
-          return;
-        }
-        setTimeout(tick, 3000);
       });
+    }).then(function() {
+      if (finished) return;
+      // Job terminé depuis 90 s sans nouvelles données → échec
+      if (runDoneAt && Date.now() - runDoneAt > 90000) {
+        finished = true;
+        _setFetchProgress(_fetchProgressMax, 'Échec de la récupération', '');
+        if (statusEl) statusEl.textContent = '🔴 Échec de la récupération' + (runConclusion ? ' (' + runConclusion + ')' : '') + ' — voir le lien « détails ».';
+        _showLastFetchInfo();
+        return;
+      }
+      if (Date.now() - started > 15 * 60000) {
+        finished = true;
+        if (statusEl) statusEl.textContent = '⚠️ Toujours rien après 15 min — vérifie sur GitHub Actions.';
+        return;
+      }
+      setTimeout(tick, 3000);
     });
   }
+  setTimeout(shaTick, 1000);
   setTimeout(tick, 2000);
 }
 
@@ -16436,7 +16530,7 @@ async function _dispatchUpdateWorkflow(inputs, statusEl) {
     try {
         var body = { "ref": "main" };
         if (inputs) body.inputs = inputs;
-        let response = await fetch("https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/update_notams.yml/dispatches", {
+        let response = await fetch("https://api.github.com/repos/Str9ke/Quizz-PPL/actions/workflows/" + _fetchWorkflow() + "/dispatches", {
             method: "POST",
             headers: {
                 "Accept": "application/vnd.github.v3+json",

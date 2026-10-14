@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v205';
+const CACHE_NAME = 'quiz-ppl-v206';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -267,6 +267,16 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('securetoken') ||
       url.hostname.includes('googleapis.com')) {
     return; // Ne pas intercepter — laisser le réseau gérer
+  }
+
+  // IGNORER l'API GitHub et raw.githubusercontent.com — toujours en réseau direct.
+  // Sinon la stratégie par défaut (cache d'abord, ignoreSearch) renvoyait une ANCIENNE réponse
+  // de l'API GitHub (état du workflow, dernier commit) : la page Briefing ne voyait pas la fin
+  // d'une récupération. Les fichiers de raw.githubusercontent.com (données fraîches, voir
+  // js/remote-assets.js) sont à une adresse de commit immuable : le cache HTTP du navigateur
+  // suffit, inutile de les accumuler dans le cache de l'appli.
+  if (url.hostname === 'api.github.com' || url.hostname === 'raw.githubusercontent.com') {
+    return;
   }
 
   // IGNORER les APIs météo et proxies CORS — toujours en réseau direct
