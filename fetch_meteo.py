@@ -1,6 +1,5 @@
 import os
 import requests
-import cloudscraper
 import fitz
 from bs4 import BeautifulSoup
 import json

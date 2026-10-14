@@ -1,6 +1,5 @@
 import os
 import requests
-import cloudscraper
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin

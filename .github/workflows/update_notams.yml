@@ -24,13 +24,14 @@ on:
         type: boolean
         default: false
 
-concurrency:
-  group: update-notams
-  cancel-in-progress: true
-
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    # Une seule récupération à la fois — mais seulement pour ce job : un nouveau lancement
+    # n'attend plus la fin (ou l'annulation) du déploiement Pages du précédent (+10 s mesurés).
+    concurrency:
+      group: update-notams
+      cancel-in-progress: true
     permissions:
       contents: write
     outputs:
@@ -48,6 +49,12 @@ jobs:
             /.gitignore
             /tools/
 
+      # Clé = version d'Ubuntu + de Python + requirements.txt : le venv pointe vers le Python du
+      # système, il ne doit jamais être réutilisé sur une autre image (passage à Ubuntu 26…).
+      - name: Env key
+        id: envkey
+        run: echo "key=fastenv-$(. /etc/os-release; echo $VERSION_ID)-py$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')-${{ hashFiles('requirements.txt') }}-v2" >> "$GITHUB_OUTPUT"
+
       - name: Restore Python env + Chromium
         id: env
         uses: actions/cache/restore@v4
@@ -55,7 +62,7 @@ jobs:
           path: |
             ~/venv
             ~/.cache/ms-playwright
-          key: fastenv-${{ runner.os }}-${{ env.ImageOS }}-${{ hashFiles('requirements.txt') }}-v1
+          key: ${{ steps.envkey.outputs.key }}
 
       - name: Build env (first run only)
         if: steps.env.outputs.cache-hit != 'true'
@@ -71,7 +78,7 @@ jobs:
           path: |
             ~/venv
             ~/.cache/ms-playwright
-          key: fastenv-${{ runner.os }}-${{ env.ImageOS }}-${{ hashFiles('requirements.txt') }}-v1
+          key: ${{ steps.envkey.outputs.key }}
 
       - name: Run script
         env:
@@ -98,6 +105,9 @@ jobs:
           # --sparse : enregistre aussi les fichiers de données hors de la copie partielle.
           # Les fichiers du site absents de la copie ne sont PAS considérés comme supprimés.
           T0=$(date +%s.%N); lap() { echo "[publish] $1 $(echo "$(date +%s.%N) - $T0" | bc)s"; }
+          # Images déjà compressées : inutile de les recompresser (gain de temps à l'ajout et au push)
+          git config core.compression 0
+          git config pack.compression 0
           git add --sparse -A
           lap add
           if git diff --cached --quiet; then
