@@ -1243,8 +1243,8 @@ class _Publisher:
     1. RIEN ne part avant l'OPMET : il part dès qu'il est prêt, avec les petites parties déjà
        prêtes (avis du jour, NOTAM). Les cartes Météo-France, prêtes bien avant l'OPMET (pas de
        connexion Skeyes), le retardaient de ~6 s en passant devant.
-    2. Ensuite, le reste part en UN envoi dès que tout est prêt — ou plus tôt si une partie
-       prête attend depuis plus de 4 s (une partie lente ne bloque pas les autres)."""
+    2. Ensuite, le reste part en UN envoi dès que tout est prêt, sauf de petites parties (le NOTAM
+       suit alors seul) — ou plus tôt si une partie prête attend depuis plus de 4 s."""
     SMALL = {"opmet", "opmet_pdf", "daily", "notam"}
     PRIORITY = "opmet"
     MAX_WAIT_PRIORITY = 25   # s : au-delà, on n'attend plus l'OPMET (échec Skeyes…)
@@ -1314,7 +1314,10 @@ class _Publisher:
             return []
         remaining = [p for p in self.expected if p not in self.parts and p not in names]
         oldest = max(min(t for _, _, t in self.pending), self.free_since)
-        if not remaining or now - oldest > self.MAX_HOLD or self.closed_at is not None and now - self.closed_at > 30:
+        # Seules de petites parties manquent encore (le NOTAM, que Skeyes met ~6 s à produire) :
+        # inutile de retenir les cartes pour elles, elles suivront dans un petit envoi (~1,4 s).
+        only_small_left = all(p in self.SMALL for p in remaining)
+        if only_small_left or now - oldest > self.MAX_HOLD or self.closed_at is not None and now - self.closed_at > 30:
             return list(self.pending)
         return []
 
