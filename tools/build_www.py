@@ -26,7 +26,7 @@ EXCLUDE_DIRS = {
 
 # Fichiers jamais embarqués.
 #
-# Les données météo (skeyes_*, temsi_*, wintem_*, NOTAM, OPMET) sont régénérées toutes les ~3 h
+# Les données météo (skeyes_*, temsi_*, wintem_*, NOTAM, OPMET) sont régénérées à chaque récupération
 # par GitHub Actions : les embarquer figerait dans l'APK une météo périmée dès la compilation,
 # pour ~40 Mio inutiles. Elles sont récupérées en ligne, au sol, à la préparation du vol.
 #

@@ -9,7 +9,7 @@
   <!-- Doit être chargé AVANT tout le reste : dans l'APK Android, il redirige les fichiers météo
        (non embarqués car régénérés toutes les ~3 h) vers le site en ligne. Sur le web, sans
        effet. Voir js/remote-assets.js. -->
-  <script src="js/remote-assets.js?v=20261014a"></script>
+  <script src="js/remote-assets.js?v=20261014b"></script>
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1051,7 +1051,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         </div>
         <div class="map-card-actions">
             <button onclick="window.highlightRouteNotams()" style="background:linear-gradient(135deg,#fbc02d,#f9a825);color:#000;border:none;font-weight:bold;">&#x1F3AF; Surligner les NOTAM de ma route</button>
-            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur (quelques minutes)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
+            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur (~30 s ; l&#x27;OPMET s&#x27;affiche en premier, vers 20 s)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
             <button onclick="var f=document.getElementById('autoNotamFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
             <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
           </div>
@@ -1069,7 +1069,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           </div>
 
           <div class="map-card-actions">
-            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur (quelques minutes)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
+            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;" title="R&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur (~30 s ; l&#x27;OPMET s&#x27;affiche en premier, vers 20 s)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
             <button onclick="var f=document.getElementById('autoDailyWarnFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
             <a href="daily_warnings.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF original</a>
           </div>
@@ -1168,7 +1168,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Barre de récupération des données (simplifiée le 13/10/2026 : 4 boutons redondants
          remplacés par une action principale, une option rapide et un simple rafraîchissement). -->
     <div class="meteo-refresh-bar">
-      <button class="meteo-action-btn" onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b)" title="Lance la r&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur : OPMET, NOTAM, Daily Warnings, images radar/satellite, TEMSI/WINTEM (quelques minutes)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
+      <button class="meteo-action-btn" onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b)" title="Lance la r&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur : OPMET, NOTAM, Daily Warnings, images radar/satellite, TEMSI/WINTEM (~30 s ; l&#x27;OPMET s&#x27;affiche en premier, vers 20 s, puis chaque partie d&#xe8;s son arriv&#xe9;e)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
       <button class="meteo-action-btn" onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706)" title="R&#xe9;cup&#xe8;re uniquement l'OPMET (METAR, TAF, SIGMET, GAMET/AIRMET) &#x2014; plus rapide">&#x26A1; OPMET seul</button>
       <button class="meteo-action-btn" onclick="window.refreshBriefingDisplay()" style="background:rgba(127,127,127,.25);color:var(--text-primary,#fff)" title="Recharge l'affichage avec les derni&#xe8;res donn&#xe9;es d&#xe9;j&#xe0; r&#xe9;cup&#xe9;r&#xe9;es, sans relancer de r&#xe9;cup&#xe9;ration">&#x1F504; Rafra&#xee;chir l'affichage</button>
       <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
@@ -16412,7 +16412,21 @@ function _rawStamp(sha) {
     .then(function(r) { return r.ok ? r.json() : null; })
     .catch(function() { return null; });
 }
-/* Données fraîches lues sur GitHub : dès que le site déployé les a rattrapées, y revenir. */
+/* Données fraîches lues sur GitHub : dès que le site déployé les a rattrapées, y revenir.
+   S'il est même PLUS récent (récupération lancée depuis un autre appareil, page rouverte plus
+   tard…), l'affichage est rechargé : il serait sinon resté sur les données lues sur GitHub. */
+function _adoptPagesStamp(st) {
+  var f = window.freshDataInfo && window.freshDataInfo();
+  if (!f || !st || !st.ts || st.ts < f.ts || _fetchWatchActive) return false;
+  window.clearFreshDataBase();
+  if (st.ts > f.ts) {
+    _lastStampTs = st.ts;
+    if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
+  } else {
+    _showLastFetchInfo();
+  }
+  return true;
+}
 var _freshCatchUpTimer = null;
 function _watchFreshCatchUp() {
   if (_freshCatchUpTimer || !window.freshDataInfo) return;
@@ -16420,11 +16434,7 @@ function _watchFreshCatchUp() {
     var f = window.freshDataInfo();
     if (!f) { clearInterval(_freshCatchUpTimer); _freshCatchUpTimer = null; return; }
     _readFetchStamp().then(function(st) {
-      if (st && st.ts && st.ts >= f.ts) {
-        window.clearFreshDataBase();
-        clearInterval(_freshCatchUpTimer); _freshCatchUpTimer = null;
-        _showLastFetchInfo();
-      }
+      if (_adoptPagesStamp(st)) { clearInterval(_freshCatchUpTimer); _freshCatchUpTimer = null; }
     });
   }
   _freshCatchUpTimer = setInterval(check, 20000);
@@ -16441,7 +16451,8 @@ _watchFreshCatchUp();
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState !== 'visible') return;
   _readFetchStamp().then(function(st) {
-    if (st && st.ts && _lastStampTs && st.ts > _lastStampTs) {
+    if (_adoptPagesStamp(st)) return;
+    if (st && st.ts && _lastStampTs && st.ts > _lastStampTs && !_fetchWatchActive) {
       _lastStampTs = st.ts;
       if (typeof window.refreshBriefingDisplay === 'function') window.refreshBriefingDisplay();
       _toast('✅ Nouvelles données chargées', 'success', 2500);
@@ -16509,8 +16520,12 @@ function _stampComplete(st) {
   return exp.every(function(p) { return st.parts.indexOf(p) >= 0; });
 }
 
-var _fetchWatchActive = false;
+var _fetchWatchActive = false, _fetchWatchGen = 0;
 function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
+  // Un seul suivi à la fois : une relance (double clic…) remplace le suivi précédent, qui
+  // sinon continuait en parallèle (doubles rafraîchissements, faux « échec » de la 1re).
+  var gen = ++_fetchWatchGen;
+  function stale() { return gen !== _fetchWatchGen; }
   var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
   var workflow = _fetchWorkflow(), classic = workflow === 'update_notams_classic.yml';
   var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet'] : _ALL_BRIEFING_PARTS.slice();
@@ -16542,7 +16557,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   /* Nouvel horodatage (commit du workflow rapide ou site déployé) : afficher les parties
      qu'il apporte, aussitôt, sans attendre les autres. */
   function apply(sha, st) {
-    if (finished) return;
+    if (finished || stale()) return;
     if (sha && window.setFreshDataBase) { window.setFreshDataBase(sha, st.ts); _watchFreshCatchUp(); }
     _lastStampTs = st.ts;
     if (Array.isArray(st.expected)) expected = st.expected.slice();
@@ -16562,7 +16577,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   }
   // Voie rapide : nouveau commit sur main (toutes les 1,5 s)
   function shaTick() {
-    if (finished) return;
+    if (finished || stale()) return;
     _headSha(token).then(function(sha) {
       if (finished || !sha || sha === lastSha) return;
       lastSha = sha;
@@ -16575,7 +16590,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   }
   // Barre de progression + voie normale (site déployé) + détection d'échec (toutes les 3 s)
   function tick() {
-    if (finished) return;
+    if (finished || stale()) return;
     var elapsed = elapsedS();
     _readFetchStamp().then(function(st) {
       if (finished) return;
@@ -16655,6 +16670,8 @@ async function _dispatchUpdateWorkflow(inputs, statusEl) {
         localStorage.setItem("github_pat", token);
     }
 
+    // Relance pendant une récupération (double clic…) : le serveur annulerait celle en cours
+    if (_fetchWatchActive && !confirm("Une récupération est déjà en cours.\n\nLa relancer quand même ? (celle en cours sera annulée)")) return;
     if (statusEl) { statusEl.style.display = ''; statusEl.textContent = '⏳ Déclenchement…'; }
     var dispatchedAtMs = Date.now();
 
@@ -16672,6 +16689,9 @@ async function _dispatchUpdateWorkflow(inputs, statusEl) {
         });
         if (response.ok || response.status === 204) {
             if (statusEl) statusEl.textContent = '🟡 Lancée — récupération en cours…';
+            // Visible quel que soit l'onglet (les boutons des onglets NOTAM / avis du jour n'ont
+            // pas d'indicateur à côté d'eux : rien ne montrait que le clic avait marché)
+            _toast('⏳ Récupération lancée — chaque partie s’affichera seule dès son arrivée (OPMET en ~20 s)', '', 4500);
             _waitForFreshData(dispatchedAtMs, token, statusEl, !!(inputs && inputs.opmet_only));
         } else {
             if (statusEl) statusEl.style.display = 'none';

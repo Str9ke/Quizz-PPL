@@ -132,6 +132,9 @@
       file = d.file;
     }
     if (!fresh) {
+      // Annule un chargement de données fraîches encore en cours : arrivé après coup, il
+      // remettrait l'ancienne page fraîche par-dessus la copie (plus récente) du site.
+      el._freshTok = (el._freshTok || 0) + 1;
       var base = dataBase();
       if (!base) {
         // Données fraîches abandonnées entre-temps : revenir à la copie du site
@@ -163,8 +166,22 @@
     });
   }
 
+  /* Liens « ouvrir en plein écran » / « PDF original » (<a href="temsi_france.pdf">…). Dans
+     l'application, ces fichiers ne sont PAS dans l'APK : le lien relatif menait à une page
+     introuvable → il pointe vers le site en ligne. (Sur le web, données fraîches : voir le
+     gestionnaire de clic plus bas.) */
+  function fixLink(el) {
+    if (!NATIVE) return;
+    var raw = el.getAttribute('href');
+    var d = dataFile(raw);
+    if (!d) return;
+    var next = REMOTE_BASE + d.file + d.search + d.hash;
+    if (next !== raw) el.setAttribute('href', next);
+  }
+
   function fixElement(el) {
     if (!el || !el.tagName) return;
+    if (el.tagName === 'A') { fixLink(el); return; }
     var attr = ATTR_BY_TAG[el.tagName];
     if (!attr) return;
     if (el.tagName === 'IFRAME') { fixIframe(el); return; }
@@ -179,7 +196,7 @@
   function scan(root) {
     if (!root || root.nodeType !== 1) return;
     fixElement(root);
-    var sel = 'iframe[src],img[src],embed[src],source[src],object[data]';
+    var sel = 'iframe[src],img[src],embed[src],source[src],object[data]' + (NATIVE ? ',a[href]' : '');
     var found = root.querySelectorAll ? root.querySelectorAll(sel) : [];
     for (var i = 0; i < found.length; i++) fixElement(found[i]);
   }
@@ -200,7 +217,40 @@
       }
     }).observe(document.documentElement, {
       childList: true, subtree: true,
-      attributes: true, attributeFilter: ['src', 'data']
+      attributes: true, attributeFilter: NATIVE ? ['src', 'data', 'href'] : ['src', 'data']
+    });
+  }
+
+  /* Web, données fraîches : un lien vers un fichier de données ouvrirait l'ANCIENNE copie du
+     site (pas encore redéployé). On ouvre la version fraîche lue sur GitHub — le HTML écrit
+     dans un nouvel onglet (raw.githubusercontent.com le sert en texte brut), le PDF via une
+     URL blob: (raw le sert en téléchargement). L'onglet est ouvert tout de suite, pendant le
+     clic, sinon le navigateur le bloquerait comme fenêtre surgissante. */
+  if (!NATIVE) {
+    document.addEventListener('click', function (ev) {
+      if (!fresh || ev.defaultPrevented || ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+      var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+      var d = a && dataFile(a.getAttribute('href'));
+      if (!d) return;
+      var isHtml = /\.html?$/i.test(d.file), isPdf = /\.pdf$/i.test(d.file);
+      if (!isHtml && !isPdf) return;
+      var w = window.open('', '_blank');
+      if (!w) return;   // onglet bloqué : le lien s'ouvre normalement (copie du site)
+      ev.preventDefault();
+      var srcBase = fresh.base;
+      var fallback = function () { w.location.href = new URL(d.file, document.baseURI).href; };
+      nativeFetch(srcBase + d.file, { cache: 'force-cache' }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return isHtml ? r.text() : r.arrayBuffer();
+      }).then(function (body) {
+        if (isHtml) {
+          w.document.open();
+          w.document.write(absolutize(body, srcBase));
+          w.document.close();
+        } else {
+          w.location.href = URL.createObjectURL(new Blob([body], { type: 'application/pdf' }));
+        }
+      }).catch(fallback);
     });
   }
 

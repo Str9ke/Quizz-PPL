@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v208';
+const CACHE_NAME = 'quiz-ppl-v209';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -17,8 +17,8 @@ const CACHE_NAME = 'quiz-ppl-v208';
    Ce cache n'est supprimé que si on change explicitement son nom ci-dessous. */
 const ASSETS_CACHE = 'quiz-ppl-assets-v1';
 
-/* isImageAsset() — une image de l'appli (pas une carte météo régénérée toutes les 3 h, qui
-   doit rester sur la stratégie network-first plus bas). */
+/* isImageAsset() — une image de l'appli (pas une carte météo régénérée à chaque récupération,
+   traitée à part : voir isBriefingData). */
 function isImageAsset(pathname) {
   if (!/\.(png|jpe?g|gif|webp|svg)$/i.test(pathname)) return false;
   if (/\/(skeyes_|temsi_|wintem_|daily_warnings|opmet)/.test(pathname)) return false;
@@ -249,10 +249,12 @@ function topUpPrecacheIfNeeded() {
    — pendant ce temps l'appli semblait totalement figée/inutilisable. Toutes les requêtes
    "quand en ligne" passent maintenant par ce wrapper pour garantir un repli rapide sur le
    cache local dans tous les cas. */
-function fetchWithTimeout(request, ms) {
+function fetchWithTimeout(request, ms, cacheMode) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  return fetch(request, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+  const init = { signal: ctrl.signal };
+  if (cacheMode) init.cache = cacheMode;
+  return fetch(request, init).finally(() => clearTimeout(timer));
 }
 
 // ---- FETCH : stratégie de cache ----
@@ -292,6 +294,37 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('meteo.fr') ||
       url.hostname.includes('meteo.be')) {
     return; // Ne pas intercepter
+  }
+
+  /* === Données du Briefing régénérées à chaque récupération ===
+     OPMET, NOTAM, avis du jour (pages, PDF, images, JSON), images radar/satellite/modèles
+     Skeyes, TEMSI/WINTEM, fetch_stamp.json. Leurs NOMS ne changent jamais d'une récupération à
+     l'autre (skeyes_radar_max_00.gif…), donc :
+       - la stratégie par défaut (cache d'abord) affichait les images de la récupération
+         PRÉCÉDENTE — et les ?t=… ajoutés par la page n'y changeaient rien (ignoreSearch) ;
+       - même en réseau d'abord, le cache HTTP du navigateur (GitHub Pages : max-age=600)
+         pouvait resservir pendant 10 min l'ancien OPMET (iframe, widget vent GAMET).
+     → toujours revalidées auprès du serveur (cache: 'no-cache' : un simple 304 si rien n'a
+     changé), copie gardée pour le hors-ligne. */
+  const isBriefingData = /\/(opmet[^/]*|notams_belgique\.html|daily_warnings[^/]*|skeyes_[^/]*|(temsi|wintem)_[^/]*|fetch_stamp\.json)$/.test(url.pathname);
+  if (isBriefingData && event.request.method === 'GET') {
+    const fromCache = () => caches.match(event.request, { ignoreSearch: true });
+    if (!navigator.onLine) {
+      event.respondWith(fromCache().then(cached => cached || fetch(event.request)));
+      return;
+    }
+    event.respondWith(
+      fetchWithTimeout(event.request.url, 4000, 'no-cache').then(response => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          const cleanUrl = new URL(event.request.url);
+          cleanUrl.search = '';
+          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
+        }
+        return response;
+      }).catch(() => fromCache().then(cached => cached || Response.error()))
+    );
+    return;
   }
 
   // Déterminer si c'est un fichier JSON de questions (network-first quand en ligne)
@@ -359,38 +392,6 @@ self.addEventListener('fetch', event => {
           });
         });
       })
-    );
-    return;
-  }
-
-  // Pages HTML régénérées automatiquement toutes les ~3h par le workflow GitHub Actions
-  // (NOTAMs, avis du jour, OPMET) — affichées via <iframe src="opmet.html"> etc. SANS
-  // paramètre de version dans navlog.html. En cache-first classique, l'iframe affichait
-  // silencieusement une donnée météo vieille de plusieurs heures tant que l'utilisateur
-  // n'avait pas explicitement rechargé APRÈS qu'un premier passage en tâche de fond ait
-  // rafraîchi le cache — inacceptable pour des METAR/TAF/NOTAM utilisés en préparation de
-  // vol. Même traitement network-first que les JSON de questions, mais avec repli sur le
-  // cache existant (pas de contenu vide) si hors-ligne.
-  const isAutoFetchedWx = /\/(opmet|notams_belgique|daily_warnings)\.html$/.test(url.pathname);
-  // Cartes TEMSI/WINTEM (manifest.json + PNG + PDF regénérés par le workflow toutes les
-  // ~3h) : le code cliente (initTemsiCarousels) ajoute déjà un paramètre "?t=timestamp"
-  // pour forcer un fetch frais après un clic sur "Relancer GitHub Action" — mais le
-  // caches.match({ignoreSearch:true}) ci-dessous ignore justement ce paramètre, donc
-  // cette tentative de cache-busting était neutralisée et l'utilisateur revoyait
-  // indéfiniment la carte périmée même après un cycle du workflow réussi. Même
-  // traitement network-first que isAutoFetchedWx.
-  const isAutoFetchedTemsiWintem = /\/(temsi|wintem)_(france|euroc)[^/]*\.(png|pdf|json)$/.test(url.pathname);
-  if ((isAutoFetchedWx || isAutoFetchedTemsiWintem) && navigator.onLine) {
-    event.respondWith(
-      fetchWithTimeout(event.request, 3000).then(response => {
-        if (response && response.ok) {
-          const clone = response.clone();
-          const cleanUrl = new URL(event.request.url);
-          cleanUrl.search = '';
-          caches.open(CACHE_NAME).then(cache => cache.put(new Request(cleanUrl.toString()), clone));
-        }
-        return response;
-      }).catch(() => caches.match(event.request, { ignoreSearch: true }))
     );
     return;
   }
