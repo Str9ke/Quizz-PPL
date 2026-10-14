@@ -10,6 +10,13 @@ msg="$1"; shift
 [ "$#" -gt 0 ] || exit 0
 t0=$(date +%s%N)
 ms() { echo $(( ($(date +%s%N) - t0) / 1000000 )); }
+# Durées détaillées (trace git) des étapes de plus de 0,15 s — pour repérer un ralentissement
+trace="${RUNNER_TEMP:-/tmp}/git_publish_trace.$$"
+export GIT_TRACE2_PERF="$trace"
+summary() {
+  awk -F'|' -f "$(dirname "$0")/git_trace_summary.awk" "$trace" 2>/dev/null
+  rm -f "$trace"
+}
 if [ "$1" = "--all" ]; then
   git add --sparse -A || exit 1          # tout ce qui a changé (filet de sécurité final)
 else
@@ -18,15 +25,12 @@ fi
 git diff --cached --quiet && exit 0
 git commit -q -m "$msg" || exit 1
 tc=$(ms)
-trace="${RUNNER_TEMP:-/tmp}/git_push_trace.$$"
-try_push() { GIT_NO_LAZY_FETCH=$1 GIT_TRACE2_PERF="$trace" git push -q --no-thin origin HEAD:main; }
+slow_commit=$(summary)
+try_push() { GIT_NO_LAZY_FETCH=$1 git push -q --no-thin origin HEAD:main; }
 for attempt in 1 2 3 4 5; do
   # Sans téléchargement d'abord ; au moindre souci, push classique avant de conclure à un conflit
   if try_push 1 || try_push 0; then
-    # Durées (ms) : commit, puis étapes du push les plus longues — pour repérer un ralentissement
-    slow=$(awk -F'|' '/region_leave|child_exit/ && $7+0 > 0.15 { l=$10; gsub(/^[ .]+|[ ]+$/, "", l); sub(/ code:0$/, "", l); printf "%s=%.2f ", l, $7 }' "$trace" 2>/dev/null)
-    echo "commit ${tc} ms, push $(( $(ms) - tc )) ms (essai $attempt) ${slow}"
-    rm -f "$trace"
+    echo "commit ${tc} ms [${slow_commit}] push $(( $(ms) - tc )) ms (essai $attempt) [$(summary)]"
     exit 0
   fi
   rm -f "$trace"
