@@ -7,7 +7,8 @@ name: Update NOTAMs
 #   - environnement Python + Chromium restauré d'un seul cache (plus d'installation) ;
 #   - défi WAF Skeyes résolu par le Chromium de Playwright, restauré du cache (le Chrome
 #     préinstallé du runner a été essayé : 22 s au lieu de 6, abandonné) ;
-#   - récupération (Skeyes et Météo-France en parallèle) puis commit + push des seules données.
+#   - récupération (Skeyes et Météo-France en parallèle) ; chaque partie est commitée et
+#     poussée dès qu'elle est prête (OPMET d'abord), voir _Publisher dans fetch_notams.py.
 #   Dès le push, la page Briefing lit les nouveaux fichiers sur raw.githubusercontent.com à
 #   l'adresse exacte de ce commit (voir js/remote-assets.js) : pas besoin d'attendre Pages.
 # Job « deploy » (en arrière-plan) : déploiement complet du site GitHub Pages, comme avant.
@@ -84,7 +85,16 @@ jobs:
         env:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
+          # Publication progressive : chaque partie (OPMET d'abord) est poussée dès qu'elle est
+          # prête — voir _Publisher dans fetch_notams.py et tools/git_publish.sh.
+          FAST_PUBLISH: '1'
+          READY_DIR: _ready
         run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          # Images déjà compressées : inutile de les recompresser (gain de temps à chaque envoi)
+          git config core.compression 0
+          git config pack.compression 0
           PY=~/venv/bin/python
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             $PY -u fetch_notams.py --opmet-only || true
@@ -95,41 +105,23 @@ jobs:
             wait $METEO_PID || true
             cat _meteo.log; rm -f _meteo.log
           fi
-          python3 -c "import json,time; json.dump({'ts': int(time.time()*1000), 'run': '${{ github.run_id }}', 'opmet_only': '${{ github.event.inputs.opmet_only }}' == 'true'}, open('fetch_stamp.json','w'))"
+          # Filet de sécurité : si le script n'a rien publié, horodatage « tout est là » pour que
+          # la page cesse d'attendre (l'étape suivante pousse ce qui reste).
+          [ -f fetch_stamp.json ] || python3 -c "import json,time; json.dump({'ts': int(time.time()*1000), 'run': '${{ github.run_id }}'}, open('fetch_stamp.json','w'))"
 
+      # Normalement tout est déjà parti pendant l'étape précédente ; ceci rattrape un envoi
+      # partiel qui aurait échoué.
       - name: Publish data (commit + push)
         id: push
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          # --sparse : enregistre aussi les fichiers de données hors de la copie partielle.
-          # Les fichiers du site absents de la copie ne sont PAS considérés comme supprimés.
-          T0=$(date +%s.%N); lap() { echo "[publish] $1 $(echo "$(date +%s.%N) - $T0" | bc)s"; }
-          # Images déjà compressées : inutile de les recompresser (gain de temps à l'ajout et au push)
-          git config core.compression 0
-          git config pack.compression 0
-          git add --sparse -A
-          lap add
-          if git diff --cached --quiet; then
-            echo "pushed=false" >> "$GITHUB_OUTPUT"; exit 0
+          if bash tools/git_publish.sh "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET" --all; then :; else
+            echo "::error::Échec du push après plusieurs tentatives."; exit 1
           fi
-          git commit -q -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET"
-          lap commit
-          for attempt in 1 2 3 4 5; do
-            # --no-thin : sans lui, git cherche les anciennes versions des fichiers comme base de
-            # compression — absentes de la copie partielle, elles étaient téléchargées une à une
-            # (~20 s). Le paquet envoyé est un peu plus gros mais part immédiatement.
-            if git push -q --no-thin origin HEAD:main; then
-              lap push
-              echo "pushed=true" >> "$GITHUB_OUTPUT"
-              echo "Push réussi (tentative $attempt) : $(git rev-parse HEAD)"
-              exit 0
-            fi
-            git fetch -q --depth=1 origin main
-            git rebase origin/main || { git rebase --abort; sleep 2; }
-          done
-          echo "::error::Échec du push après plusieurs tentatives."
-          exit 1
+          if [ "$(git rev-parse HEAD)" != "${{ github.sha }}" ]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Alert if Skeyes retrieval failed
         if: always()

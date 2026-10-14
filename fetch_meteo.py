@@ -203,11 +203,22 @@ def main():
         dict(operation="postWintem", zone="EUROC", prefix="wintem_euroc", map_name="WINTEM EUROC",
              level="050", level_filter="FL50-100"),
     ]
+    ready_dir = os.getenv("READY_DIR")
+
     def run(job):
         try:
             fetch_all_charts(session, **job)
         except Exception as e:
             print(f"❌ {job['map_name']}: {e}")
+        finally:
+            # Témoin pour la publication progressive (voir _Publisher dans fetch_notams.py) :
+            # cette carte est prête, ses fichiers peuvent partir tout de suite.
+            if ready_dir:
+                os.makedirs(ready_dir, exist_ok=True)
+                path = os.path.join(ready_dir, job["prefix"])
+                with open(path + ".tmp", "w", encoding="utf-8") as f:
+                    f.write(job["prefix"] + "*\n")
+                os.replace(path + ".tmp", path)
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(run, jobs))
     print(f"::notice title=Durée TEMSI/WINTEM::{time.time() - t0:.1f}s")

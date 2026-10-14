@@ -741,9 +741,7 @@ def fetch_remote_sensing_images(session):
             manifest[prefix] = {"files": [j[4] for j in ok], "times": [_extract_utc_timestamp(j[5]) for j in ok]}
             print(f"{prefix}: saved {len(ok)} images")
 
-    # Write manifest JSON
-    with open("skeyes_images.json", "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
+    _merge_manifest(manifest)
     return manifest
 
 
@@ -1204,6 +1202,121 @@ def do_login(session, username, password):
     return False
 
 
+
+# ===== Publication progressive (workflow rapide) =====
+# Avec FAST_PUBLISH=1, chaque partie du briefing est commitée et poussée DÈS qu'elle est
+# prête (OPMET d'abord, ~9 s après le début), au lieu d'un seul envoi final : la page
+# Briefing (navlog.html) surveille les commits et affiche chaque partie à son arrivée.
+# Un seul fil s'occupe de git ; les parties prêtes pendant un envoi partent ensemble au
+# suivant. fetch_stamp.json accompagne chaque envoi : parties déjà publiées et attendues.
+# Les parties produites par un AUTRE processus (fetch_meteo.py, lancé en parallèle) sont
+# signalées par des fichiers témoins dans READY_DIR (contenu = motifs des fichiers).
+import threading
+import subprocess
+import glob as _glob
+
+EXPECTED_FULL = ["opmet", "daily", "notam", "sfc", "images",
+                 "temsi_france", "temsi_euroc", "wintem_france", "wintem_euroc"]
+
+
+def _write_json_atomic(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(tmp, path)
+
+
+class _Publisher:
+    def __init__(self, expected):
+        self.enabled = os.getenv("FAST_PUBLISH") == "1"
+        self.expected = list(expected)
+        self.ready_dir = os.getenv("READY_DIR")
+        self.cond = threading.Condition()
+        self.pending = []      # [(partie, motifs)]
+        self.parts = []        # parties déjà publiées (ou en cours de publication)
+        self.closed_at = None
+        self.thread = None
+        if self.enabled:
+            self.thread = threading.Thread(target=self._run, daemon=True)
+            self.thread.start()
+
+    def ready(self, part, patterns):
+        if not self.enabled:
+            return
+        with self.cond:
+            self.pending.append((part, list(patterns)))
+            self.cond.notify()
+
+    def close(self, timeout=60):
+        """Attend que toutes les parties attendues soient publiées (au plus `timeout` s)."""
+        if not self.enabled:
+            return
+        with self.cond:
+            self.closed_at = time.time()
+            self.cond.notify()
+        self.thread.join(timeout=timeout + 60)
+
+    def _poll_markers(self):
+        if not self.ready_dir or not os.path.isdir(self.ready_dir):
+            return
+        for name in os.listdir(self.ready_dir):
+            path = os.path.join(self.ready_dir, name)
+            if name.endswith(".tmp"):
+                continue
+            try:
+                with open(path, encoding="utf-8") as f:
+                    pats = [l.strip() for l in f if l.strip()]
+                os.remove(path)
+            except OSError:
+                continue
+            self.pending.append((name, pats))
+
+    def _done(self):
+        return all(p in self.parts for p in self.expected)
+
+    def _run(self):
+        while True:
+            with self.cond:
+                while True:
+                    self._poll_markers()
+                    if self.pending:
+                        break
+                    if self.closed_at is not None and (self._done() or time.time() - self.closed_at > 60):
+                        return
+                    self.cond.wait(timeout=0.2)
+                batch, self.pending = self.pending, []
+            names = [p for p, _ in batch]
+            for n in names:
+                if n not in self.parts:
+                    self.parts.append(n)
+            files = sorted({f for _, pats in batch for pat in pats for f in _glob.glob(pat)})
+            _write_json_atomic("fetch_stamp.json", {
+                "ts": int(time.time() * 1000),
+                "run": os.getenv("GITHUB_RUN_ID", ""),
+                "parts": self.parts,
+                "expected": self.expected,
+            })
+            t0 = time.time()
+            r = subprocess.run(["bash", "tools/git_publish.sh", "Briefing : " + ", ".join(names)]
+                               + files + ["fetch_stamp.json"], capture_output=True, text=True)
+            if r.returncode == 0:
+                _lap(f"publié {'+'.join(names)} en {time.time() - t0:.1f}s")
+            else:
+                print(f"Publication de {names} en échec : {r.stderr[-400:]}")
+
+
+_MANIFEST_LOCK = threading.Lock()
+_MANIFEST = {}
+
+
+def _merge_manifest(entries):
+    """skeyes_images.json est partagé par les images et le SFC, produits en parallèle :
+    fusion sous verrou et écriture atomique (jamais un fichier à moitié écrit publié)."""
+    with _MANIFEST_LOCK:
+        _MANIFEST.update(entries)
+        _write_json_atomic("skeyes_images.json", _MANIFEST)
+
+
 _T0 = time.time()
 _TIMINGS = []
 def _lap(label):
@@ -1221,6 +1334,7 @@ def main():
         print("Missing credentials")
         return
 
+    pub = _Publisher(EXPECTED_FULL)
     session = make_skeyes_session()
     _lap("waf")
     
@@ -1351,31 +1465,54 @@ def main():
     #  - en tâche de fond, les simples téléchargements (images radar/satellite/modèles, avis du jour) ;
     #  - ici, dans l'ordre, les formulaires Skeyes liés à la session (OPMET, NOTAM puis SFC).
     from concurrent.futures import ThreadPoolExecutor
+
+    def _images_task():
+        m = {}
+        try:
+            m = fetch_remote_sensing_images(session)
+        finally:
+            pub.ready("images", [f for v in m.values() for f in v["files"]] + ["skeyes_images.json"])
+            _lap("images")
+
+    def _daily_task():
+        try:
+            _daily()
+        finally:
+            pub.ready("daily", ["daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page_*.png", "daily_warnings.json"])
+            _lap("avis du jour")
+
+    def _notams_task():
+        try:
+            _notams()
+        finally:
+            pub.ready("notam", ["notams_belgique.html"])
+            _lap("notam")
+
     with ThreadPoolExecutor(max_workers=3) as bg:
-        fut_images = bg.submit(fetch_remote_sensing_images, session)
-        fut_daily = bg.submit(_daily)
+        fut_images = bg.submit(_images_task)
+        fut_daily = bg.submit(_daily_task)
         # Le résumé NOTAM met ~5 s à être produit par Skeyes : demandé en parallèle de l'OPMET.
-        fut_notams = bg.submit(_notams)
-        # OPMET (requires auth)
+        fut_notams = bg.submit(_notams_task)
+        # OPMET (requires auth) — publié en premier, dès qu'il est prêt
         try:
             fetch_opmet(session)
         except Exception as e:
             print(f"Error fetching OPMET: {e}")
             _record_failure("opmet", str(e))
             generate_error_html("opmet.html", "OPMET", session, str(e))
+        pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
         _lap("opmet")
         sfc_manifest = {}
-        fetch_sfc_analysis(session, sfc_manifest, write=False)
-        _lap("sfc")
+        try:
+            fetch_sfc_analysis(session, sfc_manifest, write=False)
+            _merge_manifest(sfc_manifest)
+        finally:
+            pub.ready("sfc", [f for v in sfc_manifest.values() for f in v["files"]] + ["skeyes_images.json"])
+            _lap("sfc")
         fut_notams.result()
-        _lap("notam")
-        manifest = fut_images.result()
-        _lap("images")
+        fut_images.result()
         fut_daily.result()
-        _lap("avis du jour")
-    manifest.update(sfc_manifest)
-    with open("skeyes_images.json", "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
+    pub.close()
 
 
 def main_opmet_only():
@@ -1391,6 +1528,7 @@ def main_opmet_only():
         print("Missing credentials")
         return
 
+    pub = _Publisher(["opmet"])
     session = make_skeyes_session()
     do_login(session, username, password)
 
@@ -1400,6 +1538,8 @@ def main_opmet_only():
         print(f"Error fetching OPMET (fast): {e}")
         _record_failure("opmet", str(e))
         generate_error_html("opmet.html", "OPMET", session, str(e))
+    pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
+    pub.close()
 
 
 if __name__ == "__main__":
