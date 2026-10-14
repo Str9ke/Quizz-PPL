@@ -105,13 +105,20 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           # --sparse : enregistre aussi les fichiers de données hors de la copie partielle.
           # Les fichiers du site absents de la copie ne sont PAS considérés comme supprimés.
+          T0=$(date +%s.%N); lap() { echo "[publish] $1 $(echo "$(date +%s.%N) - $T0" | bc)s"; }
           git add --sparse -A
+          lap add
           if git diff --cached --quiet; then
             echo "pushed=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           git commit -q -m "Auto-update NOTAMs & Daily Warnings & Meteo Maps & OPMET"
+          lap commit
           for attempt in 1 2 3 4 5; do
-            if git push -q origin HEAD:main; then
+            # --no-thin : sans lui, git cherche les anciennes versions des fichiers comme base de
+            # compression — absentes de la copie partielle, elles étaient téléchargées une à une
+            # (~20 s). Le paquet envoyé est un peu plus gros mais part immédiatement.
+            if git push -q --no-thin origin HEAD:main; then
+              lap push
               echo "pushed=true" >> "$GITHUB_OUTPUT"
               echo "Push réussi (tentative $attempt) : $(git rev-parse HEAD)"
               exit 0

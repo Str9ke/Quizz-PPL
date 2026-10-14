@@ -1244,6 +1244,7 @@ def main():
             data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
             data_response = session.post(data_url)
             data_response.raise_for_status()
+            _lap(f"notam: réponse reçue ({len(data_response.content)//1024} Ko)")
         
             soup = BeautifulSoup(data_response.text, 'html.parser')
             notam_section = soup.find('body')
