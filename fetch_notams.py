@@ -681,11 +681,24 @@ def fetch_remote_sensing_images(session):
     from concurrent.futures import ThreadPoolExecutor
     jobs = []      # (prefix, index, img_url, detail_url, filename, path)
     order = []     # prefixes dans l'ordre d'origine
-    for html_param, type_param, prefix in pages:
+
+    def _detail(pg):
+        html_param, type_param, prefix = pg
+        detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
+        referer = "https://ops.skeyes.be/opersite/meteonumwxStart.do" if type_param == "numwx" else "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
         try:
-            detail_url = f"https://ops.skeyes.be/opersite/remoteSensingDetail.do?html={html_param}&type={type_param}"
-            referer = "https://ops.skeyes.be/opersite/meteonumwxStart.do" if type_param == "numwx" else "https://ops.skeyes.be/opersite/opmeteoindex.do?cmd=init"
-            resp = session.get(detail_url, headers={"Referer": referer}, timeout=30)
+            return pg, detail_url, session.get(detail_url, headers={"Referer": referer}, timeout=30)
+        except Exception as e:
+            print(f"{prefix}: error {e}")
+            return pg, detail_url, None
+
+    # Pages de détail : simples GET indépendants, récupérés en parallèle eux aussi.
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        details = list(pool.map(_detail, pages))
+    for (html_param, type_param, prefix), detail_url, resp in details:
+        if resp is None:
+            continue
+        try:
             if resp.status_code != 200:
                 print(f"{prefix}: HTTP {resp.status_code}")
                 continue
@@ -735,7 +748,7 @@ def fetch_remote_sensing_images(session):
     return manifest
 
 
-def fetch_sfc_analysis(session, manifest):
+def fetch_sfc_analysis(session, manifest, write=True):
     """Fetch SFC Analysis Europe charts (06Z/12Z) from Skeyes Flight Briefing Charts."""
     print("\n--- Fetching SFC Analysis ---")
     base = "https://ops.skeyes.be/opersite"
@@ -856,9 +869,9 @@ def fetch_sfc_analysis(session, manifest):
             print(f"  SFC {time_val}: error: {e}")
     if filenames:
         manifest["skeyes_sfc_analysis"] = {"files": filenames, "times": timestamps}
-        # Re-write manifest with SFC data
-        with open("skeyes_images.json", "w", encoding="utf-8") as f:
-            json.dump(manifest, f)
+        if write:  # Re-write manifest with SFC data
+            with open("skeyes_images.json", "w", encoding="utf-8") as f:
+                json.dump(manifest, f)
         print(f"  -> Saved {len(filenames)} SFC Analysis images")
     else:
         print("  -> No SFC Analysis images obtained")
@@ -950,9 +963,23 @@ def make_skeyes_session():
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
     })
+    # Cookie de dégagement WAF d'une exécution précédente (mis en cache par le workflow rapide,
+    # voir WAF_COOKIE_FILE) : s'il est encore accepté, on évite de lancer Chromium (~4-5 s).
+    # Seul ce cookie WAF est conservé — jamais la session Skeyes (JSESSIONID).
+    waf_file = os.getenv("WAF_COOKIE_FILE")
+    if waf_file and os.path.exists(waf_file):
+        try:
+            with open(waf_file, encoding="utf-8") as f:
+                for c in json.load(f):
+                    session.cookies.set(c["name"], c["value"], domain=c["domain"], path=c.get("path", "/"))
+        except Exception as e:
+            print(f"WAF cookie cache illisible: {e}")
     probe = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
     if probe.status_code != 403:
+        if session.cookies.get("appgw_azwaf_jsclearance"):
+            print("WAF: cookie précédent toujours accepté, Chromium inutile")
         return session
+    session.cookies.clear()
     print(f"Skeyes WAF detected (Server={probe.headers.get('Server')}), solving JS challenge with Chromium...")
     try:
         cookies = _waf_clearance_cookies()
@@ -974,6 +1001,13 @@ def make_skeyes_session():
         return session
     for c in cookies:
         session.cookies.set(c["name"], c["value"], domain=c["domain"], path=c.get("path", "/"))
+    if waf_file:
+        try:
+            os.makedirs(os.path.dirname(waf_file) or ".", exist_ok=True)
+            with open(waf_file, "w", encoding="utf-8") as f:
+                json.dump([c for c in cookies if c["name"].startswith("appgw_")], f)
+        except Exception as e:
+            print(f"WAF cookie non sauvegardé: {e}")
     check = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
     print(f"After WAF clearance: login.do status={check.status_code}")
     if check.status_code == 403:
@@ -1204,138 +1238,153 @@ def main():
     logged_in = do_login(session, username, password)
     _lap("login")
     
-    # OPMET (requires auth)
-    try:
-        fetch_opmet(session)
-    except Exception as e:
-        print(f"Error fetching OPMET: {e}")
-        _record_failure("opmet", str(e))
-        generate_error_html("opmet.html", "OPMET", session, str(e))
-    
-    _lap("opmet")
-    # Remote sensing images (fetch via detail pages)
-    manifest = fetch_remote_sensing_images(session)
-    _lap("images")
-
-    # SFC Analysis charts
-    fetch_sfc_analysis(session, manifest)
-    _lap("sfc")
-
-    print("--- Extracting NOTAMs ---")
-    try:
-        data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
-        data_response = session.post(data_url)
-        data_response.raise_for_status()
-        
-        soup = BeautifulSoup(data_response.text, 'html.parser')
-        notam_section = soup.find('body')
-
-        if notam_section:
-            search_html = BeautifulSoup("""
-            <div style='margin: 15px 0; text-align: center;'>
-                <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
-            </div>
-            <script>
-                // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
-                // terme recherché en évidence dans ceux qui restaient affichés — sans retour
-                // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
-                // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
-                // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
-                // pas casser les liens/images imbriqués dans les paragraphes.
-                function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&'); }
-                function _notamHighlightHtml(html, term) {
-                    var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
-                    var parts = html.split(/(<[^>]+>)/);
-                    for (var j = 0; j < parts.length; j++) {
-                        if (parts[j].charAt(0) !== '<') {
-                            parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
-                        }
-                    }
-                    return parts.join('');
-                }
-                function filterNotams() {
-                    var filter = document.getElementById('notamSearch').value.trim();
-                    var filterUpper = filter.toUpperCase();
-                    var paragraphs = document.querySelectorAll('p');
-                    for (var i = 0; i < paragraphs.length; i++) {
-                        var p = paragraphs[i];
-                        if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
-                        if (!filter) {
-                            p.innerHTML = p.dataset.origHtml;
-                            p.style.display = "";
-                            continue;
-                        }
-                        var txt = p.innerText || p.textContent;
-                        if (txt.toUpperCase().indexOf(filterUpper) > -1) {
-                            p.style.display = "";
-                            p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
-                        } else {
-                            p.style.display = "none";
-                        }
-                    }
-                }
-                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
-                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
-                // sans masquer les autres NOTAM (contrairement à filterNotams()).
-                function highlightNotamTerms(termsStr) {
-                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
-                    var paragraphs = document.querySelectorAll('p');
-                    var firstMatch = null;
-                    for (var i = 0; i < paragraphs.length; i++) {
-                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
-                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
-                        paragraphs[i].style.background = matched ? '#fff59d' : '';
-                        paragraphs[i].style.color = matched ? '#000' : '';
-                        paragraphs[i].style.display = '';
-                        if (matched && !firstMatch) firstMatch = paragraphs[i];
-                    }
-                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    return !!firstMatch;
-                }
-            </script>
-            """, 'html.parser')
-
-            h1_tag = notam_section.find('h1')
-            if h1_tag:
-                h1_tag.insert_after(search_html)
-            else:
-                notam_section.insert(0, search_html)
-
-        html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
-        with open("notams_belgique.html", "w", encoding="utf-8") as f:
-            f.write(html_output)
-    except Exception as e:
-        print(f"Error extracting NOTAMs: {e}")
-
-    print("--- Extracting Daily Warnings ---")
-    try:
-        daily_url = "https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday"
-        daily_response = session.get(daily_url)
-        daily_response.raise_for_status()
-
-        with open("daily_warnings.pdf", "wb") as f:
-            f.write(daily_response.content)
-
-        convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
-
-        # Extraction structurée (JSON) des avis, en plus des images de la page — utilisée
-        # par navlog.html pour afficher une bannière d'alerte automatique et situer chaque
-        # zone sur une mini-carte, sans devoir faire relire le PDF/les images par l'utilisateur.
+    def _notams():
+        print("--- Extracting NOTAMs ---")
         try:
-            warn_doc = fitz.open("daily_warnings.pdf")
-            full_text = "\n".join(page.get_text("text") for page in warn_doc)
-            warnings_list = parse_daily_warnings(full_text)
-            with open("daily_warnings.json", "w", encoding="utf-8") as f:
-                json.dump({
-                    "generated": daily_response.headers.get("Date"),
-                    "count": len(warnings_list),
-                    "warnings": warnings_list,
-                }, f, ensure_ascii=False, indent=2)
-            print(f"--- Extracted {len(warnings_list)} structured daily warnings ---")
+            data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
+            data_response = session.post(data_url)
+            data_response.raise_for_status()
+        
+            soup = BeautifulSoup(data_response.text, 'html.parser')
+            notam_section = soup.find('body')
+
+            if notam_section:
+                search_html = BeautifulSoup("""
+                <div style='margin: 15px 0; text-align: center;'>
+                    <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
+                </div>
+                <script>
+                    // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
+                    // terme recherché en évidence dans ceux qui restaient affichés — sans retour
+                    // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
+                    // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
+                    // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
+                    // pas casser les liens/images imbriqués dans les paragraphes.
+                    function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&'); }
+                    function _notamHighlightHtml(html, term) {
+                        var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
+                        var parts = html.split(/(<[^>]+>)/);
+                        for (var j = 0; j < parts.length; j++) {
+                            if (parts[j].charAt(0) !== '<') {
+                                parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                            }
+                        }
+                        return parts.join('');
+                    }
+                    function filterNotams() {
+                        var filter = document.getElementById('notamSearch').value.trim();
+                        var filterUpper = filter.toUpperCase();
+                        var paragraphs = document.querySelectorAll('p');
+                        for (var i = 0; i < paragraphs.length; i++) {
+                            var p = paragraphs[i];
+                            if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
+                            if (!filter) {
+                                p.innerHTML = p.dataset.origHtml;
+                                p.style.display = "";
+                                continue;
+                            }
+                            var txt = p.innerText || p.textContent;
+                            if (txt.toUpperCase().indexOf(filterUpper) > -1) {
+                                p.style.display = "";
+                                p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
+                            } else {
+                                p.style.display = "none";
+                            }
+                        }
+                    }
+                    // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                    // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                    // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                    function highlightNotamTerms(termsStr) {
+                        var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                        var paragraphs = document.querySelectorAll('p');
+                        var firstMatch = null;
+                        for (var i = 0; i < paragraphs.length; i++) {
+                            var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                            var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                            paragraphs[i].style.background = matched ? '#fff59d' : '';
+                            paragraphs[i].style.color = matched ? '#000' : '';
+                            paragraphs[i].style.display = '';
+                            if (matched && !firstMatch) firstMatch = paragraphs[i];
+                        }
+                        if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        return !!firstMatch;
+                    }
+                </script>
+                """, 'html.parser')
+
+                h1_tag = notam_section.find('h1')
+                if h1_tag:
+                    h1_tag.insert_after(search_html)
+                else:
+                    notam_section.insert(0, search_html)
+
+            html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
+            with open("notams_belgique.html", "w", encoding="utf-8") as f:
+                f.write(html_output)
         except Exception as e:
-            print(f"Error parsing daily warnings text: {e}")
-    except Exception as e:
-        print(f"Error fetching daily warnings: {e}")
+            print(f"Error extracting NOTAMs: {e}")
+
+
+    def _daily():
+        print("--- Extracting Daily Warnings ---")
+        try:
+            daily_url = "https://ops.skeyes.be/opersite/dailywarnings.do?cmd=warningstoday"
+            daily_response = session.get(daily_url)
+            daily_response.raise_for_status()
+
+            with open("daily_warnings.pdf", "wb") as f:
+                f.write(daily_response.content)
+
+            convert_pdf_to_html("daily_warnings.pdf", "daily_warnings.html", "daily_warnings_page")
+
+            # Extraction structurée (JSON) des avis, en plus des images de la page — utilisée
+            # par navlog.html pour afficher une bannière d'alerte automatique et situer chaque
+            # zone sur une mini-carte, sans devoir faire relire le PDF/les images par l'utilisateur.
+            try:
+                warn_doc = fitz.open("daily_warnings.pdf")
+                full_text = "\n".join(page.get_text("text") for page in warn_doc)
+                warnings_list = parse_daily_warnings(full_text)
+                with open("daily_warnings.json", "w", encoding="utf-8") as f:
+                    json.dump({
+                        "generated": daily_response.headers.get("Date"),
+                        "count": len(warnings_list),
+                        "warnings": warnings_list,
+                    }, f, ensure_ascii=False, indent=2)
+                print(f"--- Extracted {len(warnings_list)} structured daily warnings ---")
+            except Exception as e:
+                print(f"Error parsing daily warnings text: {e}")
+        except Exception as e:
+            print(f"Error fetching daily warnings: {e}")
+
+    # Après la connexion, deux branches en parallèle :
+    #  - en tâche de fond, les simples téléchargements (images radar/satellite/modèles, avis du jour) ;
+    #  - ici, dans l'ordre, les formulaires Skeyes liés à la session (OPMET, NOTAM puis SFC).
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as bg:
+        fut_images = bg.submit(fetch_remote_sensing_images, session)
+        fut_daily = bg.submit(_daily)
+        # OPMET (requires auth)
+        try:
+            fetch_opmet(session)
+        except Exception as e:
+            print(f"Error fetching OPMET: {e}")
+            _record_failure("opmet", str(e))
+            generate_error_html("opmet.html", "OPMET", session, str(e))
+        _lap("opmet")
+        _notams()
+        _lap("notam")
+        sfc_manifest = {}
+        fetch_sfc_analysis(session, sfc_manifest, write=False)
+        _lap("sfc")
+        manifest = fut_images.result()
+        _lap("images")
+        fut_daily.result()
+        _lap("avis du jour")
+    manifest.update(sfc_manifest)
+    with open("skeyes_images.json", "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
+
 
 def main_opmet_only():
     """Point d'entrée léger pour le bouton 'OPMET rapide' : login + fetch_opmet() UNIQUEMENT

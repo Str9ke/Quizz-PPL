@@ -182,23 +182,36 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
         f.write(html_content)
 
 def main():
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    t0 = time.time()
     session = requests.Session()
-    
-    print("Scraping SOFIA for Meteo Pdfs...")
-    
-    # 1. TEMSI France - all time entries
-    fetch_all_charts(session, "postTemsi", "FRANCE", "temsi_france", "TEMSI France")
-        
-    # 2. TEMSI EUROC - all time entries
-    fetch_all_charts(session, "postTemsi", "EUROC", "temsi_euroc", "TEMSI EUROC")
-        
-    # 3. WINTEM France FL050 - filter to low level only
-    fetch_all_charts(session, "postWintem", "FRANCE", "wintem_france", "WINTEM France",
-                     level="050", level_filter="FL20-100")
+    session.mount("https://", requests.adapters.HTTPAdapter(pool_maxsize=16))
 
-    # 4. WINTEM EUROC FL050 - filter to low level only
-    fetch_all_charts(session, "postWintem", "EUROC", "wintem_euroc", "WINTEM EUROC",
-                     level="050", level_filter="FL50-100")
+    print("Scraping SOFIA for Meteo Pdfs...")
+
+    # Les 4 cartes sont indépendantes (préfixes de fichiers distincts) : récupérées en
+    # parallèle au lieu de l'une après l'autre.
+    jobs = [
+        # 1. TEMSI France - all time entries
+        dict(operation="postTemsi", zone="FRANCE", prefix="temsi_france", map_name="TEMSI France"),
+        # 2. TEMSI EUROC - all time entries
+        dict(operation="postTemsi", zone="EUROC", prefix="temsi_euroc", map_name="TEMSI EUROC"),
+        # 3. WINTEM France FL050 - filter to low level only
+        dict(operation="postWintem", zone="FRANCE", prefix="wintem_france", map_name="WINTEM France",
+             level="050", level_filter="FL20-100"),
+        # 4. WINTEM EUROC FL050 - filter to low level only
+        dict(operation="postWintem", zone="EUROC", prefix="wintem_euroc", map_name="WINTEM EUROC",
+             level="050", level_filter="FL50-100"),
+    ]
+    def run(job):
+        try:
+            fetch_all_charts(session, **job)
+        except Exception as e:
+            print(f"❌ {job['map_name']}: {e}")
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(run, jobs))
+    print(f"::notice title=Durée TEMSI/WINTEM::{time.time() - t0:.1f}s")
 
 if __name__ == "__main__":
     main()
