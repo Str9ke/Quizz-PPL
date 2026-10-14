@@ -7,63 +7,63 @@
 <input id="notamSearch" onkeyup="filterNotams()" placeholder="Rechercher un mot clé (ex: EBCI, TRA, etc.)..." style="padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" type="text"/>
 </div>
 <script>
-                // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
-                // terme recherché en évidence dans ceux qui restaient affichés — sans retour
-                // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
-                // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
-                // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
-                // pas casser les liens/images imbriqués dans les paragraphes.
-                function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-                function _notamHighlightHtml(html, term) {
-                    var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
-                    var parts = html.split(/(<[^>]+>)/);
-                    for (var j = 0; j < parts.length; j++) {
-                        if (parts[j].charAt(0) !== '<') {
-                            parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                    // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
+                    // terme recherché en évidence dans ceux qui restaient affichés — sans retour
+                    // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
+                    // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
+                    // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
+                    // pas casser les liens/images imbriqués dans les paragraphes.
+                    function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+                    function _notamHighlightHtml(html, term) {
+                        var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
+                        var parts = html.split(/(<[^>]+>)/);
+                        for (var j = 0; j < parts.length; j++) {
+                            if (parts[j].charAt(0) !== '<') {
+                                parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                            }
+                        }
+                        return parts.join('');
+                    }
+                    function filterNotams() {
+                        var filter = document.getElementById('notamSearch').value.trim();
+                        var filterUpper = filter.toUpperCase();
+                        var paragraphs = document.querySelectorAll('p');
+                        for (var i = 0; i < paragraphs.length; i++) {
+                            var p = paragraphs[i];
+                            if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
+                            if (!filter) {
+                                p.innerHTML = p.dataset.origHtml;
+                                p.style.display = "";
+                                continue;
+                            }
+                            var txt = p.innerText || p.textContent;
+                            if (txt.toUpperCase().indexOf(filterUpper) > -1) {
+                                p.style.display = "";
+                                p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
+                            } else {
+                                p.style.display = "none";
+                            }
                         }
                     }
-                    return parts.join('');
-                }
-                function filterNotams() {
-                    var filter = document.getElementById('notamSearch').value.trim();
-                    var filterUpper = filter.toUpperCase();
-                    var paragraphs = document.querySelectorAll('p');
-                    for (var i = 0; i < paragraphs.length; i++) {
-                        var p = paragraphs[i];
-                        if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
-                        if (!filter) {
-                            p.innerHTML = p.dataset.origHtml;
-                            p.style.display = "";
-                            continue;
+                    // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                    // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                    // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                    function highlightNotamTerms(termsStr) {
+                        var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                        var paragraphs = document.querySelectorAll('p');
+                        var firstMatch = null;
+                        for (var i = 0; i < paragraphs.length; i++) {
+                            var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                            var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                            paragraphs[i].style.background = matched ? '#fff59d' : '';
+                            paragraphs[i].style.color = matched ? '#000' : '';
+                            paragraphs[i].style.display = '';
+                            if (matched && !firstMatch) firstMatch = paragraphs[i];
                         }
-                        var txt = p.innerText || p.textContent;
-                        if (txt.toUpperCase().indexOf(filterUpper) > -1) {
-                            p.style.display = "";
-                            p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
-                        } else {
-                            p.style.display = "none";
-                        }
+                        if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        return !!firstMatch;
                     }
-                }
-                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
-                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
-                // sans masquer les autres NOTAM (contrairement à filterNotams()).
-                function highlightNotamTerms(termsStr) {
-                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
-                    var paragraphs = document.querySelectorAll('p');
-                    var firstMatch = null;
-                    for (var i = 0; i < paragraphs.length; i++) {
-                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
-                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
-                        paragraphs[i].style.background = matched ? '#fff59d' : '';
-                        paragraphs[i].style.color = matched ? '#000' : '';
-                        paragraphs[i].style.display = '';
-                        if (matched && !firstMatch) firstMatch = paragraphs[i];
-                    }
-                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    return !!firstMatch;
-                }
-            </script>
+                </script>
 
 <button accesskey="P" onclick="window.open('aisPdfAction.do?cmd=summaryToPdf')" type="button"><u>P</u>rint this page 
 				</button>
@@ -71,7 +71,7 @@
 <table border="1">
 <tr>
 <td align="center"><font color="red">SKEYES SHALL NOT ACCEPT RESPONSIBILITY FOR ANY CORRUPTION OR CHANGES TO DATA THAT MIGHT BE CAUSED BY OR DURING THE INTERNET TRANSPORT </font>
-<br/>Summary of NOTAM in force on Tuesday 13/10/2026 at 19:03 UTC<br/>Your kind remarks about the layout of the summary are appreciated at the NOTAM office <br/>Phone: +32 (0)2 206 25 30<br/>AFTN: EBBRYNYN<br/>Email: <a href="mailto://notam@skeyes.be">notam@skeyes.be</a>
+<br/>Summary of NOTAM in force on Wednesday 14/10/2026 at 10:41 UTC<br/>Your kind remarks about the layout of the summary are appreciated at the NOTAM office <br/>Phone: +32 (0)2 206 25 30<br/>AFTN: EBBRYNYN<br/>Email: <a href="mailto://notam@skeyes.be">notam@skeyes.be</a>
 <br/>Address: Tervuursesteenweg 303 B-1820 Steenokkerzeel</td>
 </tr>
 </table>
@@ -462,6 +462,13 @@ POSSIBLE. NO IDENT CODE RADIATED<br/>
 <i>Text:</i>GENERAL AVIATION ARR PPR. CALL +3227536900 OR MAIL TO
 INSPECT(AT)BRUSSELSAIRPORT.BE PRIOR TKOF.<br/>
 </p>
+<p>
+<font class="ssstitle-bold">A3767/26</font>
+<br/>
+<i>From:</i>14 OCT 26 06:45  <i>Till:</i>14 OCT 26 11:00 <br/>
+<i>Text:</i>MOWING WORKS EAST OF RUNWAY 01/19 LOCATED BETWEEN 91M AND 150M OF
+RWY AXIS BETWEEN TWY F2 AND F5<br/>
+</p>
 <hr/>
 <a name="EBCIA"></a>
 <br/>
@@ -531,6 +538,20 @@ BY TEL +3256362044 OR FREQ 120.255MHZ<br/>
 <i>From:</i>21 OCT 26 07:00  <i>Till:</i>21 OCT 26 12:00 <br/>
 <i>Text:</i>JET A1 NOT AVBL<br/>
 </p>
+<p>
+<font class="ssstitle-bold">A3769/26</font>
+<br/>
+<i>From:</i>15 NOV 26 06:00  <i>Till:</i>14 FEB 27 15:00 <br/>
+<i>Text:</i>KOKSIJDE CRANE 510558N 0023708E 20M AGL. ICAO DAY AND NGT MARKING
+UNKNOWN<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3771/26</font>
+<br/>
+<i>From:</i>20 OCT 26 11:30  <i>Till:</i>20 OCT 26 13:30 <br/>
+<i>Text:</i>AD RESTRICTED TO COMMERCIAL IFR FLT WITH FPL. NO VFR FLT AND NO
+TRG FLT ALLOWED.<br/>
+</p>
 <hr/>
 <a name="EBLGA"></a>
 <br/>
@@ -558,16 +579,16 @@ BTN S2 AND S3<br/>
 POSSIBLE<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A3691/26</font>
-<br/>
-<i>From:</i>14 OCT 26 06:30  <i>Till:</i>14 OCT 26 14:00 <br/>
-<i>Text:</i>TWY A3 CLSD DUE TO WIP EXC LVP<br/>
-</p>
-<p>
 <font class="ssstitle-bold">A3692/26</font>
 <br/>
 <i>From:</i>16 OCT 26 10:00  <i>Till:</i>16 OCT 26 15:00 <br/>
 <i>Text:</i>NO TRG FLIGHTS ALLOWED<br/>
+</p>
+<p>
+<font class="ssstitle-bold">A3762/26</font>
+<br/>
+<i>From:</i>14 OCT 26 06:30  <i>Till:</i>14 OCT 26 14:00 <br/>
+<i>Text:</i>TWY A CLSD FM STAND 49 TO STAND 51E DUE TO WIP EXC LVP<br/>
 </p>
 <hr/>
 <a name="EBOSA"></a>
@@ -686,14 +707,6 @@ STRICT MINIMUM<br/>
 OR DESTINATION) EXC HOME-BASED CARRIERS<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A3733/26</font>
-<br/>
-<i>From:</i>13 OCT 26 04:00  <i>Till:</i>14 OCT 26 04:00 <br/>
-<i>Text:</i>APN P1 ACFT STANDS B08 AND V10 INS COORDINATES PUBLISHED
-INCORRECTLY. CORRECT INS COORDINATES: B08 493754.64N 0061252.66E
-AND V10 493753.36N 0061253.43E. REF AIP ELLX AD 2.ELLX-APDC.01.<br/>
-</p>
-<p>
 <font class="ssstitle-bold">A3735/26</font>
 <br/>
 <i>From:</i>10 NOV 26 23:30  <i>Till:</i>11 NOV 26 05:00 <br/>
@@ -730,18 +743,15 @@ AMSL/190FT AGL, RADIUS 165FT. OBST LIMITATION SFC PENETRATION 28M.
 MARKINGS: WHITE FLASHING LGT.<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A3758/26</font>
+<font class="ssstitle-bold">A3764/26</font>
 <br/>
-<i>From:</i>13 OCT 26 13:30  <i>Till:</i>13 OCT 26 21:59 EST<br/>
-<i>Text:</i>APN P10 ENTRY/EXIT LIMITED DUE TO ACFT PARKED ON TXL K2. STAND
-Z09 NOT ACCESSIBLE. STAND Z10 ACCESSIBLE VIA TOWING, DEPARTURE VIA
-PUSHBACK. ACCESS/DEPARTURE TO/FROM STANDS Z11, Z12, Z12A AND Z12B
-UNDER OWN POWER.<br/>
+<i>From:</i>14 OCT 26 04:47  <i>Till:</i>17 OCT 26 04:00 EST<br/>
+<i>Text:</i>TWY C 4 CONSECUTIVE CL LGT U/S<br/>
 </p>
 <p>
-<font class="ssstitle-bold">A3759/26</font>
+<font class="ssstitle-bold">A3765/26</font>
 <br/>
-<i>From:</i>14 OCT 26 04:00  <i>Till:</i>15 OCT 26 04:00 <br/>
+<i>From:</i>14 OCT 26 04:47  <i>Till:</i>15 OCT 26 04:00 <br/>
 <i>Text:</i>APN P1 STANDS B08 AND V10 INS COORDINATES PUBLISHED INCORRECTLY.
 CORRECT INS COORDINATES: B08 493754.64N 0061252.66E, V10 493753.36N
 0061253.43E. REF AIP ELLX AD 2.ELLX-APDC.01.<br/>
@@ -1196,10 +1206,10 @@ HEIGHT OF 45M AGL<br/>
 ILLUMINATED<br/>
 </p>
 <p>
-<font class="ssstitle-bold">C1479/26</font>
+<font class="ssstitle-bold">C1483/26</font>
 <br/>
-<i>From:</i>14 OCT 26 07:00  <i>Till:</i>14 OCT 26 19:30 <br/>
-<i>Text:</i>AD OPR HR: 0800-1130 1600-1930<br/>
+<i>From:</i>14 OCT 26 08:53  <i>Till:</i>14 OCT 26 19:30 <br/>
+<i>Text:</i>AD OPR HRS: 1600-1930<br/>
 </p>
 <hr/>
 <a name="EBFNC"></a>
@@ -1264,12 +1274,6 @@ UNKNOWN<br/>
 SURFACE SOUTH OF THE RWY. TAKE-OFF AND LANDING ONLY ALLOWED FOR 
 HOMEBASED F-16 AND MQ-9B . STRAIGHT-IN APPROACH MANDATORY. NO TRG
 EXCEPT FOR F-16 NARROW RWY REQUALIFICATION.<br/>
-</p>
-<p>
-<font class="ssstitle-bold">C1464/26</font>
-<br/>
-<i>From:</i>13 OCT 26 06:30  <i>Till:</i>13 OCT 26 22:00 <br/>
-<i>Text:</i>AD OPR HR: 0630-1530<br/>
 </p>
 <p>
 <font class="ssstitle-bold">C1465/26</font>
@@ -1389,16 +1393,18 @@ NIL<br/>
 <i>Text:</i>STEENOKKERZEEL ATCC CLSD<br/>
 </p>
 <p>
-<font class="ssstitle-bold">D0533/26</font>
-<br/>
-<i>From:</i>12 OCT 26 06:30  <i>Till:</i>13 OCT 26 21:30 <br/>
-<i>Text:</i>STEENOKKERZEEL ATCC OPR HR: MON-TUE 0630-1530<br/>
-</p>
-<p>
 <font class="ssstitle-bold">D0555/26</font>
 <br/>
 <i>From:</i>19 OCT 26 06:30  <i>Till:</i>20 OCT 26 21:30 <br/>
 <i>Text:</i>STEENOKKERZEEL ATCC OPR HR: MON-TUE 0630-1530<br/>
+</p>
+<p>
+<font class="ssstitle-bold">D0556/26</font>
+<br/>
+<i>From:</i>16 OCT 26 10:00  <i>Till:</i>16 OCT 26 11:00 <br/>
+<i>Text:</i>BUSY FRIDAY PROCEDURE OCTOBER 16 ADAPTED DUE TO REVISED CAPACITY
+NEEDS REF AIP SUP 028/2026, AUP OR ANY RELEVANT UUP WILL REFLECT
+THE UPDATE ACCORDINGLY.<br/>
 </p>
 <hr/>
 <a name="EBAWD"></a>
@@ -1975,29 +1981,6 @@ BE AMENDED ACCORDINGLY<br/>
 UNKNOWN<br/>
 </p>
 <p>
-<font class="ssstitle-bold">F3150/26</font>
-<br/>
-<i>From:</i>13 OCT 26 07:30  <i>Till:</i>13 OCT 26 20:00 <br/>
-<i>Schedule:</i>0730-1030 1700-2000<br/>
-<i>Text:</i>HTA10A- COASTAL HELICOPTER TRAINING AREA ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F3151/26</font>
-<br/>
-<i>From:</i>13 OCT 26 17:00  <i>Till:</i>13 OCT 26 21:45 <br/>
-<i>Text:</i>HTA12A-HERK-DE-STAD HELICOPTER TRAINING AREA ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F3152/26</font>
-<br/>
-<i>From:</i>13 OCT 26 09:00  <i>Till:</i>13 OCT 26 21:45 <br/>
-<i>Schedule:</i>0900-1330 1700-2145<br/>
-<i>Text:</i>HTA12B-SINT-TRUIDEN HELICOPTER TRAINING AREA ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
 <font class="ssstitle-bold">F3157/26</font>
 <br/>
 <i>From:</i>15 OCT 26 07:00  <i>Till:</i>15 OCT 26 16:30 <br/>
@@ -2059,13 +2042,6 @@ HELICOPTER TRAINING AREA ACT<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
 </p>
 <p>
-<font class="ssstitle-bold">F3172/26</font>
-<br/>
-<i>From:</i>14 OCT 26 07:30  <i>Till:</i>14 OCT 26 10:30 <br/>
-<i>Text:</i>HTA10A- COASTAL HELICOPTER TRAINING AREA ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>500FT AGL<br/>
-</p>
-<p>
 <font class="ssstitle-bold">F3173/26</font>
 <br/>
 <i>From:</i>14 OCT 26 10:30  <i>Till:</i>14 OCT 26 13:00 <br/>
@@ -2093,13 +2069,6 @@ HELICOPTER TRAINING AREA ACT<br/>
 <i>From:</i>14 OCT 26 06:30  <i>Till:</i>14 OCT 26 16:30 <br/>
 <i>Text:</i>TSA22-BERTRIX-JEHONVILLE ACT<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>4500FT AMSL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">F3182/26</font>
-<br/>
-<i>From:</i>14 OCT 26 07:30  <i>Till:</i>14 OCT 26 08:45 <br/>
-<i>Text:</i>EBD26-ARDENNES 05 ACT<br/>
-<i>Lower limit:</i>1000FT AGL <i>Upper limit:</i>4500FT AMSL<br/>
 </p>
 <hr/>
 <a name="EBDTF"></a>
@@ -2167,21 +2136,6 @@ AIP MIL
 NIL<br/>
 </p>
 <p>
-<font class="ssstitle-bold">G2490/26</font>
-<br/>
-<i>From:</i>13 OCT 26 06:00  <i>Till:</i>13 OCT 26 22:00 <br/>
-<i>Text:</i>EBR04-ELSENBORN 01 ACT<br/>
-<i>Lower limit:</i>GND <i>Upper limit:</i>FL170<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G2493/26</font>
-<br/>
-<i>From:</i>13 OCT 26 06:30  <i>Till:</i>13 OCT 26 20:00 <br/>
-<i>Schedule:</i>0630-1530 1700-2000<br/>
-<i>Text:</i>LFA11-KOKSIJDE TRAINING AREA ACT<br/>
-<i>Lower limit:</i>10FT AMSL <i>Upper limit:</i>500FT AMSL<br/>
-</p>
-<p>
 <font class="ssstitle-bold">G2497/26</font>
 <br/>
 <i>From:</i>13 OCT 26 10:00  <i>Till:</i>23 OCT 26 14:00 <br/>
@@ -2232,22 +2186,6 @@ NIL<br/>
 <i>From:</i>14 OCT 26 07:00  <i>Till:</i>14 OCT 26 15:30 <br/>
 <i>Text:</i>TSA28D-ELSENBORN 05 ACT<br/>
 <i>Lower limit:</i>GND <i>Upper limit:</i>FL105<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G2508/26</font>
-<br/>
-<i>From:</i>14 OCT 26 07:30  <i>Till:</i>14 OCT 26 08:45 <br/>
-<i>Text:</i>TSA26A - ARDENNES 01 ACT. 
-GAT ALLOWED TO CROSS TRACK MATIX-MMD ON FIXED LVL BLW FL195 AFTER 
-COOR BTN BELGA RADAR AND CRNA/NORD<br/>
-<i>Lower limit:</i>FL095 <i>Upper limit:</i>UNL<br/>
-</p>
-<p>
-<font class="ssstitle-bold">G2511/26</font>
-<br/>
-<i>From:</i>14 OCT 26 07:30  <i>Till:</i>14 OCT 26 08:45 <br/>
-<i>Text:</i>TSA26B - ARDENNES 04 ACT<br/>
-<i>Lower limit:</i>4500FT AMSL <i>Upper limit:</i>FL095<br/>
 </p>
 <hr/>
 <a name="EBBLG"></a>
@@ -2424,6 +2362,15 @@ AIP VFR
 NIL
 AIP MIL
 NIL<br/>
+</p>
+<p>
+<font class="ssstitle-bold">Z0101/26</font>
+<br/>
+<i>From:</i>14 OCT 26 10:17  <i>Till:</i>14 OCT 26 12:05 <br/>
+<i>Text:</i>BIRD INTENSITY OVER BELGIUM
+5-FF, 5-GF, 5-FE
+SEE AIP ENR 5.6, PARA 4<br/>
+<i>Lower limit:</i>GND <i>Upper limit:</i>2000FT AGL<br/>
 </p>
 <hr/>
 <br/>Please click <a href="/opersite/eaip.forward.main.do" target="_blank">here </a>to consult eAIP</td>
