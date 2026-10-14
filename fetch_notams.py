@@ -263,7 +263,7 @@ body {{ margin:0; padding:0; background:transparent; display:flex; flex-directio
     except Exception as e:
         print(f"Error fetching animation {title}: {e}")
 
-def fetch_opmet(session):
+def fetch_opmet(session, on_html=None):
     """Fetch OPMET (METAR/TAF/SIGMET/GAMET) data from Skeyes."""
     print("\n--- Fetching OPMET data ---")
     print(f"Cookies before OPMET: {list(session.cookies.get_dict().keys())}")
@@ -596,6 +596,8 @@ try{
         with open("opmet.html", "w", encoding="utf-8") as f:
             f.write('\n'.join(html_parts))
         print("OPMET: saved clean METAR/TAF data HTML")
+        if on_html:
+            on_html()   # publication immédiate (le PDF, secondaire, suit au lot suivant)
 
     # Secondary: also try PDF download
     pdf_url = "https://ops.skeyes.be/opersite/opmet.do?cmd=opmetAsPdf"
@@ -1227,14 +1229,27 @@ def _write_json_atomic(path, data):
 
 
 class _Publisher:
+    """Ordre d'envoi (mesuré : chaque push coûte ~3 s, les cartes TEMSI/WINTEM pèsent ~13 Mo) :
+    1. RIEN ne part avant l'OPMET : il part dès qu'il est prêt, avec les petites parties déjà
+       prêtes (avis du jour, NOTAM). Les cartes Météo-France, prêtes bien avant l'OPMET (pas de
+       connexion Skeyes), le retardaient de ~6 s en passant devant.
+    2. Ensuite, le reste part en UN envoi dès que tout est prêt — ou plus tôt si une partie
+       prête attend depuis plus de 4 s (une partie lente ne bloque pas les autres)."""
+    SMALL = {"opmet", "opmet_pdf", "daily", "notam"}
+    PRIORITY = "opmet"
+    MAX_WAIT_PRIORITY = 25   # s : au-delà, on n'attend plus l'OPMET (échec Skeyes…)
+    MAX_HOLD = 4             # s : délai max d'une partie prête avant envoi
+
     def __init__(self, expected):
         self.enabled = os.getenv("FAST_PUBLISH") == "1"
         self.expected = list(expected)
         self.ready_dir = os.getenv("READY_DIR")
         self.cond = threading.Condition()
-        self.pending = []      # [(partie, motifs)]
-        self.parts = []        # parties déjà publiées (ou en cours de publication)
+        self.pending = []      # [(partie, motifs, instant où elle est prête)]
+        self.parts = []        # parties déjà publiées
         self.closed_at = None
+        self.t_start = time.time()
+        self.free_since = 0.0  # fin du dernier envoi (une partie arrivée PENDANT un envoi n'a pas « attendu »)
         self.thread = None
         if self.enabled:
             self.thread = threading.Thread(target=self._run, daemon=True)
@@ -1244,7 +1259,7 @@ class _Publisher:
         if not self.enabled:
             return
         with self.cond:
-            self.pending.append((part, list(patterns)))
+            self.pending.append((part, list(patterns), time.time()))
             self.cond.notify()
 
     def close(self, timeout=60):
@@ -1269,27 +1284,47 @@ class _Publisher:
                 os.remove(path)
             except OSError:
                 continue
-            self.pending.append((name, pats))
+            self.pending.append((name, pats, time.time()))
 
     def _done(self):
         return all(p in self.parts for p in self.expected)
+
+    def _pick(self):
+        """Parties à envoyer maintenant (liste vide = attendre)."""
+        if not self.pending:
+            return []
+        now = time.time()
+        names = [p for p, _, _ in self.pending]
+        # OPMET publié, absent de cette récupération, ou qui n'arrivera plus (échec, délai)
+        prio_done = (self.PRIORITY in self.parts or self.PRIORITY not in self.expected
+                     or self.closed_at is not None or now - self.t_start > self.MAX_WAIT_PRIORITY)
+        if not prio_done:
+            if self.PRIORITY in names:
+                return [x for x in self.pending if x[0] in self.SMALL]
+            return []
+        remaining = [p for p in self.expected if p not in self.parts and p not in names]
+        oldest = max(min(t for _, _, t in self.pending), self.free_since)
+        if not remaining or now - oldest > self.MAX_HOLD or self.closed_at is not None and now - self.closed_at > 30:
+            return list(self.pending)
+        return []
 
     def _run(self):
         while True:
             with self.cond:
                 while True:
                     self._poll_markers()
-                    if self.pending:
+                    batch = self._pick()
+                    if batch:
                         break
-                    if self.closed_at is not None and (self._done() or time.time() - self.closed_at > 60):
+                    if self.closed_at is not None and not self.pending and (self._done() or time.time() - self.closed_at > 60):
                         return
                     self.cond.wait(timeout=0.2)
-                batch, self.pending = self.pending, []
-            names = [p for p, _ in batch]
+                self.pending = [x for x in self.pending if x not in batch]
+            names = [p for p, _, _ in batch]
             for n in names:
                 if n not in self.parts:
                     self.parts.append(n)
-            files = sorted({f for _, pats in batch for pat in pats for f in _glob.glob(pat)})
+            files = sorted({f for _, pats, _ in batch for pat in pats for f in _glob.glob(pat)})
             _write_json_atomic("fetch_stamp.json", {
                 "ts": int(time.time() * 1000),
                 "run": os.getenv("GITHUB_RUN_ID", ""),
@@ -1299,6 +1334,8 @@ class _Publisher:
             t0 = time.time()
             r = subprocess.run(["bash", "tools/git_publish.sh", "Briefing : " + ", ".join(names)]
                                + files + ["fetch_stamp.json"], capture_output=True, text=True)
+            with self.cond:
+                self.free_since = time.time()
             if r.returncode == 0:
                 _lap(f"publié {'+'.join(names)} en {time.time() - t0:.1f}s")
             else:
@@ -1494,13 +1531,21 @@ def main():
         # Le résumé NOTAM met ~5 s à être produit par Skeyes : demandé en parallèle de l'OPMET.
         fut_notams = bg.submit(_notams_task)
         # OPMET (requires auth) — publié en premier, dès qu'il est prêt
+        opmet_sent = []
+        def _opmet_html_ready():
+            opmet_sent.append(1)
+            pub.ready("opmet", ["opmet.html"])
+            _lap("opmet (HTML)")
         try:
-            fetch_opmet(session)
+            fetch_opmet(session, on_html=_opmet_html_ready)
         except Exception as e:
             print(f"Error fetching OPMET: {e}")
             _record_failure("opmet", str(e))
             generate_error_html("opmet.html", "OPMET", session, str(e))
-        pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
+        if opmet_sent:
+            pub.ready("opmet_pdf", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
+        else:
+            pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
         _lap("opmet")
         sfc_manifest = {}
         try:

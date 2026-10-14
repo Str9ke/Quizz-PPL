@@ -16549,9 +16549,11 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
     var parts = Array.isArray(st.parts) ? st.parts : expected;
     var news = parts.filter(function(p) { return !shown[p]; });
     news.forEach(function(p) { shown[p] = true; });
-    if (news.length) {
-      window._refreshBriefingParts(news);
-      if (!_stampComplete(st)) _toast('✅ ' + news.map(label).join(', ') + ' à jour', 'success', 2500);
+    // Parties techniques (ex. « opmet_pdf », PDF envoyé après l'OPMET) : rien à annoncer
+    var newsShown = news.filter(function(p) { return _BRIEFING_PART_LABELS[p]; });
+    if (newsShown.length) {
+      window._refreshBriefingParts(newsShown);
+      if (!_stampComplete(st)) _toast('✅ ' + newsShown.map(label).join(', ') + ' à jour', 'success', 2500);
     }
     if (_stampComplete(st)) { finish(); return; }
     var sum = partsSummary(), e = elapsedS();
