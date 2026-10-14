@@ -5,7 +5,7 @@ name: Update NOTAMs
 # Job « fetch » (chemin critique) :
 #   - copie PARTIELLE du dépôt (scripts seulement, sans les ~380 Mo d'images du site) ;
 #   - environnement Python + Chromium restauré d'un seul cache (plus d'installation) ;
-#   - cookie WAF Skeyes réutilisé d'une exécution à l'autre quand il est encore accepté ;
+#   - défi WAF Skeyes résolu avec le Chrome préinstallé du runner ;
 #   - récupération (Skeyes et Météo-France en parallèle) puis commit + push des seules données.
 #   Dès le push, la page Briefing lit les nouveaux fichiers sur raw.githubusercontent.com à
 #   l'adresse exacte de ce commit (voir js/remote-assets.js) : pas besoin d'attendre Pages.
@@ -72,20 +72,12 @@ jobs:
             ~/.cache/ms-playwright
           key: fastenv-${{ runner.os }}-${{ env.ImageOS }}-${{ hashFiles('requirements.txt') }}-v1
 
-      # Seul le cookie de dégagement du WAF Azure est conservé (jamais la session Skeyes).
-      - name: Restore WAF cookie
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/waf
-          key: waf-${{ github.run_id }}
-          restore-keys: waf-
-
       - name: Run script
         env:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
         run: |
-          export WAF_COOKIE_FILE="$HOME/waf/cookie.json"
+          export SKEYES_BROWSER=chrome   # Chrome préinstallé du runner (repli : Chromium)
           PY=~/venv/bin/python
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             $PY -u fetch_notams.py --opmet-only || true
@@ -128,14 +120,6 @@ jobs:
           done
           echo "::error::Échec du push après plusieurs tentatives."
           exit 1
-
-      - name: Save WAF cookie
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: ~/waf
-          key: waf-${{ github.run_id }}
 
       - name: Alert if Skeyes retrieval failed
         if: always()

@@ -909,19 +909,29 @@ def _waf_clearance_cookies():
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         args = ["--disable-blink-features=AutomationControlled"]
-        # Chromium de Playwright (mis en cache par le workflow). NB : le Google Chrome
-        # préinstallé du runner (channel="chrome") a été essayé le 13/10/2026 : il ne passe
-        # PAS le défi du WAF Skeyes — ne pas y revenir.
-        try:
-            browser = p.chromium.launch(headless=True, args=args)
-        except Exception as e:
-            print(f"Chromium indisponible ({e.__class__.__name__}), installation avec dépendances…")
-            import subprocess, sys as _sys
-            subprocess.run([_sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"], check=False)
-            browser = p.chromium.launch(headless=True, args=args)
+        # Navigateur : Google Chrome préinstallé sur le runner si SKEYES_BROWSER=chrome (rien à
+        # télécharger ni à restaurer), sinon le Chromium de Playwright. NB : l'échec observé
+        # le 13/10/2026 avec Chrome venait de la détection (formulaire attendu), pas de Chrome.
+        t_b = time.time()
+        browser = None
+        if os.getenv("SKEYES_BROWSER") == "chrome":
+            try:
+                browser = p.chromium.launch(channel="chrome", headless=True, args=args)
+            except Exception as e:
+                print(f"Chrome système indisponible ({e.__class__.__name__}), repli sur Chromium")
+        if browser is None:
+            try:
+                browser = p.chromium.launch(headless=True, args=args)
+            except Exception as e:
+                print(f"Chromium indisponible ({e.__class__.__name__}), installation avec dépendances…")
+                import subprocess, sys as _sys
+                subprocess.run([_sys.executable, "-m", "playwright", "install", "--with-deps", "chromium"], check=False)
+                browser = p.chromium.launch(headless=True, args=args)
+        print(f"[WAF] navigateur lancé en {time.time() - t_b:.1f}s ({browser.version})")
         ctx = browser.new_context(locale="fr-BE", user_agent=BROWSER_UA)
         page = ctx.new_page()
         page.goto(f"{SKEYES_BASE}/opersite/login.do", wait_until="domcontentloaded", timeout=60000)
+        print(f"[WAF] page chargée à +{time.time() - t_b:.1f}s")
         # Défi résolu = cookie de dégagement du WAF reçu ET vraie page Skeyes affichée.
         # (Depuis le 13/10/2026, login.do n'affiche plus le formulaire mais un bouton
         # « LOGIN » : attendre le formulaire faisait conclure à tort à un échec.)
@@ -939,6 +949,7 @@ def _waf_clearance_cookies():
                 has_form = False
             if "appgw_azwaf_jsclearance" in names and ("skeyes" in title or has_form):
                 ok = True
+                print(f"[WAF] défi résolu à +{time.time() - t_b:.1f}s")
                 break
             page.wait_for_timeout(300)
         if not ok:
@@ -963,23 +974,9 @@ def make_skeyes_session():
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
     })
-    # Cookie de dégagement WAF d'une exécution précédente (mis en cache par le workflow rapide,
-    # voir WAF_COOKIE_FILE) : s'il est encore accepté, on évite de lancer Chromium (~4-5 s).
-    # Seul ce cookie WAF est conservé — jamais la session Skeyes (JSESSIONID).
-    waf_file = os.getenv("WAF_COOKIE_FILE")
-    if waf_file and os.path.exists(waf_file):
-        try:
-            with open(waf_file, encoding="utf-8") as f:
-                for c in json.load(f):
-                    session.cookies.set(c["name"], c["value"], domain=c["domain"], path=c.get("path", "/"))
-        except Exception as e:
-            print(f"WAF cookie cache illisible: {e}")
     probe = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
     if probe.status_code != 403:
-        if session.cookies.get("appgw_azwaf_jsclearance"):
-            print("WAF: cookie précédent toujours accepté, Chromium inutile")
         return session
-    session.cookies.clear()
     print(f"Skeyes WAF detected (Server={probe.headers.get('Server')}), solving JS challenge with Chromium...")
     try:
         cookies = _waf_clearance_cookies()
@@ -1001,13 +998,6 @@ def make_skeyes_session():
         return session
     for c in cookies:
         session.cookies.set(c["name"], c["value"], domain=c["domain"], path=c.get("path", "/"))
-    if waf_file:
-        try:
-            os.makedirs(os.path.dirname(waf_file) or ".", exist_ok=True)
-            with open(waf_file, "w", encoding="utf-8") as f:
-                json.dump([c for c in cookies if c["name"].startswith("appgw_")], f)
-        except Exception as e:
-            print(f"WAF cookie non sauvegardé: {e}")
     check = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
     print(f"After WAF clearance: login.do status={check.status_code}")
     if check.status_code == 403:
@@ -1261,7 +1251,7 @@ def main():
                     // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
                     // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
                     // pas casser les liens/images imbriqués dans les paragraphes.
-                    function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&'); }
+                    function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }
                     function _notamHighlightHtml(html, term) {
                         var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
                         var parts = html.split(/(<[^>]+>)/);
@@ -1362,9 +1352,11 @@ def main():
     #  - en tâche de fond, les simples téléchargements (images radar/satellite/modèles, avis du jour) ;
     #  - ici, dans l'ordre, les formulaires Skeyes liés à la session (OPMET, NOTAM puis SFC).
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=2) as bg:
+    with ThreadPoolExecutor(max_workers=3) as bg:
         fut_images = bg.submit(fetch_remote_sensing_images, session)
         fut_daily = bg.submit(_daily)
+        # Le résumé NOTAM met ~5 s à être produit par Skeyes : demandé en parallèle de l'OPMET.
+        fut_notams = bg.submit(_notams)
         # OPMET (requires auth)
         try:
             fetch_opmet(session)
@@ -1373,11 +1365,11 @@ def main():
             _record_failure("opmet", str(e))
             generate_error_html("opmet.html", "OPMET", session, str(e))
         _lap("opmet")
-        _notams()
-        _lap("notam")
         sfc_manifest = {}
         fetch_sfc_analysis(session, sfc_manifest, write=False)
         _lap("sfc")
+        fut_notams.result()
+        _lap("notam")
         manifest = fut_images.result()
         _lap("images")
         fut_daily.result()
