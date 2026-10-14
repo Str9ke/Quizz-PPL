@@ -950,7 +950,7 @@ def _waf_clearance_cookies():
                 ok = True
                 _lap("waf: défi résolu")
                 break
-            page.wait_for_timeout(300)
+            page.wait_for_timeout(150)
         if not ok:
             try:
                 txt = " ".join(page.inner_text("body").split())[:400]
@@ -973,15 +973,25 @@ def make_skeyes_session():
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "fr-BE,fr;q=0.9,en;q=0.8",
     })
+    # Le défi WAF est systématique depuis 10/2026 : Chromium est lancé TOUT DE SUITE, en
+    # parallèle de la requête de test (~0,7 s gagnées). Fil « daemon » : si le WAF disparaît,
+    # le navigateur lancé pour rien ne retarde pas la fin du script.
+    spec = {}
+    def _speculative():
+        try:
+            spec["cookies"] = _waf_clearance_cookies()
+        except Exception as e:
+            spec["error"] = e
+    spec_thread = threading.Thread(target=_speculative, daemon=True)
+    spec_thread.start()
     probe = session.get(f"{SKEYES_BASE}/opersite/login.do", timeout=30)
     if probe.status_code != 403:
         return session
     print(f"Skeyes WAF detected (Server={probe.headers.get('Server')}), solving JS challenge with Chromium...")
-    try:
-        cookies = _waf_clearance_cookies()
-    except Exception as e:
-        cookies = None
-        print(f"WAF browser bootstrap crashed: {e}")
+    spec_thread.join(timeout=120)
+    cookies = spec.get("cookies")
+    if "error" in spec:
+        print(f"WAF browser bootstrap crashed: {spec['error']}")
     if not cookies:
         # Repli : installer Chromium complet + dépendances système (polices…) et réessayer.
         print("WAF non résolu — installation de Chromium avec dépendances système, nouvel essai…")

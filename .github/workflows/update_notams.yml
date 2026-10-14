@@ -95,6 +95,12 @@ jobs:
           # Images déjà compressées : inutile de les recompresser (gain de temps à chaque envoi)
           git config core.compression 0
           git config pack.compression 0
+          # Anciennes versions des petits fichiers de données (OPMET, NOTAM, avis du jour…),
+          # préchargées en arrière-plan pendant la connexion Skeyes : sans elles, le premier
+          # envoi (l'OPMET) les télécharge au moment du push (~0,6 s). Les images ne sont pas
+          # concernées (~125 Mo).
+          git ls-tree HEAD | awk '$2 == "blob" && $4 ~ /^(opmet|daily_warnings|notams_belgique|fetch_stamp|skeyes_images\.json|.*_manifest\.json)/ { print $3 }' \
+            | git -c fetch.negotiationAlgorithm=noop fetch -q origin --no-tags --no-write-fetch-head --recurse-submodules=no --filter=blob:none --stdin &
           PY=~/venv/bin/python
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             $PY -u fetch_notams.py --opmet-only || true

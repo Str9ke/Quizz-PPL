@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Commit + push d'une partie des données du briefing (workflow rapide, voir _Publisher dans
 # fetch_notams.py). Usage : git_publish.sh "message" fichier...  |  git_publish.sh "message" --all
-# La copie du dépôt est PARTIELLE (sparse, sans contenu de fichiers) : --sparse enregistre
-# aussi les fichiers hors de la copie. Au push, git voudrait télécharger les anciennes versions
-# des fichiers modifiés pour n'envoyer que des différences (des Mo d'images : ~20 s) —
-# GIT_NO_LAZY_FETCH l'en empêche, il envoie alors les fichiers entiers (rapide, déjà compressés).
+#
+# La copie du dépôt est PARTIELLE (sparse, sans contenu de fichiers) ; deux pièges mesurés :
+#  - `git commit` calcule l'état de la copie de travail et télécharge pour cela les anciennes
+#    versions des fichiers de données (~2,7 s) → commit « plomberie » (write-tree/commit-tree),
+#    qui n'en a pas besoin (~0,03 s) ;
+#  - le push télécharge les anciennes versions des fichiers envoyés pour n'envoyer que des
+#    différences (--no-thin est sans effet en HTTPS) → les petits fichiers (OPMET…) sont
+#    préchargés en début de job (voir update_notams.yml).
 set -u
 msg="$1"; shift
 [ "$#" -gt 0 ] || exit 0
@@ -22,14 +26,14 @@ if [ "$1" = "--all" ]; then
 else
   git add --sparse -- "$@" || exit 1
 fi
-git diff --cached --quiet && exit 0
-git commit -q -m "$msg" || exit 1
+tree=$(git write-tree) || exit 1
+[ "$tree" = "$(git rev-parse 'HEAD^{tree}')" ] && { rm -f "$trace"; exit 0; }   # rien de neuf
+commit=$(git commit-tree "$tree" -p HEAD -m "$msg") || exit 1
+git update-ref -m "commit: $msg" HEAD "$commit" || exit 1
 tc=$(ms)
 slow_commit=$(summary)
-try_push() { GIT_NO_LAZY_FETCH=$1 git push -q --no-thin origin HEAD:main; }
 for attempt in 1 2 3 4 5; do
-  # Sans téléchargement d'abord ; au moindre souci, push classique avant de conclure à un conflit
-  if try_push 1 || try_push 0; then
+  if git push -q origin HEAD:main; then
     echo "commit ${tc} ms [${slow_commit}] push $(( $(ms) - tc )) ms (essai $attempt) [$(summary)]"
     exit 0
   fi
