@@ -22,6 +22,13 @@
             window.location = 'quiz.html';
           }
         }
+        // Ouverture de l'appli (site, PWA installée, application Android) : on arrive sur le
+        // BRIEFING, pas sur l'accueil du quiz. L'accueil reste accessible par le menu
+        // (index.html?accueil=1). Le démarrage automatique du quiz, s'il est activé dans la
+        // configuration, garde la priorité.
+        if (!window.location.search.includes('accueil') && !autoStartQuiz) {
+          window.location.replace('navlog.html');
+        }
       })();
     </script>
   <meta charset="UTF-8" />

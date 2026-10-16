@@ -99,7 +99,7 @@
       <div class="home-nav-icon">📊</div>
       <div class="home-nav-label">Statistiques</div>
     </div>
-    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+    <div class="home-nav-card" onclick="window.location='index.html?accueil=1'" style="border-color: rgba(102, 126, 234, 0.2);">
       <div class="home-nav-icon">🏠</div>
       <div class="home-nav-label">Accueil</div>
     </div>
@@ -169,7 +169,7 @@
     async function initSearch() {
       uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
       if (!uid) {
-        window.location = 'index.html';
+        window.location = 'index.html?accueil=1';
         return;
       }
 
@@ -605,7 +605,7 @@
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
       else if (localStorage.getItem('cachedUid')) { doInit(); }
-      else { window.location = 'index.html'; }
+      else { window.location = 'index.html?accueil=1'; }
     });
     setTimeout(function() {
       if (!initDone && localStorage.getItem('cachedUid')) doInit();

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121218">
+  <title>Manuel de vol FAA</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css?v=20261016a" />
+  <link rel="stylesheet" href="livre.css?v=20261016a" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase : surlignages, notes et progression de lecture sont synchronisés entre appareils
+    // (quizProgress/{uid}/book/*, voir js/livre.js). Hors ligne, tout reste utilisable.
+    const firebaseConfig = {
+      apiKey: (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || 'AIzaSyD8hy_cTHQZybJ5RFAzgh7DLIh15Jhwkyw',
+      authDomain: "quizaviation-b79ff.firebaseapp.com",
+      projectId: "quizaviation-b79ff",
+      storageBucket: "quizaviation-b79ff.firebasestorage.app",
+      messagingSenderId: "200438765697",
+      appId: "1:200438765697:web:3467cf30e905ed586e5580",
+      measurementId: "G-N3G7EVGZ84"
+    };
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      window.auth = firebase.auth();
+      window.db = firebase.firestore();
+      window._persistenceReady = db.enablePersistence({ synchronizeTabs: true }).then(function () {
+        window._persistenceStatus = 'ok';
+      }).catch(function (err) {
+        window._persistenceStatus = 'unavailable';
+      });
+    } catch (e) { console.warn('[livre] Firebase indisponible (hors ligne ?)', e); }
+  </script>
+</head>
+<body>
+  <script>
+    (function () {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'light') document.body.classList.add('light');
+      else if (saved === 'exotique') document.body.classList.add('exotique');
+    })();
+  </script>
+  <main class="bk" id="bk" aria-live="polite">
+    <p class="bk-loading">Chargement du manuel…</p>
+  </main>
+
+  <div class="bk-sheet-ov" id="bkOv" hidden>
+    <div class="bk-sheet" role="dialog" aria-modal="true" aria-labelledby="bkSheetTitle">
+      <header>
+        <div><p class="bk-kicker" id="bkSheetKicker"></p><h3 id="bkSheetTitle"></h3></div>
+        <button class="bk-btn" id="bkClose" type="button">Fermer</button>
+      </header>
+      <div id="bkSheetBody"></div>
+    </div>
+  </div>
+
+  <!-- Barre d'annotation : apparaît dès qu'un texte est sélectionné, ou en touchant un surlignage -->
+  <div class="bk-annot" id="bkAnnot" hidden>
+    <span class="bk-annot-label" id="bkAnnotLabel">Surligner</span>
+    <button type="button" class="bk-dot c1" data-c="1" aria-label="Jaune"></button>
+    <button type="button" class="bk-dot c2" data-c="2" aria-label="Vert"></button>
+    <button type="button" class="bk-dot c3" data-c="3" aria-label="Rose"></button>
+    <button type="button" class="bk-dot c4" data-c="4" aria-label="Bleu"></button>
+    <button type="button" class="bk-btn" id="bkAnnotNote">📝 Note</button>
+    <button type="button" class="bk-btn" id="bkAnnotDel" hidden>🗑 Effacer</button>
+    <button type="button" class="bk-btn" id="bkAnnotClose" aria-label="Fermer">✕</button>
+  </div>
+
+  <script src="js/livre.js?v=20261016a"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
  *    un clic sur l'overlay, Échap, ou un clic sur un vrai lien de navigation.
  *  - Desktop (≥ 880px) : le menu reste affiché en permanence sur la gauche
  *    (le bouton ☰ et l'overlay sont masqués, inutiles dans ce cas).
- *  - Les groupes (Réviser / Suivre / Références / Briefing) sont des
+ *  - Les groupes (Briefing / PPL / Aviation) sont des
  *    <details> natifs : ouverture/fermeture et clavier gérés par le
  *    navigateur, aucune logique JS de repli à écrire ou à maintenir.
  *  - Le groupe correspondant à la page courante s'ouvre automatiquement
@@ -25,16 +25,14 @@
  */
 (function () {
   var GROUP_LABELS = {
-    reviser: 'Réviser',
-    suivre: 'Suivre',
-    references: 'Références',
-    briefing: 'Briefing'
+    briefing: 'Briefing',
+    ppl: 'PPL',
+    aviation: 'Aviation'
   };
   var GROUP_ICONS = {
-    reviser: 'target',
-    suivre: 'barChart',
-    references: 'layers',
-    briefing: 'map'
+    briefing: 'map',
+    ppl: 'target',
+    aviation: 'bookOpen'
   };
 
   // Chaque entrée est le contenu interne (<path>/<circle>/...) d'un <svg viewBox="0 0 24 24">,
@@ -79,27 +77,8 @@
   // de clé de détection de la page courante (comparée par nom de fichier,
   // sans se soucier des paramètres ?... ou #...).
   var STRUCTURE = [
-    { type: 'link', href: 'index.html?accueil=1', icon: 'home', label: 'Accueil' },
-    { type: 'group', id: 'reviser', items: [
-      { href: 'quiz.html', icon: 'target', label: 'Quiz' },
-      { href: 'rates.html', icon: 'bookOpen', label: 'Révisions' },
-      { href: 'echecs.html', icon: 'flame', label: 'Plus ratées' },
-      { href: 'difficultes.html', icon: 'zap', label: 'Difficultés' },
-      { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' },
-      { href: 'examen.html', icon: 'flag', label: 'Révisions finales' }
-    ] },
-    { type: 'link', href: 'syllabus.html', icon: 'clock', label: 'Syllabus' },
-    { type: 'group', id: 'suivre', items: [
-      { href: 'stats.html', icon: 'barChart', label: 'Stats' },
-      { href: 'historique.html', icon: 'calendar', label: 'Historique' },
-      { href: 'search.html', icon: 'search', label: 'Recherche' }
-    ] },
-    { type: 'group', id: 'references', items: [
-      { href: 'fiches.html', icon: 'fileText', label: 'Fiches' },
-      { href: 'symboles.html', icon: 'hash', label: 'Symboles' },
-      { href: 'urgences.html', icon: 'alertTriangle', label: 'Urgences' },
-      { href: 'radial.html', icon: 'compass', label: 'Radial' }
-    ] },
+    // Le Briefing est l'usage principal : en tête de menu, et page d'ouverture de l'appli
+    // (voir la redirection au début de index.html).
     { type: 'group', id: 'briefing', featured: true, items: [
       { href: 'navlog.html', tab: 'nav', icon: 'compass', label: 'Vue d’ensemble' },
       { href: 'navlog.html#meteo', tab: 'meteo', icon: 'cloud', label: 'Météo' },
@@ -112,6 +91,30 @@
       { href: 'navlog.html#notes', tab: 'notes', icon: 'fileText', label: 'Notes' },
       { href: 'navlog.html#fpl', tab: 'fpl', icon: 'send', label: 'FPL' },
       { href: 'navlog.html#dossiers', tab: 'dossiers', icon: 'folder', label: 'Dossiers' }
+    ] },
+    // Tout ce qui concerne la préparation au PPL, dans un seul onglet
+    { type: 'group', id: 'ppl', items: [
+      { href: 'index.html?accueil=1', icon: 'home', label: 'Accueil PPL' },
+      { type: 'label', label: 'Réviser' },
+      { href: 'quiz.html', icon: 'target', label: 'Quiz' },
+      { href: 'rates.html', icon: 'bookOpen', label: 'Révisions' },
+      { href: 'echecs.html', icon: 'flame', label: 'Plus ratées' },
+      { href: 'difficultes.html', icon: 'zap', label: 'Difficultés' },
+      { href: 'epreuve.html', icon: 'clipboardCheck', label: 'Examen blanc' },
+      { href: 'examen.html', icon: 'flag', label: 'Révisions finales' },
+      { href: 'syllabus.html', icon: 'clock', label: 'Syllabus' },
+      { type: 'label', label: 'Suivre' },
+      { href: 'stats.html', icon: 'barChart', label: 'Stats' },
+      { href: 'historique.html', icon: 'calendar', label: 'Historique' },
+      { href: 'search.html', icon: 'search', label: 'Recherche' },
+      { type: 'label', label: 'Références' },
+      { href: 'fiches.html', icon: 'fileText', label: 'Fiches' },
+      { href: 'symboles.html', icon: 'hash', label: 'Symboles' },
+      { href: 'urgences.html', icon: 'alertTriangle', label: 'Urgences' },
+      { href: 'radial.html', icon: 'compass', label: 'Radial' }
+    ] },
+    { type: 'group', id: 'aviation', items: [
+      { href: 'livre.html', icon: 'bookOpen', label: 'Manuel de vol FAA' }
     ] },
     { type: 'link', href: 'plongee.html', icon: 'lifeBuoy', label: 'Plongée' },
     { type: 'sep' },
@@ -130,6 +133,7 @@
   }
 
   function linkHtml(item, cur) {
+    if (item.type === 'label') return '<div class="sidebar-sublabel">' + esc(item.label) + '</div>';
     var isCurrent = !item.tab && hrefFile(item.href) === cur;
     var attrs = 'href="' + esc(item.href) + '" class="sidebar-link' + (isCurrent ? ' sidebar-link-current' : '') + '"';
     if (item.tab) attrs += ' data-navlog-tab="' + esc(item.tab) + '"';
@@ -138,20 +142,19 @@
 
   function buildHtml(cur) {
     var html = '';
-    var briefingEntry = STRUCTURE.filter(function (e) { return e.type === 'group' && e.id === 'briefing'; })[0];
-    var onBriefing = !!briefingEntry && briefingEntry.items.some(function (it) { return hrefFile(it.href) === cur; });
+    // Un groupe est ouvert s'il contient la page courante ; sur index.html / une page hors menu,
+    // le Briefing (groupe principal) reste ouvert.
+    var inAnyGroup = STRUCTURE.some(function (e) {
+      return e.type === 'group' && e.items.some(function (it) { return it.href && hrefFile(it.href) === cur; });
+    });
     STRUCTURE.forEach(function (entry) {
       if (entry.type === 'link') {
         html += linkHtml(entry, cur);
       } else if (entry.type === 'sep') {
         html += '<hr class="sidebar-sep">';
       } else if (entry.type === 'group') {
-        var containsCurrent = entry.items.some(function (it) { return hrefFile(it.href) === cur; });
-        // "Réviser" et "Suivre" restent dépliés en permanence pour un accès direct à leurs
-        // sous-pages sans clic supplémentaire — sauf sur une page de Briefing, où sa propre
-        // liste (11 onglets) suffit déjà à remplir le menu sans y ajouter le reste.
-        var alwaysOpen = (entry.id === 'reviser' || entry.id === 'suivre') && !onBriefing;
-        var isOpen = containsCurrent || alwaysOpen;
+        var containsCurrent = entry.items.some(function (it) { return it.href && hrefFile(it.href) === cur; });
+        var isOpen = containsCurrent || (!inAnyGroup && entry.id === 'briefing');
         html += '<details class="sidebar-group"'
           + (entry.featured ? ' data-featured="1"' : '')
           + ' data-group="' + entry.id + '"'

@@ -490,7 +490,7 @@
 
     async function init() {
       uid = (auth.currentUser && auth.currentUser.uid) || localStorage.getItem('cachedUid');
-      if (!uid) { window.location = 'index.html'; return; }
+      if (!uid) { window.location = 'index.html?accueil=1'; return; }
       const loading = document.getElementById('frLoading');
       loading.textContent = 'Chargement des questions GLIGLI…';
 
@@ -891,7 +891,7 @@
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); doInit(); }
       else if (localStorage.getItem('cachedUid')) { doInit(); }
-      else { window.location = 'index.html'; }
+      else { window.location = 'index.html?accueil=1'; }
     });
     setTimeout(function() { if (!initDone && localStorage.getItem('cachedUid')) doInit(); }, 2500);
   })();

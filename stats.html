@@ -62,7 +62,7 @@
         if (!statsInitTriggered) { statsInitTriggered = true; initStats(); }
       } else {
         alert("Vous devez être connecté pour voir vos statistiques.");
-        window.location = 'index.html';
+        window.location = 'index.html?accueil=1';
       }
     });
     // Sécurité : si auth ne fire pas dans les 3s et qu'on a un cachedUid, démarrer quand même
@@ -149,7 +149,7 @@
       <div class="home-nav-icon">📅</div>
       <div class="home-nav-label">Historique</div>
     </div>
-    <div class="home-nav-card" onclick="window.location='index.html'" style="border-color: rgba(102, 126, 234, 0.2);">
+    <div class="home-nav-card" onclick="window.location='index.html?accueil=1'" style="border-color: rgba(102, 126, 234, 0.2);">
       <div class="home-nav-icon">🏠</div>
       <div class="home-nav-label">Accueil</div>
     </div>

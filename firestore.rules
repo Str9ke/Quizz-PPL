@@ -41,6 +41,12 @@ service cloud.firestore {
       match /finalReview/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+      // Manuel de vol FAA (livre.html) : surlignages, notes, pages lues et temps de lecture,
+      // un document par chapitre (c1…c19) + "meta" (dernière position). Même remarque : les
+      // règles ne sont pas héritées du document parent.
+      match /book/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
     match /navlogNotes/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
