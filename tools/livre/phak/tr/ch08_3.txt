@@ -1,0 +1,75 @@
+@CH 8
+@PAGE 8-13 pdf=215
+P: …zone normale et zone de précaution. [Figure 8-12] Le chiffre de vitesse devient rouge quand la vitesse dépasse VNE, pour avertir le pilote.
+## Horizon artificiel
+P: Amélioration sur l’analogique : l’horizon artificiel de l’EFD est plus grand : il couvre toute la largeur du PFD, ce qui donne une meilleure référence pour toutes les phases et manœuvres. Il reçoit ses informations du système AHRS (*Attitude Heading and Reference System*).
+## Altimètre
+P: Situé à droite du PFD : les grands chiffres descendent du haut du ruban quand l’altitude augmente ; l’altitude actuelle est dans le cadre noir central, par pas de 20 ft.
+## Variomètre
+P: Affiché à droite du ruban d’altitude : indicateur en arc ou ruban de vitesse verticale, avec un repère (« bug »).
+## Indicateur de cap
+P: Sous l’horizon artificiel, il est généralement modelé sur un indicateur de situation horizontale (HSI) ; il reçoit ses informations du magnétomètre, via l’AHRS.
+## Indicateur de virage
+P: Une barre glissante sous le triangle indique l’écart par rapport au vol coordonné ; la référence vient des accéléromètres de l’AHRS.
+## Compte-tours
+P: Le sixième instrument du « six-pack » est le seul qui n’est pas sur le PFD : il est sur le MFD ; en cas de panne d’un écran, il passe sur l’écran restant avec les instruments de vol. [Figure 8-13]
+## Indicateur de dérapage (bille)
+P: Ligne horizontale sous l’indicateur de roulis : comme la bille d’un indicateur de virage, la largeur d’une barre hors du centre équivaut à la largeur de la bille.
+## Indicateur de taux de virage
+P: Généralement au-dessus de la rose de cap : des repères à gauche et à droite du trait de foi indiquent le taux standard ou le demi-taux ; si le vecteur de tendance atteint le deuxième repère, l’avion est en virage au taux standard. Les afficheurs peuvent être configurés pour différents avions par logiciel, et mis à niveau sans remplacer les jauges. [Figure 8-14]
+FIG: Figure 8-13. Afficheur multifonction (MFD).
+SUM: L’horizon artificiel du PFD occupe toute la largeur ; données de l’AHRS. || Altimètre à droite (pas de 20 ft), variomètre à côté. || Le compte-tours est sur le MFD. || Taux standard : le vecteur atteint le 2e repère.
+VOC: AHRS | Attitude Heading and Reference System ;; indicateur de cap | heading indicator ;; indicateur de situation horizontale | horizontal situation indicator (HSI) ;; magnétomètre | magnetometer ;; indicateur de dérapage | slip/skid indicator ;; taux de virage | turn rate
+@PAGE 8-14 pdf=216
+FIG: Figure 8-14. FlightLogic de Chelton (haut) et Entegra d’Avidyne (bas) : exemples d’afficheurs configurables.
+## Calculateur de données air (ADC)
+P: Les EFD utilisent les mêmes entrées que les jauges analogiques, mais le traitement est différent : les entrées Pitot-statiques arrivent à un ==ADC== (*Air Data Computer*), qui calcule la différence entre pression totale et pression statique pour produire l’affichage de la vitesse sur le PFD. La température extérieure est aussi surveillée et affichée. [Figure 8-15] L’ADC est un composant électronique séparé, aussi capable de fournir des données au pilote automatique ; en cas de panne il se remplace vite. L’altitude vient toujours de la prise statique, mais la pression ne passe pas dans un diaphragme : l’ADC calcule la pression barométrique et envoie un signal numérique au PFD.
+FIG: Figure 8-15. Calculateur de données air Teledyne 90004 TAS/Plus (entrées : système pneumatique Pitot-statique, sonde de température, correction barométrique).
+## Vecteurs de tendance
+P: Lignes magenta qui se déplacent sur l’anémomètre et l’altimètre. [Figures 8-16 et 8-17] L’ADC calcule le taux de variation et affiche la ==projection à 6 secondes== de la position de l’avion. Les inclure dans le balayage permet de contrôler précisément vitesse et altitude. Plus d’informations dans l’*Instrument Flying Handbook* ou le matériel du constructeur.
+FIG: Figure 8-16. Vecteur de tendance de vitesse.
+SUM: L’ADC calcule vitesse et altitude à partir du Pitot-statique et de la température. || Les vecteurs de tendance (magenta) montrent la projection à 6 secondes. || Un ADC défaillant se remplace rapidement.
+VOC: calculateur de données air | air data computer (ADC) ;; vecteur de tendance | trend vector ;; sonde de température | temperature probe ;; signal numérique | digital signal ;; projection | projection
+@PAGE 8-15 pdf=217
+FIG: Figure 8-17. Vecteur de tendance d’altitude.
+# Instruments gyroscopiques
+P: Plusieurs instruments utilisent les propriétés d’un gyroscope : les plus courants sont le ==coordinateur de virage==, l’==indicateur de cap== et l’==horizon artificiel==. Pour les comprendre, il faut connaître les sources d’énergie, les principes gyroscopiques et le fonctionnement de chaque instrument.
+## Principes gyroscopiques
+P: Tout objet en rotation a des propriétés gyroscopiques. Une roue ou rotor conçu et monté pour les utiliser est un ==gyroscope==. Deux caractéristiques de conception importantes : ==grande masse pour sa taille (densité élevée) et rotation à grande vitesse sur des paliers à faible frottement==. Deux types de montages : gyroscope à montage libre (universel : trois plans de liberté) et gyroscope à montage restreint (semi-rigide : un plan de liberté fixé par rapport au support). Deux propriétés fondamentales : la rigidité dans l’espace et la précession.
+## Rigidité dans l’espace
+P: ==La rigidité dans l’espace== : un gyroscope reste dans une position fixe dans le plan dans lequel il tourne. Exemple : une roue de vélo : plus elle va vite, plus elle est stable dans son plan de rotation, d’où un vélo instable et maniable à basse vitesse, stable et moins maniable à grande vitesse. Monté sur des cardans, le gyro reste dans son plan initial même si les cardans sont inclinés ou déplacés. [Figure 8-18]
+## Précession
+P: La ==précession== est l’inclinaison ou la rotation d’un gyroscope en réponse à une force de déviation. ==La réaction ne se produit pas au point d’application mais 90° plus loin dans le sens de rotation.== Cela permet au gyro de déterminer un taux de virage en détectant la pression créée par un changement de direction. La vitesse de précession est inversement proportionnelle à la vitesse du rotor et proportionnelle à la force de déviation. Exemple du vélo : à vitesse normale, on ne tourne pas le guidon, on se penche du côté voulu : la force s’applique en haut de la roue, mais agit 90° plus loin dans le sens de rotation, sur l’avant du pneu…
+FIG: Figure 8-18. Quelle que soit la position de son support, un gyroscope tend à rester rigide dans l’espace, son axe de rotation pointant dans une direction constante.
+SUM: Gyroscope : masse élevée, grande vitesse, paliers à faible frottement. || Rigidité dans l’espace : le gyro garde son plan de rotation. || Précession : la réaction apparaît 90° plus loin dans le sens de rotation.
+VOC: gyroscope | gyroscope ;; rigidité dans l’espace | rigidity in space ;; précession | precession ;; cardan | gimbal ;; rotor | rotor
+@PAGE 8-16 pdf=218
+P: …Le vélo doit tourner son guidon à basse vitesse à cause de l’instabilité des gyros lents et pour augmenter le taux de virage. La précession peut aussi créer de petites erreurs : un gyro libre peut se décaler de son plan prévu (frottement des paliers…) ; certains instruments, comme l’indicateur de cap, exigent un ==recalage en vol==. [Figure 8-19]
+## Sources d’énergie
+P: Selon l’avion, tous les gyros sont à dépression, à pression ou électriques ; sur d’autres, le circuit de dépression/pression alimente l’indicateur de cap et l’horizon, tandis que le coordinateur de virage est électrique. La plupart des avions ont au moins deux sources pour qu’au moins une source d’inclinaison reste disponible en cas de panne. Le circuit de dépression fait tourner le gyro en aspirant un flux d’air contre les aubes du rotor ; la dépression nécessaire est généralement ==entre 4,5 et 5,5 "Hg==. Une source : une pompe à palettes entraînée par le moteur. Un circuit typique : pompe, limiteur de dépression, filtre à air, manomètre et tuyaux. Le manomètre (tableau de bord) indique la dépression en pouces de mercure sous la pression ambiante. [Figure 8-20]
+FIG: Figure 8-19. Précession d’un gyroscope due à une force de déviation (plan de rotation, plan de force, plan de précession).
+P: L’air est aspiré par la pompe, passe par un filtre, puis par l’horizon et l’indicateur de cap qui font tourner les gyros ; un limiteur empêche la dépression de dépasser les limites ; l’air est ensuite évacué ou utilisé ailleurs (boudins de dégivrage). ==Quand la dépression passe sous la plage normale, les instruments gyroscopiques peuvent devenir instables et imprécis : prendre l’habitude de recouper régulièrement les instruments.==
+## Indicateurs de virage
+P: Deux types : ==indicateur de virage et de dérapage (turn-and-slip)== et ==coordinateur de virage (turn coordinator)==. Le premier n’indique que le taux de virage en degrés par seconde (gyro monté en plan vertical, aligné sur l’axe longitudinal) ; le coordinateur, monté incliné (« canté »), indique d’abord le taux de roulis puis, une fois le roulis stabilisé, le taux de virage. Tous deux indiquent la direction et la qualité (coordination) du virage et servent de secours à l’horizon artificiel. La coordination se lit sur l’==inclinomètre== (bille dans un tube courbe rempli de liquide). [Figure 8-21]
+P: Dans l’indicateur de virage et de dérapage, un cardan unique limite les plans d’inclinaison du gyro et un ressort le ramène au centre ; à cause de la précession, une force de lacet incline le gyro ; l’aiguille (*turn needle*) montre direction et taux de virage. Des ressorts empêchent le « culbutage » ; des forces extrêmes peuvent déplacer le gyro hors de son plan et rendre les indications invalides…
+SUM: Gyros alimentés par dépression (4,5–5,5 "Hg), pression ou électricité ; au moins 2 sources. || Dépression insuffisante : instruments instables → recouper. || Indicateur de virage : taux ; coordinateur : roulis puis taux ; inclinomètre = coordination.
+VOC: pompe à dépression | vacuum pump ;; limiteur de dépression | vacuum relief valve ;; coordinateur de virage | turn coordinator ;; inclinomètre | inclinometer ;; recalage | realignment ;; manomètre de dépression | suction gauge
+@PAGE 8-17 pdf=219
+FIG: Figure 8-20. Circuit de dépression typique (pompe, filtre, limiteur, indicateur de cap, horizon, manomètre, évent).
+## Coordinateur de virage
+P: Son cardan est incliné : le gyro détecte le ==taux de roulis== et le ==taux de virage==. En entrant ou sortant d’un virage, l’avion miniature s’incline dans le sens du roulis ; un roulis rapide l’incline plus qu’un roulis lent. On peut établir et maintenir un ==virage au taux standard== en alignant l’aile de l’avion miniature avec le repère de taux. [Figure 8-22] Il y a deux repères de chaque côté : le premier = ailes à plat (taux nul), le second = taux standard : ==3° par seconde==. Il indique uniquement le taux et le sens du virage, pas l’angle d’inclinaison.
+FIG: Figure 8-21. Les indicateurs de virage reposent sur une précession contrôlée (coordinateur de virage / indicateur de virage et de dérapage).
+SUM: Le coordinateur de virage mesure taux de roulis puis taux de virage. || Taux standard = 3°/s (aile alignée avec le deuxième repère). || Il n’indique pas l’angle d’inclinaison.
+VOC: taux standard | standard rate ;; avion miniature | miniature aircraft ;; repère | index ;; taux de roulis | roll rate ;; canté | canted
+@PAGE 8-18 pdf=220
+FIG: Figure 8-22. Avec trop peu de palonnier à droite en virage à droite : glissade ; trop de palonnier à droite : dérapage ; bille centrée : virage coordonné.
+## Inclinomètre
+P: L’inclinomètre représente le lacet. En vol coordonné en palier, la gravité maintient la bille au point le plus bas, centrée. ==Le vol coordonné se maintient en gardant la bille centrée, avec la direction== : règle simple : « ==step on the ball== » (appuyer sur la bille, c’est-à-dire du côté où elle est déviée). Dans une ==glissade== (*slip*), le taux de virage est trop lent pour l’inclinaison et la bille se déplace vers l’intérieur du virage ; dans un ==dérapage== (*skid*), il est trop grand et la bille va vers l’extérieur. Corrections : pour une glissade, diminuer l’inclinaison et/ou augmenter le taux de virage ; pour un dérapage, augmenter l’inclinaison et/ou diminuer le taux de virage.
+## Fil de laine (yaw string)
+P: Un fil de laine fixé au centre du pare-brise : en vol coordonné il reste droit vers l’arrière ; en glissade ou en dérapage, il se déplace à droite ou à gauche.
+P: **Vérification** : à la prévol, l’inclinomètre doit être plein de liquide, sans bulles, la bille à son point bas ; au roulage, le coordinateur doit indiquer un virage dans le bon sens, la bille allant en sens inverse du virage.
+## Horizon artificiel
+P: L’==horizon artificiel== (*attitude indicator*), avec son avion miniature et sa barre d’horizon, donne une image de l’attitude de l’avion ; l’avion miniature se positionne par rapport à la barre comme l’avion réel par rapport à l’horizon réel ; il indique instantanément les plus petits changements. Son gyro est monté en plan horizontal et dépend de la rigidité dans l’espace : la barre représente l’horizon vrai, fixée au gyro ; l’avion tourne autour du gyro. [Figure 8-23]
+FIG: Figure 8-23. Horizon artificiel (index d’inclinaison, cardan de roulis, bras de référence d’horizon, cardan de tangage).
+SUM: Bille : « step on the ball » ; glissade = bille vers l’intérieur ; dérapage = vers l’extérieur. || Corriger : glissade → moins d’inclinaison/plus de taux ; dérapage → plus d’inclinaison/moins de taux. || Horizon artificiel : gyro horizontal, rigidité dans l’espace.
+VOC: glissade | slip ;; dérapage | skid ;; fil de laine | yaw string ;; horizon artificiel | attitude indicator ;; barre d’horizon | horizon bar ;; avion miniature | miniature aircraft

@@ -1,0 +1,77 @@
+@PAGE 8-19 pdf=221
+P: Un bouton de réglage permet au pilote de déplacer l’avion miniature vers le haut ou le bas pour l’aligner avec la barre d’horizon selon sa ligne de vue. Normalement, on le règle pour que les ailes recouvrent la barre d’horizon en palier de croisière.
+P: Les ==limites de tangage et d’inclinaison== dépendent du modèle. Certains horizons ont des limites en inclinaison de 100° à 110° et en tangage de 60° à 70°. Ceux qui n’affichent que ±25° de tangage peuvent « ==buter== » (*peg*) ou « ==culbuter== » (*tumble*) et donner de fausses indications quand l’avion dépasse ces limites : très dangereux en IMC ou lors d’une ==reprise d’assiette inusuelle==. Beaucoup d’horizons modernes n’ont pas ce problème.
+FIG: Figure 8-24. La représentation de l’assiette sur l’horizon artificiel correspond à la relation de l’avion avec l’horizon réel (montée/palier/descente, inclinaison gauche/droite).
+P: Tout pilote doit savoir lire l’échelle d’inclinaison. Sur la plupart des instruments, l’index du haut bouge dans le même sens que l’inclinaison réelle, mais certains modèles bougent en sens inverse. ==Cette échelle ne sert qu’à contrôler la valeur de l’inclinaison ; le sens de l’inclinaison se lit par la position de l’avion miniature par rapport à la barre d’horizon.== L’horizon artificiel est fiable et l’instrument le plus réaliste du tableau de bord.
+## Conservateur de cap (directional gyro)
+P: Le ==conservateur de cap== (*heading indicator*) est un instrument mécanique conçu pour faciliter l’usage du compas magnétique, dont les erreurs rendent difficiles le vol rectiligne et les virages précis, surtout en turbulence. Il n’est pas affecté par les forces qui perturbent le compas.
+SUM: Bouton de réglage : l’avion miniature recouvre la barre en croisière. || Limites : 100–110° d’inclinaison, 60–70° de tangage ; certains instruments culbutent. || L’échelle d’inclinaison sert à la valeur, l’avion miniature au sens.
+VOC: bouton de réglage | adjustment knob ;; culbuter | to tumble ;; buter | to peg ;; conservateur de cap | heading indicator ;; échelle d’inclinaison | bank scale
+@PAGE 8-20 pdf=222
+P: Le conservateur de cap fonctionne par ==rigidité dans l’espace==. Le rotor tourne dans un plan vertical et porte une rose des caps : les repères gardent la même position dans l’espace. C’est l’avion qui tourne autour du gyro, et non l’inverse. [Figure 8-25]
+P: À cause de la ==précession== due aux frottements, l’instrument ==dérive==. Elle dépend de l’état de l’instrument (roulements usés, sales ou mal lubrifiés = dérive excessive). Le gyro étant fixe dans l’espace et la Terre tournant de ==15° par heure==, l’indication peut présenter jusqu’à ==15° d’erreur par heure== de fonctionnement.
+P: Certains conservateurs de cap, les ==HSI== (*horizontal situation indicator*), reçoivent une référence au nord magnétique d’un transmetteur d’asservissement (un ==magnétomètre==) et n’ont généralement pas besoin de réglage.
+FIG: Figure 8-25. Conservateur de cap : azimut sur 360° avec le dernier zéro omis (« 6 » = 060°, « 21 » = 210°). Le bouton sert à l’aligner sur le compas magnétique.
+## AHRS
+P: Les affichages électroniques ont remplacé les gyros à rotor par des systèmes à état solide (laser) qui fonctionnent dans toutes les assiettes sans culbuter : c’est l’==AHRS== (*Attitude and Heading Reference System*). Il envoie l’assiette au PFD (tangage et inclinaison) ; le cap provient d’un magnétomètre qui mesure les lignes de flux magnétique. [Figure 8-26]
+## Compas à vanne de flux (flux gate)
+P: Les lignes de flux du champ terrestre ont deux propriétés : un aimant s’y aligne, et elles induisent un courant dans tout fil qu’elles traversent. Le compas à vanne de flux qui asservit les gyros utilise l’induction. La ==vanne de flux== (*flux valve*) est un anneau segmenté en fer doux, avec une bobine sur chacune de ses trois branches ; une bobine centrale est alimentée en ==courant alternatif 400 Hz==. À chaque pic, son magnétisme est tel que l’anneau ne peut accepter le flux terrestre.
+FIG: Figure 8-26. Attitude and heading reference system (AHRS).
+SUM: Conservateur de cap = rigidité dans l’espace ; dérive par précession + 15°/h (rotation terrestre). || HSI : cap asservi par magnétomètre. || AHRS : gyros à état solide, pas de culbutage ; cap par magnétomètre. || Vanne de flux : trois bobines, courant 400 Hz.
+VOC: rigidité dans l’espace | rigidity in space ;; précession | precession ;; dérive | drift ;; magnétomètre | magnetometer ;; vanne de flux | flux valve ;; fer doux | soft iron
+@PAGE 8-21 pdf=223
+FIG: Figure 8-27. Le cadre en fer doux de la vanne de flux accepte le flux terrestre à chaque inversion du courant de la bobine centrale ; ce flux fait circuler un courant dans les trois bobines.
+P: Entre les pics, le courant démagnétise le cadre, qui peut accepter le flux terrestre. En le traversant, ce flux fait circuler un courant dans les trois bobines, branchées de façon que ce courant varie avec le cap. [Figure 8-28] Elles sont reliées à trois bobines plus petites d’un synchro dans le boîtier de l’instrument, qui fait tourner le cadran d’un ==RMI== (*radio magnetic indicator*) ou d’un HSI.
+FIG: Figure 8-28. Le courant dans chacune des trois bobines varie avec le cap de l’avion.
+## Compas à lecture à distance (remote indicating compass)
+P: Il a été conçu pour compenser les erreurs et limites des anciens conservateurs de cap. Les deux éléments du tableau sont l’==indicateur de navigation imagé== (couramment appelé HSI) et l’==unité de commande d’asservissement et de compensation==. [Figure 8-29]
+P: Cette unité possède un bouton pour choisir le mode « ==slaved gyro== » (asservi) ou « ==free gyro== » (libre), un ==indicateur d’asservissement== et deux boutons de commande manuelle du cap. L’indicateur montre l’écart entre le cap affiché et le cap magnétique : déviation à droite = erreur de la rose dans le sens horaire ; à gauche = sens antihoraire. En virage, la rose tourne et l’indicateur est en butée d’un côté. En mode « free gyro », on règle la rose avec les boutons.
+P: Le ==transmetteur d’asservissement magnétique==, monté à distance (souvent en bout d’aile pour éviter les interférences magnétiques), contient la vanne de flux, l’organe détecteur de direction du système. Son signal, amplifié, est
+FIG: Figure 8-29. Indicateur de navigation imagé (HSI, en haut), indicateur d’asservissement (en bas à droite) et unité de commande d’asservissement (en bas à gauche).
+SUM: Vanne de flux : le flux terrestre induit un courant qui varie avec le cap ; relié à un synchro qui entraîne RMI ou HSI. || Remote indicating compass : HSI + unité de commande (slaved/free gyro, indicateur d’asservissement). || Transmetteur monté en bout d’aile pour éviter les interférences.
+VOC: indicateur de navigation imagé | pictorial navigation indicator ;; asservi | slaved ;; gyro libre | free gyro ;; transmetteur d’asservissement | magnetic slaving transmitter ;; synchro | synchro
+@PAGE 8-22 pdf=224
+P: … transmis à l’indicateur de cap, également monté à distance ; il commande un moteur couple qui aligne le gyro sur le signal du transmetteur. Il existe de nombreuses conceptions ; les pilotes aux instruments doivent connaître les caractéristiques de l’équipement de leur avion.
+P: Les tableaux de bord étant chargés, les constructeurs regroupent les instruments. Exemple : le ==RMI== [Figure 8-30] : la rose est entraînée par la vanne de flux, et les deux aiguilles par l’==ADF== et le ==VOR==.
+P: Les conservateurs de cap sans recherche automatique du nord sont des gyros « ==libres== » et demandent un réglage périodique. ==Vérifier l’indication environ toutes les 15 minutes== et le recaler sur le compas magnétique, ==en palier rectiligne à vitesse constante== pour éviter les erreurs du compas.
+P: Les limites de tangage et d’inclinaison varient ; sur certains modèles d’avions légers, ==environ 55° de tangage et 55° d’inclinaison==. Au-delà, l’instrument « culbute » ou « se renverse » (*spills*) et n’est plus correct avant remise à zéro (bouton de calage / *caging knob*). Beaucoup d’instruments modernes ne culbutent pas.
+FIG: Figure 8-30. Entraînée par la vanne de flux, la rose de ce RMI indique le cap en face du repère supérieur central. L’aiguille verte est entraînée par l’ADF.
+## Vérification des instruments
+P: Pendant la montée en régime du gyro, il ne doit pas y avoir de bruits anormaux. Au roulage, l’instrument doit indiquer les virages dans le bon sens et la précession doit rester normale. Au ralenti, les instruments à dépression peuvent ne pas avoir atteint leur régime et la précession peut être plus rapide qu’en vol.
+## Indicateurs d’angle d’attaque (AOA)
+P: Un indicateur d’AOA donne une meilleure conscience de la « santé aérodynamique » de l’aile, c’est-à-dire de la ==marge de décrochage== : l’écart entre l’incidence actuelle et l’==incidence critique==.
+P: ==La vitesse seule n’est pas fiable pour éviter un décrochage : un avion peut décrocher à n’importe quelle vitesse.== Dans une configuration donnée, il décroche toujours à la même incidence critique, qui ne change pas avec :
+- ==le poids==
+- ==l’inclinaison==
+- la température
+- l’altitude-densité
+- le centre de gravité
+P: Sans indicateur, l’AOA est « invisible » ; ces appareils mesurent plusieurs paramètres et affichent l’incidence actuelle et sa proximité avec l’incidence critique. [Figure 8-31] Ils donnent aussi une image de l’état énergétique de l’avion, c’est-à-dire
+SUM: Conservateur « libre » : à recaler sur le compas environ toutes les 15 min, en palier à vitesse constante. || Limites ≈ 55° tangage/inclinaison ; sinon culbutage, remise par le bouton de calage. || L’incidence critique est la même quel que soit poids, inclinaison ou CG.
+VOC: moteur couple | torque motor ;; bouton de calage | caging knob ;; incidence critique | critical AOA ;; marge de décrochage | stall margin ;; gyro libre | free gyro
+@PAGE 8-23 pdf=225
+FIG: Figure 8-31. Indicateurs d’angle d’attaque.
+P: … l’équilibre entre vitesse, altitude, traînée et poussée, qui représente l’efficacité avec laquelle l’aile travaille.
+## Systèmes de compas
+P: La Terre est un énorme aimant en rotation entouré d’un champ magnétique fait de lignes de flux invisibles, qui sortent au pôle nord magnétique et rentrent au pôle sud magnétique. Un aimant libre de tourner s’y aligne, et un conducteur qui les coupe est parcouru par un courant induit : la plupart des indicateurs de direction exploitent l’une de ces deux propriétés.
+## Compas magnétique
+P: Un des plus anciens et simples instruments de direction. Il est exigé par le ==14 CFR part 91== pour le vol VFR comme IFR. Tout aimant a deux pôles ; les pôles de noms contraires s’attirent, ceux de même nom se repoussent.
+P: Un compas d’avion (Figure 8-32) comporte ==deux petits aimants== fixés à un ==flotteur== métallique scellé dans un bol de liquide transparent proche du kérosène. Une ==rose graduée== entoure le flotteur et se lit à travers une vitre portant une ==ligne de foi== (*lubber line*). Elle porte les lettres N, E, S, W et un chiffre tous les 30°, ==dernier zéro omis== (3 = 30°, 6 = 60°, 33 = 330°). Un grand trait vaut 10°, un petit 5°.
+P: Le flotteur repose sur un ==pivot en acier trempé== dans une coupelle en verre dur (*jewel cup*) à ressort. La poussée d’Archimède enlève l’essentiel du poids et le liquide amortit les oscillations. Ce montage permet au flotteur de tourner et de s’incliner jusqu’à ==environ 18° d’inclinaison== ; au-delà, les indications sont erratiques.
+P: Le boîtier est entièrement rempli de liquide ; une membrane souple (ou un soufflet métallique) à l’arrière absorbe la dilatation due aux variations de température. Les aimants s’alignent sur le champ terrestre et le pilote lit la direction face à la ligne de foi. Le pilote voit le compas par sa face arrière :
+FIG: Figure 8-32. Un compas magnétique. La ligne verticale est la ligne de foi (lubber line).
+SUM: Compas magnétique : exigé en VFR et IFR (14 CFR part 91). || Deux aimants sur un flotteur dans du liquide ; pivot et coupelle ; rose sans le dernier zéro. || Fonctionne jusqu’à ≈ 18° d’inclinaison.
+VOC: ligne de foi | lubber line ;; flotteur | float ;; rose | card ;; liquide du compas | compass fluid ;; pôle | pole ;; coupelle | jewel cup
+@PAGE 8-24 pdf=226
+P: … la rose depuis l’arrière. Quand on vole vers le nord, l’est est à droite du pilote, et « 33 » (330°, à l’ouest du nord) est à droite du nord sur la rose. Cette graduation apparemment inversée vient du fait que la rose reste fixe tandis que le boîtier et le pilote tournent autour : le compas peut prêter à confusion.
+## Erreurs du compas magnétique
+P: Le compas est l’instrument le plus simple du tableau mais il est soumis à plusieurs erreurs.
+## Variation
+P: Les cartes utilisent des méridiens passant par les pôles géographiques : les directions mesurées par rapport à eux sont les ==directions vraies==. Le pôle nord magnétique, que vise le compas, est à environ ==1 300 milles== du pôle géographique ; les directions mesurées par rapport aux pôles magnétiques sont des ==directions magnétiques==. En navigation aérienne, la différence est la ==variation== (appelée ==déclinaison== en topographie).
+P: La Figure 8-33 montre les ==lignes isogones== (variation égale). Celle qui passe près de Chicago est la ==ligne agone== : là, les deux pôles sont alignés et la variation est nulle. À l’est de cette ligne, le pôle magnétique est à l’ouest du pôle géographique et il faut corriger l’indication du compas pour obtenir une direction vraie.
+P: À Washington D.C., la variation est de ==10° W== : pour une route vraie de 180°, on ==ajoute== la variation, soit une route magnétique de ==190°==. À Los Angeles, elle est de ==14° E== : on ==soustrait==, soit ==166°==. La variation ne dépend pas du cap de l’avion, seulement du lieu.
+## Déviation
+P: Les aimants du compas s’alignent sur tout champ magnétique : courants électriques, pièces aimantées, etc. créent des champs propres à l’avion, d’où l’erreur de ==déviation==. Contrairement à la variation, elle ==dépend du cap de l’avion== et non du lieu. On ne peut pas réduire la variation, mais un mécanicien (AMT) peut minimiser la déviation en « ==compensant le compas== » (*swinging the compass*).
+FIG: Figure 8-33. Les lignes isogones sont des lignes de variation égale (ligne agone en rose, variation est positive en rouge, ouest négative en bleu).
+SUM: Variation = écart vrai/magnétique, dépend du lieu ; ouest on ajoute, est on soustrait. || Washington 10° W : 180° vrai → 190° magnétique ; Los Angeles 14° E : → 166°. || Déviation = champs de l’avion, dépend du cap ; réduite par la compensation du compas.
+VOC: variation | variation ;; déclinaison | declination ;; ligne isogone | isogonic line ;; ligne agone | agonic line ;; déviation | deviation ;; compenser le compas | swing the compass ;; route vraie | true course ;; route magnétique | magnetic course

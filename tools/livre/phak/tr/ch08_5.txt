@@ -1,0 +1,57 @@
+@PAGE 8-25 pdf=227
+P: Pour compenser, le mécanicien place l’avion sur des caps connus, en général sur une ==rose de compensation== (*compass rose*) : des lignes tracées tous les 30° sur un parking, orientées sur le nord magnétique, où l’interférence magnétique est minimale. [Figure 8-34] À chaque cap, il règle le ==compensateur== (deux axes à tête de tournevis, repérés E-W et N-S, qui font tourner de petits aimants correcteurs).
+P: Il note l’erreur résiduelle sur une ==fiche de correction du compas== (*compass correction card*) placée près du compas (Figure 8-35). Seul un AMT peut régler le compas et remplir la fiche. Le pilote vole ses caps compas avec les déviations de la fiche, et note l’usage d’équipements perturbateurs (radios, dégivrage, réchauffage pitot, radar, cargaison magnétique).
+P: Les corrections se font dans l’ordre suivant, à partir de la route vraie voulue :
+1. ==Étape 1 – route magnétique== : route vraie (180°) ± variation (+10°) = route magnétique (190°).
+2. ==Étape 2 – cap compas== : route magnétique (190°) ± déviation (–2°, fiche) = cap compas (188°).
+P: Pour retrouver la route vraie à partir du cap compas : ==cap compas ± déviation = route magnétique ± variation = route vraie==.
+FIG: Figure 8-34. La rose de compensation aide à compenser les erreurs de déviation. Figure 8-35. Une fiche de correction donne la correction de déviation pour chaque cap.
+## Erreurs d’inclinaison magnétique (dip)
+P: Le champ magnétique n’est parallèle à la surface qu’à l’==équateur magnétique==. En s’en éloignant, l’angle que fait le champ avec la surface, l’==angle d’inclinaison== (*dip*), augmente : vers le bas en allant vers le pôle nord magnétique, vers le haut vers le pôle sud. Le compas est conçu pour
+SUM: Compensation : rose de compensation tous les 30°, aimants correcteurs N-S et E-W ; erreurs résiduelles sur la fiche. || Ordre : route vraie ± variation = route magnétique ; ± déviation = cap compas. || Seul un AMT règle le compas.
+VOC: rose de compensation | compass rose ;; fiche de correction | compass correction card ;; compensateur | compensator assembly ;; équateur magnétique | magnetic equator ;; angle d’inclinaison | dip angle
+@PAGE 8-26 pdf=228
+P: … ne tourner que dans le plan horizontal : on abaisse le centre de gravité sous le pivot et on alourdit l’ensemble pour que la composante verticale du champ soit trop faible pour l’incliner. Le compas fonctionne ainsi à toutes les latitudes ; mais près des pôles magnétiques, la composante horizontale est trop faible et il devient inutilisable. Il n’indique correctement que si la rose est horizontale ; sinon la composante verticale provoque les erreurs de virage ci-dessous.
+## Erreur de virage vers le nord
+P: Le centre de gravité du flotteur est sous le pivot. En virage, la force due à l’inclinaison magnétique fait osciller le flotteur dans le sens du virage : fausse indication de virage vers le nord, la rose ==devance== le virage. ==Il faut donc arrêter un virage vers le nord avant d’atteindre le cap voulu==. L’erreur croît près des pôles. Règle : arrêter le virage ==15° + la moitié de la latitude== avant (vers 40° de latitude : 15 + 20 = 35°). [Figure 8-36A]
+## Erreur de virage vers le sud
+P: Vers le sud, le flotteur ==retarde==. ==Il faut laisser dépasser le cap voulu avant d’arrêter le virage==, selon la même règle (vers 30° de latitude : 15 + 15 = 30° après le cap). [Figure 8-36B]
+FIG: Figure 8-36. Erreurs de virage vers le nord et vers le sud.
+## Erreur d’accélération
+P: L’inclinaison magnétique et l’inertie causent des erreurs lors des accélérations/décélérations sur caps ==est ou ouest==. Le montage pendulaire fait pencher l’arrière de la rose vers le haut à l’accélération, vers le bas à la décélération. ==À l’accélération sur cap est ou ouest, l’erreur donne un virage vers le nord ; à la décélération, vers le sud.== Moyen mnémotechnique : « ==ANDS== » (*Acceleration-North / Deceleration-South*). [Figure 8-37]
+SUM: Près des pôles, le compas devient inutilisable. || Virage vers le nord : arrêter AVANT (15° + ½ latitude). || Virage vers le sud : arrêter APRÈS (15° + ½ latitude). || Accélération sur E/O → vers le nord ; décélération → vers le sud : « ANDS ».
+VOC: inclinaison magnétique | magnetic dip ;; erreur de virage | turning error ;; erreur d’accélération | acceleration error ;; devancer | to lead ;; retarder | to lag ;; centre de gravité | center of gravity
+@PAGE 8-27 pdf=229
+FIG: Figure 8-37. Effets de l’erreur d’accélération.
+P: L’accélération donne une indication vers le nord ; la décélération vers le sud.
+## Erreur d’oscillation
+P: L’==oscillation== combine toutes les erreurs précédentes et fait fluctuer la rose autour du cap réel. En recalant le conservateur de cap sur le compas, ==utiliser l’indication moyenne entre les oscillations==.
+## Compas magnétique à rose verticale
+P: Il supprime certaines erreurs et confusions. Son cadran porte les lettres cardinales, des chiffres tous les 30° et des repères tous les 5° ; il est entraîné par des engrenages depuis un aimant sur axe, et le nez de l’avion symbolique sur la vitre sert de ligne de foi. [Figure 8-38]
+## Retard et avance
+P: En amorçant un virage depuis un cap nord, le compas ==retarde== ; depuis un cap sud, il ==devance== le virage.
+## Amortissement par courants de Foucault
+P: Dans le compas à rose verticale, le flux de l’aimant permanent oscillant crée des ==courants de Foucault== (*eddy currents*) dans un disque ou une coupelle d’amortissement ; leur flux s’oppose à celui de l’aimant et réduit les oscillations.
+FIG: Figure 8-38. Compas magnétique à rose verticale (vue du pilote ; la rose mobile est recalée après chaque virage).
+SUM: Oscillation : prendre la moyenne. || Compas à rose verticale : moins d’erreurs, nez symbolique = ligne de foi. || Départ du nord : retard ; départ du sud : avance. || Amortissement par courants de Foucault.
+VOC: erreur d’oscillation | oscillation error ;; rose verticale | vertical card ;; courants de Foucault | eddy currents ;; disque d’amortissement | damping disk
+@PAGE 8-28 pdf=230
+## Thermomètre d’air extérieur (OAT)
+P: La sonde du ==thermomètre d’air extérieur (OAT)== est exposée à l’air extérieur. Elle est faite d’une lame ==bimétallique== (deux matériaux différents soudés) enroulée en hélice : une extrémité est fixée dans un tube protecteur, l’autre à l’aiguille qui se lit sur un cadran gradué en °C, °F ou les deux. Une température précise renseigne sur le gradient de température avec l’altitude. [Figure 8-39]
+FIG: Figure 8-39. Thermomètre d’air extérieur (OAT).
+## Résumé du chapitre
+P: Les instruments de vol permettent d’exploiter l’avion avec performance et sécurité maximales, surtout sur de longues distances. Pour bien s’en servir, le pilote doit connaître le fonctionnement du ==système pitot-statique== et de ses instruments, du ==système de dépression== et de ses instruments, des ==instruments gyroscopiques== et du ==compas magnétique==.
+SUM: OAT : lame bimétallique en hélice, °C/°F. || À maîtriser : pitot-statique, dépression, gyroscopes, compas magnétique.
+VOC: lame bimétallique | bimetallic strip ;; thermomètre d’air extérieur | outside air temperature gauge ;; gradient de température | temperature lapse rate
+@SHEET
+* Pitot-statique : l’anémomètre utilise pitot + statique ; l’altimètre et le variomètre utilisent la statique seule. Statique bouchée : altimètre figé, variomètre à zéro, anémomètre faux (source alternative). Pitot bouché : l’anémomètre se comporte en altimètre. Altimètre : régler l’altimétrie, vérifier à ±75 ft ; erreurs d’altitude (indiquée, vraie, pression, densité).
+* Gyroscopes : rigidité dans l’espace et précession. Horizon artificiel : tangage/inclinaison (avion miniature = sens, échelle = valeur). Conservateur de cap : dérive (≈ 15°/h), à recaler sur le compas toutes les ≈ 15 min en palier. Coordinateur/indicateur de virage : taux ; bille : « step on the ball » ; glissade = bille vers l’intérieur, dérapage = vers l’extérieur.
+* Compas magnétique : variation (lieu ; ouest on ajoute, est on soustrait) et déviation (cap ; fiche de correction). Virage vers le nord : arrêter avant ; vers le sud : dépasser ; accélération sur E/O = nord (ANDS). Incidence critique : indépendante du poids, de l’inclinaison et du CG.
+@NUMS
+15° par heure | dérive du conservateur de cap due à la rotation de la Terre
+≈ 15 min | intervalle de vérification du conservateur de cap
+≈ 18° | inclinaison maximale pour un compas magnétique fiable
+400 Hz | courant alternatif de la bobine centrale de la vanne de flux
+≈ 55° / 55° | limites de tangage/inclinaison de certains conservateurs de cap
+15° + ½ latitude | avance ou retard à prendre dans les virages vers le nord/sud
+≈ 1 300 NM | distance entre pôle nord géographique et magnétique
