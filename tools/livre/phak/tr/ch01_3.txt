@@ -1,0 +1,54 @@
+@CH 1
+@PAGE 1-13 pdf=28
+## NOTAM FDC
+P: Émis par le *National Flight Data Center*, ils contiennent des informations de nature réglementaire : changements de cartes, de procédures et d’usage de l’espace aérien. Contenu : procédures IFR provisoires (structure des airways, procédures d’approche aux instruments hors DP et STAR, espace aérien, approches spéciales) ; ==restrictions temporaires de vol (TFR)== — zones sinistrées, événements spéciaux, détournement ; restrictions près du Président ; changements de conditions des aéroports certifiés part 139 ; neige affectant le guidage d’alignement de descente ; urgences de défense aérienne ; règles de vol d’urgence ; routes de remplacement ; corrections cartographiques ; activité laser.
+FIG: Figure 1-19. NOTAM (D) : mot-clé / exemple / signification (RWY 3/21 CLSD : pistes 3 et 21 fermées ; TWY F LGTS OTS : feux de la voie F hors service ; AD ABN OTS : phare de l’aérodrome hors service ; OBST TOWER 283 (245 AGL) : feux d’une tour de 283 ft MSL hors service ; NAV VOR OTS ; COM ATIS OTS ; SVC : nouveaux horaires de la tour ou carburant/douane indisponibles ; AIRSPACE AIRSHOW ACFT 5000/BLW 5 NMR : meeting aérien, éviter ; (U) informations non vérifiées ; (O) autres).
+SUM: FDC NOTAM = nature réglementaire (cartes, procédures, TFR). || Mots-clés NOTAM (D) : RWY, TWY, RAMP, APRON, AD, OBST, NAV, COM, SVC, AIRSPACE, (U), (O). || OTS = hors service.
+VOC: NOTAM FDC | FDC NOTAM ;; hors service | out of service (OTS) ;; restriction temporaire de vol | temporary flight restriction ;; procédure d’approche | approach procedure ;; mot-clé | keyword
+@PAGE 1-14 pdf=29
+P: Composition d’un NOTAM, de gauche à droite : un point d’exclamation (!), lieu responsable, lieu concerné, ==MOT-CLÉ==, identification de surface (facultative : piste, voie, aire), condition, période. Altitudes et hauteurs en pieds MSL jusqu’à 17 999 ft, en niveaux de vol (FL) à partir de 18 000 ; AGL si le MSL est inconnu. Les heures sont en ==UTC== sur ==10 chiffres== (année, mois, jour, heure, minute).
+## Diffusion et disponibilité des NOTAM
+P: Deux sous-systèmes : l’==AIS== (cartes et publications) et le système NOTAM. Cartes : IFR (en route haute/basse altitude, procédures terminales DP, STAR, SIAP) et VFR (sectionnelles, zone terminale, mondiales). Publications : ==NTAP== (tous les ==28 jours==), Chart Supplement U.S. (Pacifique, Alaska), AIM. Les NOTAM sont disponibles par abonnement, auprès du FSS ou en ligne (PilotWeb, fltplan.com, AOPA).
+## SPANS
+P: Depuis 2004, le *Safety Program Airmen Notification System* est un système en ligne d’information sur séminaires et événements, qui remplace le courrier papier.
+## Classifications d’aéronefs et ultralégers
+P: Le terme le plus général est « ==aéronef== » (14 CFR 1.1) : appareil utilisé ou destiné au vol dans l’air. ==Ultraléger== (14 CFR 103) : moins de ==254 lb== à vide s’il est motorisé, moins de ==155 lb== s’il ne l’est pas ; règles très différentes de celles des aéronefs.
+SUM: NOTAM : 10 chiffres UTC (AAMMJJHHMM). || NTAP tous les 28 jours. || Ultraléger : < 254 lb (motorisé), < 155 lb (non motorisé).
+VOC: ultraléger | ultralight vehicle ;; heure UTC | UTC time ;; système d’information aéronautique | Airmen’s Information System (AIS) ;; abonnement | subscription ;; lieu concerné | affected location
+@PAGE 1-15 pdf=30
+P: Définitions du 14 CFR 1.1 : ==avion== (aéronef à voilure fixe plus lourd que l’air soutenu par la réaction dynamique de l’air sur ses ailes) ; ==planeur== (plus lourd que l’air, vol libre indépendant d’un moteur) ; ==plus léger que l’air== (dirigeable : propulsé et dirigeable ; ballon : sans moteur) ; ==aéronef à sustentation motorisée== (décollage et atterrissage verticaux, voilure fixe en vol horizontal) ; ==parachute motorisé== ; ==fusée== ; ==giravion== (rotors : gyrocoptère (rotors non motorisés) ; hélicoptère) ; ==pendulaire (weight-shift control)== : pilotage par déplacement du CG par rapport à une aile pivotante.
+P: Par la taille et la masse : ==gros aéronef (large)== > 12 500 lb de masse maximale certifiée au décollage ; ==petit aéronef== ≤ 12 500 lb ; ==LSA== (aéronef sportif léger).
+P: Classifications liées à la certification : ==catégorie== (pour les navigants : avion, giravion, planeur, plus léger que l’air ; pour les aéronefs : transport, normal, utilitaire, acrobatique, limité, restreint, provisoire) ; ==classe== (pour les navigants : monomoteur, multimoteur, terre, eau… ; pour les aéronefs : avion, giravion, planeur, ballon, terrestre, hydravion) ; ==type== (marque et modèle précis, ex. 737-700, G-IV).
+SUM: Large > 12 500 lb ; petit ≤ 12 500 lb. || Catégorie > classe > type. || Plus léger que l’air = dirigeable + ballon.
+VOC: gros aéronef | large aircraft ;; petit aéronef | small aircraft ;; catégorie | category ;; classe | class ;; type | type ;; dirigeable | airship
+@PAGE 1-16 pdf=31
+P: …Type : pour les navigants, une marque et un modèle de base précis (modifications sans effet sur les caractéristiques de vol) ; pour les aéronefs, ceux de conception similaire. Ce système permet à la FAA de grouper et réglementer les aéronefs.
+# Brevets de pilote
+P: Le type de vol visé détermine le brevet ; conditions d’éligibilité, formation, expérience et examens varient [Figure 1-20]. Chaque brevet a ses ==privilèges== (où, quand, avec qui, dans quel but, quel type d’aéronef) et ses ==limitations== (imposées si le pilote ne démontre pas toutes les compétences). Les ==mentions (endorsements)== attestent qu’une formation précise a été reçue, signées par une personne autorisée (en général un CFI). [Figure 1-21]
+## Pilote sportif (Sport Pilot)
+P: Heures minimales de vol : avion 20 h ; parachute motorisé 12 h ; pendulaire 20 h ; planeur 10 h ; gyrocoptère 20 h ; plus léger que l’air 20 h (dirigeable) ou 7 h (ballon). Conditions : ==16 ans== pour devenir élève (14 pour planeur ou ballon) ; ==17 ans== pour l’examen (16 pour planeur ou ballon) ; lire, écrire et comprendre l’anglais ; un ==permis de conduire valide== tient lieu de preuve médicale.
+P: Privilèges : commandant d’un LSA ; passager avec partage des frais ; de jour en VFR avec visibilité minimale de 3 SM et contact visuel avec le sol…
+FIG: Figure 1-20. Recto et verso d’un brevet de navigant délivré par la FAA.
+SUM: Sport pilot : 16/17 ans, permis de conduire = preuve médicale, 20 h (avion). || Brevet = privilèges + limitations. || Mention (endorsement) = formation spécifique attestée.
+VOC: privilège | privilege ;; limitation | limitation ;; mention | endorsement ;; pilote sportif | sport pilot ;; brevet | certificate ;; partage des frais | share expenses
+@PAGE 1-17 pdf=32
+FIG: Figure 1-21. Exemple de mention pour un pilote de loisir en vol solo en vue d’obtenir un autre brevet ou qualification (art. 61.101(i)).
+P: Limitations du pilote sportif : interdit en ==classe A==, en classes B, C, D sans formation et mention de l’instructeur ; pas de vol hors des États-Unis sans autorisation étrangère ; pas de remorquage ; ni de vol rémunéré ; ni dans le cadre d’une activité professionnelle. Le brevet ne porte pas de qualifications de catégorie/classe ; l’instructeur fait la mention dans le carnet.
+## Pilote de loisir (Recreational Pilot)
+P: Conditions : ==17 ans==, lire, écrire, parler et comprendre l’anglais, réussir le test de connaissances, satisfaire à l’expérience (monomoteur, hélicoptère ou gyrocoptère), mention de l’instructeur, examen pratique et ==certificat médical de 3e classe== (part 67). Navigation limitée à ==50 NM== du départ (plus avec formation supplémentaire §61.101(c)) ; pas de vol de nuit ni dans l’espace où l’ATC est requis. Expérience minimale : ==30 h== dont 15 h de double, 2 h de navigation, 3 h de préparation à l’examen et 3 h de solo.
+P: Privilèges : un seul passager, partage au prorata des frais (carburant, huile, aéroport, location). Limitation : pas de commandant d’un aéronef certifié pour plus de quatre occupants ou à plusieurs groupes motopropulseurs.
+## Pilote privé
+P: Vole par plaisir ou pour des affaires personnelles sans rémunération (hors cas très limités). Le brevet de pilote privé est celui de la majorité des pilotes actifs…
+SUM: Loisir : 17 ans, 30 h, 50 NM, pas de nuit, 1 passager, ≤ 4 places. || Pilote sportif : pas de classe A.
+VOC: pilote de loisir | recreational pilot ;; pilote privé | private pilot ;; test de connaissances | knowledge test ;; examen pratique | practical test ;; double commande | dual instruction
+@PAGE 1-18 pdf=33
+P: …Il permet de commander tout aéronef (avec les qualifications adéquates) à des fins non commerciales, avec une autorité presque illimitée en VFR. Passagers autorisés, vol dans le cadre d’une activité professionnelle permis, mais ==aucune rémunération pour services de pilote== (les passagers peuvent payer leur part des frais). Sous le part 61 : au moins ==40 heures== de vol dont ==20 h avec instructeur et 10 h de solo==. [Figure 1-22]
+## Pilote professionnel (Commercial)
+P: Peut être rémunéré. Le brevet ne permet pas le vol en IMC ; sans qualification aux instruments, un pilote professionnel est limité au vol de jour à moins de 50 NM s’il vole contre rémunération. Doit savoir utiliser un ==avion complexe== (train rentrant, volets mobiles, hélice à pas variable, §61.31(e)). [Figure 1-23]
+## Pilote de ligne (ATP)
+P: Testé au plus haut niveau ; indispensable pour être commandant ou copilote de lignes régulières. Expérience minimale : ==1 500 heures==, ==23 ans==, anglais, « bonne moralité ». Brevet restreint possible comme copilote, à partir de ==21 ans==, avec moins d’heures selon la formation académique. [Figure 1-24]
+## Choisir une école de pilotage
+P: Formation par centres de formation, écoles FAA, écoles non certifiées, instructeurs indépendants, selon les parts 142, 141 ou 61. Les ==centres de formation (part 142)== sont certifiés (volontairement) et utilisent beaucoup de dispositifs de simulation, surtout pour les compagnies…
+FIG: Figure 1-22. Avion typique d’un pilote privé. Figure 1-23. Avion complexe. Figure 1-24. Avion d’un pilote de ligne.
+SUM: Privé : 40 h (20 double + 10 solo), pas de rémunération. || Professionnel : avion complexe, rémunéré. || ATP : 1 500 h, 23 ans (21 restreint). || Parts 141, 142, 61.
+VOC: pilote professionnel | commercial pilot ;; pilote de ligne | airline transport pilot (ATP) ;; avion complexe | complex aircraft ;; école de pilotage | flight school ;; centre de formation | training center ;; rémunération | compensation
