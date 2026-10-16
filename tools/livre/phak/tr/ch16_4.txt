@@ -1,0 +1,50 @@
+@PAGE 16-19 pdf=406
+FIG: Figure 16-25. Extrait de carte sectionnelle (route directe de Chickasha à Guthrie ; points de repère, ligne de route, espaces de classe C et D, obstacle le plus haut, point le plus élevé).
+P: Données du vol : route directe Chickasha → Guthrie ; TAS 115 kt ; vent en altitude 360° à 10 kt ; carburant utilisable 38 gal ; consommation 8 gal/h ; déviation +2°.
+SUM: Exemple de navigation Chickasha → Guthrie : TAS 115 kt, vent 360°/10 kt, déviation +2°. || La carte montre repères, espaces C et D, obstacle le plus haut.
+VOC: ligne de route | course line ;; point de repère | checkpoint ;; obstacle le plus haut | tallest obstruction ;; point le plus élevé | highest elevation
+@PAGE 16-20 pdf=407
+FIG: Figure 16-26. Fiche de planification du pilote et journal de vol à vue : N123DB, Chickasha → Guthrie, TC 031°, vent 360°/10 kt, altitude 5 500 ft, WCA 3° L, TH 28°, variation 7° E, MH 21°, déviation +2°, cap compas 23°, GS 106 kt, distance 53 NM, temps 35 min (dont 5 de montée), consommation 8 gal/h, carburant 38 gal.
+P: L’obstacle le plus haut est une antenne d’une série à ==2 749 ft MSL== (point D) ; le point le plus élevé, dans le quadrant nord-est, ==2 900 ft MSL== (point E). Le vent étant sans importance et le survol de la classe C et de la D étant possible, on choisit ==5 500 ft MSL==, ce qui donne une marge sur tous les obstacles et respecte l’exigence du part 91 : ==altitude de « mille impair + 500 ft » sur une route magnétique de 0 à 179°==.
+P: Mesurer la distance totale (==53 NM==) et entre repères (journal de la Figure 16-26). Mesurer la TC : ==031°==. Calculer le cap compas par la formule : ==TC ± WCA = TH ± V = MH ± D = CH==. Avec un vent de 360° à 10 kt, la WCA est de 3° à gauche, soustraite : ==TH 28°==. L’isogone le plus proche donne une variation de 6,30° E (arrondie à 7° E), soustraite : ==MH 21°==. Ajouter la déviation +2° : ==cap compas 23°==. La GS est de ==106 kt== (calculateur).
+SUM: 5 500 ft = 5 000 + 500 pour une route magnétique 0–179°. || TC 031° → TH 028° → MH 021° → CH 023°. || GS 106 kt ; 53 NM.
+VOC: journal de vol à vue | visual flight log ;; fiche de planification | pilot’s planning sheet ;; altitude de croisière | cruising altitude ;; distance totale | total distance ;; formule | formula
+@PAGE 16-21 pdf=408
+P: GS 106 kt, temps total ==35 minutes== (30 min + 5 min de montée), consommation ==4,7 gal==. Pendant le vol, noter caps et heures et ajuster cap, GS et temps.
+## Dépôt d’un plan de vol VFR
+P: Il n’est pas imposé par la réglementation, mais c’est une bonne pratique : ses informations servent aux recherches et au sauvetage en cas d’urgence. On peut le déposer en l’air par radio, mais il vaut mieux le faire ==par téléphone juste avant le départ==. Après le décollage, contacter le FSS par radio et donner l’heure du décollage pour que le plan soit activé.
+P: Un plan de vol VFR est conservé par le FSS jusqu’à ==1 heure après l’heure de départ proposée== puis annulé, sauf si : l’heure réelle de départ est reçue ; une nouvelle heure proposée est reçue ; ou, au dépôt, le FSS est informé que l’heure proposée sera tenue mais ne peut pas être donnée faute de communication.
+P: La Figure 16-27 est le formulaire de plan de vol ; donner l’information dans l’ordre des cases numérotées. Cases à connaître : ==case 3== : type d’avion et équipement spécial (ex. C-150/X : pas de transpondeur) ; ==case 6== : heure de départ proposée en UTC (« Z ») ; ==case 7== : altitude de croisière (« VFR » suffit normalement).
+FIG: Figure 16-27. Formulaire de plan de vol intérieur (N123DB, C150/X, 115 kt, CHK Chickasha, direct, Guthrie, 5 500 ft…).
+SUM: Plan de vol VFR : facultatif mais utile (recherche et sauvetage). || Conservé jusqu’à 1 h après l’heure proposée. || Case 3 : type/équipement ; 6 : départ UTC ; 7 : altitude (VFR).
+VOC: plan de vol | flight plan ;; recherche et sauvetage | search and rescue ;; équipement spécial | special equipment ;; heure de départ proposée | proposed departure time ;; formulaire | form
+@PAGE 16-22 pdf=409
+P: Suite : ==case 8== : route de vol (« direct » si direct, sinon la route réelle via villes ou aides à la navigation) ; ==case 10== : durée estimée en route (ici 5 min ajoutées pour la montée) ; ==case 12== : carburant à bord en heures et minutes (carburant utilisable ÷ consommation). ==Ne pas oublier de clore le plan de vol à l’arrivée== (de préférence par téléphone, pour éviter la saturation radio).
+# Navigation au sol (aides radio)
+P: Les récepteurs radio de navigation, les cartes indiquant les stations et leurs fréquences, et l’instrumentation permettent de naviguer avec précision. Mais les pilotes débutants doivent s’en servir ==en complément du pilotage==, ce qui protège contre la désorientation en cas de panne radio. Trois systèmes pour le VFR : ==VOR, NDB, GPS==.
+## VOR (VHF Omnidirectional Range)
+P: Le système VOR existe dans trois aides : ==VOR==, ==VOR/DME== (avec mesure de distance) et ==VORTAC== (avec TACAN militaire, DME toujours inclus). L’indicateur fonctionne de la même façon pour tous. Il donne le relèvement magnétique vers ou depuis la station.
+P: « Omni » = toutes directions : station sol VHF qui émet des routes rectilignes (==radiales==) dans toutes les directions, comme les rayons d’une roue ; la distance dépend de la puissance. Les radiales sont référencées au ==MN== ; la 001 est à 1° à l’est du MN, jusqu’à 360. Une rose de référence est superposée sur la carte à la station.
+P: Les VOR émettent en VHF sur ==108,0–117,95 MHz==, soumis à la ligne de vue : la portée croît avec l’altitude du récepteur. À 1 000 ft AGL, environ ==40 à 45 miles==. [Figure 16-28]
+FIG: Figure 16-28. Les émissions VHF suivent la ligne de vue (les signaux A et B reçus selon la position).
+SUM: VOR = VHF 108,0–117,95 MHz ; ligne de vue (~ 40–45 mi à 1 000 ft AGL). || Radiales vers MN, 001 à 360. || VOR, VOR/DME, VORTAC.
+VOC: VOR | VHF Omnidirectional Range (VOR) ;; radiale | radial ;; VORTAC | VORTAC ;; aide à la navigation | navigational aid (NAVAID) ;; ligne de vue | line of sight
+@PAGE 16-23 pdf=410
+P: Les VOR/VORTAC sont classés : ==T (terminal), L (basse altitude), H (haute altitude)==. Portées utiles normales : T : 12 000 ft et en dessous, 25 miles ; L : sous 18 000 ft, 40 miles ; H : sous 14 500 ft, 40 miles ; H (48 États seulement) entre 14 500 et 17 999 ft : 100 miles ; H de 18 000 ft au FL450 : 130 miles ; H du FL450 à 60 000 ft : 100 miles. Voir le Chart Supplement pour les restrictions.
+P: La précision de l’alignement des radiales est excellente, en général de ±1°, mais le récepteur peut se dégrader, surtout loin de la station. Les contrôles de précision ne sont pas obligatoires en VFR, mais à faire souvent, avec un étalonnage complet chaque année. Moyens : ==VOT== (installation d’essai VOR de la FAA), points de contrôle certifiés en vol, points de contrôle certifiés au sol sur l’aéroport. Avec deux récepteurs VOR : les régler sur la même station ; ==écart maximal permis entre les deux : 4°==. Pour guide en VFR, utiliser les tolérances IFR : ==±4° au sol et ±6° en vol==.
+P: La station s’identifie positivement par son ==code Morse== ou une identification vocale enregistrée. Ne pas se fier aux messages vocaux des FSS. Si le VOR est hors service, le code est retiré : ne pas l’utiliser pour naviguer. Le récepteur a un ==drapeau d’alarme== quand le signal est insuffisant (trop loin, trop bas).
+## Utilisation du VOR
+P: Deux composants : l’émetteur au sol et le récepteur avec un instrument VOR : ==CDI, HSI ou RMI==.
+## CDI (Course Deviation Indicator)
+P: Présent sur la plupart des avions d’entraînement : un ==sélecteur de radiale (OBS)==, une ==aiguille CDI== (gauche-droite) et un indicateur ==TO/FROM==. Le sélecteur est un cadran en azimut qu’on tourne pour choisir une radiale ou déterminer celle que l’on survole…
+SUM: Classes T 25 mi, L 40 mi, H 40 / 100 / 130 mi. || Contrôles : VOT, points sol/air ; double récepteur : 4° ; tolérances IFR ±4° sol, ±6° air. || Station identifiée par code Morse.
+VOC: VOT | VOR test facility (VOT) ;; sélecteur de radiale | omnibearing selector (OBS) ;; drapeau | flag ;; classe | class ;; identification Morse | Morse code identification ;; aiguille | needle
+@PAGE 16-24 pdf=411
+P: Quand l’aiguille est centrée, le sélecteur indique soit la radiale (route magnétique « FROM »), soit sa réciproque (route « TO »). L’aiguille bouge à droite ou à gauche quand on s’écarte de la radiale affichée. ==Si le drapeau indique « TO », le cap affiché doit être suivi vers la station ; si « FROM », il éloigne de la station.== [Figure 16-29]
+## HSI (Horizontal Situation Indicator)
+P: Indicateur de direction qui utilise la vanne de flux pour entraîner la rose ; il combine le compas magnétique avec les signaux de navigation et d’alignement de descente. Dans la Figure 16-30 : cap magnétique 184° ; le sélecteur de route est sur 295° (queue 115° = réciproque). La barre d’écart de route fonctionne avec VOR/localizer ou GPS pour indiquer l’écart gauche/droite. On règle la route avec le bouton de sélection. Le symbole d’avion est fixe et la barre montre la position de l’avion par rapport à la route. L’indicateur TO/FROM est un triangle : pointé vers la tête du sélecteur = route vers l’aide ; vers la queue = route qui s’en éloigne.
+## RMI (Radio Magnetic Indicator)
+P: Aide à la navigation fournissant le cap magnétique ou gyroscopique et les relèvements VOR, GPS et ADF…
+FIG: Figure 16-29. Indicateur VOR (drapeau de signal non fiable, index de route, aiguille CDI ≈ 2° en mode VOR, indicateur TO/FROM, bouton OBS). Figure 16-30. HSI (rose, ligne de foi, barre d’écart de route, sélecteur de route, symbole d’avion, bug de cap, échelle d’écart d’alignement de descente).
+SUM: Aiguille centrée : TO = vers la station ; FROM = loin de la station. || HSI : rose + VOR/GPS + alignement de descente. || RMI : cap + relèvements.
+VOC: indicateur de situation horizontale | horizontal situation indicator (HSI) ;; indicateur radio-magnétique | radio magnetic indicator (RMI) ;; barre d’écart | course deviation bar ;; sélecteur de route | course select pointer ;; localizer | localizer

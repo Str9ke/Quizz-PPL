@@ -1,0 +1,62 @@
+@PAGE 16-13 pdf=400
+FIG: Figure 16-18. (A) Règle de navigation (plotter, côté sectionnelle 1:500 000) : 1. placer le trou sur l’intersection de la route vraie et de la ligne du nord vrai ; 2. sans le déplacer, tourner jusqu’à ce que le bord soit sur la route ; 3. depuis le trou, suivre la ligne du nord vrai jusqu’à l’échelle courbe ; 4. lire la route vraie. (B) Côtés calcul et vent d’un calculateur mécanique E6B. (C) Calculateur électronique.
+# Navigation à l’estime
+P: La navigation à l’estime (*dead reckoning*) repose uniquement sur des calculs fondés sur le temps, la vitesse air, la distance et la direction. Corrigés du vent, ces éléments donnent le ==cap== et la ==vitesse-sol (GS)==. Le cap prévu mène l’avion sur la route voulue et la GS donne l’heure d’arrivée à chaque point. Sauf au-dessus de l’eau, l’estime est utilisée avec le pilotage ; le cap et la GS calculés sont constamment contrôlés et corrigés par les repères observés.
+## Triangle des vents (analyse vectorielle)
+P: Sans vent, la route-sol est identique au cap et la GS à la vitesse vraie : ce cas est rare. Le ==triangle des vents== est la version pilote de l’analyse vectorielle et fonde l’estime. Il représente graphiquement l’effet du vent et permet de déterminer GS, cap et temps, depuis la navigation la plus simple jusqu’au vol aux instruments le plus complexe.
+SUM: Estime = temps, vitesse air, distance, direction. || Triangle des vents : fonde l’estime. || Le pilote contrôle l’estime avec des repères.
+VOC: navigation à l’estime | dead reckoning ;; triangle des vents | wind triangle ;; analyse vectorielle | vector analysis ;; calculateur électronique | electronic flight computer ;; règle de navigation | plotter
+@PAGE 16-14 pdf=401
+P: Le pilote expérimenté fait des estimations suffisantes pour le VFR sans dessiner les diagrammes ; le débutant doit s’exercer pour bien comprendre l’effet du vent. Exemple : route à l’est, vent du nord-est : l’avion doit être pointé un peu au nord de l’est. Figure 16-19 : chaque ligne représente direction et vitesse ; la ligne bleue (cap) a pour longueur la distance parcourue à la vitesse air en 1 h ; la flèche courte, le vent ; la ligne jaune, la route-sol (GS). Dans la pratique, on construit un triangle semblable (Figure 16-20).
+P: Exemple : vol de E à P. TC mesurée au rapporteur : ==090°==. Vent à l’altitude de vol : ==40 kt du nord-est (045°)==. TAS : ==120 kt==. Sur une feuille, tracer une ligne verticale (nord-sud) [Figure 16-21].
+P: ==Étape 1== : rapporteur sur la ligne verticale, bord courbe vers l’est ; point « E » (départ) au centre de la base, repères à 90° (route vraie) et 45° (vent).
+FIG: Figure 16-19. Principe du triangle des vents (cap 080° et vitesse air 120 kt ; route 090° et vitesse-sol 110 kt ; correction de 8° à gauche). Figure 16-20. Triangle des vents tel que dessiné en pratique.
+SUM: Exemple : TC 090°, vent 045° 40 kt, TAS 120 kt. || Étape 1 : placer E, repères 90° et 45°.
+VOC: rapporteur | protractor ;; flèche de vent | wind arrow ;; route vraie | true course ;; vitesse vraie | true airspeed ;; vent du nord-est | northeast wind
+@PAGE 16-15 pdf=402
+FIG: Figure 16-21. Étapes du dessin du triangle des vents (TC 090°, vent, vitesse air 120 kt, GS 88, étapes 1 à 4).
+P: ==Étape 2== : avec la règle, tracer la route vraie depuis E, légèrement au-delà du point à 90° : « TC 090° ». ==Étape 3== : aligner la règle sur E et le repère 045°, tracer la flèche de vent depuis E ==vers l’aval== (dans le sens où le vent souffle), longueur 40 unités (40 kt), marquée « W ». ==Étape 4== : mesurer 120 unités (vitesse air) sur la règle et poser la règle pour que son bout soit sur la pointe (W) et que le repère des 120 kt coupe la ligne de TC. Tracer la ligne « AS 120 ». Le point « P » est la position de l’avion après 1 heure. Utiliser la même échelle pour tous les segments.
+P: La distance parcourue en 1 h (GS) se lit sur la ligne de TC : ==88 kt==. Le TH nécessaire se trouve en lisant la direction de la ligne de vitesse air :
+- en posant le rapporteur sur la ligne nord-sud, centre à l’intersection : lecture directe du ==TH = 076°== [Figure 16-22] ;
+- ou en posant le rapporteur sur la TC, centre en P : l’angle entre TC et la ligne de vitesse air est la ==WCA== (ici ==14°==), ==ajoutée si le vent vient de la droite, retranchée s’il vient de la gauche==. Ici le vent vient de la gauche : 090 – 14 = 076° [Figure 16-23].
+P: Puis appliquer la variation (cap magnétique) et la déviation (cap compas). Pour le temps et le carburant : distance mesurée sur la carte (220 NM) ÷ GS (88 kt) = ==2,5 h== (2 h 30) ; consommation 8 gal/h → 8 × 2,5 = ==20 gallons==.
+SUM: GS = longueur sur la TC (88 kt) ; TH 076° ; WCA 14° (vent de gauche : retrancher). || 220 NM ÷ 88 kt = 2 h 30 ; 8 gal/h → 20 gal.
+VOC: angle de correction de vent | wind correction angle (WCA) ;; vent de gauche | wind from the left ;; temps estimé en route | estimated time en route (ETE) ;; échelle | scale ;; consommation | fuel rate
+@PAGE 16-16 pdf=403
+FIG: Figure 16-22. Détermination du cap vrai par l’angle de correction de vent. Figure 16-23. Détermination du cap vrai par mesure directe (TC 090°, GS 88, WCA 14° gauche, TH 076°, AS 120).
+P: Résumé des étapes pour obtenir les informations de vol :
+- ==TC== : direction de la ligne reliant les deux points, mesurée au méridien du milieu depuis le TN.
+- ==WCA== : issue du triangle des vents (ajoutée à la TC si le vent vient de la droite ; retranchée s’il vient de la gauche).
+- ==TH== : direction (depuis le TN) à tenir au nez pour rester sur la route.
+- ==Variation== : lue sur l’isogone (ajoutée au TH si ouest, retranchée si est).
+- ==MH== : étape intermédiaire (TH corrigé de la variation).
+- ==Déviation== : lue sur la fiche de l’avion (ajoutée ou retranchée au MH).
+- ==Cap compas== : lecture du compas à suivre pour rester sur la route.
+SUM: TC ± WCA = TH ; TH ± variation = MH ; MH ± déviation = cap compas. || WCA + si vent de la droite, – si vent de la gauche. || Variation : ouest +, est –.
+VOC: cap vrai | true heading ;; cap magnétique | magnetic heading ;; cap compas | compass heading ;; fiche de déviation | deviation card ;; étape | step
+@PAGE 16-17 pdf=404
+P: Suite : ==distance totale== (longueur de la TC sur la carte, avec l’échelle) ; ==GS== (longueur de la TC sur le triangle des vents) ; ==ETE== = distance totale ÷ GS ; ==consommation== prévue (gal/h en croisière). Ajouter une réserve de sécurité.
+# Planification du vol
+P: Le 14 CFR part 91 impose au commandant de bord de se familiariser avec ==toutes les informations disponibles== sur son vol. Pour un vol hors des abords d’un aéroport, cela inclut les rapports et prévisions météo, les besoins en carburant, les solutions de repli et les retards connus.
+## Rassembler le matériel
+P: Le faire bien avant le vol : cartes sectionnelles à jour (et les cartes voisines si la route est près du bord), calculateur de vol, règle de navigation, et tout élément utile (lampe de poche pour un vol de nuit, eau pour un survol de désert).
+## Contrôle de la météo
+P: Vérifier la météo avant le reste de la planification pour voir si le vol est faisable et quelle route est la meilleure (voir chapitre 13).
+## Utilisation du Chart Supplement U.S.
+P: Étudier chaque aéroport d’atterrissage prévu : NOTAM et Chart Supplement (Figure 16-24) : emplacement, altitude, pistes et éclairage, services, fréquence UNICOM, carburants disponibles (pour choisir les escales), FSS sur place, fréquences tour et sol, remarques. ==Les NOTAM, publiés tous les 28 jours, signalent les dangers ou changements postérieurs== au Chart Supplement. Vérifier aussi le bulletin de la carte sectionnelle : ==la carte peut avoir jusqu’à 6 mois== ; la date de validité est en haut du recto. Le Chart Supplement a en principe l’information la plus récente et prévaut sur celle du dos de la carte.
+## AFM/POH
+P: Contrôler le chargement (masse et centrage) : carburant utilisable, huile vidangeable, passagers, bagages, masse à vide ; la masse totale ne doit pas dépasser la masse maximale et le CG doit rester dans les limites.
+FIG: Figure 16-24. Chart Supplement U.S. (ex-Airport/Facility Directory).
+SUM: ETE = distance ÷ GS. || Le commandant doit connaître toutes les informations disponibles (§91.103). || NOTAM tous les 28 jours ; carte sectionnelle jusqu’à 6 mois.
+VOC: planification du vol | flight planning ;; commandant de bord | pilot in command (PIC) ;; bulletin de carte | chart bulletin ;; date de validité | effective date ;; chargement | loading
+@PAGE 16-18 pdf=405
+P: Utiliser les dernières données de masse et centrage de l’AFM approuvé FAA. Déterminer les distances de décollage et d’atterrissage à partir des abaques selon la charge, l’altitude et la température, et les comparer à la piste disponible : ==plus la charge, l’altitude, la température ou l’humidité sont élevées, plus les roulements sont longs et plus le taux de montée est faible==. Vérifier la consommation à l’altitude et à la puissance prévues pour inclure les escales de ravitaillement.
+## Tracé de la route
+P: Une fois la météo vérifiée, on trace la route et on détermine les données du vol : journal de navigation (Figure 16-26) et plan de vol. Exemple : Chickasha → Guthrie directement ; TAS 115 kt ; vent en altitude 360° à 10 kt ; carburant utilisable 38 gal ; consommation 8 gal/h ; déviation +2° [Figure 16-25].
+## Étapes du tracé
+P: D’abord tracer la ligne du centre de l’aéroport de départ (point A) au centre de l’aéroport de destination (point F). Si la route n’est pas directe, plusieurs segments (par exemple via un VOR hors route qui facilite la navigation).
+P: Choisir des ==points de repère== faciles à repérer : grandes villes, grands lacs et rivières, ou combinaisons reconnaissables (ville avec aérodrome, réseau routier, voies ferrées). ==Choisir surtout les villes en jaune sur la carte, pas celles représentées par un petit cercle== (peut-être quelques maisons, sauf en zones isolées). Ici quatre repères : (1) un pylône à l’est de la route, avec route et voie ferrée presque parallèles ; (2) un obstacle à l’ouest, avec l’aéroport Will Rogers World à l’est ; (3) l’aéroport Wiley Post, qu’on survole ; (4) un aérodrome privé non revêtu à l’ouest, avec voie ferrée et route à l’est.
+P: Vérifier l’espace aérien le long de la route et de part et d’autre : ici la route traverse un segment de ==classe C== autour de Will Rogers World (plancher 2 500 ft MSL, plafond 5 300 ft MSL, point B) et ==classe D== de la surface à 3 800 ft MSL autour de Wiley Post (point C) quand la tour est en service.
+P: Étudier le relief et les obstacles : le plus haut et le plus bas, pour choisir une altitude conforme au part 91. ==Si le vol est à plus de 3 000 ft au-dessus du terrain, respecter les altitudes de croisière selon la direction du vol.== Éviter le relief accidenté ; vérifier les obstacles aux zones de décollage et d’atterrissage : des pylônes de télévision peuvent dépasser 1 500 ft au-dessus du terrain…
+SUM: Plus de charge/chaleur/altitude = roulements plus longs. || Repères : villes en jaune (pas les petits cercles). || Vérifier l’espace aérien, le relief et les obstacles sur la route. || Au-dessus de 3 000 ft AGL : altitudes de croisière selon le cap.
+VOC: journal de navigation | flight log ;; tracé de la route | charting the course ;; relief | terrain ;; obstacle | obstruction ;; altitude de croisière | cruising altitude ;; pylône | tower

@@ -1,0 +1,51 @@
+@CH 16
+@INTRO Navigation : introduction au vol de navigation en VFR. Cartes aéronautiques (sectionnelle, zone terminale, mondiale), latitude/longitude, fuseaux horaires et UTC, direction, variation et déviation, effet du vent, navigation à l’estime, aides radio (VOR, DME, ADF, GPS), plan de vol, perte d’orientation.
+@PAGE 16-1 pdf=388
+# Introduction
+P: Ce chapitre introduit le vol de navigation en VFR : informations pratiques pour planifier et exécuter une navigation pour le pilote débutant. La ==navigation aérienne== consiste à conduire un avion d’un point géographique à un autre en contrôlant sa position au fil du vol. Elle suppose une planification : tracer la route sur la carte, choisir les points de repère, mesurer les distances, obtenir la météo, calculer temps de vol, caps et carburant.
+P: Méthodes : ==le pilotage (pilotage à vue)== — se repérer sur des repères visibles ; ==la navigation à l’estime (dead reckoning)== — calculs de direction et de distance depuis une position connue ; ==la radionavigation== — par aides radio.
+SUM: Navigation = aller d’un point à un autre en suivant sa position. || Trois méthodes : pilotage, estime, radionavigation.
+VOC: navigation | navigation ;; pilotage | pilotage ;; navigation à l’estime | dead reckoning ;; radionavigation | radio navigation ;; point de repère | checkpoint
+@PAGE 16-2 pdf=389
+# Cartes aéronautiques
+P: Une carte aéronautique est la carte routière du pilote VFR. Trois cartes : ==sectionnelle==, ==de zone terminale VFR==, ==aéronautique mondiale==. Un catalogue gratuit existe sur le site Aeronautical Navigation Products (aeronav.faa.gov).
+## Cartes sectionnelles
+P: Les plus courantes : échelle ==1:500 000== (1 po = 6,86 NM, soit environ 8 SM), très détaillées (aérodromes, aides à la navigation, espaces aériens, relief). La légende permet d’interpréter la carte (Figure 16-1) ; vérifier aussi les fréquences ATC et informations d’espace aérien dans la légende. ==Révision semestrielle== (annuelle pour certaines zones hors des États-Unis contigus).
+## Cartes de zone terminale VFR
+P: Utiles dans ou près de la classe B. Échelle ==1:250 000== (1 po = 3,43 NM, soit environ 4 SM), plus détaillées en relief. Révision semestrielle (sauf quelques cartes Alaska et Caraïbes). [Figure 16-2]
+## Cartes aéronautiques mondiales (WAC)
+P: Série standard couvrant les terres du monde, à une taille et échelle pratiques pour les avions de vitesse moyenne…
+FIG: Figure 16-1. Carte sectionnelle et légende.
+SUM: Sectionnelle 1:500 000 (1 po = 6,86 NM), révision semestrielle. || Zone terminale VFR 1:250 000 (1 po = 3,43 NM). || WAC 1:1 000 000.
+VOC: carte sectionnelle | sectional chart ;; carte de zone terminale VFR | VFR terminal area chart ;; carte aéronautique mondiale | world aeronautical chart ;; échelle | scale ;; légende | legend
+@PAGE 16-3 pdf=390
+FIG: Figure 16-2. Carte de zone terminale VFR et légende.
+P: … Échelle ==1:1 000 000== (1 po = 13,7 NM, soit environ 16 SM). Mêmes symboles que les sectionnelles, avec moins de détails. [Figure 16-3] Révisées annuellement (tous les 2 ans pour quelques cartes Alaska et Mexique/Caraïbes).
+## Latitude et longitude (méridiens et parallèles)
+P: L’==équateur== est un cercle imaginaire équidistant des pôles. Les cercles parallèles à l’équateur (est-ouest) sont les ==parallèles de latitude== : ils mesurent les degrés de latitude nord (N) ou sud (S). La distance angulaire équateur-pôle est un quart de cercle, soit ==90°==. Les 48 États contigus sont entre ==25° et 49° N==. Les ==méridiens de longitude== vont du pôle Nord au pôle Sud, perpendiculaires à l’équateur. Le ==méridien d’origine== passe par Greenwich (Angleterre) : zéro, mesures jusqu’à 180° est (E) ou ouest (W). Les 48 États sont entre ==67° et 125° W==.
+P: Tout point se repère par latitude et longitude : Washington D.C. ≈ 39° N, 77° W ; Chicago ≈ 42° N, 88° W.
+## Fuseaux horaires
+P: Un jour est le temps d’une rotation complète de 360° de la Terre ; divisé en 24 heures, la Terre tourne de ==15° par heure==. Midi est l’heure où le soleil est à la verticale d’un méridien ; à l’ouest c’est le matin, à l’est l’après-midi.
+SUM: Latitude : parallèles, 0° à 90° ; longitude : méridiens, 0° à 180°. || 48 États : 25–49° N, 67–125° W. || La Terre tourne de 15° par heure. || WAC 1:1 000 000.
+VOC: latitude | latitude ;; longitude | longitude ;; équateur | equator ;; méridien | meridian ;; parallèle | parallel ;; fuseau horaire | time zone
+@PAGE 16-4 pdf=391
+FIG: Figure 16-3. Carte aéronautique mondiale. Figure 16-4. Méridiens et parallèles : base de la mesure du temps, de la distance et de la direction.
+P: La pratique : un fuseau par ==15° de longitude==, soit exactement ==1 heure== d’écart. Aux États-Unis contigus : ==Est (75°), Centre (90°), Montagne (105°), Pacifique (120°)==. Les limites sont irrégulières pour des raisons de commodité locale. [Figure 16-5] Quand le soleil est au-dessus du 90e méridien, il est midi CST ; 13 h EST ; 11 h MST ; 10 h PST. En heure d’été (de la deuxième semaine de mars au premier dimanche de novembre), le soleil est au-dessus du 75e méridien à midi CDT.
+P: Ces écarts comptent pour les longs vols vers l’est, surtout si le vol doit se terminer avant la nuit : ==on perd une heure en allant vers l’est==…
+SUM: Un fuseau par 15° de longitude (1 h). || États-Unis : Est 75°, Centre 90°, Montagne 105°, Pacifique 120°. || Vers l’est : on perd une heure.
+VOC: heure d’été | daylight saving time ;; heure standard | standard time ;; vers l’est | eastbound ;; coucher du soleil | sunset
+@PAGE 16-5 pdf=392
+FIG: Figure 16-5. Fuseaux horaires des États-Unis contigus (Pacifique, Montagne, Centre, Est).
+P: … en passant d’un fuseau à l’autre vers l’est (parfois même du bord ouest au bord est d’un même fuseau). Consulter le FSS pour l’heure du coucher du soleil à destination et en tenir compte.
+P: En aviation, l’heure s’exprime au système de ==24 heures== (9 h = 0900, 13 h = 1300, 22 h = 2200) : instructions ATC, bulletins météo, ETA. Comme on peut traverser plusieurs fuseaux, on a adopté l’==heure universelle coordonnée (UTC)== ou heure ==Zulu==, celle du méridien 0° (Greenwich). Conversion vers UTC (heure standard) : ==Est +5 h ; Centre +6 h ; Montagne +7 h ; Pacifique +8 h== ; en heure d’été, retrancher 1 h du résultat.
+## Mesure de la direction
+P: Les méridiens servent à mesurer la direction en degrés dans le sens horaire à partir du nord vrai. Pour définir une route, tracer sur la carte un trait du départ à la destination et mesurer l’angle avec un méridien (rose des vents, Figure 16-6). Les méridiens convergeant vers les pôles, mesurer à un méridien proche du milieu de la route. La route mesurée est la ==route vraie (TC)== : direction prévue du vol, en degrés dans le sens horaire depuis le nord vrai (TN). Figure 16-7 : de A à B, TC 065° ; retour (réciproque) TC 245°.
+SUM: UTC = heure locale standard + 5 (Est), 6 (Centre), 7 (Montagne), 8 (Pacifique). || Heure d’été : retrancher 1 h. || Route vraie : mesurée au méridien du milieu ; réciproque ±180°.
+VOC: heure universelle coordonnée | Universal Coordinated Time (UTC) ;; heure Zulu | Zulu time ;; horloge de 24 heures | 24-hour clock ;; route vraie | true course (TC) ;; réciproque | reciprocal ;; nord vrai | true north (TN)
+@PAGE 16-6 pdf=393
+FIG: Figure 16-6. Rose des vents. Figure 16-7. Les routes sont déterminées par rapport aux méridiens des cartes (A vers B : 065°, B vers A : 245°). Figure 16-8. Les méridiens magnétiques (en rouge) et les lignes de longitude et de latitude (en bleu).
+P: Le ==cap vrai (TH)== est la direction du nez de l’avion, en degrés dans le sens horaire depuis le TN. Il faut souvent un cap légèrement différent de la route pour compenser le vent ; la TH peut donc ne pas égaler la TC. Par vent nul, cap et route coïncident (TC 065° = TH 065°). Pour utiliser le compas, il faut corriger la variation et la déviation.
+## Variation
+P: La ==variation== est l'angle entre le nord vrai (TN) et le nord magnétique (MN) ; ==est== ou ==ouest== selon que le MN est à l’est ou à l’ouest du TN. Le pôle magnétique nord est près de ==71° N, 96° W==, à environ ==1 300 miles== du pôle géographique (Figure 16-8). La Terre n’étant pas uniformément aimantée, l’aiguille vise la direction générale du pôle mais peut s’en écarter de plusieurs degrés localement. La valeur et le sens de la variation, qui changent lentement, sont indiqués sur les cartes par des ==lignes isogones== (tirets magenta) reliant les points de variation égale ; la ==ligne agone== relie les points sans variation. [Figure 16-9] ==Sur la côte ouest des États-Unis, l’aiguille pointe à l’est du TN ; sur la côte est, à l’ouest du TN.==
+SUM: Cap vrai ≠ route vraie quand il y a du vent. || Variation = TN – MN ; isogones (magenta), agone (0°). || Côte ouest : variation est ; côte est : variation ouest.
+VOC: cap vrai | true heading (TH) ;; variation | variation ;; nord magnétique | magnetic north (MN) ;; ligne isogone | isogonic line ;; ligne agone | agonic line ;; rose des vents | compass rose

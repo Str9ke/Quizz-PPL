@@ -1,0 +1,69 @@
+@PAGE 16-7 pdf=394
+FIG: Figure 16-9. Noter la ligne agone, où la variation magnétique est nulle (variation est / variation ouest). Figure 16-10. Effet de la variation sur le compas.
+P: La variation est nulle sur la ==ligne agone==, où MN et TN coïncident ; elle passe grossièrement à l’ouest des Grands Lacs, au sud par le Wisconsin, l’Illinois, l’ouest du Tennessee et la frontière Mississippi/Alabama. Les routes sont mesurées par rapport aux méridiens géographiques (TN) mais suivies au compas (MN) : il faut convertir la direction vraie en direction magnétique en ajoutant ou soustrayant la variation de l’isogone le plus proche.
+P: Une ligne tracée entre deux points est une TC mesurée depuis le TN ; la suivre au compas ne donnerait pas une route exacte à cause de trois éléments : la ==variation magnétique==, la ==déviation du compas== et la ==correction du vent==. Tous trois doivent être pris en compte.
+## Variation magnétique
+P: Appliquer la variation du lieu (et ses changements le long de la route). La route obtenue est la ==route magnétique==.
+## Déviation magnétique
+P: Chaque avion a son propre effet sur le compas (influences magnétiques locales) : le pilote applique la déviation (prise de la fiche de déviation) à la route magnétique pour obtenir le ==cap compas==. Par vent nul, le cap compas mène l’avion de A à B même si le cap ne correspond pas à la route tracée.
+P: Exemple : si la variation est « 9° E », le MN est à 9° à l’est du TN. TC 360° → cap magnétique 351° (360 – 9) ; vers l’est : 081° (090 – 9) ; vers le sud : 171° ; vers l’ouest : 261° ; TH 060° → 051°.
+SUM: Ligne agone : variation 0 (Grands Lacs, Wisconsin, Illinois, ouest du Tennessee). || Trois corrections : variation, déviation, vent. || Variation 9° E : soustraire 9°.
+VOC: route magnétique | magnetic course ;; cap compas | compass heading ;; fiche de déviation | deviation card ;; déviation | deviation ;; variation magnétique | magnetic variation ;; correction du vent | wind correction
+@PAGE 16-8 pdf=395
+P: Règle : ==variation ouest = on ajoute ; variation est = on soustrait== (« east is least, west is best »). 
+## Déviation
+P: Le cap magnétique est une étape intermédiaire pour obtenir le cap compas. À cause des influences magnétiques de l’avion (circuits électriques, radio, feux, outils, moteur, pièces aimantées), l’aiguille est souvent déviée : c’est la ==déviation==, différente pour chaque avion et même selon le cap. Exemple : si le moteur attire l’extrémité nord du compas, aucun effet au cap du MN, mais erreur aux caps est et ouest [Figure 16-11]. La ==compensation== peut réduire l’erreur, le reste est à corriger par le pilote. Elle est faite par un technicien compétent ; comme les forces magnétiques changent (chocs à l’atterrissage, vibrations, travaux), faire vérifier la déviation de temps en temps : c’est « ==swinging the compass== ».
+P: L’avion est placé sur une rose de compas magnétique, moteur en marche et équipements électriques normalement utilisés allumés (trains classiques mis en ligne de vol). On l’aligne sur le MN, on note le compas sur la fiche, puis tous les ==30°==. Si l’avion vole de nuit, on allume les feux et on note les changements. On peut aussi comparer avec des caps de piste connus.
+P: La ==fiche de déviation== (Figure 16-12) est placée près du compas ; pour les valeurs intermédiaires, interpoler mentalement : correction 0° à 180° et +2° à 210° → +1° à 195°. Le cap magnétique corrigé de la déviation est le ==cap compas==.
+## Effet du vent
+P: Le vent est une masse d’air qui se déplace au-dessus de la surface : un vent du nord de 25 kt déplace l’air vers le sud de 25 NM en 1 heure. Tout objet libre est emporté de même, et l’avion volant dans la masse d’air en subit l’effet. Après 1 heure, sa position résulte de deux mouvements…
+FIG: Figure 16-11. Les parties aimantées de l’avion font dévier le compas. Figure 16-12. Fiche de déviation du compas (pour 0/30/60… les caps compas à tenir : 30 → 28 ; 60 → 57 ; 120 → 117 ; 150 → 148 ; 210 → 212 ; 240 → 243 ; 300 → 303 ; 330 → 332).
+SUM: Variation ouest : +, est : –. || Déviation : propre à chaque avion, fiche tous les 30°, interpoler. || TH ± V = MH ± D = CH.
+VOC: compensation du compas | compass compensation ;; faire tourner le compas | swing the compass ;; interpolation | interpolation ;; cap magnétique | magnetic heading ;; vent | wind
+@PAGE 16-9 pdf=396
+P: Les deux mouvements sont indépendants : le déplacement de l’air par rapport au sol et le déplacement de l’avion dans l’air. Un pilote dans un vent de 70 kt ne le sent pas (hors turbulence) sauf en regardant le sol. Par rapport au sol, l’avion va plus vite avec un vent arrière, plus lentement avec un vent de face, et dérive avec un vent de travers. Figure 16-13 : vitesse air 120 kt cap est : vent calme → ==vitesse-sol (GS) 120 kt== ; vent d’ouest (270°) 20 kt → 140 kt ; vent d’est (090°) 20 kt → 100 kt. ==La vitesse air n’est pas affectée par le mouvement de l’air.==
+P: Sans correction, cap est à 120 kt avec une masse d’air se déplaçant vers le sud à 20 kt : après 1 heure l’avion est presque à 120 miles à l’est du départ et 20 miles au sud. La vitesse-sol se calcule par le temps entre deux points distants connus, ou avant le vol par un ==triangle des vents== [Figure 16-14].
+P: ==Cap== : direction du nez ; ==route-sol (track)== : trajectoire réelle ; ==angle de dérive== : angle entre cap et route-sol. Cap = route, vent de gauche → l’avion dérive à droite [Figure 16-15].
+P: Méthode courante : après mesure de la TC et correction du vent (TH), appliquer la séquence ==TH ± variation (V) = cap magnétique (MH) ± déviation (D) = cap compas (CH)== [Figure 16-16].
+P: Pour contrer la dérive, il faut pointer l’avion du côté d’où vient le vent : c’est l’==angle de correction de vent (WCA)==, en degrés à droite ou à gauche de la TC [Figure 16-17].
+FIG: Figure 16-13. Le mouvement de l’air affecte la vitesse de l’avion par rapport au sol (vent calme : 120 kt ; vent 270° à 20 kt : 140 kt ; vent 090° à 20 kt : 100 kt).
+SUM: GS = TAS ± vent ; vent d’ouest cap est : 140 kt. || Cap / route-sol / dérive. || WCA : pointer du côté du vent.
+VOC: vitesse-sol | groundspeed (GS) ;; route-sol | track ;; angle de dérive | drift angle ;; angle de correction de vent | wind correction angle (WCA) ;; triangle des vents | wind triangle ;; vitesse air | airspeed
+@PAGE 16-10 pdf=397
+FIG: Figure 16-14. Trajectoire de l’avion résultant de sa vitesse air et de son cap, et de la vitesse et de la direction du vent. Figure 16-15. Effets de la dérive sur le maintien de la route voulue. Figure 16-16. Relation entre caps vrai, magnétique et compas (ex. VAR 10° E, DEV 4°). 
+P: Résumé des termes :
+- ==Route (course)== : trajectoire voulue au-dessus du sol, ou direction de la ligne tracée sur la carte.
+- ==Cap (heading)== : direction du nez en vol.
+- ==Route-sol (track)== : trajectoire réelle ; si la correction du vent est bonne, track = course.
+- ==Angle de dérive== : angle entre cap et track.
+- ==WCA== : correction appliquée à la route pour établir un cap qui fait coïncider track et course.
+- ==Vitesse air (airspeed)== : vitesse d’avancement dans l’air.
+- ==Vitesse-sol (GS)== : vitesse d’avancement par rapport au sol.
+SUM: Course = trajectoire voulue ; heading = nez ; track = trajectoire réelle. || WCA = angle pour que track = course. || Airspeed ≠ GS.
+VOC: route | course ;; cap | heading ;; angle de dérive | drift angle ;; vitesse air | airspeed ;; vitesse-sol | groundspeed
+@PAGE 16-11 pdf=398
+FIG: Figure 16-17. Établissement d’un angle de correction de vent qui contre la dérive et maintient la route voulue.
+# Calculs de base
+P: Avant une navigation, faire les calculs usuels de temps, vitesse, distance et carburant.
+## Conversion minutes ↔ heures
+P: Minutes → heures : diviser par 60 (30 min = 0,5 h) ; heures → minutes : multiplier par 60 (0,75 h = 45 min).
+## Temps, distance, vitesse-sol
+P: ==T = D / GS== : 210 NM à 140 kt = 1,5 h (1 h 30). ==D = GS × T== : 1 h 45 à 120 kt = 120 × 1,75 = 210 NM. ==GS = D / T== : 270 NM en 3 h = 90 kt.
+## Nœuds ↔ miles par heure
+P: Le NWS donne le vent de surface et en altitude en nœuds ; certains anémomètres sont gradués en mph. Un nœud = 1 NM par heure ; 1 NM = 6 076,1 ft et 1 SM = 5 280 ft : facteur de conversion ==1,15==. Pour passer des nœuds aux mph, multiplier par 1,15 : ==20 kt ≈ 23 mph==. Les calculateurs de vol ou les échelles NM/SM au bas des cartes peuvent aussi servir.
+## Consommation de carburant
+P: Il faut calculer précisément la consommation en préparation. En général, en gallons par heure pour les avions à essence. Les turbines consomment bien plus ; comme le volume de carburant varie beaucoup avec la température, le carburant des jets est quantifié par masse. On en tire une consommation en livres par heure qui, divisée par la vitesse (TAS ± vent), donne la ==distance spécifique== (NM par livre de carburant). La planification doit s’appuyer sur le suivi de la consommation passée et les procédures de gestion du carburant et du mélange.
+SUM: T = D ÷ GS ; D = GS × T ; GS = D ÷ T. || 1 kt = 1,15 mph : 20 kt ≈ 23 mph. || Carburant : consommation × temps.
+VOC: calculateur | computer ;; conversion | conversion ;; consommation de carburant | fuel consumption ;; nœud | knot ;; mille nautique | nautical mile (NM) ;; mille terrestre | statute mile (SM)
+@PAGE 16-12 pdf=399
+P: Pour les avions simples à pistons, l’AFM/POH donne les valeurs en gallons par heure. En planification, déterminer le carburant nécessaire : distance ÷ GS = temps, multiplié par la consommation. Exemple : 400 NM à 100 kt = 4 h ; 5 gal/h → ==20 gallons==. En présence de vent, utiliser la ==GS== (la consommation est constante à TAS donnée). Prévoir une ==réserve== adéquate.
+P: Prévoir d’être posé avant que : le temps de vol dépasse celui calculé pour le carburant prévol, ou que la jauge indique un niveau bas. La consommation dépend de l’état du moteur, du pas et du régime de l’hélice, de la richesse du mélange et du pourcentage de puissance. Compter la mise en route, le roulage et la consommation plus forte en montée (vitesse-sol plus faible qu’en croisière à même vitesse air).
+## Calculateurs de vol
+P: La plupart des pilotes utilisent un calculateur mécanique ==E6B== ou électronique (Figure 16-18). Chaque appareil a un manuel avec des exemples.
+## Règle de navigation (plotter)
+P: Rapporteur et règle servant à déterminer la TC et à mesurer les distances ; généralement graduée en NM et SM, avec échelles de sectionnelle et de carte mondiale.
+# Pilotage (navigation à vue)
+P: Navigation par rapport à des repères ou points de contrôle, utilisable sur toute route disposant de repères suffisants, plus souvent avec l’estime et la radionavigation VFR. Choisir des repères remarquables et identifiables (routes, rivières, voies ferrées, lacs, lignes électriques), idéalement des « bornes » de chaque côté de la route. ==Ne jamais se fier à un seul repère== ; si l’un est manqué, chercher le suivant en gardant le cap. Échelle d’une sectionnelle : 1 po = 8 SM ou 6,86 NM (un demi-pouce = 4 SM ou 3,43 NM). ==En cas de doute, garder le cap== : un virage fait facilement se perdre.
+P: Les routes représentées sont les plus fréquentées ; les nouvelles constructions ne sont pas encore sur la carte. Certaines structures, comme les antennes, sont difficiles à voir, et des groupes d’antennes de télévision sont soutenus par des haubans quasi invisibles : ==ne jamais approcher une zone d’antennes à moins de 500 ft au-dessus de la plus haute==.
+SUM: Carburant = temps (D ÷ GS) × consommation ; 400 NM à 100 kt, 5 gal/h = 20 gal. || Être posé avant d’épuiser le carburant prévu. || Pilotage : plusieurs repères ; garder le cap si perdu ; antennes à +500 ft.
+VOC: pilotage | pilotage ;; repère | checkpoint ;; E6B | E6B flight computer ;; règle de navigation | plotter ;; haubans | guy wires ;; réserve de carburant | fuel reserve

@@ -1,0 +1,70 @@
+@PAGE 16-31 pdf=418
+FIG: Figure 16-39. Suivi ADF (relèvement 340° vers la station ; cap 330°).
+P: Le GPS est un système de radionavigation et de diffusion de l’heure par satellites, développé et exploité par le ministère de la Défense (DOD). L’interface civile et l’état du système sont disponibles auprès de la Garde côtière. Il n’est pas nécessaire de comprendre la technique pour l’utiliser en VFR/IFR, mais il diffère nettement de la navigation électronique au sol : bien connaître les approbations et limites de l’équipement.
+P: Le récepteur suit plusieurs satellites et détermine une mesure de pseudo-distance. ==Il faut au minimum quatre satellites pour une position tridimensionnelle précise.== L’état d’un satellite est diffusé dans le message de données, disponible aussi auprès de la Garde côtière (navcen.uscg.gov) et par le système NOTAM.
+P: Le récepteur vérifie l’intégrité des signaux par le ==RAIM== (*receiver autonomous integrity monitoring*). Il lui faut au moins un satellite en plus de ceux nécessaires à la navigation : le RAIM exige ==cinq satellites== (ou quatre plus un altimètre barométrique : « baro-aiding ») pour détecter une anomalie, et ==six== (ou cinq avec baro-aiding) pour isoler le signal corrompu. L’altitude GPS n’est pas fiable (erreur verticale importante, sans intégrité) : le calage altimétrique doit être saisi pour le baro-aiding. Messages RAIM de deux types : pas assez de satellites pour la surveillance ; ou erreur potentielle dépassant la limite de la phase de vol. ==Sans RAIM, le pilote n’a aucune assurance de la précision de la position GPS.==
+## Disponibilité sélective (SA)
+P: Dégradation intentionnelle de la précision, supprimée le 1er mai 2000 ; beaucoup de récepteurs supposent encore qu’elle est active. La constellation de base compte ==24 satellites== sur six plans orbitaux, quatre satellites opérationnels plus un emplacement de rechange par plan (jusqu’à 30). La période orbitale est d’un demi-jour sidéral (11 h 58)…
+SUM: GPS : minimum 4 satellites (3D). || RAIM : 5 satellites pour détecter, 6 pour isoler (ou +1 avec baro-aiding). || Sans RAIM, aucune garantie de précision. || 24 satellites, 6 plans.
+VOC: RAIM | receiver autonomous integrity monitoring (RAIM) ;; pseudo-distance | pseudorange ;; constellation | constellation ;; disponibilité sélective | selective availability (SA) ;; baro-aiding | baro-aiding
+@PAGE 16-32 pdf=419
+P: … Orbites presque circulaires, espacées de 60° autour de l’équateur, inclinaison de 55°, rayon ≈ 26 600 km. Avec un ciel dégagé, un utilisateur voit au moins quatre satellites, plus probablement six à huit. Les satellites émettent des signaux de mesure et des données de navigation ; le récepteur utilise au moins quatre satellites au-dessus de l’==angle de masque== (angle minimal au-dessus de l’horizon). [Figure 16-40]
+## Emploi du GPS en VFR
+P: Le GPS est un grand atout pour le VFR (navigation accrue, meilleure conscience de la situation, coûts réduits grâce aux routes directes) mais il ne faut pas dépasser ses capacités. Récepteurs : installation IFR complète utilisée en VFR, installation VFR seule, ou portable. Il faut comprendre leurs limites. ==Le pilote VFR ne doit jamais se fier à un seul système de navigation== : le GPS doit être intégré aux autres formes de navigation électronique, au pilotage et à l’estime. Préoccupations : ==capacité RAIM, mise à jour de la base de données, emplacement de l’antenne==.
+## Capacité RAIM
+P: Beaucoup de récepteurs VFR et tous les portables n’ont pas d’alerte RAIM : la perte de satellites ou une erreur de position n’est pas signalée. Une comparaison systématique avec les autres techniques identifie la panne.
+P: ==Base de données== : à jour obligatoire en IFR, pas en VFR, mais la carte mobile qui montre les espaces à usage spécial et les classes d’espace peut être obsolète et donner de fausses informations : de nombreux pilotes sont entrés dans un espace qu’ils voulaient éviter. Sans base à jour, ignorer la carte mobile pour les décisions critiques. Les waypoints sont ajoutés, supprimés ou renommés : vérifier avec une source officielle à jour (Chart Supplement, sectionnelle). Antenne : sur les installations VFR, l’emplacement est une question de commodité ; une partie de l’avion peut masquer l’antenne et faire perdre le signal.
+FIG: Figure 16-40. Constellation de satellites.
+SUM: Base de données : à jour obligatoire seulement en IFR ; carte mobile potentiellement fausse. || Ne jamais se fier à une seule méthode. || Antenne : bien dégagée. || Portables : pas de RAIM.
+VOC: base de données | database ;; carte mobile | moving map display ;; angle de masque | mask angle ;; antenne | antenna ;; installation VFR | VFR installation
+@PAGE 16-33 pdf=420
+P: L’emploi d’un GPS portable en VFR n’est pas limité par la réglementation, mais une modification de l’avion (support sur le tableau ou le manche) relève du 14 CFR part 43 : consulter un mécanicien.
+## Conseils pour l’emploi du GPS en VFR
+P: 
+- ==Toujours vérifier si l’unité a le RAIM== ; sinon, se méfier de la position GPS en cas de désaccord avec les autres systèmes.
+- Vérifier la validité de la base de données ; sinon l’actualiser, ou ignorer la carte mobile pour les décisions critiques. Des waypoints peuvent avoir disparu ou changé de place : au minimum, les vérifier avec une source officielle à jour.
+- ==Planifier soigneusement le vol avant le décollage== ; saisir les waypoints définis par l’utilisateur au sol, pas en vol ; les vérifier sur une sectionnelle à jour. Éviter le « nez dans la cabine » : surveiller trafic, relief et obstacles.
+- Bien connaître le récepteur (les touches, boutons et écrans ne sont pas intuitifs) : tutoriels et simulations des constructeurs.
+P: En résumé, ne pas compter sur le GPS pour résoudre tous les problèmes de navigation VFR. ==Sans installation IFR conforme, aucune norme de précision ni d’intégrité n’est assurée==. Seul le pilote navigue : le GPS n’est qu’un de ses outils.
+## Waypoints VFR
+P: Outil supplémentaire pour la conscience de la position en navigation à vue avec un récepteur RNAV, pour aider les pilotes qui ne connaissent pas une zone, définir des points de compte rendu, mieux naviguer autour des classes B et C et des espaces à usage spécial. Se fier aux cartes à jour conçues pour la navigation à vue ; dans une zone terminale, utiliser la carte de zone terminale. ==Ils ne dispensent pas de respecter le part 91.==
+P: Un nom de waypoint VFR (pour la saisie et les plans de vol) comporte ==cinq lettres commençant par « VP »==, n’est pas conçu pour être prononcé ni utilisé avec l’ATC. Sur les cartes VFR, un waypoint isolé est représenté par l’étoile à quatre branches ; un waypoint coïncidant avec un repère visuel par un petit drapeau magenta (prononçable selon le nom du repère, utilisable avec l’ATC). Nom entre parenthèses près du lieu ; latitudes/longitudes dans le Chart Supplement régional.
+SUM: Conseils GPS : vérifier RAIM et base de données, saisir les waypoints au sol. || Waypoint VFR : 5 lettres commençant par « VP » ; drapeau magenta si repère visuel. || Le GPS n’est qu’un outil.
+VOC: waypoint VFR | VFR waypoint ;; carte de zone terminale | terminal area chart ;; base de données expirée | expired database ;; point défini par l'utilisateur | user-defined waypoint ;; simulation | simulation
+@PAGE 16-34 pdf=421
+P: Dans un plan de vol VFR, utiliser l’identifiant de cinq lettres comme waypoint dans la route s’il y a un changement de route à ce point ou pour décrire la route (comme un VOR). ==À utiliser seulement en conditions VFR.== Charger les waypoints VFR au sol avant le départ ; éviter de programmer des routes en vol.
+P: Redoubler de vigilance près des waypoints VFR (comme près des VOR et NDB) : la précision du GPS réduit les écarts entre pilotes. Utiliser tous les services ATC disponibles, écouter la fréquence ATC, et allumer le(s) phare(s) d’atterrissage pour être plus visible, surtout par visibilité réduite.
+# Procédures en cas de perte d’orientation (lost procedures)
+P: Se perdre en vol est dangereux, surtout avec peu de carburant. Bon sens :
+- Si aucune ville n’est visible, ==monter== (attention au trafic et à la météo) : cela augmente la portée radio, de navigation et radar. Près d’une ville, lire le nom sur un château d’eau.
+- Avec un VOR ou ADF, déterminer sa position en traçant des relèvements de deux ou plusieurs stations. Avec un GPS (installé ou portable), obtenir la position et l’aéroport le plus proche.
+- ==Communiquer avec une installation disponible== (fréquences de la sectionnelle) ; le contrôleur peut donner des vecteurs radar ou une aide à la radiogoniométrie (DF) : il demande de maintenir le bouton d’émission quelques secondes puis de le relâcher, voire de changer de cap, pour tracer la position.
+- Si la situation devient menaçante, transmettre sur la fréquence d’urgence ==121,5 MHz== et afficher ==7700== au transpondeur.
+## Déroutement
+P: Il peut arriver qu’on ne puisse pas atteindre la destination (météo imprévue, panne, mauvaise planification) : se dérouter vers un aérodrome de dégagement en sécurité. La gestion des risques devient prioritaire (par ex. le danger d’un VFR into IMC inopiné se traite par un déroutement prévu ou en vol). ==Avant toute navigation, vérifier sur la carte les aéroports ou zones d’atterrissage le long de la route, et les aides à la navigation utilisables en déroutement.==
+P: Les calculs en vol sont les mêmes qu’avant le vol mais l’attention est partagée (pilotage, calculs, surveillance) : utiliser les raccourcis et règles empiriques. Il est rarement pratique de tracer la route sur la carte. La route vers l’alternative se mesure au rapporteur, ou à la règle avec la rose de compas autour des VOR (une radiale proche ou une airway parallèle). ==Le cap magnétique d’une radiale ou d’une airway est sortant de la station : pour aller vers la station, prendre la réciproque.== Plus facile avec une alternative munie d’un VOR ou NDB. Commencer si possible depuis un repère remarquable.
+SUM: Perdu : monter, relever deux stations, GPS, appeler (121,5, 7700). || DF : tenir l’émission quelques secondes. || Déroutement : vérifier à l’avance les alternatives ; radiale = sortant de la station.
+VOC: perdu | lost ;; radiogoniométrie | direction finding (DF) ;; déroutement | diversion ;; aérodrome de dégagement | alternate ;; fréquence d’urgence | emergency frequency ;; vecteurs radar | radar vectors
+@PAGE 16-35 pdf=422
+P: En urgence, se dérouter sans attendre ; vouloir tout tracer, mesurer et calculer avant peut aggraver l’urgence réelle. Une fois sur la route, noter l’heure, utiliser les vents en altitude les plus proches pour calculer cap et GS, puis la nouvelle heure d’arrivée et la consommation. ==Donner la priorité au pilotage== en partageant l’attention. Pour choisir l’altitude du déroutement : hauteur des nuages, vents, relief, réception radio.
+## Résumé du chapitre
+P: Ce chapitre expose les fondamentaux de la navigation VFR, des cartes jusqu’au GPS. Un aspect reste constant : ==le pilote est responsable d’une bonne planification et de son exécution== pour un vol sûr.
+@SHEET
+* Cartes : sectionnelle 1:500 000 (1 po = 6,86 NM, révision semestrielle), terminale VFR 1:250 000, WAC 1:1 000 000. Latitude 0–90° N/S, longitude 0–180° E/O. États-Unis : 25–49° N, 67–125° W ; un fuseau par 15° (Est 75°, Centre 90°, Montagne 105°, Pacifique 120°). UTC : Est +5, Centre +6, Montagne +7, Pacifique +8 ; heure d’été –1.
+* Directions : TC ± WCA = TH ; TH ± V = MH ; MH ± D = CH (variation ouest +, est – ; vent de droite WCA +, de gauche –). Variation = écart TN/MN, isogones, ligne agone ; déviation = fiche de l’avion ; compas ±. Triangle des vents : GS et TH.
+* Calculs : T = D/GS ; D = GS × T ; GS = D/T ; 1 kt = 1,15 mph ; carburant = temps × consommation ; réserve. Plan de vol VFR : facultatif mais conseillé ; clore à l’arrivée ; conservé 1 h après l’heure proposée. Altitudes VFR : mille impair + 500 ft pour 0–179° magnétique (au-dessus de 3 000 ft AGL).
+* VOR : 108,0–117,95 MHz, ligne de vue (40–45 mi à 1 000 ft AGL), classes T/L/H, tolérances ±4° sol, ±6° air, 4° entre deux récepteurs. TO/FROM, ne pas chasser l’aiguille. DME : distance oblique. NDB/ADF : 200–415 kHz, homing vs tracking. GPS : 4 satellites min, RAIM 5/6, base de données, antenne.
+* Perdu : monter, relever, appeler 121,5, 7700, DF. Déroutement : rapide, estime, rose des VOR.
+@NUMS
+1:500 000 / 6,86 NM par pouce | échelle d’une carte sectionnelle
+1:250 000 / 3,43 NM par pouce | échelle d’une carte de zone terminale VFR
+15° de longitude | largeur d’un fuseau horaire (1 heure)
++5 / +6 / +7 / +8 h | conversion Est / Centre / Montagne / Pacifique vers UTC
+1,15 | facteur de conversion des nœuds en mph
+108,0–117,95 MHz | bande de fréquence des VOR
+40–45 miles à 1 000 ft AGL | portée approximative du VOR
+±4° / ±6° | tolérance IFR de contrôle VOR au sol / en vol
+200–415 kHz | bande de fréquence des NDB
+4 / 5 / 6 | satellites minimum pour position / détection RAIM / isolation RAIM
+24 | satellites de la constellation GPS de base
+121,5 MHz / 7700 | fréquence et code d’urgence
