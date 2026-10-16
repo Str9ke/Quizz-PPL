@@ -8,7 +8,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?v=20261016a" />
-  <link rel="stylesheet" href="livre.css?v=20261016a" />
+  <link rel="stylesheet" href="livre.css?v=20261016b" />
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -71,7 +71,16 @@
     <button type="button" class="bk-btn" id="bkAnnotClose" aria-label="Fermer">✕</button>
   </div>
 
-  <script src="js/livre.js?v=20261016a"></script>
+  <div class="bk-z" id="bkZ" hidden>
+    <div class="bk-z-bar"><span id="bkZCap"></span><span class="bk-grow"></span>
+      <button class="bk-btn" id="bkZOut" type="button" aria-label="Dézoomer">−</button>
+      <button class="bk-btn" id="bkZIn" type="button" aria-label="Zoomer">+</button>
+      <button class="bk-btn" id="bkZReset" type="button">1×</button>
+      <button class="bk-btn primary" id="bkZClose" type="button">Fermer</button></div>
+    <div class="bk-z-stage" id="bkZStage"><img id="bkZImg" alt="Page originale" draggable="false"></div>
+  </div>
+
+  <script src="js/livre.js?v=20261016b"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/pwa-install.js"></script>
 </body>

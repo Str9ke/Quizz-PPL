@@ -35,7 +35,7 @@
   var BOOK = null, PAGES = [], ALLWORDS = 0;
   var uid = null, S = null, dirty = {}, seq = 0, flushTimer = null, lastFlush = 0, inflight = 0;
   var unsub = null;
-  var view = 'home', cur = null, lastAct = Date.now(), bottomSeen = false, showOrig = false;
+  var view = 'home', cur = null, lastAct = Date.now(), bottomSeen = false, showOrig = !!jget('bk_orig', 1);
   var unitHtml = {}, annot = null, noteTarget = null, ticks = 0;
 
   var DEV = (function () {
@@ -432,7 +432,8 @@
       + '<button class="bk-btn" data-act="chunread">↺ Tout marquer non lu</button></div>'
       + '<nav class="bk-pills" id="bkPills" aria-label="Pages du chapitre"></nav>'
       + '<div class="bk-stage" id="bkStage"><article class="bk-page" id="bkPage"></article>'
-      + '<aside class="bk-orig" id="bkOrig" hidden><div class="bk-orig-cap" id="bkOrigCap"></div><img id="bkOrigImg" alt="Page originale en anglais"></aside></div>';
+      + '<aside class="bk-orig" id="bkOrig" hidden><div class="bk-row"><div class="bk-orig-cap bk-grow" id="bkOrigCap"></div><button class="bk-btn" data-act="zoom">🔍 Zoomer</button></div>'
+      + '<img id="bkOrigImg" alt="Page originale en anglais" data-act="zoom"></aside></div>';
     $root.innerHTML = h;
     document.getElementById('bkKey').addEventListener('change', function (e) {
       document.getElementById('bkPage').classList.toggle('nokey', !e.target.checked); jset('bk_key', e.target.checked ? 1 : 0);
@@ -500,15 +501,63 @@
       + (st.read === st.total ? 'chapitre terminé ✓' : 'reste ≈ ' + fmtDur(st.wUnread * pc));
   }
   function updateOrig() {
-    var o = document.getElementById('bkOrig'), st = document.getElementById('bkStage'); if (!o) return;
+    var o = document.getElementById('bkOrig'); if (!o) return;
     var p = chap(cur.n).pages[cur.pi];
-    o.hidden = !showOrig; st.classList.toggle('two', showOrig);
+    o.hidden = !showOrig;
+    document.querySelectorAll('.bk-foot [data-act=orig]').forEach(function (x) { x.classList.toggle('on', showOrig); });
     if (showOrig) {
-      o.classList.remove('zoom');
       document.getElementById('bkOrigImg').src = imgUrl(p);
-      document.getElementById('bkOrigCap').textContent = 'Page originale ' + p.ref + ' (anglais) — touche l’image pour zoomer';
+      document.getElementById('bkOrigCap').textContent = 'Page originale ' + p.ref + ' (anglais)';
     }
   }
+
+  /* Visionneuse plein écran de la page originale : pincer / molette pour zoomer, glisser pour
+     se déplacer, double toucher pour alterner 1× / 3×. */
+  var zv = { open: false, x: 0, y: 0, k: 1, pts: {}, d0: 0, k0: 1, drag: null };
+  function zvApply() {
+    var img = document.getElementById('bkZImg'); if (!img) return;
+    zv.k = Math.max(1, Math.min(8, zv.k));
+    if (zv.k === 1) { zv.x = 0; zv.y = 0; }
+    img.style.transform = 'translate(' + zv.x + 'px,' + zv.y + 'px) scale(' + zv.k + ')';
+  }
+  function zoomAt(cx, cy, nk) {
+    var box = document.getElementById('bkZ').getBoundingClientRect();
+    var px = cx - box.left - box.width / 2, py = cy - box.top - box.height / 2;
+    nk = Math.max(1, Math.min(8, nk));
+    zv.x = px - (px - zv.x) * nk / zv.k; zv.y = py - (py - zv.y) * nk / zv.k; zv.k = nk; zvApply();
+  }
+  function openZoom() {
+    var p = chap(cur.n).pages[cur.pi], z = document.getElementById('bkZ');
+    document.getElementById('bkZImg').src = imgUrl(p);
+    document.getElementById('bkZCap').textContent = 'Page ' + p.ref + ' — pince ou molette pour zoomer, glisse pour te déplacer';
+    zv.x = zv.y = 0; zv.k = 1; zvApply(); z.hidden = false; zv.open = true;
+  }
+  function closeZoom() { var z = document.getElementById('bkZ'); if (z) z.hidden = true; zv.open = false; }
+  (function initZoom() {
+    var z = document.getElementById('bkZ'), st = document.getElementById('bkZStage'), last = 0;
+    document.getElementById('bkZClose').addEventListener('click', closeZoom);
+    document.getElementById('bkZIn').addEventListener('click', function () { var r = st.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, zv.k * 1.6); });
+    document.getElementById('bkZOut').addEventListener('click', function () { var r = st.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, zv.k / 1.6); });
+    document.getElementById('bkZReset').addEventListener('click', function () { zv.k = 1; zvApply(); });
+    st.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.clientX, e.clientY, zv.k * (e.deltaY < 0 ? 1.2 : 1 / 1.2)); }, { passive: false });
+    st.addEventListener('pointerdown', function (e) {
+      st.setPointerCapture(e.pointerId); zv.pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(zv.pts);
+      if (ids.length === 2) { var a = zv.pts[ids[0]], b = zv.pts[ids[1]]; zv.d0 = Math.hypot(a.x - b.x, a.y - b.y); zv.k0 = zv.k; zv.drag = null; }
+      else { zv.drag = { x: e.clientX, y: e.clientY, ox: zv.x, oy: zv.y }; if (now() - last < 320) { zoomAt(e.clientX, e.clientY, zv.k > 1.5 ? 1 : 3); zv.drag = null; } last = now(); }
+    });
+    st.addEventListener('pointermove', function (e) {
+      if (!zv.pts[e.pointerId]) return; zv.pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(zv.pts);
+      if (ids.length === 2 && zv.d0) {
+        var a = zv.pts[ids[0]], b = zv.pts[ids[1]];
+        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, zv.k0 * Math.hypot(a.x - b.x, a.y - b.y) / zv.d0);
+      } else if (zv.drag && zv.k > 1) { zv.x = zv.drag.ox + e.clientX - zv.drag.x; zv.y = zv.drag.oy + e.clientY - zv.drag.y; zvApply(); }
+    });
+    function up(e) { delete zv.pts[e.pointerId]; zv.d0 = 0; if (!Object.keys(zv.pts).length) zv.drag = null; }
+    st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && zv.open) closeZoom(); });
+  })();
   function go(delta) {
     var n = cur.n, pi = cur.pi + delta;
     if (pi < 0) { if (n === 1) return; n--; pi = chap(n).pages.length - 1; openChapter(n, pi, true); return; }
@@ -708,7 +757,8 @@
     else if (act === 'next') go(1);
     else if (act === 'sum') pageSheet();
     else if (act === 'chsheet') chapterSheet();
-    else if (act === 'orig') { showOrig = !showOrig; updateOrig(); document.querySelectorAll('.bk-foot [data-act=orig]').forEach(function (x) { x.classList.toggle('on', showOrig); }); }
+    else if (act === 'orig') { showOrig = !showOrig; jset('bk_orig', showOrig ? 1 : 0); updateOrig(); if (showOrig && b.closest('.bk-fig')) document.getElementById('bkOrig').scrollIntoView({ block: 'start' }); }
+    else if (act === 'zoom') openZoom();
     else if (act === 'toggleread') { setRead(cur.ref, !isRead(cur.ref)); renderPills(); updateReadBtn(); updateChapterHead(); }
     else if (act === 'chread' || act === 'chunread') {
       chap(cur.n).pages.forEach(function (p) { setRead(p.ref, act === 'chread'); });
@@ -727,10 +777,6 @@
   ov.addEventListener('click', onClick);   // les fiches (notes, annotations) sont hors de $root
   document.getElementById('bkClose').addEventListener('click', closeSheet);
   ov.addEventListener('click', function (e) { if (e.target === ov) closeSheet(); });
-  $root.addEventListener('click', function (e) {
-    var im = e.target.closest('#bkOrigImg');
-    if (im) document.getElementById('bkOrig').classList.toggle('zoom');
-  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { closeSheet(); annotHide(); return; }
     if (view !== 'chapter' || !ov.hidden || e.target.matches('input,textarea')) return;
