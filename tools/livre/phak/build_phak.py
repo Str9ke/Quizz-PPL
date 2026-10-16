@@ -50,7 +50,10 @@ def parse(path):
 def main():
     done={}
     for f in sorted(glob.glob(SRC+'/tr/ch*.txt')):
-        n,intro,pages,sheet,nums=parse(f); done[n]=(intro,pages,sheet,nums)
+        n,intro,pages,sheet,nums=parse(f)
+        if n in done:
+            i0,p0,s0,n0=done[n]; done[n]=(i0 or intro,p0+pages,s0 or sheet,n0 or nums)
+        else: done[n]=(intro,pages,sheet,nums)
     chapters=[]
     for n,(label,title,g,a,b) in CHAPTERS.items():
         if n not in done: continue
@@ -61,7 +64,7 @@ def main():
             assert os.path.exists(src),src; shutil.copy2(src,f'{R}/img/{p["pdf"]:03d}.webp')
     pending=[f'{CHAPTERS[n][0]} — {CHAPTERS[n][1]}' for n in CHAPTERS if n not in done]
     json.dump({'id':'phak','title':'Manuel du pilote, en français','eyebrow':'FAA-H-8083-25C · Pilot’s Handbook of Aeronautical Knowledge',
-      'footer':'Traduction non officielle, faite pour étudier. Règles américaines : pour l’Europe et la Belgique, la réglementation en vigueur, l’AIP et ton instructeur font foi. Les figures ne sont pas traduites : ouvre la page originale pour les voir.',
+      'footer':'Traduction condensée et non officielle, faite pour étudier. Règles américaines : pour l’Europe et la Belgique, la réglementation en vigueur, l’AIP et ton instructeur font foi. Les figures ne sont pas traduites : ouvre la page originale pour les voir.',
       'groups':[{'name':g[1],'sub':g[2]} for g in GROUPS],'pending':pending,'chapters':chapters},open(R+'/book.json','w',encoding='utf8'),ensure_ascii=False,separators=(',',':'))
     print(len(chapters),'chapitres,',sum(len(c['pages']) for c in chapters),'pages,',sum(p['w'] for c in chapters for p in c['pages']),'mots ;',len(pending),'en attente')
 main()

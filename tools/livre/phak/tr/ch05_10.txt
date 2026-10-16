@@ -1,0 +1,67 @@
+@CH 5
+@PAGE 5-45 pdf=142
+FIG: Figure 5-64. Écoulement sur l’aile (M = 0,50 : vitesse locale maximale inférieure à la vitesse du son ; M = 0,72 : Mach critique ; M = 0,77 : onde de choc normale et décollement possible).
+P: En vol rapide ou à haute altitude, la vitesse s’exprime en ==nombre de Mach== : rapport entre la vitesse vraie et la vitesse du son dans les mêmes conditions. Voler à la vitesse du son = Mach 1,0. Régimes : ==subsonique== (< Mach 0,75), ==transsonique== (0,75 à 1,20), ==supersonique== (1,20 à 5,00), hypersonique (> 5,00). Les jets civils croisent entre Mach 0,7 et 0,90.
+P: Le ==Mach critique== (*critical Mach number*) est la vitesse à laquelle l’écoulement atteint pour la première fois Mach 1,0 sur une partie de l’avion : frontière entre subsonique et transsonique, qui dépend de l’aile et du profil. Au-dessus, des ondes de choc se forment, avec décollement, buffeting et difficultés de commande. À 5–10 % au-dessus du Mach critique, la traînée augmente brutalement : c’est la « divergence de traînée » (*drag divergence*). [Figure 5-65]
+P: VMO/MMO est la limite de vitesse opérationnelle maximale : VMO en nœuds de vitesse corrigée (KCAS), liée aux basses altitudes (charges structurales, flutter) ; MMO en Mach, liée aux hautes altitudes (compressibilité, flutter). Respecter ces vitesses évite les problèmes structurels et la dégradation des commandes (Mach tuck, inversion d’ailerons, *buzz*). Exemple : VMO 306 KCAS jusqu’à environ FL 310, où MMO 0,82 = 306 KCAS ; au-dessus, MMO devient la limite (à FL 380, 0,82 = 261 KCAS).
+SUM: Nombre de Mach = vitesse vraie / vitesse du son ; subsonique < 0,75, transsonique 0,75–1,20, supersonique 1,20–5,00. || Mach critique : première apparition de Mach 1,0 sur l’avion ; au-dessus, ondes de choc et buffeting. || VMO (KCAS, basse altitude) et MMO (Mach, haute altitude) : limites opérationnelles. || Cette partie concerne surtout les jets ; peu utile pour un PPL.
+VOC: nombre de Mach | Mach number ;; transsonique | transonic ;; supersonique | supersonic ;; Mach critique | critical Mach number ;; divergence de traînée | drag divergence ;; flutter | flutter
+@PAGE 5-46 pdf=143
+P: Même si la vitesse de décrochage reste la même en KCAS, le nombre de Mach et la vitesse vraie augmentent avec l’altitude : exemple d’un jet qui décroche à 152 KCAS au niveau de la mer (152 KTAS, Mach 0,23) et à FL 380 (≈ 287 KTAS, Mach 0,50). La vitesse du son diminue avec la température (661 kt au niveau de la mer, 574 kt à FL 380). En montée à Mach constant (0,82), le KCAS passe de 543 à 261 : en montant assez haut, la vitesse de décrochage (en Mach) peut égaler le MMO : le pilote ne peut plus ni ralentir (décrochage) ni accélérer (dépassement) : c’est le « ==coin du cercueil== » (*coffin corner*).
+## Couche limite
+P: La viscosité de l’air réduit les vitesses locales sur une surface et cause le frottement. La couche limite a deux régimes : ==laminaire== (écoulement très lisse, moins de frottement mais moins stable) et ==turbulente== (avec tourbillons). Elle commence laminaire au bord d’attaque puis devient turbulente un peu plus loin : pour la traînée, il est avantageux que la transition soit le plus en arrière possible.
+P: Le ==décollement== (*separation*) survient quand l’écoulement se détache du profil : il produit une forte traînée et détruit la portance. Il avance sur l’aile quand l’AOA augmente. [Figure 5-66] Les ==générateurs de tourbillons== (*vortex generators*) sont de petits profils à faible allongement, calés à 12–15° et placés devant les ailerons : ils mélangent la couche limite avec l’air énergétique pour retarder le décollement dû aux ondes de choc.
+SUM: Coin du cercueil : à haute altitude, vitesse de décrochage et vitesse maximale se rejoignent. || Couche limite : laminaire (lisse) puis turbulente ; le décollement détruit la portance. || Générateurs de tourbillons : retardent le décollement.
+VOC: coin du cercueil | coffin corner ;; couche limite laminaire | laminar boundary layer ;; couche limite turbulente | turbulent boundary layer ;; décollement | separation ;; générateur de tourbillons | vortex generator
+@PAGE 5-47 pdf=144
+FIG: Figure 5-66. Couche limite (région de transition, laminaire, turbulente, sous-couche laminaire).
+P: À vitesse supersonique, l’avion « dépasse » ses propres ondes de pression et l’air s’accumule devant lui : la vitesse chute et pression et densité augmentent brutalement. Une ==onde de choc normale== est perpendiculaire à l’écoulement ; derrière elle l’écoulement est subsonique, sa pression statique et sa densité sont fortement augmentées, son énergie fortement réduite.
+P: La formation d’ondes de choc augmente la traînée, surtout à cause du décollement : c’est la ==traînée d’onde== (*wave drag*), qui augmente brutalement quand la vitesse dépasse le Mach critique d’environ 10 %. Quand la vitesse de vol approche celle du son, les zones supersoniques s’agrandissent et les ondes de choc reculent vers le bord de fuite. [Figure 5-67]
+FIG: Figure 5-67. Ondes de choc (M = 0,82 ; 0,95 ; 1,05 avec onde d’étrave).
+SUM: Onde de choc normale : l’écoulement devient subsonique derrière, pression et densité montent. || Traînée d’onde : augmente fortement ~10 % au-dessus du Mach critique.
+VOC: onde de choc | shock wave ;; traînée d’onde | wave drag ;; onde d’étrave | bow wave ;; supersonique | supersonic ;; subsonique | subsonic
+@PAGE 5-48 pdf=145
+P: Au « drag rise » s’associent le buffeting de Mach, des changements de compensation et de stabilité et une perte d’efficacité des gouvernes. Le décollement fait perdre le downwash et déplace le centre de poussée de l’aile ; s’il recule, il crée un moment piqueur appelé « ==Mach tuck== » ; c’est la raison principale de la ==queue en T== sur de nombreux avions à turbine, qui éloigne le stabilisateur de la turbulence des ailes.
+## Flèche
+P: La plupart des difficultés du vol transsonique sont liées au décollement dû aux ondes de choc : la ==flèche== en est un remède. Seule la composante de l’écoulement perpendiculaire au bord d’attaque agit sur la répartition de pression et les ondes de choc [Figure 5-68] : une aile en flèche est frappée sous un angle inférieur à 90°, comme si elle volait plus lentement : la formation des ondes de choc est retardée (augmentation du Mach critique et du Mach de divergence de force). La flèche « adoucit » la divergence.
+P: Inconvénient : une aile en flèche décroche d’abord aux bouts, car la couche limite s’écoule vers les bouts et décolle près du bord d’attaque ; comme les bouts sont en arrière du CL, leur décrochage fait avancer le CL et cabrer davantage l’avion. Cette tendance est maximale quand flèche et effilement sont combinés.
+FIG: Figure 5-68. Effet de flèche (écoulement latéral, vitesse perçue par l’aile Mach 0,70 pour une vitesse vraie Mach 0,85).
+SUM: Mach tuck : moment piqueur quand le CP recule ; queue en T pour éloigner le stabilisateur. || Flèche : retarde les ondes de choc ; inconvénient : décrochage des bouts d’ailes en premier.
+VOC: Mach tuck | Mach tuck ;; queue en T | T-tail ;; flèche | sweepback ;; décrochage en bout d’aile | tip stall ;; buffeting de Mach | Mach buffet
+@PAGE 5-49 pdf=146
+FIG: Figure 5-69. Pré-décrochage de bout d’aile.
+FIG: Figure 5-70. Décrochage d’un empennage en T.
+P: …AOA. Dans cette situation, sans information fiable d’AOA, une assiette piquée avec une vitesse croissante ne garantit pas la récupération, et tirer sur la profondeur peut maintenir l’avion décroché.
+P: Le ==buffeting de Mach== dépend de la vitesse de l’écoulement sur l’aile, pas forcément de celle de l’avion : il survient quand on demande trop de portance (vitesse trop grande ou AOA trop grand près de MMO) ; il existe aussi un buffeting de basse vitesse. Il est favorisé par : ==haute altitude, masse élevée et facteur de charge (virages, turbulence)==.
+P: Sur les avions rapides, les commandes de vol primaires (ailerons, profondeur, direction) manœuvrent autour des trois axes ; les secondaires comprennent les compensateurs, volets de bord d’attaque et de fuite, ==spoilers== et becs. Les spoilers, sur l’extrados, détruisent de la portance ; ils servent d’aérofreins sur ces avions très « propres » et sont sortis dès le toucher pour reporter le poids sur les roues et améliorer le freinage. [Figure 5-71] Les jets ont de petits ailerons (la place sert aux volets, et un grand aileron vrillerait l’aile à grande vitesse) : des spoilers aident en roulis ; certains ont deux paires d’ailerons (extérieurs basse vitesse verrouillés quand les volets sont rentrés).
+SUM: Buffeting de Mach : haute altitude, masse élevée, facteur de charge. || Spoilers = destruction de portance, aérofreins, aide au roulis. || Ailerons de jet petits, aidés par des spoilers.
+VOC: spoiler | spoiler ;; aérofrein | speed brake ;; bec de bord d’attaque | slat ;; commande primaire | primary flight control ;; commande secondaire | secondary flight control
+@PAGE 5-50 pdf=147
+FIG: Figure 5-71. Gouvernes (737 et 727 : ailerons, spoilers de vol et au sol, becs, volets, dérive, compensateurs, générateurs de tourbillons).
+P: Les spoilers peuvent être différentiels (sortent d’un côté et rentrent de l’autre) ou non différentiels. Pour avoir un décrochage doux et un AOA plus élevé sans décollement, le bord d’attaque devrait être bien arrondi ; le bord d’attaque pointu du vol rapide donne un décrochage brutal et limite l’usage des volets de bord de fuite. On utilise donc des fentes (*slots*), becs et volets de bord d’attaque pour améliorer les basses vitesses au décollage, en montée et à l’atterrissage : ==une réduction de 50 kt de la vitesse de décrochage n’est pas rare==.
+SUM: Bord d’attaque pointu = décrochage brutal ; becs et fentes retardent le décollement. || Becs + volets : jusqu’à 50 kt de vitesse de décrochage en moins.
+VOC: bec | slat ;; fente | slot ;; volet de bord d’attaque | leading edge flap ;; volet de bord de fuite | trailing edge flap ;; CL maximal | CL-MAX
+@PAGE 5-51 pdf=148
+P: Les gros jets exigent de grands changements de compensation en tangage : grande plage de CG, grande plage de vitesses, grands changements dus aux hypersustentateurs, sans limiter la profondeur restante, avec le minimum de traînée de compensation. On y répond avec un ==stabilisateur horizontal à incidence variable== : plus grand que la profondeur, il n’a pas besoin d’être déplacé d’un grand angle et la profondeur garde toute sa course. Comme les forces nécessaires dépassent la force du pilote, les gouvernes sont actionnées par des servocommandes hydrauliques ou électriques ; en cas de panne complète, les compensateurs de commande peuvent manœuvrer la gouverne manuellement.
+# Résumé du chapitre
+P: Pour maintenir un aéronef en vol, le pilote doit comprendre comment poussée, traînée, portance et poids agissent sur lui. En comprenant l’aérodynamique du vol — comment conception, masse, facteurs de charge et gravité affectent l’avion pendant les manœuvres, du décrochage au vol rapide — il apprend à maîtriser l’équilibre entre ces forces. ==Pour les vitesses de décrochage, les facteurs de charge et les autres données, toujours consulter l’AFM/POH de l’avion piloté.==
+SUM: Stabilisateur à incidence variable : absorbe les grands changements de compensation. || Servocommandes hydrauliques/électriques sur les gros avions. || Toujours consulter l’AFM/POH de l’avion pour vitesses de décrochage, facteurs de charge et données.
+VOC: stabilisateur à incidence variable | variable-incidence horizontal stabilizer ;; servocommande | power unit ;; compensateur de commande | control tab ;; AFM/POH | AFM/POH ;; incidence | incidence
+@SHEET
+* Quatre forces en vol : poussée, traînée, portance, poids. En vol stabilisé, la somme des forces est nulle ; portance et poids sont égaux, poussée et traînée sont égales entre elles.
+* Portance : L = CL · ρ · V² · S / 2. Elle dépend de l’AOA (au maximum au décrochage), de la vitesse (au carré), de la densité et de la surface. Un avion décroche toujours au même AOA, quelle que soit la vitesse.
+* Traînée = parasite (forme, interférence, frottement ; ∝ V²) + induite (due à la portance ; ∝ 1/V²). La traînée totale est minimale à L/Dmax.
+* Stabilité : statique (tendance initiale) et dynamique (dans le temps) ; longitudinale (tangage), latérale (dièdre, flèche, quille), directionnelle (dérive). Roulis hollandais et spirale sont des instabilités typiques.
+* Virage : l’avion doit être incliné ; la composante horizontale de la portance fait virer, la verticale soutient le poids. Plus d’inclinaison → plus d’AOA, plus de puissance, plus de facteur de charge et une vitesse de décrochage plus élevée.
+* Facteur de charge : 1/cos(inclinaison) ; la vitesse de décrochage augmente avec sa racine carrée. VA = vitesse de manœuvre ; effet de sol, turbulence de sillage et position du CG (avant : plus lourd et plus lent ; arrière : moins stable) influencent la sécurité.
+@NUMS
+2 G à 60° | facteur de charge en virage coordonné en palier
+5,76 G à 80° | facteur de charge en virage coordonné en palier
+3,8 / 4,4 / 6,0 G | facteurs de charge limites : normale / utilitaire / acrobatique
+× 1,5 | facteur de sécurité structural sur la charge limite
+VA ≈ 1,7 × Vs | vitesse de manœuvre des avions anciens
+ROT = 1 091 × tan(inclinaison) / TAS (kt) | taux de virage (°/s)
+R = V² / (11,26 × tan(inclinaison)) | rayon de virage (ft, V en kt)
+≈ 3 minutes | intervalle conseillé derrière un avion lourd (turbulence de sillage)
+1 000 ft | distance verticale à éviter derrière un autre aéronef
+0,8 mm de glace | –25 % de portance
