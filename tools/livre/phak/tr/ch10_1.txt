@@ -1,0 +1,96 @@
+@CH 10
+@INTRO Masse et centrage : respecter les limites de masse et de centrage est vital pour la sécurité. Au-dessus de la masse maximale, la structure et les performances sont compromises ; avec un CG hors limites, l’avion devient difficile à contrôler. Ce chapitre explique les effets de la masse, du centrage, les définitions et les calculs.
+@PAGE 10-1 pdf=245
+# Introduction
+P: Le respect des ==limites de masse et de centrage== de tout aéronef est essentiel à la sécurité du vol. Dépasser la ==masse maximale== compromet l’intégrité structurelle et dégrade les performances. Un ==centre de gravité (CG)== hors des limites approuvées entraîne des difficultés de contrôle.
+# Maîtrise de la masse
+P: Comme vu au chapitre 5, le poids est la force par laquelle la gravité attire un corps vers le centre de la Terre (masse × accélération). C’est un facteur majeur dans la construction et l’utilisation d’un avion.
+P: La gravité cherche en permanence à attirer l’avion vers le sol ; ==la portance est la seule force qui s’oppose au poids==. Elle est limitée par le profil, l’angle d’attaque, la vitesse et la densité de l’air. Pour qu’elle suffise, il faut ==éviter de charger l’avion au-delà de la masse recommandée par le constructeur== : si le poids dépasse la portance, l’avion peut être incapable de voler.
+SUM: Respecter masse max et limites de CG : sinon structure et contrôle compromis. || La portance est la seule force qui s’oppose au poids. || Ne jamais charger au-delà de la masse recommandée.
+VOC: masse et centrage | weight and balance ;; centre de gravité | center of gravity ;; masse maximale | maximum weight ;; portance | lift
+@PAGE 10-2 pdf=246
+## Effets de la masse
+P: Tout élément supplémentaire à bord nuit aux performances. Un avion ==surchargé== peut ne pas décoller, ou avoir des caractéristiques de vol inattendues et très médiocres ; le premier signe apparaît généralement au décollage. Une masse excessive dégrade presque toutes les performances :
+- ==vitesse de décollage plus élevée== et ==roulement plus long==
+- taux et pente de montée réduits, altitude maximale plus basse
+- autonomie plus courte, vitesse de croisière réduite, maniabilité réduite
+- ==vitesse de décrochage plus élevée==, vitesse d’approche et d’atterrissage plus élevées, roulement à l’atterrissage plus long
+- charge excessive sur la roulette de nez ou la roulette de queue
+P: Le pilote doit connaître l’effet de la masse sur son avion et vérifier les abaques de performance en préparation du vol. La surcharge réduit les marges de sécurité, surtout combinée à d’autres facteurs. En cas de panne moteur au décollage ou de givrage à basse altitude, il est en général trop tard pour alléger l’avion.
+## Variations de masse
+P: On peut changer la masse en modifiant la quantité de carburant : ==l’essence pèse 6 lb par gallon US== (30 gal peuvent peser plus qu’un passager). Réduire le carburant réduit l’autonomie, à prendre en compte. En vol, la consommation de carburant est normalement le seul changement de masse ; l’avion s’allège et les performances s’améliorent.
+P: Les modifications d’équipement fixe (radios, instruments, réparations) influent aussi sur la masse.
+## Équilibre, stabilité et centre de gravité
+P: L’==équilibre== (*balance*) concerne la position du CG, importante pour la stabilité et la sécurité. Le ==CG== est le point où l’avion s’équilibrerait s’il était suspendu.
+P: La préoccupation principale est la position ==avant-arrière== du CG sur l’axe longitudinal. Le CG n’est pas fixe : il dépend de la répartition des masses et se déplace quand les charges variables sont déplacées ou consommées. La distance entre les limites avant et arrière est la ==plage de CG== (*CG range*), certifiée par le constructeur. Trop avant : avion ==lourd du nez== ; trop arrière : avion ==lourd de la queue==. Un CG entraînant une instabilité peut rendre l’avion incontrôlable. [Figure 10-1]
+P: La position du CG par rapport à l’axe latéral compte aussi : pour chaque masse à gauche de l’axe du fuselage, il y a une masse équivalente à droite. Cet équilibre peut être rompu par un chargement latéral déséquilibré.
+FIG: Figure 10-1. Déséquilibre latéral et longitudinal (réservoir plein/vide, excès de bagages).
+SUM: Excès de masse : décollage plus long, montée réduite, décrochage plus haut, atterrissage plus long. || L’essence pèse 6 lb/gal US. || CG : trop avant = lourd du nez, trop arrière = lourd de la queue. || Plage de CG fixée par le constructeur.
+VOC: surchargé | overloaded ;; équilibre | balance ;; plage de CG | CG range ;; lourd du nez | nose-heavy ;; lourd de la queue | tail heavy ;; roulement au décollage | takeoff run
+@PAGE 10-3 pdf=247
+P: Le CG latéral n’est pas calculé dans tous les avions, mais un déséquilibre latéral a des effets néfastes. Il survient notamment par une mauvaise gestion du carburant (alimentation inégale depuis les réservoirs d’un seul côté). Le pilote compense par le trim ou une pression constante sur les commandes, ce qui met les commandes « hors du lit du vent » (*out of streamline*), augmente la traînée et réduit l’efficacité. L’équilibre latéral étant traité dans le manuel de vol (AFM) au besoin et le longitudinal étant plus critique, la suite ne considère que le CG longitudinal.
+P: Un avion mal équilibré augmente la fatigue du pilote. La correction naturelle (trim) élimine l’effort, mais un trim excessif réduit l’efficacité aérodynamique et la course disponible des commandes dans ce sens.
+## Effets d’un mauvais équilibre
+P: Les effets sont proches de ceux de l’excès de masse. Respecter les limites est vital : au-dessus de la masse maximale, la structure et les performances sont compromises ; un mauvais équilibre affecte aussi la stabilité et le contrôle.
+## Stabilité
+P: Un chargement ==lourd du nez== rend difficile de contrôler et de lever le nez, surtout au décollage et à l’atterrissage. Un chargement ==lourd de la queue== nuit gravement à la stabilité longitudinale et réduit la capacité de ==sortir d’un décrochage ou d’une vrille==. Il donne aussi des efforts de commande très légers, ce qui facilite la ==surcontrainte involontaire== de la structure.
+## Stabilité et centre de gravité
+P: Les limites de CG sont fixées par le constructeur, publiées dans la ==fiche de données du certificat de type (TCDS)==, le manuel de vol (AFM) ou le manuel d’utilisation (POH). Si le CG n’est pas dans les limites après chargement, il faut déplacer des charges avant le vol.
+P: La ==limite avant== est souvent fixée par les caractéristiques d’atterrissage : la dépasser peut causer une charge excessive sur la roulette de nez, une tendance à capoter sur train classique, des performances réduites, des vitesses de décrochage plus élevées et des efforts de commande plus grands.
+P: Dans les cas extrêmes, un CG au-delà de la limite avant rend l’arrondi difficile ou impossible. Les constructeurs placent la limite avant le plus en arrière possible. Un CG trop arrière réduit la stabilité statique et dynamique, et peut causer une grande difficulté de contrôle, des décrochages violents et des efforts très légers (risque de surcontrainte).
+P: La limite avant sert aussi à garantir assez de débattement de profondeur à vitesse minimale : sans limite structurelle, elle se situe là où il faut la ==profondeur à fond cabré== pour atteindre l’incidence élevée d’atterrissage.
+P: La ==limite arrière== est la position la plus reculée pour la manœuvre la plus critique. Plus le CG recule, moins l’avion est stable et moins il se redresse seul après une manœuvre ou une turbulence.
+P: Pour certains avions, les limites avant/arrière varient avec la masse, ou pour certaines opérations (acrobatie, rentrée du train, charges spéciales).
+P: Le pilote contrôle la position réelle du CG par le placement des bagages et du fret et l’attribution des sièges ; avion lourd de la queue : passagers lourds à l’avant. La consommation de carburant a peu d’effet si les réservoirs (dans les ailes) sont proches du CG.
+SUM: Déséquilibre latéral (carburant mal géré) : trim, traînée en plus. || CG arrière : peu stable, difficile de sortir d’un décrochage/vrille, efforts légers. || CG avant : roulette de nez chargée, arrondi difficile. || Limites dans TCDS, AFM/POH ; on déplace les charges si hors limites.
+VOC: surcontrainte | overstress ;; limite avant | forward CG limit ;; limite arrière | aft CG limit ;; fiche de données du certificat de type | Type Certificate Data Sheet (TCDS) ;; manuel de vol | airplane flight manual (AFM) ;; manuel d’utilisation | pilot’s operating handbook (POH) ;; capoter | to nose over
+@PAGE 10-4 pdf=248
+## Gestion de la masse et du centrage
+P: Le ==14 CFR part 23, §23.23== impose d’établir les plages de masse et de CG dans lesquelles l’avion peut être utilisé en sécurité ; le constructeur les fournit dans l’AFM, la TCDS ou les spécifications.
+P: Il n’existe pas d’obligation précise de calculer masse et centrage avant chaque vol en part 91, mais le ==§91.9== impose au commandant de bord de respecter les limites d’utilisation de l’AFM, dont masse et centrage. Des abaques et graphiques de l’AFM permettent ces calculs.
+P: Le pilote contrôle le chargement et le carburant, les deux facteurs variables. Le propriétaire/exploitant doit tenir à jour les informations et consigner les réparations ou modifications. Retirer ou ajouter un équipement change le CG, qu’il faut noter dans les documents de masse et centrage, et mettre à jour la liste d’équipement.
+P: Les pièces standard de masse négligeable (écrous, boulons, rondelles, rivets) ne demandent pas de vérification. Critères de la circulaire AC 43.13-1 :
+- ==1 lb ou moins== pour un avion de masse à vide < 5 000 lb
+- 2 lb ou moins pour 5 000 à 50 000 lb
+- 5 lb ou moins au-delà de 50 000 lb
+P: Variation négligeable du CG : moins de ==0,05 % de la MAC== (voilure fixe), 0,2 % (voilure tournante). La ==MAC== est la distance moyenne entre bord d’attaque et bord de fuite de l’aile.
+P: Avant tout vol, déterminer la masse et le centrage avec les procédures simples du constructeur et son bon jugement. Sur beaucoup d’avions modernes, on ne peut pas remplir tous les sièges, soutes et réservoirs tout en restant dans les limites : il faut réduire le carburant ou les bagages.
+P: Le part 125 impose la pesée tous les 36 mois pour les avions de 20 sièges ou plus, ou de charge utile ≥ 6 000 lb ; aussi pour les multimoteurs part 135 (sauf système approuvé). Après une visite de 100 h ou annuelle, le mécanicien s’assure que les données de masse et centrage sont à jour (AC 43.13-1).
+## Termes et définitions
+P: Termes normalisés (ceux marqués GAMA sont la norme de l’industrie) :
+- ==Bras de levier (arm)== : distance horizontale en pouces entre le ==point de référence (datum)== et le CG d’un élément ; + derrière le datum, – devant.
+- ==Masse à vide de base== (GAMA) : masse à vide standard + équipements optionnels et spéciaux installés.
+- ==Centre de gravité (CG)== : point d’équilibre de l’avion suspendu ; centre de masse, point théorique où toute la masse serait concentrée. Il peut s’exprimer en pouces depuis le datum ou en % de MAC ; point à trois dimensions.
+SUM: §91.9 : le commandant respecte les limites de l’AFM, dont masse et centrage. || Variation négligeable : ≤ 1 lb (< 5 000 lb à vide) ; < 0,05 % MAC. || Pesée tous les 36 mois (part 125 ; multimoteurs part 135). || Arm : + derrière le datum, – devant.
+VOC: point de référence | datum ;; bras de levier | arm ;; masse à vide de base | basic empty weight ;; corde aérodynamique moyenne | mean aerodynamic chord (MAC) ;; commandant de bord | pilot in command (PIC) ;; pesée | weighing
+@PAGE 10-5 pdf=249
+P: Suite des définitions :
+- ==Limites de CG== : points avant et arrière entre lesquels le CG doit se situer en vol. ==Plage de CG== : distance entre elles.
+- ==Datum== : plan ou ligne vertical imaginaire d’où partent toutes les mesures de bras, défini par le constructeur.
+- ==Delta (Δ)== : indique une variation (ΔCG = déplacement du CG).
+- ==Charge admissible au plancher== : masse maximale que le plancher supporte par unité de surface.
+- ==Charge de carburant== : partie consommable de la charge ; seulement le carburant ==utilisable==, pas celui des conduites ni celui piégé dans les puisards.
+- ==Masse à vide homologuée== (*licensed empty weight*) : cellule, moteur(s), carburant inutilisable, huile non vidangeable + équipements standard et optionnels de la liste d’équipement.
+- ==Masse maximale à l’atterrissage==, ==masse maximale rampe== (*ramp/taxi weight*, plus grande que celle au décollage à cause du carburant brûlé au roulage et aux essais moteur), ==masse maximale au décollage==, ==masse maximale== (TCDS).
+- ==Masse maximale sans carburant== (*zero fuel weight*, GAMA) : masse maximale hors carburant utilisable.
+- ==MAC== : distance moyenne bord d’attaque – bord de fuite.
+- ==Moment== : masse × bras, en lb·in. ==Indice de moment== : moment divisé par une constante (100, 1 000, 10 000) pour simplifier les calculs.
+- ==Charge marchande== (*payload*, GAMA) : occupants, fret et bagages.
+- ==Masse à vide standard== (GAMA) : cellule, moteurs et équipements fixes installés en permanence, dont lest fixe, liquide hydraulique, carburant inutilisable et huile moteur pleine.
+- ==Masses standard== (à ne pas utiliser si on a les masses réelles) : essence ==6 lb/gal US== ; Jet A et A-1 6,8 ; Jet B 6,5 ; huile ==7,5== ; eau ==8,35==.
+- ==Station== : emplacement repéré par sa distance en pouces au datum (le datum est la station 0 ; station +50 = bras de 50 po).
+- ==Charge utile== (*useful load*) : pilote, copilote, passagers, bagages, carburant utilisable et huile vidangeable = masse maximale – masse à vide de base (aviation générale).
+## Principes des calculs de masse et centrage
+P: Tout pilote doit en comprendre les principes. Le calcul de la masse totale est simple (avion à vide + tout ce qui est chargé). Le plus difficile est de répartir cette masse pour que l’ensemble soit équilibré autour du CG, situé dans les limites.
+SUM: Masses standard : essence 6, Jet A 6,8, Jet B 6,5, huile 7,5, eau 8,35 lb/gal. || Moment = masse × bras (lb·in). || Charge utile = masse max – masse à vide de base. || Station 0 = datum.
+VOC: charge utile | useful load ;; charge marchande | payload ;; masse maximale au décollage | maximum takeoff weight ;; masse maximale rampe | maximum ramp weight ;; moment | moment ;; station | station ;; masse à vide standard | standard empty weight
+@PAGE 10-6 pdf=250
+P: Le CG est le point imaginaire où toute la masse est concentrée. Pour équilibrer stabilité longitudinale et efficacité de la profondeur, il est en général ==légèrement en avant du centre de poussée (de portance)==, ce qui donne une tendance à piquer, souhaitable à forte incidence et basse vitesse.
+P: La zone de sécurité est la ==plage de CG==, bornée par la limite avant et la limite arrière, mesurées en pouces le long de l’axe longitudinal depuis le ==datum==, point arbitraire fixé par le constructeur. [Figure 10-2]
+P: La distance du datum à un objet est le ==bras== : positif derrière, négatif devant. L’emplacement est la ==station==. ==Poids × bras = moment== (lb·in), mesure de la tendance du poids à faire tourner autour d’un point.
+P: Exemple : 50 lb à 100 po du datum = ==5 000 in-lb==. [Figure 10-3] Pour équilibrer, il faut 5 000 in-lb de l’autre côté. Par exemple (Figure 10-4), 100 lb à 25 po plus 50 lb à 50 po donnent chacun 2 500 : total 5 000 in-lb, la planche est équilibrée.
+FIG: Figure 10-2. Masse et centrage (datum, bras – et +, limites avant/arrière). Figure 10-3. Détermination d’un moment : 50 × 100 = 5 000 in-lb. Figure 10-4. Établissement d’un équilibre : 100 × 25 + 50 × 50 = 5 000 in-lb.
+## Restrictions de masse et de centrage
+P: Les restrictions doivent être suivies de près. L’état de chargement et la masse à vide peuvent différer de ceux de l’AFM/POH (modifications) ; les exemples du POH ne servent que de guide, chaque avion étant traité séparément. Même si l’avion est certifié pour une masse maximale au décollage, il peut ne pas décoller en sécurité à cette masse dans toutes les conditions : altitude élevée, température élevée, forte humidité (haute ==altitude-densité==) peuvent imposer une réduction de masse.
+SUM: CG légèrement en avant du centre de portance : tendance à piquer souhaitable. || Poids × bras = moment ; exemple 50 lb × 100 po = 5 000 in-lb. || Les exemples du POH ne valent que pour guider ; haute altitude-densité = réduire la masse.
+VOC: centre de portance | center of lift ;; moment | moment ;; planche | board ;; point d’appui | fulcrum ;; altitude-densité | density altitude

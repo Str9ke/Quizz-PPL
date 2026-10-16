@@ -1,0 +1,70 @@
+@PAGE 10-7 pdf=251
+P: Autres facteurs à considérer avant le décollage : longueur, état et pente de la piste, vent de surface et obstacles. Ils peuvent imposer de réduire ou de redistribuer la masse.
+P: Certains avions (petits, sièges, carburant et bagages près des limites de CG) sont difficiles à charger hors limites de CG, mais peuvent être surchargés en masse tout en restant dans le centrage. D’autres peuvent être hors limites de CG sans dépasser la charge utile. Le pilote doit toujours s’assurer que l’avion est correctement chargé.
+## Détermination de la masse chargée et du CG
+P: Plusieurs méthodes : le calcul, les graphiques et les tableaux du constructeur.
+## Méthode par calcul
+P: Exemple : masse maximale 3 400 lb ; plage de CG 78–86 po. Charges : occupants avant 340 lb, arrière 350 lb, carburant 75 gal, bagages zone 1 80 lb.
+1. Lister les masses de l’avion, des occupants, du carburant et des bagages (AVGAS ==6 lb/gal==).
+2. Calculer le moment de chaque élément : ==masse × bras = moment==.
+3. Additionner masses et moments.
+4. ==Pour obtenir le CG, diviser le moment total par la masse totale.==
+P: Les dossiers de l’avion donnent la masse à vide, son moment et les bras. [Figure 10-5] Masse totale chargée 3 320 lb < 3 400 lb ; CG = 281 430 ÷ 3 320 = ==84,8 po==, dans la plage 78–86 po : l’avion est chargé dans les limites.
+FIG: Figure 10-5. Exemple de calcul : à vide 2 100 lb × 78,3 = 164 430 ; avant 340 × 85 = 28 900 ; arrière 350 × 121 = 42 350 ; carburant 450 × 75 = 33 750 ; bagages 80 × 150 = 12 000 ; total 3 320 lb, 281 430, CG 84,8.
+## Méthode graphique
+P: Les graphiques du constructeur calculent les moments ; ceux-ci sont parfois divisés par 100, 1 000 ou 10 000. [Figures 10-6, 10-7, 10-8] Exemple : avant 340 lb, arrière 300 lb, carburant 40 gal (240 lb), bagages 20 lb. Mêmes étapes que le calcul, mais les graphiques donnent les moments.
+FIG: Figure 10-6. Données de masse et centrage (exemple : masse totale 2 367 lb, moment 105,2 /1 000).
+SUM: Méthode par calcul : masse × bras = moment ; CG = moment total ÷ masse totale. || Exemple : 3 320 lb et CG 84,8 po dans la plage 78–86 po. || Méthode graphique : on lit les moments sur le graphique de chargement.
+VOC: méthode par calcul | computational method ;; méthode graphique | graph method ;; méthode par tableau | table method ;; bras | arm ;; moment | moment ;; bagages | baggage
+@PAGE 10-8 pdf=252
+FIG: Figure 10-7. Graphique de chargement : moment/1 000 (in-lb) en fonction de la masse chargée, pour carburant, pilote et passager avant, passagers arrière, bagages zone 1 et zone 2.
+FIG: Figure 10-8. Enveloppe de moments du CG : masse de l’avion chargé en fonction du moment/1 000 (catégories normale et utilitaire).
+P: Sur le graphique de chargement, on trouve la masse, on trace une droite horizontale jusqu’à l’élément concerné, puis une droite verticale vers le bas pour lire le moment.
+SUM: Graphique de chargement : masse → élément → moment. || Enveloppe de CG : masse et moment totaux doivent se croiser à l’intérieur.
+VOC: graphique de chargement | loading graph ;; enveloppe de moment du CG | CG moment envelope ;; catégorie normale | normal category ;; catégorie utilitaire | utility category
+@PAGE 10-9 pdf=253
+P: Une fois les moments obtenus pour chaque élément, on additionne masses et moments et on trace les deux lignes sur l’enveloppe. ==Si elles se croisent à l’intérieur de l’enveloppe, l’avion est chargé dans les limites.==
+## Méthode par tableau
+P: Mêmes principes, mais les informations et limites sont dans des tableaux du constructeur. La Figure 10-9 donne un exemple de tableau et un calcul : masse totale 2 799 lb et moment 2 278/100, dans les limites du tableau.
+FIG: Figure 10-9. Plaque de chargement : masse à vide 2 015 lb (moment 1 554/100), carburant 44 gal 264 lb (198), avant 300 lb (254), arrière 190 lb (230), bagages 30 lb (42) : total 2 799 lb, 2 278/100. Limites : CG avant 77,5 / 77,0 ; arrière 85,7.
+SUM: Si masse et moment tombent dans l’enveloppe : chargé dans les limites. || Méthode par tableau : on additionne les valeurs du tableau du constructeur. || Exemple : 2 799 lb, moment 2 278/100.
+VOC: plaque de chargement | loading schedule placard ;; tableau | table ;; interpoler | to interpolate
+@PAGE 10-10 pdf=254
+## Calculs avec un bras négatif
+P: Figure 10-10 : avion avec un bras négatif. Un positif multiplié par un négatif donne un négatif, qui se ==soustrait== du moment total.
+## Calculs avec masse maximale sans carburant
+P: Figure 10-11 : la masse de l’avion sans carburant est de 4 240 lb, inférieure à la ==masse maximale sans carburant== de 4 400 lb. Si elle l’avait dépassée, il aurait fallu réduire passagers ou fret.
+## Déplacer, ajouter et retirer de la masse
+P: Le pilote doit savoir résoudre ces problèmes. Exemple : l’avion est chargé sous la masse maximale mais hors limite de CG. La meilleure solution est de ==déplacer bagages ou passagers==, en connaissant le déplacement minimal nécessaire.
+## Déplacement de masse
+P: Quand on déplace une masse, ==la masse totale ne change pas, mais les moments changent== : vers l’avant, le moment total diminue ; vers l’arrière, il augmente, proportionnellement à la masse et à la distance. Exemple : 100 lb déplacées de la station 30 à la station 150 : 100 × 150 – 100 × 30 = 15 000 – 3 000 = ==+12 000 in-lb==. Moment total = 616 000 + 12 000 = 628 000 ; CG = 628 000 ÷ 8 000 lb = ==78,5 po==.
+FIG: Figure 10-10. Exemple avec un bras négatif (huile à –31 po : moment –341 ; total 1 648,9 lb, CG 74,0). Figure 10-11. Exemple avec masse sans carburant publiée (max 4 400 lb ; rampe max 5 224 lb ; atterrissage max 4 940 lb ; CG 98,0 → 96,5).
+SUM: Un bras négatif donne un moment négatif. || Masse sans carburant ≤ masse max sans carburant ; sinon réduire passagers/fret. || Déplacer de la masse : masse totale inchangée, moment modifié ; vers l’avant = moment diminue.
+VOC: bras négatif | negative arm ;; masse sans carburant | zero fuel weight ;; déplacer | to shift ;; masse maximale à l’atterrissage | maximum landing weight ;; masse rampe | ramp weight
+@PAGE 10-11 pdf=255
+P: Autre méthode, proportionnelle : ==ΔCG / distance de déplacement = masse déplacée / masse totale==. Exemple : 100 lb déplacées de 120 po dans un avion de 8 000 lb : ΔCG = 1,5 po. Le nouveau CG est 77 + 1,5 = ==78,5 po== derrière le datum.
+P: Cette formule sert aussi à trouver la masse à déplacer pour un déplacement de CG voulu. Exemple : masse totale 7 800 lb, CG à 81,5 po, limite arrière 80,5 po ; combien déplacer du compartiment arrière (station 150) vers l’avant (station 30) ? Masse = (1,0 × 7 800) ÷ 120 = ==65 lb==.
+## Ajout ou retrait de masse
+P: Quand on ajoute ou retire une masse, il faut calculer un nouveau CG et le comparer aux limites. C’est le cas en vol quand on brûle du carburant ; la plupart des petits avions ont leurs réservoirs près du CG, donc l’effet est faible. Ajouter ou retirer du fret demande un calcul avant le vol, toujours résoluble par les moments totaux.
+P: Formule : ==ΔCG / distance entre la masse et l’ancien CG = masse ajoutée / nouvelle masse totale==.
+P: Ajout : 6 860 lb, CG 80,0 po, on ajoute 140 lb à la station 150 : ΔCG = (140 ÷ 7 000) × 70 = 1,4 po vers l’arrière ; nouveau CG = 81,4 po.
+P: Retrait : 6 100 lb, CG 80,0 po, on retire 100 lb à la station 150 : ΔCG = (100 ÷ 6 000) × 70 = 1,2 po vers l’avant ; nouveau CG = 78,8 po.
+P: Pour décider d’ajouter ou de soustraire ΔCG, on raisonne sur le sens du déplacement : CG vers l’arrière → on ajoute ; vers l’avant → on soustrait.
+## Résumé du chapitre
+P: Utiliser l’avion dans les limites de masse et de centrage est essentiel à la sécurité. Le pilote doit veiller à ce que le CG soit et reste dans les limites approuvées pendant toutes les phases du vol.
+SUM: ΔCG ÷ distance = masse déplacée ÷ masse totale. || Ajout : ΔCG = masse ajoutée ÷ nouvelle masse × distance à l’ancien CG. || CG arrière → on ajoute ΔCG ; avant → on soustrait.
+VOC: nouveau CG | new CG ;; masse déplacée | weight shifted ;; masse ajoutée | added weight ;; masse retirée | weight removed ;; formule proportionnelle | proportion formula
+@SHEET
+* Masse : surcharge = décollage plus long, montée réduite, vitesse de décrochage plus élevée, atterrissage plus long. Essence 6 lb/gal ; huile 7,5 ; Jet A 6,8 ; eau 8,35. Le carburant brûlé est le seul changement de masse en vol.
+* CG trop avant : lourd du nez, arrondi difficile, roulette de nez chargée. CG trop arrière : peu stable, décrochage/vrille difficile à rattraper, efforts légers (risque de surcontrainte). Limites dans TCDS, AFM/POH.
+* Calcul : masse × bras = moment ; CG = moment total ÷ masse totale ; le CG doit être entre limite avant et limite arrière et la masse ≤ masse maximale. Déplacement : masse totale inchangée ; bras négatif = moment négatif. Charge utile = masse max – masse à vide de base.
+* Part 91 : §91.9, respecter les limites de l’AFM. Pesée tous les 36 mois (part 125, multimoteurs part 135).
+@NUMS
+6 lb / gal | masse de l’essence (AVGAS)
+7,5 lb / gal | masse de l’huile
+6,8 lb / gal | masse du Jet A
+8,35 lb / gal | masse de l’eau
+0,05 % MAC | variation négligeable du CG (voilure fixe)
+1 lb | variation de masse négligeable (avion de moins de 5 000 lb à vide)
+36 mois | intervalle de pesée (part 125 et multimoteurs part 135)
+poids × bras = moment | formule de base ; CG = moment total ÷ masse totale
