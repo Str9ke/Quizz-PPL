@@ -1,0 +1,91 @@
+@CH 13
+@INTRO Services météorologiques aéronautiques : ce chapitre présente les observations (surface, altitude, radar, satellite), les points de service (FSS, TIBS, HIWAS), les types de briefings, les messages (METAR, PIREP, TAF, vents en altitude) et les avis (AIRMET, SIGMET) qui permettent au pilote de décider avant et pendant le vol.
+@PAGE 13-1 pdf=311
+# Introduction
+P: Le service météo aéronautique est un effort combiné du ==NWS== (*National Weather Service*), de la ==FAA==, du ministère de la Défense, d’autres groupes aéronautiques et de particuliers ; des organisations étrangères y contribuent. Les prévisions ne sont pas exactes à 100 %, mais la science et la modélisation informatique les rendent de plus en plus précises. Les pilotes reçoivent ainsi des comptes rendus et des prévisions à jour pour décider en connaissance de cause avant et pendant le vol.
+SUM: Météo aéronautique = NWS + FAA + défense + autres. || Les prévisions ne sont pas exactes à 100 %.
+VOC: service météorologique | weather service ;; prévision | forecast ;; compte rendu | report ;; modélisation | modeling
+@PAGE 13-2 pdf=312
+# Observations
+P: Les observations de surface et d’altitude fondent toutes les prévisions, avis et briefings. Il y a quatre types : ==surface, altitude, radar, satellite==.
+## Observations météo aéronautiques de surface
+P: Les METAR compilent les éléments de la météo courante de stations au sol (installations gouvernementales ou privées, stations automatiques ==AWOS== et ==ASOS==). Ils donnent : type de message, indicatif de station, date/heure, modificateur, vent, visibilité, portée visuelle de piste (RVR), phénomènes, nébulosité, température/point de rosée, calage altimétrique et remarques. Chaque rapport couvre un petit rayon, mais plusieurs stations donnent une bonne image d’une grande zone.
+## ARTCC
+P: Les centres de contrôle en route (==ARTCC==) assurent la séparation des vols IFR en route. Leurs radars (ARSR) affichaient autrefois la météo en barres obliques (précipitations légères) et en « H » (pluie modérée), sans voir les niveaux supérieurs : méfiance en cas de pluie modérée. Les nouveaux affichent trois nuances de bleu ; les contrôleurs choisissent le niveau affiché. ==Ne pas compter sur l’ATC pour afficher la météo en continu.==
+## Observations en altitude
+P: Plus difficiles. Méthodes : ==radiosondes==, ==PIREP== (comptes rendus de pilotes), ==AMDAR== et ==MDCRS==. La radiosonde est un petit boîtier suspendu sous un ballon de 6 ft rempli d’hydrogène ou d’hélium, qui monte à environ ==1 000 ft/min== et mesure température, humidité, pression, vitesse et direction du vent ; un émetteur de 300 mW relaie les données au sol. Le vol dure jusqu’à 2 h, jusqu’à ==115 000 ft==, et peut dériver de 125 miles ; les températures atteignent –130 °F. Le ballon, dilaté, éclate à plus de 20 ft de diamètre ; un parachute ralentit la chute. Plus de 75 000 ballons par an, 20 % récupérés.
+P: ==Les pilotes sont la seule source en temps réel sur la turbulence, le givrage et la hauteur des nuages.== PIREP et radiosondes sont complémentaires. Beaucoup de compagnies transmettent automatiquement des observations par liaison de données.
+P: ==AMDAR== : programme international utilisant des avions commerciaux (220 000 à 230 000 observations par jour dans le monde : vent, température, humidité, turbulence, givrage) pour améliorer analyses et prévisions.
+SUM: 4 types d’observations : surface, altitude, radar, satellite. || Radiosonde : ballon, 1 000 ft/min, jusqu’à 115 000 ft. || PIREP : seule source temps réel de turbulence, givrage et hauteur des nuages. || AMDAR : 220 000+ observations/jour.
+VOC: radiosonde | radiosonde ;; compte rendu de pilote | pilot weather report (PIREP) ;; observation de surface | surface observation ;; observation en altitude | upper air observation ;; point de rosée | dew point ;; AWOS/ASOS | AWOS/ASOS
+@PAGE 13-3 pdf=313
+P: Les données AMDAR sont transmises par VHF via ACARS ou par satellite (ASDAR) et améliorent aussi les prévisions pour le temps sévère, la défense, la marine, etc. Le ==MDCRS== est un programme américain de collecte automatique d’observations de compagnies participantes (plus de 1 500 avions : vent et température, parfois turbulence et humidité), transmises par ACARS, gérées par ARINC puis envoyées au NWS ; hors couverture ACARS, les rapports sont mis en mémoire jusqu’à la prochaine couverture.
+## Observations radar
+P: Quatre types de radars renseignent sur les précipitations et le vent.
+P: 1. Le ==WSR-88D NEXRAD== (radar Doppler) a deux modes : ==air clair== (le plus sensible, rotation lente, image mise à jour toutes les ≈ 10 min) et ==précipitations== (rotation plus rapide, mise à jour toutes les 4 à 6 minutes). L’intensité est mesurée en ==dBZ== et représentée en couleurs [Figures 13-1 à 13-3].
+FIG: Figure 13-1. Exemple d’écran de radar météo. Figure 13-2. Légende d’intensité d’écho du radar WSR-88D. Figure 13-3. Terminologie d’intensité : léger < 30 dBZ ; modéré 30–40 dBZ ; fort > 40–50 dBZ ; extrême 50+ dBZ.
+SUM: MDCRS : plus de 1 500 avions transmettent vent et température. || Doppler NEXRAD : air clair (≈ 10 min), précipitations (4–6 min). || Intensité : léger < 30, modéré 30–40, fort 40–50, extrême > 50 dBZ.
+VOC: radar Doppler | Doppler radar ;; dBZ | dBZ ;; mode air clair | clear air mode ;; intensité | intensity ;; écho | echo
+@PAGE 13-4 pdf=314
+P: 3. Le ==radar de surveillance d’aéroport== de la FAA détecte surtout les aéronefs mais aussi la position et l’intensité des précipitations, pour dérouter le trafic autour du mauvais temps. 4. Le ==radar embarqué== localise les perturbations ; il fonctionne généralement en bande C ou X (≈ 6 ou ≈ 10 GHz), pénétrant les fortes précipitations pour évaluer l’étendue des orages.
+## Satellite
+P: Les progrès permettent des liaisons montantes météo commerciales : par abonnement satellite, on reçoit une météo quasi temps réel pour l’Amérique du Nord.
+# Points de service
+P: Organismes gouvernementaux (FAA, NOAA, NWS) et privés fournissant la météo.
+## FSS (Flight Service Station)
+P: Le FSS est la ==source principale d’information météo prévol==. Un briefing est disponible 24 h/24 au ==1-800-WX-BRIEF== (États-Unis et Porto Rico) ; les numéros figurent dans le Chart Supplement U.S. Le FSS fournit aussi des briefings en vol et des avis météo.
+## TIBS (Telephone Information Briefing Service)
+P: Enregistrements téléphoniques automatiques de météo et d’informations aéronautiques (briefings de zone et de route, procédures d’espace aérien), mis à jour automatiquement. ==Outil de briefing préliminaire, ne remplace pas un briefing standard du FSS==. Accessible seulement par téléphone à touches.
+## HIWAS
+P: Diffusion automatique continue d’avis météo dangereux sur certains VOR (48 États contigus) : AIRMET, SIGMET, SIGMET convectifs, PIREP urgents. Pour plus d’informations, contacter le FSS ou l’EFAS. Les VOR avec HIWAS portent un « ==H== » en haut à droite de leur cadre d’identification sur les cartes [Figure 13-4].
+## TWEB (Alaska uniquement)
+P: Diffusion automatique continue de données météo et aéronautiques sur certains L/MF et VOR (observations, PIREP, énoncé d’altitude-densité, prévisions…), non destinée à remplacer un briefing d’un spécialiste.
+FIG: Figure 13-4. La disponibilité HIWAS est indiquée sur la carte sectionnelle (symbole H).
+SUM: FSS : source principale de météo prévol, 1-800-WX-BRIEF. || TIBS : enregistrements, briefing préliminaire seulement. || HIWAS : avis dangereux diffusés sur les VOR marqués « H ». || Radar embarqué : bandes C ou X.
+VOC: briefing météo | weather briefing ;; diffusion | broadcast ;; point de service | service outlet ;; radar embarqué | airborne radar ;; avis météo dangereux | hazardous weather advisory
+@PAGE 13-5 pdf=315
+# Briefings météo
+P: Avant chaque vol, rassembler toutes les informations utiles, dont un ==briefing météo adapté obtenu d’un spécialiste du FSS==. Il faut préciser le type : ==standard, abrégé ou perspectives (outlook)==, ainsi que : VFR ou IFR, immatriculation et type d’avion, point de départ, heure estimée de départ (ETD), altitude, route, destination, durée estimée en route (ETE). Ces données sont enregistrées dans le système de plans de vol, avec le type de briefing, pour un éventuel dépôt ou amendement du plan et en cas d’avion en retard ou disparu.
+## Briefing standard
+P: Le plus complet, à obtenir ==avant tout départ==, en séquence (si applicable) :
+1. ==Conditions défavorables== (orages, givrage, fermetures d’aéroports).
+2. ==« VFR not recommended »== si la météo est sous les minimums VFR ou douteuse : la décision de poursuivre reste celle du pilote, mais l’avis doit être sérieusement pesé.
+3. ==Synopsis== : vue d’ensemble (fronts, systèmes majeurs).
+4. ==Conditions actuelles== (plafonds, visibilité, vents, températures) ; omises si le départ est dans plus de 2 h.
+5. ==Prévision en route==.
+6. ==Prévision à destination== (à l’ETA).
+7. ==Vents et températures en altitude== (température seulement sur demande).
+8. ==NOTAM== non encore publiés (les NOTAM publiés seulement sur demande).
+9. ==Retards ATC==.
+10. Autres informations : fréquences pour ouvrir un plan de vol, contacter l’EFAS, etc.
+## Briefing abrégé
+P: Version courte, à demander quand le départ est retardé ou pour mettre à jour un briefing précédent ; le spécialiste doit connaître l’heure et la source du précédent.
+## Briefing « perspectives » (outlook)
+P: À demander quand le départ est prévu dans ==6 heures ou plus== ; informations initiales limitées, utiles à la route, à l’altitude et à la décision go/no-go. ==Demander un briefing de suivi avant le départ== ; un briefing standard près de l’heure du départ garantit les dernières informations.
+## Messages météo aéronautiques
+P: Ils décrivent avec précision la météo courante : METAR et PIREP, entre autres.
+SUM: 3 types de briefing : standard (avant tout départ), abrégé (mise à jour), outlook (départ ≥ 6 h). || Ordre du standard : conditions défavorables, VFR not recommended, synopsis, conditions actuelles, en route, destination, vents en altitude, NOTAM, retards ATC, autres. || Conditions actuelles omises si départ > 2 h.
+VOC: briefing standard | standard briefing ;; briefing abrégé | abbreviated briefing ;; briefing perspectives | outlook briefing ;; synopsis | synopsis ;; NOTAM | Notice to Airmen (NOTAM) ;; plan de vol | flight plan
+@PAGE 13-6 pdf=316
+## METAR (Aviation Routine Weather Report)
+P: Le METAR est l’observation de la météo de surface courante dans un format international normalisé (adaptations nationales mineures). Il est émis régulièrement, sauf changement significatif ; un METAR spécial (==SPECI==) peut être émis à tout moment (météo qui change rapidement, accident d’aéronef, etc.). Exemple : ==METAR KGGG 161753Z AUTO 14021G26KT 3/4SM +TSRA BR BKN008 OVC012CB 18/17 A2970 RMK PRESFR==. Éléments, dans l’ordre :
+1. ==Type== : METAR (routinier) ou SPECI.
+2. ==Indicatif de station== : quatre lettres OACI ; aux États-Unis, trois lettres précédées de « K » (KGGG = Gregg County, Longview). Alaska : « PA » ; Hawaï : « PH ».
+3. ==Date et heure== : six chiffres (161753Z) : jour (16) et heure ==UTC== (1753), « Z » = Zulu.
+4. ==Modificateur== : « AUTO » (source automatique) ; « COR » (rapport corrigé). Dans les remarques, AO1 (sans discriminateur de précipitation) ou AO2 (avec).
+5. ==Vent== : cinq chiffres (14021KT) : direction vraie d'où il souffle en dizaines de degrés (140°), vitesse en nœuds (21) ; six chiffres si > 99 kt. « ==VRB== » si variable ; « ==G== » + rafale maximale (G26KT) ; si la direction varie de plus de 60° et le vent > 6 kt, un groupe séparé par « V » indique les extrêmes.
+6. ==Visibilité== : visibilité dominante en ==statute miles== (3/4SM). La ==RVR== (portée visuelle de piste) peut suivre : R17L/1400FT = 1 400 ft sur la piste 17 gauche.
+7. ==Temps présent== : qualificatifs (intensité : – léger, modéré (aucun signe), + fort ; proximité : « VC » = 5 à 10 miles de l’aéroport ; descripteur) et phénomènes (précipitations, obscurcissements, autres : grains, entonnoir…).
+SUM: METAR : type, station, date/heure UTC, modificateur, vent, visibilité, temps présent, nuages, T/Td, calage, remarques. || KGGG 161753Z : 16 du mois à 17h53 UTC. || 14021G26KT : vent 140° à 21 kt, rafales 26 kt. || SPECI : spécial, à tout moment.
+VOC: METAR | METAR ;; SPECI | SPECI ;; indicatif de station | station identifier ;; portée visuelle de piste | runway visual range (RVR) ;; temps universel | UTC (Zulu) ;; visibilité dominante | prevailing visibility
+@PAGE 13-7 pdf=317
+P: Les phénomènes sont codés par intensité, descripteur, puis phénomène (ex. +SHRA = fortes averses de pluie) [Figure 13-5].
+8. ==Nébulosité== : quantité, hauteur, type ou plafond indéfini/visibilité verticale (BKN008 OVC012CB, VV003). Hauteurs des bases en centaines de pieds ==AGL==. Les stations automatiques ne détectent pas les nuages au-dessus de ==12 000 ft==. TCU et CB sont indiqués. Quantité en huitièmes du ciel [Figure 13-6].
+9. ==Température et point de rosée== en °C (18/17) ; « ==M== » devant une valeur négative.
+10. ==Calage altimétrique== en "Hg, quatre chiffres précédés de « A » (A2970). « PRESRR » (pression en hausse rapide) ou « PRESFR » (en baisse rapide) peut figurer en remarques.
+11. ==Heure Zulu== = UTC.
+12. ==Remarques== : commencent toujours par ==RMK== (données de vent, visibilité variable, début/fin de phénomènes, pression…). Ex. : OCNL LTGICCG = foudre occasionnelle dans le nuage et nuage-sol. Les stations automatiques y indiquent aussi un besoin de maintenance.
+FIG: Figure 13-5. Descripteurs et phénomènes du METAR : intensité – (léger), modéré, + (fort), VC ; descripteurs MI (mince), BC (bancs), DR (chasse basse), BL (chasse haute), SH (averses), TS (orage), FZ (se congelant), PR (partiel) ; précipitations DZ (bruine), RA (pluie), SN (neige), SG (grains de neige), IC (cristaux de glace), PL (granules de glace), GR (grêle), GS (petite grêle), UP (précipitation inconnue) ; obscurcissements BR (brume), FG (brouillard), FU (fumée), DU (poussière), SA (sable), HZ (brume sèche), PY (embruns) ; autres PO, SQ (grains), FC (entonnoir), +FC (tornade/trombe), SS, DS, VA (cendres volcaniques).
+FIG: Figure 13-6. Contractions de nébulosité : SKC/CLR < 1/8 ; FEW 1/8–2/8 ; SCT 3/8–4/8 ; BKN 5/8–7/8 ; OVC 8/8.
+SUM: Nuages : FEW 1–2/8, SCT 3–4/8, BKN 5–7/8, OVC 8/8 ; hauteurs en centaines de ft AGL ; auto = rien au-dessus de 12 000 ft. || Température/point de rosée en °C, M = négatif ; calage A2970 = 29,70 "Hg. || RMK = remarques.
+VOC: nébulosité | sky condition ;; fragmenté | broken (BKN) ;; couvert | overcast (OVC) ;; épars | scattered (SCT) ;; peu | few (FEW) ;; remarques | remarks (RMK)

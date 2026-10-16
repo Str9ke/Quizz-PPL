@@ -1,0 +1,71 @@
+@PAGE 13-8 pdf=318
+P: Explication du METAR d’exemple : METAR de routine pour l’aéroport de Gregg County, le 16 du mois à 1753Z, source automatique. Vent 140° à 21 kt, rafales 26. Visibilité ¾ SM. Orages avec forte pluie et brume. Plafond fragmenté à 800 ft, couvert à 1 200 ft avec cumulonimbus. Température 18 °C, point de rosée 17 °C. Pression 29,70 "Hg en baisse rapide.
+## PIREP (Pilot Weather Reports)
+P: Les PIREP fournissent des informations sur les conditions réelles en vol, introuvables ailleurs : hauteur des bases et sommets, cisaillement et turbulence, givrage. ==Si le plafond est inférieur à 5 000 ft ou la visibilité ≤ 5 miles, les organismes ATC doivent solliciter des PIREP auprès des pilotes de la zone.== En cas de météo inattendue, les pilotes sont encouragés à faire un compte rendu au FSS ou à l’ATC, qui l’ajoute au système de diffusion. Un formulaire standard existe (Figure 13-7) : les éléments 1 à 5 sont obligatoires, ainsi qu’au moins un phénomène météo rencontré.
+FIG: Figure 13-7. Codage des PIREP : 1 UA (routinier) ou UUA (urgent) ; /OV lieu (balise sur 3 lettres) ; /TM heure UTC ; /FL altitude ; /TP type d’avion ; /SK nuages ; /WX temps ; /TA température (°C) ; /WV vent ; /TB turbulence ; /IC givrage ; /RM remarques.
+P: Exemple : UA/OV GGG 090025/TM 1450/FL 060/TP C182/SK 080 OVC/WX FV04SM RA/TA 05/WV 270030KT/TB LGT/RM HVY RAIN. Décodage : PIREP routinier ; à 25 NM sur le radial 090° du VOR de Gregg County ; 1450Z ; 6 000 ft ; Cessna 182 ; couvert à 8 000 ft ; visibilité 4 miles sous la pluie ; 5 °C ; vent 270° à 30 kt ; turbulence légère ; pas de givrage ; pluie forte.
+SUM: PIREP : seule source des conditions réelles en vol. || ATC doit solliciter des PIREP si plafond < 5 000 ft ou visibilité ≤ 5 miles. || Éléments obligatoires : 1 à 5 (type, lieu, heure, altitude, type d’avion) + un phénomène.
+VOC: compte rendu de pilote | pilot weather report (PIREP) ;; turbulence | turbulence ;; givrage | icing ;; urgent | urgent ;; routinier | routine
+@PAGE 13-9 pdf=319
+# Prévisions aéronautiques
+P: Les observations servent à élaborer les prévisions. Les prévisions imprimées à connaître : ==TAF== (prévisions d’aérodrome), ==FA== (prévisions de zone), avis en vol (==SIGMET, AIRMET==) et ==FB== (vents et températures en altitude).
+## TAF (Terminal Aerodrome Forecast)
+P: Une TAF couvre un ==rayon de 5 statute miles== autour d’un aéroport (en général les grands). Valide ==24 ou 30 heures==, elle est mise à jour 4 fois par jour à ==0000Z, 0600Z, 1200Z et 1800Z==, avec les mêmes descripteurs que le METAR. Contenu en ordre :
+1. Type : TAF ou ==TAF AMD== (amendée).
+2. Indicatif OACI (comme METAR).
+3. Date et heure d’origine (081125Z), toujours en UTC.
+4. Période de validité (0812/0912) : jour/heure de début, jour/heure de fin ; minuit début = 00, fin = 24 (ex. 0900/0924).
+5. Vent prévu : 15011KT (direction vraie, vitesse).
+6. Visibilité prévue en SM ; au-delà de 6 miles : ==P6SM==.
+7. Temps significatif (même format que METAR).
+8. Nébulosité prévue : seuls les CB sont prévus (pas les TCU).
+9. Groupe de changement : ==FM== (changement rapide et significatif, en général dans l’heure) et ==TEMPO== (fluctuations temporaires de moins d’une heure).
+10. ==PROB30== : probabilité de 30 % d’orages et de précipitations ; non utilisé pendant les 6 premières heures d’une TAF de 24 h.
+P: Exemple : TAF KPIR 111130Z 1112/1212 TEMPO 1112/1114 5SM BR FM1500 16015G25KT P6SM SCT040 BKN250 FM120000 14012KT P6SM BKN080 OVC150 PROB30 1200/1204 3SM TSRA BKN030CB FM120400 1408KT P6SM SCT040 OVC080 TEMPO 1204/1208 3SM TSRA OVC030CB — TAF de routine de Pierre (Dakota du Sud), émise le 11 à 1130Z, valide de 1200Z le 11 à 1200Z le 12 ; temporairement entre 1200Z et 1400Z visibilité 5 SM en brume ; à partir de 1500Z vent 160° à 15 kt rafales 25, visibilité > 6 SM, épars à 4 000 ft et fragmenté à 25 000 ft ; etc. jusqu’à la fin du message (=).
+SUM: TAF : rayon de 5 SM, valide 24 ou 30 h, mise à jour 4×/jour (00, 06, 12, 18Z). || FM = changement rapide ; TEMPO = < 1 h ; PROB30 = 30 % ; P6SM = > 6 SM. || Seuls les CB sont prévus.
+VOC: prévision d’aérodrome | terminal aerodrome forecast (TAF) ;; amendée | amended ;; temporaire | temporary (TEMPO) ;; probabilité | probability ;; période de validité | valid period
+@PAGE 13-10 pdf=320
+## Prévisions de zone (FA)
+P: La FA donne une image des nuages, du temps général et des conditions VMC attendues sur une large zone de plusieurs États. Il y a ==six zones== dans les 48 États contigus. Émise ==trois fois par jour==, valide ==18 heures==. Utile en route et pour les petits aéroports sans TAF. Quatre sections :
+1. ==En-tête== : identifiant de la source, date et heure d’émission, validité, zone couverte (ex. DFWC FA 120945 …).
+2. ==Mises en garde== : IFR, obscurcissement des montagnes, orages. Hauteurs en ==MSL== sauf mention AGL ou CIG. « TS » implique turbulence sévère ou plus, givrage sévère, cisaillement à basse altitude et conditions IFR. (Pour l’IFR et les montagnes, voir AIRMET SIERRA.)
+3. ==Synopsis== : bref résumé de la position et du mouvement des systèmes de pression, fronts et circulations.
+4. ==VFR Clouds and Weather== : ciel, visibilité et temps attendus pour les ==12 prochaines heures== avec perspectives pour les ==6 heures suivantes==.
+P: Exemple de décodage : dans le centre-sud et le sud-est du Texas, couche éparse à fragmentée à 1 000 ft AGL, sommets 3 000 ft, visibilité 3 à 5 SM en brume ; entre 14Z et 16Z les bases montent à 3 000 ft AGL ; après 19Z elles montent à 5 000 ft ; perspective VFR. Dans le nord-ouest de l’Oklahoma… après 20Z, orages épars avec pluie et quelques-uns violents ; sommets de CB au FL450.
+SUM: FA : 6 zones, 3 émissions/jour, valide 18 h. || 4 sections : en-tête, mises en garde, synopsis, VFR clouds/weather (12 h + 6 h de perspectives). || Hauteurs en MSL sauf mention AGL/CIG.
+VOC: prévision de zone | area forecast (FA) ;; mise en garde | precautionary statement ;; synopsis | synopsis ;; obscurcissement des montagnes | mountain obscuration ;; conditions VMC | visual meteorological conditions (VMC)
+@PAGE 13-11 pdf=321
+P: Les localisations peuvent être données par États, régions ou accidents géographiques (chaînes de montagnes) ; la Figure 13-8 montre la carte des six zones.
+FIG: Figure 13-8. Carte des régions de prévision de zone (SLC Salt Lake City, DFW Dallas/Fort Worth, CHI Chicago, BOS Boston, MIA Miami, SFO San Francisco).
+## Avis météo en vol
+P: Les avis en vol sont des prévisions de phénomènes potentiellement dangereux, fournis aux avions en route et disponibles avant le départ : ==AIRMET, SIGMET, SIGMET convectif==.
+## AIRMET
+P: Les AIRMET (WA) sont émis ==toutes les 6 heures== avec mises à jour intermédiaires pour une région de prévision de zone. Ils intéressent tous les aéronefs mais concernent surtout les phénomènes dangereux pour les avions légers ou à capacités limitées. Un AIRMET inclut : ==givrage modéré, turbulence modérée, vents de surface soutenus de 30 kt ou plus, étendues de plafonds < 1 000 ft et/ou visibilités < 3 miles, obscurcissement montagneux étendu==.
+P: Chaque bulletin a un désignateur fixe, numéroté séquentiellement : ==SIERRA== = IFR et obscurcissement des montagnes ; ==TANGO== = turbulence, vents de surface forts et cisaillement à basse altitude ; ==ZULU== = givrage et niveaux de gel.
+P: Exemple : BOSS WA 211945 AIRMET SIERRA UPDT 3 FOR IFR AND MTN OBSCN VALID UNTIL 220200 AIRMET IFR… (zone de ME à NJ…) OCNL CIG BLW 010/VIS BLW 3SM PCPN/BR. CONDS CONT BYD 02Z THRU 08Z.
+SUM: AIRMET : toutes les 6 h ; givrage modéré, turbulence modérée, vent de surface ≥ 30 kt, plafond < 1 000 ft / visibilité < 3 SM, montagnes obscurcies. || SIERRA = IFR/montagnes ; TANGO = turbulence/vent/cisaillement ; ZULU = givrage.
+VOC: AIRMET | AIRMET ;; avion léger | light aircraft ;; désignateur | designator ;; obscurcissement | obscuration ;; carte de région | region map
+@PAGE 13-12 pdf=322
+P: Explication de l’AIRMET SIERRA : émis pour la zone de Boston le 21 à 1945Z ; 3e mise à jour (« UPDT 3 ») ; valide jusqu’à 0200Z le 22 ; plafonds < 1 000 ft et visibilité < 3 SM avec précipitations et brume ; conditions persistantes de 0200Z à 0800Z.
+## SIGMET
+P: Les SIGMET (WS) concernent la météo ==non convective== potentiellement dangereuse pour ==tous les aéronefs== : ==givrage sévère non lié aux orages==, ==turbulence sévère ou extrême ou CAT non liée aux orages==, ==tempêtes de poussière ou de sable== (visibilité < 3 miles), ==cendres volcaniques==. Prévisions non programmées, valides ==4 heures== (==6 heures== pour un ouragan). Identifiant alphabétique de ==November à Yankee==. La première émission est un Urgent Weather SIGMET (UWS) ; les réémissions du même phénomène sont numérotées.
+P: Exemple : SFOR WS 100130 SIGMET ROME02 VALID UNTIL 100530 OR WA FROM SEA TO PDT TO EUG TO SEA OCNL SEV CAT BTN FL280 AND FL350 EXPCD DUE TO JTSTR. CONDS BGNG AFT 0200Z CONTG BYD 0530Z. → SIGMET Romeo 2 (2e émission), valide jusqu’au 10 à 0530Z, pour l’Oregon et Washington : turbulence sévère en air clair occasionnelle entre FL280 et FL350 due au courant-jet.
+## SIGMET convectif (WST)
+P: Avis pour la météo convective dangereuse affectant la sécurité de tous les vols : orages sévères avec vents de surface > ==50 kt==, grêle ≥ ==¾ po== de diamètre, ou tornades ; aussi orages noyés, lignes d’orages, ou orages à fortes précipitations couvrant ==40 % ou plus d’une région de 3 000 miles carrés ou plus==.
+P: Émis pour les États-Unis contigus (est E, ouest W, centre C), pas pour l’Alaska ni Hawaï. Émis à ==H+55==, avec émission spéciale possible ; valide ==2 heures== ; numérotés de 1 à 99 à partir de 00Z ; s’il n’y a pas de météo dangereuse, « CONVECTIVE SIGMET…NONE ».
+P: Exemple : MKCC WST 221855 CONVECTIVE SIGMET 20C VALID UNTIL 2055Z ND SD … INTSFYG AREA SEV TS MOVG FROM 24045KT. TOPS ABV FL450. WIND GUSTS TO 60KTS RPRTD. → 20e SIGMET convectif du jour pour le centre, valide jusqu’à 2055Z, Dakota du Nord et du Sud, orages sévères en intensification venant du 240° à 45 kt, sommets au-dessus du FL450, rafales à 60 kt.
+SUM: SIGMET : turbulence/givrage sévères non convectifs, poussière, cendres ; valide 4 h (6 h ouragan) ; lettres N à Y. || SIGMET convectif : vent > 50 kt, grêle ≥ ¾ po, tornade ; H+55 ; valide 2 h ; E, W, C. || AIRMET = moins grave que SIGMET.
+VOC: SIGMET | SIGMET ;; SIGMET convectif | convective SIGMET (WST) ;; cendres volcaniques | volcanic ash ;; turbulence en air clair | clear air turbulence (CAT) ;; grêle | hail
+@PAGE 13-13 pdf=323
+P: … En outre : tornades, grêle jusqu’à 2 po et rafales possibles à 65 kt dans la partie du Dakota du Nord.
+## Vents et températures en altitude (FB)
+P: Les FB prévoient vent et température en des lieux précis des États-Unis (réseau d’Alaska et d’Hawaï compris), deux fois par jour, d’après les radiosondes de ==0000Z et 1200Z==. Jusqu’à 12 000 ft : altitudes vraies ; à partir de 18 000 ft : niveaux de vol. ==Direction par rapport au nord vrai==, vitesse en kt, température en °C. Pas de vent si le niveau est à moins de ==1 500 ft== de l’altitude de la station ; pas de température si moins de ==2 500 ft==.
+P: Pour un vent prévu entre 100 et 199 kt, on ajoute 50 à la direction et on retranche 100 à la vitesse : au décodage, l’inverse. Ex. « 731960 » : 73 – 50 = 23 → 230° ; 19 + 100 = 119 kt ; –60 °C. Pour ≥ 200 kt, le groupe est codé 99 : « 7799 » → 270° à 199 kt ou plus. Calme ou < 5 kt : « 9900 » (léger et variable). [Figure 13-9]
+P: Explication de la Figure 13-9 : transmise le 15 à 1640Z, d’après les données de 1200Z, valide 1800Z, à utiliser entre 1400Z et 2100Z ; au-dessus du FL240 le signe moins est omis. Amarillo (AMA, 3 605 ft) : plus bas niveau de vent 6 000 ft, « 2714 » = 270° à 14 kt. Denver (DEN, 5 431 ft) : plus bas niveau 9 000 ft ; « 2321-04 » = 230° à 21 kt, –4 °C.
+FIG: Figure 13-9. Prévision de vents et températures en altitude (niveaux 3 000 à 30 000 ft ; AMA 2714, 2725+00 …).
+## Cartes météo
+P: Cartes graphiques de la météo actuelle ou prévue, pour le début de la planification : ==analyse de surface==, ==carte de représentation du temps==, ==cartes de prévisions du temps significatif==.
+## Carte d’analyse de surface
+P: Elle représente la météo de surface actuelle [Figure 13-10], émise ==toutes les 3 heures== pour les 48 États contigus. Elle montre hautes et basses pressions, fronts, températures, points de rosée, vents, météo locale et obstacles à la visibilité. Chaque station est représentée par un ==modèle de station== [Figure 13-11] : nébulosité totale, pression au niveau de la mer (trois chiffres en dixièmes de mb : préfixe 10 si ≥ 1 000 mb, 9 sinon), tendance de pression sur 3 h, point de rosée (°F), temps présent (plus de 100 symboles), température (°F), vent (flèche d’où vient le vent ; petite barbule 5 kt, grande 10 kt, fanion 50 kt).
+SUM: FB : 2×/jour (radiosondes 00Z, 12Z) ; pas de vent à moins de 1 500 ft de la station, pas de température à moins de 2 500 ft. || Décodage > 100 kt : retrancher 50 à la direction, ajouter 100 à la vitesse. || 9900 = calme/léger et variable. || Analyse de surface : toutes les 3 h.
+VOC: vents et températures en altitude | winds and temperatures aloft (FB) ;; carte d’analyse de surface | surface analysis chart ;; modèle de station | station model ;; tendance de pression | pressure tendency ;; niveau de vol | flight level

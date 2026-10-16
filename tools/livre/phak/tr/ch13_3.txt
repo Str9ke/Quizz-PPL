@@ -1,0 +1,52 @@
+@PAGE 13-14 pdf=324
+FIG: Figure 13-10. Carte d’analyse de surface. Figure 13-11. Exemple de modèle de station et symboles des cartes météo (1 couvert ; 2 température/point de rosée 34 °F/32 °F ; 3 vent du nord-ouest à 20 kt, par rapport au nord vrai ; 4 neige faible continue ; 5 pression 1014,7 mb ; 6 variation de pression sur 3 h : augmentation de 2,8 mb).
+P: Rappel du modèle de station : pression toujours en trois chiffres au dixième de mb ; pour 1 000 mb ou plus, préfixer « 10 » ; pour moins de 1 000 mb, préfixer « 9 ». Exemples de vent : NE/5 kt, SO/10 kt, N/15 kt, O/50 kt, S/60 kt, calme.
+SUM: Modèle de station : nébulosité, pression, tendance, point de rosée, temps, température, vent. || Pression : 147 → 1014,7 mb ; 987 → 998,7 mb. || Barbules : 5 kt, 10 kt, fanion 50 kt.
+VOC: modèle de station | station model ;; tendance de pression | pressure tendency ;; nébulosité totale | total sky cover ;; temps présent | present weather
+@PAGE 13-15 pdf=325
+## Carte de représentation du temps (weather depiction chart)
+P: Elle détaille les conditions de surface tirées des METAR et autres observations ; préparée par ordinateur et transmise ==toutes les 3 heures== à partir de 0100Z. Elle donne une vue d’ensemble pour la planification. [Figure 13-12]
+P: Elle montre aussi graphiquement les zones ==IFR, MVFR et VFR== :
+- ==IFR== : plafond < 1 000 ft et visibilité < 3 miles ; zone hachurée entourée d’une ligne lisse.
+- ==MVFR== (VFR marginal) : plafond de 1 000 à 3 000 ft, visibilité de 3 à 5 miles ; zone non hachurée entourée d’une ligne lisse.
+- ==VFR== : pas de plafond ou plafond > 3 000 ft et visibilité > 5 miles ; zone non délimitée.
+P: Fronts, creux et lignes de grains de l’analyse précédente sont reportés. Le modèle de station modifié donne la nébulosité totale, la hauteur du plafond, le temps et les obstacles à la visibilité, mais ni vent ni pression. Un crochet « ] » à droite de la station indique une observation automatique.
+## Cartes de prévisions du temps significatif
+P: Disponibles pour le temps significatif en basse altitude (surface au ==FL240==, niveau 400 mb) et en haute altitude (FL250 à FL630). On s'intéresse à la carte de basse altitude, prévision de dangers aéronautiques pour guider le briefing du pilote VFR : 48 États, sud du Canada et eaux côtières sous 24 000 ft. Émise ==4 fois par jour==, valide à 0000, 0600, 1200 et 1800 UTC, avec des prévisions à 12 et 24 h.
+FIG: Figure 13-12. Carte de représentation du temps.
+SUM: Weather depiction : toutes les 3 h ; IFR (< 1 000 ft, < 3 SM), MVFR (1 000–3 000 ft, 3–5 SM), VFR (> 3 000 ft, > 5 SM). || Prog basse altitude : surface–FL240, 4×/jour, 12 h et 24 h.
+VOC: carte de représentation du temps | weather depiction chart ;; VFR marginal | marginal VFR (MVFR) ;; prévision du temps significatif | significant weather prognostic ;; basse altitude | low-level
+@PAGE 13-16 pdf=326
+P: Depuis le 1er septembre 2015, la carte à quatre panneaux SFC-FL240 a été remplacée par une carte à ==deux panneaux== montrant le niveau de gel, les zones IFR, MVFR et la turbulence modérée ou plus, plus une carte de surface améliorée (fronts, pression, type et intensité des précipitations, type de temps). [Figure 13-13] Ces cartes permettent d’évaluer les dangers existants et potentiels et de les comparer aux capacités de l’avion et du pilote (ADM). Excellente source de planification, mais à voir à la lumière des conditions actuelles et des prévisions locales.
+P: La carte de prévisions à 36 et 48 heures prolonge celle de 12 et 24 h ; émise 2 fois par jour : positions et caractéristiques prévues des systèmes de pression, fronts et précipitations [Figure 13-14].
+## Affichages radar météo de l’ATC
+P: L’ATC ne détecte pas toujours la présence ou l’absence de nuages, mais peut déterminer l’intensité d’une zone de précipitation, sans connaître sa nature (neige, pluie, grêle, virga) : l’ATC parle de « ==précipitations== ». Les ARTCC emploient normalement le ==WARP== (mosaïque de plusieurs sites NEXRAD) : décalage jusqu’à ==6 minutes==. Intensités annoncées aux pilotes : ==faible (light), modérée (moderate), forte (heavy), extrême (extreme)==. Sans WARP, l’ARSR à bande étroite affiche deux niveaux, annoncés « MODERATE » et « HEAVY TO EXTREME ». Sans niveaux d’intensité, le contrôleur indique la position et dit « ==INTENSITY UNKNOWN==».
+P: ==Le radar ATC ne détecte pas la turbulence.==
+FIG: Figure 13-13. Carte de prévisions du temps significatif (deux panneaux).
+SUM: Prog basse altitude à deux panneaux depuis 2015 : niveau de gel, IFR/MVFR, turbulence modérée ou plus. || ATC : « précipitations », intensités light/moderate/heavy/extreme ; WARP jusqu’à 6 min de retard. || Le radar ATC ne détecte pas la turbulence.
+VOC: niveau de gel | freezing level ;; WARP | Weather and Radar Processor (WARP) ;; intensité inconnue | intensity unknown ;; précipitations | precipitation ;; prévision | prognosis
+@PAGE 13-17 pdf=327
+FIG: Figure 13-14. Carte pronostique de surface à 36 h (en haut) et à 48 h (en bas).
+P: Cette page présente la carte pronostique de surface (36 et 48 heures), prolongement des cartes de 12 et 24 h : positions prévues des systèmes de pression, fronts et précipitations.
+SUM: Les cartes à 36 et 48 h prolongent les prévisions de 12 et 24 h. || Émises deux fois par jour.
+VOC: carte pronostique de surface | surface prognostic chart ;; 36 heures | 36-hour ;; 48 heures | 48-hour
+@PAGE 13-18 pdf=328
+P: La turbulence augmente en général avec le taux ou l’intensité des précipitations. Elle est à attendre près de l’activité convective, même en air clair. Les orages impliquent une turbulence ==sévère ou plus==. ==Être très prudent à moins de 20 miles des orages== : la turbulence peut être bien plus forte que l’intensité des précipitations le laisse penser.
+## Aide à l’évitement de la météo
+P: Les contrôleurs transmettent la météo pertinente et aident à éviter les zones sur demande. Le pilote doit accuser réception de l’avis, avec éventuellement une demande : ==dérouter== (nombre de miles et direction), ==nouvelle route==, ==changement d’altitude==, ==guidage radar autour de la zone==. La fonction première du contrôleur est la séparation ; le reste n’est possible que s’il ne l’entrave pas, et la charge de séparation est plus élevée quand la météo perturbe le trafic (limites radar, fréquence saturée).
+## Affichages électroniques (EFD/MFD) – météo
+P: De nombreux avions neufs offrent la météo par liaison de données sur écran EFD/MFD (Figure 13-15). Produits : NEXRAD graphique, METAR graphique et texte, TAF, prévisions de ville, vent graphique, sommets d’échos, sommets de nuages, éclairs, mouvement des cellules, couverture NEXRAD, SIGMET/AIRMET, analyse de surface, niveaux de gel, trajectoire d’ouragan, TFR (restrictions temporaires de vol). Le pilote doit bien connaître son appareil.
+## Âge et expiration des produits météo
+P: Les informations en liaison de données sont quasi temps réel mais pas instantanées. Chaque produit porte un horodatage (âge en UTC depuis l’assemblage au sol, pas depuis la réception par le FIS). La météo « actuelle » affiche un âge ; les prévisions un horodatage de type « __ / __ __ : __ ». [Figure 13-16]
+## NEXRAD
+P: Le NEXRAD comprend ==159 radars WSR-88D== aux États-Unis et sur des sites d’outre-mer (DOC, DOD, DOT ; NWS, AFWA, FAA). [Figure 13-17] Les données s’affichent jusqu’à 2 000 miles, mais l’image n’est pas en temps réel : jusqu’à ==5 minutes== de retard, parfois plus (le NTSB a rapporté 2 accidents mortels avec images vieilles de 6 à 8 minutes).
+SUM: Orages : prudence à moins de 20 miles. || Demandes à l’ATC : déroutement, nouvelle route, altitude, guidage radar. || NEXRAD : 159 radars, image jusqu’à 5 min de retard. || EFD : NEXRAD, METAR, TAF, éclairs, SIGMET/AIRMET, TFR…
+VOC: évitement météo | weather avoidance ;; affichage de vol électronique | electronic flight display (EFD) ;; affichage multifonction | multi-function display (MFD) ;; liaison de données | data link ;; âge du produit | product age ;; restriction temporaire de vol | temporary flight restriction (TFR)
+@PAGE 13-19 pdf=329
+FIG: Figure 13-15. Page d’information. Figure 13-16. Liste des produits météo et de leur durée de validité.
+P: Dans les cas extrêmes, l’âge réel de la donnée NEXRAD la plus ancienne de la mosaïque peut dépasser de ==15 à 20 minutes== l’âge affiché dans le poste. De petits écarts comptent pour des phénomènes rapides. ==Ne jamais utiliser ces images comme radar de pénétration d’orage ni pour traverser une ligne d’orages ; elles ne servent que de référence.==
+P: Le NEXRAD est incompatible avec TOPO, TERRAIN et STORMSCOPE : quand NEXRAD est activé, ils sont désactivés car leurs couleurs d’intensité sont proches. Les informations d’éclairs aident quand NEXRAD est actif. On peut choisir la portée et zoomer. [Figure 13-18]
+## Que peuvent faire les pilotes ?
+P: ==L’affichage NEXRAD dans le poste montre où la météo ÉTAIT, pas où elle EST.== L’indicateur d’âge donne l’âge de l’image mosaïque, pas celui des conditions réelles, qui peuvent être plus anciennes de 15 à 20 minutes.
+SUM: Le NEXRAD du poste montre où était le temps, pas où il est. || Âge réel jusqu’à 15–20 min de plus que l’âge affiché. || Ne jamais traverser un orage ou une ligne d’orages avec l’image.
+VOC: mosaïque | mosaic ;; âge | age ;; ne pas pénétrer | do not penetrate ;; éclair | lightning strike ;; retard | latency

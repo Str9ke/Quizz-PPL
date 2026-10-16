@@ -8,7 +8,7 @@ GROUPS=[('A','À lire en priorité pour le PPL','Aérodynamique, commandes, syst
 CHAPTERS={1:('Chapitre 1','Introduction au vol','B',16,39),2:('Chapitre 2','Prise de décision aéronautique','B',40,71),3:('Chapitre 3','Structure et composants de l’aéronef','B',72,87),
  4:('Chapitre 4','Principes du vol','A',88,96),5:('Chapitre 5','Aérodynamique du vol','A',98,148),6:('Chapitre 6','Commandes de vol','A',149,160),7:('Chapitre 7','Systèmes de l’aéronef','A',161,202),
  8:('Chapitre 8','Instruments de vol','A',203,230),9:('Chapitre 9','Manuels de vol et documents','B',231,244),10:('Chapitre 10','Masse et centrage','A',245,255),11:('Chapitre 11','Performances de l’aéronef','A',257,284),
- 12:('Chapitre 12','Théorie météorologique','A',285,310),13:('Chapitre 13','Services météorologiques aéronautiques','A',311,334),14:('Chapitre 14','Opérations d’aéroport','A',335,375),
+ 12:('Chapitre 12','Théorie météorologique','A',285,309),13:('Chapitre 13','Services météorologiques aéronautiques','A',311,334),14:('Chapitre 14','Opérations d’aéroport','A',335,375),
  15:('Chapitre 15','Espace aérien','A',376,387),16:('Chapitre 16','Navigation','A',388,422),17:('Chapitre 17','Facteurs aéromédicaux','B',423,452),
  18:('Annexe A','Données de performance (Cessna 172R)','C',453,460),19:('Annexe B','Abréviations','C',461,472),20:('Annexe C','Panneaux et marquages d’aéroport','C',473,476),21:('Glossaire','Glossaire A–Z','C',477,512)}
 def inl(t):

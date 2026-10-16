@@ -1,0 +1,65 @@
+@PAGE 13-20 pdf=330
+FIG: Figure 13-17. Affichage radar NEXRAD. Figure 13-18. Affichage NEXRAD (portée 500 miles) : les dégradés de couleurs se lisent avec la légende en haut à droite de l’écran ; la touche LEGEND affiche la page de légende.
+SUM: NEXRAD : la portée est réglable ; la légende explique les couleurs.
+VOC: légende | legend ;; portée | range ;; touche programmable | soft key ;; dégradé de couleurs | color gradient
+@PAGE 13-21 pdf=331
+P: … Le déplacement ou l’intensification de la météo peut nuire à la sécurité. Conseils : comprendre que le « délai de 5 minutes » souvent cru n’est pas toujours exact ; ==obtenir son briefing prévol — la météo dans le poste ne dispense pas d’un briefing complet== ; utiliser toutes les sources appropriées pour décider en vol ; informer les autres pilotes des limites du NEXRAD embarqué.
+## Anomalies du NEXRAD
+P: Échos parasites du sol (*ground clutter*) ; éclairs parasites et données radar erronées ; éclairs du soleil quand l’antenne pointe vers lui ; interférences de bâtiments ou montagnes (ombres) ; avions militaires larguant de la poussière métallique qui réfléchit le radar.
+## Limites du NEXRAD
+P: ==Réflectivité de base== : elle ne permet pas de déterminer les couches de nuages ni le type de précipitation (grêle ou pluie) : un pilote peut prendre de la pluie pour de la grêle. Elle est mesurée à l’angle d’élévation minimal : un site ne peut pas représenter un orage en altitude juste au-dessus de lui, d’où une zone sans couverture si un site voisin ne la couvre pas.
+P: ==Résolution== : la résolution minimale est de ==1,24 mile==. En zoomant à environ 10 miles, les carrés apparaissent ; chaque carré indique l’écho le plus fort de sa zone de 1,24 mile.
+## Affichage AIRMET/SIGMET
+P: Les AIRMET/SIGMET sont disponibles pour la portée affichée sur le MFD (certains écrans jusqu’à 2 000 miles) et apparaissent en lignes pointillées [Figure 13-19]. La légende donne les couleurs (givrage, turbulence, IFR, montagnes obscurcies, vents de surface) [Figure 13-20]. Avantage : le pilote voit l’étendue de la zone sans tracer les points à la main.
+## METAR graphiques
+P: Chaque station ayant un METAR/TAF est représentée par un drapeau coloré selon le temps rapporté, avec une légende [Figure 13-21]. En réglant la portée jusqu’à 2 000 miles, on voit rapidement zones marginales, IFR ou VFR et la météo d’un aéroport de déroutement.
+## Météo par liaison de données
+P: On peut recevoir une météo continuellement mise à jour sur tout le pays, à toute altitude, sans limite de portée radio ni de relief. Plus besoin de demander directement des informations : quand le temps devient douteux, la fréquence se sature, et le FSS ne parle qu’à un pilote à la fois. La liaison de données offre une meilleure conscience de la situation. Les pilotes peuvent choisir des équipements certifiés FAA ou des récepteurs portables.
+SUM: NEXRAD : anomalies (échos de sol, soleil, ombres) ; ne distingue pas pluie et grêle ; résolution 1,24 mile. || AIRMET/SIGMET en pointillés ; METAR en drapeaux de couleur. || Le briefing prévol reste obligatoire.
+VOC: réflectivité de base | base reflectivity ;; échos de sol | ground clutter ;; résolution | resolution ;; drapeau de couleur | color-coded flag ;; liaison de données | data link
+@PAGE 13-22 pdf=332
+FIG: Figure 13-19. L’encadré AIRMET invite à appuyer sur la touche ENT pour obtenir plus d’informations sur la zone sélectionnée ; le texte détaillé s’affiche alors à droite. Figure 13-20. Légende d’affichage SIGMET/AIRMET.
+SUM: Appuyer sur ENT affiche le texte de l’AIRMET. || La légende donne les couleurs par type d’avis.
+VOC: encadré | information box ;; touche ENT | ENTER soft key ;; texte détaillé | textual information
+@PAGE 13-23 pdf=333
+FIG: Figure 13-21. Légende d’affichage des METAR graphiques.
+P: … Grâce aux diffusions continues, on peut obtenir un briefing météo en regardant un écran.
+## Produits météo par liaison de données : FIS-B
+P: Le ==FIS-B== (*Flight Information Service–Broadcast*) est un service de diffusion au sol via le réseau ADS-B sur la liaison de données ==UAT 978 MHz==. Il affiche dans le poste : METAR, SPECI, TAF et amendements, cartes NEXRAD (régional et CONUS), NOTAM distants et FDC, AIRMET, SIGMET et SIGMET convectifs, statut de l’espace aérien à usage spécial (SUA), TFR, vents et températures en altitude, PIREP, statut du service TIS-B.
+P: ==Les produits FIS-B sont fournis à titre d’information seulement : ils ne satisfont pas aux exigences réglementaires et de sécurité des produits météo officiels et ne doivent pas servir de produits météo primaires.== Certaines données peuvent avoir ==20 à 30 minutes==. Consulter les manuels de l’équipement.
+SUM: FIS-B : diffusion ADS-B sur 978 MHz (UAT). || Contenu : METAR, TAF, NEXRAD, NOTAM, AIRMET/SIGMET, TFR, vents en altitude, PIREP. || Information seulement, retard possible de 20–30 min.
+VOC: FIS-B | Flight Information Service–Broadcast (FIS-B) ;; ADS-B | Automatic Dependent Surveillance–Broadcast (ADS-B) ;; espace aérien à usage spécial | special use airspace (SUA) ;; restriction temporaire de vol | temporary flight restriction (TFR)
+@PAGE 13-24 pdf=334
+## Responsabilité du pilote
+P: L’intérêt de la liaison de données dépend de la compréhension par le pilote de ses capacités et limites :
+- ==Latence== : lire l’horodatage ou « valid until ». Le traitement et la transmission du NEXRAD prenant plusieurs minutes, ==considérer que la météo par liaison de données a toujours au moins 7 à 8 minutes de plus que l’horodatage== ; n’utiliser les images radar que pour un évitement stratégique global.
+- Cycles de mise à jour des produits.
+- Indications de panne (partielle ou totale).
+- Zones de couverture : les systèmes au sol à vue directe ont une couverture limitée sous 5 000 ft AGL ; les systèmes satellitaires ont d’autres limites ; le NEXRAD a des trous, surtout dans l’ouest.
+- Contenu et format : connaître les symboles et la légende.
+- Intégrité des données et limites d’emploi.
+- Emploi de l’équipement (EFB ou avionique) : le pilote reste responsable ; l’examen pratique peut l’évaluer.
+- ==Surcharge d’information== : trop d’informations nuisent à la charge cognitive ; adapter la quantité à la phase de vol, au pilotage seul, au pilote automatique, à la classe d’espace aérien et à la météo.
+## Résumé du chapitre
+P: Aucune prévision n’est exacte à 100 %, mais les pilotes disposent d’une multitude d’informations pour décider, de la planification prévol à la réception en vol par radio ou liaison de données. Chaque message est une pièce du puzzle : il faut en utiliser plusieurs pour obtenir une vue d’ensemble de la météo.
+SUM: Latence : ajouter au moins 7–8 min à l’horodatage. || Savoir : mises à jour, pannes, couverture, format, limites. || Trop d’information = surcharge ; utiliser plusieurs sources.
+VOC: latence | latency ;; cycle de mise à jour | update cycle ;; zone de couverture | coverage area ;; charge cognitive | cognitive workload ;; sac de vol électronique | electronic flight bag (EFB) ;; surcharge d’information | information overload
+@SHEET
+* Observations : surface (METAR), altitude (radiosonde, PIREP, AMDAR), radar (NEXRAD WSR-88D : air clair ≈ 10 min, précipitations 4–6 min), satellite. FSS : source principale prévol, 1-800-WX-BRIEF. TIBS : préliminaire seulement. HIWAS : avis sur les VOR « H ».
+* Briefings : standard (avant tout départ), abrégé (mise à jour), outlook (départ ≥ 6 h). Ordre du standard : conditions défavorables, VFR not recommended, synopsis, conditions actuelles, en route, destination, vents en altitude, NOTAM, retards ATC.
+* METAR : station, date/heure UTC, vent (dir/vit/G), visibilité SM, temps, nuages (FEW/SCT/BKN/OVC en centaines de ft AGL), T/Td, calage Axxxx, RMK. PIREP : UA ou UUA, OV, TM, FL, TP, SK, WX, TA, WV, TB, IC, RM. TAF : 5 SM, 24/30 h, mise à jour 00/06/12/18Z ; FM, TEMPO, PROB30.
+* FA : 6 zones, 18 h. AIRMET (Sierra/Tango/Zulu, toutes les 6 h), SIGMET (4 h), SIGMET convectif (H+55, 2 h). FB : vents et températures en altitude. Analyse de surface (3 h), weather depiction (IFR < 1 000 ft/< 3 SM, MVFR 1 000–3 000 ft/3–5 SM), prog 12/24 h, 36/48 h.
+* ATC : « précipitations » (light, moderate, heavy, extreme) ; ne voit pas la turbulence. NEXRAD embarqué : où était le temps ; latence ≥ 7–8 min ; jamais pour traverser des orages. FIS-B : 978 MHz, information seulement.
+@NUMS
+5 SM | rayon couvert par une TAF
+24 ou 30 h / 0000-0600-1200-1800Z | validité et mises à jour d’une TAF
+18 h / 3 par jour | validité et émissions de la prévision de zone (FA)
+6 h / 4 h / 2 h | validité AIRMET (émission) / SIGMET / SIGMET convectif
+H + 55 | minute d’émission du SIGMET convectif
+< 5 000 ft ou ≤ 5 SM | seuil à partir duquel l’ATC doit solliciter des PIREP
+< 1 000 ft et < 3 SM | seuil IFR de la weather depiction
+1 000–3 000 ft et 3–5 SM | MVFR
+FL240 | limite de la prog basse altitude
+7–8 min | latence minimale à ajouter aux images de liaison de données
+978 MHz | fréquence UAT du FIS-B
+159 | nombre de radars WSR-88D du NEXRAD
