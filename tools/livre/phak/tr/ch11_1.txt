@@ -1,0 +1,75 @@
+@CH 11
+@INTRO Performances de l’aéronef : ce chapitre traite des facteurs qui influent sur les performances (masse, conditions atmosphériques, environnement de piste) et des lois physiques qui régissent les forces agissant sur l’avion : atmosphère standard, altitude-pression, altitude-densité, puis décollage, montée, croisière et atterrissage.
+@PAGE 11-1 pdf=257
+# Introduction
+P: Ce chapitre traite des facteurs qui influent sur les performances : la masse de l’avion, les conditions atmosphériques, l’environnement de piste et les lois physiques régissant les forces qui agissent sur l’avion.
+# Importance des données de performance
+P: La section « performances » du manuel de vol / manuel d’utilisation (==AFM/POH==) contient les données de décollage, montée, distance franchissable, endurance, descente et atterrissage. ==Utiliser ces données est obligatoire== pour une exploitation sûre et efficace ; les étudier permet aussi de bien connaître l’avion.
+SUM: Le chapitre traite masse, atmosphère, piste et lois physiques. || Les données de performance de l’AFM/POH doivent être utilisées pour exploiter l’avion en sécurité.
+VOC: performances | performance ;; manuel de vol | Aircraft Flight Manual (AFM) ;; manuel d’utilisation | Pilot’s Operating Handbook (POH) ;; endurance | endurance ;; distance franchissable | range
+@PAGE 11-2 pdf=258
+P: Les données de l’AFM/POH ne sont ==pas normalisées== : certains constructeurs utilisent des tableaux, d’autres des graphiques ; elles peuvent être fondées sur l’atmosphère standard, l’altitude-pression ou l’altitude-densité. Elles n’ont ==aucune valeur== si l’utilisateur ne reconnaît pas ces variations et n’effectue pas les corrections nécessaires. Il faut aussi connaître le sens des termes employés.
+# Structure de l’atmosphère
+P: L’atmosphère est une enveloppe d’air entourant la Terre. L’air est un mélange de gaz ; il a une masse, un poids et une forme indéfinie. Comme tout fluide, il s’écoule et change de forme sous de très faibles pressions. Il est composé de ==78 % d’azote, 21 % d’oxygène et 1 % d’autres gaz== (argon, hélium). L’essentiel de l’oxygène se trouve sous 35 000 ft.
+## Pression atmosphérique
+P: La pression atmosphérique est un des facteurs de base du temps, aide à porter l’avion et fait fonctionner des instruments importants : altimètre, anémomètre, variomètre, manomètre de pression d’admission.
+P: L’air a un poids, donc exerce une force, également dans toutes les directions (pression). Dans les conditions standard au niveau de la mer, la pression moyenne est d’environ ==14,7 psi==. Plus l’air est peu dense, plus il réduit :
+- la ==puissance== (le moteur absorbe moins d’air)
+- la ==poussée== (l’hélice est moins efficace)
+- la ==portance== (les profils reçoivent moins de force)
+P: La pression varie avec le temps, mais surtout avec l’altitude et la température. Il existe une référence : l’atmosphère standard au niveau de la mer a ==15 °C (59 °F)== et ==29,92 "Hg (1 013,2 mb)==. [Figure 11-1]
+P: Le ==gradient standard de température== est une baisse d’environ ==2 °C (3,5 °F) par 1 000 ft== jusqu’à 36 000 ft ; au-dessus, la température est considérée constante jusqu’à 80 000 ft. Le ==gradient standard de pression== est une baisse d’environ ==1 "Hg par 1 000 ft== jusqu’à 10 000 ft. [Figure 11-2] L’OACI en a fait une norme mondiale (==ISA==, atmosphère standard OACI). Toute température ou pression différente est dite non standard ; les abaques de performance fournissent les corrections.
+FIG: Figure 11-1. Pression standard au niveau de la mer (29,92 "Hg ou 1 013,2 mb).
+SUM: Air : 78 % azote, 21 % oxygène, 1 % autres. || ISA au niveau de la mer : 15 °C, 29,92 "Hg, 14,7 psi. || Gradients standard : –2 °C et –1 "Hg par 1 000 ft. || Air moins dense = moins de puissance, de poussée, de portance.
+VOC: atmosphère standard | standard atmosphere ;; gradient de température | temperature lapse rate ;; pression atmosphérique | atmospheric pressure ;; pouces de mercure | inches of mercury ;; non standard | nonstandard ;; densité | density
+@PAGE 11-3 pdf=259
+FIG: Figure 11-2. Propriétés de l’atmosphère standard (0 ft : 15,0 °C, 29,92 "Hg ; 5 000 ft : 5,1 °C, 24,89 "Hg ; 10 000 ft : –4,8 °C, 20,57 "Hg ; 20 000 ft : –24,6 °C, 13,74 "Hg).
+P: Les performances sont comparées dans l’atmosphère standard et tous les instruments y sont étalonnés : il faut donc corriger instruments et performances quand les conditions réelles diffèrent. D’où quelques définitions.
+## Altitude-pression
+P: L’==altitude-pression== (*pressure altitude*) est la hauteur au-dessus du ==plan de référence standard (SDP)==. L’altimètre est un baromètre sensible étalonné pour l’atmosphère standard : ==calé sur 29,92 "Hg, il indique l’altitude-pression==.
+P: Le SDP est un niveau théorique où la pression est de 29,92 "Hg ; il peut être sous, au niveau ou au-dessus du niveau de la mer. L’altitude-pression sert de base pour les performances et pour attribuer les niveaux de vol au-dessus de 18 000 ft. Trois façons de la déterminer :
+1. caler l’altimètre sur 29,92 "Hg et lire l’altitude indiquée ;
+2. appliquer un facteur de correction à l’altitude indiquée selon le calage altimétrique reçu [Figure 11-3] ;
+3. utiliser un calculateur de vol.
+## Altitude-densité
+P: Pour relier les performances à l’atmosphère non standard, le terme approprié est l’==altitude-densité== (*density altitude*) : l’altitude de l’atmosphère standard correspondant à une valeur donnée de densité de l’air. ==C’est l’altitude-pression corrigée pour la température non standard.== Plus la densité augmente (altitude-densité basse), plus les performances augmentent ; inversement, elles diminuent avec une altitude-densité haute.
+FIG: Figure 11-3. Altitude du terrain et pression : sur un terrain au niveau de la mer, calage 29,7 : la différence de 205 ft s’ajoute à l’altitude du terrain, soit une altitude-pression de 205 ft. (Table : calage 28,0 → +1 824 ft ; 29,92 → 0 ; 31,0 → –983 ft.)
+SUM: Altitude-pression = altitude indiquée avec calage 29,92. || Altitude-densité = altitude-pression corrigée de la température. || Altitude-densité haute = performances réduites. || Au-dessus de 18 000 ft : niveaux de vol.
+VOC: altitude-pression | pressure altitude ;; altitude-densité | density altitude ;; plan de référence standard | standard datum plane (SDP) ;; calage altimétrique | altimeter setting ;; calculateur de vol | flight computer ;; niveau de vol | flight level
+@PAGE 11-4 pdf=260
+P: Dans l’atmosphère standard, altitude-pression et altitude-densité identifient le même niveau. L’altitude-densité se calcule à partir de l’altitude-pression et de la température : on trouve d’abord l’altitude-pression, puis on la corrige pour la température non standard. Densité varie ==directement avec la pression et inversement avec la température==. ==Quelle que soit l’altitude réelle, l’avion se comporte comme à l’altitude-densité existante.==
+P: Exemple : l’altimètre calé sur 29,92 indique 5 000 ft ; l’AFM donne 790 ft de roulement au décollage en température standard. Si la température est de 20 °C au-dessus de la standard, l’air se dilate et la densité équivaut à plus de 7 000 ft : le roulement approche ==1 000 ft==.
+P: La densité de l’air est influencée par l’altitude, la température et l’humidité. Une ==altitude-densité élevée== (air raréfié) résulte de : haute altitude, basse pression, ==haute température==, forte humidité, ou une combinaison. Basse altitude-densité : faible altitude, haute pression, basses températures, faible humidité.
+P: On la calcule avec un calculateur (altitude-pression et OAT), ou par le tableau et le graphique des Figures 11-3 et 11-4.
+## Effets de la pression sur la densité
+P: L’air étant un gaz, il peut être comprimé ou détendu : quand la pression diminue, l’air se détend et occupe plus de volume, donc la colonne d’air contient moins de masse (densité réduite). ==La densité est directement proportionnelle à la pression== (à température constante).
+FIG: Figure 11-4. Graphique d’altitude-densité (altitude-pression et température extérieure OAT).
+SUM: L’avion se comporte selon l’altitude-densité. || Exemple : 5 000 ft en altitude-pression, +20 °C → roulement de 790 à ≈ 1 000 ft. || Haute altitude-densité : chaleur, humidité, altitude, basse pression. || Densité ∝ pression (T constante).
+VOC: air raréfié | thin air ;; humidité | humidity ;; proportionnel | proportional ;; roulement au sol | ground run ;; température extérieure | outside air temperature (OAT)
+@PAGE 11-5 pdf=261
+## Effets de la température sur la densité
+P: Augmenter la température diminue la densité : ==la densité varie inversement avec la température== (à pression constante). Dans l’atmosphère, température et pression diminuent avec l’altitude, avec des effets contraires sur la densité ; la chute rapide de pression domine : la densité diminue avec l’altitude.
+## Effets de l’humidité sur la densité
+P: L’air n’est jamais complètement sec. La vapeur d’eau est plus légère que l’air : l’==air humide est moins dense que l’air sec==. Quand la teneur en eau augmente, la densité diminue, l’altitude-densité augmente et les performances baissent. L’humidité relative est exprimée en pourcentage de la quantité maximale de vapeur que l’air peut contenir (l’air chaud en contient plus). Il n’existe pas de règle ni d’abaque pour son effet sur l’altitude-densité, mais il faut en tenir compte : ==s’attendre à une baisse globale des performances en forte humidité==.
+P: Une masse d’air chaude et humide est moins dense qu’une masse froide et sèche.
+# Performance
+P: Les « performances » décrivent la capacité d’un avion à accomplir certaines tâches (atterrir et décoller court, emporter de lourdes charges, voler vite et haut, loin). Les facteurs concernés : distances de décollage et d’atterrissage, taux de montée, plafond, charge marchande, distance franchissable, vitesse, maniabilité, stabilité, économie de carburant. Certains s’opposent (vitesse élevée / atterrissage court ; grande autonomie / grande charge ; fort taux de montée / économie).
+P: Les performances résultent de l’association des caractéristiques de la cellule (qui définissent la puissance ou poussée ==nécessaire==) et du groupe motopropulseur (qui définit celle ==disponible==).
+## Vol rectiligne en palier
+P: Les performances s’appuient sur des conditions stabilisées : en palier, ==portance = poids== et ==poussée = traînée==. La traînée définit donc la poussée nécessaire. Voir chapitre 4 : traînée induite et traînée parasite. ==La traînée parasite domine à grande vitesse, la traînée induite à basse vitesse.== [Figure 11-5] Passer de 100 à 200 kt : la traînée parasite est multipliée par quatre, mais la puissance pour la vaincre par ==huit==. À l’inverse, à vitesse doublée, la traînée induite est divisée par quatre
+SUM: Température ↑ → densité ↓. || Humidité ↑ → densité ↓, performances ↓ (pas de règle chiffrée). || Palier : portance = poids, poussée = traînée. || Parasite domine à grande vitesse, induite à basse vitesse ; 100 → 200 kt : puissance × 8.
+VOC: air humide | moist air ;; vapeur d’eau | water vapor ;; humidité relative | relative humidity ;; traînée parasite | parasite drag ;; traînée induite | induced drag ;; plafond | ceiling
+@PAGE 11-6 pdf=262
+FIG: Figure 11-5. Traînée en fonction de la vitesse (traînée totale, parasite, induite ; L/D max ; décrochage). Figure 11-6. Puissance en fonction de la vitesse (vitesse max en palier, croisière rapide/lente, vitesse min).
+P: … et la puissance nécessaire est réduite de moitié. En palier stabilisé, l’équilibre prévaut : avion compensé pour une portance égale au poids et groupe motopropulseur réglé pour une poussée égale à la traînée.
+P: La ==vitesse maximale en palier== est atteinte quand la puissance (ou poussée) nécessaire égale le maximum disponible [Figure 11-6]. La vitesse minimale n’est généralement pas définie par la puissance, mais par le décrochage ou des problèmes de stabilité et de contrôle.
+## Performances en montée
+P: Pour qu’un avion se déplace, un travail doit agir sur lui, il acquiert alors de l’énergie mécanique sous deux formes : l’==énergie cinétique (KE)==, liée à la vitesse, et l’==énergie potentielle (PE)==, liée à la hauteur. KE est proportionnelle à la masse et au ==carré de la vitesse== ; PE à la masse et à la hauteur :
+- KE = ½ × m × v²
+- PE = m × g × h
+P: Il ne faut pas confondre ==poussée== (une force, en lb ou N) et ==puissance== (taux de travail ou transfert d’énergie, en hp ou kW).
+P: Une montée positive (gain de PE) a deux sources, seules ou combinées :
+1. ==utiliser l’excès de puissance== par rapport au palier : un moteur de 200 hp qui n’en utilise que 130 en palier en laisse 70 pour monter (vitesse constante, puissance augmentée) ;
+2. ==convertir la vitesse (KE) en altitude (PE)== : en palier à 120 kt avec une puissance constante, une ==montée en chandelle== (*zoom climb*) convertit la vitesse en altitude.
+SUM: Vitesse max en palier : puissance nécessaire = puissance disponible. || KE = ½mv² ; PE = mgh. || Poussée = force, puissance = taux de travail. || Montée = excès de puissance ou conversion vitesse → altitude.
+VOC: énergie cinétique | kinetic energy ;; énergie potentielle | potential energy ;; excès de puissance | excess power ;; montée en chandelle | zoom climb ;; puissance | power ;; poussée | thrust

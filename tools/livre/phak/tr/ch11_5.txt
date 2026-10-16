@@ -1,0 +1,56 @@
+@PAGE 11-25 pdf=281
+FIG: Figure 11-28. Réglages de puissance de croisière (65 % de puissance continue maximale, 2 800 lb ; colonnes ISA –20 °C, standard, ISA +20 °C : régime, pression d’admission, consommation par moteur, TAS).
+P: Problème 9 : OAT 16 °C, altitude-pression 6 000 ft, 65 % de puissance « best power », sans carénages de roues (Figure 11-30). On part de l’OAT, on monte jusqu’à 6 000 ft, on va à la ligne « 65 % best power », puis on descend : TAS ==140 kt==. La note impose de ==retrancher 8 kt== sans carénages de roues : ==132 kt==.
+FIG: Figure 11-29. Distance franchissable à mélange de meilleure puissance (puissance 55/65/75 % ; avec réserve de 45 min à 55 % ; sans réserve ; la distance peut baisser jusqu’à 7 % sans carénages de roues ; + 0,6 NM par °C au-dessus de la standard, – 1 NM par °C en dessous).
+## Abaque des composantes de vent traversier et de face
+P: Chaque avion est essayé selon la réglementation FAA, par un pilote de compétence moyenne, avec un vent traversier à 90° jusqu’à ==0,2 × VS0== (vitesse de décrochage moteur réduit, train et volets sortis). Si VS0 = 45 kt, l’avion doit pouvoir atterrir avec un vent traversier de ==9 kt==. La composante de vent traversier maximale démontrée figure dans l’AFM/POH.
+P: Problème 10 : piste 17 (170°), vent 140° / 25 kt (Figure 11-31). L’angle est 170 – 140 = ==30°==. On repère 30°, on suit la ligne jusqu’à 25 kt, puis on lit : ==composante de face 22 kt== et ==composante traversière 13 kt==.
+SUM: Croisière sans carénages de roues : retrancher 8 kt à la TAS (140 → 132 kt). || Vent traversier démontré = 0,2 × VS0 (VS0 45 → 9 kt). || Vent 140°/25 kt, piste 17 : angle 30°, face 22 kt, traversier 13 kt.
+VOC: composante de vent traversier | crosswind component ;; composante de vent de face | headwind component ;; carénages de roues | wheel fairings ;; angle du vent | wind angle ;; meilleure puissance | best power ;; meilleure économie | best economy
+@PAGE 11-26 pdf=282
+FIG: Figure 11-30. Graphique de performances de croisière (TAS selon température, altitude-pression et puissance ; retrancher 8 kt sans carénages de roues). Figure 11-31. Abaque des composantes de vent traversier.
+P: Ce résultat sert à choisir la piste la plus adaptée quand il y en a plusieurs, et à ne pas dépasser les limites d’essai de l’avion.
+## Abaques d’atterrissage
+P: La performance d’atterrissage dépend de variables semblables : altitude-densité, masse, vent de face. Comme pour le décollage, il existe des tableaux pour l’atterrissage normal et pour le franchissement d’un obstacle de 50 ft. ==Se souvenir que la masse à l’atterrissage n’est pas celle du décollage : elle doit être recalculée en retranchant le carburant consommé.==
+P: Problème 11 : altitude-pression 1 250 ft, température standard (tableau, Figure 11-32). 1 250 ft est à mi-chemin entre le niveau de la mer et 2 500 ft : on additionne les distances totales (1 075 + 1 135) et on divise par deux : ==1 105 ft== pour franchir 50 ft ; de même, le roulement est de ==457,5 ft==.
+P: Problème 12 : OAT 57 °F, altitude-pression 4 000 ft, masse à l’atterrissage 2 400 lb, vent de face 6 kt, obstacle 50 ft (graphique combiné, Figure 11-33).
+SUM: Masse à l’atterrissage = masse au décollage – carburant consommé. || Interpolation : 1 250 ft entre 0 et 2 500 → moyenne des deux valeurs (1 105 ft).
+VOC: tableau d’atterrissage | landing distance table ;; masse à l’atterrissage | landing weight ;; interpoler | to interpolate ;; composante de vent | wind component
+@PAGE 11-27 pdf=283
+FIG: Figure 11-32. Tableau de distance d’atterrissage (volets 40°, puissance réduite, piste dure, vent nul ; approche 70 mph ; niveau mer 59 °F : roulement 445 ft, total 1 075 ft pour franchir 50 ft ; à 2 500 ft/50 °F : 470 et 1 135 ft…). Notes : (1) diminuer les distances de 10 % par 4 kt de vent de face ; (2) augmenter de 10 % par 60 °F au-dessus de la standard ; (3) sur herbe sèche, augmenter les distances de 20 % du total pour franchir 50 ft.
+P: Pour le problème 12, on part de l’OAT, on monte à 4 000 ft, on va à la première ligne de référence, on suit les diagonales jusqu’à 2 400 lb, on va à la deuxième ligne de référence, puis au vent, puis à la troisième ligne. Résultat : ==975 ft de roulement== et ==1 500 ft== pour franchir un obstacle de 50 ft.
+FIG: Figure 11-33. Graphique de distance d’atterrissage (puissance réduite pour ≈ 900 ft/min en finale, volets sortis, train sorti, piste revêtue plane et sèche, freinage maximal).
+## Abaques de vitesse de décrochage
+P: Ces abaques donnent la vitesse de décrochage dans une configuration donnée, selon l’==angle d’inclinaison==, la position du train et des volets et la manette des gaz (Figure 11-34).
+P: Problème 13 : puissance réduite, volets sortis, train sorti, inclinaison 45°. On prend la moitié basse du tableau (train et volets sortis), la ligne « puissance réduite », puis la colonne 45° : ==78 mph (68 kt)==.
+SUM: Notes d’atterrissage : –10 % par 4 kt de vent de face ; +10 % par 60 °F au-dessus de la standard ; herbe sèche +20 %. || Exemple : 975 ft de roulement, 1 500 ft pour 50 ft. || Décrochage 45° d’inclinaison, volets/train sortis, moteur réduit : 78 mph (68 kt).
+VOC: vitesse de décrochage | stall speed ;; angle d’inclinaison | angle of bank ;; moteur réduit | power off ;; volets sortis | flaps down ;; train sorti | gear down
+@PAGE 11-28 pdf=284
+FIG: Figure 11-34. Tableau des vitesses de décrochage (2 750 lb ; train et volets rentrés, moteur réduit : 62 / 67 / 74 / 88 mph à 0° / 30° / 45° / 60° ; train et volets sortis : 54 / 58 / 64 / 76 mph, moteur réduit).
+P: Les abaques de performance donnent des informations précieuses : on peut prévoir les performances dans la plupart des conditions de vol et mieux planifier chaque vol. ==Les règlements imposent au pilote de connaître toutes les informations disponibles avant chaque vol.==
+## Performances des avions de transport
+P: Les avions de la catégorie transport sont certifiés selon le ==14 CFR part 25== (voir l’*Airplane Flying Handbook*, FAA-H-8083-3). Les hélicoptères de transport sont certifiés selon le part 29.
+## Exigences de franchissement d’obstacles des transporteurs aériens
+P: Voir l’*Instrument Procedures Handbook*, FAA-H-8083-16.
+## Résumé du chapitre
+P: Les performances varient beaucoup d’un avion à l’autre. À mesure que les avions de transport deviennent plus complexes, les exploitants s’appuient de plus en plus sur des systèmes informatisés de planification de mission, à bord ou au sol. La masse, les conditions atmosphériques et l’environnement extérieur modifient sensiblement les performances. Le pilote doit connaître à fond les programmes de planification, les caractéristiques de l’avion et ses systèmes de bord ; ==la source principale d’information est l’AFM/POH==.
+SUM: Les abaques permettent de prévoir les performances dans la plupart des cas. || Avions de transport : part 25 (hélicoptères : part 29). || Source principale : l’AFM/POH.
+VOC: avion de transport | transport category aircraft ;; planification de mission | mission planning ;; certifié | certificated ;; manuel de vol | AFM
+@SHEET
+* Atmosphère standard (ISA) : 15 °C, 29,92 "Hg (1 013,2 mb), 14,7 psi au niveau de la mer ; –2 °C et –1 "Hg par 1 000 ft. Composition : 78 % N₂, 21 % O₂. Altitude-pression = altimètre calé sur 29,92 ; altitude-densité = altitude-pression corrigée de la température. Altitude-densité haute (chaud, haut, humide, basse pression) = air peu dense = moins de puissance, de poussée et de portance.
+* Densité ∝ pression, inversement à la température ; l’air humide est moins dense. Décollage et atterrissage dépendent de l’altitude-densité, de la masse, du vent, de la pente et de l’état de la piste. +10 % de vitesse au décollage = +21 % de distance (distance ∝ vitesse²). Vent de face 10 % : –19 % ; vent arrière : +21 %.
+* Atterrissage : +10 % de masse = +10 % de distance ; +3,5 % par 1 000 ft ; aquaplanage à 9 × √(psi) kt. Vitesses : VX pente max, VY taux max, VS0, VS1, VFE, VLE, VLO, VA, VNO, VNE.
+* Montée : excès de puissance = taux ; excès de poussée = pente. Plafond pratique : 100 ft/min. Distance max à L/Dmax ; commande inversée sous la vitesse d’endurance max : plus de vitesse = moins de puissance.
+* Abaques : calculer avant chaque vol ; lire les notes ; interpoler ; essais sur avion neuf et bon état. Vent traversier démontré 0,2 × VS0. Décollage court : –10 % par 9 kt de vent de face.
+@NUMS
+15 °C / 29,92 "Hg / 1 013,2 mb | conditions ISA au niveau de la mer
+2 °C ou 3,5 °F par 1 000 ft | gradient standard de température (jusqu’à 36 000 ft)
+1 "Hg par 1 000 ft | gradient standard de pression (jusqu’à 10 000 ft)
+14,7 psi | pression moyenne de l’atmosphère au niveau de la mer
+78 % / 21 % / 1 % | azote / oxygène / autres gaz
++21 % | distance de décollage pour 10 % de vitesse en excès
++3,5 % par 1 000 ft | augmentation de la distance d’atterrissage avec l’altitude
+9 × √psi | vitesse minimale d’aquaplanage (kt)
+100 ft/min | taux de montée au plafond pratique
+0,2 × VS0 | composante de vent traversier démontrée
+6 lb / gal | masse de l’essence
