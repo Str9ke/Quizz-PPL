@@ -1,0 +1,66 @@
+@PAGE 14-25 pdf=359
+FIG: Figure 14-42. Signaux au pistolet lumineux : feu vert fixe = avion au sol : autorisé au décollage / en vol : autorisé à atterrir / véhicules : autorisé à traverser, avancer ; vert clignotant = au sol : autorisé à rouler / en vol : revenir pour atterrir (suivi du vert fixe au bon moment) ; rouge fixe = au sol : stop / en vol : céder le passage aux autres avions et continuer à tourner ; rouge clignotant = au sol : dégager la voie/piste / en vol : aéroport dangereux, ne pas atterrir ; blanc clignotant = au sol : retourner au point de départ / en vol : sans objet ; rouge et vert alternés = extrême prudence.
+SUM: Pistolet lumineux : vert fixe = autorisé à décoller (sol) ou atterrir (vol) ; rouge fixe = stop (sol) ou céder le passage (vol) ; rouge clignotant = dégager (sol) ou aéroport dangereux (vol) ; blanc clignotant = retourner au point de départ ; rouge/vert alterné = extrême prudence.
+VOC: pistolet lumineux | light gun ;; vert fixe | steady green ;; rouge clignotant | flashing red ;; signal | signal ;; extrême prudence | extreme caution
+@PAGE 14-26 pdf=359
+P: … L’==ADS-B== fournit les mêmes informations que l’ATCRBS, mais plus vite et avec bien plus de précision ; en diffusant la position à une station sol, il couvre aussi des zones sans radar et fournit des informations de trajectoire (vitesse, direction).
+## Transpondeur
+P: Le transpondeur est la partie embarquée du radar secondaire. L’ATCRBS ne peut afficher les informations secondaires que si l’avion en est équipé. Il est aussi requis dans certains espaces aériens contrôlés (chapitre 15). Un code est composé de ==quatre chiffres de 0 à 7== (4 096 codes) ; « ==squawk== » demande un code ou une fonction. Phraséologie courante (Figure 14-43) :
+- ==SQUAWK (numéro)== : afficher le code en Mode A/3. ==IDENT== : actionner la fonction IDENT. SQUAWK (numéro) et IDENT : les deux.
+- SQUAWK Standby : mettre en veille. SQUAWK Low/Normal : sensibilité (NORMAL sauf instruction).
+- ==SQUAWK Altitude== : activer le Mode C avec report d’altitude automatique. STOP Altitude SQUAWK : couper le report d’altitude. STOP SQUAWK : couper le transpondeur.
+- ==SQUAWK Mayday== : code ==7700== d’urgence. ==SQUAWK VFR== : code ==1200== en Mode A/3 (ou autre code VFR adapté).
+FIG: Figure 14-43. Phraséologie du transpondeur.
+SUM: Transpondeur : 4 chiffres de 0 à 7 (4 096 codes). || 1200 = VFR ; 7700 = urgence. || SQUAWK ALTITUDE = Mode C ; IDENT = identification.
+VOC: transpondeur | transponder ;; squawk | squawk ;; mode C | Mode C ;; urgence | emergency ;; code VFR | VFR code ;; identification | IDENT
+@PAGE 14-27 pdf=360
+## ADS-B (Automatic Dependent Surveillance–Broadcast)
+P: Technologie de surveillance déployée dans le NAS pour augmenter capacité et efficacité tout en maintenant la sécurité, avec un taux de mise à jour supérieur et une précision accrue par rapport au radar, et qui étend la surveillance ATC aux zones sans couverture. Le sol fournit aussi le TIS-B et le FIS-B. Le système comprend l’avionique embarquée et l’infrastructure sol : l’avion détermine sa position par ==GPS== et la transmet, avec d’autres informations, aux stations sol et aux avions équipés proches.
+P: Aux États-Unis, deux fréquences : ==978 MHz== (UAT, *Universal Access Transceiver*) et ==1090 MHz== (liée aux transpondeurs Mode A, C et S ; transpondeurs avec ADS-B intégré = « extended squitter », 1090ES).
+## Avis de trafic radar
+P: Les installations ATC avec radar fournissent une assistance radar aux aéronefs IFR et aux VFR qui peuvent communiquer avec elles et sont dans la couverture : alertes de sécurité, avis de trafic, guidage limité sur demande, séquencement. Les avis de trafic sont basés sur les cibles radar et donnent la position selon le ==cadran horaire== (12 h), la distance en NM, la direction de déplacement, le type et l’altitude si connus. Ex. : « Traffic 10 o’clock 5 miles east bound, Cessna 152, 3,000 feet ». La position est basée sur la route-sol : la correction du vent peut changer l’heure à laquelle le pilote voit le trafic. ==Ce service ne dispense pas le pilote de voir et éviter== [Figure 14-44].
+P: Les ==TRSA== (*terminal radar service areas*) fournissent la séparation entre tous les VFR participants et tous les IFR ; service Classe C : séparation IFR/VFR et séquencement des VFR vers l’aéroport principal ; service Classe B : séparation selon IFR, VFR et/ou masse.
+## Turbulence de sillage
+P: Tout aéronef en vol en génère : une paire de ==tourbillons contrarotatifs== partant des bouts d’aile. Ceux des gros avions peuvent imposer des moments de roulis supérieurs à l’autorité de roulis du suiveur et endommager des équipements à courte distance : le pilote doit se représenter le sillage et adapter sa trajectoire.
+## Génération des tourbillons
+P: La portance naît d’une différence de pression : pression la plus basse sur l’extrados, la plus haute sous l’aile ; ce différentiel provoque l’enroulement de l’écoulement derrière l’aile en deux ==cylindres tourbillonnaires contrarotatifs==, dont l’énergie se concentre à quelques pieds du centre. [Figure 14-45]
+FIG: Figure 14-44. Avis de trafic : le trafic annoncé « 12 heures » pour l’avion A est vu à 1 heure par son pilote (dérive) ; pour l’avion B, il est annoncé à 12 heures mais vu à 10 heures.
+SUM: ADS-B : GPS, 978 MHz (UAT) ou 1090 MHz (1090ES). || Avis de trafic : cadran horaire ; ne dispense pas de voir et éviter. || Sillage : deux tourbillons contrarotatifs nés des bouts d’aile.
+VOC: ADS-B | ADS-B ;; avis de trafic | traffic advisory ;; cadran horaire | clock position ;; turbulence de sillage | wake turbulence ;; tourbillon | vortex ;; TRSA | terminal radar service area (TRSA)
+@PAGE 14-28 pdf=361
+FIG: Figure 14-45. Génération des tourbillons. Figure 14-46. Comportement des tourbillons (le sillage commence à la rotation et finit au toucher).
+## Force des tourbillons
+P: Le sillage a longtemps été vu comme fonction de la masse seule ; la recherche prend aussi en compte vitesse, forme de l’aile, décroissance et résistance du suiveur. Les facteurs de base sont la masse et la vitesse : la force augmente avec la masse et lorsque la vitesse diminue. ==La force maximale se produit quand l’avion est lourd, lent et « propre » (volets et trains rentrés)==, car une configuration « sale » accélère la décroissance.
+## En route
+P: Les événements de sillage en route sont influencés par plus d’avions « Super » (A380) et « Heavy » (B-747, B-777, A340…). Des événements ont eu lieu à plus de 30 NM et 2 000 ft sous l’avion générateur. La faible densité de l’air en altitude peut donner un sillage comparable à celui d’une zone terminale, et à vitesse élevée le sillage a moins de temps pour décroître avant d’être rencontré.
+## Comportement des tourbillons
+P: Les tourbillons sont générés ==dès que l’avion quitte le sol jusqu’au toucher== (sous-produit de la portance). La circulation est vers l’extérieur, le haut, puis autour des bouts d’aile, vue de l’avant ou de l’arrière. Les essais montrent que les tourbillons restent espacés d’un peu moins d’une envergure…
+SUM: Force maximale : avion lourd, lent, lisse. || Sillage de la rotation au toucher. || En route : peut dépasser 30 NM et 2 000 ft sous le générateur.
+VOC: avion lourd | heavy aircraft ;; lisse (propre) | clean ;; décroissance | decay ;; configuration | configuration ;; envergure | wingspan
+@PAGE 14-29 pdf=362
+P: … dérivent avec le vent à plus d’une envergure du sol et s’enfoncent de plusieurs centaines de pieds par minute en s’affaiblissant avec le temps et la distance. Près du sol (100 à 200 ft), ils se déplacent latéralement à ==2–3 kt==. Un vent traversier réduit le déplacement du tourbillon au vent et augmente celui du tourbillon sous le vent. ==Un vent arrière faible de trois-quarts arrière est le pire cas==, avec des tourbillons sur une grande partie de la finale et de l’axe prolongé.
+## Procédures d’évitement des tourbillons
+P: 
+- Atterrissage derrière un gros avion, même piste : rester ==au-dessus de sa trajectoire== et atterrir ==au-delà de son point de toucher== (Figure 14-47A).
+- Piste parallèle à moins de 2 500 ft : tenir compte de la dérive, rester au-dessus de sa trajectoire et noter son point de toucher (47B).
+- Piste sécante : traverser au-dessus de sa trajectoire ; ou noter sa rotation : si elle est après l’intersection, atterrir avant l’intersection ; si elle est avant, ne pas voler sous sa trajectoire et remettre les gaz sauf atterrissage assuré bien avant l’intersection (47C).
+- Atterrissage derrière un avion qui décolle sur la même piste : atterrir avant son point de rotation.
+- Décollage derrière un gros : ==tourner (rotation) avant son point de rotation== et monter ==au-dessus de sa trajectoire== jusqu’à virer pour s’écarter.
+- Décollage d’intersection : attention aux gros avions adjacents, surtout au vent de la piste ; éviter les caps croisant sous sa trajectoire.
+- Après un gros qui fait un passage bas, une remise de gaz ou un touch-and-go : ==attendre au moins 2 minutes== avant de décoller ou d’atterrir.
+- En route : éviter de passer sous et derrière un gros ; si un gros est au-dessus sur la même route, se décaler latéralement, de préférence au vent.
+## Prévention des collisions
+P: Le 14 CFR part 91 fixe règles de priorité, altitudes minimales de sécurité et altitudes de croisière VFR. Le pilote doit scruter l’espace, en particulier près d’un aéroport. Un balayage efficace utilise des ==mouvements oculaires courts et réguliers de moins de 10°==, chacun observé ==au moins 1 seconde==. Chacun doit développer un schéma de balayage confortable et s’y tenir. ==Même prioritaire, il faut céder si un autre avion semble trop près.==
+SUM: Tourbillons : dérivent de 2–3 kt près du sol ; pire cas : léger vent arrière de trois-quarts. || Atterrir au-dessus de la trajectoire et au-delà du toucher du gros ; décoller avant sa rotation. || Attendre 2 min après un gros qui passe bas/remise de gaz/touch-and-go. || Balayage : mouvements < 10°, 1 s chacun.
+VOC: sillage | wake ;; au-dessus de la trajectoire | above the flight path ;; point de rotation | rotation point ;; balayage | scanning ;; priorité | right-of-way ;; point de toucher | touchdown point
+@PAGE 14-30 pdf=362
+P: Procédures de dégagement :
+- ==Avant le décollage== : avant de rouler sur la piste, scruter l’approche et faire les manœuvres pour dégager la vue.
+- ==Montée/descente== : de légers virages à gauche et à droite assez fréquents pour balayer en continu.
+- ==Palier== : procédures de dégagement à intervalles réguliers.
+- ==Circuit== : éviter d’entrer dans un circuit en descente.
+- ==VOR== : vigilance soutenue (trafic convergent).
+- ==Instruction== : faire des virages de dégagement avant une manœuvre d’entraînement ; faire dire à voix haute « dégagé à gauche, à droite, au-dessus, en dessous ».
+FIG: Figure 14-47. Procédures d’évitement des tourbillons (A même piste, B piste parallèle < 2 500 ft, C piste sécante ; l’avion reste au-dessus du sillage).
+SUM: Dégagement : scruter avant le décollage, virages doux en montée/descente. || Éviter les entrées en circuit en descente. || Vigilance près des VOR. || Instruction : dire « clear left/right/above/below ».
+VOC: procédure de dégagement | clearing procedure ;; virage de dégagement | clearing turn ;; angle mort | blind spot ;; trafic convergent | converging traffic ;; vigilance | vigilance

@@ -1,0 +1,64 @@
+@CH 14
+@INTRO Opérations aéroportuaires : un vol commence et finit normalement sur un aéroport. Ce chapitre présente les catégories et types d’aéroports, les sources d’information (cartes, Chart Supplement, NOTAM, ATIS), les marquages et panneaux, l’éclairage, les circuits de piste, les communications radio, la prévention des incursions de piste et les opérations autour de l’aéroport.
+@PAGE 14-1 pdf=335
+# Introduction
+P: Un vol commence et se termine en général sur un aéroport, petit terrain en herbe ou grand complexe de compagnies aériennes. Ce chapitre examine les opérations, les éléments d’un aéroport et les informations pour évoluer sur ou à proximité d’un aéroport.
+# Catégories d’aéroports
+P: Un aéroport est toute étendue de terre ou d’eau utilisée ou destinée à l’atterrissage ou au décollage d’aéronefs ; cela inclut, dans les cinq catégories ci-dessous, les bases d’hydravions, héliports et installations pour convertibles, ainsi que les bâtiments, installations et servitudes.
+SUM: Aéroport = terre ou eau pour décoller/atterrir ; inclut hydrobases et héliports. || Cinq catégories légales.
+VOC: aéroport | airport ;; hydrobase | seaplane base ;; héliport | heliport ;; décollage | takeoff ;; atterrissage | landing
+@PAGE 14-2 pdf=336
+P: La loi distingue : ==aéroports de service commercial== (publics, ≥ 2 500 embarquements de passagers par an, service régulier ; les embarquements s’appellent *enplanements*) ; ==aéroports de fret== (plus de 100 millions de livres de masse annuelle à l’atterrissage en fret seul) ; ==aéroports de délestage (reliever)== (désignés par la FAA pour décongestionner les aéroports commerciaux et améliorer l’accès de l’aviation générale ; publics ou privés) ; ==aéroports d’aviation générale== (tous les autres, le plus grand groupe).
+## Types d’aéroports
+P: Deux types, ==contrôlés (towered)== ou ==non contrôlés (nontowered)==, subdivisés en : ==civils== (ouverts au public), ==militaires/gouvernement fédéral== (armée, NASA…), ==privés== (usage restreint).
+## Aéroport contrôlé
+P: Il a une tour de contrôle en service. L’ATC assure un écoulement sûr, ordonné et rapide du trafic. Les pilotes doivent maintenir une ==radio bilatérale== avec l’ATC, ==accuser réception et se conformer== aux instructions ; s’ils ne le peuvent pas, ils doivent le dire et demander des instructions modifiées. En urgence, un pilote peut s’écarter d’une instruction mais doit en informer l’ATC dès que possible.
+## Aéroport non contrôlé
+P: Pas de tour en service ; la radio bilatérale n’est pas obligatoire, mais annoncer ses intentions est une bonne pratique. La clé est de choisir la bonne ==fréquence commune CTAF== (*Common Traffic Advisory Frequency*), fréquence désignée pour les avis de trafic autour d’un aéroport sans tour : UNICOM, MULTICOM, FSS ou fréquence de la tour. ==UNICOM== est une station air-sol non gouvernementale pouvant donner, sur demande, météo, vent, piste recommandée. [Figure 14-1]
+P: Les circuits des aéroports non contrôlés se rejoignent toujours à l’altitude du circuit. Pour entrer par le côté vent arrière : arriver à ==45° de la branche vent arrière et s’intégrer à mi-piste==.
+SUM: Contrôlé : radio bilatérale obligatoire, se conformer à l’ATC. || Non contrôlé : CTAF (UNICOM, MULTICOM, FSS, tour) ; annoncer ses intentions. || Catégories : commercial, fret, délestage, aviation générale.
+VOC: aéroport contrôlé | towered airport ;; aéroport non contrôlé | nontowered airport ;; fréquence commune | Common Traffic Advisory Frequency (CTAF) ;; UNICOM | UNICOM ;; circuit d’aérodrome | traffic pattern ;; aéroport de délestage | reliever airport
+@PAGE 14-3 pdf=337
+P: Si l’on arrive par le côté vent debout (opposé), une méthode : annoncer ses intentions, survoler la mi-piste à au moins ==500 ft au-dessus== de l’altitude du circuit (normalement 1 500 ft AGL ; ==2 000 ft AGL== si des gros avions ou des turbines évoluent), bien en dehors du circuit (environ 2 miles) scruter le trafic, descendre à l’altitude du circuit et virer à droite pour entrer à ==45°== sur la vent arrière à mi-piste. [Figure 14-2] Autre méthode : entrer en travers à mi-piste à l’altitude du circuit, scruter, annoncer, puis virer en vent arrière [Figure 14-3] ; à éviter si le circuit est chargé. ==Toujours céder le passage aux avions en entrée à 45° et à ceux déjà établis en vent arrière.==
+P: Dans tous les cas : annoncer ses intentions et surveiller l’extérieur ; ajuster route ou vitesse avant la vent arrière, éviter d’aller trop vite ou trop lentement ; vitesses recommandées ≈ ==70 à 80 kt== pour un monomoteur à train fixe, ==80 à 90 kt== pour un avion performant à train rentrant.
+FIG: Figure 14-1. Procédures de communication recommandées : UNICOM (pas de tour ni FSS) : fréquence CTAF publiée (122,7, 122,8, 122,725, 122,975 ou 123,0), sinon auto-annonces sur CTAF ; ni tour, ni FSS, ni UNICOM : auto-annonce sur MULTICOM ==122,9== ; FSS ouvert sans tour : communiquer avec le FSS sur la CTAF ; FSS fermé ou tour fermée : auto-annonce sur CTAF. Procédures d’annonce : avant de rouler et d’entrer sur la piste pour le départ ; à 10 miles ; en entrant vent arrière, base et finale ; en quittant la piste.
+## Sources d’information sur les aéroports
+P: Avant d’aller sur un autre aéroport, revoir ses données (fréquences, services, pistes fermées, travaux). Sources : cartes aéronautiques, ==Chart Supplement U.S== (ex-Airport/Facility Directory), ==NOTAM==, ==ATIS==.
+## Cartes aéronautiques
+P: Elles donnent des informations précises sur les aéroports (voir chapitre 16).
+## Chart Supplement U.S.
+P: Source la plus complète sur un aéroport (aéroports, héliports et hydrobases ouverts au public). Publié en ==sept volumes== régionaux, révisé tous les ==56 jours==, aussi disponible en ligne.
+SUM: Entrée dans le circuit : 45° vers la vent arrière à mi-piste ; céder le passage. || Altitude de circuit 1 500 ft AGL (2 000 ft si gros avions). || Vitesses : 70–80 kt train fixe ; 80–90 kt train rentrant. || MULTICOM 122,9. || Chart Supplement : 7 volumes, 56 jours.
+VOC: auto-annonce | self-announce ;; vent arrière | downwind ;; mi-piste | midfield ;; altitude du circuit | pattern altitude ;; mise à jour | revision ;; sources d’information | sources of information
+@PAGE 14-4 pdf=338
+FIG: Figure 14-3. Autre entrée à mi-piste. Figure 14-2. Entrée préférée : traversée à mi-piste. Figure 14-4. Extrait du Chart Supplement U.S.
+P: Pour la liste complète des informations et leur décodage, voir la « Legend Sample » au début de chaque Chart Supplement. Il contient aussi : avis spéciaux, numéros de téléphone FAA et NWS, routes IFR préférées, points VFR (VFR waypoints), points de contrôle de récepteurs VOR, bulletins de cartes, opérations LAHSO (*land and hold short*) pour certains aéroports, plans d’aéroports contrôlés choisis, points EFAS, zones de parachutisme, téléphones des installations. Il est utile de le parcourir.
+## NOTAM (Notices to Airmen)
+P: Information aéronautique urgente, temporaire ou non connue assez tôt pour être publiée sur les cartes ou autres publications, diffusée immédiatement par le système NOTAM.
+SUM: Chart Supplement : plans d’aéroport, LAHSO, EFAS, VOR check… || NOTAM : information urgente et temporaire.
+VOC: NOTAM | NOTAM ;; point de contrôle VOR | VOR receiver checkpoint ;; LAHSO | land and hold short operations (LAHSO) ;; plan d’aéroport | airport diagram
+@PAGE 14-5 pdf=339
+P: Les NOTAM peuvent influer sur la décision de voler : fermetures de pistes et de voies de circulation, travaux, communications, changements d’état des aides à la navigation, etc. ==Avant tout vol, vérifier les NOTAM== (voir chapitre 1).
+## ATIS (Automated Terminal Information Service)
+P: L’ATIS est un enregistrement en boucle de la météo locale et d’autres informations non liées au contrôle, diffusé sur une fréquence locale. Mis à jour ==une fois par heure== (plus souvent si les conditions changent). Il contient : météo, pistes en service, procédures ATC particulières, travaux sur l’aéroport pouvant affecter la planification du roulage.
+P: Chaque enregistrement porte un ==code alphabétique== (Alpha, puis Bravo, Charlie…). Avant d’appeler l’ATC, ==écouter l’ATIS== et à la première prise de contact, indiquer le code : « ==have information Bravo== », ce qui évite à la tour de répéter les informations.
+# Marquages et panneaux d’aéroport
+P: Les marquages (peints sur la surface) et les panneaux (verticaux ou peints) sont des aides à la navigation de surface (voir AIM chapitre 2).
+## Marquages et panneaux de piste
+P: Les marquages varient selon le type d’opérations ; une piste VFR de base peut n’avoir que l’axe et les numéros. Les pistes sont orientées selon les vents dominants ; les ==numéros de piste se réfèrent au nord magnétique== (en dizaines de degrés). Les pistes parallèles ajoutent une lettre : 36L, 36C, 36R.
+## Seuil décalé vers l’intérieur (relocated threshold)
+P: En cas de travaux, une partie de piste peut être fermée et le seuil déplacé : le plus souvent une ==barre blanche de 10 ft== de large sur la piste [Figure 14-5]. La partie fermée est interdite au décollage et à l’atterrissage mais disponible au roulage. Elle raccourcit aussi la piste dans l’autre sens. ==Des chevrons jaunes== sont peints avant la barre.
+## Seuil décalé (displaced threshold)
+P: Le seuil est placé à un point autre que le début désigné de la piste : il réduit la longueur disponible pour l’atterrissage. La partie avant le seuil décalé est disponible pour le décollage dans les deux sens et l’atterrissage en sens inverse. Une barre blanche de 10 ft, des ==flèches blanches== sur l’axe et des chevrons blancs avant la barre marquent le seuil. [Figure 14-6]
+SUM: ATIS : mise à jour ~ toutes les heures ; annoncer le code à l’ATC. || Numéros de piste : nord magnétique en dizaines de degrés. || Seuil déplacé (travaux) : barre blanche, chevrons jaunes, zone fermée mais roulable. || Seuil décalé : flèches blanches, utilisable au décollage et à l’atterrissage inverse.
+VOC: ATIS | Automated Terminal Information Service (ATIS) ;; seuil | threshold ;; seuil décalé | displaced threshold ;; piste parallèle | parallel runway ;; barre de seuil | threshold bar ;; chevron | arrowhead
+@PAGE 14-6 pdf=340
+## Aire de sécurité de piste (RSA)
+P: La ==RSA== (*runway safety area*) est une surface définie autour de la piste, préparée pour réduire le risque de dommages en cas de ==atterrissage trop court, dépassement ou sortie de piste==, et pour faciliter l’accès des pompiers et secours (dimensions selon AC 150/5300-13). Elle est généralement nivelée et tondue ; ses limites latérales sont en général repérées par les panneaux et marquages d’attente de piste sur les voies de circulation adjacentes. Sur aéroport non contrôlé, ne pas y entrer sans s’assurer d’une séparation suffisante. [Figure 14-7]
+## Panneau de limite de RSA
+P: Certaines voies de circulation ont un panneau de limite de RSA (fond jaune, inscription noire) face à la piste, visible seulement en quittant la piste ; il sert de repère pour savoir si l’on est dégagé quand le contrôleur demande de « reporter dégagé de la piste ». On est hors de la RSA quand ==tout l’avion a passé le panneau et le marquage peint== (Figure 14-8, voie Kilo).
+## Panneau d’attente de piste
+P: Ne pas respecter un panneau d’attente peut conduire la FAA à déposer une ==déviation de pilote== (*Pilot Deviation*)…
+FIG: Figure 14-5. (A) Seuil de piste déplacé (schéma). (B) Seuil déplacé de la piste 36 de l’aéroport régional de Joplin (JLN).
+SUM: RSA : surface de sécurité autour de la piste (dépassement, sortie, atterrissage court). || Panneau de limite de RSA : jaune/noir ; dégagé quand tout l’avion l’a passé. || Panneau d’attente : le franchir sans clairance = déviation de pilote.
+VOC: aire de sécurité de piste | runway safety area (RSA) ;; panneau d’attente | holding position sign ;; déviation de pilote | pilot deviation ;; dépassement de piste | overrun ;; dégagé de la piste | clear of the runway
