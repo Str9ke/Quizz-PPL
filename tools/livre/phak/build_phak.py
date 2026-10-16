@@ -10,7 +10,7 @@ CHAPTERS={1:('Chapitre 1','Introduction au vol','B',16,39),2:('Chapitre 2','Pris
  8:('Chapitre 8','Instruments de vol','A',203,230),9:('Chapitre 9','Manuels de vol et documents','B',231,244),10:('Chapitre 10','Masse et centrage','A',245,255),11:('Chapitre 11','Performances de l’aéronef','A',257,284),
  12:('Chapitre 12','Théorie météorologique','A',285,309),13:('Chapitre 13','Services météorologiques aéronautiques','A',311,334),14:('Chapitre 14','Opérations d’aéroport','A',335,375),
  15:('Chapitre 15','Espace aérien','A',376,387),16:('Chapitre 16','Navigation','A',388,422),17:('Chapitre 17','Facteurs aéromédicaux','B',423,452),
- 18:('Annexe A','Données de performance (Cessna 172R)','C',453,460),19:('Annexe B','Abréviations','C',461,472),20:('Annexe C','Panneaux et marquages d’aéroport','C',473,476),21:('Glossaire','Glossaire A–Z','C',477,512)}
+ 18:('Annexe A','Données de performance (Cessna 172R)','C',453,460),19:('Annexe B','Abréviations','C',461,472),20:('Annexe C','Panneaux et marquages d’aéroport','C',473,476),21:('Glossaire','Glossaire A–Z','C',477,511)}
 def inl(t):
     t=t.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
     t=re.sub(r'==(.+?)==',r'<mark>\1</mark>',t); t=re.sub(r'\*\*(.+?)\*\*',r'<b>\1</b>',t); t=re.sub(r'(?<![\w*])\*(.+?)\*(?![\w*])',r'<i>\1</i>',t)
