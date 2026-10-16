@@ -1,0 +1,58 @@
+@CH 12
+@INTRO Théorie météorologique : ce chapitre explique les bases de la météo (atmosphère, circulation, pression, vents, humidité, stabilité, nuages, masses d’air, fronts, orages, givrage, brouillard…) pour que le pilote comprenne les bulletins et prévisions et prenne de bonnes décisions.
+@PAGE 12-1 pdf=285
+# Introduction
+P: La météo est un facteur important des performances et de la sécurité. C’est l’état de l’atmosphère en un lieu et un moment donnés, selon la ==température==, l’==humidité==, la ==vitesse du vent==, la ==visibilité== et la ==pression barométrique==. Le terme s’applique aussi aux conditions défavorables ou destructrices (vents forts).
+P: Ce chapitre explique les bases de la théorie météo pour comprendre comment le temps influe sur le vol. Comprendre ces théories aide à prendre de bonnes décisions à partir des bulletins et prévisions fournis par un spécialiste du FSS (*Flight Service Station*) et les autres services. Pour un vol local comme une navigation, les décisions météo peuvent changer radicalement la sécurité du vol.
+SUM: Météo = état de l’atmosphère (température, humidité, vent, visibilité, pression). || Comprendre la théorie aide à décider à partir des bulletins et prévisions. || Les décisions météo influent fortement sur la sécurité.
+VOC: météo | weather ;; visibilité | visibility ;; pression barométrique | barometric pressure ;; prévision | forecast ;; service d’information de vol | Flight Service Station (FSS)
+@PAGE 12-2 pdf=286
+# Atmosphère
+P: L’atmosphère est une couverture de gaz entourant la Terre, qui s’étend jusqu’à presque ==350 miles== de la surface. Ce mélange est en mouvement permanent. Elle absorbe l’énergie solaire, recycle l’eau et les produits chimiques, et protège de la radiation à haute énergie et du vide glacial de l’espace.
+## Composition de l’atmosphère
+P: Azote ==78 %==, oxygène ==21 %==, le reste (1 %) est de l’argon, du dioxyde de carbone et des traces d’autres gaz. L’air contient aussi de la vapeur d’eau de 0 à environ 5 % en volume : cette petite quantité est à l’origine des grands changements du temps. [Figure 12-1]
+P: Quatre couches ont été identifiées d’après leurs caractéristiques thermiques, leur composition chimique, leur mouvement et leur densité. [Figure 12-2] La première, la ==troposphère==, s’étend de 6 à 20 km (4 à 12 miles) aux pôles et jusqu’à 48 000 ft (14,5 km) à l’équateur. ==La grande majorité de la météo, des nuages, des orages et des variations de température s’y produit.== Dans la troposphère, la température diminue en moyenne d’environ ==2 °C par 1 000 ft==…
+FIG: Figure 12-1. Composition de l’atmosphère (azote 78 %, oxygène 21 %). Figure 12-2. Couches de l’atmosphère.
+SUM: Atmosphère : jusqu’à ≈ 350 miles ; 78 % azote, 21 % oxygène, 1 % autres, 0–5 % vapeur d’eau. || Troposphère : 6–20 km aux pôles, 14,5 km à l’équateur ; presque toute la météo.
+VOC: troposphère | troposphere ;; stratosphère | stratosphere ;; vapeur d’eau | water vapor ;; azote | nitrogen ;; oxygène | oxygen ;; couche | layer
+@PAGE 12-3 pdf=287
+P: … et la pression d’environ ==1 "Hg par 1 000 ft==.
+P: Au sommet de la troposphère, la ==tropopause== piège l’humidité et le temps associé. Son altitude varie avec la latitude et la saison (forme elliptique). Elle est importante car on y associe le courant-jet et la possible ==turbulence en air clair (CAT)==. Au-dessus : la ==stratosphère== (jusqu’à ≈ 160 000 ft / 50 km), air stable avec peu de météo ; puis la mésosphère et la thermosphère, qui influencent peu le temps.
+## Circulation atmosphérique
+P: L’atmosphère est en mouvement ; le facteur majeur est le ==chauffage inégal== de la surface terrestre, qui crée des changements de mouvement de l’air et de pression atmosphérique. Le mouvement de l’air autour de la Terre est la circulation atmosphérique. L’air chaud monte car la chaleur écarte les molécules (il devient moins dense et plus léger) ; l’air froid, plus dense et lourd, descend et le remplace.
+P: La surface étant courbe et tournant sur un axe incliné, les régions équatoriales reçoivent plus de chaleur que les régions polaires. L’air équatorial chaud monte, se déplace vers les pôles, se refroidit, devient plus dense et redescend. [Figure 12-3]
+## Pression atmosphérique
+P: Le chauffage inégal modifie la densité et crée aussi des variations de pression (force exercée par le poids des molécules d’air). Une colonne d’air d’un pouce carré et de 350 miles de haut pèse ==14,7 lb==. À 18 000 ft, la colonne est plus courte et pèse environ ==7,4 lb==, soit près de ==50 %== de moins qu’au niveau de la mer. [Figure 12-4] La pression réelle varie avec l’altitude, la température et la densité, ce qui affecte les performances (décollage, montée, atterrissage).
+FIG: Figure 12-3. Schéma de circulation en milieu statique (air chaud monte à l’équateur, air froid descend aux pôles).
+SUM: Tropopause : limite de la troposphère, courant-jet et CAT. || Chauffage inégal → circulation atmosphérique. || À 18 000 ft la pression est moitié de celle du niveau de la mer (7,4 lb contre 14,7).
+VOC: tropopause | tropopause ;; courant-jet | jet stream ;; turbulence en air clair | clear air turbulence ;; circulation atmosphérique | atmospheric circulation ;; chauffage inégal | uneven heating
+@PAGE 12-4 pdf=288
+FIG: Figure 12-4. Poids de l’atmosphère (14,7 lb au niveau de la mer ; ≈ 7,4 lb à 18 000 ft).
+## Force de Coriolis
+P: Selon la théorie générale, les basses pressions règnent à l’équateur et les hautes pressions aux pôles, et l’air des pôles devrait s’écouler vers l’équateur. Cette circulation est modifiée par plusieurs forces, dont la plus importante est la ==rotation de la Terre==, qui crée la ==force de Coriolis==. Elle est imperceptible à l’échelle humaine mais agit sur les grandes distances (masses d’air).
+P: ==La force de Coriolis dévie l’air vers la droite dans l’hémisphère nord==. Elle est maximale aux pôles et nulle à l’équateur, et augmente avec la vitesse du mobile. Elle divise la circulation générale en ==trois cellules== dans chaque hémisphère [Figure 12-5]. Dans l’hémisphère nord, l’air chaud équatorial monte, va vers le nord et est dévié vers l’est ; vers 30° de latitude, il se refroidit et descend (haute pression), puis revient vers l’équateur en surface, dévié à droite : ce sont les ==alizés== du nord-est. Des cellules similaires existent entre 30° et 60°, et entre 60° et les pôles, d’où les vents d’ouest dominants en altitude sur les États-Unis.
+P: D’autres facteurs compliquent la circulation : saisons, différences continents/océans, frottements. Dans les 2 000 ft au-dessus du sol, le frottement ralentit l’air et dévie le vent : ==le vent de surface diffère un peu du vent à quelques milliers de pieds au-dessus==.
+## Mesure de la pression atmosphérique
+P: La pression se mesurait en pouces de mercure avec un baromètre à mercure [Figure 12-6] : la hauteur d’une colonne de mercure dans un tube de verre monte quand la pression augmente. Peu transportable, difficile à lire.
+FIG: Figure 12-5. Circulation à trois cellules due à la rotation de la Terre (alizés, vents d’ouest).
+SUM: Coriolis : déviation à droite (hémisphère nord) ; nulle à l’équateur, maximale aux pôles. || Trois cellules par hémisphère ; alizés du NE de 30° à l’équateur. || Le frottement (sous 2 000 ft) dévie et ralentit le vent de surface.
+VOC: force de Coriolis | Coriolis force ;; alizés | trade winds ;; cellule de circulation | circulation cell ;; baromètre à mercure | mercurial barometer ;; frottement | friction ;; hémisphère nord | Northern Hemisphere
+@PAGE 12-5 pdf=289
+P: Au niveau de la mer en atmosphère standard, le poids de l’atmosphère (14,7 lb/in²) soutient une colonne de mercure de ==29,92 po== (760 mm). ==29,92 "Hg = 1 013,2 mb (hPa) = 14,7 lb/in².== [Figure 12-6]
+P: Le ==baromètre anéroïde== est l’instrument standard : une capsule fermée (cellule anéroïde) se contracte ou se dilate avec la pression et un mécanisme l’indique. La partie sensible de l’altimètre est essentiellement un baromètre anéroïde (moins précis que le baromètre à mercure à cause de sa tringlerie). [Figure 12-7]
+P: L’==ISA== est la référence commune pour les instruments et les performances : ==29,92 "Hg et 59 °F (15 °C)==. 1 "Hg ≈ ==34 mb== ; pression standard 1 013,2 mb ; valeurs usuelles de 950 à 1 040 mb (cartes de surface, centres de pression et ouragans en mb).
+P: Les relevés de toutes les stations sont ramenés au niveau de la mer en ajoutant environ ==1 "Hg par 1 000 ft== d’altitude de la station. Exemple : station à 5 000 ft lisant 24,92 "Hg → ==29,92 "Hg== au niveau de la mer [Figure 12-8]. Cela permet de régler correctement les altimètres.
+P: Suivre les tendances de pression permet de prévoir les systèmes : pression en hausse = beau temps qui approche ; pression en baisse (surtout rapide) = mauvais temps, possibles orages sévères.
+## Altitude et pression atmosphérique
+P: La pression diminue de ==1 "Hg par 1 000 ft== en moyenne. L’air devient moins dense, ce qui équivaut à être plus haut : ==altitude-densité==, qui augmente quand la pression baisse et affecte nettement les performances. Les différences de densité dues à la température changent la pression, créant courants et vent, l’atmosphère cherchant sans cesse son équilibre.
+FIG: Figure 12-6. Les baromètres à mercure ne sont plus utilisés aux États-Unis mais expliquent le calage en pouces de mercure. Figure 12-7. Baromètre anéroïde.
+SUM: 29,92 "Hg = 1 013,2 mb = 14,7 psi. || 1 "Hg ≈ 34 mb ; +1 "Hg par 1 000 ft pour ramener au niveau de la mer. || Pression en hausse = beau temps ; en baisse rapide = mauvais temps.
+VOC: baromètre anéroïde | aneroid barometer ;; millibar | millibar (mb) ;; hectopascal | hectopascal (hPa) ;; cellule anéroïde | aneroid cell ;; pression de station | station pressure ;; tendance de pression | pressure trend
+@PAGE 12-6 pdf=290
+FIG: Figure 12-8. La pression de station est convertie et rapportée en pression au niveau de la mer (Denver 24,92 "Hg → 29,92 "Hg). Figure 12-9. Les distances de décollage augmentent avec l’altitude (745 ft au niveau de la mer ; 1 590 ft à 8 000 ft d’altitude-pression).
+## Altitude et vol
+P: L’altitude affecte tous les aspects du vol, des performances de l’avion à celles du corps humain. Avec une pression plus basse, ==les distances de décollage et d’atterrissage augmentent et les taux de montée diminuent==. L’air étant moins dense, il faut plus de vitesse pour obtenir la portance de décollage, donc un roulement plus long : un avion qui demande 745 ft au niveau de la mer demande ==plus du double à 8 000 ft d’altitude-pression== (1 590 ft). Moteurs et hélices sont aussi moins efficaces : taux de montée réduit, roulement plus long pour franchir les obstacles.
+## Altitude et corps humain
+P: L’azote et les autres gaz traces constituent 79 % de l’atmosphère, et les 21 % restants sont de l’oxygène…
+SUM: Altitude : décollage plus long, montée plus lente, moteur et hélice moins efficaces. || 745 ft au niveau de la mer → 1 590 ft à 8 000 ft.
+VOC: distance de décollage | takeoff distance ;; pression de station | station pressure ;; efficacité | efficiency ;; roulement | ground run
