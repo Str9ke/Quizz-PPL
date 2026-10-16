@@ -1,0 +1,48 @@
+@CH 3
+@INTRO Construction de l’aéronef : définitions et catégories, conception, certification et navigabilité, forces et axes, composants principaux (fuselage, ailes, empennage, train, groupe motopropulseur), types de construction (treillis, monocoque, semi-monocoque), matériaux et avionique.
+@PAGE 3-1 pdf=72
+# Introduction
+P: Un aéronef est un appareil utilisé ou destiné à voler selon le 14 CFR part 1. Les catégories de certification des navigants : ==avion, giravion, planeur, plus léger que l’air, aéronef à sustentation motorisée, parachute motorisé, aéronef à contrôle par déplacement du poids==. Le part 1 définit l’==avion== comme un aéronef à voilure fixe propulsé par un moteur, soutenu en vol par la réaction dynamique de l’air sur ses ailes. Notion non codifiée : l’==avion à avionique avancée== (GPS avec carte mobile + autre système comme un pilote automatique). Ce chapitre présente la structure d’un avion ; les aéronefs légers sportifs (LSA) ont leurs propres manuels.
+SUM: Catégories : avion, giravion, planeur, plus léger que l’air, sustentation motorisée, parachute motorisé, déplacement du poids. || Avion = voilure fixe, moteur.
+VOC: aéronef | aircraft ;; avion | airplane ;; giravion | rotorcraft ;; planeur | glider ;; plus léger que l’air | lighter-than-air ;; avionique avancée | advanced avionics
+@PAGE 3-2 pdf=73
+# Conception, certification et navigabilité de l’aéronef
+P: La FAA certifie trois types de produits : ==aéronefs, moteurs, hélices==, conçus selon des normes de navigabilité du 14 CFR :
+- avions normaux, utilitaires, acrobatiques et commuter : ==part 23== ;
+- avions de transport : ==part 25== ;
+- giravions normaux : ==part 27== ; giravions de transport : ==part 29== ;
+- ballons libres habités : ==part 31== ;
+- moteurs : ==part 33== ; hélices : ==part 35==.
+P: Certains aéronefs sont des « classes spéciales » (planeurs, sustentation motorisée) sans normes propres : combinaison convenue des parts 23, 25, 27 et 29. La FAA délivre un ==certificat de type (TC)== quand le produit est conforme ; il génère une ==fiche de données (TCDS)== qui définit les caractéristiques importantes, publique sur faa.gov.
+## Note sur les aéronefs légers sportifs (LSA)
+P: Les LSA ne suivent pas les normes de navigabilité FAA mais un consensus de normes de l’industrie accepté par la FAA ; moteurs et hélices ne sont pas forcément certifiés individuellement : un TC est délivré à l’aéronef entier.
+P: Pendant la fabrication, chaque pièce est inspectée pour vérifier sa conformité au plan approuvé : l’==inspection de conformité==. Quand l’avion est achevé, la FAA délivre un ==certificat de navigabilité==, à bord pendant tous les vols, valable tant que maintenance et inspections sont à jour. ==Standard== (blanc) : normal, utilitaire, acrobatique, commuter, transport, ballons libres habités et « classes spéciales ». ==Spécial== (rose) : primaire, restreint, limité, LSA, provisoire, permis de vol spécial (convoyage) et expérimental. (Voir chapitre 9.)
+## Portance et aérodynamique de base
+P: Quatre forces agissent sur un avion en palier non accéléré : ==poussée, portance, poids, traînée==. [Figure 3-1] La ==poussée== est la force avant du groupe motopropulseur/hélice, qui s’oppose à la traînée (en général parallèle à l’axe longitudinal). La ==traînée== est une force de retard vers l’arrière due aux perturbations de l’écoulement (aile, fuselage, objets saillants) ; elle s’oppose à la poussée et agit vers l’arrière parallèlement au vent relatif.
+SUM: Parts : 23 avions, 25 transport, 27/29 giravions, 31 ballons, 33 moteurs, 35 hélices. || TC + TCDS ; certificat de navigabilité blanc = standard, rose = spécial. || 4 forces : poussée, traînée, portance, poids.
+VOC: certificat de type | Type Certificate (TC) ;; fiche de données | Type Certificate Data Sheet (TCDS) ;; inspection de conformité | conformity inspection ;; normes de navigabilité | airworthiness standards ;; poussée | thrust ;; traînée | drag
+@PAGE 3-3 pdf=74
+FIG: Figure 3-1. Les quatre forces (portance, poids, traînée, poussée). Figure 3-2. Mouvements de tangage, roulis et lacet autour des axes latéral, longitudinal et vertical.
+P: Le ==poids== est la charge combinée de l’avion, de l’équipage, du carburant et du fret ; il tire l’avion vers le bas et agit verticalement au travers du ==centre de gravité (CG)==. La ==portance== s’oppose au poids, naît de l’effet dynamique de l’air sur l’aile et agit perpendiculairement à la trajectoire par le centre de portance (CL).
+P: L’avion se meut en trois dimensions autour de ses axes : l’axe ==longitudinal (roulis)==, du nez à la queue ; l’axe ==latéral (tangage)==, d’un bout d’aile à l’autre ; l’axe ==vertical (lacet)==. Tous passent par le CG.
+P: Le CG est le point où l’on peut dire que la masse est centrée. Sa position détermine la stabilité : ==plus il recule (vers la queue), plus l’avion devient instable== (dynamiquement). Si des réservoirs sont devant le CG, il faut le régler avec réservoir vide, sinon l’avion devient instable à mesure qu’on consomme. [Figure 3-3]
+## Composants principaux
+P: La plupart des avions ont les mêmes éléments : ==fuselage, ailes, empennage, train d’atterrissage, groupe motopropulseur== [Figure 3-4].
+## Fuselage
+P: Corps central qui accueille équipage, passagers et fret et relie ailes et queue. Autrefois : structure ouverte en ==treillis== de tubes (bois, acier, aluminium) [Figure 3-5] ; aujourd’hui surtout ==monocoque== (« coque unique ») et ==semi-monocoque==.
+SUM: CG plus arrière = moins stable. || Axes : longitudinal (roulis), latéral (tangage), vertical (lacet). || Composants : fuselage, ailes, empennage, train, motopropulseur.
+VOC: centre de gravité | center of gravity (CG) ;; axe longitudinal | longitudinal axis ;; axe latéral | lateral axis ;; axe vertical | vertical axis ;; fuselage | fuselage ;; treillis | truss
+@PAGE 3-4 pdf=75
+FIG: Figure 3-3. Centre de gravité (si le CG est trop arrière, l’empennage horizontal peut ne pas fournir assez de force à piquer à basse vitesse de décrochage pour récupérer ; s’il est trop avant, pas assez de force à cabrer pour arrondir). Figure 3-4. Composants de l’avion. Figure 3-5. Structure de fuselage en treillis (longerons, entretoises, lisses, cloison).
+## Ailes
+P: Profils fixés de chaque côté du fuselage, surfaces porteuses principales. Fixées en haut, au milieu ou en bas : ==aile haute, médiane, basse==. ==Monoplan== (un jeu d’ailes) ou ==biplan== (deux). [Figure 3-6]
+P: Beaucoup d’avions à aile haute ont des ==haubans== externes qui transmettent les charges au fuselage : aile ==semi-cantilever== (haubans à mi-envergure). Quelques ailes hautes et la plupart des ailes basses sont ==cantilever== : sans haubans externes. Les éléments structurels principaux sont les ==longerons (spars)==, les ==nervures (ribs)== et les ==lisses (stringers)==, renforcés par fermes, poutres en I, tubes et le revêtement. [Figure 3-7] Les nervures déterminent la forme et l’épaisseur du profil. Les réservoirs de carburant sont intégrés à la structure de l’aile ou sont des poches souples dans l’aile.
+SUM: Ailes haute/médiane/basse ; monoplan/biplan. || Semi-cantilever = haubans ; cantilever = sans. || Longerons, nervures, lisses.
+VOC: aile haute | high wing ;; aile basse | low wing ;; monoplan | monoplane ;; biplan | biplane ;; longeron | spar ;; nervure | rib
+@PAGE 3-5 pdf=76
+FIG: Figure 3-6. Monoplan (à gauche) et biplan (à droite). Figure 3-7. Composants de l’aile (réservoir, revêtement, nervures, longeron, lisses, aileron, volet, bout d’aile).
+P: Au bord de fuite de l’aile se trouvent les ==ailerons== et les ==volets== : les ailerons vont environ du milieu de l’aile vers le bout et se déplacent en sens opposés pour faire rouler l’avion ; les volets s’étendent du fuselage à la mi-aile, rentrés (au ras) en croisière, braqués vers le bas ensemble pour augmenter la portance au décollage et à l’atterrissage. [Figure 3-8]
+## Autres types d’ailes
+P: La forme dépend du type d’opération (voir chapitre 5), des ailes qui fléchissent et se déplacent avec le CG. Par exemple, l’aile du ==pendulaire (weight-shift control)== est très en flèche pour réduire la traînée et permettre le déplacement du poids pour piloter. [Figure 3-9] Des manuels spécifiques existent sur faa.gov.
+SUM: Ailerons : roulis, sens opposés. Volets : portance, braqués ensemble. || Pendulaire : aile en flèche et déplacement du poids.
+VOC: aileron | aileron ;; volet | flap ;; bord de fuite | trailing edge ;; bout d’aile | wing tip ;; pendulaire | weight-shift control aircraft ;; flèche | sweep

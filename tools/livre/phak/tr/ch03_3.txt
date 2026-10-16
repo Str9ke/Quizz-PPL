@@ -1,0 +1,48 @@
+@CH 3
+@PAGE 3-12 pdf=83
+P: Dans un avion composite, la fibre de verre est un excellent isolant électrique, la fibre de carbone conduit l’électricité mais moins bien que l’aluminium. Il faut donc ajouter de la conductivité à la couche extérieure, en général par de fines ==mailles métalliques== collées à la peau : ==aluminium sur la fibre de verre, cuivre sur le carbone==. Toute réparation structurelle dans les zones protégées doit aussi reconstituer la maille. Pour les avions avec antennes radio internes, la maille doit comporter des « fenêtres » : la fibre de verre est transparente aux fréquences radio, pas le carbone.
+## L’avenir des composites
+P: Depuis la Seconde Guerre mondiale, les composites ont gagné un rôle important : souplesse de conception, résistance à la corrosion et rapport résistance/masse élevé. Du Cirrus SR-20 au Boeing 787, ils sont là pour rester. [Figure 3-17]
+## L’instrumentation de demain
+P: Jusqu’à récemment, la plupart des avions d’aviation générale avaient des instruments individuels. Avec l’==affichage de vol électronique (EFD)==, les instruments classiques sont remplacés par des écrans LCD : le ==PFD== devant le pilote et le ==MFD== environ au centre du tableau. Ils désencombrent le tableau et améliorent la sécurité grâce à des instruments à semi-conducteurs dont le taux de panne est bien inférieur à celui de l’analogique. [Figure 3-18] Quel que soit le type (analogique ou numérique « glass »), les instruments se répartissent en trois catégories : ==performance, contrôle, navigation==. (Voir chapitre 2 pour l’automatisation.)
+## Instruments de performance
+P: Ils indiquent la performance réelle de l’avion : ==altimètre, anémomètre ou variomètre (VSI), conservateur de cap, bille/indicateur de virage==. L’anémomètre donne la vitesse, l’altimètre l’altitude, le variomètre la performance de montée. Autres : indicateur d’angle d’attaque, indicateur de dérapage/glissade. [Figure 3-19]
+FIG: Figure 3-17. Matériaux composites dans les aéronefs (Columbia 350, Boeing 787, HH-65 des garde-côtes).
+SUM: Maille d’aluminium sur verre, de cuivre sur carbone (foudre). || PFD + MFD à la place des instruments classiques. || 3 catégories : performance, contrôle, navigation.
+VOC: affichage de vol électronique | electronic flight display (EFD) ;; instrument de performance | performance instrument ;; maille métallique | metal mesh ;; semi-conducteur | solid state ;; écran LCD | LCD screen
+@PAGE 3-13 pdf=84
+FIG: Figure 3-18. Affichage analogique (haut) et numérique (bas) d’un Cessna 172.
+## Instruments de contrôle
+P: Ils affichent les changements immédiats d’assiette et de puissance et sont étalonnés pour des réglages en incréments précis [Figure 3-20]. L’instrument d’assiette est l’==horizon artificiel==. ==Ils n’indiquent ni la vitesse ni l’altitude== : il faut consulter les instruments de performance.
+## Instruments de navigation
+P: Ils indiquent la position de l’avion par rapport à une installation ou un repère de navigation choisi : indicateurs de route, de distance, d’alignement de descente, aiguilles de relèvement. Les avions récents donnent une information mélangée plus précise. Ils affichent GPS, VOR, NDB et ILS et fournissent des informations de pilotage en deux ou trois dimensions par rapport à la navigation au sol ou spatiale. [Figures 3-21 et 3-22]
+## GPS
+P: Système de navigation par satellites, mis en orbite par le DOD, d’abord militaire, ouvert au civil dans les années 1980. Il fonctionne par tous les temps, partout, 24 h/24. Le récepteur doit accrocher au moins ==trois satellites== pour une position bidimensionnelle (latitude, longitude) et le suivi de mouvement ; avec ==quatre ou plus==, une position tridimensionnelle (avec l’altitude). D’autres satellites doivent être visibles pour compenser perte et ambiguïté de signal (voir chapitre 16, AIM).
+## Résumé du chapitre
+P: Aperçu des structures d’avion. Pour approfondir : logiciels de simulation, programmes interactifs en ligne (AOPA), revues aéronautiques ; la NASA et la FAA offrent aussi des informations gratuites.
+SUM: Contrôle = horizon artificiel, puissance ; pas de vitesse ni d’altitude. || Navigation : GPS, VOR, NDB, ILS. || GPS : 3 satellites en 2D, 4 en 3D.
+VOC: instrument de contrôle | control instrument ;; instrument de navigation | navigation instrument ;; horizon artificiel | attitude indicator ;; système de positionnement mondial | Global Positioning System (GPS) ;; alignement de descente | glideslope
+@PAGE 3-14 pdf=85
+FIG: Figure 3-19. Instruments de performance (analogiques : anémomètre, altimètre, horizon, coordinateur de virage, conservateur de cap, variomètre ; numériques : bande de vitesse, altimètre avec tendance d’altitude, variomètre avec bande, indicateur de glissade/dérapage, vecteur de tendance du taux de virage, bug de cap, flèche de route).
+SUM: Performance : vitesse, altitude, variomètre, cap, virage.
+VOC: anémomètre | airspeed indicator ;; altimètre | altimeter ;; variomètre | vertical speed indicator ;; coordinateur de virage | turn coordinator ;; bille | slip/skid indicator
+@PAGE 3-15 pdf=86
+FIG: Figure 3-20. Instruments de contrôle (horizon artificiel, manomètre de pression d’admission, compte-tours).
+SUM: Contrôle : horizon artificiel, pression d’admission, régime.
+VOC: horizon artificiel | attitude indicator ;; pression d’admission | manifold pressure ;; compte-tours | tachometer ;; instrument de contrôle | control instrument
+@PAGE 3-16 pdf=87
+FIG: Figure 3-21. Comparaison de l’information de navigation sur affichages analogiques et numériques (l’avion a le cap 020° mais la route est à gauche ; position actuelle, en rapprochement sur la radiale 160°; CRS 340°, HDG 360°). Figure 3-22. Indications analogiques et numériques pour l’interception de l’alignement de descente (aiguille « fly up » / « fly down »).
+SUM: Navigation : CDI, HSI, alignement de descente. || Aiguille d’alignement : fly up / fly down.
+VOC: aiguille d’alignement | glideslope needle ;; route | course ;; radiale | radial ;; interception | intercept ;; indicateur de route | course indicator
+@SHEET
+* Normes : part 23 (avions normal/utilitaire/acrobatique/commuter), part 25 (transport), part 27/29 (giravions), part 33 (moteurs), part 35 (hélices) ; TC + TCDS ; certificat de navigabilité : blanc = standard, rose = spécial. Quatre forces : poussée, traînée, portance, poids ; axes : longitudinal (roulis), latéral (tangage), vertical (lacet) ; CG plus arrière = moins stable.
+* Composants : fuselage (treillis, monocoque, semi-monocoque), ailes (haute/médiane/basse, longerons, nervures, lisses ; cantilever / semi-cantilever), empennage (dérive, stabilisateur, direction, profondeur, compensateurs, stabilator), train (classique ou tricycle), groupe motopropulseur (moteur, hélice, capot).
+* Composites : époxy + fibres ; verre (peu cher, lourd), carbone (léger, rigide, fragile aux chocs) ; avantages : traînée, corrosion, fatigue ; inconvénients : dommages invisibles, chaleur (> 150 °F), décapants chimiques ; maille d’aluminium (verre) ou de cuivre (carbone) contre la foudre.
+* Instruments : performance (altimètre, vitesse, variomètre, cap, virage), contrôle (horizon, puissance), navigation (GPS, VOR, NDB, ILS). GPS : 3 satellites en 2D, 4 en 3D.
+@NUMS
+part 23 / 25 / 27 / 29 / 31 / 33 / 35 | normes de navigabilité (avions / transport / giravions / ballons / moteurs / hélices)
+blanc / rose | couleurs des certificats de navigabilité standard / spécial
+35 % | part des avions neufs en composites en 2005
+30 % | gain de poids possible du carbone par rapport à l’aluminium
+150 °F | température au-dessus de laquelle l’époxy s’affaiblit
+3 / 4 satellites | positions 2D / 3D du GPS
