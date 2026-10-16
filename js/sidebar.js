@@ -114,7 +114,8 @@
       { href: 'radial.html', icon: 'compass', label: 'Radial' }
     ] },
     { type: 'group', id: 'aviation', items: [
-      { href: 'livre.html', icon: 'bookOpen', label: 'Manuel de vol FAA' }
+      { href: 'livre.html?b=afh', icon: 'bookOpen', label: 'Manuel de vol (AFH)' },
+      { href: 'livre.html?b=phak', icon: 'bookOpen', label: 'Manuel du pilote (PHAK)' }
     ] },
     { type: 'link', href: 'plongee.html', icon: 'lifeBuoy', label: 'Plongée' },
     { type: 'sep' },
@@ -135,6 +136,9 @@
   function linkHtml(item, cur) {
     if (item.type === 'label') return '<div class="sidebar-sublabel">' + esc(item.label) + '</div>';
     var isCurrent = !item.tab && hrefFile(item.href) === cur;
+    // Plusieurs entrées vers la même page (livre.html?b=afh / ?b=phak) : on compare aussi le paramètre
+    var bk = /[?&]b=([a-z0-9]+)/.exec(item.href);
+    if (isCurrent && bk) isCurrent = ((/[?&]b=([a-z0-9]+)/.exec(location.search) || [0, 'afh'])[1] === bk[1]);
     var attrs = 'href="' + esc(item.href) + '" class="sidebar-link' + (isCurrent ? ' sidebar-link-current' : '') + '"';
     if (item.tab) attrs += ' data-navlog-tab="' + esc(item.tab) + '"';
     return '<a ' + attrs + '>' + iconSvg(item.icon) + '<span>' + esc(item.label) + '</span></a>';

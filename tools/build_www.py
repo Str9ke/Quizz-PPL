@@ -58,6 +58,10 @@ def main() -> None:
         if rel_dir == ".":
             rel_dir = ""
             dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
+        # Pages originales des livres (livre/<id>/img, des centaines de Mo) : lues en ligne et
+        # mises en cache à la demande (voir js/livre.js) ; seul le texte est embarqué.
+        if rel_dir.startswith("livre") and os.path.basename(dirpath) == "img":
+            continue
         for name in filenames:
             if excluded(name):
                 continue

@@ -2,11 +2,11 @@
  * ============================================================================
  * Lecteur du manuel de vol FAA (livre.html)
  * ----------------------------------------------------------------------------
- * - Texte intégral dans livre/book.json (précaché par le service worker : lecture hors ligne
- *   complète). Pages originales (figures) dans livre/img/, mises en cache à la lecture ou en
+ * - Texte intégral dans livre/<id>/book.json (précaché par le service worker : lecture hors ligne
+ *   complète). Pages originales (figures) dans livre/<id>/img/, mises en cache à la lecture ou en
  *   bloc via « Télécharger hors ligne ».
  * - Annotations (surlignages en 4 couleurs, notes), pages lues, temps de lecture : état LOCAL
- *   (localStorage) + synchronisation Firestore  quizProgress/{uid}/book/{c1…c19, meta}.
+ *   (localStorage) + synchronisation Firestore  quizProgress/{uid}/book/{c1…cN, meta}; livres suivants : {id}_c1…, {id}_meta.
  *
  * Synchronisation — conçue pour que deux appareils (et le hors ligne) ne s'écrasent jamais :
  *   - tout est un dictionnaire clé → valeur horodatée, fusionné « le plus récent gagne » PAR
@@ -24,11 +24,14 @@
   var CACHE_IMG = 'quiz-ppl-assets-v1';        // même cache que sw.js (images de l'appli)
   var DEFAULT_SEC_PER_WORD = 0.25;             // 240 mots/min tant qu'on n'a pas mesuré le rythme
   var IDLE_MS = 60000;                         // pas d'interaction depuis 1 min → le temps ne compte plus
-  var GROUPS = [
-    { name: 'À lire en priorité pour le PPL', sub: 'Le cœur du pilotage sur un avion léger comme le C172.' },
-    { name: 'Selon ton projet', sub: 'Vol de nuit, avions plus évolués, vocabulaire.' },
-    { name: "Hors du cadre d'un C172", sub: 'Pour la culture : multimoteurs, turbines, LSA.' }
-  ];
+  /* Plusieurs livres : livre.html?b=afh (manuel de vol, défaut) ou ?b=phak (manuel du pilote).
+     Données : livre/<id>/book.json ; images : livre/<id>/img/NNN.webp. Les documents Firestore
+     du premier livre gardent leurs noms d'origine (c1…, meta) ; les autres sont préfixés. */
+  var BOOK_ID = (new URLSearchParams(location.search).get('b') || 'afh').replace(/[^a-z0-9]/g, '') || 'afh';
+  var DOCP = BOOK_ID === 'afh' ? '' : BOOK_ID + '_';
+  var BASE = 'livre/' + BOOK_ID + '/';
+  var REMOTE_BASE = 'https://str9ke.github.io/Quizz-PPL/';
+  var REFCH = {}, CHMAP = {}, ORDER = [];
   var COLORS = { 1: 'Jaune', 2: 'Vert', 3: 'Rose', 4: 'Bleu' };
 
   var $root = document.getElementById('bk');
@@ -49,8 +52,9 @@
   /* ------------------------------------------------------------------ utilitaires */
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function pad3(n) { return String(n).padStart(3, '0'); }
-  function chOf(ref) { return ref.charAt(0) === 'G' ? 19 : parseInt(ref, 10); }
-  function chap(n) { return BOOK.chapters[n - 1]; }
+  function chOf(ref) { return REFCH[ref] || parseInt(ref, 10) || 0; }
+  function chap(n) { return CHMAP[n]; }
+  function chLabel(c) { return c.label || ('Chapitre ' + c.n); }
   function now() { return Date.now(); }
   function newId() { return now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function fmtDur(sec) {
@@ -69,7 +73,7 @@
 
   /* ------------------------------------------------------------------ état local */
   function emptyState() { return { rd: {}, pt: {}, hl: {}, gn: {}, nt: {}, last: null }; }
-  function lsKey(p) { return 'bk_' + p + '_' + (uid || 'anon'); }
+  function lsKey(p) { return 'bk_' + DOCP + p + '_' + (uid || 'anon'); }
   function loadLocal() {
     S = jget(lsKey('state'), null) || emptyState();
     ['rd', 'pt', 'hl', 'gn', 'nt'].forEach(function (f) { if (!S[f]) S[f] = {}; });
@@ -124,7 +128,7 @@
   }
 
   /* ------------------------------------------------------------------ synchronisation */
-  function docRef(id) { return db.collection('quizProgress').doc(uid).collection('book').doc(id); }
+  function docRef(id) { return db.collection('quizProgress').doc(uid).collection('book').doc(DOCP + id); }
   function dirtyCount() {
     var c = 0;
     Object.keys(dirty).forEach(function (k) {
@@ -215,7 +219,11 @@
     try {
       unsub = db.collection('quizProgress').doc(uid).collection('book').onSnapshot(function (qs) {
         var changed = false;
-        qs.docChanges().forEach(function (ch) { mergeRemote(ch.doc.id, ch.doc.data()); changed = true; });
+        qs.docChanges().forEach(function (ch) {
+          var id = ch.doc.id;                                    // c12, meta (livre 1) ou phak_c12, phak_meta…
+          if (DOCP ? id.indexOf(DOCP) !== 0 : !/^(c\d+|meta)$/.test(id)) return;
+          mergeRemote(id.slice(DOCP.length), ch.doc.data()); changed = true;
+        });
         if (changed) { saveLocal(); onRemote(); }
         syncUI();
       }, function (err) { console.warn('[livre] écoute Firestore :', err && err.code); });
@@ -292,14 +300,15 @@
   function renderHome() {
     view = 'home'; cur = null; annotHide();
     var g = globalStats();
-    var pct = Math.round(100 * g.read / g.total);
+    var pct = g.total ? Math.round(100 * g.read / g.total) : 0;
     var last = S.last && findPage(S.last.ref);
-    var h = '<p class="bk-eyebrow">FAA-H-8083-3C · Airplane Flying Handbook</p>'
-      + '<div class="bk-top"><h1>Manuel de vol, en français</h1><span class="bk-sync" id="bkSync"></span></div>'
+    var h = '<p class="bk-eyebrow">' + esc(BOOK.eyebrow || '') + '</p>'
+      + '<div class="bk-top"><h1>' + esc(BOOK.title) + '</h1><span class="bk-sync" id="bkSync"></span></div>'
       + '<p class="bk-sub">Traduction page par page : termes clés surlignés, résumé de chaque page, fiche de chapitre, page originale à côté. Surligne et annote : tout est enregistré en ligne et retrouvé sur tous tes appareils.</p>'
+      + (BOOK.pending && BOOK.pending.length ? '<div class="bk-card" style="margin-bottom:12px;border-color:#ffb74d"><b>🛠 Traduction en cours</b><p class="bk-note-small" style="margin:4px 0 0">Les chapitres suivants arrivent au fil des mises à jour : ' + esc(BOOK.pending.join(', ')) + '. Tu peux déjà lire les autres ; ta progression est conservée.</p></div>' : '')
       + '<div class="bk-card"><div class="bk-row"><b>Ma progression</b><span class="bk-grow"></span>'
       + (last ? '<button class="bk-btn primary" data-act="resume">▶ Reprendre — ' + esc(last.c.title) + ', p. ' + esc(last.p.ref) + '</button>'
-              : '<button class="bk-btn primary" data-act="open" data-n="1" data-pi="0">▶ Commencer la lecture</button>') + '</div>'
+              : '<button class="bk-btn primary" data-act="open" data-n="' + ORDER[0] + '" data-pi="0">▶ Commencer la lecture</button>') + '</div>'
       + '<div class="bk-bar big" style="margin-top:10px"><i style="width:' + pct + '%"></i></div>'
       + '<div class="bk-stats">'
       + stat(g.read + ' / ' + g.total, 'pages lues (' + pct + ' %)')
@@ -314,21 +323,21 @@
       + '<button class="bk-btn" data-act="annots">📝 Mes annotations</button></div><div class="bk-results" id="bkResults"></div>'
       + '<div class="bk-card" style="margin-top:12px"><div class="bk-row"><div class="bk-grow"><b>Hors ligne</b><div class="bk-note-small" id="bkOffInfo" style="margin:2px 0 0">✅ Texte intégral disponible sans connexion.</div></div>'
       + '<button class="bk-btn" data-act="dlall" id="bkDl">⬇ Télécharger les pages originales</button></div></div>';
-    GROUPS.forEach(function (gr) {
+    (BOOK.groups || []).forEach(function (gr) {
       var cs = BOOK.chapters.filter(function (c) { return c.group === gr.name; });
       if (!cs.length) return;
       h += '<h2 class="bk-group">' + esc(gr.name) + '</h2><p class="bk-group-sub">' + esc(gr.sub) + '</p><div class="bk-grid">';
       cs.forEach(function (c) {
-        var st = chapterStats(c.n), p = Math.round(100 * st.read / st.total), rest = st.wUnread * g.pace.spw;
+        var st = chapterStats(c.n), p = Math.round(100 * st.read / (st.total || 1)), rest = st.wUnread * g.pace.spw;
         h += '<button class="bk-card bk-ch" data-act="open" data-n="' + c.n + '" data-pi="' + firstUnread(c) + '">'
-          + '<span class="num">' + (c.n === 19 ? 'Glossaire' : 'Chapitre ' + c.n) + ' · ' + st.total + ' p.</span><span class="t">' + esc(c.title) + '</span>'
+          + '<span class="num">' + esc(chLabel(c)) + ' · ' + st.total + ' p.</span><span class="t">' + esc(c.title) + '</span>'
           + '<div class="bk-bar"><i style="width:' + p + '%"></i></div>'
           + '<span class="m"><span>' + st.read + '/' + st.total + ' pages' + (st.time ? ' · ' + fmtDur(st.time) : '') + '</span><span>'
           + (st.read === st.total ? '✓ terminé' : 'reste ≈ ' + fmtDur(rest)) + '</span></span></button>';
       });
       h += '</div>';
     });
-    h += '<p class="bk-note-small" style="margin-top:22px">Traduction non officielle, faite pour étudier. Règles américaines : pour l’Europe et la Belgique, la réglementation en vigueur, l’AIP et ton instructeur font foi. En cas de doute, le manuel de vol (AFM/POH) de ton avion prime.</p>';
+    h += '<p class="bk-note-small" style="margin-top:22px">' + (BOOK.footer || 'Traduction non officielle, faite pour étudier.') + '</p>';
     $root.innerHTML = h;
     syncUI(); offInfo();
     var inp = document.getElementById('bkSearch'), t;
@@ -373,11 +382,11 @@
   }
 
   /* hors ligne : pages originales */
-  function imgUrl(p) { return 'livre/img/p-' + pad3(p.pdf) + '.jpg'; }
+  function imgUrl(p) { return (window.APP_IS_NATIVE ? REMOTE_BASE : '') + BASE + 'img/' + pad3(p.pdf) + '.webp'; }
   function cachedImgCount() {
     if (!window.caches) return Promise.resolve(-1);
     return caches.open(CACHE_IMG).then(function (c) { return c.keys(); }).then(function (ks) {
-      return ks.filter(function (r) { return r.url.indexOf('/livre/img/') >= 0; }).length;
+      return ks.filter(function (r) { return r.url.indexOf('/' + BASE + 'img/') >= 0; }).length;
     }).catch(function () { return -1; });
   }
   function offInfo() {
@@ -423,7 +432,7 @@
     view = 'chapter'; cur = { n: n, pi: pi, ref: c.pages[pi].ref };
     annotHide();
     var h = '<div class="bk-top"><button class="bk-btn" data-act="home">← Sommaire</button><span class="bk-sync" id="bkSync"></span></div>'
-      + '<div class="bk-chhead"><p class="bk-eyebrow">' + (n === 19 ? 'Glossaire' : 'Chapitre ' + n) + '</p><h1>' + esc(c.title) + '</h1>'
+      + '<div class="bk-chhead"><p class="bk-eyebrow">' + esc(chLabel(c)) + '</p><h1>' + esc(c.title) + '</h1>'
       + '<p class="bk-sub">' + (c.intro || '') + '</p>'
       + '<div class="bk-bar big"><i id="bkChBar" style="width:0"></i></div><p class="bk-note-small" id="bkChInfo"></p></div>'
       + '<div class="bk-row"><label class="bk-btn" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="bkKey" ' + (jget('bk_key', 1) ? 'checked' : '') + '> Termes clés</label>'
@@ -461,8 +470,8 @@
       + '<div class="bk-foot" id="bkFoot"><button class="bk-btn primary" data-act="sum">Résumé de la page</button>'
       + '<button class="bk-btn' + (showOrig ? ' on' : '') + '" data-act="orig">Page originale</button>'
       + '<button class="bk-btn" data-act="toggleread" id="bkReadBtn"></button><span class="bk-grow"></span>'
-      + '<button class="bk-btn" data-act="prev"' + (pi === 0 && cur.n === 1 ? ' disabled' : '') + '>← Précédente</button>'
-      + '<button class="bk-btn" data-act="next"' + (pi === c.pages.length - 1 && cur.n === 19 ? ' disabled' : '') + '>Suivante →</button></div>'
+      + '<button class="bk-btn" data-act="prev"' + (pi === 0 && cur.n === ORDER[0] ? ' disabled' : '') + '>← Précédente</button>'
+      + '<button class="bk-btn" data-act="next"' + (pi === c.pages.length - 1 && cur.n === ORDER[ORDER.length - 1] ? ' disabled' : '') + '>Suivante →</button></div>'
       + '<textarea class="bk-pnote" id="bkPNote" placeholder="Ma note sur cette page…">' + esc(note) + '</textarea>';
     document.getElementById('bkPNote').addEventListener('input', function (e) {
       var v = e.target.value, ref = cur.ref;
@@ -560,8 +569,9 @@
   })();
   function go(delta) {
     var n = cur.n, pi = cur.pi + delta;
-    if (pi < 0) { if (n === 1) return; n--; pi = chap(n).pages.length - 1; openChapter(n, pi, true); return; }
-    if (pi >= chap(n).pages.length) { if (n === 19) return; openChapter(n + 1, 0, true); return; }
+    var oi = ORDER.indexOf(n);
+    if (pi < 0) { if (oi <= 0) return; n = ORDER[oi - 1]; openChapter(n, chap(n).pages.length - 1, true); return; }
+    if (pi >= chap(n).pages.length) { if (oi >= ORDER.length - 1) return; openChapter(ORDER[oi + 1], 0, true); return; }
     showPage(pi, true);
   }
 
@@ -712,7 +722,7 @@
   }
   function chapterSheet() {
     var c = chap(cur.n);
-    sheet(c.n === 19 ? 'Glossaire' : 'Chapitre ' + c.n, 'Fiche du chapitre', '<ul>' + c.sheet.points.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ul>'
+    sheet(chLabel(c), 'Fiche du chapitre', '<ul>' + c.sheet.points.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ul>'
       + '<h4>Chiffres à connaître</h4><table><tbody>' + c.sheet.nums.map(function (n) { return '<tr><td>' + n[0] + '</td><td>' + n[1] + '</td></tr>'; }).join('') + '</tbody></table>');
   }
   function annotsSheet() {
@@ -824,10 +834,12 @@
   }
 
   /* ------------------------------------------------------------------ démarrage */
-  fetch('livre/book.json').then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
+  fetch(BASE + 'book.json').then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
     BOOK = data;
+    document.title = BOOK.title;
     BOOK.chapters.forEach(function (c) {
-      c.pages.forEach(function (p, i) { PAGES.push({ n: c.n, pi: i, ref: p.ref, pdf: p.pdf, w: p.w }); ALLWORDS += p.w; });
+      CHMAP[c.n] = c; ORDER.push(c.n);
+      c.pages.forEach(function (p, i) { PAGES.push({ n: c.n, pi: i, ref: p.ref, pdf: p.pdf, w: p.w }); ALLWORDS += p.w; REFCH[p.ref] = c.n; });
     });
     S = emptyState();
     initAuth();
