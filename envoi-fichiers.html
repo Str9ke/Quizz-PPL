@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Envoi de gros fichiers</title>
+  <style>
+    :root { color-scheme: dark; --bg:#121218; --card:#1e1e2d; --line:#333350; --fg:#e0e0e8; --mut:#a0a0b8; --acc:#1976d2; --ok:#66bb6a; --ko:#ef5350; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; padding: 20px 16px 60px; }
+    main { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .sub { color: var(--mut); margin: 0 0 18px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    label { display: block; font-size: .85rem; color: var(--mut); margin: 10px 0 4px; }
+    input[type=text], input[type=password], select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #1a1a30; color: var(--fg); font: inherit; }
+    .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 26px 12px; text-align: center; color: var(--mut); cursor: pointer; }
+    .drop.over { border-color: var(--acc); color: var(--fg); }
+    button { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+    button.primary { background: var(--acc); border-color: var(--acc); color: #fff; }
+    button[disabled] { opacity: .45; cursor: default; }
+    .bar { height: 12px; background: #2a2a40; border-radius: 6px; overflow: hidden; margin: 8px 0; }
+    .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#4caf50,#81c784); transition: width .2s; }
+    .file { display: flex; justify-content: space-between; gap: 10px; font-size: .9rem; padding: 4px 0; }
+    #log { font: 12px/1.5 ui-monospace, monospace; color: var(--mut); white-space: pre-wrap; max-height: 220px; overflow: auto; }
+    .ok { color: var(--ok); } .ko { color: var(--ko); }
+    a { color: #64b5f6; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Envoi de gros fichiers</h1>
+  <p class="sub">Envoie un fichier de n'importe quelle taille (300 Mo, 1 Go…) vers ton dépôt GitHub, en petits morceaux, directement depuis ton navigateur. Le fichier n'est pas chargé en mémoire et rien ne passe par un autre site.</p>
+
+  <div class="card">
+    <label for="tok">Jeton GitHub (déjà enregistré s'il sert pour le Briefing)</label>
+    <input type="password" id="tok" placeholder="ghp_… ou github_pat_…" autocomplete="off">
+    <label for="chunk">Taille des morceaux</label>
+    <select id="chunk">
+      <option value="20">20 Mo (recommandé)</option>
+      <option value="10">10 Mo (connexion instable)</option>
+      <option value="40">40 Mo (connexion rapide)</option>
+    </select>
+    <p class="sub" style="margin:10px 0 0;font-size:.82rem">Les morceaux vont dans la branche <b>book-sources</b>, dossier <b>sources/</b> : le site et l'application ne sont pas touchés. Un envoi interrompu reprend où il s'est arrêté : relance simplement le même fichier.</p>
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">Glisse un ou plusieurs fichiers ici<br>ou touche pour les choisir<input type="file" id="files" multiple hidden></div>
+    <div id="list" style="margin-top:10px"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+      <button class="primary" id="go" disabled>⬆ Envoyer vers GitHub</button>
+      <button id="split" disabled>💾 Seulement découper (télécharger les morceaux)</button>
+    </div>
+  </div>
+
+  <div class="card" id="prog" hidden>
+    <div id="progTxt"></div>
+    <div class="bar"><i id="progBar"></i></div>
+    <div id="log"></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var API = 'https://api.github.com/repos/Str9ke/Quizz-PPL';
+  var BRANCH = 'book-sources', DIR = 'sources';
+  var $ = function (id) { return document.getElementById(id); };
+  var files = [], busy = false;
+  try { $('tok').value = localStorage.getItem('github_pat') || ''; } catch (e) { /* ignore */ }
+
+  function mb(n) { return (n / 1048576).toFixed(1) + ' Mo'; }
+  function log(msg, cls) { var d = document.createElement('div'); if (cls) d.className = cls; d.textContent = msg; $('log').appendChild(d); $('log').scrollTop = 1e9; }
+  function refresh() {
+    $('list').innerHTML = files.map(function (f) { return '<div class="file"><span>' + f.name.replace(/</g, '&lt;') + '</span><span>' + mb(f.size) + '</span></div>'; }).join('');
+    $('go').disabled = $('split').disabled = busy || !files.length;
+  }
+  function setFiles(l) { files = Array.prototype.slice.call(l); refresh(); }
+  $('drop').addEventListener('click', function () { $('files').click(); });
+  $('files').addEventListener('change', function (e) { setFiles(e.target.files); });
+  ['dragenter', 'dragover'].forEach(function (ev) { $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.remove('over'); }); });
+  $('drop').addEventListener('drop', function (e) { setFiles(e.dataTransfer.files); });
+
+  function chunkSize() { return parseInt($('chunk').value, 10) * 1048576; }
+  function partName(f, i) { return f.name.replace(/[^\w.\-]+/g, '_') + '.part' + String(i + 1).padStart(3, '0'); }
+  function b64(blob) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(',')[1]); };
+      r.onerror = function () { rej(r.error); };
+      r.readAsDataURL(blob);
+    });
+  }
+  function gh(path, opt, tok) {
+    opt = opt || {}; opt.headers = Object.assign({ Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' }, opt.headers || {});
+    return fetch(API + path, opt);
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* branche book-sources (créée à partir de main si elle n'existe pas) */
+  function ensureBranch(tok) {
+    return gh('/git/ref/heads/' + BRANCH, null, tok).then(function (r) {
+      if (r.ok) return;
+      if (r.status === 401 || r.status === 403) throw new Error('Jeton refusé (HTTP ' + r.status + ') : il doit avoir le droit « repo » / « Contents : écriture ».');
+      return gh('/git/ref/heads/main', null, tok).then(function (m) { return m.json(); }).then(function (m) {
+        return gh('/git/refs', { method: 'POST', body: JSON.stringify({ ref: 'refs/heads/' + BRANCH, sha: m.object.sha }) }, tok).then(function (c) {
+          if (!c.ok && c.status !== 422) throw new Error('Création de la branche impossible (HTTP ' + c.status + ')');
+          log('Branche ' + BRANCH + ' créée.');
+        });
+      });
+    });
+  }
+  function existing(tok) {
+    return gh('/contents/' + DIR + '?ref=' + BRANCH, null, tok).then(function (r) { return r.ok ? r.json() : []; }).then(function (l) {
+      var m = {}; (Array.isArray(l) ? l : []).forEach(function (x) { m[x.name] = x; }); return m;
+    });
+  }
+  function putPart(tok, name, blob, sha) {
+    return b64(blob).then(function (data) {
+      var body = { message: 'Envoi ' + name, content: data, branch: BRANCH };
+      if (sha) body.sha = sha;
+      return gh('/contents/' + DIR + '/' + encodeURIComponent(name), { method: 'PUT', body: JSON.stringify(body) }, tok);
+    });
+  }
+
+  function upload() {
+    var tok = $('tok').value.trim();
+    if (!tok) { alert('Colle ton jeton GitHub.'); return; }
+    try { localStorage.setItem('github_pat', tok); } catch (e) { /* ignore */ }
+    busy = true; refresh(); $('prog').hidden = false; $('log').textContent = '';
+    var cs = chunkSize(), total = files.reduce(function (a, f) { return a + f.size; }, 0), done = 0;
+    function prog(txt) { $('progTxt').textContent = txt; $('progBar').style.width = Math.min(100, 100 * done / total) + '%'; }
+    prog('Préparation…');
+    return ensureBranch(tok).then(existing.bind(null, tok)).then(function (have) {
+      var jobs = [];
+      files.forEach(function (f) {
+        var n = Math.max(1, Math.ceil(f.size / cs));
+        for (var i = 0; i < n; i++) jobs.push({ f: f, i: i, n: n, start: i * cs, end: Math.min(f.size, (i + 1) * cs) });
+      });
+      var k = 0;
+      function next() {
+        if (k >= jobs.length) return Promise.resolve();
+        var j = jobs[k++], name = partName(j.f, j.i), size = j.end - j.start, ex = have[name];
+        if (ex && ex.size === size) { done += size; log('✓ ' + name + ' déjà envoyé', 'ok'); prog(j.f.name + ' — morceau ' + (j.i + 1) + '/' + j.n); return next(); }
+        prog(j.f.name + ' — morceau ' + (j.i + 1) + '/' + j.n + ' (' + mb(size) + ')');
+        function attempt(t) {
+          return putPart(tok, name, j.f.slice(j.start, j.end), ex && ex.sha).then(function (r) {
+            if (r.ok) return;
+            if (r.status === 401 || r.status === 403) throw new Error('Jeton refusé (HTTP ' + r.status + ')');
+            if (t < 4) { log('… nouvel essai de ' + name + ' (HTTP ' + r.status + ')', 'ko'); return sleep(1500 * t).then(function () { return attempt(t + 1); }); }
+            throw new Error(name + ' : échec (HTTP ' + r.status + ')');
+          }, function (e) {
+            if (t < 4) { log('… nouvel essai de ' + name + ' (' + e.message + ')', 'ko'); return sleep(1500 * t).then(function () { return attempt(t + 1); }); }
+            throw e;
+          });
+        }
+        return attempt(1).then(function () { done += size; log('✓ ' + name + ' (' + mb(size) + ')', 'ok'); prog(j.f.name + ' — morceau ' + (j.i + 1) + '/' + j.n); return next(); });
+      }
+      return next();
+    }).then(function () {
+      done = total; prog('✅ Terminé : ' + files.length + ' fichier(s) envoyé(s) dans la branche ' + BRANCH + '. Préviens Claude.');
+      log('Tout est envoyé. Tu peux fermer cette page.', 'ok');
+    }).catch(function (e) {
+      prog('⚠️ Interrompu : ' + e.message + ' — relance le même fichier pour reprendre.'); log(e.message, 'ko');
+    }).then(function () { busy = false; refresh(); });
+  }
+
+  /* découpage local : téléchargement des morceaux sans rien envoyer */
+  function splitLocal() {
+    var cs = chunkSize(); $('prog').hidden = false; $('log').textContent = '';
+    var jobs = [];
+    files.forEach(function (f) { var n = Math.max(1, Math.ceil(f.size / cs)); for (var i = 0; i < n; i++) jobs.push({ f: f, i: i, s: i * cs, e: Math.min(f.size, (i + 1) * cs) }); });
+    var k = 0;
+    (function step() {
+      if (k >= jobs.length) { $('progTxt').textContent = '✅ ' + jobs.length + ' morceau(x) téléchargé(s).'; return; }
+      var j = jobs[k++], a = document.createElement('a');
+      a.href = URL.createObjectURL(j.f.slice(j.s, j.e)); a.download = partName(j.f, j.i);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+      $('progBar').style.width = (100 * k / jobs.length) + '%'; $('progTxt').textContent = 'Téléchargement des morceaux… ' + k + '/' + jobs.length; log(a.download, 'ok');
+      setTimeout(step, 700);
+    })();
+  }
+  $('go').addEventListener('click', upload);
+  $('split').addEventListener('click', splitLocal);
+})();
+</script>
+</body>
+</html>
