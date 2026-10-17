@@ -63,6 +63,11 @@ body.light .urg-hero-title{background:linear-gradient(135deg,#c0392b,#e74c3c,#d3
 /* Speed badges */
 .urg-speed{display:inline-block;padding:2px 8px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;font-size:.85em;margin:0 2px}
 
+/* Onglets */
+.urg-tabs{display:flex;gap:8px;justify-content:center;margin:0 8px 14px;flex-wrap:wrap}
+.urg-tab{padding:10px 18px;font-size:.9em;font-weight:700;border-radius:22px;cursor:pointer;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary)}
+.urg-tab.active{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;border-color:transparent}
+
 /* Print */
 @media print{
   .sidebar-toggle-btn,.app-sidebar,.sidebar-overlay,.urg-cats,.urg-hero,#themeToggle{display:none!important}
@@ -91,7 +96,12 @@ body.light .urg-hero-title{background:linear-gradient(135deg,#c0392b,#e74c3c,#d3
     <p class="urg-hero-sub">Cessna F-150L — Manuel de vol</p>
   </div>
 
-  <div class="urg-wrap">
+  <div class="urg-tabs" id="urgTabs">
+    <button type="button" class="urg-tab active" data-tab="f150">Cessna F-150L</button>
+    <button type="button" class="urg-tab" data-tab="f172">Fiches F 172 M · OO-FCE</button>
+  </div>
+
+  <div class="urg-wrap" id="tabF150">
     <!-- Legend -->
     <div class="urg-legend">
       <span><span class="dot" style="background:#667eea"></span> Commandes de vol</span>
@@ -109,6 +119,8 @@ body.light .urg-hero-title{background:linear-gradient(135deg,#c0392b,#e74c3c,#d3
     <!-- Procedures -->
     <div id="urgContent"></div>
   </div>
+
+  <div class="urg-wrap" id="tab172" hidden><div id="f172Root"></div></div>
 
   <script>
 (function(){
@@ -339,6 +351,20 @@ buildCats();
 buildContent();
 })();
   </script>
+  <script>
+  /* onglets : F-150L (existant) / fiches F 172 M — l'onglet choisi est retenu (#f172 dans l'adresse) */
+  (function(){
+    var tabs=document.querySelectorAll('.urg-tab'), a=document.getElementById('tabF150'), b=document.getElementById('tab172');
+    function show(t){
+      a.hidden = t!=='f150'; b.hidden = t!=='f172';
+      tabs.forEach(function(x){ x.classList.toggle('active', x.getAttribute('data-tab')===t); });
+      try { history.replaceState(null,'', t==='f172' ? '#f172' : location.pathname + location.search); } catch(e){}
+    }
+    tabs.forEach(function(x){ x.addEventListener('click', function(){ show(x.getAttribute('data-tab')); }); });
+    if (location.hash==='#f172') show('f172');
+  })();
+  </script>
+  <script src="js/urgences172.js?v=20261017a"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/pwa-install.js"></script>

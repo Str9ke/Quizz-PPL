@@ -31,7 +31,7 @@ Dépôt : `Str9ke/Quizz-PPL`, branche de travail et de production : **`main`** (
 Questions : `section_easa_*.json`, `gligli_*_easy/hard.json`, `questions_*.json` (4742 questions) ; images `IMAGES_*`.
 Scripts : `build_questions_easa*.py`, `check_duplicates.py`, `dedupe_questions.py`. Pages : `quiz.html`, `examen.html`,
 `epreuve.html`, `stats.html`, `echecs.html`, `difficultes.html`, `historique.html`, `search.html`, `fiches.html`, `syllabus.html`,
-`navlog.html`, `opmet.html`, `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
+`navlog.html`, `opmet.html`, `urgences.html` (onglets F-150L + **fiches F 172 M** : `js/urgences172.js`, PDF A5 `fiche_urgence_172M_A5.pdf` à régénérer par impression Chrome si les fiches changent ; manuels sources dans `Livres/`), `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
 `envoi-fichiers.html` (envoi de gros fichiers, jusqu'à 300 Mo).
 
 ## Le lecteur de livres (`livre.html?b=afh|phak`)
