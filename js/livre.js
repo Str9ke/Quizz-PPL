@@ -38,7 +38,7 @@
   var BOOK = null, PAGES = [], ALLWORDS = 0;
   var uid = null, S = null, dirty = {}, seq = 0, flushTimer = null, lastFlush = 0, inflight = 0;
   var unsub = null;
-  var view = 'home', cur = null, lastAct = Date.now(), bottomSeen = false, showOrig = !!jget('bk_orig', 1);
+  var view = 'home', cur = null, lastAct = Date.now(), showOrig = !!jget('bk_orig', 1);
   var unitHtml = {}, annot = null, noteTarget = null, ticks = 0;
 
   var DEV = (function () {
@@ -318,7 +318,7 @@
       + '</div><p class="bk-note-small">'
       + (g.pace.measured ? 'Ton rythme : ' + Math.round(60 / g.pace.spw) + ' mots/minute (mesuré sur ' + g.pace.pages + ' pages lues).'
                          : 'Estimation à 240 mots/minute pour l’instant ; elle s’ajustera à ton rythme dès quelques pages lues.')
-      + ' Une page compte comme lue quand tu l’as parcourue jusqu’en bas (ou en la cochant).</p></div>'
+      + ' Une page compte comme lue quand tu cliques sur « Suivante » (ou en la cochant).</p></div>'
       + '<div class="bk-row" style="margin-top:12px"><input class="bk-search" id="bkSearch" type="search" placeholder="Rechercher dans tout le livre…" style="flex:1;min-width:200px">'
       + '<button class="bk-btn" data-act="annots">📝 Mes annotations</button></div><div class="bk-results" id="bkResults"></div>'
       + '<div class="bk-card" style="margin-top:12px"><div class="bk-row"><div class="bk-grow"><b>Hors ligne</b><div class="bk-note-small" id="bkOffInfo" style="margin:2px 0 0">✅ Texte intégral disponible sans connexion.</div></div>'
@@ -451,7 +451,7 @@
   }
 
   function showPage(pi, push) {
-    var c = chap(cur.n), p = c.pages[pi]; cur.pi = pi; cur.ref = p.ref; bottomSeen = false; unitHtml = {};
+    var c = chap(cur.n), p = c.pages[pi]; cur.pi = pi; cur.ref = p.ref; unitHtml = {};
     var art = document.getElementById('bkPage');
     art.classList.toggle('nokey', !document.getElementById('bkKey').checked);
     var body = '', bi = 0;
@@ -481,13 +481,29 @@
     applyHighlights(); cur.sig = pageSig();
     renderPills(); updateReadBtn(); updateChapterHead(); updateOrig();
     setLast(p.ref);
-    var foot = document.getElementById('bkFoot');
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es, o) { if (es[0].isIntersecting) { bottomSeen = true; o.disconnect(); } }, { threshold: 0.6 }).observe(foot);
-    } else bottomSeen = true;
     try { history[push ? 'pushState' : 'replaceState'](null, '', '#c' + cur.n + '/' + pi); } catch (e) { /* ignore */ }
-    if (push !== 'keep') window.scrollTo(0, 0);
+    if (resumeY != null && resumeRef === p.ref) restoreScroll(resumeY);
+    else { if (push !== 'keep') window.scrollTo(0, 0); savePos(); }
+    resumeY = null; resumeRef = null;
   }
+
+  /* ------------------------------------------------------------------ reprise à l'endroit exact */
+  /* Page + position de défilement mémorisées PAR LIVRE sur cet appareil ; à la réouverture du
+     livre on retombe exactement là où on s'était arrêté (la page lue-ou-non n'y est pour rien). */
+  var POS_KEY = 'bk_pos_' + BOOK_ID, resumeY = null, resumeRef = null, posTimer = null;
+  function savePos() {
+    if (view !== 'chapter' || !cur) return;
+    jset(POS_KEY, { ref: cur.ref, y: Math.round(window.scrollY || 0), ts: now() });
+  }
+  function restoreScroll(y) {
+    // le contenu (figures, notes) peut finir de se mettre en page après coup : on réessaie
+    var tries = 0;
+    (function apply() {
+      window.scrollTo(0, y);
+      if (++tries < 6 && Math.abs((window.scrollY || 0) - y) > 4) setTimeout(apply, 150);
+    })();
+  }
+  window.addEventListener('scroll', function () { clearTimeout(posTimer); posTimer = setTimeout(savePos, 350); }, { passive: true });
 
   function renderPills() {
     var c = chap(cur.n), el = document.getElementById('bkPills'); if (!el) return;
@@ -571,6 +587,7 @@
     var n = cur.n, pi = cur.pi + delta;
     var oi = ORDER.indexOf(n);
     if (pi < 0) { if (oi <= 0) return; n = ORDER[oi - 1]; openChapter(n, chap(n).pages.length - 1, true); return; }
+    if (delta > 0 && !isRead(cur.ref)) { setRead(cur.ref, true); if (typeof window._toast === 'function') window._toast('✓ Page ' + cur.ref + ' lue', 'success', 1200); }
     if (pi >= chap(n).pages.length) { if (oi >= ORDER.length - 1) return; openChapter(ORDER[oi + 1], 0, true); return; }
     showPage(pi, true);
   }
@@ -798,24 +815,31 @@
   });
   function route() {
     var m = (location.hash || '').match(/^#c(\d+)\/(\d+)$/);
-    if (m && BOOK && chap(+m[1])) openChapter(+m[1], +m[2], false); else if (BOOK) renderHome();
+    if (!BOOK) return;
+    var pos = jget(POS_KEY, null), f = pos && findPage(pos.ref);
+    if (m && chap(+m[1])) {
+      // même page que la dernière mémorisée → on rouvre aussi à la même hauteur
+      if (firstRoute && f && f.p.n === +m[1] && f.pi === +m[2]) { resumeRef = pos.ref; resumeY = pos.y; }
+      openChapter(+m[1], +m[2], false);
+    } else if (firstRoute && f) {
+      resumeRef = pos.ref; resumeY = pos.y;
+      openChapter(f.p.n, f.pi, false);
+    } else renderHome();
+    firstRoute = false;
   }
+  var firstRoute = true;
   window.addEventListener('popstate', route);
 
   /* ------------------------------------------------------------------ temps de lecture */
   setInterval(function () {
     if (view !== 'chapter' || !cur || document.hidden || !ov.hidden || now() - lastAct > IDLE_MS) return;
     addTime(cur.ref, 1); ticks++;
-    var p = chap(cur.n).pages[cur.pi];
-    // « lue » : parcourue jusqu'en bas ET au moins ~1/4 du temps de lecture normal passé dessus
-    if (!isRead(cur.ref) && bottomSeen && pageTime(cur.ref) >= Math.max(8, Math.round(p.w / 4 * 0.25))) {
-      setRead(cur.ref, true); renderPills(); updateReadBtn(); updateChapterHead();
-      if (typeof window._toast === 'function') window._toast('✓ Page ' + cur.ref + ' lue', 'success', 1200);
-    }
+    // Une page n'est « lue » que lorsqu'on clique sur « Suivante » (voir go()) : regarder le bas
+    // de la page pour en estimer la longueur ne la marque plus comme vue.
     if (ticks % 5 === 0) saveLocal();
     if (ticks % 10 === 0) updateChapterHead();
   }, 1000);
-  function persistNow() { saveLocal(); flush(true); }
+  function persistNow() { savePos(); saveLocal(); flush(true); }
   document.addEventListener('visibilitychange', function () { if (document.hidden) persistNow(); else flush(); });
   window.addEventListener('pagehide', persistNow);
   window.addEventListener('online', function () { flush(true); syncUI(); });
