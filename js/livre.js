@@ -472,8 +472,8 @@
         body += '<' + tag + '>' + items.map(function (x, j) { return '<li data-u="b' + i + '.' + j + '">' + reg('b' + i + '.' + j, x) + '</li>'; }).join('') + '</' + tag + '>';
       } else if (b.imgs) {
         // figure découpée dans le livre : insérée telle quelle (texte de l'image non traduit), en grand
-        body += '<figure class="bk-fig bk-figimg">' + b.imgs.map(function (im) {
-          return '<img src="' + figUrl(im.f) + '" width="' + im.w + '" height="' + im.h + '" style="max-width:' + im.w + 'px" loading="lazy" alt="' + esc(plain(b.fig) || 'Figure') + '" data-act="figzoom" data-src="' + figUrl(im.f) + '">';
+        body += '<figure class="bk-fig bk-figimg" style="display:block;padding:0;border:0;max-width:none;margin:20px 0">' + b.imgs.map(function (im) {
+          return '<img src="' + figUrl(im.f) + '" width="' + im.w + '" height="' + im.h + '" style="display:block;width:100%;max-width:' + im.w + 'px;height:auto" loading="lazy" alt="' + esc(plain(b.fig) || 'Figure') + '" data-act="figzoom" data-src="' + figUrl(im.f) + '">';
         }).join('') + (b.fig ? '<figcaption>' + b.fig + '</figcaption>' : '') + '</figure>';
       } else if (b.same) body += '<div class="bk-fig bk-figsame"><span>' + b.fig + ' <em>(même figure que ci-dessus)</em></span></div>';
       else if (b.fig !== undefined) body += '<div class="bk-fig"><span>' + b.fig + '</span><button class="bk-btn" data-act="orig">Voir la figure</button></div>';
