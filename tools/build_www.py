@@ -36,7 +36,7 @@ EXCLUDE_DIRS = {
 EXCLUDE_FILES = [
     "config.js", "*.py", "*.har", "*.docx", "*.md", "*.log", "*.txt",
     "skeyes_*", "temsi_*", "wintem_*", "opmet*", "notams_belgique.html",
-    "daily_warnings*", "package.json", "package-lock.json",
+    "daily_warnings*", "figs.json", "package.json", "package-lock.json",
     "capacitor.config.json", "firebase.json", "firestore.*", "storage.rules",
     "*.code-workspace", ".gitignore", ".DS_Store",
 ]

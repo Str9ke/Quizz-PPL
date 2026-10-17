@@ -382,20 +382,28 @@
   }
 
   /* hors ligne : pages originales */
+  function figUrl(f) { return BASE + 'fig/' + f; }      // figures découpées : embarquées dans l'APK, donc toujours en relatif
+  function allFigs() {
+    var out = [], seen = {};
+    BOOK.chapters.forEach(function (c) { c.pages.forEach(function (p) { p.blocks.forEach(function (b) {
+      (b.imgs || []).forEach(function (im) { if (!seen[im.f]) { seen[im.f] = 1; out.push(figUrl(im.f)); } });
+    }); }); });
+    return out;
+  }
   function imgUrl(p) { return (window.APP_IS_NATIVE ? REMOTE_BASE : '') + BASE + 'img/' + pad3(p.pdf) + '.webp'; }
   function cachedImgCount() {
     if (!window.caches) return Promise.resolve(-1);
     return caches.open(CACHE_IMG).then(function (c) { return c.keys(); }).then(function (ks) {
-      return ks.filter(function (r) { return r.url.indexOf('/' + BASE + 'img/') >= 0; }).length;
+      return ks.filter(function (r) { return r.url.indexOf('/' + BASE + 'img/') >= 0 || r.url.indexOf('/' + BASE + 'fig/') >= 0; }).length;
     }).catch(function () { return -1; });
   }
   function offInfo() {
     cachedImgCount().then(function (n) {
       var el = document.getElementById('bkOffInfo'), b = document.getElementById('bkDl');
       if (!el) return;
-      var tot = PAGES.length;
+      var tot = PAGES.length + allFigs().length;
       if (n < 0) { el.textContent = '✅ Texte intégral disponible sans connexion. (Pages originales : stockage hors ligne indisponible sur ce navigateur.)'; if (b) b.hidden = true; return; }
-      el.textContent = '✅ Texte intégral disponible sans connexion · pages originales (figures) : ' + Math.min(n, tot) + ' / ' + tot + ' en mémoire' + (n >= tot ? ' — tout est prêt pour le vol.' : '.');
+      el.textContent = '✅ Texte intégral disponible sans connexion · pages originales et figures : ' + Math.min(n, tot) + ' / ' + tot + ' en mémoire' + (n >= tot ? ' — tout est prêt pour le vol.' : '.');
       if (b) { b.hidden = n >= tot; b.disabled = false; }
     });
   }
@@ -404,7 +412,7 @@
     if (!window.caches) return;
     if (!navigator.onLine) { el.textContent = '📴 Connexion nécessaire pour télécharger les pages originales.'; return; }
     b.disabled = true;
-    var urls = PAGES.map(imgUrl), done = 0, fail = 0, i = 0;
+    var urls = PAGES.map(imgUrl).concat(allFigs()), done = 0, fail = 0, i = 0;
     caches.open(CACHE_IMG).then(function (cache) {
       function next() {
         if (i >= urls.length) return Promise.resolve();
@@ -462,7 +470,13 @@
       else if (b.ul || b.ol) {
         var tag = b.ul ? 'ul' : 'ol', items = b.ul || b.ol;
         body += '<' + tag + '>' + items.map(function (x, j) { return '<li data-u="b' + i + '.' + j + '">' + reg('b' + i + '.' + j, x) + '</li>'; }).join('') + '</' + tag + '>';
-      } else if (b.fig) body += '<div class="bk-fig"><span>' + b.fig + '</span><button class="bk-btn" data-act="orig">Voir la figure</button></div>';
+      } else if (b.imgs) {
+        // figure découpée dans le livre : insérée telle quelle (texte de l'image non traduit), en grand
+        body += '<figure class="bk-fig bk-figimg">' + b.imgs.map(function (im) {
+          return '<img src="' + figUrl(im.f) + '" width="' + im.w + '" height="' + im.h + '" style="max-width:' + im.w + 'px" loading="lazy" alt="' + esc(plain(b.fig) || 'Figure') + '" data-act="figzoom" data-src="' + figUrl(im.f) + '">';
+        }).join('') + (b.fig ? '<figcaption>' + b.fig + '</figcaption>' : '') + '</figure>';
+      } else if (b.same) body += '<div class="bk-fig bk-figsame"><span>' + b.fig + ' <em>(même figure que ci-dessus)</em></span></div>';
+      else if (b.fig !== undefined) body += '<div class="bk-fig"><span>' + b.fig + '</span><button class="bk-btn" data-act="orig">Voir la figure</button></div>';
     });
     function reg(u, html) { unitHtml[u] = html; return html; }
     var note = S.nt[p.ref] ? S.nt[p.ref][0] : '';
@@ -551,10 +565,10 @@
     nk = Math.max(1, Math.min(8, nk));
     zv.x = px - (px - zv.x) * nk / zv.k; zv.y = py - (py - zv.y) * nk / zv.k; zv.k = nk; zvApply();
   }
-  function openZoom() {
+  function openZoom(src, cap) {
     var p = chap(cur.n).pages[cur.pi], z = document.getElementById('bkZ');
-    document.getElementById('bkZImg').src = imgUrl(p);
-    document.getElementById('bkZCap').textContent = 'Page ' + p.ref + ' — pince ou molette pour zoomer, glisse pour te déplacer';
+    document.getElementById('bkZImg').src = src || imgUrl(p);
+    document.getElementById('bkZCap').textContent = (cap || 'Page ' + p.ref) + ' — pince ou molette pour zoomer, glisse pour te déplacer';
     zv.x = zv.y = 0; zv.k = 1; zvApply(); z.hidden = false; zv.open = true;
   }
   function closeZoom() { var z = document.getElementById('bkZ'); if (z) z.hidden = true; zv.open = false; }
@@ -786,6 +800,7 @@
     else if (act === 'chsheet') chapterSheet();
     else if (act === 'orig') { showOrig = !showOrig; jset('bk_orig', showOrig ? 1 : 0); updateOrig(); if (showOrig && b.closest('.bk-fig')) document.getElementById('bkOrig').scrollIntoView({ block: 'start' }); }
     else if (act === 'zoom') openZoom();
+    else if (act === 'figzoom') openZoom(b.getAttribute('data-src'), b.getAttribute('alt'));
     else if (act === 'toggleread') { setRead(cur.ref, !isRead(cur.ref)); renderPills(); updateReadBtn(); updateChapterHead(); }
     else if (act === 'chread' || act === 'chunread') {
       chap(cur.n).pages.forEach(function (p) { setRead(p.ref, act === 'chread'); });

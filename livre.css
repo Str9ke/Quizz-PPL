@@ -68,6 +68,10 @@ body.light .bk-page mark { background: #ffe14d; color: #111; box-shadow: 0 0 0 1
 .bk-page.nokey mark { background: transparent; box-shadow: none; font-weight: inherit; color: inherit; padding: 0; }
 .bk-fig { margin: 16px 0; padding: 12px 14px; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 70ch; }
 .bk-fig span { flex: 1 1 220px; font-size: .95rem; }
+.bk-fig.bk-figimg { display: block; padding: 0; border: 0; margin: 20px 0; max-width: none; }
+.bk-figimg img { display: block; width: 100%; height: auto; margin: 0 auto 8px; background: #fff; border-radius: 6px; cursor: zoom-in; }
+.bk-figimg figcaption { font-size: .92rem; line-height: 1.5; color: var(--text-secondary); max-width: 70ch; }
+.bk-figsame { font-size: .92rem; color: var(--text-secondary); }
 .bk-foot { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); }
 .bk-pnote { width: 100%; margin-top: 14px; min-height: 70px; padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--input-text); font: inherit; resize: vertical; }
 .bk-orig { background: var(--bg-container); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; }
