@@ -18,7 +18,7 @@ Dépôt : `Str9ke/Quizz-PPL`, branche de travail et de production : **`main`** (
   NOTAM, météo (skeyes/temsi/wintem), OPMET → beaucoup de commits « Auto-update » : normal. **Toujours `git pull --rebase` avant de pousser.**
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v214`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v215`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -54,8 +54,8 @@ synchronisés, hors ligne, page originale en pleine largeur par défaut + vision
   vectoriels, recadre, écrit `fig/` et `figs.json`) puis `python3 tools/livre/add_figs.py phak` (fusionne dans `book.json` :
   rattachement par numéro de figure, figures absentes de la traduction ajoutées après le paragraphe qui les cite). **Relancer
   `add_figs.py` après chaque `build_phak.py`** (qui régénère `book.json`). Les `fig/` sont embarquées dans l'APK (hors-ligne en vol).
-  Les PDF sources sont dans `Livres/` (ignoré par Git). **Le PDF de l'AFH fourni est tronqué** (arbre de pages perdu, pages 172-207
-  et 348+ inexploitables) : en attente d'un PDF intact pour faire l'AFH.
+  Les PDF sources sont dans `Livres/` (ignoré par Git) : `faa-h-8083-25c.pdf` (PHAK), `00_afh_fullvv.pdf` (AFH). PHAK : 522 images,
+  AFH : 279 images, toutes insérées. Un PDF tronqué n'a plus de pages exploitables : vérifier `len(pymupdf.open(pdf))` avant de lancer.
 
 ## Pièges connus
 - Une mise à jour d'APK signée par une autre clé → « Application non installée » (voir signature).

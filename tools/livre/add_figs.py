@@ -64,11 +64,20 @@ def main():
             elif n and bynum.get(n):       # même image que celle d'une autre légende (figure à deux numéros)
                 b['same'] = 1; matched += 1
             else: unmatched.append((pdf, b))
-    # légende sans numéro concordant (coquille du PDF : « 6-48 » pour 7-48) : même page, seule candidate
-    for pdf, b in list(unmatched):
-        cands = [k for k in groups if k[0] == pdf and k not in used]
-        if len(cands) == 1 and sum(1 for q, _ in unmatched if q == pdf) == 1:
-            used.add(cands[0]); b['imgs'] = groups[cands[0]]['imgs']; matched += 1; unmatched.remove((pdf, b))
+    # légendes sans numéro concordant (coquille du PDF, « 13-5A », « Figures 12-13 et 12-14 », figure à
+    # sous-parties…) : on les associe, PAGE par PAGE, aux figures restantes de la même page du PDF
+    bypage = collections.defaultdict(list)
+    for pdf, b in unmatched: bypage[pdf].append(b)
+    still = []
+    for pdf, blocks in bypage.items():
+        cands = sorted((k for k in groups if k[0] == pdf and k not in used), key=lambda k: k[1])
+        if not cands: still += [(pdf, b) for b in blocks]; continue
+        if len(blocks) == 1:                       # une légende pour toutes les figures restantes de la page
+            blocks[0]['imgs'] = [im for k in cands for im in groups[k]['imgs']]; used.update(cands); matched += 1
+        elif len(blocks) == len(cands):            # autant de légendes que de figures : dans l'ordre
+            for b, k in zip(blocks, cands): b['imgs'] = groups[k]['imgs']; used.add(k); matched += 1
+        else: still += [(pdf, b) for b in blocks]
+    unmatched = still
 
     # figures du livre absentes de la traduction
     extra = collections.defaultdict(list)
