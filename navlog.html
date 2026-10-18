@@ -3867,6 +3867,26 @@ window.refreshAllMeteo=function(){
     return best;
   }
 
+  /* Prépare un carrousel : frames triées dans l'ordre CHRONOLOGIQUE (le curseur va du passé, à
+     gauche, au futur, à droite), puis une SEULE adresse par image pour toute la session.
+     Avant, chaque cran du curseur redemandait l'image au réseau avec un « ?t= » neuf : en glissant
+     vite, les réponses arrivaient dans le désordre et une image d'une autre échéance s'affichait
+     dans le cadre (« les images sautent »). Les frames sont maintenant préchargées une fois : le
+     curseur ne fait qu'afficher une image déjà en mémoire, dans le bon ordre. */
+  function makeCarousel(el, img, files, times){
+    var order = files.map(function(f, i){ return i; });
+    if(times && times.length === files.length){
+      var ms = times.map(function(t){ var d = (t && t.length > 6) ? Date.parse(t) : NaN; return d; });
+      if(ms.every(function(v){ return !isNaN(v); })) order.sort(function(a, b){ return ms[a] - ms[b]; });
+    }
+    files = order.map(function(i){ return files[i]; });
+    times = times ? order.map(function(i){ return times[i]; }) : null;
+    var bust = '?t=' + Date.now();
+    var urls = files.map(function(f){ return f + bust; });
+    var pre = urls.map(function(u){ var im = new Image(); im.decoding = 'async'; im.src = u; return im; });
+    return {el:el, img:img, files:files, times:times, urls:urls, pre:pre, idx:0, playing:false, timer:null, speed:500};
+  }
+
   function initCarousels(){
     _frozenMode = false;
     fetch('skeyes_images.json?t='+Date.now()).then(function(r){return r.json()}).then(function(manifest){
@@ -3881,11 +3901,11 @@ window.refreshAllMeteo=function(){
         var times = Array.isArray(entry) ? null : entry.times;
         if(!files || !files.length) continue;
         var img = el.querySelector('.skeyes-carousel-img');
+        var c = _carousels[key] = makeCarousel(el, img, files, times);
         // Select closest-to-now or last
-        var startIdx = findClosestIdx(times);
-        if(startIdx < 0) startIdx = files.length - 1;
-        img.src = files[startIdx] + '?t='+Date.now();
-        _carousels[key] = {el:el, img:img, files:files, idx:startIdx, playing:false, timer:null, speed:500};
+        var startIdx = findClosestIdx(c.times);
+        c.idx = startIdx < 0 ? c.files.length - 1 : startIdx;
+        img.src = c.urls[c.idx];
         buildNav(key);
       }
     }).catch(function(e){console.log('No skeyes_images.json:',e)});
@@ -3910,7 +3930,7 @@ window.refreshAllMeteo=function(){
 
   function showImg(key){
     var c = _carousels[key]; if(!c) return;
-    c.img.src = c.files[c.idx] + (_frozenMode ? '' : '?t='+Date.now());
+    c.img.src = c.urls ? c.urls[c.idx] : c.files[c.idx];
     var cnt = document.getElementById('cnt-'+key);
     if(cnt) cnt.textContent = (c.idx+1)+' / '+c.files.length;
     var sl = document.getElementById('slider-'+key);
@@ -3953,10 +3973,10 @@ window.refreshAllMeteo=function(){
         if(_carousels[key] && _carousels[key].playing) {
           _carousels[key].playing=false; clearTimeout(_carousels[key].timer);
         }
-        var startIdx = findClosestIdx(times);
-        if(startIdx < 0) startIdx = files.length - 1;
-        _carousels[key] = {el:el, img:img, files:files, idx:startIdx, playing:false, timer:null, speed:500};
-        img.src = files[startIdx] + '?t='+Date.now();
+        var c = _carousels[key] = makeCarousel(el, img, files, times);
+        var startIdx = findClosestIdx(c.times);
+        c.idx = startIdx < 0 ? c.files.length - 1 : startIdx;
+        img.src = c.urls[c.idx];
         buildNav(key);
       }
       if(quiet) return; // arrivée progressive : l'appelant gère OPMET et messages
@@ -4483,10 +4503,13 @@ window.refreshAllMeteo=function(){
           .then(function(entries) {
             var urls = [];
             var labels = [];
+            var firstUrlOfEntry = [];   // indice de la 1re image de chaque échéance dans `urls`
+            var bust = '?t=' + Date.now();
             for (var e = 0; e < entries.length; e++) {
               var entry = entries[e];
+              firstUrlOfEntry.push(urls.length);
               for (var p = 0; p < entry.images.length; p++) {
-                urls.push(entry.images[p] + '?t=' + Date.now());
+                urls.push(entry.images[p] + bust);
                 labels.push(entry.date + ' (' + entry.deadline + ') — ' + entry.level);
               }
             }
@@ -4513,6 +4536,9 @@ window.refreshAllMeteo=function(){
               }
             }
 
+            // bestIdx désigne une ÉCHÉANCE ; une échéance peut avoir plusieurs images : sans cette
+            // conversion, le carrousel s'ouvrait sur l'image d'une autre échéance.
+            bestIdx = entries.length ? (firstUrlOfEntry[bestIdx] || 0) : 0;
             img.src = urls[bestIdx];
             _mc[key] = {
               el: el, img: img, urls: urls, hours: [],

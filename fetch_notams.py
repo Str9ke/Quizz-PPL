@@ -642,8 +642,11 @@ def _extract_utc_timestamp(original_path):
         base = _dt(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)))
         valid = base + _td(hours=int(m.group(5)))
         return valid.strftime("%Y-%m-%dT%H:%MZ")
-    # Numwx wind: nmesowdt06.gif, nmewdfl1006.gif – offset from today's 00Z
-    m = re.search(r'(\d{2,3})\.gif$', basename)
+    # Numwx wind: nmesowdt06.gif, nmewdfl106.gif (FL10), nmewdfl1006.gif (FL100) – offset from
+    # today's 00Z. L'échéance est TOUJOURS les 2 derniers chiffres : le niveau de vol précède
+    # (« fl1 » + « 06 »). Lire 3 chiffres donnait « 106 h » pour FL10 → cartes datées de 4 jours
+    # plus tard, dans le désordre, et le curseur « passé / futur » sautait d'une échéance à l'autre.
+    m = re.search(r'(\d{2})\.gif$', basename)
     if m and '/modeloutput/' in original_path:
         from datetime import datetime as _dt, timedelta as _td, timezone as _tz
         offset_h = int(m.group(1))
@@ -740,11 +743,67 @@ def fetch_remote_sensing_images(session):
     for prefix in order:
         ok = sorted((job for job, good in results if good and job[0] == prefix), key=lambda j: j[1])
         if ok:
-            manifest[prefix] = {"files": [j[4] for j in ok], "times": [_extract_utc_timestamp(j[5]) for j in ok]}
+            times = [_extract_utc_timestamp(j[5]) for j in ok]
+            # Ordre chronologique garanti : le curseur va du plus ancien (gauche) au plus récent
+            # (droite). Les horodatages ISO « YYYY-MM-DDTHH:MMZ » se trient comme du texte.
+            if all(times):
+                pairs = sorted(zip(times, ok), key=lambda tj: tj[0])
+                times = [t for t, _ in pairs]
+                ok = [j for _, j in pairs]
+            manifest[prefix] = {"files": [j[4] for j in ok], "times": times}
             print(f"{prefix}: saved {len(ok)} images")
 
     _merge_manifest(manifest)
     return manifest
+
+
+SFC_STATE_FILE = "skeyes_sfc_state.json"
+
+
+def _sfc_valid_times(saved):
+    """Date réelle des cartes d'analyse de surface 06Z / 12Z.
+
+    Skeyes renvoie toujours « la dernière 06Z » et « la dernière 12Z » sous un nom fixe : à 10 h UTC,
+    la 06Z est celle du jour mais la 12Z est encore celle de la VEILLE. Les présenter comme
+    « 06:00Z, 12:00Z » d'aujourd'hui inversait le temps (« passé » = aujourd'hui, « futur » = hier).
+    On date donc chaque carte :
+      - contenu identique à la dernière exécution → on garde la date déjà attribuée ;
+      - contenu nouveau → dernière occurrence de cette heure déjà passée ;
+      - aucune mémoire (première exécution) → même règle, avec 90 min de délai de publication.
+    `saved` : [(time_val, fname, sha1)] → [(iso, fname)] triés chronologiquement.
+    """
+    import hashlib  # noqa: F401  (sha1 calculé par l'appelant)
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    try:
+        with open(SFC_STATE_FILE, encoding="utf-8") as f:
+            state = json.load(f)
+    except Exception:
+        state = {}
+    now = _dt.now(_tz.utc)
+
+    def latest(hour, delay_min):
+        t = (now - _td(minutes=delay_min)).replace(minute=0, second=0, microsecond=0)
+        t = t.replace(hour=hour)
+        if t > now - _td(minutes=delay_min):
+            t -= _td(days=1)
+        return t.strftime("%Y-%m-%dT%H:%MZ")
+
+    out = []
+    for time_val, fname, sha in saved:
+        hour = int(time_val[:2])
+        prev = state.get(time_val) or {}
+        if prev.get("sha") == sha and prev.get("valid"):
+            valid = prev["valid"]
+        else:
+            valid = latest(hour, 0 if prev else 90)
+        state[time_val] = {"sha": sha, "valid": valid}
+        out.append((valid, fname))
+    try:
+        with open(SFC_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"  SFC: état non enregistré ({e})")
+    return sorted(out)
 
 
 def fetch_sfc_analysis(session, manifest, write=True):
@@ -867,6 +926,19 @@ def fetch_sfc_analysis(session, manifest, write=True):
         except Exception as e:
             print(f"  SFC {time_val}: error: {e}")
     if filenames:
+        import hashlib
+        saved = []
+        for tv, fn in zip(timestamps, filenames):
+            try:
+                with open(fn, "rb") as f:
+                    sha = hashlib.sha1(f.read()).hexdigest()
+            except Exception:
+                sha = ""
+            saved.append((tv.replace(":00Z", "Z"), fn, sha))
+        dated = _sfc_valid_times(saved)
+        filenames = [fn for _, fn in dated]
+        timestamps = [t for t, _ in dated]
+        print("  SFC dates : " + ", ".join(f"{fn} = {t}" for t, fn in dated))
         manifest["skeyes_sfc_analysis"] = {"files": filenames, "times": timestamps}
         if write:  # Re-write manifest with SFC data
             with open("skeyes_images.json", "w", encoding="utf-8") as f:
@@ -1565,7 +1637,7 @@ def main():
             fetch_sfc_analysis(session, sfc_manifest, write=False)
             _merge_manifest(sfc_manifest)
         finally:
-            pub.ready("sfc", [f for v in sfc_manifest.values() for f in v["files"]] + ["skeyes_images.json"])
+            pub.ready("sfc", [f for v in sfc_manifest.values() for f in v["files"]] + ["skeyes_images.json", SFC_STATE_FILE])
             _lap("sfc")
         fut_notams.result()
         fut_images.result()
