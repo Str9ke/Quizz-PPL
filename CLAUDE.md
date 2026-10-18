@@ -35,7 +35,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v219`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v220`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -73,6 +73,18 @@ synchronisés, hors ligne, page originale en pleine largeur par défaut + vision
   `add_figs.py` après chaque `build_phak.py`** (qui régénère `book.json`). Les `fig/` sont embarquées dans l'APK (hors-ligne en vol).
   Les PDF sources sont dans `Livres/` (ignoré par Git) : `faa-h-8083-25c.pdf` (PHAK), `00_afh_fullvv.pdf` (AFH). PHAK : 522 images,
   AFH : 279 images, toutes insérées. Un PDF tronqué n'a plus de pages exploitables : vérifier `len(pymupdf.open(pdf))` avant de lancer.
+
+- **Nouveaux livres (chaîne générique, oct. 2026)** — ex. `rmh` (Risk Management Handbook, FAA-H-8083-2A) :
+  1. `tools/livre/<id>/config.json` (titre, groupes, chapitres, `skip` = bandeaux décoratifs à ne pas extraire) ;
+  2. `python tools/livre/render.py <id> Livres/<pdf>` (pages originales) et `python tools/livre/cover.py <id> Livres/<pdf>` (couverture) ;
+  3. texte : `python tools/livre/ex.py Livres/<pdf> a b` pour lire, traduire dans `tools/livre/<id>/tr/chNN.txt` (format PHAK) ;
+  4. figures : `extract_figs.py <id> <pdf> --pages a-b --dump` → textes des schémas ; traduire dans `figtr_src.py` (→ `figtr.json`) ;
+     `extract_figs.py ... --tr` découpe ET traduit les figures vectorielles **en place** (`figtrans.py` : même couleur, taille, graisse,
+     lettres d'acronymes colorées, textes verticaux) ; puis `python tools/livre/rasterfix.py <id>` pour les figures **matricielles**
+     (`raster.json` : zones en pixels, effacement par inpainting OpenCV puis texte français) — à lancer UNE fois après chaque extraction ;
+  5. `python tools/livre/build_book.py <id>` puis `python tools/livre/add_figs.py <id>` ;
+  6. ajouter le livre dans `bibliotheque.html` (`BOOKS`), `js/sidebar.js` (menu biblio) et `sw.js` (book.json + cover.webp).
+  Dépendances locales : pymupdf, pillow, numpy, opencv-python-headless.
 
 ## Pièges connus
 - Une mise à jour d'APK signée par une autre clé → « Application non installée » (voir signature).

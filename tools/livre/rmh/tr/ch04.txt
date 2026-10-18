@@ -1,0 +1,67 @@
+@CH 4
+@INTRO Traduction française de *Assessing Risk*, pages 4-1 à 4-5.
+@PAGE 4-1 pdf=34
+# Introduction
+P: Une fois dangers et risques identifiés, on les ==évalue pour déterminer le niveau de risque de chaque danger==, avant le vol. L’évaluation paraît subjective au début, mais elle s’apprend par la pratique régulière.
+# Composantes de l’évaluation
+P: Le risque combine ==la probabilité== (*likelihood*) et ==la gravité== (*severity*) d’un résultat ; chacune a plusieurs niveaux.
+## Probabilité
+- ==Probable== : l’événement peut se produire plusieurs fois.
+- ==Occasionnelle== : il peut se produire un jour.
+- ==Rare== (*remote*) : peu probable mais possible.
+- ==Improbable== : très peu probable.
+P: Exemples : traverser un orage dépassera presque à chaque fois les limites structurales → « probable ». Une piste juste assez longue entourée de relief : une sortie de piste peut arriver un jour → « occasionnelle ».
+## Gravité
+- ==Catastrophique== : morts et/ou destruction de l’avion.
+- ==Critique== : blessures graves, dommages importants à l’avion ou aux biens.
+- ==Marginale== : blessures ou dommages légers.
+- ==Négligeable== : moins que des blessures ou dommages légers.
+P: Exemples : perte de contrôle dans un orage → « critique » ou « catastrophique ». Sortie de piste sur piste limite → dommages importants, blessures graves possibles → « critique ».
+SUM: Risque = probabilité + gravité, chacune sur quatre niveaux. || Probabilité : probable, occasionnelle, rare, improbable. || Gravité : catastrophique, critique, marginale, négligeable.
+VOC: probabilité | likelihood ;; gravité | severity ;; probable | probable ;; occasionnel | occasional ;; rare | remote ;; catastrophique | catastrophic ;; critique | critical
+@PAGE 4-2 pdf=35
+# La matrice d’évaluation du risque
+P: On croise probabilité et gravité dans une matrice pour obtenir le ==risque global==. [Figure 4-1]
+FIG: Figure 4-1. Matrice d’évaluation du risque.
+P: L’orage (catastrophique, probable ou occasionnel) donne un risque ==élevé (rouge)== ; la sortie de piste (critique, occasionnelle) un risque ==sérieux (jaune)==. Le niveau ==moyen (vert)== permet de partir (« go »), en atténuant si possible. ==Rouge ou jaune = « no-go »==, sauf si le pilote trouve comment réduire le risque jusqu’à moyen ou faible lors de la réévaluation.
+P: L’analyse commence des heures, des jours, voire des semaines avant le vol : quelques heures pour un vol simple, beaucoup plus pour un vol complexe à plusieurs étapes.
+# Erreurs d’utilisation de la matrice
+P: ==Précision== : le résultat dépend du bon choix des niveaux. En cas de doute entre deux niveaux, prendre ==le plus pessimiste==, et demander l’avis d’un pilote plus expérimenté ou d’un instructeur.
+P: ==Biais== (*skewing*) : l’envie de faire le vol pousse à choisir des valeurs qui sous-estiment le risque.
+P: ==Péremption== : si les dangers changent avant le départ, l’évaluation ne vaut plus : la refaire avec les informations à jour.
+SUM: Matrice : probabilité × gravité → faible (blanc), moyen (vert), sérieux (jaune), élevé (rouge). || Rouge ou jaune = no-go tant qu’on n’a pas ramené le risque à moyen ou faible. || Dans le doute, choisir le niveau le plus pessimiste. || Se méfier de l’envie de partir et réévaluer si la situation change.
+VOC: matrice d’évaluation du risque | risk assessment matrix ;; risque global | composite risk ;; partir | go ;; ne pas partir | no-go ;; biais | skewing ;; péremption | obsolescence
+@PAGE 4-3 pdf=36
+# Étude de cas
+## Analyse des risques
+P: Tricia a identifié ==neuf dangers== pour le vol direct Animas Air Park → Santa Rosa. Elle les évalue avec PAVE.
+P: ==Pilote== : son manque de pratique IFR rend une perte de contrôle (LOC-I) possible mais peu probable, mortelle en convection ou givrage : rare × catastrophique = ==sérieux (jaune)==. Avec IMSAFE, elle retient l’alcool et la fatigue : erreurs possibles en vol, avec dommages ou blessures graves : occasionnelle × critique = ==sérieux==. [Figure 4-2]
+FIG: Figure 4-2. Extrait du FRAT : dangers pilote et risques associés.
+P: ==Avion== : sans escale, la panne sèche devient possible si de longs contournements de la météo sont nécessaires ; au-dessus d’un relief hostile, elle serait mortelle : rare × catastrophique = ==sérieux==. Non certifié givrage, l’avion pourrait en rencontrer : occasionnelle × catastrophique = ==élevé (rouge)==. Enfin, à la masse max de 2 740 lb, le décollage calculé est de 4 700 ft ; avec ses 20 % de marge, il lui faudrait ==5 640 ft, plus que les 5 000 ft disponibles== : occasionnelle × critique = ==sérieux==. [Figure 4-3]
+FIG: Figure 4-3. Extrait du FRAT : dangers avion et risques associés.
+P: ==Environnement== : orages, givrage et plafonds bas sur la route ; la turbulence sévère de la convection peut provoquer une perte de contrôle à un moment ou un autre (occasionnelle)…
+SUM: Neuf dangers évalués avec la matrice. || Pilote : manque de pratique IFR et fatigue/alcool → sérieux. || Avion : panne sèche → sérieux ; givrage → élevé ; décollage (5 640 ft nécessaires pour 5 000 ft) → sérieux.
+VOC: analyse des risques | risk assessment analysis ;; extrait | excerpt ;; contournement | deviation ;; masse maximale | maximum gross weight ;; facteur de sécurité | safety factor
+@PAGE 4-4 pdf=37
+P: … et donc un accident mortel : occasionnelle × catastrophique = ==élevé (rouge)==. Voler sous les plafonds bas au-dessus d’un relief élevé crée un risque de CFIT, peu probable pour une pilote de son expérience mais mortel : ==sérieux==. L’Animas Air Park est à ==6 684 ft== : en juillet, l’==altitude-densité élevée== combinée au relief peut mener à un CFIT : occasionnelle × catastrophique = ==élevé==. [Figure 4-4]
+FIG: Figure 4-4. Extrait du FRAT : dangers environnement et risques associés.
+P: ==Pressions externes== : Tricia et Martha ont des réunions jugées critiques ; Tricia a promis une solution, ne veut pas décevoir ses amis, qui veulent aussi officier lundi et aller à la fête du soir — sans forcément voir pourquoi elle ne pourrait pas partir tôt mardi. Elle conclut que ces pressions ==amplifient tous les autres risques== : probable × catastrophique = ==élevé==. [Figure 4-5]
+FIG: Figure 4-5. Extrait du FRAT : pressions externes et risques associés.
+P: Elle termine son évaluation [Figure 4-6] et passe à l’atténuation (chapitre 5), avant d’en parler aux Smith.
+SUM: Environnement : météo → élevé ; relief → sérieux ; altitude-densité (terrain à 6 684 ft en juillet) → élevé. || Pressions externes : elles amplifient tous les autres risques → élevé. || Bilan : quatre risques élevés et cinq sérieux.
+VOC: altitude-densité élevée | high density altitude ;; amplifier | to magnify ;; pression externe | external pressure ;; décevoir | to disappoint
+@PAGE 4-5 pdf=38
+FIG: Figure 4-6. FRAT : dangers et risques associés.
+# Résumé du chapitre
+P: L’évaluation est une étape clé : pour chaque danger identifié, le pilote estime ==probabilité et gravité== pour obtenir le niveau de risque global. Outils principaux : ==le FRAT et la matrice d’évaluation==. La justesse s’améliore avec la pratique.
+SUM: Évaluer chaque danger : probabilité + gravité → niveau de risque. || Outils : FRAT et matrice. || La pratique améliore la justesse de l’évaluation.
+VOC: niveau de risque global | overall risk level ;; justesse | accuracy ;; pratique | practice
+@SHEET
+* Probabilité : probable, occasionnelle, rare, improbable. Gravité : catastrophique, critique, marginale, négligeable.
+* La matrice croise les deux : faible (blanc), moyen (vert = go), sérieux (jaune) et élevé (rouge) = no-go tant qu’ils ne sont pas atténués.
+* Dans le doute, prendre le niveau le plus pessimiste ; se méfier du biais « envie de partir » ; réévaluer si les conditions changent.
+* Les pressions externes amplifient tous les autres risques.
+@NUMS
+4 × 4 | niveaux de probabilité × niveaux de gravité de la matrice
+5 640 ft | piste nécessaire pour Tricia (4 700 ft + 20 %), pour 5 000 ft disponibles
+6 684 ft | altitude de l’Animas Air Park

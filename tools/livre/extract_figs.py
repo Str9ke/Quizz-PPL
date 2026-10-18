@@ -17,7 +17,9 @@ pymupdf.TOOLS.mupdf_display_errors(False)
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MAXW, Q = 1600, 80
 NUM = r'(?:[A-Z]-\d+|\d+-\d+)'
-CAP_RE = re.compile(r'^\s*Figure\s+(' + NUM + r')\.')
+# Légende : « Figure 5-3. », « Figure 1. », « Figure 8 Reason’s… », « Table 2: », « Table 4 (below) »…
+# mais PAS une référence dans le texte (« Figure 3 above is… », « Figure 10 shows… »).
+CAP_RE = re.compile(r'^\s*(Figure|Table)\s+(?:(' + NUM + r')\.|(\d+)(?=\s*[.:,\u2013(]|\s*$|\s+[A-Z\u2018\u2019]))')
 
 
 def inter(a, b, pad=0):
@@ -83,7 +85,9 @@ def captions(page):
         for l in b['lines']:
             t = ''.join(s['text'] for s in l['spans'])
             m = CAP_RE.match(t)
-            if m: out.append((m.group(1), list(l['bbox'])))
+            if m:
+                no = m.group(2) or m.group(3)
+                out.append((('T' + no) if m.group(1) == 'Table' else no, list(l['bbox'])))
     return out
 
 
@@ -141,6 +145,16 @@ def render(page, box, out, pad=4, caps=()):
             if cb[1] >= box[3] - 0.5: r.y1 = min(r.y1, cb[1] - 0.5)
             elif cb[3] <= box[1] + 0.5: r.y0 = max(r.y0, cb[3] + 0.5)
     r &= page.rect
+    # Une ligne de texte courant qui frôle la figure (au-dessus ou au-dessous) ne doit pas être
+    # rognée à moitié dans l'image : on recule le bord jusqu'à elle.
+    for blk in page.get_text('dict')['blocks']:
+        if blk.get('type') != 0: continue
+        for l in blk['lines']:
+            lb = l['bbox']
+            if lb[2] < r.x0 or lb[0] > r.x1 or lb[3] < r.y0 or lb[1] > r.y1: continue
+            cy = (lb[1] + lb[3]) / 2
+            if cy < box[1] and lb[3] > r.y0: r.y0 = min(max(r.y0, lb[3] + .3), box[1])
+            elif cy > box[3] and lb[1] < r.y1: r.y1 = max(min(r.y1, lb[1] - .3), box[3])
     z = min(MAXW / r.width, 4.0)
     z = max(z, 2.0) if r.width * 2.0 <= MAXW else z
     pix = page.get_pixmap(matrix=pymupdf.Matrix(z, z), clip=r, alpha=False)
@@ -150,20 +164,48 @@ def render(page, box, out, pad=4, caps=()):
 
 
 def main():
+    """extract_figs.py <id> <pdf> [--pages a-b] [--dump] [--tr] [--dry]
+    --pages a-b : pages du PDF à traiter (sinon : celles de livre/<id>/book.json)
+    --dump      : écrit tools/livre/<id>/figtext.json (textes des figures, à traduire)
+    --tr        : applique tools/livre/<id>/figtr.json (figures et tableaux traduits en place)
+    Les figures listées dans tools/livre/<id>/config.json (« skip » : ["PPP_N", …]) sont écartées
+    (visuels décoratifs, bandeaux de chapitre)."""
+    import figtrans
     book, pdf = sys.argv[1], sys.argv[2]
     dry = '--dry' in sys.argv
+    dump = '--dump' in sys.argv
     d = pymupdf.open(pdf)
-    bk = json.load(open(os.path.join(ROOT, 'livre', book, 'book.json'), encoding='utf-8'))
-    pdfs = sorted({p['pdf'] for c in bk['chapters'] for p in c['pages']})
+    if '--pages' in sys.argv:
+        a_, b_ = sys.argv[sys.argv.index('--pages') + 1].split('-')
+        pdfs = list(range(int(a_), int(b_) + 1))
+    else:
+        bk = json.load(open(os.path.join(ROOT, 'livre', book, 'book.json'), encoding='utf-8'))
+        pdfs = sorted({p['pdf'] for c in bk['chapters'] for p in c['pages']})
+    tdir = os.path.join(ROOT, 'tools', 'livre', book)
+    cfg = {}
+    if os.path.exists(os.path.join(tdir, 'config.json')):
+        cfg = json.load(open(os.path.join(tdir, 'config.json'), encoding='utf-8'))
+    skip = set(cfg.get('skip', []))
+    mapping = None
+    if '--tr' in sys.argv:
+        mapping = json.load(open(os.path.join(tdir, 'figtr.json'), encoding='utf-8'))
     outdir = os.path.join(ROOT, 'livre', book, 'fig')
-    if not dry: os.makedirs(outdir, exist_ok=True)
-    result = {}; nfig = nimg = 0
+    if not dry and not dump: os.makedirs(outdir, exist_ok=True)
+    result = {}; nfig = nimg = 0; texts = {}; missing = set(); ntr = 0
     for pn in pdfs:
         if pn > len(d): continue
         page = d[pn - 1]
         caps = captions(page)
         gs = group(find_regions(page), caps)
         gs.sort(key=lambda g: (g['boxes'][0][1] > page.rect.height * 0.0, g['boxes'][0][0] > page.rect.width * 0.5 and (g['boxes'][0][2] - g['boxes'][0][0]) < page.rect.width * 0.6, g['boxes'][0][1]))
+        gs = [g for gi, g in enumerate(gs) if '%03d_%d' % (pn, gi + 1) not in skip]
+        boxes = [b for g in gs for b in g['boxes']]
+        if dump:
+            for blk in figtrans.blocks(page, boxes):
+                texts.setdefault(blk['key'], 'p%d' % pn)
+            continue
+        if mapping is not None and boxes:
+            n, miss = figtrans.apply(page, boxes, mapping); ntr += n; missing.update(miss)
         items = []
         for gi, g in enumerate(gs):
             g['boxes'].sort(key=lambda b: b[1])
@@ -175,9 +217,19 @@ def main():
                 imgs.append({'f': name, 'w': w, 'h': h}); nimg += 1
             items.append({'no': g['no'], 'y': round(g['boxes'][0][1] / page.rect.height, 3), 'imgs': imgs}); nfig += 1
         if items: result[str(pn)] = items
+    if dump:
+        path = os.path.join(tdir, 'figtext.json')
+        old = json.load(open(os.path.join(tdir, 'figtr.json'), encoding='utf-8')) if os.path.exists(os.path.join(tdir, 'figtr.json')) else {}
+        todo = {k: v for k, v in texts.items() if k not in old}
+        json.dump(todo, open(path, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+        print(book, ':', len(texts), 'textes de figures,', len(todo), 'à traduire ->', path)
+        return
     if not dry:
         json.dump(result, open(os.path.join(ROOT, 'livre', book, 'figs.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
-    print(book, 'pages avec figures:', len(result), 'figures:', nfig, 'images:', nimg)
+    print(book, 'pages avec figures:', len(result), 'figures:', nfig, 'images:', nimg,
+          ('· textes traduits : %d · sans traduction : %d' % (ntr, len(missing))) if mapping is not None else '')
+    if missing:
+        print('  sans traduction :', ' | '.join(sorted(missing))[:2000])
 
 
 if __name__ == '__main__':

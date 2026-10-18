@@ -23,14 +23,15 @@
     .bl-resume{display:none;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:18px;text-decoration:none;color:#fff;
       background:linear-gradient(135deg,#f59e0b,#b45309);box-shadow:0 6px 18px rgba(180,83,9,.35)}
     .bl-resume b{font-size:1.02rem}.bl-resume small{display:block;opacity:.9}.bl-resume span.go{margin-left:auto;font-weight:800;font-size:1.3rem}
-    .bl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-    .bl-book{background:var(--bg-container);border:1px solid var(--border-color);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
-    .bl-cover{position:relative;padding:22px 20px 18px;color:#fff;min-height:132px}
-    .bl-cover .code{font-size:.72rem;letter-spacing:.12em;opacity:.85;text-transform:uppercase}
-    .bl-cover h2{margin:6px 0 4px;font-size:1.3rem;line-height:1.2}
-    .bl-cover p{margin:0;font-size:.85rem;opacity:.92}
-    .bl-cover svg{position:absolute;right:14px;bottom:12px;width:58px;height:58px;opacity:.28}
-    .bl-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .bl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+    .bl-book{background:var(--bg-container);border:1px solid var(--border-color);border-radius:16px;overflow:hidden;display:flex;gap:0}
+    /* Première de couverture du livre : on le reconnaît d'un coup d'œil */
+    .bl-cover{flex:0 0 122px;display:block;padding:14px 0 14px 14px;background:none !important}
+    .bl-cover img{display:block;width:100%;height:auto;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.45)}
+    .bl-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+    .bl-body .code{font-size:.7rem;letter-spacing:.12em;color:var(--text-secondary);text-transform:uppercase}
+    .bl-body h2{margin:0;font-size:1.15rem;line-height:1.2;color:var(--text-heading)}
+    .bl-body .en{margin:-4px 0 0;font-size:.8rem;color:var(--text-secondary);font-style:italic}
     .bl-bar{height:8px;border-radius:6px;background:var(--progressbar-bg,rgba(255,255,255,.08));overflow:hidden}
     .bl-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f59e0b,#22c55e)}
     .bl-meta{font-size:.84rem;color:var(--text-secondary)}
@@ -49,7 +50,7 @@
   <main class="bl">
     <header class="bl-hero">
       <img src="icons/biblio-192.png" alt="">
-      <div><h1>Bibliothèque du pilote</h1><p>Les manuels de la FAA, traduits et annotables — même hors ligne.</p></div>
+      <div><h1>Bibliothèque du pilote</h1><p>Les manuels du pilote, traduits et annotables — même hors ligne.</p></div>
     </header>
 
     <a class="bl-resume" id="blResume" href="#"><div><b>▶ Reprendre la lecture</b><small id="blResumeTxt"></small></div><span class="go">›</span></a>
@@ -73,9 +74,10 @@
       { id: 'afh', code: 'FAA-H-8083-3C', title: 'Manuel de vol', en: 'Airplane Flying Handbook',
         desc: 'Les manœuvres, du roulage à l’atterrissage : techniques de pilotage, pannes, vol de nuit.', c: ['#0b3d91', '#0f9fb0'] },
       { id: 'phak', code: 'FAA-H-8083-25C', title: 'Manuel du pilote', en: 'Pilot’s Handbook of Aeronautical Knowledge',
-        desc: 'Les connaissances : aérodynamique, systèmes, instruments, météo, navigation, facteurs humains.', c: ['#7b3fb0', '#5b6cf0'] }
+        desc: 'Les connaissances : aérodynamique, systèmes, instruments, météo, navigation, facteurs humains.', c: ['#7b3fb0', '#5b6cf0'] },
+      { id: 'rmh', code: 'FAA-H-8083-2A', title: 'Gestion des risques', en: 'Risk Management Handbook',
+        desc: 'Minima personnels, PAVE, IMSAFE, évaluer et atténuer le risque, TEM, automatisation, décision en vol.', c: ['#b45309', '#0f766e'] }
     ];
-    var BOOK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><path d="M12 6v13"/></svg>';
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
     function uid() { try { return localStorage.getItem('cachedUid') || 'anon'; } catch (e) { return 'anon'; } }
@@ -84,9 +86,10 @@
 
     var root = document.getElementById('blBooks'), latest = null;
     root.innerHTML = BOOKS.map(function (b) {
-      return '<article class="bl-book" data-id="' + b.id + '"><div class="bl-cover" style="background:linear-gradient(135deg,' + b.c[0] + ',' + b.c[1] + ')">'
-        + '<div class="code">' + esc(b.code) + '</div><h2>' + esc(b.title) + '</h2><p>' + esc(b.en) + '</p>' + BOOK_SVG + '</div>'
-        + '<div class="bl-body"><div class="bl-meta">' + esc(b.desc) + '</div><div class="bl-bar"><i></i></div><div class="bl-meta bl-prog">…</div>'
+      return '<article class="bl-book" data-id="' + b.id + '"><a class="bl-cover" href="livre.html?b=' + b.id + '" style="background:linear-gradient(135deg,' + b.c[0] + ',' + b.c[1] + ')">'
+        + '<img src="livre/' + b.id + '/cover.webp" alt="Couverture : ' + esc(b.en) + '" loading="lazy" onerror="this.remove()"></a>'
+        + '<div class="bl-body"><div class="code">' + esc(b.code) + '</div><h2>' + esc(b.title) + '</h2><p class="en">' + esc(b.en) + '</p>'
+        + '<div class="bl-meta">' + esc(b.desc) + '</div><div class="bl-bar"><i></i></div><div class="bl-meta bl-prog">…</div>'
         + '<div class="bl-actions"><a class="bl-btn primary" href="livre.html?b=' + b.id + '">Ouvrir</a></div></div></article>';
     }).join('');
 

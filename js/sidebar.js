@@ -106,8 +106,9 @@
     biblio: [
       { href: 'bibliotheque.html', icon: 'home', label: 'Ma bibliothèque' },
       { type: 'label', label: 'Manuels' },
-      { href: 'livre.html?b=afh', icon: 'bookOpen', label: 'Manuel de vol (AFH)' },
-      { href: 'livre.html?b=phak', icon: 'bookOpen', label: 'Manuel du pilote (PHAK)' }
+      { href: 'livre.html?b=afh', icon: 'bookOpen', img: 'livre/afh/cover.webp', label: 'Manuel de vol (AFH)' },
+      { href: 'livre.html?b=phak', icon: 'bookOpen', img: 'livre/phak/cover.webp', label: 'Manuel du pilote (PHAK)' },
+      { href: 'livre.html?b=rmh', icon: 'bookOpen', img: 'livre/rmh/cover.webp', label: 'Gestion des risques (RMH)' }
     ]
   };
   var CURRENT_APP = (window.CURRENT_APP && MENUS[window.CURRENT_APP]) ? window.CURRENT_APP : 'ppl';
@@ -132,7 +133,8 @@
     if (isCurrent && bk) isCurrent = ((/[?&]b=([a-z0-9]+)/.exec(location.search) || [0, 'afh'])[1] === bk[1]);
     var attrs = 'href="' + esc(item.href) + '" class="sidebar-link' + (isCurrent ? ' sidebar-link-current' : '') + '"';
     if (item.tab) attrs += ' data-navlog-tab="' + esc(item.tab) + '"';
-    return '<a ' + attrs + '>' + iconSvg(item.icon) + '<span>' + esc(item.label) + '</span></a>';
+    var ic = item.img ? '<img class="sidebar-cover" src="' + esc(item.img) + '" alt="">' : iconSvg(item.icon);
+    return '<a ' + attrs + '>' + ic + '<span>' + esc(item.label) + '</span></a>';
   }
 
   function buildHtml(cur) {

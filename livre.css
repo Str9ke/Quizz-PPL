@@ -121,3 +121,7 @@ body.light .bk-page mark { background: #ffe14d; color: #111; box-shadow: 0 0 0 1
 .bk-z-bar { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--bg-container); color: var(--text-secondary); font-size: .8rem; flex-wrap: wrap; }
 .bk-z-stage { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
 .bk-z-stage img { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; background: #fff; transform-origin: center center; will-change: transform; }
+
+/* Première de couverture en tête du sommaire du livre */
+.bk-cover-row { display: flex; gap: 16px; align-items: center; }
+.bk-cover { width: 84px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.35); flex: 0 0 auto; }

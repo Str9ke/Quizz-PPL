@@ -1,0 +1,52 @@
+@CH 7
+@INTRO Traduction française de *Automation & Flight Path Management*, pages 7-1 à 7-4.
+@PAGE 7-1 pdf=50
+# Introduction
+P: L’automatisme permet au pilote de ==fixer un état voulu de l’avion== ; le système tient compte des consignes et des données de l’avion, élabore une solution et l’exécute sans action continue du pilote. Bien utilisé, il ==réduit la charge de travail, améliore la conscience de la situation== et libère l’attention pour la trajectoire.
+P: Les premiers automatismes géraient un seul système : des volets électriques à crans, par exemple, qui se positionnent seuls sur la valeur choisie. Avec les ordinateurs et le numérique, on peut contrôler de nombreuses fonctions à la fois, désormais courant en aviation générale :
+- systèmes de gestion du vol (FMS) qui enchaînent des points de route d’une base de données, couplés au pilote automatique [Figure 7-1] ;
+- pressurisation automatique ;
+- gestion automatique du carburant ;
+- automanettes et régulation numérique des moteurs ;
+- avionique qui charge le plan de vol depuis une base de données ou une source extérieure.
+FIG: Figure 7-1. Interface du pilote automatique.
+SUM: Automatisme = l’avion réalise seul l’état voulu par le pilote. || Bien utilisé : moins de charge, meilleure conscience de la situation. || FMS, pilote automatique, pressurisation, carburant, moteurs… de plus en plus courants en aviation générale.
+VOC: automatisme | automation ;; système de gestion du vol | flight management system (FMS) ;; pilote automatique | autopilot ;; automanette | auto-throttle ;; point de route | waypoint ;; base de données | database
+@PAGE 7-2 pdf=51
+# Dépendance à l’automatisme
+P: L’automatisme devrait alléger la charge, mais il peut aussi ==en créer, semer la confusion et favoriser l’erreur==, ou endormir la vigilance (*complacency*). Le pilote qui laisse toujours le pilote automatique tenir la trajectoire ==perd la main== en pilotage manuel. Exemple : en givrage, le système compense l’accumulation de glace ; à ses limites, il se déconnecte et laisse l’avion dans un état indésirable, face à un pilote qui ne sait plus piloter à la main.
+P: Une reprogrammation imprévue peut provoquer erreurs et écarts de trajectoire. Il faut ==anticiper le passage en manuel== et s’entraîner à divers scénarios. Si l’automatisme ne fait pas ce qu’on attend : ==réduire son niveau, piloter à la main== et prendre le temps de résoudre le problème.
+# Équilibrer automatisme et pilotage manuel
+P: Le pilote choisit le niveau d’automatisme. Il doit servir ==à gérer la charge de travail, pas à compenser un manque de compétence==. L’erreur la plus fréquente : ==ne pas redescendre à un niveau d’automatisme plus simple== quand la situation change.
+P: Exemple : suivre une approche à la main tout en écoutant l’ATIS, chargeant la procédure et faisant les check-lists détourne l’attention de la trajectoire ; le pilote automatique la tient pendant ce temps. Puis le contrôle annule l’approche et donne des caps et une attente : on repasse aux ==modes de base (cap et altitude)== pour garder la trajectoire sous contrôle pendant qu’on reprogramme. On peut aussi déconnecter pour s’entretenir au pilotage manuel.
+# Dialoguer avec l’automatisme
+P: Quel que soit le niveau : [Figure 7-2]
+1. ==Anticiper== : savoir ce qui doit se passer avant d’appuyer ou de tourner un bouton.
+2. ==Agir== : appuyer, tourner pour obtenir l’automatisme voulu.
+3. ==Vérifier== : s’assurer que l’avion ou l’avionique fait ce qui était prévu.
+SUM: Risques : surcharge, confusion, vigilance endormie, perte de la main. || Automatisme pour gérer la charge, pas pour masquer un manque de compétence. || Erreur fréquente : ne pas redescendre à un niveau plus simple quand tout change. || Anticiper — Agir — Vérifier.
+VOC: vigilance endormie | complacency ;; pilotage manuel | manual flight ;; mode cap | heading mode ;; mode altitude | altitude mode ;; anticiper | to anticipate ;; vérifier | to verify
+@PAGE 7-3 pdf=52
+FIG: Figure 7-2. Étapes du dialogue avec l’automatisme.
+P: Connaître le fonctionnement et la logique du pilote automatique permet d’anticiper, d’agir et de vérifier. La figure 7-3 montre l’annonciateur de modes d’un écran de vol principal (PFD). Un pilote mal formé peut ne pas prévoir qu’==un changement de source de navigation réduit le niveau d’automatisme== et ramène le guidage latéral en ==mode ailes horizontales== : charge accrue, confusion, état indésirable.
+FIG: Figure 7-3. Annonciateurs de modes du pilote automatique.
+# Ne pas anticiper, agir et vérifier
+P: L’automatisme améliore la sécurité, mais peut rendre le pilote ==trop confiant, mal préparé ou perdu==. En 1995, en Colombie, un équipage autorisé inopinément pour une approche perd la conscience de la situation et percute un relief. Il ==n’est pas revenu à la radionavigation de base== quand le FMS est devenu confus en phase critique ; l’avion a suivi le chemin programmé vers la montagne. Dans la confusion, l’équipage a même mis plein gaz sans rentrer les aérofreins, ce qui l’a empêché de passer la crête.
+# Systèmes intégrés de gestion de trajectoire
+P: L’automatisme est un excellent moyen de maîtriser le risque en forte charge de travail, notamment en monopilote. Mais ==un manque de maîtrise de l’automatisme devient lui-même un danger==. Il faut aussi savoir piloter à la main selon les normes, s’entraîner d’abord en VFR avec un instructeur qualifié avant l’IFR, et utiliser un simulateur…
+SUM: Un changement de source de navigation peut faire tomber le pilote automatique en mode dégradé. || Colombie 1995 : FMS confus, pas de retour à la radionavigation de base, aérofreins oubliés → impact. || Mal maîtrisé, l’automatisme devient un danger : s’entraîner en VFR avec un instructeur, puis en simulateur.
+VOC: annonciateur de modes | flight mode annunciator ;; écran de vol principal | primary flight display (PFD) ;; mode ailes horizontales | wings level mode ;; aérofreins | speed brakes ;; radionavigation | radio navigation ;; source de navigation | navigation source
+@PAGE 7-4 pdf=53
+P: … qui permet de répéter les procédures en simulant une forte charge de travail. Avec une formation adaptée, on utilise le pilote automatique avec aisance et de façon routinière. Il faut aussi connaître les ==limitations du système, la procédure de déconnexion d’urgence== et savoir où trouver les check-lists, en étudiant la documentation et les suppléments du manuel de vol.
+# Résumé du chapitre
+P: Automatismes, pilotes automatiques et cockpits intégrés aident à gérer la trajectoire. ==Pilote automatique engagé ne veut pas dire attention désengagée== : garder en permanence la conscience de la situation. Équilibrer automatisme et pilotage manuel permet d’intervenir quand il le faut ; un automatisme maîtrisé, au bon niveau, réduit le risque.
+SUM: Connaître limitations, déconnexion d’urgence et check-lists du pilote automatique. || PA engagé ≠ attention désengagée. || Équilibre automatisme / manuel, au bon niveau.
+VOC: simulateur | flight simulation training device ;; supplément au manuel de vol | flight manual supplement ;; déconnexion | disconnect ;; cockpit intégré | integrated flight deck
+@SHEET
+* L’automatisme sert à gérer la charge de travail, jamais à compenser un manque de compétence.
+* Anticiper — Agir — Vérifier à chaque action sur l’automatisme.
+* Quand la situation change ou que l’automatisme surprend : réduire son niveau (cap/altitude) ou piloter à la main.
+* S’entraîner régulièrement au pilotage manuel pour ne pas perdre la main.
+@NUMS
+3 | étapes : anticiper, agir, vérifier
+1995 | accident de Colombie : FMS confus, pas de retour à la radionavigation de base

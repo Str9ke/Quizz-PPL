@@ -302,8 +302,9 @@
     var g = globalStats();
     var pct = g.total ? Math.round(100 * g.read / g.total) : 0;
     var last = S.last && findPage(S.last.ref);
-    var h = '<p class="bk-eyebrow">' + esc(BOOK.eyebrow || '') + '</p>'
-      + '<div class="bk-top"><h1>' + esc(BOOK.title) + '</h1><span class="bk-sync" id="bkSync"></span></div>'
+    var h = '<div class="bk-cover-row"><img class="bk-cover" src="' + BASE + 'cover.webp" alt="" onerror="this.remove()"><div class="bk-grow">'
+      + '<p class="bk-eyebrow">' + esc(BOOK.eyebrow || '') + '</p>'
+      + '<div class="bk-top"><h1>' + esc(BOOK.title) + '</h1><span class="bk-sync" id="bkSync"></span></div></div></div>'
       + '<p class="bk-sub">Traduction page par page : termes clés surlignés, résumé de chaque page, fiche de chapitre, page originale à côté. Surligne et annote : tout est enregistré en ligne et retrouvé sur tous tes appareils.</p>'
       + (BOOK.pending && BOOK.pending.length ? '<div class="bk-card" style="margin-bottom:12px;border-color:#ffb74d"><b>🛠 Traduction en cours</b><p class="bk-note-small" style="margin:4px 0 0">Les chapitres suivants arrivent au fil des mises à jour : ' + esc(BOOK.pending.join(', ')) + '. Tu peux déjà lire les autres ; ta progression est conservée.</p></div>' : '')
       + '<div class="bk-card"><div class="bk-row"><b>Ma progression</b><span class="bk-grow"></span>'
