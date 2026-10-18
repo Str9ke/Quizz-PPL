@@ -19,7 +19,8 @@ MAXW, Q = 1600, 80
 NUM = r'(?:[A-Z]-\d+|\d+-\d+)'
 # Légende : « Figure 5-3. », « Figure 1. », « Figure 8 Reason’s… », « Table 2: », « Table 4 (below) »…
 # mais PAS une référence dans le texte (« Figure 3 above is… », « Figure 10 shows… »).
-CAP_RE = re.compile(r'^\s*(Figure|Table)\s+(?:(' + NUM + r')\.|(\d+)(?=\s*[.:,\u2013(]|\s*$|\s+[A-Z\u2018\u2019]))')
+# \u00ab Figure 1.1 \u00bb (manuels Oxford) : num\u00e9ro chapitre.figure, sans point final obligatoire
+CAP_RE = re.compile(r'^\s*(Figure|Table)\s+(?:(\d+\.\d+)(?!\d)|(' + NUM + r')\.|(\d+)(?=\s*[.:,\u2013(]|\s*$|\s+[A-Z\u2018\u2019]))')
 
 
 def inter(a, b, pad=0):
@@ -86,7 +87,7 @@ def captions(page):
             t = ''.join(s['text'] for s in l['spans'])
             m = CAP_RE.match(t)
             if m:
-                no = m.group(2) or m.group(3)
+                no = m.group(2) or m.group(3) or m.group(4)
                 out.append((('T' + no) if m.group(1) == 'Table' else no, list(l['bbox'])))
     return out
 

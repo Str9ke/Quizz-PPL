@@ -25,6 +25,7 @@
     .bl-resume b{font-size:1.02rem}.bl-resume small{display:block;opacity:.9}.bl-resume span.go{margin-left:auto;font-weight:800;font-size:1.3rem}
     .bl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
     .bl-book{background:var(--bg-container);border:1px solid var(--border-color);border-radius:16px;overflow:hidden;display:flex;gap:0}
+    .bl-book[hidden]{display:none}
     /* Première de couverture du livre : on le reconnaît d'un coup d'œil */
     .bl-cover{flex:0 0 122px;display:block;padding:14px 0 14px 14px;background:none !important}
     .bl-cover img{display:block;width:100%;height:auto;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.45)}
@@ -80,7 +81,10 @@
       { id: 'ac6022', code: 'FAA AC 60-22', title: 'Décision aéronautique', en: 'Aeronautical Decision Making',
         desc: 'Les cinq attitudes dangereuses et leurs antidotes, pièges opérationnels, stress, modèle DECIDE, I’M SAFE.', c: ['#334155', '#64748b'] },
       { id: 'cap737', code: 'CAA CAP 737', title: 'Facteurs humains de l’équipage', en: 'Flight-crew Human Factors Handbook',
-        desc: 'CRM et TEM : attention, erreur, charge de travail, surprise, conscience de la situation, décision, stress, fatigue, communication, leadership.', c: ['#1e3a8a', '#0e7490'] }
+        desc: 'CRM et TEM : attention, erreur, charge de travail, surprise, conscience de la situation, décision, stress, fatigue, communication, leadership.', c: ['#1e3a8a', '#0e7490'] },
+      // Livre protégé (CAE Oxford) : préparé en local seulement (livre/hpl/ ignoré par Git) ; la carte n'apparaît que s'il est présent.
+      { id: 'hpl', opt: true, code: 'ATPL 040 (Oxford)', title: 'Performances et limites humaines', en: 'Human Performance and Limitations',
+        desc: 'Usage privé. Corps humain, vision, oreille, hypoxie, santé, stress, sommeil, information et erreur, décision, CRM.', c: ['#7c2d12', '#b45309'] }
     ];
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -90,7 +94,7 @@
 
     var root = document.getElementById('blBooks'), latest = null;
     root.innerHTML = BOOKS.map(function (b) {
-      return '<article class="bl-book" data-id="' + b.id + '"><a class="bl-cover" href="livre.html?b=' + b.id + '" style="background:linear-gradient(135deg,' + b.c[0] + ',' + b.c[1] + ')">'
+      return '<article class="bl-book" data-id="' + b.id + '"' + (b.opt ? ' hidden' : '') + '><a class="bl-cover" href="livre.html?b=' + b.id + '" style="background:linear-gradient(135deg,' + b.c[0] + ',' + b.c[1] + ')">'
         + '<img src="livre/' + b.id + '/cover.webp" alt="Couverture : ' + esc(b.en) + '" loading="lazy" onerror="this.remove()"></a>'
         + '<div class="bl-body"><div class="code">' + esc(b.code) + '</div><h2>' + esc(b.title) + '</h2><p class="en">' + esc(b.en) + '</p>'
         + '<div class="bl-meta">' + esc(b.desc) + '</div><div class="bl-bar"><i></i></div><div class="bl-meta bl-prog">…</div>'
@@ -107,12 +111,13 @@
         if (!latest || pos.ts > latest.ts) latest = { ts: pos.ts, ref: pos.ref, b: b };
       }
       // Nombre total de pages : lu dans le livre lui-même (embarqué, donc disponible hors ligne)
-      fetch('livre/' + b.id + '/book.json').then(function (r) { return r.json(); }).then(function (book) {
+      fetch('livre/' + b.id + '/book.json').then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function (book) {
+        card.hidden = false;
         var total = 0; book.chapters.forEach(function (c) { total += c.pages.length; });
         var pct = total ? Math.round(read * 100 / total) : 0;
         card.querySelector('.bl-bar i').style.width = pct + '%';
         card.querySelector('.bl-prog').textContent = read + ' / ' + total + ' pages lues · ' + pct + ' % · ' + book.chapters.length + ' chapitres';
-      }).catch(function () { card.querySelector('.bl-prog').textContent = read + ' pages lues'; });
+      }).catch(function () { if (b.opt) card.remove(); else card.querySelector('.bl-prog').textContent = read + ' pages lues'; });
     });
 
     if (latest) {

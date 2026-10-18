@@ -8,6 +8,8 @@ Lit tools/livre/<id>/raster.json :
                      "lead": ["P", "#1f6fb5"],      # optionnel : 1re lettre d'une autre couleur
                      "color": "#000000",            # optionnel : sinon couleur du texte d'origine
                      "bold": true, "angle": 0, "align": "center", "size": 30 } ] }
+Autres options : "tbox" (zone d'écriture si plus large que la zone effacée), "max" (taille de départ, réduite
+pour tenir), "maxlum", "fill", "script" (écriture manuscrite), "angle" + "len" + "thick" (texte incliné).
 Coordonnées en pixels de l'image livre/<id>/fig/<fichier>. Pour chaque zone : le texte d'origine
 est repéré (pixels éloignés de la couleur du fond), effacé par « inpainting » (le fond — même
 dégradé — est reconstruit), puis le français est écrit à la même place, même couleur, même graisse.
@@ -85,11 +87,11 @@ def apply(img_path, items):
     global _SERIF
     for it, auto in zip(items, colors):
         _SERIF = 'script' if it.get('script') else bool(it.get('serif'))   # « script » : écriture manuscrite
-        x0, y0, x1, y1 = it['box']
+        x0, y0, x1, y1 = it.get('tbox') or it['box']   # « tbox » : zone d'écriture, si plus large que la zone effacée
         w, h = x1 - x0, y1 - y0
         ang = it.get('angle', 0)
         bw, bh = (w, h) if not ang else (it.get('len', w), it.get('thick', h))
-        size = it.get('size') or int(bh * .78)
+        size = it.get('size') or it.get('max') or int(bh * .78)   # « max » : taille de départ, réduite si besoin
         col = hexrgb(it['color']) if it.get('color') else auto
         lead = it.get('lead')
         lines = it['t'].split('\n')
@@ -128,9 +130,9 @@ def apply(img_path, items):
         if ang:
             layer = layer.rotate(ang, expand=True, resample=Image.BICUBIC)
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        if bw > bw0 and it.get('align') == 'left':     # texte plus long : il part du même point de départ
+        if bw > bw0 and it.get('align') in ('left', 'right'):   # texte plus long : même bord d'appui que l'original
             import math
-            dx = (bw - bw0) / 2; a = math.radians(ang)
+            dx = (bw - bw0) / 2 * (1 if it.get('align') == 'left' else -1); a = math.radians(ang)
             cx += dx * math.cos(a); cy -= dx * math.sin(a)
         out.paste(layer, (int(cx - layer.size[0] / 2), int(cy - layer.size[1] / 2)), layer)
     out.save(img_path, 'WEBP', quality=80, method=5)

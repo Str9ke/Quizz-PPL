@@ -35,7 +35,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v222`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v223`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -89,6 +89,12 @@ synchronisés, hors ligne, page originale en pleine largeur par défaut + vision
   `config.json` (`{"PPP": [[x0, y0, x1, y1, "n°"]]}` en points PDF, remplace la détection de la page). `raster.json` peut être
   généré par un script (`tools/livre/cap737/raster_src.py`) ; `"script": true` = écriture manuscrite (Segoe Script).
   Livres faits : afh, phak, rmh (FAA-H-8083-2A), ac6022 (AC 60-22), cap737 (CAA CAP 737, 222 p., 25 figures/tableaux).
+  Figures MATRICIELLES nombreuses : `python tools/livre/ocrfig.py <id>` (OCR Windows intégré, `tools/livre/winocr.ps1`) repère
+  les étiquettes dans `tools/livre/<id>/ocr.json` ; on les traduit dans `tools/livre/<id>/rastertr.py` (→ raster.json, taille
+  d’origine de chaque étiquette) puis `rasterfix.py`. Légendes « Figure 1.1 » (chapitre.figure) reconnues.
+  **Livre Oxford `hpl`** (Human Performance and Limitations, ATPL 040) : ŒUVRE PROTÉGÉE (reproduction interdite sans accord
+  écrit de CAE Oxford) → `livre/hpl/` et `tools/livre/hpl/` sont dans `.gitignore`, jamais poussés ; la carte de
+  `bibliotheque.html` (`opt: true`) n’apparaît que si le livre est présent en local. Ne pas le publier sans autorisation.
   Dépendances locales : pymupdf, pillow, numpy, opencv-python-headless.
 
 ## Pièges connus

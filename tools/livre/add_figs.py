@@ -13,7 +13,7 @@ Usage :  python3 tools/livre/add_figs.py phak|afh
 import collections, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-NUM = r'(?:[A-Z]-\d+|\d+-\d+)'
+NUM = r'(?:[A-Z]-\d+|\d+-\d+|\d+\.\d+)'
 
 
 def plain(h): return re.sub(r'<[^>]+>', ' ', h or '')
