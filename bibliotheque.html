@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a140c">
+  <title>Bibliothèque du pilote</title>
+  <link rel="icon" type="image/png" href="icons/biblio-192.png">
+  <link rel="manifest" href="manifest-biblio.json">
+  <link rel="stylesheet" href="style.css?v=20261018a" />
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-init.js?v=20261018a"></script>
+  <style>
+    .bl{max-width:980px;margin:0 auto;padding:0 14px 60px}
+    .bl-hero{display:flex;align-items:center;gap:16px;padding:22px 4px 18px}
+    .bl-hero img{width:64px;height:64px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    .bl-hero h1{margin:0;font-size:1.6rem;color:var(--text-heading);text-align:left}
+    .bl-hero p{text-align:left}
+    .bl-hero p{margin:2px 0 0;color:var(--text-secondary);font-size:.92rem}
+    .bl-resume{display:none;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:18px;text-decoration:none;color:#fff;
+      background:linear-gradient(135deg,#f59e0b,#b45309);box-shadow:0 6px 18px rgba(180,83,9,.35)}
+    .bl-resume b{font-size:1.02rem}.bl-resume small{display:block;opacity:.9}.bl-resume span.go{margin-left:auto;font-weight:800;font-size:1.3rem}
+    .bl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .bl-book{background:var(--bg-container);border:1px solid var(--border-color);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+    .bl-cover{position:relative;padding:22px 20px 18px;color:#fff;min-height:132px}
+    .bl-cover .code{font-size:.72rem;letter-spacing:.12em;opacity:.85;text-transform:uppercase}
+    .bl-cover h2{margin:6px 0 4px;font-size:1.3rem;line-height:1.2}
+    .bl-cover p{margin:0;font-size:.85rem;opacity:.92}
+    .bl-cover svg{position:absolute;right:14px;bottom:12px;width:58px;height:58px;opacity:.28}
+    .bl-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+    .bl-bar{height:8px;border-radius:6px;background:var(--progressbar-bg,rgba(255,255,255,.08));overflow:hidden}
+    .bl-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f59e0b,#22c55e)}
+    .bl-meta{font-size:.84rem;color:var(--text-secondary)}
+    .bl-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+    .bl-btn{padding:9px 16px;border-radius:10px;border:1px solid var(--border-color);color:inherit;text-decoration:none;font-weight:700;font-size:.9rem}
+    .bl-btn.primary{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:transparent}
+    .bl-card{background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;padding:14px 16px;margin-top:18px}
+    .bl-card h3{margin:0 0 10px;font-size:1rem;color:var(--text-heading)}
+    .bl-foot{font-size:.8rem;color:var(--text-secondary);margin-top:18px;text-align:center}
+  </style>
+</head>
+<body>
+  <script>
+    (function () { var t = localStorage.getItem('theme'); if (t === 'light') document.body.classList.add('light'); else if (t === 'exotique') document.body.classList.add('exotique'); })();
+  </script>
+  <main class="bl">
+    <header class="bl-hero">
+      <img src="icons/biblio-192.png" alt="">
+      <div><h1>Bibliothèque du pilote</h1><p>Les manuels de la FAA, traduits et annotables — même hors ligne.</p></div>
+    </header>
+
+    <a class="bl-resume" id="blResume" href="#"><div><b>▶ Reprendre la lecture</b><small id="blResumeTxt"></small></div><span class="go">›</span></a>
+
+    <section class="bl-grid" id="blBooks"></section>
+
+    <section class="bl-card">
+      <h3>👤 Mon compte</h3>
+      <div id="blAccount"></div>
+    </section>
+
+    <p class="bl-foot">Surlignages, notes, pages lues et temps de lecture sont sauvegardés sur ce téléphone et synchronisés avec ton compte.<br>
+      <a href="configuration.html?app=biblio" style="color:var(--link-color)">Réglages, mise à jour et transfert de données</a></p>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+    // Catalogue : ajouter un livre = une entrée ici + livre/<id>/book.json (voir js/livre.js)
+    var BOOKS = [
+      { id: 'afh', code: 'FAA-H-8083-3C', title: 'Manuel de vol', en: 'Airplane Flying Handbook',
+        desc: 'Les manœuvres, du roulage à l’atterrissage : techniques de pilotage, pannes, vol de nuit.', c: ['#0b3d91', '#0f9fb0'] },
+      { id: 'phak', code: 'FAA-H-8083-25C', title: 'Manuel du pilote', en: 'Pilot’s Handbook of Aeronautical Knowledge',
+        desc: 'Les connaissances : aérodynamique, systèmes, instruments, météo, navigation, facteurs humains.', c: ['#7b3fb0', '#5b6cf0'] }
+    ];
+    var BOOK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><path d="M12 6v13"/></svg>';
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+    function uid() { try { return localStorage.getItem('cachedUid') || 'anon'; } catch (e) { return 'anon'; } }
+    /* État local du lecteur (voir lsKey() dans js/livre.js) : pages lues + dernière position. */
+    function state(id) { return jget('bk_' + (id === 'afh' ? '' : id + '_') + 'state_' + uid()) || jget('bk_' + (id === 'afh' ? '' : id + '_') + 'state_anon'); }
+
+    var root = document.getElementById('blBooks'), latest = null;
+    root.innerHTML = BOOKS.map(function (b) {
+      return '<article class="bl-book" data-id="' + b.id + '"><div class="bl-cover" style="background:linear-gradient(135deg,' + b.c[0] + ',' + b.c[1] + ')">'
+        + '<div class="code">' + esc(b.code) + '</div><h2>' + esc(b.title) + '</h2><p>' + esc(b.en) + '</p>' + BOOK_SVG + '</div>'
+        + '<div class="bl-body"><div class="bl-meta">' + esc(b.desc) + '</div><div class="bl-bar"><i></i></div><div class="bl-meta bl-prog">…</div>'
+        + '<div class="bl-actions"><a class="bl-btn primary" href="livre.html?b=' + b.id + '">Ouvrir</a></div></div></article>';
+    }).join('');
+
+    BOOKS.forEach(function (b) {
+      var card = root.querySelector('[data-id="' + b.id + '"]');
+      var st = state(b.id) || {}, rd = st.rd || {};
+      var read = Object.keys(rd).filter(function (k) { return rd[k] && rd[k][0] === 1; }).length;
+      var pos = jget('bk_pos_' + b.id);
+      if (pos && pos.ref) {
+        card.querySelector('.bl-actions').insertAdjacentHTML('beforeend', '<a class="bl-btn" href="livre.html?b=' + b.id + '">▶ Reprendre p. ' + esc(pos.ref) + '</a>');
+        if (!latest || pos.ts > latest.ts) latest = { ts: pos.ts, ref: pos.ref, b: b };
+      }
+      // Nombre total de pages : lu dans le livre lui-même (embarqué, donc disponible hors ligne)
+      fetch('livre/' + b.id + '/book.json').then(function (r) { return r.json(); }).then(function (book) {
+        var total = 0; book.chapters.forEach(function (c) { total += c.pages.length; });
+        var pct = total ? Math.round(read * 100 / total) : 0;
+        card.querySelector('.bl-bar i').style.width = pct + '%';
+        card.querySelector('.bl-prog').textContent = read + ' / ' + total + ' pages lues · ' + pct + ' % · ' + book.chapters.length + ' chapitres';
+      }).catch(function () { card.querySelector('.bl-prog').textContent = read + ' pages lues'; });
+    });
+
+    if (latest) {
+      var r = document.getElementById('blResume');
+      r.href = 'livre.html?b=' + latest.b.id; r.style.display = 'flex';
+      document.getElementById('blResumeTxt').textContent = latest.b.title + ' — page ' + latest.ref;
+    }
+  })();
+  </script>
+  <script src="js/account.js?v=20261018a"></script>
+  <script>if (window.renderAccountCard) window.renderAccountCard(document.getElementById('blAccount'));</script>
+  <script src="js/statusbar.js?v=20260818a"></script>
+  <script src="js/apps.js?v=20261018a"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/pwa-install.js"></script>
+</body>
+</html>

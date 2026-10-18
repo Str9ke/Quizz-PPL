@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <script src="config.js"></script>
+  <script src="js/apps.js?v=20261018a"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -87,8 +88,14 @@
     Chaque réglage a une valeur par défaut indiquée entre parenthèses.
   </p>
 
+  <!-- Compte : chaque application a son propre stockage, on s'y connecte séparément (js/account.js) -->
+  <div class="home-card cfg-section" data-apps="all">
+    <div class="cfg-section-title">👤 Mon compte</div>
+    <div id="cfgAccountCard"></div>
+  </div>
+
   <!-- Mode hors-ligne -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">✈️ Mode hors-ligne</div>
     <p class="cfg-hint" style="margin:0 0 8px">
       À vérifier AVANT un vol, pendant que tu es encore connecté — pas en plein vol.
@@ -144,11 +151,11 @@
   </div>
 
   <!-- Application Android native (APK) -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="all">
     <div class="cfg-section-title">🤖 Application Android (recommandé en vol)</div>
     <p class="cfg-hint" style="margin:0 0 8px">
-      Vraie application Android, distincte du navigateur : les pages, les questions <b>et les
-      images</b> sont embarquées <b>dans l'application elle-même</b>. Rien ne dépend plus d'un
+      Vraie application Android, distincte du navigateur : les pages et leurs données (questions,
+      images, manuels, fiches) sont embarquées <b>dans l'application elle-même</b>. Rien ne dépend plus d'un
       cache que le système peut vider, ni d'une page qu'il aurait fallu ouvrir en ligne au
       préalable — c'est la seule version réellement à l'abri d'une panne hors-ligne.
       Seules la synchronisation de ta progression et la météo utilisent encore le réseau.
@@ -156,6 +163,7 @@
     <a class="stats-btn" style="padding:6px 14px;display:inline-block;text-decoration:none"
        href="https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest"
        target="_blank" rel="noopener" id="cfgApkLink">⬇️ Télécharger l'APK (dernière version)</a>
+    <div id="cfgAppsList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
     <p class="cfg-hint" style="margin-top:8px" id="cfgApkHint">
       Ouvre ce lien <b>depuis ton téléphone</b>, télécharge le fichier <code>.apk</code> puis
       ouvre-le. Android demandera d'autoriser l'installation depuis cette source : c'est normal
@@ -191,8 +199,14 @@
     </div>
   </div>
 
+  <!-- Transfert des données locales entre applications (js/app-transfer.js) -->
+  <div class="home-card cfg-section" data-apps="all">
+    <div class="cfg-section-title">🔄 Transférer mes données entre applications</div>
+    <div id="cfgTransferCard"></div>
+  </div>
+
   <!-- Installation de l'application (PWA) -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="all">
     <div class="cfg-section-title">📲 Installer le raccourci web (PWA)</div>
     <p class="cfg-hint" style="margin:0 0 8px">
       Solution de repli, plus légère mais moins robuste que l'application Android ci-dessus :
@@ -207,7 +221,7 @@
   </div>
 
   <!-- Sauvegarde locale de secours -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">🛟 Sauvegarde locale de secours</div>
     <p class="cfg-hint" style="margin:0 0 8px">
       Chaque réponse donnée est automatiquement recopiée sur cet appareil (localStorage), en plus de l'envoi vers le serveur — même si l'écriture serveur échoue (document trop volumineux, coupure réseau non détectée...), cette réponse n'est jamais perdue. Ce bouton la renvoie vers le serveur si besoin, sans jamais écraser une réponse plus récente déjà en ligne.
@@ -218,7 +232,7 @@
   </div>
 
   <!-- Diagnostic des shards de réponses -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">🔍 Diagnostic de la sauvegarde serveur</div>
     <p class="cfg-hint" style="margin:0 0 8px">
       Vérifie directement sur le serveur (pas depuis le cache) comment tes réponses sont réparties, pour repérer une incohérence.
@@ -232,7 +246,7 @@
   </div>
 
   <!-- Récupération des réponses écrites au mauvais endroit (champs parasites) -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">🩺 Récupérer les réponses mal enregistrées</div>
     <p class="cfg-hint" style="margin:0 0 8px">
       Pendant un temps, une anomalie d'écriture rangeait chaque réponse dans un champ parasite
@@ -251,7 +265,7 @@
   </div>
 
   <!-- Apparence -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="all">
     <div class="cfg-section-title">🎨 Apparence</div>
     <div class="cfg-row">
       <div class="cfg-label">Thème<div class="cfg-hint">Par défaut : Sombre</div></div>
@@ -266,7 +280,7 @@
   </div>
 
   <!-- Voix / lecture vocale -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="all">
     <div class="cfg-section-title">🔊 Lecture vocale (TTS)</div>
     <div class="cfg-row">
       <div class="cfg-label">Activer la lecture vocale<div class="cfg-hint">Par défaut : désactivée</div></div>
@@ -292,7 +306,7 @@
   </div>
 
   <!-- Quiz -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">🎯 Quiz</div>
     <div class="cfg-row">
       <div class="cfg-label">Démarrage automatique depuis l'accueil<div class="cfg-hint">Par défaut : désactivé</div></div>
@@ -322,7 +336,7 @@
   </div>
 
   <!-- Filtres mémorisés -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="ppl">
     <div class="cfg-section-title">🔖 Filtres mémorisés (accueil / répétition espacée)</div>
     <p class="cfg-hint" style="margin:0 0 6px">État actuel des cases de filtre (marquées, importantes, notées…) — cochées ici = elles le seront aussi à l'accueil.</p>
     <div id="cfgFiltersList"></div>
@@ -332,7 +346,7 @@
   </div>
 
   <!-- Navlog -->
-  <div class="home-card cfg-section">
+  <div class="home-card cfg-section" data-apps="briefing">
     <div class="cfg-section-title">🗺️ Briefing / Navlog</div>
     <div class="cfg-row">
       <div class="cfg-label">Avion par défaut<div class="cfg-hint">Par défaut : Cessna F-150M — OO-MQA</div></div>
@@ -352,7 +366,7 @@
   </div>
 
   <!-- Confidentialité -->
-  <div class="home-card cfg-section" id="cfgPrivacySection" style="display:none">
+  <div class="home-card cfg-section" data-apps="all" id="cfgPrivacySection" style="display:none">
     <div class="cfg-section-title">🔒 Confidentialité</div>
     <div class="cfg-row">
       <div class="cfg-label">Jeton GitHub enregistré (pour déclencher l'actualisation météo depuis le site)<div class="cfg-hint">Jamais affiché ici, uniquement effaçable</div></div>
@@ -363,7 +377,7 @@
   </div>
 
   <!-- Reset global -->
-  <div class="home-card cfg-section" style="text-align:center">
+  <div class="home-card cfg-section" data-apps="ppl" style="text-align:center">
     <button type="button" class="stats-btn stats-btn-reset" onclick="_cfgResetAll()">
       🔄 Réinitialiser TOUS ces réglages aux valeurs par défaut
     </button>
@@ -1493,11 +1507,39 @@
     auth.onAuthStateChanged(function(user) {
       if (user) { localStorage.setItem('cachedUid', user.uid); uid = user.uid; doInit(); }
       else if (localStorage.getItem('cachedUid')) { doInit(); }
+      else if (window.CURRENT_APP && window.CURRENT_APP !== 'ppl') { doInit(); }
       else { window.location = 'index.html?accueil=1'; }
     });
     setTimeout(function() {
       if (!initDone && localStorage.getItem('cachedUid')) doInit();
     }, 2500);
+  })();
+  </script>
+  <script src="js/account.js?v=20261018a"></script>
+  <script src="js/app-transfer.js?v=20261018a"></script>
+  <script>
+  /* Configuration commune aux trois applications : on n'affiche que les sections utiles à
+     l'application courante (data-apps), et l'APK proposé est le sien (voir js/apps.js). */
+  (function(){
+    var app = window.CURRENT_APP || 'ppl', A = window.APPS || {};
+    document.querySelectorAll('.cfg-section[data-apps]').forEach(function(sec){
+      var list = sec.getAttribute('data-apps');
+      if (list !== 'all' && list.split(',').indexOf(app) < 0) sec.style.display = 'none';
+    });
+    // Raccourcis du quiz en bas de page (statistiques, historique…) : seulement dans le Quiz PPL
+    if (app !== 'ppl') document.querySelectorAll('.home-nav-card').forEach(function(c){ if (c.parentElement) c.parentElement.style.display = 'none'; });
+    var sub = document.querySelector('.home-hero-subtitle');
+    if (sub && A[app]) sub.textContent = 'Réglages de l’application ' + A[app].name;
+    var apk = document.getElementById('cfgApkLink');
+    if (apk && window.appReleaseUrl) { apk.href = window.appReleaseUrl(app); apk.textContent = '⬇️ Télécharger l’APK ' + (A[app] ? A[app].name : '') + ' (dernière version)'; }
+    var list = document.getElementById('cfgAppsList');
+    if (list && window.APP_ORDER) list.innerHTML = '<div class="cfg-hint" style="margin:0">Les trois applications :</div>' + window.APP_ORDER.map(function(id){
+      var a = A[id];
+      return '<a href="' + window.appReleaseUrl(id) + '" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;padding:6px 8px;border:1px solid var(--border-color);border-radius:10px">'
+        + '<img src="' + a.logo + '" alt="" style="width:32px;height:32px;border-radius:8px"><span><b>' + a.name + '</b>' + (id === app ? ' <small>(celle-ci)</small>' : '') + '<br><small style="color:var(--text-secondary)">' + a.tagline + '</small></span></a>';
+    }).join('');
+    if (window.renderAccountCard) window.renderAccountCard(document.getElementById('cfgAccountCard'));
+    if (window.renderTransferCard) window.renderTransferCard(document.getElementById('cfgTransferCard'));
   })();
   </script>
   <script src="js/sidebar.js"></script>

@@ -96,6 +96,6 @@
     check: compare,
     installedVersion: installedVersion,
     isNativeApp: isNativeApp,
-    releaseUrl: 'https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest'
+    releaseUrl: (window.appReleaseUrl && window.appReleaseUrl()) || 'https://github.com/Str9ke/Quizz-PPL/releases/tag/android-latest'
   };
 })();

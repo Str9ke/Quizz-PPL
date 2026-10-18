@@ -8,12 +8,9 @@
  *    un clic sur l'overlay, Échap, ou un clic sur un vrai lien de navigation.
  *  - Desktop (≥ 880px) : le menu reste affiché en permanence sur la gauche
  *    (le bouton ☰ et l'overlay sont masqués, inutiles dans ce cas).
- *  - Les groupes (Briefing / PPL / Aviation) sont des
- *    <details> natifs : ouverture/fermeture et clavier gérés par le
- *    navigateur, aucune logique JS de repli à écrire ou à maintenir.
- *  - Le groupe correspondant à la page courante s'ouvre automatiquement
- *    (ex: "Briefing" pré-ouvert quand on est sur navlog.html).
- *  - Les sous-éléments de "Briefing" pointent vers les onglets internes de
+ *  - Un menu par application (Briefing VFR / Quiz PPL / Bibliothèque du pilote, voir
+ *    js/apps.js) : chaque application n'affiche que ses pages, et un lien vers les deux autres.
+ *  - Les entrées du Briefing pointent vers les onglets internes de
  *    navlog.html (navlog.html#meteo, etc.). Si on est DÉJÀ sur navlog.html,
  *    le clic appelle directement window.switchTab() au lieu de recharger la
  *    page — sinon la navigation normale se fait et navlog.html lit le hash
@@ -24,17 +21,6 @@
  * ============================================================================
  */
 (function () {
-  var GROUP_LABELS = {
-    briefing: 'Briefing',
-    ppl: 'PPL',
-    aviation: 'Aviation'
-  };
-  var GROUP_ICONS = {
-    briefing: 'map',
-    ppl: 'target',
-    aviation: 'bookOpen'
-  };
-
   // Chaque entrée est le contenu interne (<path>/<circle>/...) d'un <svg viewBox="0 0 24 24">,
   // dessiné au trait (stroke, pas de remplissage) pour rester cohérent quelle que soit la taille
   // d'affichage — voir .sidebar-icon dans style.css pour l'épaisseur/couleur communes.
@@ -64,7 +50,8 @@
     zap: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
     send: '<path d="M4 12 20 4 13 20l-2-7-7-1Z"/>',
     folder: '<path d="M4 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>'
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    antenna: '<path d="M12 13v8"/><circle cx="12" cy="11" r="2"/><path d="M8.5 7.5a5 5 0 0 0 0 7"/><path d="M15.5 7.5a5 5 0 0 1 0 7"/><path d="M5.6 4.6a9 9 0 0 0 0 12.8"/><path d="M18.4 4.6a9 9 0 0 1 0 12.8"/>'
   };
 
   function iconSvg(key) {
@@ -73,28 +60,31 @@
       + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   }
 
-  // Structure unique de la navigation. `href` sert à la fois de lien réel et
-  // de clé de détection de la page courante (comparée par nom de fichier,
-  // sans se soucier des paramètres ?... ou #...).
-  var STRUCTURE = [
-    // Le Briefing est l'usage principal : en tête de menu, et page d'ouverture de l'appli
-    // (voir la redirection au début de index.html).
-    { type: 'group', id: 'briefing', featured: true, items: [
-      { href: 'navlog.html', tab: 'nav', icon: 'compass', label: 'Vue d’ensemble' },
-      { href: 'navlog.html#meteo', tab: 'meteo', icon: 'cloud', label: 'Météo' },
+  // Un menu PAR APPLICATION (voir js/apps.js) : chaque application n'affiche que ses propres
+  // pages, plus un accès aux deux autres en bas du menu. `href` sert à la fois de lien réel et
+  // de clé de détection de la page courante (comparée par nom de fichier, sans ?... ni #...).
+  var MENUS = {
+    briefing: [
+      { href: 'briefing.html', icon: 'home', label: 'Accueil' },
+      { type: 'label', label: 'Préparer le vol' },
+      { href: 'navlog.html', tab: 'nav', icon: 'compass', label: 'Navlog & route' },
+      { href: 'navlog.html#meteo', tab: 'meteo', icon: 'cloud', label: 'Météo & OPMET' },
+      { href: 'navlog.html#metar', tab: 'metar', icon: 'antenna', label: 'METAR de secours' },
       { href: 'navlog.html#notam', tab: 'notam', icon: 'alertTriangle', label: 'NOTAMs' },
-      { href: 'navlog.html#masse', tab: 'masse', icon: 'scale', label: 'Masse & centrage' },
-      { href: 'navlog.html#perf', tab: 'perf', icon: 'barChart', label: 'Perf' },
       { href: 'navlog.html#altitudes', tab: 'altitudes', icon: 'mountain', label: 'Altitudes' },
       { href: 'navlog.html#fuel', tab: 'fuel', icon: 'droplet', label: 'Carburant' },
+      { href: 'navlog.html#fpl', tab: 'fpl', icon: 'send', label: 'Plan de vol (FPL)' },
+      { type: 'label', label: 'Avion' },
+      { href: 'navlog.html#masse', tab: 'masse', icon: 'scale', label: 'Masse & centrage' },
+      { href: 'navlog.html#perf', tab: 'perf', icon: 'barChart', label: 'Performances' },
       { href: 'navlog.html#checklist', tab: 'checklist', icon: 'checkSquare', label: 'Checklist' },
-      { href: 'navlog.html#notes', tab: 'notes', icon: 'fileText', label: 'Notes' },
-      { href: 'navlog.html#fpl', tab: 'fpl', icon: 'send', label: 'FPL' },
-      { href: 'navlog.html#dossiers', tab: 'dossiers', icon: 'folder', label: 'Dossiers' }
-    ] },
-    // Tout ce qui concerne la préparation au PPL, dans un seul onglet
-    { type: 'group', id: 'ppl', items: [
-      { href: 'index.html?accueil=1', icon: 'home', label: 'Accueil PPL' },
+      { href: 'urgences.html', icon: 'lifeBuoy', label: 'Procédures d’urgence' },
+      { type: 'label', label: 'Mes vols' },
+      { href: 'navlog.html#dossiers', tab: 'dossiers', icon: 'folder', label: 'Dossiers' },
+      { href: 'navlog.html#notes', tab: 'notes', icon: 'fileText', label: 'Notes' }
+    ],
+    ppl: [
+      { href: 'index.html?accueil=1', icon: 'home', label: 'Accueil' },
       { type: 'label', label: 'Réviser' },
       { href: 'quiz.html', icon: 'target', label: 'Quiz' },
       { href: 'rates.html', icon: 'bookOpen', label: 'Révisions' },
@@ -110,17 +100,18 @@
       { type: 'label', label: 'Références' },
       { href: 'fiches.html', icon: 'fileText', label: 'Fiches' },
       { href: 'symboles.html', icon: 'hash', label: 'Symboles' },
-      { href: 'urgences.html', icon: 'alertTriangle', label: 'Urgences' },
-      { href: 'radial.html', icon: 'compass', label: 'Radial' }
-    ] },
-    { type: 'group', id: 'aviation', items: [
+      { href: 'radial.html', icon: 'compass', label: 'Radial VOR' },
+      { href: 'plongee.html', icon: 'lifeBuoy', label: 'Plongée' }
+    ],
+    biblio: [
+      { href: 'bibliotheque.html', icon: 'home', label: 'Ma bibliothèque' },
+      { type: 'label', label: 'Manuels' },
       { href: 'livre.html?b=afh', icon: 'bookOpen', label: 'Manuel de vol (AFH)' },
       { href: 'livre.html?b=phak', icon: 'bookOpen', label: 'Manuel du pilote (PHAK)' }
-    ] },
-    { type: 'link', href: 'plongee.html', icon: 'lifeBuoy', label: 'Plongée' },
-    { type: 'sep' },
-    { type: 'link', href: 'configuration.html', icon: 'settings', label: 'Configuration' }
-  ];
+    ]
+  };
+  var CURRENT_APP = (window.CURRENT_APP && MENUS[window.CURRENT_APP]) ? window.CURRENT_APP : 'ppl';
+  var APPS = window.APPS || {};
 
   function currentFile() {
     var f = location.pathname.split('/').pop();
@@ -145,30 +136,21 @@
   }
 
   function buildHtml(cur) {
-    var html = '';
-    // Un groupe est ouvert s'il contient la page courante ; sur index.html / une page hors menu,
-    // le Briefing (groupe principal) reste ouvert.
-    var inAnyGroup = STRUCTURE.some(function (e) {
-      return e.type === 'group' && e.items.some(function (it) { return it.href && hrefFile(it.href) === cur; });
-    });
-    STRUCTURE.forEach(function (entry) {
-      if (entry.type === 'link') {
-        html += linkHtml(entry, cur);
-      } else if (entry.type === 'sep') {
-        html += '<hr class="sidebar-sep">';
-      } else if (entry.type === 'group') {
-        var containsCurrent = entry.items.some(function (it) { return it.href && hrefFile(it.href) === cur; });
-        var isOpen = containsCurrent || (!inAnyGroup && entry.id === 'briefing');
-        html += '<details class="sidebar-group"'
-          + (entry.featured ? ' data-featured="1"' : '')
-          + ' data-group="' + entry.id + '"'
-          + (isOpen ? ' open' : '') + '>'
-          + '<summary>' + iconSvg(GROUP_ICONS[entry.id]) + '<span>' + GROUP_LABELS[entry.id] + '</span></summary>'
-          + '<div class="sidebar-group-items">'
-          + entry.items.map(function (it) { return linkHtml(it, cur); }).join('')
-          + '</div></details>';
-      }
-    });
+    var html = MENUS[CURRENT_APP].map(function (it) { return linkHtml(it, cur); }).join('');
+    html += '<hr class="sidebar-sep">' + linkHtml({ href: 'configuration.html?app=' + CURRENT_APP, icon: 'settings', label: 'Configuration' }, cur);
+    // Les deux autres applications : simple lien sur le web ; dans un APK, la page d'installation
+    // de l'autre application (ses pages ne sont pas embarquées dans celle-ci).
+    var others = (window.APP_ORDER || []).filter(function (id) { return id !== CURRENT_APP && APPS[id]; });
+    if (others.length) {
+      html += '<div class="sidebar-sublabel">Autres applications</div>';
+      others.forEach(function (id) {
+        var a = APPS[id];
+        var href = window.appLinkTo ? window.appLinkTo(id) : a.home;
+        var ext = /^https?:/.test(href);
+        html += '<a href="' + esc(href) + '" class="sidebar-link sidebar-app-link"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>'
+          + '<img class="sidebar-app-logo" src="' + esc(a.logo) + '" alt="">' + '<span>' + esc(a.name) + (ext ? ' <small>· installer</small>' : '') + '</span></a>';
+      });
+    }
     return html;
   }
 
@@ -194,8 +176,8 @@
     nav.setAttribute('aria-label', 'Navigation principale');
     nav.innerHTML =
       '<div class="sidebar-header">'
-      + '<span class="sidebar-header-icon">✈️</span>'
-      + '<span class="sidebar-header-title">Quiz PPL</span>'
+      + (APPS[CURRENT_APP] ? '<img class="sidebar-header-logo" src="' + esc(APPS[CURRENT_APP].logo) + '" alt="">' : '<span class="sidebar-header-icon">✈️</span>')
+      + '<span class="sidebar-header-title">' + esc(APPS[CURRENT_APP] ? APPS[CURRENT_APP].name : 'Quiz PPL') + '</span>'
       + '<button type="button" class="sidebar-close-btn" aria-label="Fermer le menu">✕</button>'
       + '</div>'
       + '<div class="sidebar-body">' + buildHtml(cur) + '</div>';

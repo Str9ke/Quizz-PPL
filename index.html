@@ -22,13 +22,8 @@
             window.location = 'quiz.html';
           }
         }
-        // Ouverture de l'appli (site, PWA installée, application Android) : on arrive sur le
-        // BRIEFING, pas sur l'accueil du quiz. L'accueil reste accessible par le menu
-        // (index.html?accueil=1). Le démarrage automatique du quiz, s'il est activé dans la
-        // configuration, garde la priorité.
-        if (!window.location.search.includes('accueil') && !autoStartQuiz) {
-          window.location.replace('navlog.html');
-        }
+        // Le Briefing est désormais une application à part (briefing.html, voir js/apps.js) :
+        // index.html est l'accueil de l'application Quiz PPL.
       })();
     </script>
   <meta charset="UTF-8" />
@@ -130,11 +125,44 @@
 
   <!-- Hero banner -->
   <div class="home-hero">
-    <div class="home-hero-icon">✈️</div>
-    <h1 class="home-hero-title">Quiz Aviation PPL</h1>
+    <div class="home-hero-icon"><img src="icons/ppl-192.png" alt="" style="width:64px;height:64px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.35)"></div>
+    <h1 class="home-hero-title">Quiz PPL</h1>
     <div id="lastUpdateInfo" class="home-hero-subtitle"></div>
     <a id="deployStatusInfo" class="home-hero-subtitle deploy-status" href="https://github.com/Str9ke/Quizz-PPL/actions" target="_blank" rel="noopener" style="display:none"></a>
   </div>
+
+  <!-- Séparation en trois applications (octobre 2026) : annonce, jusqu'à ce qu'on la ferme. -->
+  <div id="appSplitNotice" class="home-card" style="display:none;max-width:760px;margin:0 auto 16px;border:1px solid #0f9fb0">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1">
+        <b>Nouveau : trois applications</b>
+        <p style="margin:6px 0 10px;font-size:.88em;color:var(--text-secondary)">Le <b>Briefing VFR</b> (préparation du vol, météo, NOTAM, urgences)
+          et la <b>Bibliothèque du pilote</b> (manuels AFH et PHAK) sont désormais des applications à part. Celle-ci devient le <b>Quiz PPL</b> :
+          ta progression du quiz est conservée.</p>
+        <div id="appSplitLinks" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <button type="button" id="appSplitClose" aria-label="Fermer" style="width:auto;background:transparent;border:0;color:var(--text-secondary);font-size:1.1em;cursor:pointer">✕</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      try { if (localStorage.getItem('appSplitNoticeSeen')) return; } catch (e) { return; }
+      var box = document.getElementById('appSplitNotice');
+      function go() {
+        var A = window.APPS || {}, links = document.getElementById('appSplitLinks');
+        ['briefing', 'biblio'].forEach(function (id) {
+          if (!A[id]) return;
+          var href = window.appLinkTo ? window.appLinkTo(id) : A[id].home, ext = /^https?:/.test(href);
+          links.insertAdjacentHTML('beforeend', '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + ' class="stats-btn" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;width:auto;margin:0;text-decoration:none">'
+            + '<img src="' + A[id].logo + '" alt="" style="width:20px;height:20px;border-radius:5px">' + (ext ? 'Installer ' : 'Ouvrir ') + A[id].name + '</a>');
+        });
+        links.insertAdjacentHTML('beforeend', '<a href="configuration.html?app=ppl#cfgTransferCard" class="stats-btn" style="padding:6px 12px;width:auto;margin:0;text-decoration:none">🔄 Transférer mes données</a>');
+        box.style.display = 'block';
+      }
+      document.getElementById('appSplitClose').onclick = function () { box.style.display = 'none'; try { localStorage.setItem('appSplitNoticeSeen', '1'); } catch (e) {} };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+    })();
+  </script>
 
   <!-- Top navigation -->
   
@@ -894,6 +922,7 @@
       }
     };
   </script>
+  <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/pwa-install.js"></script>
 </body>

@@ -23,8 +23,11 @@
 (function () {
   'use strict';
 
-  var APK_URL = 'https://github.com/Str9ke/Quizz-PPL/releases/download/android-latest/quiz-aviation-ppl.apk';
-  var APK_NAME = 'quiz-aviation-ppl.apk';
+  // Chaque application (Quiz PPL, Briefing VFR, Bibliothèque du pilote) a son propre APK :
+  // voir js/apps.js. Repli sur l'APK historique si apps.js n'est pas chargé.
+  var APK_URL = (window.appApkUrl && window.appApkUrl()) ||
+    'https://github.com/Str9ke/Quizz-PPL/releases/download/android-latest/quiz-aviation-ppl.apk';
+  var APK_NAME = APK_URL.split('/').pop();
 
   function plugins() {
     try { return (window.Capacitor && window.Capacitor.Plugins) || null; }

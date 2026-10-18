@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#121218">
   <title>Briefing Pr&#xe9;vol - Pr&#xe9;paration Vol VFR</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest-briefing.json">
   <!-- Doit être chargé AVANT tout le reste : dans l'APK Android, il redirige les fichiers météo
        (non embarqués car régénérés toutes les ~3 h) vers le site en ligne. Sur le web, sans
        effet. Voir js/remote-assets.js. -->
@@ -814,14 +814,15 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 
   <div class="navlog-hero">
     <div class="navlog-hero-icon">&#x2708;&#xFE0F;</div>
-    <h1 class="navlog-hero-title">Briefing Pr&#xe9;vol</h1>
-    <p class="navlog-hero-sub">Pr&#xe9;paration de vol &amp; navigation</p>
+    <h1 class="navlog-hero-title">Navlog &amp; pr&#xe9;paration</h1>
+    <p class="navlog-hero-sub"><a href="briefing.html" style="color:inherit">Briefing VFR</a> &middot; route, m&#xe9;t&#xe9;o, NOTAM, avion</p>
   </div>
 
   <!-- Tabs -->
   <div class="navlog-tabs" id="navlogTabs">
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o</button>
+    <button class="navlog-tab" onclick="window.switchTab('metar')">&#x1F4E1; METAR secours</button>
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; M&amp;CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
@@ -911,13 +912,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <button class="navlog-btn" style="background:rgba(255,255,255,.08);border-color:var(--border-color)" onclick="window._resetEtapesSelection()">&#x21BA; R&#xe9;initialiser la s&#xe9;lection</button>
       </div>
       </div>
-    </div>
-
-    <!-- Weather panel -->
-    <div class="nl-card">
-      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
-      <div class="wx-airport-btns" id="wxAirportBtns"></div>
-      <div id="wxPanels"></div>
     </div>
 
     <!-- Config panel -->
@@ -1040,6 +1034,28 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </div>
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
+  <!-- ==================== TAB : METAR DE SECOURS ====================
+       METAR/TAF des aérodromes de la route, lus sur Internet (aviationweather, avec repli sur un
+       aérodrome voisin). Ils étaient affichés en tête de la première page ; ils servent
+       désormais de SECOURS quand l'OPMET (Skeyes, onglet Météo) n'a pas pu être récupéré. Les
+       identifiants (wxPanels, wxAirportBtns) sont inchangés : performances, vent des branches et
+       dossiers continuent de lire ces mêmes METAR. -->
+  <div id="tab-metar" class="navlog-tab-content">
+    <div class="nl-card" style="border-left:4px solid #f59e0b">
+      <div class="nl-card-title"><span class="icon">&#x1F4E1;</span> METAR de secours</div>
+      <p style="font-size:.85em;color:var(--text-secondary);margin:0">Source de repli : METAR et TAF publiés sur Internet pour les a&#xe9;rodromes de la route.
+        La r&#xe9;f&#xe9;rence reste l'<b>OPMET</b> (onglet <a href="#meteo" onclick="window.switchTab('meteo');return false" style="color:var(--link-color)">M&#xe9;t&#xe9;o</a>) :
+        utilise cette page si l'OPMET n'a pas pu &#xea;tre r&#xe9;cup&#xe9;r&#xe9; ou semble p&#xe9;rim&#xe9;.</p>
+    </div>
+    <div class="nl-card">
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
+      <div class="wx-airport-btns" id="wxAirportBtns"></div>
+      <div id="wxPanels"></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== TAB 2b: NOTAMs ==================== -->
   <div id="tab-notam" class="navlog-tab-content">
       <!-- NOTAM Summary Automatique -->
       <div class="map-card" style="margin-bottom:14px">
@@ -16804,7 +16820,7 @@ document.addEventListener('DOMContentLoaded',init);
    sans dépendre de ce qu'init() fait par ailleurs en interne. Un hash absent ou invalide
    laisse simplement l'onglet par défaut ("nav", déjà actif dans le HTML) inchangé. */
 document.addEventListener('DOMContentLoaded', function () {
-  var validTabs = ['nav','meteo','notam','masse','perf','altitudes','fuel','checklist','notes','fpl','dossiers'];
+  var validTabs = ['nav','meteo','metar','notam','masse','perf','altitudes','fuel','checklist','notes','fpl','dossiers'];
   var id = (location.hash || '').replace('#', '');
   if (id && validTabs.indexOf(id) !== -1 && typeof window.switchTab === 'function') {
     window.switchTab(id);
@@ -16813,6 +16829,7 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
   <script src="js/statusbar.js?v=20260818a"></script>
+  <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/pwa-install.js"></script>
 </body>

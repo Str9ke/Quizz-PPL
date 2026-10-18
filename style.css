@@ -2346,6 +2346,9 @@ body.sidebar-open .app-sidebar {
   min-height: 40px;
 }
 .sidebar-header-icon { font-size: 1.2rem; flex: 0 0 auto; }
+.sidebar-header-logo { width: 30px; height: 30px; border-radius: 8px; flex: 0 0 auto; }
+.sidebar-app-logo { width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto; }
+.sidebar-app-link small { opacity: .65; font-weight: 400; }
 .sidebar-header-title {
   font-weight: 800;
   color: var(--text-heading);
@@ -2752,3 +2755,15 @@ body.sidebar-open .app-sidebar {
 @media print {
   .session-progress { display: none !important; }
 }
+
+/* ===== Carte « Mon compte » (js/account.js) — commune aux trois applications ===== */
+.acc-row { display: flex; align-items: center; gap: 10px; }
+.acc-grow { flex: 1; min-width: 0; }
+.acc-grow small { color: var(--text-secondary); }
+.acc-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef5350; flex: 0 0 auto; }
+.acc-dot.on { background: #22c55e; }
+.acc-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.acc-form input { flex: 1 1 180px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--input-text); font: inherit; }
+.acc-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: inherit; font-weight: 600; cursor: pointer; width: auto !important; margin: 0; }
+.acc-btn.primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-color: transparent; }
+.acc-msg { font-size: .85em; margin-top: 6px; }

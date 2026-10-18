@@ -6,7 +6,7 @@ Dépôt : `Str9ke/Quizz-PPL`, branche de travail et de production : **`main`** (
 ## Ce que c'est
 - **Site** : PWA statique (HTML/JS/CSS, pas de framework ni de build) publiée par GitHub Pages depuis `main`
   (`.github/workflows/deploy-pages.yml` ; il injecte `config.js` depuis les secrets `FIREBASE_API_KEY`, `OPENAIP_API_KEY`).
-- **Appli Android** : **Capacitor** (`capacitor.config.json`, appId `be.str9ke.quizzppl`). Construite par
+- **Applis Android** : **Capacitor** (`capacitor.config.json`, appId remplacé par application au build — voir « Trois applications »). Construite par
   `.github/workflows/build-android.yml` à chaque push touchant le site : `tools/build_www.py` assemble `www/`
   (pages + questions + images embarquées dans l'APK), puis Gradle `assembleDebug`. L'APK est publié dans la
   pré-release GitHub **`android-latest`**. Il n'y a pas de dossier `android/` versionné : il est généré au build.
@@ -17,8 +17,25 @@ Dépôt : `Str9ke/Quizz-PPL`, branche de travail et de production : **`main`** (
 - **Données auto** : `update_notams.yml`, `update_notams_classic.yml`, `update_openaip.yml` committent toutes seules
   NOTAM, météo (skeyes/temsi/wintem), OPMET → beaucoup de commits « Auto-update » : normal. **Toujours `git pull --rebase` avant de pousser.**
 
+## Trois applications (depuis le 18/10/2026)
+Un seul dépôt, un seul site, **trois applications** (registre : `js/apps.js`) — chacune son menu (`js/sidebar.js`, `MENUS`),
+son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et son APK :
+| app | nom | accueil | manifeste | appId | pré-release / APK |
+|---|---|---|---|---|---|
+| `ppl` | Quiz PPL | `index.html` | `manifest.json` | `be.str9ke.quizzppl` (ancien appId : mise à jour par-dessus) | `android-latest` / `quiz-aviation-ppl.apk` |
+| `briefing` | Briefing VFR | `briefing.html` (+ `navlog.html`, `urgences.html`) | `manifest-briefing.json` | `be.str9ke.briefingvfr` | `android-briefing` / `briefing-vfr.apk` |
+| `biblio` | Bibliothèque du pilote | `bibliotheque.html` (+ `livre.html`) | `manifest-biblio.json` | `be.str9ke.bibliopilote` | `android-biblio` / `bibliotheque-pilote.apk` |
+- Page d'une appli = `PAGE_APP` dans `js/apps.js` + son menu. Pages communes : `configuration.html`, `envoi-fichiers.html`
+  (`?app=` ; sections filtrées par `data-apps`).
+- `build-android.yml` = matrice des 3 applis ; `tools/build_www.py --app X` n'embarque que les fichiers de X (`APP_ONLY`) + le commun,
+  écrit un `index.html` qui redirige vers l'accueil (Capacitor ouvre toujours index.html) et signale les liens non embarqués.
+  `config.js` de l'APK contient `APP_BUILD.app`. Une seule version (`CACHE_NAME`) pour les trois.
+- Chaque APK a son propre stockage : connexion par appli (`js/account.js`), transfert du stockage local via le compte
+  (`js/app-transfer.js`, Firestore `quizProgress/{uid}/transfer`).
+- Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
+
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v218`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v219`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

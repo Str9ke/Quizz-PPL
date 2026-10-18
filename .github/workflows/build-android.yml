@@ -1,5 +1,13 @@
 name: Build Android APK
 
+# TROIS applications sont construites depuis ce même dépôt (voir js/apps.js) :
+#   - ppl      : Quiz PPL              be.str9ke.quizzppl     pré-release android-latest
+#   - briefing : Briefing VFR          be.str9ke.briefingvfr  pré-release android-briefing
+#   - biblio   : Bibliothèque du pilote be.str9ke.bibliopilote pré-release android-biblio
+# « ppl » garde l'identifiant et la pré-release de l'ancienne application unique : l'APK déjà
+# installé se met à jour par-dessus (progression conservée). Les trois sont signées par la même
+# clé (android-signing/), ce qui est autorisé pour des applications distinctes.
+
 # Construit une VRAIE application Android (Capacitor), et non un raccourci Chrome.
 #
 # Différence qui compte en vol : les pages, les 4742 questions et les ~80 Mo d'images sont
@@ -23,6 +31,8 @@ on:
       - 'IMAGES_*/**'
       - 'capacitor.config.json'
       - 'tools/**'
+      - 'assets/**'
+      - 'icons/**'
       # sw.js porte CACHE_NAME, dont tools/app_version.py tire la version de l'appli. Sans lui
       # ici, une version publiée par le site n'aurait JAMAIS d'APK correspondant : l'appli
       # installée annoncerait une mise à jour disponible qui n'existe pas, indéfiniment.
@@ -38,13 +48,32 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: android-apk
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      # Une application qui échoue ne doit pas empêcher la publication des deux autres.
+      fail-fast: false
+      matrix:
+        include:
+          - app: ppl
+            app_id: be.str9ke.quizzppl
+            app_name: Quiz PPL
+            tag: android-latest
+            apk: quiz-aviation-ppl.apk
+          - app: briefing
+            app_id: be.str9ke.briefingvfr
+            app_name: Briefing VFR
+            tag: android-briefing
+            apk: briefing-vfr.apk
+          - app: biblio
+            app_id: be.str9ke.bibliopilote
+            app_name: Bibliothèque du pilote
+            tag: android-biblio
+            apk: bibliotheque-pilote.apk
+    concurrency:
+      group: android-apk-${{ matrix.app }}
+      cancel-in-progress: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -95,7 +124,7 @@ jobs:
           # Version EMBARQUÉE dans l'APK : c'est elle que js/update-check.js comparera au
           # version.json publié par le site, pour dire si l'appli installée est à jour.
           APP_VERSION="$(python3 tools/app_version.py)"
-          printf 'window.APP_BUILD = { version: "%s", channel: "android" };\n' "$APP_VERSION" >> config.js
+          printf 'window.APP_BUILD = { version: "%s", channel: "android", app: "%s" };\n' "$APP_VERSION" "${{ matrix.app }}" >> config.js
           cat config.js | tail -1
 
       - name: Refresh the image manifest
@@ -103,7 +132,7 @@ jobs:
 
       - name: Assemble www/ (the files shipped inside the APK)
         run: |
-          python3 tools/build_www.py
+          python3 tools/build_www.py --app ${{ matrix.app }}
           # config.js est exclu de la copie générique (il contient les clés) : on l'ajoute ici,
           # après coup, pour qu'il soit bien embarqué dans l'application.
           cp config.js www/config.js
@@ -130,6 +159,19 @@ jobs:
         # horloge et icônes se mélangeaient au menu ☰ et aux résumés de score. Ce greffon
         # demande au système de réserver la place lui-même — voir js/statusbar.js.
         run: npm install --no-audit --no-fund @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7 @capacitor-community/text-to-speech@^6 @capacitor/filesystem@^7 @capacitor-community/file-opener@^7 capacitor-native-settings@^7 @capacitor/network@^7 @capacitor/status-bar@^7
+
+      - name: Configure Capacitor for this application
+        # Identifiant, nom affiché et icônes propres à l'application construite (voir la matrice).
+        run: |
+          python3 - "${{ matrix.app_id }}" "${{ matrix.app_name }}" <<'PYEOF'
+          import json, sys
+          c = json.load(open('capacitor.config.json', encoding='utf-8'))
+          c['appId'], c['appName'] = sys.argv[1], sys.argv[2]
+          json.dump(c, open('capacitor.config.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+          print(c['appId'], '·', c['appName'])
+          PYEOF
+          cp "assets/${{ matrix.app }}/icon.png" assets/icon.png
+          cp "assets/${{ matrix.app }}/splash.png" assets/splash.png
 
       - name: Generate the Android project
         run: npx cap add android
@@ -254,13 +296,13 @@ jobs:
             find android -name '*.apk' -printf '%p\t%s octets\n' || true
             exit 1
           fi
-          cp "$path" quiz-aviation-ppl.apk
-          echo "size=$(du -h quiz-aviation-ppl.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+          cp "$path" ${{ matrix.apk }}
+          echo "size=$(du -h ${{ matrix.apk }} | cut -f1)" >> "$GITHUB_OUTPUT"
           # La version de l'appli (quiz-ppl-vNNN) est CE QUE CONFIGURATION AFFICHE. La mettre
           # dans la release permet de comparer d'un coup d'œil « installée » et « publiée »,
           # sans avoir à déchiffrer des empreintes de commit.
           echo "version=$(python3 tools/app_version.py)" >> "$GITHUB_OUTPUT"
-          ls -lh quiz-aviation-ppl.apk
+          ls -lh ${{ matrix.apk }}
 
       - name: Verify the APK is properly signed
         # Un APK mal signé s'installe... jusqu'au moment où Android le refuse, sur le téléphone,
@@ -274,13 +316,13 @@ jobs:
         run: |
           set -e
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
-          "$BT/apksigner" verify --verbose --print-certs quiz-aviation-ppl.apk
+          "$BT/apksigner" verify --verbose --print-certs ${{ matrix.apk }}
 
           # La version précédente se contentait d'AFFICHER les deux empreintes côte à côte, sans
           # jamais les comparer : le build restait vert alors que l'APK était signé par une clé
           # inédite, et le défaut n'est apparu que sur le téléphone, à l'installation. Une
           # vérification qu'on ne fait que regarder n'est pas une vérification.
-          APK_FP="$("$BT/apksigner" verify --print-certs quiz-aviation-ppl.apk \
+          APK_FP="$("$BT/apksigner" verify --print-certs ${{ matrix.apk }} \
             | grep -i 'SHA-256 digest' | head -1 | sed 's/.*: *//' | tr -d ': ' | tr 'A-Z' 'a-z')"
           KEY_FP="$(keytool -list -v -keystore android-signing/debug.keystore -storepass android \
             | grep 'SHA256:' | head -1 | sed 's/.*SHA256: *//' | tr -d ': ' | tr 'A-Z' 'a-z')"
@@ -295,34 +337,36 @@ jobs:
       - name: Upload the APK as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quiz-aviation-ppl-apk
-          path: quiz-aviation-ppl.apk
+          name: ${{ matrix.app }}-apk
+          path: ${{ matrix.apk }}
           retention-days: 30
 
-      - name: Point the android-latest tag at this build
+      - name: Point the release tag at this build
         # Le tag restait figé sur le commit qui l'avait créé la première fois, tandis que le
         # corps de la release et l'APK, eux, étaient bien à jour. La page de release affichait
         # donc DEUX commits différents — de quoi douter légitimement de la version qu'on vient
         # de télécharger. Le tag est désormais repositionné à chaque publication.
         run: |
           set -e
-          git tag -f android-latest "${{ github.sha }}"
-          git push -f origin refs/tags/android-latest
+          git tag -f "${{ matrix.tag }}" "${{ github.sha }}"
+          git push -f origin "refs/tags/${{ matrix.tag }}"
 
-      - name: Publish the APK to the android-latest release
+      - name: Publish the APK to its pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-latest
-          name: Application Android — ${{ steps.apk.outputs.version }}
+          tag_name: ${{ matrix.tag }}
+          name: ${{ matrix.app_name }} — ${{ steps.apk.outputs.version }}
           prerelease: true
-          files: quiz-aviation-ppl.apk
+          files: ${{ matrix.apk }}
           body: |
             ## Version publiée : `${{ steps.apk.outputs.version }}`
 
             C'est le numéro qu'affiche **Configuration → Application Android**. S'il correspond
             à celui indiqué comme « installée », l'appli est à jour — inutile de retélécharger.
 
-            Application Android autonome — questions et images embarquées, utilisable sans réseau.
+            ${{ matrix.app_name }} — application Android autonome, utilisable sans réseau.
+            Les trois applications : Quiz PPL (android-latest), Briefing VFR (android-briefing),
+            Bibliothèque du pilote (android-biblio).
 
             APK : ${{ steps.apk.outputs.size }} · compilé depuis le commit ${{ github.sha }}
 
