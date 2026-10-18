@@ -76,7 +76,9 @@
       { id: 'phak', code: 'FAA-H-8083-25C', title: 'Manuel du pilote', en: 'Pilot’s Handbook of Aeronautical Knowledge',
         desc: 'Les connaissances : aérodynamique, systèmes, instruments, météo, navigation, facteurs humains.', c: ['#7b3fb0', '#5b6cf0'] },
       { id: 'rmh', code: 'FAA-H-8083-2A', title: 'Gestion des risques', en: 'Risk Management Handbook',
-        desc: 'Minima personnels, PAVE, IMSAFE, évaluer et atténuer le risque, TEM, automatisation, décision en vol.', c: ['#b45309', '#0f766e'] }
+        desc: 'Minima personnels, PAVE, IMSAFE, évaluer et atténuer le risque, TEM, automatisation, décision en vol.', c: ['#b45309', '#0f766e'] },
+      { id: 'ac6022', code: 'FAA AC 60-22', title: 'Décision aéronautique', en: 'Aeronautical Decision Making',
+        desc: 'Les cinq attitudes dangereuses et leurs antidotes, pièges opérationnels, stress, modèle DECIDE, I’M SAFE.', c: ['#334155', '#64748b'] }
     ];
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }

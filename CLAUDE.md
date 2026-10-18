@@ -35,7 +35,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v220`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v221`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -84,6 +84,8 @@ synchronisés, hors ligne, page originale en pleine largeur par défaut + vision
      (`raster.json` : zones en pixels, effacement par inpainting OpenCV puis texte français) — à lancer UNE fois après chaque extraction ;
   5. `python tools/livre/build_book.py <id>` puis `python tools/livre/add_figs.py <id>` ;
   6. ajouter le livre dans `bibliotheque.html` (`BOOKS`), `js/sidebar.js` (menu biblio) et `sw.js` (book.json + cover.webp).
+  PDF scannés (ex. `ac6022`) : pas de figures détectables → découpe à la main (`tools/livre/<id>/crop.py`) et `raster.json` en mode
+  `fill` (case repeinte en blanc puis texte réécrit).
   Dépendances locales : pymupdf, pillow, numpy, opencv-python-headless.
 
 ## Pièges connus

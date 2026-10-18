@@ -27,8 +27,17 @@ FONTS = {
 }
 
 
+SERIF = {
+    (False, False): ['C:/Windows/Fonts/times.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'],
+    (True, False): ['C:/Windows/Fonts/timesbd.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'],
+    (False, True): ['C:/Windows/Fonts/timesi.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf'],
+    (True, True): ['C:/Windows/Fonts/timesbi.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf'],
+}
+_SERIF = False
+
+
 def font(bold, italic, size):
-    for p in FONTS[(bool(bold), bool(italic))]:
+    for p in (SERIF if _SERIF else FONTS)[(bool(bold), bool(italic))]:
         if os.path.exists(p): return ImageFont.truetype(p, size)
     return ImageFont.load_default()
 
@@ -55,6 +64,10 @@ def apply(img_path, items):
     colors = []
     for it in items:
         x0, y0, x1, y1 = it['box']
+        if it.get('fill'):          # scan noir et blanc : on repeint simplement l'intérieur de la case
+            arr[y0:y1, x0:x1] = hexrgb(it['fill'])
+            colors.append((0, 0, 0))
+            continue
         m, bg = text_mask(arr, (x0, y0, x1, y1), it.get('thr', 60))
         if it.get('maxlum'):      # ne garder que le texte très sombre (épargne un cadre coloré voisin)
             roi = arr[y0:y1, x0:x1].astype(np.float32)
@@ -67,7 +80,9 @@ def apply(img_path, items):
     bgr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
     bgr = cv2.inpaint(bgr, full_mask, 6, cv2.INPAINT_TELEA)
     out = Image.fromarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
+    global _SERIF
     for it, auto in zip(items, colors):
+        _SERIF = bool(it.get('serif'))
         x0, y0, x1, y1 = it['box']
         w, h = x1 - x0, y1 - y0
         ang = it.get('angle', 0)
@@ -92,7 +107,7 @@ def apply(img_path, items):
         for i, line in enumerate(lines):
             lw = f.getlength(line)
             al = it.get('align', 'center')
-            x = 0 if al == 'left' else (bw - lw) if al == 'right' else (bw - lw) / 2
+            x = it.get('pad', 0) if al == 'left' else (bw - lw) if al == 'right' else (bw - lw) / 2
             y = ytop + i * lh
             pieces = [(line, col)]
             if lead and i == 0 and line.startswith(lead[0]):
