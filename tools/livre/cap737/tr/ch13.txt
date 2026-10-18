@@ -1,0 +1,107 @@
+@CH 13
+@INTRO Traduction française du chapitre 13, *Automation (and manual flying skills)* (mise à jour 2022). Compétences soutenues : C3, C4, C8.
+@PAGE 147 pdf=147
+# Historique
+P: Les pilotes automatiques existent depuis plus de 100 ans : d’abord ==simples mais peu fiables==, ils sont devenus ==complexes mais extrêmement fiables==.
+P: Vers le milieu du XXe siècle, ils tenaient cap, altitude et vitesse, puis des objectifs de navigation (route, trajectoire). D’où les ==modes== : différentes façons d’atteindre l’objectif du pilote (suivre une route planifiée, mode NAV, ou tenir un cap, mode HDG ; descendre à un taux ou à une vitesse). Des simples interrupteurs, on est passé à des panneaux entiers (==MCP, FCU==) au centre du poste, avec l’affichage des modes.
+P: Étape suivante : le ==système de gestion du vol (FMS)==, qui permet de préprogrammer une route ; le pilote automatique peut voler tout un départ normalisé (SID) sans intervention…
+SUM: Des PA simples et peu fiables aux PA complexes et très fiables. || Modes : façons d’atteindre l’objectif (NAV, HDG…), commandés par MCP/FCU. || FMS : route préprogrammée.
+VOC: pilote automatique | autopilot ;; mode | mode ;; panneau de commande des modes | mode control panel (MCP) ;; système de gestion du vol | flight management system (FMS) ;; départ normalisé aux instruments | standard instrument departure (SID)
+@PAGE 148 pdf=148
+P: … tandis que les affichages d’état (annonces de modes, index) étaient intégrés au ==PFD==. Fiabilité et précision ont ouvert des opérations impossibles à la main : ==atterrissage automatique==, approches PBN.
+P: En résumé : automatisation très capable et fiable, mais ==complexe pour l’utilisateur==.
+# Niveaux d’automatisation
+P: Continuum des ==niveaux d’automatisation== : d’un extrême, pas d’automatisme (vol manuel, sans directeur de vol ni automanette) ; de l’autre, tout automatique (PA et automanette, LNAV/VNAV, modes « managés »).
+P: Chercheurs et pilotes ne l’entendent pas pareil : les chercheurs distinguent 7 à 12 niveaux, dont certains que le pilote ne change pas (lois de commandes de vol électriques) ; les pilotes raisonnent selon les configurations qu’ils utilisent (retenu ici).
+P: Autrefois deux niveaux : manuel ou automatique. Aujourd’hui trois : ==manuel==, PA en automatisation ==tactique== (cap ou altitude choisis au MCP), PA en automatisation ==stratégique== (route programmée au FMS). Le manuel se décline : vol « ==données brutes== », puis avec directeur de vol…
+SUM: PFD, autoland, PBN : très capable mais complexe. || Niveaux : de tout manuel à tout automatique. || Trois niveaux pilotes : manuel, tactique (MCP), stratégique (FMS).
+VOC: écran de vol principal | primary flight display (PFD) ;; directeur de vol | flight director ;; automanette | auto-thrust ;; données brutes | raw data ;; navigation fondée sur les performances | performance-based navigation (PBN)
+@PAGE 149 pdf=149
+P: … puis avec automanette.
+P: En ligne, le pilotage manuel se limite souvent au ==décollage/montée initiale et à la finale/atterrissage== ; davantage en situation anormale et en remise de gaz sur certains avions anciens. La ==panne du PA== reste toujours possible.
+P: Choisir combien et comment utiliser l’automatisation est une compétence en soi : la ==gestion de l’automatisation==, liée à la charge, à la surveillance de trajectoire et au pilotage manuel.
+# Gestion de l’automatisation
+P: Exploitants et constructeurs fixent des politiques (niveau minimal, ou le plus haut disponible), car l’expérience suggère ==moins d’incidents avec plus d’automatisation==. Mais la réalité est difficile à mesurer : si l’on arrêtait tout vol manuel, il n’y aurait plus d’incident manuel, et le PA semblerait plus risqué. Consensus : un niveau élevé a un ==bénéfice net pour la sécurité== (affirmation simplifiée).
+P: Pour l’équipage, gérer l’automatisation fait partie du métier, liée à la gestion de la charge et à la TEM.
+SUM: Manuel surtout au décollage et à l’atterrissage ; panne du PA possible. || Gestion de l’automatisation = compétence. || Plus d’automatisation : bénéfice net, difficile à prouver.
+VOC: gestion de l’automatisation | automation management ;; politique d’automatisation | automation policy ;; bénéfice net | net benefit ;; panne du pilote automatique | autopilot failure
+@PAGE 150 pdf=150
+P: Dans le cadre des politiques, beaucoup de choix restent : c’est un levier clé de la ==gestion de la charge==. Le niveau optimal n’est pas toujours évident et la recherche aide peu.
+P: Bonne pratique : ==anticiper== et utiliser l’automatisation pour éviter les pics prévisibles (programmer l’arrivée au FMS pendant une phase calme). En guidage radar, l’==automatisation tactique== permet de changer souvent d’objectif sans reprogrammer, tout en évitant le pilotage manuel : l’optimum n’est ==pas toujours le niveau le plus élevé==.
+# Automatisation et charge de travail
+P: Le pilotage manuel ==augmente la charge immédiate== et réduit la capacité à gérer la situation ; il aggrave la gravité (pas la probabilité) d’une distraction ; fatigue, stress et sursaut le dégradent. Le PA ne se distrait pas, ne fatigue pas, libère de la capacité pour anticiper. Même pour le PM, la charge est plus faible sous PA (PF et PM surveillent un peu plus la trajectoire sans PA, Jarvis 2017) ; et plus faible encore en modes FMS, si la programmation est juste.
+P: Mais la relation n’est pas linéaire : Bainbridge (1983), ==« l’ironie de l’automatisation »== : elle baisse la charge quand elle est déjà basse et l’augmente quand elle est déjà haute…
+SUM: Anticiper : programmer en phase calme. || Guidage radar : le tactique vaut mieux que le plus haut niveau. || Manuel = charge accrue ; ironie de l’automatisation (Bainbridge).
+VOC: guidage radar | radar vectoring ;; pilote aux commandes | pilot flying (PF) ;; pilote qui surveille | pilot monitoring (PM) ;; ironie de l’automatisation | irony of automation
+@PAGE 151 pdf=151
+P: … exemple classique : moins de charge en croisière, plus à l’arrivée (gérer l’automatisme). Nuances : en court-courrier ou en fin de long-courrier, la croisière est chargée et l’automatisme soulage ; il permet aussi de ==préparer l’arrivée==, ce qui allège ensuite. L’arrivée peut devenir très chargée, surtout s’il faut ==reprogrammer== ; mais est-ce la faute de l’automatisme ou de la gestion de la charge (reprogrammer sans se donner plus de temps) ? Bien gérée, l’automatisation réduit fortement la charge ; mal gérée, elle devient une gêne.
+# Conscience de l’automatisation
+P: Il faut savoir ==ce que fait l’automatisme et pourquoi== : la fameuse question ==« qu’est-ce qu’il fait, là ? »==.
+P: Moyens : annonces de modes (FMA), paramètres affichés, trajectoires tracées, effets sur l’avion. Le ==FMA est la fenêtre principale==, pourtant les modes sont ==mal surveillés et vérifiés== (Sarter 2007). Les abréviations (« NAV », « LVL CHG », « LOC ») ne parlent pas d’elles-mêmes : il faut connaître le fonctionnement par cœur, une raison possible de cette mauvaise surveillance.
+SUM: L’automatisme aide à préparer l’arrivée ; reprogrammer tard surcharge. || Conscience de l’automatisation : « qu’est-ce qu’il fait ? ». || FMA mal surveillé ; abréviations peu parlantes.
+VOC: conscience de l’automatisation | automation awareness ;; annonciateur de mode de vol | flight mode annunciator (FMA) ;; reprogrammer | to reprogram ;; croisière | cruise
+@PAGE 152 pdf=152
+P: En équipage, les deux pilotes doivent partager la même compréhension : un changement ignoré de l’autre crée une confusion épuisante, voire dangereuse. Tout changement doit être ==clairement annoncé et compris==, avec une communication standardisée.
+P: Annoncer le mode avec l’intention : « je descends à 5000 ft en *flight level change* », puis une annonce FMA (« Arm… MCP-Speed »). Risque : une ==annonce automatique== que personne n’écoute ; pire, des pilotes l’annoncent ==sans regarder le FMA==.
+P: Certaines compagnies répartissent les annonces (le PF change de mode, le PM annonce le mode actif, le PF les modes armés) ; à surveiller dans le temps (le PF risque de moins surveiller). Pas de meilleure pratique universelle.
+P: Surveiller et comprendre le FMA est ==essentiel==, surtout en ==RNAV/RNP ou autoland==. Le formateur CRM peut en parler, ainsi que des facteurs humains qui dégradent la conscience des modes : baisse de vigilance, fatigue, sursaut, stress, et simple ==charge ou conversation distrayante== qui fait sortir le FMA du circuit visuel.
+SUM: Annoncer et comprendre tout changement à deux. || Annonces FMA : utiles mais risque d’automatisme et d’annonce sans regarder. || FMA essentiel en RNP/autoland ; distraction = FMA oublié.
+VOC: annonce | call-out ;; mode armé | armed mode ;; mode actif | active mode ;; performance de navigation requise | required navigation performance (RNP) ;; atterrissage automatique | autoland
+@PAGE 153 pdf=153
+# Automatisation et conscience de la trajectoire
+P: Avec le PA engagé, les pilotes ==surveillent moins les instruments primaires== (résultat constant, Jarvis 2017) : la conscience de la trajectoire immédiate baisse, mais celle de la ==trajectoire future== et de l’ensemble de l’opération peut augmenter. Certains pensent que s’entraîner au manuel (données brutes) entretient la surveillance en vol automatique : aucune étude ne l’a montré. Question complexe, sans réponse simple.
+# Automatisation et pilotage manuel
+P: Crainte ancienne : l’usage intensif de l’automatisme ==éroderait le pilotage manuel== faute de pratique, et freinerait son apprentissage chez les débutants (« dépendance », voire « addiction » à l’automatisation). Preuves : enquêtes, analyses, sondages, opinions, un peu de recherche. Trois hypothèses largement admises :
+1. ==Un pilotage manuel insuffisant est une menace actuelle==
+P: L’IATA (2020) relève une hausse des erreurs de pilotage manuel (sondages de pilotes)…
+SUM: PA engagé : moins de surveillance des instruments primaires, plus de vision d’ensemble. || Crainte : érosion du pilotage manuel, dépendance. || Hypothèse 1 : le manque de pilotage manuel est une menace.
+VOC: instruments primaires | primary flight instruments ;; dépendance à l’automatisation | automation dependency ;; trajectoire future | extended flight path ;; pilotage manuel | manual flying
+@PAGE 154 pdf=154
+P: … plusieurs accidents y sont associés : ==AF447 (2009)==, Air Nippon (2011), ==Asiana 214 (2013)==, United 863 (1998), Ethiopian 409 (2010), ==Colgan/Continental 3407 (2009)==… Selon l’OACI, ==92 %== des accidents liés à la trajectoire entre 2009 et 2016 comportaient une erreur de pilotage manuel.
+P: À questionner : on ne peut jamais mesurer exactement la part du pilotage manuel dans un accident ; les chiffres (« 85 % des accidents… ») reposent sur des ==jugements subjectifs==. Il reste probable que le pilotage manuel contribue à certains accidents.
+2. ==Le pilotage manuel s’érode==
+P: On parle de ==perte de savoir-faire== (*skill fade*). Le point 1 ne le prouve pas : des accidents de pilotage existent depuis un siècle ; leur nombre dépend aussi du trafic et de la quantité de vol manuel ; et ils touchent aussi des pilotes d’aviation générale qui volent toujours à la main.
+P: Recherches : la pratique récente améliore la précision ; Ebbatson (2009) sur le suivi ILS ; Haslbeck (2014) entre commandants long-courrier…
+SUM: Accidents cités : AF447, Asiana 214, Colgan 3407… ; 92 % selon l’OACI. || Chiffres fondés sur des jugements subjectifs. || Hypothèse 2 : érosion ; accidents ≠ preuve.
+VOC: perte de savoir-faire | skill fade ;; système d’atterrissage aux instruments | instrument landing system (ILS) ;; erreur de pilotage | mishandling ;; Organisation de l’aviation civile internationale | ICAO
+@PAGE 155 pdf=155
+P: … et copilotes court-courrier ; Haslbeck (2018), A320 contre A340 : lien entre ==habileté fine et pratique récente==. Conclusion : la ==pratique récente améliore la précision==.
+P: Mais cela ne prouve pas une érosion générale dans le temps : les tendances à long terme sont difficiles à mesurer, et le « pilotage manuel » va de la précision d’un suivi ILS à la ==récupération d’une position inhabituelle==. La précision ILS ne prédit pas la sortie de décrochage, le virage serré coordonné ou la panne moteur à la main. Le pilotage manuel se pratique aussi sous différents niveaux d’assistance (directeur de vol, automanette) : il a de multiples facettes.
+P: L’absence de preuve n’est pas la preuve du contraire : l’érosion reste ==probable==, mais la recherche n’est concluante que sur la pratique récente.
+3. ==L’automatisation est la cause de l’érosion==
+SUM: Pratique récente = meilleure précision ILS (Ebbatson, Haslbeck). || Érosion à long terme : probable mais pas prouvée ; le manuel a de multiples facettes. || Hypothèse 3 : l’automatisation en serait la cause.
+VOC: habileté motrice fine | fine-motor skill ;; position inhabituelle | upset (unusual attitude) ;; virage serré | steep turn ;; décrochage | stall
+@PAGE 156 pdf=156
+P: L’idée : le PA a pris la tâche du pilote, dont l’habileté décline (ou ne se développe pas) faute de pratique ; et le reste du vol manuel est assisté (directeur de vol, lois de commande, stabilisation). Les compétences « manche et palonnier » ne servent presque plus.
+P: Quatre études citées : Veillette (1995), Ebbatson (2009), Casner/NASA (2014), Haslbeck et Hoermann/DLR (2016).
+P: Haslbeck et Hoermann affirment que ==« l’automatisation érode l’habileté fine »== : les pilotes d’A340 (long-courrier) étaient moins précis que ceux d’A320. Cela montre que le ==manque de pratique physique== nuit, l’automatisation étant au moins une cause de ce manque.
+P: Mais l’affirmation directe n’est pas soutenue : les pilotes d’A320 ont sans doute été ==plus exposés à l’automatisation== (plus d’approches) ; les résultats suggéreraient plutôt l’inverse. Formulation plus juste : ==« le manque de pratique physique dû à l’usage de l’automatisation érode le pilotage manuel »==. Les affirmations trompeuses, une fois résumées, deviennent des « faits » pour régulateurs, enquêteurs et…
+SUM: Le vol manuel restant est assisté. || A340 moins précis que A320 : effet du manque de pratique. || Ce n’est pas l’automatisation elle-même : formulation trompeuse.
+VOC: manche et palonnier | stick and rudder ;; commandes de vol électriques | fly-by-wire ;; causalité | causality ;; exposition | exposure
+@PAGE 157 pdf=157
+P: … exploitants, difficiles à contester ensuite.
+P: Casner (2014) : ==aucun lien== entre expérience manuelle récente déclarée et performance ; compétences « en grande partie intactes, même peu pratiquées ».
+P: Ebbatson compare la part d’heures sur types manuels et automatisés : léger lien avec les notes de pilotage manuel. Veillette (1995) compare la version automatisée et l’ancienne version du même avion : moins bons en manuel sur le type automatisé — sans doute la preuve la plus forte, avec des limites (même simulateur pour tous, écrans EFIS ou électromécaniques).
+P: Bilan : ==le manque de pratique dégrade le pilotage manuel==, et l’automatisation est au moins un facteur qui réduit la pratique ; cela ne prouve pas un effet direct de l’automatisation. Il faudrait séparer usage de l’automatisation et exposition au vol manuel.
+SUM: Casner : compétences surtout intactes. || Veillette, Ebbatson : indices d’effet par déplacement de la pratique. || Bilan : manque de pratique nuit ; effet direct non démontré.
+VOC: système d’instruments de vol électroniques | electronic flight instrument system (EFIS) ;; électromécanique | electro-mechanical ;; type automatisé | automated type ;; heures de vol | logged time
+@PAGE 158 pdf=158
+# Solutions de l’industrie
+P: Trois axes : ==plus de vol manuel en exploitation==, plus en formation à tous les stades, et la ==formation à la prévention et à la récupération des positions inhabituelles (UPRT)==.
+P: Les autorités ont demandé d’encourager la pratique manuelle (FAA SAFO 17007, 2017 ; EASA SIB 2013-05 ; Transports Canada AC-600-06, 2015), y compris des étapes entières à la main quand c’est sûr. Les CBTA font du pilotage manuel une compétence à part ; l’UPRT est obligatoire pour la licence professionnelle et la qualification de type, parfois sur avions de voltige.
+P: Bénéfices probables, mais incertitudes : ces solutions réduisent-elles vraiment la menace ? créent-elles leurs propres risques ? Rien n’est établi.
+# Conclusions
+P: L’automatisation fiable et complexe a créé quelques menaces, moins nettes qu’on le dit. Elle est un ==pilier de l’aviation ultra-sûre== : si elle a contribué à quelques accidents, elle en a ==évité bien plus==. Les initiatives de sécurité doivent compléter ce système, pas le contrarier.
+SUM: Solutions : vol manuel en ligne, en formation, UPRT. || Autorités : FAA, EASA, Transports Canada ; CBTA. || L’automatisation évite bien plus d’accidents qu’elle n’en cause.
+VOC: prévention et récupération des positions inhabituelles | upset prevention and recovery training (UPRT) ;; qualification de type | type rating ;; avion de voltige | aerobatic aircraft ;; bulletin d’information de sécurité | safety information bulletin (SIB)
+@SHEET
+* Trois niveaux pour le pilote : manuel, tactique (MCP/FCU), stratégique (FMS) ; l’optimum n’est pas toujours le plus haut.
+* Anticiper : programmer en phase calme ; reprogrammer tard surcharge (ironie de l’automatisation).
+* FMA = fenêtre sur l’automatisme : regarder, annoncer, partager ; « qu’est-ce qu’il fait ? ».
+* La pratique récente maintient la précision manuelle ; l’effet direct de l’automatisation n’est pas démontré.
+@NUMS
+100 ans | ancienneté des pilotes automatiques
+3 | niveaux d’automatisation pour le pilote
+7–12 | niveaux selon les chercheurs
+92 % | accidents de trajectoire 2009–2016 avec erreur de pilotage manuel (OACI)
+2009 | AF447

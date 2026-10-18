@@ -169,7 +169,8 @@ def main():
     --dump      : écrit tools/livre/<id>/figtext.json (textes des figures, à traduire)
     --tr        : applique tools/livre/<id>/figtr.json (figures et tableaux traduits en place)
     Les figures listées dans tools/livre/<id>/config.json (« skip » : ["PPP_N", …]) sont écartées
-    (visuels décoratifs, bandeaux de chapitre)."""
+    (visuels décoratifs, bandeaux de chapitre) ; « manual » : {"PPP": [[x0, y0, x1, y1, "n°"], …]}
+    remplace la détection d'une page par des cadres en points PDF (tableaux sur plusieurs pages…)."""
     import figtrans
     book, pdf = sys.argv[1], sys.argv[2]
     dry = '--dry' in sys.argv
@@ -186,6 +187,7 @@ def main():
     if os.path.exists(os.path.join(tdir, 'config.json')):
         cfg = json.load(open(os.path.join(tdir, 'config.json'), encoding='utf-8'))
     skip = set(cfg.get('skip', []))
+    manual = cfg.get('manual', {})  # {"PPP": [[x0, y0, x1, y1, "n° ou null"], …]}
     mapping = None
     if '--tr' in sys.argv:
         mapping = json.load(open(os.path.join(tdir, 'figtr.json'), encoding='utf-8'))
@@ -199,6 +201,8 @@ def main():
         gs = group(find_regions(page), caps)
         gs.sort(key=lambda g: (g['boxes'][0][1] > page.rect.height * 0.0, g['boxes'][0][0] > page.rect.width * 0.5 and (g['boxes'][0][2] - g['boxes'][0][0]) < page.rect.width * 0.6, g['boxes'][0][1]))
         gs = [g for gi, g in enumerate(gs) if '%03d_%d' % (pn, gi + 1) not in skip]
+        if str(pn) in manual:  # cadres donnés à la main (points PDF) : remplacent la détection de la page
+            gs = [{'no': m[4], 'boxes': [list(m[:4])]} for m in manual[str(pn)]]
         boxes = [b for g in gs for b in g['boxes']]
         if dump:
             for blk in figtrans.blocks(page, boxes):

@@ -109,7 +109,8 @@
       { href: 'livre.html?b=afh', icon: 'bookOpen', img: 'livre/afh/cover.webp', label: 'Manuel de vol (AFH)' },
       { href: 'livre.html?b=phak', icon: 'bookOpen', img: 'livre/phak/cover.webp', label: 'Manuel du pilote (PHAK)' },
       { href: 'livre.html?b=rmh', icon: 'bookOpen', img: 'livre/rmh/cover.webp', label: 'Gestion des risques (RMH)' },
-      { href: 'livre.html?b=ac6022', icon: 'bookOpen', img: 'livre/ac6022/cover.webp', label: 'Décision aéronautique (AC 60-22)' }
+      { href: 'livre.html?b=ac6022', icon: 'bookOpen', img: 'livre/ac6022/cover.webp', label: 'Décision aéronautique (AC 60-22)' },
+      { href: 'livre.html?b=cap737', icon: 'bookOpen', img: 'livre/cap737/cover.webp', label: 'Facteurs humains (CAP 737)' }
     ]
   };
   var CURRENT_APP = (window.CURRENT_APP && MENUS[window.CURRENT_APP]) ? window.CURRENT_APP : 'ppl';

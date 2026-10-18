@@ -78,7 +78,9 @@
       { id: 'rmh', code: 'FAA-H-8083-2A', title: 'Gestion des risques', en: 'Risk Management Handbook',
         desc: 'Minima personnels, PAVE, IMSAFE, évaluer et atténuer le risque, TEM, automatisation, décision en vol.', c: ['#b45309', '#0f766e'] },
       { id: 'ac6022', code: 'FAA AC 60-22', title: 'Décision aéronautique', en: 'Aeronautical Decision Making',
-        desc: 'Les cinq attitudes dangereuses et leurs antidotes, pièges opérationnels, stress, modèle DECIDE, I’M SAFE.', c: ['#334155', '#64748b'] }
+        desc: 'Les cinq attitudes dangereuses et leurs antidotes, pièges opérationnels, stress, modèle DECIDE, I’M SAFE.', c: ['#334155', '#64748b'] },
+      { id: 'cap737', code: 'CAA CAP 737', title: 'Facteurs humains de l’équipage', en: 'Flight-crew Human Factors Handbook',
+        desc: 'CRM et TEM : attention, erreur, charge de travail, surprise, conscience de la situation, décision, stress, fatigue, communication, leadership.', c: ['#1e3a8a', '#0e7490'] }
     ];
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }

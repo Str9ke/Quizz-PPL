@@ -33,11 +33,13 @@ SERIF = {
     (False, True): ['C:/Windows/Fonts/timesi.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf'],
     (True, True): ['C:/Windows/Fonts/timesbi.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf'],
 }
+SCRIPT = ['C:/Windows/Fonts/segoesc.ttf', 'C:/Windows/Fonts/LHANDW.TTF', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf']
 _SERIF = False
 
 
 def font(bold, italic, size):
-    for p in (SERIF if _SERIF else FONTS)[(bool(bold), bool(italic))]:
+    paths = SCRIPT if _SERIF == 'script' else (SERIF if _SERIF else FONTS)[(bool(bold), bool(italic))]
+    for p in paths:
         if os.path.exists(p): return ImageFont.truetype(p, size)
     return ImageFont.load_default()
 
@@ -82,7 +84,7 @@ def apply(img_path, items):
     out = Image.fromarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
     global _SERIF
     for it, auto in zip(items, colors):
-        _SERIF = bool(it.get('serif'))
+        _SERIF = 'script' if it.get('script') else bool(it.get('serif'))   # « script » : écriture manuscrite
         x0, y0, x1, y1 = it['box']
         w, h = x1 - x0, y1 - y0
         ang = it.get('angle', 0)
