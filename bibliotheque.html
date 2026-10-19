@@ -82,9 +82,8 @@
         desc: 'Les cinq attitudes dangereuses et leurs antidotes, pièges opérationnels, stress, modèle DECIDE, I’M SAFE.', c: ['#334155', '#64748b'] },
       { id: 'cap737', code: 'CAA CAP 737', title: 'Facteurs humains de l’équipage', en: 'Flight-crew Human Factors Handbook',
         desc: 'CRM et TEM : attention, erreur, charge de travail, surprise, conscience de la situation, décision, stress, fatigue, communication, leadership.', c: ['#1e3a8a', '#0e7490'] },
-      // Livre protégé (CAE Oxford) : préparé en local seulement (livre/hpl/ ignoré par Git) ; la carte n'apparaît que s'il est présent.
-      { id: 'hpl', opt: true, code: 'ATPL 040 (Oxford)', title: 'Performances et limites humaines', en: 'Human Performance and Limitations',
-        desc: 'Usage privé. Corps humain, vision, oreille, hypoxie, santé, stress, sommeil, information et erreur, décision, CRM.', c: ['#7c2d12', '#b45309'] }
+      { id: 'hpl', code: 'ATPL 040 (Oxford)', title: 'Performances et limites humaines', en: 'Human Performance and Limitations',
+        desc: 'Corps humain, vision, oreille, hypoxie, santé, stress, sommeil, information et erreur, décision, CRM.', c: ['#7c2d12', '#b45309'] }
     ];
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function jget(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }

@@ -113,4 +113,12 @@
   window.appIsNative = isNative;
   /* Lien vers la configuration de l'application courante. */
   window.appConfigUrl = function () { return 'configuration.html?app=' + CURRENT; };
+
+  /* Mise à jour automatique (site, PWA et APK) : voir js/auto-update.js, chargé sur toutes les pages. */
+  try {
+    var me = document.currentScript && document.currentScript.src;
+    var s = document.createElement('script');
+    s.src = (me ? me.replace(/[^/]*$/, '') : 'js/') + 'auto-update.js?v=20261019a';
+    document.head.appendChild(s);
+  } catch (e) { /* ignore */ }
 })();

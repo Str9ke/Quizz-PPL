@@ -32,10 +32,12 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   `config.js` de l'APK contient `APP_BUILD.app`. Une seule version (`CACHE_NAME`) pour les trois.
 - Chaque APK a son propre stockage : connexion par appli (`js/account.js`), transfert du stockage local via le compte
   (`js/app-transfer.js`, Firestore `quizProgress/{uid}/transfer`).
+- **Mise à jour automatique** : `js/auto-update.js` (chargé par `js/apps.js`) — web : `reg.update()` + rechargement ;
+  APK : lit la pré-release GitHub de l'appli (titre = version), télécharge l'APK (seul en Wi-Fi) et ouvre l'installateur.
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v223`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v224`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -48,7 +50,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 Questions : `section_easa_*.json`, `gligli_*_easy/hard.json`, `questions_*.json` (4742 questions) ; images `IMAGES_*`.
 Scripts : `build_questions_easa*.py`, `check_duplicates.py`, `dedupe_questions.py`. Pages : `quiz.html`, `examen.html`,
 `epreuve.html`, `stats.html`, `echecs.html`, `difficultes.html`, `historique.html`, `search.html`, `fiches.html`, `syllabus.html`,
-`navlog.html`, `opmet.html`, `urgences.html` (onglets F-150L + **fiches F 172 M** : `js/urgences172.js`, PDF A5 `fiche_urgence_172M_A5.pdf` à régénérer par impression Chrome si les fiches changent ; manuels sources dans `Livres/`), `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
+`navlog.html`, `opmet.html`, `urgences.html` (onglets F-150L + **fiches F 172 M** : `js/urgences172.js`, 5 pages de 138 × 210 mm (A5 moins 1 cm, pochettes plastiques), mise en page FIXE (`PAGES` = une page : 1 moteur, 2 incendies, 3 atterrissages, 4 électrique + moteur irrégulier, 5 givrage/vrille), PDF `fiche_urgence_172M_A5.pdf` à régénérer par impression Chrome si les fiches changent ; manuels sources dans `Livres/`), `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
 `envoi-fichiers.html` (envoi de gros fichiers, jusqu'à 300 Mo).
 
 ## Le lecteur de livres (`livre.html?b=afh|phak`)
@@ -93,8 +95,9 @@ synchronisés, hors ligne, page originale en pleine largeur par défaut + vision
   les étiquettes dans `tools/livre/<id>/ocr.json` ; on les traduit dans `tools/livre/<id>/rastertr.py` (→ raster.json, taille
   d’origine de chaque étiquette) puis `rasterfix.py`. Légendes « Figure 1.1 » (chapitre.figure) reconnues.
   **Livre Oxford `hpl`** (Human Performance and Limitations, ATPL 040) : ŒUVRE PROTÉGÉE (reproduction interdite sans accord
-  écrit de CAE Oxford) → `livre/hpl/` et `tools/livre/hpl/` sont dans `.gitignore`, jamais poussés ; la carte de
-  `bibliotheque.html` (`opt: true`) n’apparaît que si le livre est présent en local. Ne pas le publier sans autorisation.
+  écrit de CAE Oxford) → publié dans l’appli à la demande de Thomas (19/10/2026) ; seules les sources de travail
+  `tools/livre/hpl/` restent en local (`.gitignore`). Une carte de `bibliotheque.html` avec `opt: true` n’apparaît que si
+  le livre est présent.
   Dépendances locales : pymupdf, pillow, numpy, opencv-python-headless.
 
 ## Pièges connus

@@ -7,7 +7,7 @@
  * Même couleur = même organe, d'une fiche à l'autre : on retrouve le geste sans lire.
  * Aide-mémoire : ne remplace pas le manuel de vol.
  *
- * Mise en page : pages au format A5 (planche de vol). Toutes les tailles sont en cqw (1 % de la largeur de la
+ * Mise en page : pages de 138 × 210 mm (A5 moins 1 cm de large, pour tenir dans une pochette plastique). Toutes les tailles sont en cqw (1 % de la largeur de la
  * page) : la fiche garde exactement les mêmes proportions à l'écran (téléphone, ordinateur) et à l'impression.
  * Un autre avion (ex. Cessna 150 M) = mêmes pages avec d'autres vitesses : voir `AIRCRAFT`.
  */
@@ -62,7 +62,9 @@
   };
 
   /* ------------------------------------------------------------------ contenu : étapes [commande, action, détail?] */
-  /* Une étape = [commande, action, détail] ; deux gestes courts qui se suivent peuvent partager une ligne :
+  /* Une entrée de PAGES = UNE page imprimée : la mise en page est fixe (page 1 moteur, page 2 incendies…),
+     elle ne dépend pas de l'écran. `k` = couleur du bandeau des blocs de la page (un bloc peut avoir son `k`).
+     Une étape = [commande, action, détail] ; deux gestes courts qui se suivent peuvent partager une ligne :
      [commande, action, détail, commande2, action2, détail2] (ordre de lecture : gauche puis droite). */
   var PAGES = [
     { k: 'moteur', blocks: [
@@ -122,12 +124,7 @@
       ], note: 'Protéger la tête à l’impact. L’avion ne flotte que quelques minutes.' },
       { t: 'PNEU ÉCLATÉ OU DÉGONFLÉ', steps: [
         ['volets', 'NORMAUX', '', 'pil', 'CABRER'], ['frein', 'FREIN OPPOSÉ', 'à fond dès le contact', 'mag', 'OFF']
-      ], note: 'Garder l’aile haute côté pneu défectueux.' },
-      { t: 'SANS COMMANDE DE PROFONDEUR', steps: [
-        ['vit', V.profond, 'palier · volets 20°'], ['gaz', 'PUISSANCE', 'seule pour régler la descente'],
-        ['pil', 'COMPENSATEUR', 'ne plus y toucher une fois réglé'],
-        ['pil', 'ARRONDI', 'compensateur plein cabré + régime pour poser à plat'], ['gaz', 'COUPER', 'dès le contact']
-      ], note: 'La réduction des gaz fait piquer : risque de toucher du nez.' }
+      ], note: 'Garder l’aile haute côté pneu défectueux.' }
     ] },
 
     { k: 'elec', blocks: [
@@ -141,34 +138,39 @@
       { t: 'AMPÈREMÈTRE / SURTENSION', steps: [
         ['si', 'TROP FAIBLE', 'batterie qui se décharge : ALT OFF, atterrir dès que possible'],
         ['si', 'SURTENSION', 'lampe allumée : MASTER OFF puis ON'], ['si', 'LAMPE REVIENT', 'interrompre le vol dès que possible']
-      ], note: 'De nuit : remettre ALT sur ON au moment des volets ou des phares.' }
-    ] },
-
-    { k: 'moteur2', blocks: [
-      { t: 'GIVRAGE CARBURATEUR', steps: [
+      ], note: 'De nuit : remettre ALT sur ON au moment des volets ou des phares.' },
+      { k: 'moteur2', t: 'GIVRAGE CARBURATEUR', steps: [
         ['gaz', 'PLEIN GAZ', '', 'rcarb', 'TIRÉ À FOND'], ['rcarb', 'COUPER', 'dès que le moteur est régulier, puis réajuster les gaz']
       ], note: 'En croisière : réchauffage au minimum nécessaire, mélange appauvri en conséquence.' },
-      { t: 'BOUGIES ENCRASSÉES / MAGNÉTO', steps: [
+      { k: 'moteur2', t: 'BOUGIES ENCRASSÉES / MAGNÉTO', steps: [
         ['mag', 'L puis R', 'test · perte nette sur une seule = bougies ou magnéto'], ['melange', 'APPAUVRIR', 'au réglage normal de croisière'],
         ['melange', 'RICHE', 'si pas mieux au bout de quelques minutes'], ['mag', 'BOTH', 'rallier l’aérodrome le plus proche']
       ] },
-      { t: 'BAISSE DE PRESSION D’HUILE', steps: [
+      { k: 'moteur2', t: 'BAISSE DE PRESSION D’HUILE', steps: [
         ['si', 'T° NORMALE', 'manomètre probablement HS : atterrir à l’aérodrome le plus proche'],
         ['si', 'T° EN HAUSSE', 'panne imminente : réduire le régime, choisir un terrain, bas régime à l’approche']
-      ] },
-      { k: 'givrage', t: 'GIVRAGE EN VOL · vol interdit, traversée possible', steps: [
+      ] }
+    ] },
+
+    { k: 'givrage', blocks: [
+      { t: 'GIVRAGE EN VOL · vol interdit, traversée possible', steps: [
         ['chauf', 'PITOT ON', '', 'rcarb', 'ON'], ['pil', 'DEMI-TOUR / ALTITUDE', 'sortir de la zone givrante'],
-        ['chauf', 'CABINE À FOND', 'dégivrage pare-brise', 'gaz', 'OUVRIR'], ['volets', 'RENTRÉS', 'efficacité de la profondeur'],
+        ['chauf', 'CABINE À FOND', 'dégivrage pare-brise'], ['gaz', 'OUVRIR', 'augmenter le régime'], ['volets', 'RENTRÉS', 'efficacité de la profondeur'],
         ['vit', V.givrage, 'selon l’épaisseur · virages larges · décrochage plus élevé']
       ], note: 'Ouvrir la glace gauche et racler le pare-brise. Atterrir à plat, au plus proche aéroport.' },
       { k: 'vrille', t: 'INVOLONTAIRE', steps: [
-        ['gaz', 'RALENTI', '', 'pil', 'AILERONS NEUTRES'], ['pil', 'PALONNIER', 'à fond, sens OPPOSÉ à la rotation'],
+        ['gaz', 'RALENTI'], ['pil', 'AILERONS NEUTRES'], ['pil', 'PALONNIER', 'à fond, sens OPPOSÉ à la rotation'],
         ['pil', 'PROFONDEUR', 'à piquer, vivement, après ¼ de tour'], ['pil', 'PALONNIER NEUTRE', 'rotation arrêtée · ressource modérée']
       ] },
       { k: 'vrille', t: 'SPIRALE · mauvaise visibilité', steps: [
         ['gaz', 'FERMÉS', '', 'rcarb', 'ON'], ['pil', 'AILERONS + DIRECTION', 'aligner l’avion du turn coordinator'],
         ['vit', V.spirale, 'régler la profondeur · ne pas toucher au volant'], ['pil', 'SORTIE DES NUAGES', 'reprendre le vol normal']
-      ] }
+      ] },
+      { k: 'atterr', t: 'SANS COMMANDE DE PROFONDEUR', steps: [
+        ['vit', V.profond, 'palier · volets 20°'], ['gaz', 'PUISSANCE', 'seule pour régler la descente'],
+        ['pil', 'COMPENSATEUR', 'ne plus y toucher une fois réglé'],
+        ['pil', 'ARRONDI', 'compensateur plein cabré + régime pour poser à plat'], ['gaz', 'COUPER', 'dès le contact']
+      ], note: 'La réduction des gaz fait piquer : risque de toucher du nez.' }
     ] }
   ];
 
@@ -203,50 +205,40 @@
     return '<footer>' + esc(AIRCRAFT.huile) + '<br>Source : manuel de vol REIMS/CESSNA F 172 M (' + esc(AIRCRAFT.reg) + '), sections 2, 3 et 4. Aide-mémoire : ne remplace pas le manuel de vol.</footer>';
   }
 
-  /* Pagination automatique : les blocs s'enchaînent, une page A5 est ajoutée quand la suivante ne tient plus.
-     Un bloc n'est jamais coupé en deux (une procédure se lit d'un seul coup d'œil). */
-  function paginate(host) {
-    var items = [];
-    PAGES.forEach(function (g) { g.blocks.forEach(function (b) { items.push(block(b, g.k)); }); });
-    function newPage(first) {
+  /* Mise en page FIXE : une entrée de PAGES = une page (page 1 moteur, page 2 incendies…). Elle ne dépend pas
+     de l'écran : les tailles sont en cqw, la page a les mêmes proportions partout (même onglet caché au chargement). */
+  function layout(host) {
+    PAGES.forEach(function (g, i) {
       var a = document.createElement('article'); a.className = 'f1-page';
-      a.innerHTML = '<header><span>Urgences ' + esc(AIRCRAFT.name) + '</span><em>' + esc(AIRCRAFT.reg) + '</em></header>' + (first ? legend() + keyFigures() : '');
-      host.appendChild(a); return a;
-    }
-    function overflows(a) { return a.scrollHeight > a.clientHeight + 1; }
-    function put(a, html) { var d = document.createElement('div'); d.innerHTML = html; var el = d.firstChild; a.appendChild(el); return el; }
-    var pages = [], cur = newPage(true); pages.push(cur);
-    items.forEach(function (html) {
-      var el = put(cur, html);
-      if (overflows(cur)) {
-        cur.removeChild(el);
-        cur = newPage(false); pages.push(cur); put(cur, html);
-      }
+      a.innerHTML = '<header><span>Urgences ' + esc(AIRCRAFT.name) + '</span><em>' + esc(AIRCRAFT.reg) + ' · ' + (i + 1) + '/' + PAGES.length + '</em></header>'
+        + (i === 0 ? legend() + keyFigures() : '')
+        + g.blocks.map(function (b) { return block(b, g.k); }).join('')
+        + (i === PAGES.length - 1 ? footer() : '');
+      host.appendChild(a);
     });
-    var f = put(cur, footer());
-    if (overflows(cur)) { cur.removeChild(f); cur = newPage(false); pages.push(cur); put(cur, footer()); }
-    pages.forEach(function (a, i) { a.querySelector('header em').textContent = AIRCRAFT.reg + ' · ' + (i + 1) + '/' + pages.length; });
-    return pages.length;
+    return PAGES.length;
   }
 
   function render(root) {
     root.innerHTML = '<div class="f1-bar"><div><b>Fiches d’urgence ' + esc(AIRCRAFT.name) + '</b> · ' + esc(AIRCRAFT.reg) + '<br>'
-      + '<small id="f1Count">Format A5 · une couleur = une commande</small></div>'
-      + '<span class="f1-btns"><a class="f1-print" href="fiche_urgence_172M_A5.pdf" target="_blank" rel="noopener">📄 PDF A5</a>'
+      + '<small id="f1Count">138 × 210 mm · une couleur = une commande</small></div>'
+      + '<span class="f1-btns"><a class="f1-print" href="fiche_urgence_172M_A5.pdf" target="_blank" rel="noopener">📄 PDF</a>'
       + '<button type="button" class="f1-print" id="f1Print">🖨 Imprimer</button></span></div><div class="f1-pages" id="f1Pages"></div>';
-    var n = paginate(document.getElementById('f1Pages'));
-    document.getElementById('f1Count').textContent = 'Format A5 · ' + n + ' pages · une couleur = une commande';
+    var n = layout(document.getElementById('f1Pages'));
+    document.getElementById('f1Count').textContent = '138 × 210 mm (A5 moins 1 cm) · ' + n + ' pages · une couleur = une commande';
     document.getElementById('f1Print').onclick = function () { document.body.classList.add('print-f172'); window.print(); };
     window.addEventListener('afterprint', function () { document.body.classList.remove('print-f172'); });
   }
 
   /* ------------------------------------------------------------------ styles */
+  /* SCALE agrandit tout le contenu (toutes les tailles cqw) : à régler si une page déborde ou reste trop vide. */
+  var SCALE = 1.02;
   var css = ''
     + '.f1-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;font-size:.95em}'
     + '.f1-bar small{opacity:.7}'
     + '.f1-print{padding:9px 16px;border-radius:20px;border:0;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;font-weight:700;cursor:pointer;text-decoration:none;font-size:.85em;display:inline-block}.f1-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}'
     + '.f1-pages{display:flex;flex-direction:column;align-items:center;gap:16px}'
-    + '.f1-page{container-type:inline-size;width:min(100%,148mm);aspect-ratio:148/210;box-sizing:border-box;padding:3cqw 3.2cqw;background:#fff;color:#111;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;gap:1cqw;font-family:Arial,Helvetica,sans-serif}'
+    + '.f1-page{container-type:inline-size;width:min(100%,138mm);aspect-ratio:138/210;box-sizing:border-box;padding:3cqw 3.2cqw;background:#fff;color:#111;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;gap:1cqw;font-family:Arial,Helvetica,sans-serif}'
     + '.f1-page header{display:flex;justify-content:space-between;align-items:baseline;margin:-3cqw -3.2cqw 0;padding:1.4cqw 3.2cqw;color:#fff;background:#263238}'
     + '.f1-page>*{flex-shrink:0}.f1-page header span{font-size:4.2cqw;font-weight:800;letter-spacing:.02em;text-transform:uppercase}'
     + '.f1-page header em{font-size:2.4cqw;font-style:normal;opacity:.9}'
@@ -257,7 +249,7 @@
     + '.f1-block{display:flex;flex-direction:column;gap:.4cqw;flex:0 0 auto}'
     + '.f1-block h3{margin:0;padding:.35cqw 1.2cqw;background:#263238;color:#fff;font-size:2.5cqw;letter-spacing:.03em;border-radius:.8cqw}'
     + '.f1-row{display:flex;align-items:center;gap:1.2cqw;counter-increment:s}'
-    + '.f1-block{counter-reset:s}'
+    + '.f1-block{counter-reset:s}.f1-block+.f1-block{margin-top:auto}'
     + '.f1-row::before{content:counter(s);flex:0 0 3.2cqw;font-size:2.4cqw;font-weight:700;color:#78909c;text-align:right}'
     + '.f1-chip{flex:0 0 21.5cqw;box-sizing:border-box;text-align:center;font-size:2.6cqw;font-weight:800;letter-spacing:.02em;border-radius:.9cqw;line-height:3.9cqw;height:3.9cqw;white-space:nowrap}'
     + '.f1-act{flex:1 1 auto;min-width:0;font-size:3.4cqw;font-weight:800;line-height:1.05;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:1.2cqw}'
@@ -266,19 +258,20 @@
     + '.f1-warn{background:#ffebee;border-left:1cqw solid #c62828;padding:.6cqw 1.3cqw;font-size:2.55cqw;font-weight:700;border-radius:.6cqw}'
     + '.f1-note{background:#fff8e1;border-left:1cqw solid #f9a825;padding:.5cqw 1.3cqw;font-size:2.3cqw;border-radius:.6cqw}'
     + '.f1-page footer{margin-top:auto;font-size:2cqw;color:#455a64;border-top:.2cqw solid #cfd8dc;padding-top:.8cqw}'
-    /* impression : une page A5 par feuille, couleurs conservées */
-    + '@media print{@page{size:A5;margin:0}'
+    /* impression : une page 138 × 210 mm par feuille (A5 moins 1 cm de large), couleurs conservées */
+    + '@media print{@page{size:138mm 210mm;margin:0}'
     + 'body.print-f172>*:not(.f1-printroot){display:none!important}'
     + 'body.print-f172 .f1-printroot{display:block!important;margin:0!important;padding:0!important}'
     + 'body.print-f172 .f1-bar{display:none}body.print-f172 .urg-hero,body.print-f172 .urg-tabs{display:none!important}'
     + 'body.print-f172 .f1-pages{display:block}'
-    + 'body.print-f172 .f1-page{width:148mm;height:210mm;border-radius:0;box-shadow:none;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + 'body.print-f172 .f1-page{width:138mm;height:210mm;border-radius:0;box-shadow:none;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     + '}';
 
   function init() {
     var root = document.getElementById('f172Root');
     if (!root) return;
-    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+    var st = document.createElement('style');
+    st.textContent = css.replace(/(\d*\.?\d+)cqw/g, function (m, n) { return +(n * SCALE).toFixed(2) + 'cqw'; }); document.head.appendChild(st);
     var wrap = root.closest('.f1-printroot') || root; wrap.classList.add('f1-printroot');
     render(root);
   }
