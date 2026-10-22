@@ -229,13 +229,26 @@
     document.body.classList.remove('print-f172');
     marked.forEach(function (n) { n.classList.remove('f1-anc'); }); marked = [];
   }
+  var PDF = 'fiche_urgence_172M_A5.pdf';
+  function openPdfNative() {
+    var C = window.Capacitor, P = C && C.Plugins;
+    if (!(C && C.isNativePlatform && C.isNativePlatform() && P && P.Filesystem && P.FileOpener)) return false;
+    fetch(PDF).then(function (r) { return r.blob(); }).then(function (b) {
+      return new Promise(function (ok, ko) {
+        var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ko; fr.readAsDataURL(b);
+      });
+    }).then(function (data) {
+      return P.Filesystem.writeFile({ path: PDF, data: data, directory: 'CACHE' });
+    }).then(function (res) {
+      return P.FileOpener.open({ filePath: res.uri, contentType: 'application/pdf' });
+    }).catch(function (e) { alert('Impossible d’ouvrir le PDF : ' + ((e && e.message) || e)); });
+    return true;
+  }
   function printFiches(root) {
     beforePrint(root);
     window.addEventListener('afterprint', afterPrint, { once: true });
-    /* Appli Android (WebView) : pas d'impression native -> on ouvre le PDF, qui s'imprime/se partage */
-    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-      afterPrint(); window.open('fiche_urgence_172M_A5.pdf', '_blank'); return;
-    }
+    /* Appli Android (WebView) : pas d'impression native -> on ouvre le PDF avec le lecteur du téléphone (impression/partage) */
+    if (openPdfNative()) { afterPrint(); return; }
     setTimeout(function () { window.print(); }, 50);
   }
 
@@ -246,6 +259,7 @@
       + '<button type="button" class="f1-print" id="f1Print">🖨 Imprimer</button></span></div><div class="f1-pages" id="f1Pages"></div>';
     var n = layout(document.getElementById('f1Pages'));
     document.getElementById('f1Count').textContent = '138 × 210 mm (A5 moins 1 cm) · ' + n + ' pages · une couleur = une commande';
+    var lk = root.querySelector('a.f1-print'); if (lk) lk.onclick = function (e) { if (openPdfNative()) e.preventDefault(); };
     document.getElementById('f1Print').onclick = function () { printFiches(root); };
   }
 
