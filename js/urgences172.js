@@ -219,6 +219,26 @@
     return PAGES.length;
   }
 
+  var marked = [];
+  function beforePrint(root) {
+    root.classList.add('f1-printroot');
+    for (var n = root.parentElement; n && n !== document.documentElement; n = n.parentElement) { n.classList.add('f1-anc'); marked.push(n); }
+    document.body.classList.add('print-f172');
+  }
+  function afterPrint() {
+    document.body.classList.remove('print-f172');
+    marked.forEach(function (n) { n.classList.remove('f1-anc'); }); marked = [];
+  }
+  function printFiches(root) {
+    beforePrint(root);
+    window.addEventListener('afterprint', afterPrint, { once: true });
+    /* Appli Android (WebView) : pas d'impression native -> on ouvre le PDF, qui s'imprime/se partage */
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      afterPrint(); window.open('fiche_urgence_172M_A5.pdf', '_blank'); return;
+    }
+    setTimeout(function () { window.print(); }, 50);
+  }
+
   function render(root) {
     root.innerHTML = '<div class="f1-bar"><div><b>Fiches d’urgence ' + esc(AIRCRAFT.name) + '</b> · ' + esc(AIRCRAFT.reg) + '<br>'
       + '<small id="f1Count">138 × 210 mm · une couleur = une commande</small></div>'
@@ -226,8 +246,7 @@
       + '<button type="button" class="f1-print" id="f1Print">🖨 Imprimer</button></span></div><div class="f1-pages" id="f1Pages"></div>';
     var n = layout(document.getElementById('f1Pages'));
     document.getElementById('f1Count').textContent = '138 × 210 mm (A5 moins 1 cm) · ' + n + ' pages · une couleur = une commande';
-    document.getElementById('f1Print').onclick = function () { document.body.classList.add('print-f172'); window.print(); };
-    window.addEventListener('afterprint', function () { document.body.classList.remove('print-f172'); });
+    document.getElementById('f1Print').onclick = function () { printFiches(root); };
   }
 
   /* ------------------------------------------------------------------ styles */
@@ -260,11 +279,15 @@
     + '.f1-page footer{margin-top:auto;font-size:2cqw;color:#455a64;border-top:.2cqw solid #cfd8dc;padding-top:.8cqw}'
     /* impression : une page 138 × 210 mm par feuille (A5 moins 1 cm de large), couleurs conservées */
     + '@media print{@page{size:138mm 210mm;margin:0}'
-    + 'body.print-f172>*:not(.f1-printroot){display:none!important}'
-    + 'body.print-f172 .f1-printroot{display:block!important;margin:0!important;padding:0!important}'
-    + 'body.print-f172 .f1-bar{display:none}body.print-f172 .urg-hero,body.print-f172 .urg-tabs{display:none!important}'
-    + 'body.print-f172 .f1-pages{display:block}'
-    + 'body.print-f172 .f1-page{width:138mm;height:210mm;border-radius:0;box-shadow:none;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    /* Les fiches sont dans un onglet, lui-même dans la page : on ne masque donc QUE les frères de chaque ancêtre
+       (jamais l'ancêtre lui-même, sinon les fiches disparaissent avec lui et la feuille sort blanche). */
+    + 'body.print-f172{margin:0!important;padding:0!important;background:#fff!important;display:block!important}'
+    + 'body.print-f172.f1-anc>*:not(.f1-anc):not(.f1-printroot),body.print-f172 .f1-anc>*:not(.f1-anc):not(.f1-printroot){display:none!important}'
+    + 'body.print-f172 .f1-anc,body.print-f172 .f1-printroot{display:block!important;margin:0!important;padding:0!important;max-width:none!important;width:auto!important;border:0!important;background:#fff!important;box-shadow:none!important;overflow:visible!important;height:auto!important}'
+    + 'body.print-f172 .f1-bar{display:none!important}'
+    + 'body.print-f172 .f1-pages{display:block!important;gap:0!important}'
+    + 'body.print-f172 .f1-page{width:138mm;height:210mm;max-width:none;aspect-ratio:auto;margin:0;border-radius:0;box-shadow:none;break-after:page;page-break-after:always;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + 'body.print-f172 .f1-page:last-child{break-after:auto;page-break-after:auto}'
     + '}';
 
   function init() {
@@ -272,7 +295,6 @@
     if (!root) return;
     var st = document.createElement('style');
     st.textContent = css.replace(/(\d*\.?\d+)cqw/g, function (m, n) { return +(n * SCALE).toFixed(2) + 'cqw'; }); document.head.appendChild(st);
-    var wrap = root.closest('.f1-printroot') || root; wrap.classList.add('f1-printroot');
     render(root);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
