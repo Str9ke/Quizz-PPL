@@ -40,12 +40,18 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   « METAR AéroWeb » de `navlog.html` ; repris par l'onglet Perf (tableau de tous les décollages/atterrissages).
 - **Aérodromes/pistes** : `js/aerodromes-data.js` généré par `tools/make_aerodromes.py` depuis `openaip_data.json` (caps vrais,
   TORA/LDA) ; complète et corrige `RUNWAY_DB`/`AIRPORT_*` de `navlog.html` (LFQO = Lille-Marcq, LFQL = Lens).
+- **Performances (onglet Perf)** : moteur unique `AFM` / `afmCalc()` / `afmClimb()` dans `navlog.html` = tableaux EXACTS des
+  manuels `Livres/Manual-de-vol-WAC-WEO.pdf` (F150M) et `Livres/Manual-de-vol-FCE.pdf` (F172M, tables par masse), avec les
+  corrections propres à chaque manuel (température, vent, herbe, montée) et le vent de travers démontré (150 : 20/15 kt).
+  Cartes par décollage/atterrissage (`_renderPerfAllMoves`), tableaux officiels (`_renderAfmTables`).
+- **Carte maille fine AéroWeb** (appli Android) : connexion native CapacitorHttp + CapacitorCookies (`capacitor.config.json`),
+  identifiants sur le téléphone seulement ; bouton ← via `@capacitor/app` (`build-android.yml`).
 - **Dossiers du navlog** : copie complète dans IndexedDB (`navlogStore`), copie allégée dans le localStorage (`navlog_dossiers`).
 - **Étapes** (source unique) : `_navStageSegs()` / `_legStageIdx()` dans `navlog.html` — utilisés par Navlog, Carbu, impression, FPL, Perf.
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v231`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v232`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
