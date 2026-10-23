@@ -54,6 +54,9 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   résumé du run GitHub Actions.
 - **Noms automatiques des points** (`_renumberAutoWaypointNames`, `navlog.html`) : aérodrome proche (code OACI), sinon
   Nominatim (repère ou village, 1 requête/s, cache `navlogGeoNames`), sinon `WPn` ; un nom tapé à la main n'est jamais remplacé.
+- **Calques OpenAIP de la carte de route** (menu « Calques OpenAIP », `_renderOaLayers` dans `navlog.html`) : espaces aériens
+  (plancher < FL 100), aérodromes, balises VOR/NDB/DME depuis `openaip_data.json`, seuls les éléments visibles sont dessinés ;
+  codes de type OpenAIP traduits dans `_openaipClassLabel` (21 vol à voile, 28 para/sport, 33 SIV, 26 CTA…).
 - **Menu latéral repliable sur ordinateur** (`js/sidebar.js`, classe `body.sidebar-collapsed`, mémorisé) ; la carte de route
   prend toute la largeur disponible.
 - **Dossiers du navlog** : copie complète dans IndexedDB (`navlogStore`), copie allégée dans le localStorage (`navlog_dossiers`).
@@ -61,7 +64,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v236`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v237`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

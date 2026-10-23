@@ -915,6 +915,22 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .dw-airport-label::before{display:none !important}
 .as-map-label{background:rgba(10,10,20,.82) !important;border:none !important;color:#fff !important;font-size:.74em !important;font-weight:700 !important;padding:2px 6px !important;box-shadow:none !important;pointer-events:none}
 .as-map-label::before{display:none !important}
+/* Calques OpenAIP de la carte de route (menu « Calques OpenAIP ») */
+.rm-oa-wrap{position:relative;display:inline-block}
+.rm-oa-menu{position:absolute;z-index:1200;bottom:calc(100% + 6px);left:0;min-width:260px;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.5);padding:8px 10px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.rm-oa-menu[hidden]{display:none}
+.rm-oa-menu label{display:flex;align-items:center;gap:8px;padding:7px 4px;border-radius:8px;cursor:pointer;font-size:.85em;white-space:nowrap}
+.rm-oa-menu label:hover{background:rgba(102,126,234,.14)}
+.rm-oa-menu input{width:18px;height:18px;margin:0;flex:0 0 auto}
+.rm-oa-menu small{color:var(--text-secondary);font-size:.72em;line-height:1.3;padding:4px 4px 0;white-space:normal}
+.oa-lbl{background:rgba(10,10,20,.78)!important;border:none!important;color:#fff!important;font-size:10.5px!important;font-weight:700!important;padding:1px 5px!important;box-shadow:none!important;border-radius:4px!important;white-space:nowrap}
+.oa-lbl::before{display:none!important}
+.oa-ic{background:none;border:none}
+.oa-ic span{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;font:700 10.5px/1.2 system-ui,sans-serif;color:#fff;background:rgba(0,70,110,.88);border:1.5px solid #4fc3f7;border-radius:5px;padding:1px 4px;cursor:pointer}
+.oa-ic span.ndb{background:rgba(110,40,90,.88);border-color:#f06292}
+.oa-ic span.as{background:rgba(10,10,20,.8);font-size:10px;font-weight:600}
+.oa-pop b{color:#5c6bc0}
+@media(max-width:640px){ .rm-oa-menu{position:fixed;left:12px;right:12px;bottom:auto;top:50%;transform:translateY(-50%);min-width:0} }
   </style>
 </head>
 <body>
@@ -1118,6 +1134,14 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <button class="navlog-btn rm-fullscreen-btn" onclick="window.toggleRouteMapFullscreen()" title="Agrandir la carte en plein écran (pratique sur mobile)">&#x26F6; Plein écran</button>
         <button class="navlog-btn" id="dwMapToggleBtn" onclick="window.toggleDailyWarningsOnMap()" title="Afficher/masquer les zones des avis du jour sur la carte">&#x26A0;&#xFE0F; Zones du jour</button>
         <button class="navlog-btn" id="asMapToggleBtn" onclick="window.toggleAirspacesOnMap()" title="Afficher/masquer les espaces aériens croisés sur la carte, avec leur classe OACI (touchez une zone) — charge d'abord les espaces aériens depuis l'onglet Altitudes">&#x1F170;&#xFE0F; Classes espace aérien</button>
+        <span class="rm-oa-wrap"><button class="navlog-btn" id="oaLayersBtn" onclick="window._toggleOaMenu(event)" title="Afficher sur la carte les espaces aériens, les aérodromes et les balises VOR/NDB/DME (données OpenAIP embarquées, aussi hors ligne)">&#x1F5FA;&#xFE0F; Calques OpenAIP &#x25BE;</button>
+          <span class="rm-oa-menu" id="oaLayersMenu" hidden>
+            <label><input type="checkbox" data-oa="all"> <b>Tout afficher</b></label>
+            <label><input type="checkbox" data-oa="as"> &#x1F7EA; Espaces aériens</label>
+            <label><input type="checkbox" data-oa="ad"> &#x2708;&#xFE0F; Aérodromes</label>
+            <label><input type="checkbox" data-oa="nav"> &#x1F4E1; Balises VOR / NDB / DME</label>
+            <small>Touchez une étiquette, un terrain ou une balise pour ses détails. Espaces aériens dont le plancher est sous le FL 100.</small>
+          </span></span>
         <label class="rm-measure-toggle" title="Cliquez 2 points sur la carte (hors navigation) pour mesurer une distance et estimer l'altitude mini pour rejoindre le rivage au-dessus d'un bras de mer">
           <input type="checkbox" id="rmMeasureCheckbox" onchange="window.toggleMeasureMode(this)"> &#x1F4CF; Mode mesure
         </label>
@@ -6931,6 +6955,125 @@ function _renderAirspacesOnRouteMap(){
   _asMapLayerGroup=group;
 }
 
+/* ===== Calques OpenAIP de la carte de route (menu « Calques OpenAIP ») =====
+   Espaces aériens, aérodromes et balises VOR/NDB/DME tirés d'openaip_data.json (le même
+   fichier que l'onglet Altitudes et l'export Google Earth, embarqué -> marche hors ligne).
+   Chaque calque se coche séparément (ou « Tout afficher ») ; le choix est retenu.
+   Seuls les éléments visibles à l'écran sont dessinés (redessinés après chaque déplacement),
+   sur un rendu canvas : 1700 zones + 1500 terrains d'un coup ralentiraient la carte.
+   Les zones ne captent pas le clic (un clic sur la carte continue d'ajouter un point) : leurs
+   détails s'obtiennent en touchant leur étiquette ; terrains et balises se touchent directement. */
+var _oaSel=(function(){ try{ return JSON.parse(localStorage.getItem('rmOaLayers'))||{}; }catch(e){ return {}; } })();
+var _oaGroup=null, _oaCanvas=null, _oaTimer=null;
+var OA_AD_TYPES={0:'Aéroport',1:'Vol à voile',2:'Aérodrome',3:'Aéroport international',4:'Héliport militaire',5:'Base militaire',
+  6:'ULM',7:'Héliport',8:'Fermé',9:'Aéroport IFR',10:'Hydrobase',11:'Piste',12:'Piste agricole',13:'Altiport'};
+var OA_AD_COL={0:'#42a5f5',3:'#42a5f5',9:'#42a5f5',2:'#ab47bc',5:'#ef5350',1:'#66bb6a',6:'#ffa726',4:'#90a4ae',7:'#90a4ae',8:'#616161',10:'#26c6da',11:'#ab47bc',12:'#8d6e63',13:'#ab47bc'};
+function _oaLim(l){
+  if(!l) return '?';
+  if(l.unit===6) return 'FL '+l.value;
+  if(l.value===0 && l.referenceDatum===0) return 'SFC';
+  return l.value+(l.unit===0?' m':' ft')+(l.referenceDatum===0?' sol':'');
+}
+function _oaSyncMenu(){
+  var m=document.getElementById('oaLayersMenu'); if(!m) return;
+  var all=!!(_oaSel.as&&_oaSel.ad&&_oaSel.nav), any=!!(_oaSel.as||_oaSel.ad||_oaSel.nav);
+  m.querySelectorAll('input[data-oa]').forEach(function(c){ var k=c.getAttribute('data-oa'); c.checked=k==='all'?all:!!_oaSel[k]; });
+  var b=document.getElementById('oaLayersBtn');
+  if(b){ b.style.background=any?'linear-gradient(135deg,#3498db,#2980b9)':''; b.style.color=any?'#fff':''; b.style.borderColor=any?'transparent':''; }
+}
+window._toggleOaMenu=function(ev){
+  if(ev) ev.stopPropagation();
+  var m=document.getElementById('oaLayersMenu'); if(!m) return;
+  m.hidden=!m.hidden; _oaSyncMenu();
+  if(!m._wired){
+    m._wired=true;
+    m.addEventListener('click',function(e){ e.stopPropagation(); });
+    m.querySelectorAll('input[data-oa]').forEach(function(c){
+      c.onchange=function(){
+        var k=c.getAttribute('data-oa');
+        if(k==='all') _oaSel={as:c.checked,ad:c.checked,nav:c.checked}; else _oaSel[k]=c.checked;
+        try{ localStorage.setItem('rmOaLayers',JSON.stringify(_oaSel)); }catch(e){}
+        _oaSyncMenu(); _renderOaLayers();
+      };
+    });
+    document.addEventListener('click',function(e){ if(!m.hidden && !(e.target.closest&&e.target.closest('.rm-oa-wrap'))) m.hidden=true; });
+  }
+};
+function _renderOaLayers(){
+  if(typeof routeMap==='undefined'||!routeMap||typeof L==='undefined') return;
+  if(!(_oaSel.as||_oaSel.ad||_oaSel.nav)){ if(_oaGroup){ routeMap.removeLayer(_oaGroup); _oaGroup=null; } return; }
+  _loadOpenaipStatic().then(function(d){
+    if(!d){ _toast('⚠️ Données OpenAIP indisponibles (openaip_data.json)','error',3000); return; }
+    if(!_oaCanvas) _oaCanvas=L.canvas({padding:.3});
+    if(!routeMap.getPane('oaPane')){ routeMap.createPane('oaPane'); routeMap.getPane('oaPane').style.zIndex=350; }
+    var g=L.layerGroup(), b=routeMap.getBounds().pad(0.25), z=routeMap.getZoom();
+    var W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
+    function inView(bb){ return !(bb[2]<W||bb[0]>E||bb[3]<S||bb[1]>N); }
+    if(_oaSel.as){
+      d.airspaces.forEach(function(a){
+        if(_openaipLimitToFt(a.lowerLimit)>=10000) return; /* plancher FL 100 et plus : hors VFR */
+        var bb=_geomBBox(a); if(!inView(bb)) return;
+        var geo=a.geometry||{}, rings=geo.type==='Polygon'?[geo.coordinates[0]]:geo.type==='MultiPolygon'?geo.coordinates.map(function(q){ return q[0]; }):[];
+        if(!rings.length) return;
+        var lab=_openaipClassLabel(a), cls=_openaipIcaoClass(a), col=_airspaceBandColor(lab);
+        var big=(bb[2]-bb[0])>3||lab==='FIR'||lab==='UIR';
+        var dang=/RESTRICTED|DANGER|PROHIBITED/.test(lab);
+        rings.forEach(function(r){
+          g.addLayer(L.polygon(r.map(function(q){ return [q[1],q[0]]; }),{renderer:_oaCanvas,pane:'oaPane',interactive:false,
+            color:col,weight:big?1:1.6,opacity:.85,fill:!big,fillColor:col,fillOpacity:.07,dashArray:dang?'5,4':(big?'8,6':null)}));
+        });
+        /* étiquette touchable « type · classe plancher–plafond » (zoom 10 et plus, sinon illisible) */
+        if(z>=10 && !big){
+          var c=[(bb[1]+bb[3])/2,(bb[0]+bb[2])/2];
+          if(!routeMap.getBounds().contains(c)) return;
+          var txt=lab+(cls&&cls!==lab?' · '+cls:'')+' '+_oaLim(a.lowerLimit)+'–'+_oaLim(a.upperLimit);
+          var mk=L.marker(c,{pane:'oaPane',icon:L.divIcon({className:'oa-ic',iconSize:[0,0],html:'<span class="as" style="border-color:'+col+'">'+escHTML(txt)+'</span>'})});
+          mk.bindPopup('<div class="oa-pop"><b>'+escHTML(a.name)+'</b><br>'+escHTML(lab)+(cls?' · classe '+cls:'')+'<br>'+escHTML(_oaLim(a.lowerLimit))+' → '+escHTML(_oaLim(a.upperLimit))+(a.byNotam?'<br>Activée par NOTAM':'')+'</div>');
+          g.addLayer(mk);
+        }
+      });
+    }
+    if(_oaSel.ad){
+      d.airports.forEach(function(a){
+        var c=a.geometry&&a.geometry.coordinates; if(!c||!b.contains([c[1],c[0]])) return;
+        var t=a.type, major=(t===0||t===3||t===9||t===5);
+        if(t===8) return; /* terrain fermé */
+        if((t===4||t===7) && z<11) return; /* héliports (hôpitaux…) : en zoom rapproché seulement */
+        if(z<8 && !major && !a.icaoCode) return; /* vue large : terrains avec code OACI seulement */
+        var mk=L.circleMarker([c[1],c[0]],{renderer:_oaCanvas,pane:'oaPane',radius:major?7:5,color:'#fff',weight:1.5,fillColor:OA_AD_COL[t]||'#ab47bc',fillOpacity:.95,bubblingMouseEvents:false});
+        var rw=(a.runways||[]).filter(function(r){ return r.designator; }).map(function(r){ var ln=r.dimension&&r.dimension.length; return r.designator+(ln?' ('+ln.value+' m)':''); });
+        var fq=(a.frequencies||[]).filter(function(f){ return f.value; }).slice(0,6).map(function(f){ return escHTML((f.name||'')+' '+f.value); });
+        mk.bindPopup('<div class="oa-pop"><b>'+escHTML((a.icaoCode?a.icaoCode+' — ':'')+a.name)+'</b><br>'+escHTML(OA_AD_TYPES[t]||'Terrain')+
+          (a.elevation?' · '+Math.round(a.elevation.unit===0?a.elevation.value*3.28084:a.elevation.value)+' ft':'')+(a.ppr?' · PPR':'')+(a.private?' · privé':'')+
+          (rw.length?'<br>Pistes : '+escHTML(rw.join(', ')):'')+(fq.length?'<br>'+fq.join('<br>'):'')+'</div>');
+        if(z>=11 || (z>=9 && a.icaoCode)) mk.bindTooltip(a.icaoCode||a.name,{permanent:true,direction:'right',offset:[6,0],className:'oa-lbl'});
+        else mk.bindTooltip((a.icaoCode?a.icaoCode+' ':'')+a.name,{className:'oa-lbl'});
+        g.addLayer(mk);
+      });
+    }
+    if(_oaSel.nav){
+      var NT=['DME','TACAN','NDB','VOR','VOR-DME','VORTAC','DVOR','DVOR-DME','DVORTAC'];
+      d.navaids.forEach(function(n){
+        var c=n.geometry&&n.geometry.coordinates; if(!c||!b.contains([c[1],c[0]])) return;
+        var unit=(n.frequency&&n.frequency.unit===1)?' kHz':'', fr=n.frequency?String(n.frequency.value).replace(/\.?0+$/,'')+unit:'';
+        var mk=L.marker([c[1],c[0]],{pane:'oaPane',icon:L.divIcon({className:'oa-ic',iconSize:[0,0],
+          html:'<span class="'+(n.type===2?'ndb':'')+'">'+(n.type===2?'◉ ':'⬡ ')+escHTML(n.identifier||'')+(z>=8?' '+escHTML(fr):'')+'</span>'})});
+        mk.bindPopup('<div class="oa-pop"><b>'+escHTML((n.identifier||'')+' — '+n.name)+'</b><br>'+(NT[n.type]||'Balise')+' · '+escHTML(fr)+(n.channel?' · canal '+escHTML(n.channel):'')+(n.range?'<br>Portée '+n.range.value+' NM':'')+'</div>');
+        g.addLayer(mk);
+      });
+    }
+    if(_oaGroup) routeMap.removeLayer(_oaGroup);
+    _oaGroup=g.addTo(routeMap);
+  });
+}
+function _wireOaLayers(){
+  if(!routeMap||routeMap._oaWired) return;
+  routeMap._oaWired=true;
+  routeMap.on('moveend',function(){ if(!(_oaSel.as||_oaSel.ad||_oaSel.nav)) return; clearTimeout(_oaTimer); _oaTimer=setTimeout(_renderOaLayers,150); });
+  _oaSyncMenu();
+  if(_oaSel.as||_oaSel.ad||_oaSel.nav) _renderOaLayers();
+}
+
 /* Carte locale (projection équirectangulaire) d'un avis, centrée sur son centre/centroïde,
    avec les waypoints de la route affichés à proximité pour donner le contexte géographique. */
 function renderWarningMapSVG(w){
@@ -12168,6 +12311,9 @@ function _openaipClassLabel(item){
   if(/\bDANGER\b/.test(nm) || /(^|[\s(])[A-Z]{1,2}-?D\d/.test(nm)) return 'DANGER';
   if(/GLID(ER|ING)|PLANEUR/.test(nmAscii)) return 'GLIDING_SECTOR';
   if(/\bWARNING\b/.test(nm)) return 'WARNING';
+  /* codes OpenAIP vérifiés sur openaip_data.json (noms des zones de chaque code, oct. 2026) */
+  var TYP={1:'RESTRICTED',2:'DANGER',3:'PROHIBITED',4:'CTR',5:'TMZ',6:'RMZ',7:'TMA',8:'TRA',9:'TSA',10:'FIR',11:'UIR',13:'ATZ',14:'MATZ',15:'AWY',18:'WARNING',21:'GLIDING_SECTOR',25:'LFA',26:'CTA',28:'PARA/SPORT',33:'SIV',34:'LTA'};
+  if(typeof item.type==='number' && TYP[item.type]) return TYP[item.type];
   if(item.icaoClass!==undefined && classMap[item.icaoClass]!==undefined) return classMap[item.icaoClass];
   if(typeof item.icaoClass==='string' && item.icaoClass) return item.icaoClass;
   if(item.type!==undefined) return 'TYPE '+item.type;
@@ -12195,7 +12341,8 @@ function _airspaceBandColor(label){
   var m={A:'#e74c3c',B:'#e67e22',C:'#f1c40f',D:'#3498db',E:'#2ecc71',F:'#1abc9c',G:'#95a5a6',
     CTR:'#3498db',TMA:'#9b59b6',TMZ:'#8e44ad',RMZ:'#8e44ad',ATZ:'#2980b9',MATZ:'#5b2c8e',
     RESTRICTED:'#e74c3c',DANGER:'#e74c3c',PROHIBITED:'#c0392b',WARNING:'#e67e22',
-    FIR:'#16a085',UIR:'#0e6655',GLIDING_SECTOR:'#27ae60'};
+    FIR:'#16a085',UIR:'#0e6655',GLIDING_SECTOR:'#27ae60',
+    TRA:'#d35400',TSA:'#d35400',CTA:'#5dade2',SIV:'#1abc9c',LTA:'#48c9b0','PARA/SPORT':'#f39c12',LFA:'#a04000',AWY:'#7f8c8d'};
   return m[label]||'#7f8c8d';
 }
 
@@ -12306,7 +12453,7 @@ function _airportToKmlPlacemark(item){
   return _pointKmlPlacemark(label,desc,c.lon,c.lat,'ff0080ff','http://maps.google.com/mapfiles/kml/shapes/airports.png');
 }
 function _navaidTypeLabel(item){
-  var m={2:'VOR',3:'VOR-DME',7:'TACAN',8:'VORTAC',9:'NDB',13:'DME'};
+  var m={0:'DME',1:'TACAN',2:'NDB',3:'VOR',4:'VOR-DME',5:'VORTAC',6:'DVOR',7:'DVOR-DME',8:'DVORTAC'};
   if(typeof item.type==='string' && item.type) return item.type.toUpperCase();
   if(item.type!==undefined && m[item.type]!==undefined) return m[item.type];
   return item.type!==undefined?('TYPE '+item.type):'NAVAID';
@@ -14616,6 +14763,7 @@ function initRouteMap(){
   /* Réafficher/masquer les étiquettes cap/ETE/distance selon le zoom, sans reconstruire
      toute la carte (voir _renderRouteLegLabels ci-dessus). */
   routeMap.on('zoomend', _renderRouteLegLabels);
+  _wireOaLayers(); /* calques OpenAIP (espaces, terrains, balises) choisis dans le menu */
 
   routeMap.on('click', function(e){
     /* Mode mesure (case à cocher "📏 Mode mesure") : un clic ici ne doit PAS ajouter de
