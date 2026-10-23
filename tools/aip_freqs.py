@@ -327,6 +327,46 @@ def match_openaip(spaces_be, ads):
     return out
 
 
+def _fset(lst):
+    return {(x.get("call", ""), x["freq"]) for x in lst or []}
+
+
+def diff(old, new):
+    """Fréquences ajoutées / retirées par aérodrome et par espace, par rapport au fichier précédent."""
+    items = []
+    for kind, o, n in (("Aérodrome", old.get("aerodromes", {}), new["aerodromes"]),
+                       ("Espace", {k: v["freqs"] for k, v in old.get("openaip", {}).items()},
+                                  {k: v["freqs"] for k, v in new["openaip"].items()})):
+        for k in sorted(set(o) | set(n)):
+            a, b = _fset(o.get(k)), _fset(n.get(k))
+            for c, f in sorted(b - a):
+                items.append({"kind": kind, "where": k, "what": "ajoutée", "call": c, "freq": f})
+            for c, f in sorted(a - b):
+                items.append({"kind": kind, "where": k, "what": "retirée", "call": c, "freq": f})
+    return {"items": items, "since": old.get("generated")}
+
+
+def report(ch):
+    """Résumé lisible : journal du workflow + résumé de l'exécution (GITHUB_STEP_SUMMARY)."""
+    items = ch.get("items", [])
+    if ch.get("first"):
+        txt = "Première récupération : pas de comparaison possible."
+    elif not items:
+        txt = "✅ Aucun changement de fréquence depuis la dernière récupération."
+    else:
+        txt = f"⚠️ {len(items)} changement(s) de fréquence depuis la dernière récupération :"
+    lines = ["## Fréquences AIP", "", txt, ""]
+    if items:
+        lines += ["| | Où | Changement | Indicatif | Fréquence |", "|---|---|---|---|---|"]
+        lines += [f"| {x['kind']} | {x['where']} | {x['what']} | {x['call']} | {x['freq']} |" for x in items[:300]]
+    print("\n".join(lines))
+    if os.getenv("GITHUB_STEP_SUMMARY"):
+        with open(os.getenv("GITHUB_STEP_SUMMARY"), "a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+    print("::notice title=Fréquences AIP::" + txt + ("" if not items else " " + "; ".join(
+        f"{x['where']} {x['call']} {x['freq']} {x['what']}" for x in items[:12])))
+
+
 def main():
     local = sys.argv[sys.argv.index("--local") + 1] if "--local" in sys.argv else None
     t0 = time.time()
@@ -424,6 +464,13 @@ def main():
     if not ads:
         print("Aucune donnée AIP récupérée — fichier non modifié")
         return 1
+    # --- Changements depuis la dernière récupération (affichés dans le résumé du workflow et l'appli)
+    try:
+        old = json.load(open(OUT, encoding="utf-8"))
+    except Exception:
+        old = None
+    result["changes"] = diff(old, result) if old else {"items": [], "first": True}
+    report(result["changes"])
     tmp = OUT + ".tmp"
     json.dump(result, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp, OUT)

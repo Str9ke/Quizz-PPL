@@ -48,13 +48,20 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   identifiants sur le téléphone seulement ; bouton ← via `@capacitor/app` (`build-android.yml`).
 - **Fréquences officielles** (bouton 📻 des commentaires du Navlog) : `tools/aip_freqs.py` -> `aip_freqs.json` (eAIP skeyes
   ENR 2.1 + AD 2.18 via la session anti-robot de `fetch_notams.py`, eAIP France SIA AD 2.18 du cycle AIRAC en cours), relié aux
-  contours OpenAIP par le nom ; workflow `update_aip.yml` (jeudi + manuel). Bande radio 118–137 MHz seulement.
+  contours OpenAIP par le nom ; workflow `update_aip.yml` (jeudi + manuel). Bande radio 118–137 MHz seulement pour les
+  communications ; balises (VOR/DME/NDB à moins de 25 NM, OpenAIP) proposées à part (indicatif + fréquence). Tous les espaces
+  survolés sont proposés (traversés, au-dessus, en dessous). Changements de fréquences : `changes` dans `aip_freqs.json` +
+  résumé du run GitHub Actions.
+- **Noms automatiques des points** (`_renumberAutoWaypointNames`, `navlog.html`) : aérodrome proche (code OACI), sinon
+  Nominatim (repère ou village, 1 requête/s, cache `navlogGeoNames`), sinon `WPn` ; un nom tapé à la main n'est jamais remplacé.
+- **Menu latéral repliable sur ordinateur** (`js/sidebar.js`, classe `body.sidebar-collapsed`, mémorisé) ; la carte de route
+  prend toute la largeur disponible.
 - **Dossiers du navlog** : copie complète dans IndexedDB (`navlogStore`), copie allégée dans le localStorage (`navlog_dossiers`).
 - **Étapes** (source unique) : `_navStageSegs()` / `_legStageIdx()` dans `navlog.html` — utilisés par Navlog, Carbu, impression, FPL, Perf.
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v234`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v235`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

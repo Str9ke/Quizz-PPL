@@ -191,21 +191,34 @@
     document.body.prepend(overlay);
     document.body.prepend(toggleBtn);
 
+    /* Ordinateur (≥ 880 px) : le menu est fixe à gauche ; ‹ le replie sur le côté (la page prend
+       toute la largeur), ☰ le ramène — choix gardé d'une visite à l'autre. Téléphone : tiroir. */
+    var desk = window.matchMedia ? window.matchMedia('(min-width: 880px)') : { matches: false };
+    function setCollapsed(v) {
+      document.body.classList.toggle('sidebar-collapsed', v);
+      try { localStorage.setItem('sidebarCollapsed', v ? '1' : '0'); } catch (e) { /* ignore */ }
+      // cartes (Leaflet…) : recalculer leur largeur après l'animation
+      setTimeout(function () { try { window.dispatchEvent(new Event('resize')); } catch (e) { /* ignore */ } }, 260);
+    }
+    try { if (localStorage.getItem('sidebarCollapsed') === '1') document.body.classList.add('sidebar-collapsed'); } catch (e) { /* ignore */ }
     function openSidebar() {
+      if (desk.matches) { setCollapsed(false); return; }
       document.body.classList.add('sidebar-open');
       toggleBtn.setAttribute('aria-expanded', 'true');
     }
     function closeSidebar() {
+      if (desk.matches && !document.body.classList.contains('sidebar-open')) { setCollapsed(true); return; }
       document.body.classList.remove('sidebar-open');
       toggleBtn.setAttribute('aria-expanded', 'false');
     }
     toggleBtn.addEventListener('click', function () {
+      if (desk.matches) { setCollapsed(false); return; }
       document.body.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
     });
     overlay.addEventListener('click', closeSidebar);
     nav.querySelector('.sidebar-close-btn').addEventListener('click', closeSidebar);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeSidebar();
+      if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
     });
 
     /* ---- Ouverture par glissement depuis le bord gauche ----

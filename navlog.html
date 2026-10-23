@@ -551,9 +551,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-circuit-submenu{margin:4px 0 0 0;min-width:max-content}
 
 /* Route map */
-.route-map-card{max-width:700px;margin:14px auto;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.route-map-card{--rmw:calc(100vw - 28px);width:var(--rmw);margin-top:14px;margin-bottom:14px;margin-left:calc((100% - var(--rmw)) / 2);max-width:none;background:var(--bg-container);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .route-map-card .nl-card-title{padding:12px 16px;margin:0;border-bottom:1px solid var(--border-color)}
-#routeMapContainer{aspect-ratio:1/1;height:auto;width:100%;background:#1a1a2e;min-height:260px;overflow:hidden}
+/* Carte : toute la largeur disponible (avec ou sans menu latéral), hauteur réglée sur l'écran */
+#routeMapContainer{height:min(74vh,860px);width:100%;background:#1a1a2e;min-height:320px;overflow:hidden}
 .route-map-card .route-map-toolbar{padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border-color)}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
 .route-map-card .route-map-legend{font-size:.72em;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap}
@@ -596,6 +597,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   position:fixed;inset:0;z-index:9000;margin:0;max-width:none;border-radius:0;
   display:flex;flex-direction:column;background:#0a0a14;box-shadow:none
 }
+/* Carte hors du bloc de 960 px de l'onglet : toute la largeur de la fenêtre, moins le menu latéral
+   quand il est affiché (ordinateur) — sans transform (Leaflet calcule ses clics sur la position réelle). */
+@media(min-width:880px){ body:not(.sidebar-collapsed) .route-map-card{--rmw:calc(100vw - var(--sidebar-width,264px) - 40px)} }
+.route-map-card.rm-fullscreen{width:auto;margin:0}
 /* Titres + barre d'outils (infos route, légende, Recentrer/Retour départ) totalement masqués
    en plein écran — l'utilisateur veut que seule la carte (et le profil d'altitude sous elle)
    occupent l'écran, sans bandeau ni bouton au milieu ; quitter se fait via la petite croix
@@ -644,7 +649,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   .wp-card-header{flex-direction:column;align-items:flex-start}
   .summary-panel{flex-direction:column;align-items:center}
   .dossier-card .d-header{flex-wrap:wrap}
-  #routeMapContainer{min-height:unset;max-height:85vw}
+  #routeMapContainer{min-height:300px;height:min(118vw,68vh);max-height:none}
   /* Sans ce wrap, la ligne d'outils (infos route + légende + 4 boutons, aucun retour à la
      ligne) écrasait le texte d'infos (flex:1) dans une colonne minuscule sur mobile — il se
      retrouvait à un mot par ligne sur des dizaines de lignes, gonflant la hauteur de la
@@ -3120,7 +3125,7 @@ function switchTab(id){
     if(typeof renderAltitudesCrossingsList==='function') renderAltitudesCrossingsList();
     /* Chargement automatique des espaces aériens à la première ouverture de l'onglet
        (évite d'avoir à cliquer manuellement — voir loadRouteAirspaces) */
-    if(typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+    if(typeof loadRouteAirspaces==='function' && _airspacesNeedLoad()){
       var _altWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){return w.lat!==null&&w.lon!==null;});
       if(_altWps.length>=2) loadRouteAirspaces();
     }
@@ -3133,7 +3138,7 @@ function switchTab(id){
      l'onglet Altitudes) — sinon le profil d'altitude affichait ses bandes d'espace aérien
      seulement après un détour par l'onglet Altitudes puis retour, ce qui ressemblait à un bug
      de chargement. */
-  if(id==='nav' && typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+  if(id==='nav' && typeof loadRouteAirspaces==='function' && _airspacesNeedLoad()){
     var _navWps=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){return w.lat!==null&&w.lon!==null;});
     if(_navWps.length>=2) loadRouteAirspaces().then(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); }).catch(function(){});
   }
@@ -7336,28 +7341,90 @@ function _nearestAerodrome(lat,lon,maxNm){
   return best;
 }
 window._nearestAerodrome=_nearestAerodrome;
+/* ===== NOM AUTOMATIQUE DES POINTS =====
+   Un point sans nom choisi reçoit le nom le plus parlant pour l'endroit :
+   1. aérodrome : code OACI s'il est à moins de 0,8 NM (1,5 NM pour un départ, une arrivée ou une
+      escale) — ex. le point d'arrivée posé près de Marcq devient LFQO ;
+   2. sinon ce que la carte OpenStreetMap indique à cet endroit (Nominatim) : carrière/mine,
+      château d'eau, lac, centrale… et à défaut le village ou la ville ;
+   3. en attendant la réponse : « WPn » (n = position dans la route).
+   Un nom tapé à la main n'est jamais remplacé ; un nom automatique suit le point s'il est déplacé.
+   Nominatim : 1 requête par seconde au plus (règle d'usage), réponses gardées sur l'appareil. */
+var _geoCache=(function(){ try{ return JSON.parse(localStorage.getItem('navlogGeoNames'))||{}; }catch(e){ return {}; } })();
+var _geoQueue=[], _geoBusy=false, _geoDirty=false;
+function _geoKey(lat,lon){ return lat.toFixed(3)+','+lon.toFixed(3); }
+function _geoPickName(d){
+  if(!d || d.error) return null;
+  var a=d.address||{}, cat=d.category||d.class||'', typ=d.type||'', nm=(d.name||'').trim();
+  var FEAT={quarry:'Carrière',mine:'Mine',mineshaft:'Puits de mine',water_tower:'Château d’eau',tower:'Tour',chimney:'Cheminée',
+    reservoir:'Réservoir',lake:'Lac',water:'Plan d’eau',power_plant:'Centrale',plant:'Centrale',wind_turbine:'Éolienne',
+    castle:'Château',bridge:'Pont',lighthouse:'Phare',motorway_junction:'Échangeur',landfill:'Terril',spoil_heap:'Terril'};
+  if(FEAT[typ]) return nm ? (nm.toLowerCase().indexOf(FEAT[typ].toLowerCase())>=0?nm:FEAT[typ]+' '+nm) : FEAT[typ]+(a.village||a.town||a.city?' '+(a.village||a.town||a.city):'');
+  if((cat==='natural'||cat==='waterway'||cat==='historic'||cat==='man_made'||cat==='aeroway') && nm) return nm;
+  return a.village||a.town||a.city||a.hamlet||a.municipality||a.suburb||null;
+}
+function _geoFetch(lat,lon){
+  var u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=fr&addressdetails=1&lat='+lat+'&lon='+lon;
+  return fetch(u+'&zoom=17').then(function(r){ return r.json(); }).then(function(d){
+    var typ=d&&d.type, cat=d&&(d.category||d.class);
+    /* repère remarquable au point même ? sinon, nom de la localité (zoom 14) */
+    if(d && (['quarry','mine','mineshaft','water_tower','tower','chimney','reservoir','lake','water','power_plant','plant','wind_turbine','castle','lighthouse','landfill','spoil_heap'].indexOf(typ)>=0 || cat==='natural')) return _geoPickName(d);
+    return fetch(u+'&zoom=14').then(function(r){ return r.json(); }).then(_geoPickName);
+  });
+}
+function _geoPump(){
+  if(_geoBusy || !_geoQueue.length) return;
+  var k=_geoQueue.shift();
+  if(_geoCache[k]!==undefined){ _geoPump(); return; }
+  _geoBusy=true;
+  var ll=k.split(',').map(Number);
+  _geoFetch(ll[0],ll[1]).then(function(n){ _geoCache[k]=n||''; }).catch(function(){ /* hors ligne : on réessaiera plus tard */ })
+    .then(function(){
+      try{ localStorage.setItem('navlogGeoNames',JSON.stringify(_geoCache)); }catch(e){}
+      _geoDirty=true;
+      setTimeout(function(){
+        _geoBusy=false;
+        if(_geoQueue.length) _geoPump();
+        else if(_geoDirty){ _geoDirty=false; if(typeof recalcNavlog==='function') recalcNavlog(); }
+      },1100);
+    });
+}
 function _renumberAutoWaypointNames(){
   var AUTO=/^WP\s*\d*$/i;
+  var used={};
+  waypoints.forEach(function(w){ if(w&&w.name&&!w._autoName) used[w.name.trim().toUpperCase()]=1; });
   for(var i=0;i<waypoints.length;i++){
     var w=waypoints[i];
     if(!w || w.lat==null || w.lon==null) continue;
     var nm=(w.name||'').trim();
-    if(nm && !AUTO.test(nm)) continue;
-    var name='WP'+(i+1);
+    var key=_geoKey(w.lat,w.lon);
+    /* nom choisi à la main : jamais touché (un nom automatique, lui, suit le point) */
+    if(nm && !AUTO.test(nm) && !(w._autoName && w._autoAt!==key) && !(w._autoName && _geoCache[key])) continue;
     var prev=waypoints[i-1];
-    /* Départ, arrivée ou escale posé sur un aérodrome : il prend son code OACI (sinon l'onglet Perf
-       ne trouvait ni pistes ni altitude pour « WP7 »). */
     var isEnd=(i===0 || i===waypoints.length-1 || w.isEtape || (prev && !_sharesStage(prev,w)));
-    var ad=isEnd?_nearestAerodrome(w.lat,w.lon,1):null;
+    var name=null, auto=true;
+    var ad=_nearestAerodrome(w.lat,w.lon,isEnd?1.5:0.8);
     if(ad) name=ad;
-    else
-    if(prev && prev.name && prev.lat!=null && prev.lon!=null && !_sharesStage(prev,w) &&
+    else if(prev && prev.name && prev.lat!=null && prev.lon!=null && !_sharesStage(prev,w) &&
        haversine(prev.lat,prev.lon,w.lat,w.lon)<0.5) name=prev.name;
+    else if(_geoCache[key]) name=_geoCache[key];
+    else {
+      name='WP'+(i+1);
+      if(_geoCache[key]===undefined && _geoQueue.indexOf(key)<0) _geoQueue.push(key);
+    }
+    /* deux points dans le même village : « Tournai », « Tournai 2 » */
+    if(!/^[A-Z]{4}$/.test(name) && !/^WP\d+$/.test(name)){
+      var base=name, n=2;
+      while(used[name.toUpperCase()]) name=base+' '+(n++);
+    }
+    used[name.toUpperCase()]=1;
+    w._autoName=auto; w._autoAt=key;
     if(w.name!==name){
       w.name=name;
       document.querySelectorAll('.wp-name-input[data-idx="'+i+'"], .nl-recap-name-input[data-idx="'+i+'"]').forEach(function(el){ if(document.activeElement!==el) el.value=name; });
     }
   }
+  _geoPump();
 }
 /* Vrai si deux points appartiennent à au moins une même étape (ou si l'un n'a pas d'étape :
    vol classique, sans découpage). */
@@ -7458,7 +7525,7 @@ function recalcNavlog(){
   renderNavlogRecapTable();
   /* Chargement automatique des espaces aériens dès que la route a ≥2 points, sans attendre un
      détour par l'onglet Altitudes (_altitudesAutoLoadDone évite tout refetch une fois fait). */
-  if(typeof loadRouteAirspaces==='function' && typeof _altitudesAutoLoadDone!=='undefined' && !_altitudesAutoLoadDone){
+  if(typeof loadRouteAirspaces==='function' && _airspacesNeedLoad()){
     var _rnWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
     if(_rnWps.length>=2) loadRouteAirspaces().then(function(){ if(typeof renderAltProfile==='function') renderAltProfile(); }).catch(function(){});
   }
@@ -7848,6 +7915,7 @@ window.renderNavlogRecapTable=renderNavlogRecapTable;
 function _syncWaypointName(idx,newName,sourceEl){
   if(!waypoints[idx]) return;
   waypoints[idx].name=newName;
+  waypoints[idx]._autoName=false;
   document.querySelectorAll('.wp-name-input[data-idx="'+idx+'"], .nl-recap-name-input[data-idx="'+idx+'"]').forEach(function(el){
     if(el!==sourceEl && el.value!==newName) el.value=newName;
     /* Champ dimensionné à la longueur du texte (attribut size) plutôt qu'à une largeur fixe :
@@ -7946,12 +8014,12 @@ window._setRecapComment=_setRecapComment;
     Object.keys(aip.aerodromes).forEach(function(c){
       var co=AIRPORT_COORDS[c]; if(!co) return;
       var dmin=Infinity; pts.forEach(function(p){ var d=haversine(p.lat,p.lon,co.lat,co.lon); if(d<dmin) dmin=d; });
-      var lim=kind==='pt'?2:3;
+      var lim=kind==='pt'?2:5;
       if(dmin<=lim || (wp.name||'').trim().toUpperCase()===c) ads.push({c:c,d:dmin});
     });
     ads.sort(function(a,b){ return a.d-b.d; }).slice(0,4).forEach(function(x){ addAd(groups,x.c,aip,x.d<0.6?'sur le terrain':'à '+x.d.toFixed(1)+' NM'); seen[x.c]=1; });
     /* espaces aériens traversés à l'altitude (et juste au-dessus) */
-    var inside=[], above=[], firFR=false;
+    var inside=[], above=[], below=[], firFR=false;
     (oa&&oa.airspaces||[]).forEach(function(a){
       var bb=_geomBBox(a), hit=pts.some(function(p){ return p.lon>=bb[0]&&p.lon<=bb[2]&&p.lat>=bb[1]&&p.lat<=bb[3]&&inGeom(p.lon,p.lat,a.geometry); });
       if(!hit) return;
@@ -7961,11 +8029,30 @@ window._setRecapComment=_setRecapComment;
       if(!items.length) return;
       var lo=limFt(a.lowerLimit), hi=limFt(a.upperLimit);
       var e={a:a,items:items,lo:lo,hi:hi,src:m?m.src:'OpenAIP'};
-      if(alt>=lo && alt<=hi) inside.push(e); else if(lo>alt && lo<=alt+1500) above.push(e);
+      /* TOUS les espaces survolés : traversés à l'altitude du leg, au-dessus, ou en dessous (on peut
+         devoir contacter l'organisme d'une zone survolée, ex. Kortrijk RMZ jusqu'à 2500 ft) */
+      if(alt>=lo && alt<=hi) inside.push(e); else if(lo>alt) above.push(e); else below.push(e);
     });
     function lab(e){ return (e.a.icaoClass!=null?'classe '+'ABCDEFG'.charAt(e.a.icaoClass)+' · ':'')+Math.round(e.lo)+'–'+(e.hi>=99999?'UNL':Math.round(e.hi))+' ft · '+e.src; }
     inside.sort(function(x,y){ return x.lo-y.lo; }).forEach(function(e){ groups.push({title:e.a.name,sub:'traversé à '+alt+' ft · '+lab(e),items:e.items}); });
-    above.forEach(function(e){ groups.push({title:e.a.name+' (au-dessus)',sub:'plancher '+Math.round(e.lo)+' ft, au-dessus de '+alt+' ft · '+lab(e),items:e.items}); });
+    above.sort(function(x,y){ return x.lo-y.lo; }).forEach(function(e){ groups.push({title:e.a.name+' (au-dessus)',sub:'plancher '+Math.round(e.lo)+' ft, au-dessus du leg ('+alt+' ft) · '+lab(e),items:e.items}); });
+    below.sort(function(x,y){ return y.hi-x.hi; }).forEach(function(e){ groups.push({title:e.a.name+' (en dessous)',sub:'plafond '+(e.hi>=99999?'UNL':Math.round(e.hi))+' ft, sous le leg ('+alt+' ft) · '+lab(e),items:e.items}); });
+    /* balises de radionavigation à moins de 25 NM (nom, indicatif, fréquence) */
+    var NAVT=['DME','TACAN','NDB','VOR','VOR-DME','VORTAC','DVOR','DVOR-DME','DVORTAC'];
+    var navs=[];
+    (oa&&oa.navaids||[]).forEach(function(n){
+      var c=n.geometry&&n.geometry.coordinates; if(!c||!n.frequency) return;
+      var dmin=Infinity; pts.forEach(function(p){ var d=haversine(p.lat,p.lon,c[1],c[0]); if(d<dmin) dmin=d; });
+      if(dmin<=25) navs.push({n:n,d:dmin});
+    });
+    navs.sort(function(a,b){ return a.d-b.d; });
+    var navSeen={}, navItems=[];
+    navs.forEach(function(x){
+      var n=x.n, k=(n.identifier||'')+'|'+n.frequency.value; if(navSeen[k]||navItems.length>=8) return; navSeen[k]=1;
+      var t=NAVT[n.type]||'balise', unit=(n.type===2?' kHz':'');
+      navItems.push({call:(n.identifier||'')+' — '+n.name+' ('+t+')',freq:String(n.frequency.value)+unit,rmk:'à '+x.d.toFixed(1)+' NM'+(n.channel?' · canal '+n.channel:''),ins:(n.identifier||n.name)+' '+n.frequency.value+unit});
+    });
+    if(navItems.length) groups.push({title:'Balises de radionavigation',sub:'à moins de 25 NM · OpenAIP',items:navItems});
     /* service d'information de vol belge (pas de contour FIR Bruxelles dans OpenAIP) */
     var be=(aip.airspacesBE||[]).filter(function(x){ return x.name==='BRUSSELS FIR'; })[0];
     var inBE=!firFR && pts.some(function(p){ return p.lat>49.45&&p.lat<51.55&&p.lon>2.5&&p.lon<6.45; });
@@ -7995,10 +8082,13 @@ window._setRecapComment=_setRecapComment;
         var dedup={};
         g.items.forEach(function(it){
           var k=it.call+'|'+it.freq; if(dedup[k]) return; dedup[k]=1;
-          h+='<button type="button" class="fp-f" data-v="'+escHTML((it.call||'').trim()+' '+it.freq)+'"><span>'+escHTML(it.call||'')+(it.rmk?'<small>'+escHTML(it.rmk)+'</small>':'')+'</span><b>'+escHTML(it.freq)+'</b></button>';
+          h+='<button type="button" class="fp-f" data-v="'+escHTML(it.ins||((it.call||'').trim()+' '+it.freq))+'"><span>'+escHTML(it.call||'')+(it.rmk?'<small>'+escHTML(it.rmk)+'</small>':'')+'</span><b>'+escHTML(it.freq)+'</b></button>';
         });
       });
-      h+='<div class="fp-foot">Sources : '+escHTML((aip.sources&&(aip.sources.BE+' · '+aip.sources.FR))||'AIP')+' — mis à jour le '+new Date(aip.generated).toLocaleDateString('fr-FR')+'. Toucher une fréquence l’ajoute au commentaire.</div>';
+      var ch=aip.changes||{}, chn=(ch.items||[]).length;
+      h+='<div class="fp-foot">Sources : '+escHTML((aip.sources&&(aip.sources.BE+' · '+aip.sources.FR))||'AIP')+' — relu le '+new Date(aip.generated).toLocaleDateString('fr-FR')
+        +(ch.first?'':' · '+(chn?'<b style="color:#ffa726">'+chn+' changement(s) de fréquence</b> lors de la dernière lecture':'aucun changement lors de la dernière lecture'))
+        +'. Toucher une fréquence l’ajoute au commentaire.</div>';
       pop.innerHTML=h;
       pop.querySelectorAll('button.fp-f').forEach(function(b){
         b.onclick=function(){
@@ -8087,7 +8177,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
       '<td class="dim">'+dimDash+'</td>'+
       '<td class="'+(isDep?'':'dim')+'">'+etaCell+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
-      '<td class="c-comment">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
+      '<td class="c-comment'+((blank||!wp._ptComment)?' c-write':'')+'">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
     '</tr>';
 
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
@@ -8148,7 +8238,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
       '<td>'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td>'+fuelTxt+'</td>'+
-      '<td class="c-comment">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
+      '<td class="c-comment'+((blank||!next._legComment)?' c-write':'')+'">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
     '</tr>';
   }
   return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel,legNum:legNum};
@@ -8550,14 +8640,14 @@ function printNavlogRecapTable(blank){
             '<td class="c-num">'+fillerLegNum+'</td>'+
             '<td class="c-name leg-arrow"></td>'+
             '<td></td><td></td><td></td><td></td><td class="cap"></td><td></td><td></td><td></td><td></td><td></td>'+
-            '<td class="c-comment"></td>'+
+            '<td class="c-comment c-write"></td>'+
           '</tr>'+
           '<tr class="pt-row'+((segIdx.length+fj)%2?' alt':'')+'">'+
             '<td class="c-num"></td>'+
             '<td class="c-name"></td>'+
             '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
             '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
-            '<td class="c-comment"></td>'+
+            '<td class="c-comment c-write"></td>'+
           '</tr>';
         }
         totalRows=wantPoints+(wantPoints-1)+1;
@@ -8738,6 +8828,9 @@ function printNavlogRecapTable(blank){
     'tr.leg-row td.leg-arrow{padding-left:10px;color:#1565c0;font-weight:700;font-style:normal}'+
     'tr.leg-row td.cap{font-style:normal}'+
     '.c-comment{background:#fff}'+
+    /* Case « Commentaires » vide = case à remplir en vol : cadre intérieur plus épais, gris
+       ardoise, détaché du trait de grille par un liseré blanc -> repérable d'un coup d'œil. */
+    'td.c-write{background:#fff!important;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 3.2px #37474f}'+
     'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
     'tr.tot-row td:first-child{text-align:left}'+
     'tr{page-break-inside:avoid}'+
@@ -9075,6 +9168,7 @@ function renderNavlog(){
         clearTimeout(timer);
         timer=setTimeout(function(){
           waypoints[idx].name=input.value;
+          waypoints[idx]._autoName=false;
           if(flightType==='local' && idx===0){
             var lastIdx=waypoints.length-1;
             waypoints[lastIdx].name=input.value;
@@ -11971,6 +12065,16 @@ window._noteHL=_noteHL;
    suffisant pour un repère visuel, pas pour une donnée réglementaire certifiée. */
 var _routeAirspaces = [];
 var _altitudesAutoLoadDone = false; /* évite de re-fetcher OpenAIP à chaque simple retour sur l'onglet */
+/* Espaces aériens à (re)charger ? Oui dès que la ROUTE a changé depuis le dernier chargement réussi
+   (avant : chargés une seule fois, puis plus jamais après un changement de route -> il fallait
+   cliquer « Charger » sur l'onglet Altitudes, et le profil imprimé restait sans espaces). */
+var _airLoading=false, _airTriedSig=null;
+function _airspacesNeedLoad(){
+  if(_airLoading || typeof _currentRouteSig!=='function') return false;
+  var ok=(typeof waypoints!=='undefined'?waypoints:[]).filter(function(w){return w.lat!==null&&w.lon!==null;}).length>=2;
+  var sig=_currentRouteSig();
+  return ok && sig!==_altitudesRouteSig && sig!==_airTriedSig;
+}
 
 function _routeSamplePoints(){
   var pts=[]; var cum=0;
@@ -12538,17 +12642,19 @@ window.triggerOpenaipUpdate=async function(){
 };
 
 async function loadRouteAirspaces(){
+  _airTriedSig=_currentRouteSig(); _airLoading=true;
+  try{ return await _loadRouteAirspacesCore(); } finally { _airLoading=false; }
+}
+async function _loadRouteAirspacesCore(){
   var status=document.getElementById('altitudesStatus');
   var validWps=waypoints.filter(function(w){return w.lat!==null&&w.lon!==null;});
   if(validWps.length<2){
     if(status) status.textContent='⚠️ Configure au moins 2 waypoints avec coordonnées avant de charger les espaces aériens.';
     return;
   }
+  /* (la clé OpenAIP n'est nécessaire que pour le secours en ligne, plus bas : les données publiées
+     avec le site n'en ont pas besoin) */
   var key=window.OPENAIP_API_KEY||'';
-  if(!key){
-    if(status) status.textContent='❌ Clé OpenAIP indisponible (window.OPENAIP_API_KEY vide) — vérifie la configuration de déploiement.';
-    return;
-  }
 
   _altitudesAutoLoadDone=true;
 
@@ -12602,6 +12708,10 @@ async function loadRouteAirspaces(){
      complets automatiquement (délai croissant entre rounds) tant que ça
      échoue, sans action de l'utilisateur — seul un échec après TOUS les
      rounds affiche enfin une erreur avec bouton pour relancer manuellement. */
+  if(!key){
+    if(status && !_usedCacheFallback) status.textContent='❌ Route hors de la zone des données publiées et clé OpenAIP indisponible — espaces aériens non chargés.';
+    return;
+  }
   var ROUND_DELAYS=[0,4000,8000,15000,25000,30000];
   for(var round=0; round<ROUND_DELAYS.length; round++){
     if(round>0){

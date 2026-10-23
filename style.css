@@ -2483,9 +2483,10 @@ body.sidebar-open .app-sidebar {
 /* Desktop : le menu reste affiché en permanence, plus besoin du bouton ☰
    ni de l'overlay — et le contenu de la page se décale pour lui faire place. */
 @media (min-width: 880px) {
-  .sidebar-toggle-btn,
-  .sidebar-overlay,
-  .sidebar-close-btn {
+  .sidebar-overlay {
+    display: none !important;
+  }
+  body:not(.sidebar-collapsed) .sidebar-toggle-btn {
     display: none !important;
   }
   .app-sidebar {
@@ -2494,6 +2495,17 @@ body.sidebar-open .app-sidebar {
   }
   body {
     margin-left: var(--sidebar-width);
+    transition: margin-left 0.22s ease;
+  }
+  /* Menu replié sur le côté (bouton ‹ de l'en-tête) : la page prend toute la largeur ; le
+     bouton ☰ le ramène. Choix retenu d'une visite à l'autre (js/sidebar.js). */
+  .sidebar-close-btn::before { content: '‹'; font-size: 1.5em; line-height: 0.8; }
+  .sidebar-close-btn { font-size: 0 !important; }
+  body.sidebar-collapsed {
+    margin-left: 0;
+  }
+  body.sidebar-collapsed .app-sidebar {
+    transform: translateX(-100%);
   }
 }
 
