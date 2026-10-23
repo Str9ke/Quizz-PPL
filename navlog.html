@@ -873,7 +873,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   <div class="navlog-tabs" id="navlogTabs">
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o</button>
-    <button class="navlog-tab" onclick="window.switchTab('metar')">&#x1F4E1; METAR secours</button>
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; M&amp;CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
@@ -1085,27 +1084,6 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
   </div>
 
   <!-- ==================== TAB 2: METEO & CARTES ==================== -->
-  <!-- ==================== TAB : METAR DE SECOURS ====================
-       METAR/TAF des aérodromes de la route, lus sur Internet (aviationweather, avec repli sur un
-       aérodrome voisin). Ils étaient affichés en tête de la première page ; ils servent
-       désormais de SECOURS quand l'OPMET (Skeyes, onglet Météo) n'a pas pu être récupéré. Les
-       identifiants (wxPanels, wxAirportBtns) sont inchangés : performances, vent des branches et
-       dossiers continuent de lire ces mêmes METAR. -->
-  <div id="tab-metar" class="navlog-tab-content">
-    <div class="nl-card" style="border-left:4px solid #f59e0b">
-      <div class="nl-card-title"><span class="icon">&#x1F4E1;</span> METAR de secours</div>
-      <p style="font-size:.85em;color:var(--text-secondary);margin:0">Source de repli : METAR et TAF publiés sur Internet pour les a&#xe9;rodromes de la route.
-        La r&#xe9;f&#xe9;rence reste l'<b>OPMET</b> (onglet <a href="#meteo" onclick="window.switchTab('meteo');return false" style="color:var(--link-color)">M&#xe9;t&#xe9;o</a>) :
-        utilise cette page si l'OPMET n'a pas pu &#xea;tre r&#xe9;cup&#xe9;r&#xe9; ou semble p&#xe9;rim&#xe9;.</p>
-    </div>
-    <div class="nl-card">
-      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
-      <div class="wx-airport-btns" id="wxAirportBtns"></div>
-      <div id="wxPanels"></div>
-    </div>
-
-  </div>
-
   <!-- ==================== TAB 2b: NOTAMs ==================== -->
   <div id="tab-notam" class="navlog-tab-content">
       <!-- NOTAM Summary Automatique -->
@@ -1222,6 +1200,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div class="meteo-subtabs">
       <button class="meteo-subtab active" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
       <button class="meteo-subtab" data-sub="aerometar" onclick="window.switchMeteoSub('aerometar')">&#x1F1EB;&#x1F1F7; METAR A&#xe9;roWeb</button>
+      <button class="meteo-subtab" data-sub="metar" onclick="window.switchMeteoSub('metar')">&#x1F4E1; METAR secours</button>
       <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
       <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
@@ -1815,7 +1794,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 <div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 16px 10px">
           <button type="button" class="aeroweb-nav-btn" onclick="window.openAeroWebMap()">&#x1F5FA;&#xFE0F; Carte maille fine AROME (plein &#xe9;cran)</button>
           <button type="button" class="aeroweb-nav-btn" onclick="window.openAeroWebDoc()">&#x1F4D8; Documentation de la carte</button>
-          <span style="font-size:.75em;color:var(--text-secondary);align-self:center">Connexion A&#xe9;roWeb demand&#xe9;e par la carte. Dans l&#x2019;appli Android, retour avec le bouton &#x2190; du t&#xe9;l&#xe9;phone.</span>
+          <span style="font-size:.75em;color:var(--text-secondary);align-self:center">Passe par l&#x2019;accueil A&#xe9;roWeb (connexion, puis &#xab; Pr&#xe9;vision/Observation &#xbb;) : sans cette &#xe9;tape les calques sont refus&#xe9;s. Retour &#xe0; l&#x2019;appli avec &#x2190;.</span>
         </div>
         <div id="awMeta" style="padding:6px 16px;font-size:.82em;color:var(--text-secondary)"></div>
         <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:4px 16px 10px">
@@ -1828,6 +1807,27 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <div id="awList" style="padding:0 12px 12px"></div>
       </div>
     </div>
+
+    <!-- ===== SUB : METAR DE SECOURS (ancien onglet, déplacé dans Météo le 23/10/2026) =====
+       METAR/TAF des aérodromes de la route, lus sur Internet (aviationweather, avec repli sur un
+       aérodrome voisin). Ils étaient affichés en tête de la première page ; ils servent
+       désormais de SECOURS quand l'OPMET (Skeyes, onglet Météo) n'a pas pu être récupéré. Les
+       identifiants (wxPanels, wxAirportBtns) sont inchangés : performances, vent des branches et
+       dossiers continuent de lire ces mêmes METAR. -->
+  <div id="msub-metar" class="meteo-sub-content">
+    <div class="nl-card" style="border-left:4px solid #f59e0b">
+      <div class="nl-card-title"><span class="icon">&#x1F4E1;</span> METAR de secours</div>
+      <p style="font-size:.85em;color:var(--text-secondary);margin:0">Source de repli : METAR et TAF publiés sur Internet pour les a&#xe9;rodromes de la route.
+        La r&#xe9;f&#xe9;rence reste l'<b>OPMET</b> (onglet <a href="#meteo" onclick="window.switchTab('meteo');return false" style="color:var(--link-color)">M&#xe9;t&#xe9;o</a>) :
+        utilise cette page si l'OPMET n'a pas pu &#xea;tre r&#xe9;cup&#xe9;r&#xe9; ou semble p&#xe9;rim&#xe9;.</p>
+    </div>
+    <div class="nl-card">
+      <div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center"><span><span class="icon">&#x1F327;&#xFE0F;</span> M&#xe9;t&#xe9;o a&#xe9;rodromes</span><button onclick="window.refreshAllMetars()" class="navlog-btn" style="font-size:.78em;padding:5px 12px;background:rgba(255,167,38,.15);border-color:#ffa726;color:#ffa726" title="Vide le cache et re-t&#xe9;l&#xe9;charge tous les METARs">&#x1F504; Actualiser les METARs</button></div>
+      <div class="wx-airport-btns" id="wxAirportBtns"></div>
+      <div id="wxPanels"></div>
+    </div>
+
+  </div>
 
     <!-- ===== SUB: OPMET ===== -->
     <div id="msub-opmet" class="meteo-sub-content active">
@@ -2997,6 +2997,9 @@ window.toggleTheme=toggleTheme;
 
 /* ===== TAB SWITCHING ===== */
 function switchTab(id){
+  /* « METAR secours » est désormais un sous-onglet de Météo : les anciens liens (menu, accueil
+     Briefing, navlog.html#metar) y mènent directement. */
+  if(id==='metar'){ switchTab('meteo'); if(typeof switchMeteoSub==='function') switchMeteoSub('metar'); return; }
   var tabs=document.querySelectorAll('.navlog-tab');
   var contents=document.querySelectorAll('.navlog-tab-content');
   
@@ -17500,18 +17503,26 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script>
 /* Carte « maille fine » d'AéroWeb (modèle AROME : nuages, pluie, vent, visibilité, plafond…).
-   Ses images viennent d'un serveur qui exige la connexion AéroWeb : dans une fenêtre intégrée
-   (iframe) la connexion n'est pas transmise (cookies tiers bloqués), d'où « non autorisé » à
-   chaque heure. Elle s'ouvre donc comme une vraie page : dans l'appli Android, en plein écran
-   DANS l'appli (navigation autorisée vers aviation.meteo.fr, voir capacitor.config.json ; retour
-   avec le bouton ← du téléphone) ; sur ordinateur, dans un nouvel onglet. */
+   Ses calques (et même son fond de carte) ne sont servis qu'après une connexion PROPRE au serveur
+   de cartes, que la page d'accueil d'AéroWeb envoie avec un code personnel au compte quand on
+   clique « Prévision/Observation » (fonction connect_maille_fine du site). Ouvrir la carte
+   directement -> tous les calques refusés (« not authorized »), d'où les erreurs à chaque heure.
+   On passe donc par l'accueil d'AéroWeb : connexion (une fois), puis « Prévision/Observation ».
+   Dans l'appli Android, tout reste DANS l'appli (navigation autorisée vers aviation.meteo.fr,
+   capacitor.config.json — la fenêtre ouverte par le site s'y ouvre aussi) ; le code personnel
+   n'est jamais copié dans cette application publique. */
 (function(){
-  var MAP='https://aviation.meteo.fr/Aeroweb_maille_fine/index.html?origin=fr';
+  var HOME='https://aviation.meteo.fr/accueil.php';
   var DOC='https://aviation.meteo.fr/documentation/doc_maille_fine.pdf#gafor_visi_metropole';
   function native(){ return typeof window.appIsNative==='function' && window.appIsNative(); }
   window.openAeroWebMap=function(){
-    if(native()){ window.location.href=MAP; return; }
-    window.open(MAP,'_blank','noopener');
+    var msg='Carte maille fine AROME (nuages, pluie, vent, visibilité…)\n\n'
+      +'1. AéroWeb va s’ouvrir : connecte-toi si c’est demandé.\n'
+      +'2. Dans le menu de gauche, « Produits complémentaires », touche « Prévision/Observation ».\n'
+      +'La carte s’ouvre en plein écran avec tous ses calques'+(native()?' — bouton ← du téléphone pour revenir à l’appli.':'.');
+    if(!confirm(msg)) return;
+    if(native()){ window.location.href=HOME; return; }
+    window.open(HOME,'_blank','noopener');
   };
   /* PDF : la WebView Android n'affiche pas les PDF -> lecteur du téléphone (navigateur externe) */
   window.openAeroWebDoc=function(){ window.open(DOC,'_blank','noopener'); };
