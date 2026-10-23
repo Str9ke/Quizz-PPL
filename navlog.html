@@ -10,6 +10,7 @@
        (non embarqués car régénérés toutes les ~3 h) vers le site en ligne. Sur le web, sans
        effet. Voir js/remote-assets.js. -->
   <script src="js/remote-assets.js?v=20261014b"></script>
+  <script src="js/aerodromes-data.js?v=20261023a"></script>
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -728,6 +729,34 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .iframe-offline{display:flex;align-items:center;justify-content:center;min-height:200px;background:rgba(244,67,54,.06);border:2px dashed rgba(244,67,54,.25);border-radius:12px;color:var(--text-secondary);font-size:.88em;text-align:center;padding:20px;flex-direction:column;gap:8px}
 .iframe-offline .offline-icon{font-size:2em}
 
+
+/* METAR AéroWeb */
+.aw-legend{border-collapse:collapse;font-size:.68em;color:var(--text-secondary)}
+.aw-legend td{width:26px;height:16px;padding:0;border:1px solid rgba(0,0,0,.25)}
+.aw-legend th{font-weight:600;padding:1px 4px;white-space:nowrap}
+.aw-group{margin:14px 4px 6px;font-size:.8em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#667eea}
+.aw-st{border:1px solid var(--border-color);border-radius:10px;margin:6px 0;overflow:hidden;background:var(--bg-container)}
+.aw-st summary{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;list-style:none;font-size:.88em}
+.aw-st summary::-webkit-details-marker{display:none}
+.aw-dot{flex:0 0 14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.35)}
+.aw-code{font-weight:800;font-family:monospace;font-size:1.05em}
+.aw-name{color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aw-vc{font-size:.8em;color:var(--text-secondary);white-space:nowrap}
+.aw-route{background:rgba(102,126,234,.18);color:#8fa4ff;border-radius:6px;padding:1px 6px;font-size:.72em;font-weight:800}
+.aw-blk{padding:4px 12px 8px}
+.aw-lbl{font-size:.74em;font-weight:800;color:#4fc3f7;margin-top:6px}
+.aw-lbl.maa,.aw-lbl.sig{color:#ef5350}
+.aw-txt{font-family:monospace;font-size:.84em;white-space:pre-wrap;line-height:1.45}
+.aw-txt.sig{color:#ef5350;font-weight:700}
+
+/* Perf : tous les décollages / atterrissages */
+.pm-table{width:100%;border-collapse:collapse;font-size:.82em}
+.pm-table th{font-size:.78em;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);text-align:left;padding:6px;border-bottom:2px solid var(--border-color)}
+.pm-table td{padding:6px;border-bottom:1px solid var(--border-color);vertical-align:top}
+.pm-table select{max-width:190px;padding:4px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.95em}
+.pm-metar{font-family:monospace;font-size:.82em;color:var(--text-secondary);margin-top:3px;white-space:normal;word-break:break-word}
+.pm-ok{color:#4caf50;font-weight:800}.pm-ko{color:#ef5350;font-weight:800}.pm-warn{color:#fb8c00;font-weight:800}
+.pm-wrap{overflow-x:auto}
 /* Print stylesheet */
 @media print{
   body{background:#fff!important;color:#000!important;margin-left:0!important;padding-bottom:0!important}
@@ -1180,6 +1209,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <!-- Sub-tabs -->
     <div class="meteo-subtabs">
       <button class="meteo-subtab active" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
+      <button class="meteo-subtab" data-sub="aerometar" onclick="window.switchMeteoSub('aerometar')">&#x1F1EB;&#x1F1F7; METAR A&#xe9;roWeb</button>
       <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
       <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
       <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
@@ -1764,6 +1794,22 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
       </div>
     </div>
 
+    <!-- ===== SUB: METAR AéroWeb (Météo-France) — récupérés avec l'OPMET (fetch_aeroweb.py) ===== -->
+    <div id="msub-aerometar" class="meteo-sub-content">
+      <div class="map-card" style="margin-bottom:14px">
+        <div class="map-card-title">&#x1F1EB;&#x1F1F7; METAR / TAF officiels &#x2014; A&#xe9;roWeb (M&#xe9;t&#xe9;o-France)</div>
+        <div id="awMeta" style="padding:6px 16px;font-size:.82em;color:var(--text-secondary)"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:4px 16px 10px">
+          <div id="awLegend"></div>
+          <div style="flex:1;min-width:220px">
+            <input id="awSearch" type="search" placeholder="Rechercher un a&#xe9;rodrome (code OACI ou nom)&#x2026;" oninput="window.renderAerowebMetars()" style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.9em">
+            <label style="display:flex;gap:6px;align-items:center;font-size:.8em;color:var(--text-secondary);margin-top:6px"><input type="checkbox" id="awRouteOnly" onchange="window.renderAerowebMetars()"> Seulement les a&#xe9;rodromes de ma route</label>
+          </div>
+        </div>
+        <div id="awList" style="padding:0 12px 12px"></div>
+      </div>
+    </div>
+
     <!-- ===== SUB: OPMET ===== -->
     <div id="msub-opmet" class="meteo-sub-content active">
       <!-- OPMET Automatique -->
@@ -1903,6 +1949,10 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
            sélecteur change quel tronçon les sections Décollage/Atterrissage ci-dessous
            calculent (masqué pour un vol classique, une seule paire dép/arr). -->
       <select id="perfStageSelect" style="display:none;margin-bottom:12px;padding:6px 12px;border-radius:8px;border:1px solid #667eea;background:rgba(102,126,234,.1);color:var(--input-text);font-size:.88em;font-weight:600" onchange="window._setPerfStage(this.value)"></select>
+
+      <!-- Tous les décollages et atterrissages du vol (chaque étape), avec METAR AéroWeb, choix de
+           la piste, vent de face/travers et distances requises — voir _renderPerfAllMoves(). -->
+      <div id="perfAllMoves" style="margin-bottom:16px"></div>
 
       <!-- Fiche comparative rapide C150 vs C172 : rappel des différences à chaque changement d'avion -->
       <div id="acDiffCard" style="display:none;margin-bottom:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;font-size:.85em">
@@ -2701,7 +2751,7 @@ var AIRPORT_NAMES = {
   'EBNM':'Namur','EBBR':'Bruxelles','LFQJ':'Maubeuge','LFQQ':'Lille-Lesquin',
   'EBCF':'Cerfontaine','EBSP':'Spa-La Sauven.','EBFS':'Florennes','EBLG':'Li\u00e8ge',
   'EBTY':'Tournai','EBBE':'Beauvechain','EBGB':'Grimbergen',
-  'EBMO':'Moorsele/Wevelgem','LFAV':'Valenciennes','LFQO':'Lens-B\u00e9nifontaine',
+  'EBMO':'Moorsele/Wevelgem','LFAV':'Valenciennes','LFQO':'Lille-Marcq-en-Bar\u0153ul','LFQL':'Lens-B\u00e9nifontaine',
   'EBAW':'Antwerpen-Deurne','EBOS':'Ostende','EBKT':'Courtrai/Wevelgem',
   'EBMB':'Melsbroek','EBST':'Sint-Truiden','EBDT':'Schaffen/Diest','EBUL':'Ursel',
   'EBWE':'Weelde','EBZR':'Oostmalle/Zoersel','EBFN':'Koksijde',
@@ -2765,6 +2815,21 @@ var RUNWAY_DB = {
   'EGJJ':[{rwy:'09/27',hdg:86,len:1706,sfc:'asphalt'}]
 };
 
+/* Aérodromes et pistes OpenAIP (js/aerodromes-data.js, généré par tools/make_aerodromes.py) :
+   complètent et CORRIGENT les tables ci-dessus — toutes les pistes de chaque terrain, caps vrais,
+   longueurs et distances déclarées (TORA/LDA par extrémité, champ `ends`). Ex. LFQO est
+   Lille-Marcq-en-Barœul (17/35 et 07/25), pas Lens (LFQL). */
+(function(){
+  var X=window.AERODROMES_DATA||{};
+  Object.keys(X).forEach(function(c){
+    var a=X[c];
+    AIRPORT_COORDS[c]={lat:a.lat,lon:a.lon};
+    if(!AIRPORT_NAMES[c] || c==='LFQO') AIRPORT_NAMES[c]=a.name;   /* noms français déjà choisis gardés */
+    if(a.elev!=null) AIRPORT_ELEV[c]=a.elev;
+    RUNWAY_DB[c]=a.rwys.map(function(r){ return {rwy:r.rwy,hdg:r.hdg,len:r.len,sfc:r.sfc,ends:r.ends}; });
+  });
+})();
+
 var WX_AIRPORTS = ['EBCV','EBCI','LFQQ','EBSG','EBNM','EBBR','LFQJ','EBCF','EBSP','EBFS','EBLG','EBTY','EBBE','EBGB','EBMO','LFAV','LFQO','EBAW','EBOS','EBKT',
   'EHAM','EHRD','EHEH','EHLE','EHBK','EHFS','EDDK','EDDL','EDLN','EDLV','EDKA','ELLX','LFAT','LFAC','LFQB','LFSG','LFOB','LFSB','EGLC','EGKK','EGJJ'];
 
@@ -2810,6 +2875,7 @@ var WP_ICONS = [
 
 /* ===== STATE ===== */
 var waypoints = [];
+window.__navWaypoints=function(){ return waypoints; };
 var wxCache = {};
 var flightType = 'local';
 var reserveMode = 'day';
@@ -3056,12 +3122,13 @@ function renderFuelLog(){
      atterrissage/circuits inclus) — sans ça, un vol à plusieurs étapes n'affichait qu'une liste
      de legs et un unique total "circuit départ"/"circuit arrivée" agrégé, sans dire à quelle
      étape (donc quel aérodrome) chaque circuit appartenait. */
-  var isEtapesFuelLog=(typeof flightType!=='undefined' && flightType==='etapes');
+  var fuelSegs=_navStageSegs();
+  var isEtapesFuelLog=fuelSegs.length>1;
   var curStageNum=null, stageNavFuel=0, stageNavTimeMin=0, stageCircDepFuel=0, stageCircDepTimeMin=0, stageCircArrFuel=0, stageCircArrTimeMin=0, stageDist=0;
   /* Numérotation des legs de NAVIGATION uniquement (pas les legs de circuit dép/arr) — reste
      cohérente avec le tableau Navlog à l'écran, qui ne numérote QUE les legs de nav (les
-     points de circuit y sont masqués, groupés à part). Redémarre à 1 par étape en vol à
-     étapes (comme le Navlog) ; compteur global sinon. Les legs de circuit départ/arrivée
+     points de circuit y sont masqués, groupés à part). Numérotation CONTINUE d'une étape à
+     l'autre, comme le Navlog. Les legs de circuit départ/arrivée
      n'affichent plus de numéro du tout (juste "Début"/"Fin"), pour ne pas laisser croire à
      une numérotation qui n'a pas de sens équivalent sur le tableau Navlog. */
   var navLegGlobalNum=0, stageNavLegNum=0;
@@ -3108,23 +3175,17 @@ function renderFuelLog(){
     var legData=wp._leg || {};
 
     /* Leg distance check to avoid 0 nm confusion */
-    if(wp.dist>0){
+    var segK=_legStageIdx(i,fuelSegs);
+    if(wp.dist>0 && segK>=0){
       if(isEtapesFuelLog){
-        var thisLegStage=_legStage(waypoints[i-1],wp);
-        if(thisLegStage!==null && thisLegStage!==curStageNum){
+        /* Étapes numérotées 1, 2, 3… dans l'ordre du vol (mêmes étapes que le Navlog) */
+        var thisLegStage=segK+1;
+        if(thisLegStage!==curStageNum){
           _closeStageSubtotal();
           _recordStageTotals();
           curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0; stageNavLegNum=0;
-          var stageDepWp=waypoints[i-1], stageArrIdxForLabel=i;
-          /* Dernier point qui appartient ENCORE à cette étape (pas le premier qui n'y
-             appartient plus) — sinon l'étiquette d'arrivée de l'étape 1 affichait par erreur
-             l'arrivée FINALE du vol (dernier point de la dernière étape) au lieu de son propre
-             point de jonction. */
-          for(var la=i;la<waypoints.length;la++){
-            if(waypoints[la]._stages && waypoints[la]._stages.indexOf(thisLegStage)>=0) stageArrIdxForLabel=la;
-            else break;
-          }
-          var stageArrWp=waypoints[Math.min(stageArrIdxForLabel,waypoints.length-1)];
+          var stageDepWp=waypoints[fuelSegs[segK][0]];
+          var stageArrWp=waypoints[fuelSegs[segK][fuelSegs[segK].length-1]];
           html+='<div style="padding:7px 10px;margin-top:8px;background:rgba(102,126,234,.2);border-radius:8px 8px 0 0;font-weight:800;font-size:.88em;color:#8fa0f5">🧭 ÉTAPE '+thisLegStage+' — '+escHTML((stageDepWp&&stageDepWp.name)||'?')+' → '+escHTML((stageArrWp&&stageArrWp.name)||'?')+'</div>';
         }
         stageDist+=wp.dist;
@@ -3148,7 +3209,7 @@ function renderFuelLog(){
       } else {
         navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t;
         navLegGlobalNum++; stageNavLegNum++;
-        legLabel='Leg '+(isEtapesFuelLog?stageNavLegNum:navLegGlobalNum);
+        legLabel='Leg '+navLegGlobalNum;
       }
       /* Ligne cliquable : bascule normal → circuit départ → circuit arrivée → normal à chaque
          clic, en réutilisant EXACTEMENT le même setCircuitType/removeCircuitType que le
@@ -3187,15 +3248,10 @@ function renderFuelLog(){
   /* Calculations */
   if(isNaN(tripFuel)) tripFuel=0;
   
-  /* Étapes intermédiaires: taxi supplémentaire par escale (spécifique au détail par étape) */
-  var etapeFuel=0; var etapeCount=0; var etapeTimeMin=0;
-  for(var ei=1;ei<waypoints.length-1;ei++){
-    if(waypoints[ei]&&waypoints[ei].isEtape){
-      etapeFuel+=((taxiD+taxiA)/60)*fuelBurn;
-      etapeTimeMin+=taxiD+taxiA;
-      etapeCount++;
-    }
-  }
+  /* Étapes intermédiaires: taxi supplémentaire par escale (une escale = une étape de plus) */
+  var etapeCount=_fuelStopCount(fuelSegs);
+  var etapeFuel=etapeCount*((taxiD+taxiA)/60)*fuelBurn;
+  var etapeTimeMin=etapeCount*(taxiD+taxiA);
 
   /* Source unique : garantit la cohérence avec le Sommaire et le Plan de Vol OACI */
   var bf = computeFullFuelBreakdown(tripFuel);
@@ -3217,6 +3273,12 @@ function renderFuelLog(){
      de l'étape qui se termine + roulage départ de celle qui commence). Le total en
      litres/minutes ne change pas, seul l'affichage est ventilé par étape. */
 
+  function patternRow(k,label){
+    var m=bf.patternList[k]||0;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">'+
+      '<span style="color:#4dd0e1" title="Temps du tour de piste à l\u2019arrivée, réglable pour chaque atterrissage">🛬 '+label+' <input type="number" value="'+m+'" min="0" max="60" step="1" onchange="window._setCircArrMin('+k+',this.value)" style="width:46px;padding:2px 4px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right"> min</span>'+
+      '<span style="color:#4dd0e1;font-weight:600">'+((m/60)*bf.fuelBurn).toFixed(1)+' L</span></div>';
+  }
   var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
   /* Ordre CHRONOLOGIQUE d'un vol réel (demandé explicitement à 2 reprises) : roulage départ,
@@ -3231,6 +3293,7 @@ function renderFuelLog(){
          le "Σ Sous-total étape N" du détail ci-dessus additionne navigation + circuits. */
       col1+=row('Délestage (Navigation, hors circuits) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
       if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
+      col1+=patternRow(sn-1,'Tour de piste — Étape '+sn);
       col1+=row('Roulage arrivée — Étape '+sn, (taxiA/60)*fuelBurn);
     });
   } else {
@@ -3239,6 +3302,7 @@ function renderFuelLog(){
     if(navFuel>0) col1+=row('Délestage (Navigation)', navFuel);
     else col1+=row('Délestage (Navigation)', 0, 'var(--text-secondary)');
     if(circArrFuel>0) col1+=row('🛬 Circuit arrivée', circArrFuel, '#4dd0e1');
+    col1+=patternRow(0,'Tour de piste à l\u2019arrivée');
     col1+=row('Roulage arrivée (Taxi)', (taxiA/60)*fuelBurn);
     if(etapeCount>0) col1+=row('Étapes taxi (×'+etapeCount+')', etapeFuel, '#ff9500');
   }
@@ -3257,7 +3321,7 @@ function renderFuelLog(){
   col1+='</div></div>';
   
   /* Right Column: Time Breakdown */
-  var totalBlockTimeMin = tripTimeMin + taxiD + taxiA + etapeTimeMin;
+  var totalBlockTimeMin = tripTimeMin + taxiD + taxiA + etapeTimeMin + bf.patternMin;
   
   function timeRow(label, min){
       return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">' +
@@ -3275,6 +3339,7 @@ function renderFuelLog(){
       if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
       col2+=timeRow('Temps Vol (Navigation, hors circuits) — Étape '+sn, st.navTime);
       if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
+      col2+=timeRow('🛬 Tour de piste — Étape '+sn, bf.patternList[sn-1]||0);
       col2+=timeRow('Taxi Arrivée — Étape '+sn, taxiA);
     });
   } else {
@@ -3283,6 +3348,7 @@ function renderFuelLog(){
     if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
     else col2+=timeRow('Temps Vol (Navigation)', 0);
     if(circArrTimeMin>0) col2+=timeRow('🛬 Circuit arrivée', circArrTimeMin);
+    col2+=timeRow('🛬 Tour de piste à l\u2019arrivée', bf.patternList[0]||0);
     col2+=timeRow('Taxi Arrivée', taxiA);
     if(etapeCount>0) col2+=timeRow('Étapes (×'+etapeCount+')', etapeTimeMin);
   }
@@ -3302,6 +3368,13 @@ function renderFuelLog(){
   var _custom=!isNaN(_savedRate);
   var _rate=_custom?_savedRate:_off.ttc;
   var _totalCost=totalBlockTimeMin*_rate;
+  /* Instructeur à bord (case à cocher) : 50 € de l'heure HTVA + TVA belge 21 % = 60,50 €/h TVAC,
+     sur le temps bloc ; tarif modifiable (gardé sur l'appareil). */
+  var _instrOn=localStorage.getItem('instructorOn')==='1';
+  var _instrRate=parseFloat(localStorage.getItem('instructorRateHtva'));
+  if(isNaN(_instrRate)) _instrRate=50;
+  var _instrTtc=Math.round(_instrRate*(1+RENTAL_VAT)*100)/100;
+  var _instrCost=_instrOn?totalBlockTimeMin/60*_instrTtc:0;
   function _eur(v,d){ return v.toFixed(d===undefined?3:d).replace('.',','); }
   var _rentHtml='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
   _rentHtml+='<div style="font-weight:700;margin-bottom:8px;color:#e879f9;font-size:1.05em">&#x1F4B6; Coût de location</div>';
@@ -3314,9 +3387,23 @@ function renderFuelLog(){
   _rentHtml+='<input type="number" id="fuelRentalRate" value="'+_rate.toFixed(3)+'" min="0" max="50" step="0.001" style="width:88px;padding:5px 8px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em" onchange="localStorage.setItem(\''+_rateKey+'\',this.value);window.renderFuelLog()">';
   if(_custom) _rentHtml+='<button type="button" onclick="localStorage.removeItem(\''+_rateKey+'\');window.renderFuelLog()" style="font-size:.75em;padding:3px 8px;border-radius:6px;cursor:pointer">&#x21BA; tarif officiel ('+_eur(_off.ttc)+')</button><span style="font-size:.75em;color:#f59e0b">tarif personnalisé</span>';
   _rentHtml+='</div>';
+  _rentHtml+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;font-size:.85em">';
+  _rentHtml+='<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700"><input type="checkbox" '+(_instrOn?'checked':'')+' onchange="localStorage.setItem(\'instructorOn\',this.checked?\'1\':\'0\');window.renderFuelLog()" style="width:18px;height:18px;accent-color:#e879f9"> 👨‍✈️ Instructeur à bord</label>';
+  _rentHtml+='<span style="color:var(--text-secondary)"><input type="number" value="'+_instrRate+'" min="0" max="500" step="1" onchange="localStorage.setItem(\'instructorRateHtva\',this.value);window.renderFuelLog()" style="width:58px;padding:3px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right"> &#x20AC;/h HTVA + TVA 21&nbsp;% = <b style="color:var(--text-primary)">'+_eur(_instrTtc,2)+'&nbsp;&#x20AC;/h TVAC</b></span>';
+  _rentHtml+='</div>';
   _rentHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border-color)">';
-  _rentHtml+='<span style="color:var(--text-secondary);font-size:.9em">'+totalBlockTimeMin.toFixed(0)+' min &times; '+_eur(_rate)+' &#x20AC;/min</span>';
-  _rentHtml+='<span style="font-weight:800;font-size:1.5em;color:#e879f9">'+_eur(_totalCost,2)+' &#x20AC;</span>';
+  _rentHtml+='<span style="color:var(--text-secondary);font-size:.9em">Avion : '+totalBlockTimeMin.toFixed(0)+' min &times; '+_eur(_rate)+' &#x20AC;/min</span>';
+  _rentHtml+='<span style="font-weight:700;font-size:1.05em">'+_eur(_totalCost,2)+' &#x20AC;</span>';
+  _rentHtml+='</div>';
+  if(_instrOn){
+    _rentHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px">';
+    _rentHtml+='<span style="color:var(--text-secondary);font-size:.9em">Instructeur : '+formatTime(totalBlockTimeMin/60)+' &times; '+_eur(_instrTtc,2)+' &#x20AC;/h</span>';
+    _rentHtml+='<span style="font-weight:700;font-size:1.05em">'+_eur(_instrCost,2)+' &#x20AC;</span>';
+    _rentHtml+='</div>';
+  }
+  _rentHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:6px;border-top:1px solid var(--border-color)">';
+  _rentHtml+='<span style="font-weight:700">TOTAL'+(_instrOn?' (avion + instructeur)':'')+'</span>';
+  _rentHtml+='<span style="font-weight:800;font-size:1.5em;color:#e879f9">'+_eur(_totalCost+_instrCost,2)+' &#x20AC;</span>';
   _rentHtml+='</div></div>';
   var _rentEl=document.getElementById('fuelRentalCost');
   if(_rentEl) _rentEl.innerHTML=_rentHtml;
@@ -3386,10 +3473,13 @@ function renderFPL(){
 
   /* Endurance: block fuel / consumption * 60 min (source unique, alignée avec Sommaire et Carbu) */
   var tripFuelL = 0;
-  for(var fi=1;fi<waypoints.length;fi++){ if(waypoints[fi]._leg && waypoints[fi]._leg.fuel) tripFuelL+=waypoints[fi]._leg.fuel; }
+  var _fplSegs=_navStageSegs();
+  for(var fi=1;fi<waypoints.length;fi++){ if(waypoints[fi]._leg && waypoints[fi]._leg.fuel && _legFuelCounts(fi,_fplSegs)) tripFuelL+=waypoints[fi]._leg.fuel; }
+  var _fplStops=_fuelStopCount(_fplSegs);
   var fplBf = computeFullFuelBreakdown(tripFuelL);
   var fuelBurnVal = fplBf.fuelBurn;
-  var blockFuel = fplBf.total;
+  /* + roulage des escales, comme le BLOCK FUEL de l'onglet Carbu */
+  var blockFuel = fplBf.total + _fplStops*(((parseFloat(_v('fuelTaxiD'))||0)+(parseFloat(_v('fuelTaxiA'))||0))/60)*fuelBurnVal;
   if(blockFuel<1) blockFuel=36; /* fallback: Cessna 150 usable fuel */
   var endMin = Math.round((blockFuel/fuelBurnVal)*60);
   var endStr = String(Math.floor(endMin/60)).padStart(2,'0')+String(endMin%60).padStart(2,'0');
@@ -6905,6 +6995,8 @@ function getConfig(){
     fuelContingency:parseFloat(_v('fuelContingency'))||5,
     fuelExtra:parseFloat(_v('fuelExtra'))||0,
     fuelAltnDist:parseFloat(_v('fuelAltnDist'))||0,
+    /* minutes de tour de piste à chaque arrivée (onglet Carbu) */
+    fuelCircArr:(typeof waypoints!=='undefined'&&waypoints.length>1)?_circArrMins():undefined,
     perfAircraft:window._perfAircraft||'OO-MQA',
     /* Vent MANUEL saisi dans l'onglet Perf pour décollage/atterrissage (distinct du "vent réf."
        ci-dessus, qui sert au calcul des caps/temps de route) : n'était sauvegardé nulle part —
@@ -6917,6 +7009,59 @@ function getConfig(){
     perfWindSpdManualLd:_v('perfWindSpdManualLd')
   };
 }
+
+/* ===== ÉTAPES DU VOL (source unique) =====
+   Mêmes étapes que les tableaux Navlog : points affichés découpés par _computeStageSegments().
+   Utilisé par l'onglet Carbu, les totaux carburant (feuille imprimée, FPL, M&CG) et l'onglet Perf,
+   pour que tous comptent les mêmes étapes, numérotées 1, 2, 3… sans trou (les numéros internes
+   _stages peuvent sauter après une suppression d'étape : « Étape 3 » sans « Étape 2 »). */
+function _navStageSegs(){
+  var shown=[];
+  for(var si=0;si<waypoints.length;si++){
+    var w=waypoints[si];
+    if(w && (w.isEtape||!w.ptType) && !_isDupOfNextPoint(si)) shown.push(si);
+  }
+  return _computeStageSegments(shown).filter(function(sg){ return sg.length>=2; });
+}
+window._navStageSegs=_navStageSegs;
+/* Étape (0-based) du leg qui arrive au point i, ou -1 pour un « leg fantôme » entre deux étapes
+   distinctes (fin d'une étape -> début de la suivante posé ailleurs) : il n'existe dans aucun
+   tableau Navlog et ne doit pas compter dans le carburant. */
+function _legStageIdx(i,segs){
+  segs=segs||_navStageSegs();
+  if(segs.length<2) return 0;
+  for(var k=segs.length-1;k>=0;k--){
+    var a=segs[k][0];
+    if(i>a) return k;
+    if(i===a) return (k>0 && segs[k-1][segs[k-1].length-1]!==a) ? -1 : Math.max(0,k-1);
+  }
+  return 0;
+}
+window._legStageIdx=_legStageIdx;
+/* Escales = étapes - 1 (vol découpé en étapes) ; à défaut, points « escale » (isEtape). */
+function _fuelStopCount(segs){
+  segs=segs||_navStageSegs();
+  if(segs.length>1) return segs.length-1;
+  var n=0; for(var ei=1;ei<waypoints.length-1;ei++){ if(waypoints[ei]&&waypoints[ei].isEtape) n++; }
+  return n;
+}
+/* Tour de piste à l'arrivée : minutes par atterrissage (5 par défaut), réglables une par une. */
+function _circArrMins(segs){
+  segs=segs||_navStageSegs();
+  var n=Math.max(1,segs.length), saved=window._circArrMin;
+  if(!Array.isArray(saved)){ try{ saved=JSON.parse(localStorage.getItem('fuelCircArrMin')||'null'); }catch(e){ saved=null; } }
+  var out=[]; for(var i=0;i<n;i++){ var v=saved&&saved[i]; out.push(v===undefined||v===null||v===''||isNaN(v)?5:+v); }
+  return out;
+}
+function _setCircArrMin(i,v){
+  var a=_circArrMins();
+  a[i]=Math.max(0,parseFloat(String(v).replace(',','.'))||0);
+  window._circArrMin=a;
+  try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(a)); }catch(e){}
+  renderFuelLog();
+}
+window._setCircArrMin=_setCircArrMin;
+function _legFuelCounts(i,segs){ return _legStageIdx(i,segs)>=0; }
 
 /* ===== SOURCE UNIQUE DU CALCUL DE CARBURANT ===== */
 /* Utilisée par le Sommaire, l'onglet Carbu et le Plan de Vol OACI pour garantir
@@ -6935,11 +7080,16 @@ function computeFullFuelBreakdown(tripFuelL){
   var tas = parseFloat(_v('cfgTAS'))||90;
   var altnFuel = (altnDist>0 && tas>0) ? (altnDist/tas)*fuelBurnVal : 0;
   var extraFuel = parseFloat(_v('fuelExtra'))||0;
-  var total = (tripFuelL||0)+taxiFuel+contFuel+resFuel+altnFuel+extraFuel;
+  /* Tour de piste à chaque arrivée (5 min par défaut, réglable par atterrissage dans l'onglet Carbu) */
+  var patternList = (typeof waypoints!=='undefined' && waypoints.length>1) ? _circArrMins() : [];
+  var patternMin = patternList.reduce(function(a,b){ return a+b; },0);
+  var patternFuel = (patternMin/60)*fuelBurnVal;
+  var total = (tripFuelL||0)+taxiFuel+contFuel+resFuel+altnFuel+extraFuel+patternFuel;
   return {
     tripFuel:tripFuelL||0, taxiFuel:taxiFuel, contFuel:contFuel, contPct:contPct,
     resFuel:resFuel, resMin:resMin, altnFuel:altnFuel, altnDist:altnDist,
-    extraFuel:extraFuel, total:total, fuelBurn:fuelBurnVal
+    extraFuel:extraFuel, total:total, fuelBurn:fuelBurnVal,
+    patternList:patternList, patternMin:patternMin, patternFuel:patternFuel
   };
 }
 window.computeFullFuelBreakdown=computeFullFuelBreakdown;
@@ -6954,15 +7104,12 @@ function _computeCarbuBlockFuelL(){
   var fuelBurnVal = parseFloat(_v('fuelBurn'))||parseFloat(_v('cfgFuel'))||20;
   var taxiD = parseFloat(_v('fuelTaxiD'))||0;
   var taxiA = parseFloat(_v('fuelTaxiA'))||0;
-  var tripFuel=0;
+  var tripFuel=0, segs=_navStageSegs();
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
-    if(wp.dist>0 && wp._leg) tripFuel+=(wp._leg.fuel||0);
+    if(wp.dist>0 && wp._leg && _legFuelCounts(i,segs)) tripFuel+=(wp._leg.fuel||0);
   }
-  var etapeFuel=0;
-  for(var ei=1;ei<waypoints.length-1;ei++){
-    if(waypoints[ei]&&waypoints[ei].isEtape) etapeFuel+=((taxiD+taxiA)/60)*fuelBurnVal;
-  }
+  var etapeFuel=_fuelStopCount(segs)*((taxiD+taxiA)/60)*fuelBurnVal;
   var bf=computeFullFuelBreakdown(tripFuel);
   return bf.total+etapeFuel;
 }
@@ -7754,7 +7901,8 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
    étaient aussi absents des totaux), alors que l'onglet Carbu les inclut : distance/temps/carburant
    affichés ne correspondaient pas d'une page à l'autre. */
 function _computeFuelTimeSummary(){
-  var isEtapesMode=(typeof flightType!=='undefined' && flightType==='etapes');
+  var segsFT=_navStageSegs();
+  var isEtapesMode=segsFT.length>1;
   var totalDist=0, tripFuel=0, tripTimeMin=0;
   var navFuel=0, navTimeMin=0, circDepFuel=0, circDepTimeMin=0, circArrFuel=0, circArrTimeMin=0;
   var stageTotals={};
@@ -7778,9 +7926,11 @@ function _computeFuelTimeSummary(){
   for(var i=1;i<waypoints.length;i++){
     var wp=waypoints[i];
     if(!(wp.dist>0)) continue;
+    var segK=_legStageIdx(i,segsFT);
+    if(segK<0) continue;   /* leg fantôme entre deux étapes distinctes : hors calcul */
     if(isEtapesMode){
-      var thisLegStage=legStage(waypoints[i-1],wp);
-      if(thisLegStage!==null && thisLegStage!==curStageNum){
+      var thisLegStage=segK+1;
+      if(thisLegStage!==curStageNum){
         recordStage();
         curStageNum=thisLegStage; stageNavFuel=0; stageNavTimeMin=0; stageCircDepFuel=0; stageCircDepTimeMin=0; stageCircArrFuel=0; stageCircArrTimeMin=0; stageDist=0;
       }
@@ -7802,10 +7952,8 @@ function _computeFuelTimeSummary(){
   var fuelBurn=parseFloat(_v('fuelBurn'))||20;
   var taxiD=parseFloat(_v('fuelTaxiD'))||0;
   var taxiA=parseFloat(_v('fuelTaxiA'))||0;
-  var etapeFuel=0, etapeTimeMin=0, etapeCount=0;
-  for(var ei=1;ei<waypoints.length-1;ei++){
-    if(waypoints[ei]&&waypoints[ei].isEtape){ etapeFuel+=((taxiD+taxiA)/60)*fuelBurn; etapeTimeMin+=taxiD+taxiA; etapeCount++; }
-  }
+  var etapeCount=_fuelStopCount(segsFT);
+  var etapeFuel=etapeCount*((taxiD+taxiA)/60)*fuelBurn, etapeTimeMin=etapeCount*(taxiD+taxiA);
   var bf=computeFullFuelBreakdown(tripFuel);
   return {
     totalDist:totalDist, tripFuel:tripFuel, tripTimeMin:tripTimeMin,
@@ -7814,7 +7962,7 @@ function _computeFuelTimeSummary(){
     circArrFuel:circArrFuel, circArrTimeMin:circArrTimeMin,
     stageTotals:stageTotals,
     etapeFuel:etapeFuel, etapeTimeMin:etapeTimeMin, etapeCount:etapeCount,
-    bf:bf, totalBlockFuel:bf.total+etapeFuel, totalBlockTimeMin:tripTimeMin+taxiD+taxiA+etapeTimeMin,
+    bf:bf, totalBlockFuel:bf.total+etapeFuel, totalBlockTimeMin:tripTimeMin+taxiD+taxiA+etapeTimeMin+bf.patternMin,
     taxiD:taxiD, taxiA:taxiA, fuelBurn:fuelBurn
   };
 }
@@ -8103,6 +8251,7 @@ function printNavlogRecapTable(blank){
         '<div><b>Réserve ('+fbGlobal.resMin+' min)</b><br>'+(blank?fl:(Math.round(fbGlobal.resFuel*10)/10)+' L')+'</div>'+
         (fbGlobal.altnFuel>0?'<div><b>Dégagement</b><br>'+(blank?fl:(Math.round(fbGlobal.altnFuel*10)/10)+' L')+'</div>':'')+
         (fbGlobal.extraFuel>0?'<div><b>Suppl.</b><br>'+(blank?fl:(Math.round(fbGlobal.extraFuel*10)/10)+' L')+'</div>':'')+
+        (fbGlobal.patternFuel>0?'<div><b>Tours de piste ('+fbGlobal.patternMin+' min)</b><br>'+(blank?fl:(Math.round(fbGlobal.patternFuel*10)/10)+' L')+'</div>':'')+
         '<div class="fuel-total"><b>TOTAL REQUIS'+(multiSheet?' (vol complet)':'')+'</b><br>'+(blank?fl:(Math.round(fuelSummary.totalBlockFuel*10)/10)+' L')+'</div>'+
       '</div>';
 
@@ -9846,6 +9995,7 @@ function _composeEtapes(){
   if(cfg.fuelResType) setVal('fuelResType',cfg.fuelResType);
   if(cfg.fuelContingency!==undefined) setVal('fuelContingency',cfg.fuelContingency);
   if(cfg.fuelExtra!==undefined) setVal('fuelExtra',cfg.fuelExtra);
+  if(Array.isArray(cfg.fuelCircArr)){ window._circArrMin=cfg.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
   if(cfg.fuelAltnDist!==undefined) setVal('fuelAltnDist',cfg.fuelAltnDist);
   if(cfg.perfAircraft) syncAircraftSelection(cfg.perfAircraft,true);
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
@@ -10060,6 +10210,7 @@ function _restoreAutosaveIfAny(){
   if(cfg.fuelResType) setVal('fuelResType',cfg.fuelResType);
   if(cfg.fuelContingency!==undefined) setVal('fuelContingency',cfg.fuelContingency);
   if(cfg.fuelExtra!==undefined) setVal('fuelExtra',cfg.fuelExtra);
+  if(Array.isArray(cfg.fuelCircArr)){ window._circArrMin=cfg.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
   if(cfg.fuelAltnDist!==undefined) setVal('fuelAltnDist',cfg.fuelAltnDist);
   if(cfg.perfAircraft) syncAircraftSelection(cfg.perfAircraft,true);
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
@@ -10764,6 +10915,7 @@ function loadDossier(id, _freshCloudFiles){
   if(d.config.landingMin!==undefined) document.getElementById('cfgLanding').value=d.config.landingMin;
   if(d.config.alt){var _ca=document.getElementById('cfgAlt');if(_ca)_ca.value=d.config.alt;var _cas=document.getElementById('cfgAltSlider');if(_cas)_cas.value=d.config.alt;}
   if(d.config.fuelBurn!==undefined){var _fb=document.getElementById('fuelBurn');if(_fb)_fb.value=d.config.fuelBurn;}
+  if(Array.isArray(d.config.fuelCircArr)){ window._circArrMin=d.config.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
   if(d.config.fuelTaxiD!==undefined){var _ftd=document.getElementById('fuelTaxiD');if(_ftd)_ftd.value=d.config.fuelTaxiD;}
   if(d.config.fuelTaxiA!==undefined){var _fta=document.getElementById('fuelTaxiA');if(_fta)_fta.value=d.config.fuelTaxiA;}
   if(d.config.fuelResType){var _frt=document.getElementById('fuelResType');if(_frt)_frt.value=d.config.fuelResType;}
@@ -15842,8 +15994,147 @@ function perfCalc(){
 
   // Build cruise table
   buildCruiseTable();
+  try{ _renderPerfAllMoves(); }catch(e){ console.warn('[perf] tableau des mouvements',e); }
 }
 window.perfCalc=perfCalc;
+
+/* ===== PERF : TOUS LES DÉCOLLAGES ET ATTERRISSAGES =====
+   Un vol à étapes = autant de décollages et d'atterrissages que d'étapes. Les sections détaillées
+   plus bas ne traitent qu'UNE étape à la fois (sélecteur) ; ce tableau les montre TOUS d'un coup :
+   METAR (AéroWeb en priorité — officiel et récupéré avec l'OPMET —, sinon METAR Internet, sinon
+   la station la plus proche), piste au choix parmi les vraies pistes du terrain (auto = plus de
+   vent de face), composantes de vent, distances requises comparées à la piste. */
+window._perfMvRwy = window._perfMvRwy || {};
+function _perfParseMetar(m){
+  var o={raw:m};
+  var w=m.match(/\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)\b/);
+  if(w){ var k=w[4]==='MPS'?1.944:1; o.dir=w[1]==='VRB'?-1:+w[1]; o.spd=Math.round(+w[2]*k); o.gust=w[3]?Math.round(+w[3]*k):0; }
+  if(/\b00000KT\b/.test(m)){ o.dir=0; o.spd=0; o.gust=0; }
+  var t=m.match(/\s(M?\d{2})\/(M?\d{2})?(?=\s|$)/); if(t) o.temp=parseInt(t[1].replace('M','-'),10);
+  var q=m.match(/\sQ(\d{4})\b/); if(q) o.qnh=+q[1];
+  var aq=m.match(/\sA(\d{4})\b/); if(!q && aq) o.qnh=Math.round(+aq[1]/100*33.8639);
+  return o;
+}
+function _perfAwMetar(st){
+  if(!st) return null;
+  if(st.blocks) for(var i=0;i<st.blocks.length;i++){ if(/^(METAR|SPECI)/i.test(st.blocks[i].label)) return st.blocks[i].text.replace(/\s*\n\s*/g,' ').replace(/=$/,''); }
+  return st.metar||null;
+}
+function _perfWxFor(icao,wp){
+  var aw=(window._aerowebData&&window._aerowebData.stations)||{};
+  var m=_perfAwMetar(aw[icao]);
+  if(m) return {metar:m,src:'AéroWeb',icao:icao,dist:0};
+  if(typeof wxCache!=='undefined' && wxCache[icao] && wxCache[icao].metar) return {metar:wxCache[icao].metar,src:'Internet',icao:icao,dist:0};
+  /* pas de station sur le terrain : la plus proche (AéroWeb), à moins de 25 NM */
+  var lat=wp&&wp.lat, lon=wp&&wp.lon;
+  if(lat==null && AIRPORT_COORDS[icao]){ lat=AIRPORT_COORDS[icao].lat; lon=AIRPORT_COORDS[icao].lon; }
+  if(lat==null) return null;
+  var best=null;
+  Object.keys(aw).forEach(function(c){
+    var st=aw[c]; if(st.lat==null || !_perfAwMetar(st)) return;
+    var d=haversine(lat,lon,st.lat,st.lon);
+    if(d<=25 && (!best || d<best.dist)) best={metar:_perfAwMetar(st),src:'AéroWeb',icao:c,dist:Math.round(d)};
+  });
+  return best;
+}
+function _perfDistances(kind,elev,temp,qnh,hw,grass){
+  var is172=(window._perfAircraft||'OO-MQA')==='OO-FCE';
+  var TO=is172?PERF_TO_172:PERF_TO, TOW=is172?PERF_TO_WIND_172:PERF_TO_WIND, LD=is172?PERF_LD_172:PERF_LD;
+  var pa=elev+((1013-qnh)*28), isa=15-(pa/1000)*2, dev=temp-isa;
+  var f=Math.max(.85,1+(dev/15)*.1), roll, over;
+  if(kind==='TO'){
+    var b=interpPerf(TO,pa); roll=b.roll*f; over=b.over15*f;
+    if(hw>0){ var bw=interpPerfWind(TOW,pa,hw,TO); roll=bw.roll*f; over=bw.over15*f; }
+  } else {
+    var l=interpPerf(LD,pa); roll=l.roll*f; over=l.over15*f;
+    if(hw>0){ var wf=Math.max(.5,1-(hw/7.5)*.1); roll*=wf; over*=wf; }
+  }
+  if(hw<0){ var tf=1+.1*(-hw)/2; roll*=tf; over*=tf; }           /* vent arrière : +10 % par 2 kt */
+  if(grass){ var add=roll*(kind==='TO'?.15:.45); roll+=add; over+=add; } /* herbe sèche (manuel de vol) */
+  return {roll:roll,over:over,pa:pa};
+}
+function _perfMovements(){
+  var segs=_navStageSegs();
+  var mv=[];
+  segs.forEach(function(sg,i){
+    mv.push({stage:i+1,n:segs.length,kind:'TO',idx:sg[0]});
+    mv.push({stage:i+1,n:segs.length,kind:'LD',idx:sg[sg.length-1]});
+  });
+  return mv;
+}
+function _renderPerfAllMoves(){
+  var box=document.getElementById('perfAllMoves');
+  if(!box || typeof waypoints==='undefined') return;
+  var mv=_perfMovements();
+  if(!mv.length){ box.innerHTML=''; return; }
+  var ac=MB_DATA[window._perfAircraft||'OO-MQA']||{};
+  var html='<div class="nl-card-title" style="font-size:.95em">🛫🛬 Tous les décollages et atterrissages du vol</div>'
+    +'<div class="pm-wrap"><table class="pm-table"><tr><th>Étape</th><th>Terrain · METAR</th><th>Piste</th><th>Vent</th><th>Distance requise</th></tr>';
+  mv.forEach(function(m){
+    var wp=waypoints[m.idx]||{};
+    var icao=(wp.name||'').trim().toUpperCase();
+    var key=m.kind+':'+m.idx+':'+icao;
+    var rwys=RUNWAY_DB[icao]||[];
+    var wx=_perfWxFor(icao,wp);
+    var p=wx?_perfParseMetar(wx.metar):{};
+    var elev=AIRPORT_ELEV[icao]!=null?AIRPORT_ELEV[icao]:0;
+    var temp=p.temp!=null?p.temp:15, qnh=p.qnh||1013;
+    /* toutes les extrémités de piste du terrain */
+    var ends=[];
+    rwys.forEach(function(r){
+      var ds=r.rwy.split('/');
+      var es=r.ends&&r.ends.length?r.ends:ds.map(function(d,j){ return {d:d,hdg:j===0?r.hdg:(r.hdg+180)%360}; });
+      es.forEach(function(e){ ends.push({d:e.d,hdg:e.hdg,avail:(m.kind==='TO'?e.tora:e.lda)||r.len,len:r.len,grass:r.sfc!=='asphalt'}); });
+    });
+    var spd=p.spd||0, dir=p.dir;
+    function comp(e){
+      if(dir==null || dir<0) return {hw:0,xw:0};
+      var a=(dir-e.hdg)*Math.PI/180; return {hw:Math.round(spd*Math.cos(a)),xw:Math.round(Math.abs(spd*Math.sin(a)))};
+    }
+    var autoIdx=-1, bestHw=-999;
+    ends.forEach(function(e,i){ var c=comp(e); if(c.hw>bestHw){ bestHw=c.hw; autoIdx=i; } });
+    var sel=window._perfMvRwy[key];
+    var ei=-1; ends.forEach(function(e,i){ if(e.d===sel) ei=i; }); if(ei<0) ei=autoIdx;
+    var e=ends[ei];
+    var stageTxt=(m.n>1?'Étape '+m.stage+'<br>':'')+(m.kind==='TO'?'🛫 Décollage':'🛬 Atterrissage');
+    var name=AIRPORT_NAMES[icao]||'';
+    var metarHtml=wx?('<div class="pm-metar">'+(wx.dist?'METAR de '+escHTML(wx.icao)+' (à '+wx.dist+' NM) · ':'')+escHTML(wx.src)+' : '+escHTML(wx.metar)+'</div>')
+      :'<div class="pm-metar">Pas de METAR — lance la récupération (onglet Météo) ou saisis le vent dans la section détaillée.</div>';
+    var rwyHtml;
+    if(ends.length){
+      rwyHtml='<select onchange="window._perfMvRwy[\''+key.replace(/'/g,'')+'\']=this.value;window._renderPerfAllMoves()">';
+      ends.forEach(function(x,i){
+        rwyHtml+='<option value="'+escHTML(x.d)+'"'+(i===ei?' selected':'')+'>'+escHTML(x.d)+' · '+x.hdg+'°'+(x.avail?' · '+x.avail+' m':'')+' · '+(x.grass?'herbe':'dur')+(i===autoIdx?' (auto)':'')+'</option>';
+      });
+      rwyHtml+='</select>';
+    } else rwyHtml='<span style="color:var(--text-secondary)">pistes inconnues</span>';
+    var windHtml='—', distHtml='—';
+    if(e){
+      var c=comp(e), gustC=p.gust?Math.round(Math.abs(p.gust*Math.sin((dir-e.hdg)*Math.PI/180))):0;
+      if(dir!=null){
+        var xwLim=m.kind==='TO'?ac.xwindTOKt:ac.xwindLDGKt;
+        var xwMax=Math.max(c.xw,gustC);
+        windHtml=(dir<0?'VRB ':String(dir).padStart(3,'0')+'° ')+spd+(p.gust?'G'+p.gust:'')+' kt<br>'
+          +(c.hw>=0?'face '+c.hw:'<span class="pm-ko">arrière '+(-c.hw)+'</span>')+' kt · travers '
+          +'<span class="'+(xwLim&&xwMax>xwLim?'pm-ko':(xwLim&&xwMax>xwLim*.8?'pm-warn':''))+'">'+c.xw+(gustC>c.xw?' (raf. '+gustC+')':'')+' kt</span>'
+          +(xwLim?'<br><small>max démontré '+xwLim+' kt</small>':'');
+      }
+      var d=_perfDistances(m.kind,elev,temp,qnh,c.hw,e.grass);
+      var need=m.kind==='TO'?d.over:d.over*1.5;
+      var ok=e.avail?need<=e.avail:null;
+      distHtml=(m.kind==='TO'?'roulement '+Math.round(d.roll)+' m<br>passage 15 m : <b>'+Math.round(d.over)+' m</b>'
+          :'roulement '+Math.round(d.roll)+' m<br>passage 15 m ×1,5 : <b>'+Math.round(need)+' m</b>')
+        +(e.avail?'<br><span class="'+(ok?'pm-ok':'pm-ko')+'">'+(ok?'✅':'⚠️')+' piste '+e.avail+' m</span>':'')
+        +'<br><small>'+elev+' ft · '+temp+' °C · Q'+qnh+(e.grass?' · herbe':'')+'</small>';
+    }
+    html+='<tr><td>'+stageTxt+'</td><td><b>'+escHTML(icao||'?')+'</b> '+escHTML(name)+metarHtml+'</td><td>'+rwyHtml+'</td><td>'+windHtml+'</td><td>'+distHtml+'</td></tr>';
+  });
+  html+='</table></div><p style="font-size:.72em;color:var(--text-secondary);margin:6px 0 0">Pistes et distances déclarées : OpenAIP (TORA au décollage, LDA à l\'atterrissage). Caps de piste VRAIS, comme le vent du METAR. '
+    +'Corrections du manuel : herbe +15 % du roulement au décollage, +45 % à l\'atterrissage ; vent arrière +10 % par 2 kt. Atterrissage comparé au passage des 15 m × 1,5. Toujours vérifier la carte VAC.</p>';
+  box.innerHTML=html;
+}
+window._renderPerfAllMoves=_renderPerfAllMoves;
+window.onAerowebData=function(){ try{ _renderPerfAllMoves(); }catch(e){} };
 
 /* ===== IAS → TAS Calculator ===== */
 window.calcIasTas=function(){
@@ -16511,7 +16802,7 @@ window.setBriefingFetchMode = function(v) {
 /* Parties du briefing publiées séparément par le workflow rapide (voir _Publisher dans
    fetch_notams.py) et ce qu'il faut recharger à l'arrivée de chacune. */
 var _BRIEFING_PART_LABELS = {
-  opmet: 'OPMET', notam: 'NOTAM', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
+  opmet: 'OPMET', aeroweb: 'METAR AéroWeb', notam: 'NOTAM', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
   temsi_france: 'TEMSI France', temsi_euroc: 'TEMSI EUROC', wintem_france: 'WINTEM France', wintem_euroc: 'WINTEM EUROC'
 };
 var _ALL_BRIEFING_PARTS = Object.keys(_BRIEFING_PART_LABELS);
@@ -16526,6 +16817,7 @@ window._refreshBriefingParts = function(parts) {
     // Le widget « vent GAMET » est tiré de l'OPMET : il restait sur l'ancienne version
     if (typeof loadGametWindWidget === 'function') loadGametWindWidget();
   }
+  if (has('aeroweb') && typeof window.loadAerowebMetars === 'function') window.loadAerowebMetars();
   if (has('notam')) _reloadDataFrame('autoNotamFrame');
   if (has('daily')) {
     _reloadDataFrame('autoDailyWarnFrame');
@@ -16730,7 +17022,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   function stale() { return gen !== _fetchWatchGen; }
   var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
   var workflow = _fetchWorkflow(), classic = workflow === 'update_notams_classic.yml';
-  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet'] : _ALL_BRIEFING_PARTS.slice();
+  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet', 'aeroweb'] : _ALL_BRIEFING_PARTS.slice();
   _fetchWatchActive = true;
   _fetchProgressMax = 0;
   _setFetchProgress(1, 'En attente d’un serveur GitHub…');
@@ -17061,6 +17353,101 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   function go(){ init(document.getElementById('navlogTabs')); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<script>
+/* ===== METAR AéroWeb (Météo-France) =====
+   opmet_aeroweb.json est produit par fetch_aeroweb.py pendant la récupération (même bouton que
+   l'OPMET Skeyes). Contenu : pour chaque aérodrome de la région, METAR, TAF LONG, PREDEC, MAA
+   (message complet d'AéroWeb, pas seulement l'infobulle de la carte) + code couleur
+   visibilité / plafond ; et les SIGMET de chaque FIR. Lu aussi par l'onglet Perf (vent au sol). */
+(function(){
+  var AW_COLORS=[ /* légende AéroWeb : lignes = plafond (ft), colonnes = visibilité (km) */
+    ['≥ 3000',['#9c27b0','#e53935','#ffa000','#ffeb3b','#00c853','#29b6f6']],
+    ['2000',['#9c27b0','#e53935','#ffa000','#ffeb3b','#00c853','#00c853']],
+    ['1000',['#9c27b0','#e53935','#ffa000','#ffeb3b','#ffeb3b','#ffeb3b']],
+    ['500',['#9c27b0','#e53935','#ffa000','#ffa000','#ffa000','#ffa000']],
+    ['200',['#9c27b0','#e53935','#e53935','#e53935','#e53935','#e53935']],
+    ['0',['#9c27b0','#9c27b0','#9c27b0','#9c27b0','#9c27b0','#9c27b0']]
+  ];
+  var VIS=['0','0,8','1,5','5','8','10'];
+  var COUNTRY={LF:'🇫🇷 France',EB:'🇧🇪 Belgique',EH:'🇳🇱 Pays-Bas',EG:'🇬🇧 Royaume-Uni',EL:'🇱🇺 Luxembourg',ED:'🇩🇪 Allemagne'};
+  function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function legend(){
+    var h='<table class="aw-legend"><tr><th colspan="7" style="text-align:left">Code couleur (METAR) — plafond × visibilité</th></tr>';
+    AW_COLORS.forEach(function(r){ h+='<tr><th style="text-align:right">'+r[0]+' ft</th>'+r[1].map(function(c){ return '<td style="background:'+c+'"></td>'; }).join('')+'</tr>'; });
+    h+='<tr><th></th>'+VIS.map(function(v){ return '<th style="font-weight:400">'+v+'</th>'; }).join('')+'</tr>';
+    h+='<tr><th></th><th colspan="6" style="font-weight:400">visibilité (km) · gris = pas de METAR</th></tr></table>';
+    return h;
+  }
+  function routeCodes(){
+    var out=[];
+    try{ (window.__navWaypoints?window.__navWaypoints():[]).forEach(function(w){ var c=(w&&w.name||'').trim().toUpperCase(); if(/^[A-Z]{4}$/.test(c)&&out.indexOf(c)<0) out.push(c); }); }catch(e){}
+    ['fpl_altn1','fpl_altn2'].forEach(function(id){ var el=document.getElementById(id); var c=el&&el.value?el.value.trim().toUpperCase():''; if(/^[A-Z]{4}$/.test(c)&&out.indexOf(c)<0) out.push(c); });
+    return out;
+  }
+  function station(code,st,onRoute){
+    var col=st.color||'#9e9e9e';
+    var vc=[];
+    if(st.visi) vc.push('vis '+(+st.visi>=10000?'≥ 10 km':(Math.round(st.visi/100)/10)+' km'));
+    if(st.plafond) vc.push('plafond '+(+st.plafond*100)+' ft');
+    var h='<details class="aw-st"'+(onRoute?' open':'')+'><summary><span class="aw-dot" style="background:'+esc(col)+'"></span>'
+      +'<span class="aw-code">'+esc(code)+'</span><span class="aw-name">'+esc(st.name||'')+'</span>'
+      +(onRoute?'<span class="aw-route">ROUTE</span>':'')+'<span class="aw-vc">'+esc(vc.join(' · '))+'</span></summary><div class="aw-blk">';
+    var blocks=st.blocks&&st.blocks.length?st.blocks:[].concat(st.metar?[{label:'METAR',text:st.metar}]:[],st.taf?[{label:'TAF',text:st.taf}]:[]);
+    if(!blocks.length) h+='<div class="aw-txt">'+esc(st.error||'Aucun message')+'</div>';
+    blocks.forEach(function(b){
+      var maa=/^MAA/i.test(b.label);
+      h+='<div class="aw-lbl'+(maa?' maa':'')+'">'+esc(b.label||'')+'</div><div class="aw-txt">'+esc(b.text)+'</div>';
+    });
+    return h+'</div></details>';
+  }
+  window.renderAerowebMetars=function(){
+    var d=window._aerowebData, list=document.getElementById('awList'), meta=document.getElementById('awMeta');
+    var lg=document.getElementById('awLegend'); if(lg && !lg.innerHTML) lg.innerHTML=legend();
+    if(!list) return;
+    if(!d){ list.innerHTML='<div style="padding:12px;color:var(--text-secondary)">Pas encore de données : lance « ⬇️ Récupérer toutes les données » ou « ⚡ OPMET seul » ci-dessus.</div>'; if(meta) meta.textContent=''; return; }
+    if(meta){
+      var when=d.generated?new Date(d.generated):null;
+      meta.innerHTML=(d.error?'<b style="color:#ef5350">⚠️ '+esc(d.error)+'</b><br>':'')
+        +(d.date?esc(d.date)+' · ':'')+(when?'récupéré le '+when.toLocaleDateString('fr-FR')+' à '+when.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' (heure locale) · ':'')
+        +Object.keys(d.stations||{}).length+' aérodromes · source : aviation.meteo.fr';
+    }
+    var q=((document.getElementById('awSearch')||{}).value||'').trim().toUpperCase();
+    var onlyRoute=(document.getElementById('awRouteOnly')||{}).checked;
+    var route=routeCodes(), st=d.stations||{};
+    var codes=Object.keys(st).filter(function(c){
+      if(onlyRoute && route.indexOf(c)<0) return false;
+      return !q || c.indexOf(q)>=0 || (st[c].name||'').toUpperCase().indexOf(q)>=0;
+    });
+    var html='';
+    var mine=route.filter(function(c){ return codes.indexOf(c)>=0; });
+    if(mine.length){ html+='<div class="aw-group">🧭 Aérodromes de la route</div>'; mine.forEach(function(c){ html+=station(c,st[c],true); }); }
+    var missing=route.filter(function(c){ return !st[c]; });
+    if(missing.length && !q) html+='<div style="font-size:.78em;color:var(--text-secondary);margin:4px">Sans message AéroWeb : '+esc(missing.join(', '))+' (pas de station officielle — voir l’OPMET ou les METAR de secours)</div>';
+    var groups={};
+    codes.filter(function(c){ return mine.indexOf(c)<0; }).sort().forEach(function(c){ var k=COUNTRY[c.slice(0,2)]||'Autres'; (groups[k]=groups[k]||[]).push(c); });
+    Object.keys(groups).forEach(function(k){ html+='<div class="aw-group">'+k+' ('+groups[k].length+')</div>'; groups[k].forEach(function(c){ html+=station(c,st[c],false); }); });
+    var firs=d.firs||{};
+    if(Object.keys(firs).length && !onlyRoute && !q){
+      html+='<div class="aw-group">⚠️ SIGMET des FIR</div>';
+      Object.keys(firs).forEach(function(k){
+        var f=firs[k];
+        html+='<div class="aw-st" style="padding:8px 12px"><b>FIR '+esc(f.name)+'</b>';
+        if(!f.blocks.length) html+='<div class="aw-txt">Aucun SIGMET en cours</div>';
+        f.blocks.forEach(function(b){ html+='<div class="aw-lbl sig">SIGMET '+esc(b.label)+'</div><div class="aw-txt sig">'+esc(b.text)+'</div>'; });
+        html+='</div>';
+      });
+    }
+    list.innerHTML=html||'<div style="padding:12px;color:var(--text-secondary)">Aucun aérodrome ne correspond.</div>';
+  };
+  window.loadAerowebMetars=function(){
+    return fetch('opmet_aeroweb.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){ if(d){ window._aerowebData=d; window.renderAerowebMetars(); if(typeof window.onAerowebData==='function') window.onAerowebData(d); } })
+      .catch(function(){});
+  };
+  function go(){ var lg=document.getElementById('awLegend'); if(lg) lg.innerHTML=legend(); window.loadAerowebMetars(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>

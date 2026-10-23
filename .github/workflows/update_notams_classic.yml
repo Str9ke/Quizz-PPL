@@ -61,6 +61,8 @@ jobs:
         env:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
+          AEROWEB_USER: ${{ secrets.AEROWEB_USER }}
+          AEROWEB_PASS: ${{ secrets.AEROWEB_PASS }}
         run: |
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then
             echo "OPMET-only fast run: full METAR+TAF+SIGMET+GAMET/AIRMET, skipping NOTAMs/images/TEMSI-WINTEM"

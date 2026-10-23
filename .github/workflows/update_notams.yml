@@ -45,6 +45,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /fetch_notams.py
+            /fetch_aeroweb.py
             /fetch_meteo.py
             /skeyes_sfc_state.json
             /requirements.txt
@@ -86,6 +87,8 @@ jobs:
         env:
           SKEYES_USER: ${{ secrets.SKEYES_USER }}
           SKEYES_PASS: ${{ secrets.SKEYES_PASS }}
+          AEROWEB_USER: ${{ secrets.AEROWEB_USER }}
+          AEROWEB_PASS: ${{ secrets.AEROWEB_PASS }}
           # Publication progressive : chaque partie (OPMET d'abord) est poussée dès qu'elle est
           # prête — voir _Publisher dans fetch_notams.py et tools/git_publish.sh.
           FAST_PUBLISH: '1'

@@ -34,10 +34,18 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   (`js/app-transfer.js`, Firestore `quizProgress/{uid}/transfer`).
 - **Mise à jour automatique** : `js/auto-update.js` (chargé par `js/apps.js`) — web : `reg.update()` + rechargement ;
   APK : lit la pré-release GitHub de l'appli (titre = version), télécharge l'APK (seul en Wi-Fi) et ouvre l'installateur.
+- **METAR AéroWeb** (Météo-France, aviation.meteo.fr) : `fetch_aeroweb.py` (lancé par `fetch_notams.py`, partie « aeroweb »,
+  secrets `AEROWEB_USER` / `AEROWEB_PASS`, mot de passe envoyé en MD5 comme le site) -> `opmet_aeroweb.json` (METAR, TAF long,
+  PREDEC, MAA via `showmessage.php?code=`, code couleur via `ajax/ajax_trajet_get_stations.php`, SIGMET des FIR) ; onglet Météo
+  « METAR AéroWeb » de `navlog.html` ; repris par l'onglet Perf (tableau de tous les décollages/atterrissages).
+- **Aérodromes/pistes** : `js/aerodromes-data.js` généré par `tools/make_aerodromes.py` depuis `openaip_data.json` (caps vrais,
+  TORA/LDA) ; complète et corrige `RUNWAY_DB`/`AIRPORT_*` de `navlog.html` (LFQO = Lille-Marcq, LFQL = Lens).
+- **Dossiers du navlog** : copie complète dans IndexedDB (`navlogStore`), copie allégée dans le localStorage (`navlog_dossiers`).
+- **Étapes** (source unique) : `_navStageSegs()` / `_legStageIdx()` dans `navlog.html` — utilisés par Navlog, Carbu, impression, FPL, Perf.
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v228`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v229`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
