@@ -808,7 +808,18 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 /* Fréquences AIP proposées dans les commentaires (bouton 📻) */
 .nl-freq-wrap{display:flex;gap:3px;align-items:center}
 .nl-freq-btn{flex:0 0 auto;border:1px solid var(--border-color);background:rgba(102,126,234,.12);border-radius:6px;cursor:pointer;padding:2px 5px;font-size:.9em;line-height:1.2}
-.freq-pop{position:fixed;z-index:10050;max-width:min(92vw,420px);max-height:min(70vh,520px);overflow:auto;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.5);padding:10px 12px;font-size:.85em}
+.freq-pop{position:fixed;z-index:2147483000;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,520px);max-height:88vh;overflow:auto;overscroll-behavior:contain;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.6),0 12px 32px rgba(0,0,0,.5);padding:0 14px 12px;font-size:.92em}
+/* en-tête collé en haut : le bouton ✕ reste visible pendant le défilement */
+.freq-pop .fp-head{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--bg-container,#1e1e2a);padding:12px 0 8px;margin-bottom:4px;border-bottom:1px solid var(--border-color);font-size:1.05em}
+.freq-pop .fp-head>span{flex:1;min-width:0}
+.freq-pop .fp-close{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--border-color);background:rgba(255,255,255,.06);color:inherit;border-radius:10px;min-width:40px;min-height:40px;font-size:1.1em;cursor:pointer}
+.freq-pop button.fp-f{min-height:44px}
+.freq-pop .fp-nav{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 10px}
+.freq-pop .fp-nav button{width:auto!important;min-height:0!important;margin:0!important;flex:0 1 auto;border:1px solid rgba(143,160,245,.45);background:rgba(102,126,234,.14);color:#c5cdfb;border-radius:999px;padding:5px 10px;font:inherit;font-size:.82em;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){
+  /* téléphone / appli Android : plein écran */
+  .freq-pop{left:0;top:0;right:0;bottom:0;transform:none;width:auto;max-height:none;border-radius:0;border:none;padding:env(safe-area-inset-top) 14px calc(14px + env(safe-area-inset-bottom));font-size:1em}
+}
 .freq-pop h5{margin:10px 0 4px;font-size:.82em;text-transform:uppercase;letter-spacing:.05em;color:#8fa0f5}
 .freq-pop h5:first-of-type{margin-top:2px}
 .freq-pop .fp-sub{font-size:.82em;color:var(--text-secondary);margin:-2px 0 4px}
@@ -8064,21 +8075,21 @@ window._setRecapComment=_setRecapComment;
   window._freqPick=function(i,kind,btn){
     close();
     var pop=document.createElement('div'); pop.id='freqPop'; pop.className='freq-pop';
-    pop.innerHTML='⏳ Recherche des fréquences…';
+    pop.innerHTML='<div class="fp-head"><b>📻 Fréquences</b></div>⏳ Recherche des fréquences…';
     document.body.appendChild(pop);
-    var r=btn.getBoundingClientRect();
-    pop.style.top=Math.min(r.bottom+6,window.innerHeight-120)+'px';
-    pop.style.left=Math.max(8,Math.min(r.right-380,window.innerWidth-Math.min(window.innerWidth*0.92,420)-8))+'px';
     setTimeout(function(){ document.addEventListener('mousedown',outside,true); },0);
     Promise.all([loadAip(),_loadOpenaipStatic()]).then(function(res){
       var aip=res[0], oa=res[1];
       if(!aip){ pop.innerHTML='Fréquences AIP indisponibles (fichier aip_freqs.json absent). <button type="button" onclick="this.closest(\'.freq-pop\').remove()">✕</button>'; return; }
       var groups=suggestions(i,kind,aip,oa);
       var input=btn.parentNode.querySelector('input');
-      var h='<div style="display:flex;justify-content:space-between;align-items:center"><b>📻 Fréquences '+(kind==='leg'?'du leg':'du point')+'</b><button type="button" class="nl-freq-btn" onclick="this.closest(\'.freq-pop\').remove()">✕</button></div>';
+      var who=(kind==='leg'?'Leg vers ':'Point ')+((waypoints[i]&&waypoints[i].name)||('WP'+(i+1)));
+      var h='<div class="fp-head"><span><b>📻 Fréquences</b><br><small style="color:var(--text-secondary)">'+escHTML(who)+'</small></span><button type="button" class="fp-close" onclick="this.closest(\'.freq-pop\').remove()" aria-label="Fermer">✕</button></div>';
       if(!groups.length) h+='<div class="fp-sub" style="margin-top:8px">Aucun espace ni aérodrome avec fréquence ici.</div>';
+      /* raccourcis vers chaque groupe (listes longues : Lille a 14 fréquences) */
+      if(groups.length>1) h+='<div class="fp-nav">'+groups.map(function(g,gi){ return '<button type="button" data-g="'+gi+'">'+escHTML(g.title.replace(/ \((au-dessus|en dessous)\)$/,function(m,x){ return x==='au-dessus'?' ↑':' ↓'; }))+'</button>'; }).join('')+'</div>';
       groups.forEach(function(g,gi){
-        h+='<h5>'+escHTML(g.title)+'</h5><div class="fp-sub">'+escHTML(g.sub)+'</div>';
+        h+='<h5 id="fpg'+gi+'">'+escHTML(g.title)+'</h5><div class="fp-sub">'+escHTML(g.sub)+'</div>';
         var dedup={};
         g.items.forEach(function(it){
           var k=it.call+'|'+it.freq; if(dedup[k]) return; dedup[k]=1;
@@ -8090,6 +8101,10 @@ window._setRecapComment=_setRecapComment;
         +(ch.first?'':' · '+(chn?'<b style="color:#ffa726">'+chn+' changement(s) de fréquence</b> lors de la dernière lecture':'aucun changement lors de la dernière lecture'))
         +'. Toucher une fréquence l’ajoute au commentaire.</div>';
       pop.innerHTML=h;
+      pop.querySelectorAll('.fp-nav button').forEach(function(b){
+        b.onclick=function(){ var t=pop.querySelector('#fpg'+b.getAttribute('data-g')), hd=pop.querySelector('.fp-head');
+          if(t) pop.scrollTo({top:t.offsetTop-(hd?hd.offsetHeight:0)-4,behavior:'smooth'}); };
+      });
       pop.querySelectorAll('button.fp-f').forEach(function(b){
         b.onclick=function(){
           if(!input) return;
@@ -8153,7 +8168,6 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     var viaCircuitTag=isArrivalViaCircuit?' <span class="tag" style="background:#00838f">via circuit</span>':'';
     var isDep=(k===0);
     var altCell=blank?'':(isDep?alt:'—');
-    var etaCell=blank?'':(isDep?'00:00:00':'—');
 
     var windBadge='';
     if(k===0 && windBadgeFirst && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
@@ -8174,10 +8188,11 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
       '<td class="dim">'+dimDash+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
+      /* ETE et ETA réels = cases à remplir en vol (cadre épais), vides sur la feuille */
+      '<td class="c-write"></td>'+
+      '<td class="c-write"></td>'+
       '<td class="dim">'+dimDash+'</td>'+
-      '<td class="'+(isDep?'':'dim')+'">'+etaCell+'</td>'+
-      '<td class="dim">'+dimDash+'</td>'+
-      '<td class="c-comment'+((blank||!wp._ptComment)?' c-write':'')+'">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
+      '<td class="c-comment">'+(blank?'':escHTML(wp._ptComment||''))+'</td>'+
     '</tr>';
 
     if(k===segIdx.length-1) break; /* pas de leg après le dernier point du segment */
@@ -8238,7 +8253,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
       '<td>'+eteTxt+'</td>'+
       '<td>'+legEtaStr+'</td>'+
       '<td>'+fuelTxt+'</td>'+
-      '<td class="c-comment'+((blank||!next._legComment)?' c-write':'')+'">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
+      '<td class="c-comment">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
     '</tr>';
   }
   return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel,legNum:legNum};
@@ -8640,14 +8655,14 @@ function printNavlogRecapTable(blank){
             '<td class="c-num">'+fillerLegNum+'</td>'+
             '<td class="c-name leg-arrow"></td>'+
             '<td></td><td></td><td></td><td></td><td class="cap"></td><td></td><td></td><td></td><td></td><td></td>'+
-            '<td class="c-comment c-write"></td>'+
+            '<td class="c-comment"></td>'+
           '</tr>'+
           '<tr class="pt-row'+((segIdx.length+fj)%2?' alt':'')+'">'+
             '<td class="c-num"></td>'+
             '<td class="c-name"></td>'+
             '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
-            '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="dim"></td>'+
-            '<td class="c-comment c-write"></td>'+
+            '<td class="dim"></td><td class="dim"></td><td class="dim"></td><td class="c-write"></td><td class="c-write"></td><td class="dim"></td>'+
+            '<td class="c-comment"></td>'+
           '</tr>';
         }
         totalRows=wantPoints+(wantPoints-1)+1;
@@ -8828,7 +8843,7 @@ function printNavlogRecapTable(blank){
     'tr.leg-row td.leg-arrow{padding-left:10px;color:#1565c0;font-weight:700;font-style:normal}'+
     'tr.leg-row td.cap{font-style:normal}'+
     '.c-comment{background:#fff}'+
-    /* Case « Commentaires » vide = case à remplir en vol : cadre intérieur plus épais, gris
+    /* Cases ETE/ETA des lignes point = à remplir en vol : cadre intérieur plus épais, gris
        ardoise, détaché du trait de grille par un liseré blanc -> repérable d'un coup d'œil. */
     'td.c-write{background:#fff!important;box-shadow:inset 0 0 0 1.5px #fff,inset 0 0 0 3.2px #37474f}'+
     'tr.tot-row td{font-weight:700;background:#e4e4e4;text-align:right;padding-right:6px}'+
