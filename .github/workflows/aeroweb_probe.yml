@@ -1,0 +1,41 @@
+name: AeroWeb probe (temporaire)
+# Test ponctuel : quelle connexion débloque les calques de la carte « maille fine » ? (à supprimer)
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe
+        env:
+          AEROWEB_USER: ${{ secrets.AEROWEB_USER }}
+          AEROWEB_PASS: ${{ secrets.AEROWEB_PASS }}
+        run: |
+          python3 - <<'PY'
+          import os, hashlib, requests, datetime
+          U, P = os.environ['AEROWEB_USER'], os.environ['AEROWEB_PASS']
+          md5 = hashlib.md5(P.encode()).hexdigest()
+          B = 'https://aviation.meteo.fr/'
+          now = datetime.datetime.utcnow()
+          run = now.replace(hour=(now.hour//3)*3, minute=0, second=0, microsecond=0) - datetime.timedelta(hours=6)
+          run = run.replace(hour=[h for h in (0,3,6,12,18) if h <= run.hour][-1])
+          t = now.replace(minute=0, second=0, microsecond=0)
+          f = lambda d: d.strftime('%Y-%m-%dT%H:%M:%SZ')
+          q = {'champ':'model.nebul_bas','TIME':f(t),'RUN':f(run),'SERVICE':'WMS','VERSION':'1.3.0','REQUEST':'GetMap','FORMAT':'image/png',
+               'TRANSPARENT':'true','LAYERS':'','CRS':'EPSG:3857','STYLES':'','WIDTH':'256','HEIGHT':'256','BBOX':'200000,6300000,700000,6700000'}
+          def show(tag, s):
+              r = s.get(B+'wms/v2/map/model.nebul_bas', params=q, timeout=30)
+              print(tag, r.status_code, r.headers.get('content-type'), len(r.content), r.text[:80] if 'json' in (r.headers.get('content-type') or '') else '')
+              print('   cookies:', [(c.name, c.domain, c.path) for c in s.cookies])
+          s = requests.Session(); show('anonyme', s)
+          # 1) connexion du site AeroWeb (PHPSESSID)
+          s1 = requests.Session(); s1.get(B+'login.php')
+          r = s1.post(B+'ajax/login_valid.php', data={'login':U,'password':md5}, headers={'X-Requested-With':'XMLHttpRequest'})
+          print('login_valid ->', r.text[:20]); show('session AeroWeb', s1)
+          # 2) connexion propre au serveur WMS
+          s2 = requests.Session()
+          r = s2.get(B+'wms/v2/auth/login/vfr/'+requests.utils.quote(U)+'/'+md5, timeout=30)
+          print('wms auth ->', r.status_code, r.text[:200].replace(md5,'***'))
+          print('   set-cookie:', [h.split(';')[0].split('=')[0]+' '+';'.join(h.split(';')[1:]) for h in r.raw.headers.getlist('Set-Cookie')] if hasattr(r.raw.headers,'getlist') else r.headers.get('set-cookie','')[:0])
+          show('jeton WMS', s2)
+          print('RUN', f(run), 'TIME', f(t))
+          PY
