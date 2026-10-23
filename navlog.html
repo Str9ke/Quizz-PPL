@@ -36,6 +36,16 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 /* Tabs */
 .navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .navlog-tabs::-webkit-scrollbar{display:none}
+/* Barre d'onglets : glisser (souris ou doigt), molette, flèches ‹ › quand des onglets sont cachés */
+.navlog-tabs{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;overscroll-behavior-x:contain}
+.navlog-tabs.dragging{cursor:grabbing}
+.navlog-tabs.dragging .navlog-tab{pointer-events:none}
+.tabs-scroll-wrap{position:relative;max-width:900px;margin:0 auto}
+.tabs-scroll-wrap .navlog-tabs{max-width:none}
+.tabs-arrow{position:absolute;top:0;bottom:18px;width:34px;border:0;z-index:3;cursor:pointer;font-size:1.5em;font-weight:800;color:var(--text-primary,#fff);display:none;align-items:center;padding:0}
+.tabs-arrow.l{left:0;justify-content:flex-start;padding-left:4px;background:linear-gradient(90deg,var(--bg-body,#121218) 40%,transparent)}
+.tabs-arrow.r{right:0;justify-content:flex-end;padding-right:4px;background:linear-gradient(270deg,var(--bg-body,#121218) 40%,transparent)}
+.tabs-arrow.show{display:flex}
 .navlog-tab{flex:0 0 auto;padding:12px 10px;font-size:.82em;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;text-align:center;white-space:nowrap}
 .navlog-tab:hover{color:#667eea}
 .navlog-tab.active{color:#667eea;border-bottom-color:#667eea}
@@ -3594,7 +3604,7 @@ function printConsolidatedDossier(){
   /* --- Checklist --- */
   if(typeof CHECKLIST_ITEMS!=='undefined'){
     html+='<h2>✅ Checklist prévol</h2>';
-    CHECKLIST_ITEMS.forEach(function(cat){
+    _checklistCats().forEach(function(cat){
       html+='<div class="ckcat">'+esc(cat.cat)+'</div><table>';
       cat.items.forEach(function(item){
         var label=typeof item==='object'?item.label:item;
@@ -3644,7 +3654,8 @@ var CHECKLIST_ITEMS = [
     'NOTAMs (imprim\u00e9s)',
     'Performances d\u00e9collage/atterrissage',
     'Masse & Centrage',
-    'Devis carburant'
+    'Devis carburant',
+    'Plan de vol (FPL) envoy\u00e9 avant le d\u00e9part'
   ]},
   {cat:'\u00c9lectronique',items:[
     'Tablette charg\u00e9e (+ c\u00e2ble)',
@@ -3666,6 +3677,32 @@ var CHECKLIST_ITEMS = [
     'Carnet de route avion'
   ]}
 ];
+/* Lignes ajoutées à la main (bouton ＋ de chaque liste) : gardées sur l'appareil, pour tous les vols. */
+var _CK_CUSTOM_KEY='navlog_checklist_custom';
+function _ckCustom(){ try{ return JSON.parse(localStorage.getItem(_CK_CUSTOM_KEY))||{}; }catch(e){ return {}; } }
+function _ckSaveCustom(c){ try{ localStorage.setItem(_CK_CUSTOM_KEY,JSON.stringify(c)); }catch(e){} }
+/* Listes affichées = listes de base + lignes ajoutées (marquées custom). */
+function _checklistCats(){
+  var c=_ckCustom();
+  return CHECKLIST_ITEMS.map(function(cat){
+    return {cat:cat.cat,items:cat.items.concat((c[cat.cat]||[]).map(function(l){ return {label:l,custom:true}; }))};
+  });
+}
+function checklistAddItem(cat){
+  var label=prompt('Nouvelle ligne pour « '+cat+' » :');
+  if(!label || !label.trim()) return;
+  var c=_ckCustom(); (c[cat]=c[cat]||[]).push(label.trim()); _ckSaveCustom(c);
+  renderChecklist();
+}
+window.checklistAddItem=checklistAddItem;
+function checklistRemoveItem(ev,cat,label){
+  ev.preventDefault(); ev.stopPropagation();
+  if(!confirm('Retirer « '+label+' » de la checklist ?')) return;
+  var c=_ckCustom(); c[cat]=(c[cat]||[]).filter(function(l){ return l!==label; }); _ckSaveCustom(c);
+  delete _checklistState[cat+'::'+label];
+  renderChecklist();
+}
+window.checklistRemoveItem=checklistRemoveItem;
 var _checklistState={};
 var _checklistInited=false;
 function initChecklist(){
@@ -3678,7 +3715,8 @@ function renderChecklist(){
   if(!panel) return;
   var html='';
   var total=0,done=0;
-  CHECKLIST_ITEMS.forEach(function(cat){
+  function jsq(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+  _checklistCats().forEach(function(cat){
     html+='<div style="margin-top:10px;margin-bottom:4px;font-weight:700;font-size:.88em;color:#667eea;text-transform:uppercase;letter-spacing:.5px">\ud83d\udccc '+cat.cat+'</div>';
     cat.items.forEach(function(item){
       var label=typeof item==='object'?item.label:item;
@@ -3689,7 +3727,8 @@ function renderChecklist(){
       if(checked) done++;
       html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .2s;'+(checked?'background:rgba(76,175,80,.1);':'background:var(--bg-question);')+'margin-bottom:2px" onclick="window.toggleCheckItem(this,\''+key.replace(/'/g,"\\'")+'\')">';
       html+='<input type="checkbox" '+(checked?'checked':'')+' style="width:18px;height:18px;accent-color:#4caf50;cursor:pointer" data-ck="'+key.replace(/"/g,'&quot;')+'">';
-      html+='<span style="font-size:.88em;'+(checked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-primary)')+'">'+label+'</span>';
+      html+='<span style="font-size:.88em;flex:1;'+(checked?'text-decoration:line-through;color:var(--text-secondary)':'color:var(--text-primary)')+'">'+escHTML(label)+'</span>';
+      if(item.custom) html+='<button type="button" title="Retirer cette ligne" onclick="window.checklistRemoveItem(event,\''+jsq(cat.cat)+'\',\''+jsq(label)+'\')" style="border:0;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:.9em;padding:0 4px">✕</button>';
       html+='</label>';
       /* Sub-items — indented */
       sub.forEach(function(subItem){
@@ -3703,6 +3742,7 @@ function renderChecklist(){
         html+='</label>';
       });
     });
+    html+='<button type="button" onclick="window.checklistAddItem(\''+jsq(cat.cat)+'\')" style="justify-self:start;margin:2px 0 4px;padding:4px 12px;border-radius:8px;border:1px dashed var(--border-color);background:transparent;color:#667eea;cursor:pointer;font-size:.8em;font-weight:700">＋ Ajouter une ligne</button>';
   });
   panel.innerHTML=html;
   var prog=document.getElementById('checklistProgress');
@@ -7937,7 +7977,7 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
 
 /* Bande d'écriture sous les lignes LEG de la feuille remplie (mm), par palier de nombre de lignes
    (≤6, ≤11, ≤16, ≤22, ≤30, plus) — calibrée par impression réelle (Chrome, A4, une page par étape). */
-var WRITE_MM=[6,6,5.5,5,4,1.2];
+var WRITE_MM=[[3,4],[2.5,3.5],[2,3],[1.5,2],[1,1.2],[.5,.6]]; /* [sous la ligne LEG bleue, sous la ligne point blanche] */
 function printNavlogRecapTable(blank){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
@@ -8140,11 +8180,13 @@ function printNavlogRecapTable(blank){
     else if(totalRows<=22) prof={f:7.6,p:'2.5px 2.3px',lp:'1.4px 2.5px',h1:8.7,sub:5.5,info:7.2,infoLbl:6};
     else if(totalRows<=30) prof={f:5.9,p:'1.6px 1.6px',lp:'1px 1.6px',h1:7,sub:4.8,info:6.4,infoLbl:5.3};
     else prof={f:5.6,p:'1.4px 1.4px',lp:'0.9px 1.4px',h1:6.8,sub:4.6,info:6,infoLbl:5};
-    /* Feuille REMPLIE : sous le texte de chaque ligne LEG (bleue), une bande libre pour barrer la
-       valeur imprimée et écrire la correction à la main juste en dessous. Hauteur selon le nombre
+    /* Feuille REMPLIE : sous le texte de chaque ligne LEG (bleue) et de chaque ligne point (blanche),
+       une bande libre pour barrer la valeur imprimée et écrire à la main juste en dessous — plus
+       large sous la ligne blanche, où l'on note le plus. Hauteur selon le nombre
        de lignes (plus de legs = bande plus fine, la feuille doit tenir sur une page). La place est
        reprise sur les deux bandeaux (infos du vol, carburant), passés sur une ligne par case. */
     var writeMm=totalRows<=6?WRITE_MM[0]:totalRows<=11?WRITE_MM[1]:totalRows<=16?WRITE_MM[2]:totalRows<=22?WRITE_MM[3]:totalRows<=30?WRITE_MM[4]:WRITE_MM[5];
+    var writeLeg=writeMm[0], writePt=writeMm[1];
 
     /* Profil d'altitude imprimé EN BAS de CETTE feuille, propre à CETTE étape (jamais sur la
        feuille vierge, où il n'y a de toute façon aucune donnée réelle à tracer). Bornes en
@@ -8187,7 +8229,8 @@ function printNavlogRecapTable(blank){
            une colonne élargie (voir colgroup ci-dessous), pour que 2 chiffres tiennent. */
         'td.c-num,th.c-num{padding-left:2px;padding-right:2px}'+
         (blank?'':
-          'tr.leg-row td{vertical-align:top;padding-top:1px;padding-bottom:'+writeMm+'mm;line-height:1.05}'+
+          'tr.leg-row td{vertical-align:top;padding-top:.8mm;padding-bottom:'+writeLeg+'mm;line-height:1.05}'+
+          'tr.pt-row td{vertical-align:top;padding-bottom:'+writePt+'mm}'+
           '.info-grid div br,.fuel-grid div br{display:none}'+
           '.info-grid b,.fuel-grid b{display:inline;margin-right:.6em}'+
           '.info-grid div,.fuel-grid div{padding:.6mm 5px;line-height:1.15}'+
@@ -9546,9 +9589,84 @@ function suggestDossierName(){
   }
 }
 
+/* ===== STOCKAGE DES DOSSIERS =====
+   Le localStorage est limité à ~5 Mo pour TOUT le site (quiz, livres, briefing…) : avec des
+   dizaines de dossiers (météo, captures, PDF), l'écriture finissait par échouer (« Erreur critique
+   de stockage ») — et réussissait parfois au 2e essai, quand un peu de place s'était libérée.
+   Les dossiers complets vivent désormais dans IndexedDB (des centaines de Mo) ; le localStorage
+   ne garde qu'une copie ALLÉGÉE (sans images ni instantanés), lisible dès le chargement de la
+   page, avant que IndexedDB ait répondu. */
+var _dossiersMem=null, _dossIdbReady=false, _dossIdbPending=null;
+var _DOSS_HEAVY=['mapImages','extraImages','screenshots','dailyWarnImages','iframeSnaps','opmetPdf',
+  'skeyesSnapshot','modelSnapshot','notamSummary'];
+function _dossIdb(){
+  if(_dossIdb._p) return _dossIdb._p;
+  _dossIdb._p=new Promise(function(ok,ko){
+    if(!window.indexedDB) return ko(new Error('IndexedDB indisponible'));
+    var rq=indexedDB.open('navlogStore',1);
+    rq.onupgradeneeded=function(){ rq.result.createObjectStore('kv'); };
+    rq.onsuccess=function(){ ok(rq.result); };
+    rq.onerror=function(){ ko(rq.error); };
+  });
+  return _dossIdb._p;
+}
+function _dossIdbPut(val){
+  return _dossIdb().then(function(db){ return new Promise(function(ok,ko){
+    var tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(val,'dossiers');
+    tx.oncomplete=function(){ ok(); }; tx.onerror=function(){ ko(tx.error); };
+  }); });
+}
+function _dossIdbGet(){
+  return _dossIdb().then(function(db){ return new Promise(function(ok,ko){
+    var rq=db.transaction('kv','readonly').objectStore('kv').get('dossiers');
+    rq.onsuccess=function(){ ok(rq.result||null); }; rq.onerror=function(){ ko(rq.error); };
+  }); });
+}
+/* Complète les dossiers allégés (copie localStorage) avec les champs lourds de la copie complète. */
+function _dossRestoreHeavy(list,full){
+  var byId={}; (full||[]).forEach(function(d){ if(d&&d.id!=null) byId[d.id]=d; });
+  (list||[]).forEach(function(d){
+    var f=d&&byId[d.id]; if(!f) return;
+    _DOSS_HEAVY.concat(['wxCache']).forEach(function(k){ if(d[k]==null && f[k]!=null) d[k]=f[k]; });
+  });
+  return list;
+}
+function _dossLite(d,level){
+  return d.map(function(item){
+    var o={}; Object.keys(item).forEach(function(k){
+      if(_DOSS_HEAVY.indexOf(k)>=0) return;
+      if(level>1 && k==='wxCache') return;
+      /* dernier recours : juste de quoi lister les vols (accueil Briefing) */
+      if(level>2 && ['id','name','date','waypoints','flightType','done','_cloudSynced'].indexOf(k)<0) return;
+      o[k]=item[k];
+    });
+    return o;
+  });
+}
 function getDossiers(){
+  if(_dossiersMem) return _dossiersMem.slice();
   try{return JSON.parse(localStorage.getItem('navlog_dossiers'))||[];}catch(e){return [];}
 }
+/* Chargement de la copie complète au démarrage (migration automatique de l'ancien stockage). */
+(function(){
+  _dossIdbGet().then(function(full){
+    var local=null; try{ local=JSON.parse(localStorage.getItem('navlog_dossiers')); }catch(e){}
+    if(_dossIdbPending){
+      /* Une sauvegarde a eu lieu avant la fin du chargement : on la garde, complétée. */
+      _dossiersMem=_dossRestoreHeavy(_dossIdbPending,full);
+    } else if(full && full.length){
+      /* Dossiers ajoutés/modifiés ailleurs dans la copie locale (ancienne version de la page) */
+      var ids={}; full.forEach(function(d){ ids[d.id]=1; });
+      (local||[]).forEach(function(d){ if(d && !ids[d.id]) full.push(d); });
+      _dossiersMem=full;
+    } else {
+      _dossiersMem=local||[];
+    }
+    _dossIdbReady=true; _dossIdbPending=null;
+    _dossIdbPut(_dossiersMem).catch(function(){});
+    if(typeof renderDossierList==='function') renderDossierList();
+  }).catch(function(e){ console.warn('[dossiers] IndexedDB indisponible, localStorage seul :',e); _dossIdbReady=true; });
+})();
 
 /* ===== VOL À ÉTAPES : composition depuis plusieurs dossiers enregistrés ===== */
 var _etapesSelection=[]; /* ids de dossiers, dans l'ordre de vol choisi (ordre de clic) */
@@ -9791,28 +9909,20 @@ function _composeEtapes(){
 window._composeEtapes=_composeEtapes;
 
 function setDossiers(d){
-  try {
-    localStorage.setItem('navlog_dossiers',JSON.stringify(d));
-  } catch(e) {
-    if(e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED'){
-      var reduced = d.map(function(item){
-        var newItem = JSON.parse(JSON.stringify(item));
-        delete newItem.mapImages;
-        delete newItem.extraImages;
-        delete newItem.screenshots;
-        delete newItem.dailyWarnImages;
-        return newItem;
-      });
-      try {
-        localStorage.setItem('navlog_dossiers',JSON.stringify(reduced));
-        alert('Stockage limité : les images de ce dossier ont été supprimées pour permettre la sauvegarde.');
-      } catch(e2) {
-        alert('Erreur critique de stockage : impossible de sauvegarder le dossier.');
-      }
-    } else {
-      throw e;
-    }
+  _dossiersMem=d;
+  if(_dossIdbReady) _dossIdbPut(d).catch(function(e){
+    console.warn('[dossiers] écriture IndexedDB en échec',e);
+    _toast('⚠️ Sauvegarde locale incomplète (stockage du navigateur plein) — le dossier reste dans le cloud et le fichier .json téléchargé','error',6000);
+  });
+  else _dossIdbPending=d;
+  /* Copie de secours dans le localStorage : complète si elle tient, sinon allégée (les images et
+     instantanés restent dans IndexedDB et dans le cloud) — plus jamais d'alerte bloquante. */
+  var tries=[d,_dossLite(d,1),_dossLite(d,2),_dossLite(d,3)];
+  for(var t=0;t<tries.length;t++){
+    try{ localStorage.setItem('navlog_dossiers',JSON.stringify(tries[t])); return; }
+    catch(e){ if(!(e && (e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22))) throw e; }
   }
+  try{ localStorage.removeItem('navlog_dossiers'); }catch(e){}
 }
 
 function _toast(msg, type, duration){
@@ -16882,6 +16992,78 @@ document.addEventListener('DOMContentLoaded', function () {
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/pwa-install.js"></script>
+<script>
+/* Barre d'onglets du navlog : on devait cliquer d'onglet en onglet pour faire apparaître ceux
+   des bords. Désormais elle se fait glisser à la souris (PC) comme au doigt (Android), défile à
+   la molette, et deux flèches ‹ › apparaissent quand des onglets sont cachés d'un côté.
+   Le glisser est géré ici (pointer events) plutôt que laissé au navigateur : le défilement
+   natif d'une barre sans ascenseur ne marchait pas partout (WebView de l'appli, souris). */
+(function(){
+  function init(bar){
+    if(!bar || bar._dragScroll) return; bar._dragScroll=true;
+    var wrap=document.createElement('div'); wrap.className='tabs-scroll-wrap';
+    bar.parentNode.insertBefore(wrap,bar); wrap.appendChild(bar);
+    var L=document.createElement('button'), R=document.createElement('button');
+    L.type=R.type='button'; L.className='tabs-arrow l'; R.className='tabs-arrow r';
+    L.innerHTML='&#x2039;'; R.innerHTML='&#x203A;'; L.title='Onglets précédents'; R.title='Onglets suivants';
+    wrap.appendChild(L); wrap.appendChild(R);
+    function step(){ return Math.max(120, bar.clientWidth*0.7); }
+    L.onclick=function(){ bar.scrollBy({left:-step(),behavior:'smooth'}); };
+    R.onclick=function(){ bar.scrollBy({left:step(),behavior:'smooth'}); };
+    function arrows(){
+      var max=bar.scrollWidth-bar.clientWidth;
+      L.classList.toggle('show', bar.scrollLeft>4);
+      R.classList.toggle('show', bar.scrollLeft<max-4);
+    }
+    bar.addEventListener('scroll',arrows,{passive:true});
+    window.addEventListener('resize',arrows);
+    setTimeout(arrows,300);
+    /* molette verticale -> défilement horizontal */
+    bar.addEventListener('wheel',function(e){
+      if(Math.abs(e.deltaY)<=Math.abs(e.deltaX)) return;
+      if(bar.scrollWidth<=bar.clientWidth) return;
+      bar.scrollLeft+=e.deltaY; e.preventDefault();
+    },{passive:false});
+    /* glisser (souris, doigt, stylet) */
+    var down=null, moved=false;
+    bar.addEventListener('pointerdown',function(e){
+      if(e.pointerType==='mouse' && e.button!==0) return;
+      down={x:e.clientX,y:e.clientY,left:bar.scrollLeft,id:e.pointerId}; moved=false;
+    });
+    bar.addEventListener('pointermove',function(e){
+      if(!down || e.pointerId!==down.id) return;
+      var dx=e.clientX-down.x;
+      if(!moved){
+        if(Math.abs(dx)<6) return;
+        if(Math.abs(e.clientY-down.y)>Math.abs(dx)){ down=null; return; } /* geste vertical : la page défile */
+        moved=true; bar.classList.add('dragging');
+        try{ bar.setPointerCapture(e.pointerId); }catch(_){}
+      }
+      bar.scrollLeft=down.left-dx;
+    });
+    function up(e){
+      if(!down) return;
+      down=null;
+      if(moved){
+        bar.classList.remove('dragging');
+        /* le relâchement après un glisser ne doit pas ouvrir l'onglet sous le doigt */
+        var stop=function(ev){ ev.stopPropagation(); ev.preventDefault(); };
+        bar.addEventListener('click',stop,true);
+        setTimeout(function(){ bar.removeEventListener('click',stop,true); },0);
+      }
+    }
+    bar.addEventListener('pointerup',up);
+    bar.addEventListener('pointercancel',up);
+    /* l'onglet actif est toujours amené à l'écran */
+    bar.addEventListener('click',function(e){
+      var t=e.target.closest && e.target.closest('.navlog-tab');
+      if(t && t.scrollIntoView) setTimeout(function(){ t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); },30);
+    });
+  }
+  function go(){ init(document.getElementById('navlogTabs')); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
 </body>
 </html>
 
