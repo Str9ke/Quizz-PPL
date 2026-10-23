@@ -799,6 +799,19 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .afm-h{margin:14px 0 6px;font-size:.92em}
 .afm-t th,.afm-t td{text-align:center;white-space:nowrap;font-size:.82em}
 .afm-note{font-size:.75em;color:var(--text-secondary);margin:4px 0 8px}
+
+/* Fréquences AIP proposées dans les commentaires (bouton 📻) */
+.nl-freq-wrap{display:flex;gap:3px;align-items:center}
+.nl-freq-btn{flex:0 0 auto;border:1px solid var(--border-color);background:rgba(102,126,234,.12);border-radius:6px;cursor:pointer;padding:2px 5px;font-size:.9em;line-height:1.2}
+.freq-pop{position:fixed;z-index:10050;max-width:min(92vw,420px);max-height:min(70vh,520px);overflow:auto;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.5);padding:10px 12px;font-size:.85em}
+.freq-pop h5{margin:10px 0 4px;font-size:.82em;text-transform:uppercase;letter-spacing:.05em;color:#8fa0f5}
+.freq-pop h5:first-of-type{margin-top:2px}
+.freq-pop .fp-sub{font-size:.82em;color:var(--text-secondary);margin:-2px 0 4px}
+.freq-pop button.fp-f{display:flex;width:100%;justify-content:space-between;gap:8px;text-align:left;border:1px solid var(--border-color);background:rgba(255,255,255,.03);color:inherit;border-radius:8px;padding:5px 8px;margin:3px 0;cursor:pointer;font:inherit}
+.freq-pop button.fp-f:hover{border-color:#667eea;background:rgba(102,126,234,.15)}
+.freq-pop button.fp-f b{font-family:monospace;font-size:1.05em;white-space:nowrap}
+.freq-pop button.fp-f small{display:block;color:var(--text-secondary);font-size:.85em}
+.freq-pop .fp-foot{font-size:.75em;color:var(--text-secondary);margin-top:8px}
 /* Print stylesheet */
 @media print{
   body{background:#fff!important;color:#000!important;margin-left:0!important;padding-bottom:0!important}
@@ -7642,7 +7655,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx,legBase){
        actionsHtml s'y réduisait déjà à delBtn seul — cette variable ne fait que rendre ce
        cas explicite plutôt que de dépendre implicitement de canType). */
     var ptActionsHtml=(k===0||isArrivalViaCircuit)?delBtn:actionsHtml;
-    var ptCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point">';
+    var ptCommentHtml='<span class="nl-freq-wrap"><input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._ptComment||'')+'" data-idx="'+i+'" data-field="pt" onchange="window._setRecapComment('+i+',\'pt\',this.value)" placeholder="…" title="Note pour ce point"><button type="button" class="nl-freq-btn" title="Fréquences officielles (AIP) de ce point" onclick="window._freqPick('+i+',\'pt\',this)">📻</button></span>';
 
     /* Ligne LEG émise ICI, AVANT la ligne fanion du point k : c'est CE segment qui relie le
        point PRÉCÉDENT à celui-ci, elle doit donc apparaître ENTRE les deux, pas après le
@@ -7669,7 +7682,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx,legBase){
       var eteTxt=formatTime(leg.ete||0).replace(/^0:/,'');
       var legEtaStr=cumMin?formatETA(cumMin):'--:--';
 
-      var legCommentHtml='<input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._legComment||'')+'" data-idx="'+i+'" data-field="leg" onchange="window._setRecapComment('+i+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment">';
+      var legCommentHtml='<span class="nl-freq-wrap"><input class="nl-recap-comment-input" type="text" value="'+escHTML(wp._legComment||'')+'" data-idx="'+i+'" data-field="leg" onchange="window._setRecapComment('+i+',\'leg\',this.value)" placeholder="…" title="Note pour ce segment"><button type="button" class="nl-freq-btn" title="Fréquences officielles (AIP) des espaces traversés" onclick="window._freqPick('+i+',\'leg\',this)">📻</button></span>';
 
       /* Alerte de changement d'altitude : compare l'altitude de CE leg à celle du leg
          PRÉCÉDENT (ou à l'altitude de départ pour le tout premier leg) — c'est CE leg qui
@@ -7876,6 +7889,129 @@ function _setRecapComment(idx,field,val){
   else waypoints[idx]._ptComment=val;
 }
 window._setRecapComment=_setRecapComment;
+/* ===== FRÉQUENCES OFFICIELLES PROPOSÉES (bouton 📻 des commentaires du Navlog) =====
+   aip_freqs.json (tools/aip_freqs.py, workflow update_aip.yml) : fréquences tirées de l'eAIP
+   belge (skeyes : ENR 2.1, AD 2.18) et de l'eAIP France (SIA : AD 2.18), reliées aux contours
+   OpenAIP des espaces. Pour un leg : espaces traversés À L'ALTITUDE du leg (et ceux juste
+   au-dessus, signalés), aérodromes proches, service d'information (Brussels Information, SIV).
+   Pour un point : son aérodrome et les espaces où il se trouve. Un toucher ajoute la fréquence
+   au commentaire (imprimé sur la feuille). */
+(function(){
+  var _aipP=null;
+  function loadAip(){
+    if(!_aipP) _aipP=fetch('aip_freqs.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
+    return _aipP;
+  }
+  function limFt(l){
+    if(!l) return 0;
+    var v=+l.value||0;
+    if(l.unit===6) return v*100;            // FL
+    if(l.unit===0) v=v*3.28084;            // mètres
+    return l.referenceDatum===0 ? v : v;   // GND : approximé comme AMSL (terrain bas en Belgique/Nord)
+  }
+  function inRing(lon,lat,ring){
+    var c=false;
+    for(var i=0,j=ring.length-1;i<ring.length;j=i++){
+      var xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+      if(((yi>lat)!==(yj>lat)) && (lon<(xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi)) c=!c;
+    }
+    return c;
+  }
+  function inGeom(lon,lat,g){
+    if(!g) return false;
+    var polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+    return polys.some(function(p){ return p.length && inRing(lon,lat,p[0]) && !p.slice(1).some(function(h){ return inRing(lon,lat,h); }); });
+  }
+  function samples(a,b){
+    var d=haversine(a.lat,a.lon,b.lat,b.lon), n=Math.max(2,Math.ceil(d/0.5)), out=[];
+    for(var k=0;k<=n;k++){ var t=k/n; out.push({lat:a.lat+(b.lat-a.lat)*t, lon:a.lon+(b.lon-a.lon)*t}); }
+    return out;
+  }
+  function apName(c){ return (AIRPORT_NAMES&&AIRPORT_NAMES[c])||c; }
+  function addAd(groups,code,aip,why){
+    var lst=aip.aerodromes[code]; if(!lst||!lst.length) return;
+    groups.push({title:code+' '+apName(code), sub:why+(lst[0].src==='OpenAIP'?' · OpenAIP (pas de fiche AD 2.18 à l’AIP)':' · AIP AD 2.18'), items:lst});
+  }
+  function suggestions(i,kind,aip,oa){
+    var wp=waypoints[i]; if(!wp||wp.lat==null) return [];
+    var cfgAlt=parseInt(_v('cfgAlt'))||2300;
+    var alt=(wp.altitude||cfgAlt);
+    var pts, groups=[], seen={};
+    if(kind==='leg'){
+      var prev=waypoints[i-1]; if(!prev||prev.lat==null) return [];
+      pts=samples(prev,wp);
+    } else pts=[{lat:wp.lat,lon:wp.lon}];
+    /* aérodromes : point lui-même (nom ou le plus proche), ou à moins de 3 NM du leg */
+    var ads=[];
+    Object.keys(aip.aerodromes).forEach(function(c){
+      var co=AIRPORT_COORDS[c]; if(!co) return;
+      var dmin=Infinity; pts.forEach(function(p){ var d=haversine(p.lat,p.lon,co.lat,co.lon); if(d<dmin) dmin=d; });
+      var lim=kind==='pt'?2:3;
+      if(dmin<=lim || (wp.name||'').trim().toUpperCase()===c) ads.push({c:c,d:dmin});
+    });
+    ads.sort(function(a,b){ return a.d-b.d; }).slice(0,4).forEach(function(x){ addAd(groups,x.c,aip,x.d<0.6?'sur le terrain':'à '+x.d.toFixed(1)+' NM'); seen[x.c]=1; });
+    /* espaces aériens traversés à l'altitude (et juste au-dessus) */
+    var inside=[], above=[], firFR=false;
+    (oa&&oa.airspaces||[]).forEach(function(a){
+      var bb=_geomBBox(a), hit=pts.some(function(p){ return p.lon>=bb[0]&&p.lon<=bb[2]&&p.lat>=bb[1]&&p.lat<=bb[3]&&inGeom(p.lon,p.lat,a.geometry); });
+      if(!hit) return;
+      if(a.type===10 && a.country==='FR') firFR=true;
+      var m=aip.openaip[a.name];
+      var items=m?m.freqs:(a.frequencies||[]).filter(function(f){ return +f.value>=118&&+f.value<137; }).map(function(f){ return {call:f.name||a.name,freq:String(f.value),rmk:'OpenAIP'}; });
+      if(!items.length) return;
+      var lo=limFt(a.lowerLimit), hi=limFt(a.upperLimit);
+      var e={a:a,items:items,lo:lo,hi:hi,src:m?m.src:'OpenAIP'};
+      if(alt>=lo && alt<=hi) inside.push(e); else if(lo>alt && lo<=alt+1500) above.push(e);
+    });
+    function lab(e){ return (e.a.icaoClass!=null?'classe '+'ABCDEFG'.charAt(e.a.icaoClass)+' · ':'')+Math.round(e.lo)+'–'+(e.hi>=99999?'UNL':Math.round(e.hi))+' ft · '+e.src; }
+    inside.sort(function(x,y){ return x.lo-y.lo; }).forEach(function(e){ groups.push({title:e.a.name,sub:'traversé à '+alt+' ft · '+lab(e),items:e.items}); });
+    above.forEach(function(e){ groups.push({title:e.a.name+' (au-dessus)',sub:'plancher '+Math.round(e.lo)+' ft, au-dessus de '+alt+' ft · '+lab(e),items:e.items}); });
+    /* service d'information de vol belge (pas de contour FIR Bruxelles dans OpenAIP) */
+    var be=(aip.airspacesBE||[]).filter(function(x){ return x.name==='BRUSSELS FIR'; })[0];
+    var inBE=!firFR && pts.some(function(p){ return p.lat>49.45&&p.lat<51.55&&p.lon>2.5&&p.lon<6.45; });
+    if(be && be.freqs.length && inBE) groups.push({title:'Brussels FIR — information de vol',sub:'AIP Belgique ENR 2.1',items:be.freqs});
+    return groups;
+  }
+  function close(){ var o=document.getElementById('freqPop'); if(o) o.remove(); document.removeEventListener('mousedown',outside,true); }
+  function outside(e){ var o=document.getElementById('freqPop'); if(o && !o.contains(e.target) && !(e.target.closest&&e.target.closest('.nl-freq-btn'))) close(); }
+  window._freqPick=function(i,kind,btn){
+    close();
+    var pop=document.createElement('div'); pop.id='freqPop'; pop.className='freq-pop';
+    pop.innerHTML='⏳ Recherche des fréquences…';
+    document.body.appendChild(pop);
+    var r=btn.getBoundingClientRect();
+    pop.style.top=Math.min(r.bottom+6,window.innerHeight-120)+'px';
+    pop.style.left=Math.max(8,Math.min(r.right-380,window.innerWidth-Math.min(window.innerWidth*0.92,420)-8))+'px';
+    setTimeout(function(){ document.addEventListener('mousedown',outside,true); },0);
+    Promise.all([loadAip(),_loadOpenaipStatic()]).then(function(res){
+      var aip=res[0], oa=res[1];
+      if(!aip){ pop.innerHTML='Fréquences AIP indisponibles (fichier aip_freqs.json absent). <button type="button" onclick="this.closest(\'.freq-pop\').remove()">✕</button>'; return; }
+      var groups=suggestions(i,kind,aip,oa);
+      var input=btn.parentNode.querySelector('input');
+      var h='<div style="display:flex;justify-content:space-between;align-items:center"><b>📻 Fréquences '+(kind==='leg'?'du leg':'du point')+'</b><button type="button" class="nl-freq-btn" onclick="this.closest(\'.freq-pop\').remove()">✕</button></div>';
+      if(!groups.length) h+='<div class="fp-sub" style="margin-top:8px">Aucun espace ni aérodrome avec fréquence ici.</div>';
+      groups.forEach(function(g,gi){
+        h+='<h5>'+escHTML(g.title)+'</h5><div class="fp-sub">'+escHTML(g.sub)+'</div>';
+        var dedup={};
+        g.items.forEach(function(it){
+          var k=it.call+'|'+it.freq; if(dedup[k]) return; dedup[k]=1;
+          h+='<button type="button" class="fp-f" data-v="'+escHTML((it.call||'').trim()+' '+it.freq)+'"><span>'+escHTML(it.call||'')+(it.rmk?'<small>'+escHTML(it.rmk)+'</small>':'')+'</span><b>'+escHTML(it.freq)+'</b></button>';
+        });
+      });
+      h+='<div class="fp-foot">Sources : '+escHTML((aip.sources&&(aip.sources.BE+' · '+aip.sources.FR))||'AIP')+' — mis à jour le '+new Date(aip.generated).toLocaleDateString('fr-FR')+'. Toucher une fréquence l’ajoute au commentaire.</div>';
+      pop.innerHTML=h;
+      pop.querySelectorAll('button.fp-f').forEach(function(b){
+        b.onclick=function(){
+          if(!input) return;
+          var v=b.getAttribute('data-v');
+          input.value=input.value?(input.value.indexOf(v)>=0?input.value:input.value+' · '+v):v;
+          input.dispatchEvent(new Event('change'));
+          b.style.borderColor='#4caf50';
+        };
+      });
+    });
+  };
+})();
 
 /* Impression dédiée du tableau récapitulatif en A5 — on ouvre une fenêtre séparée plutôt que
    window.print() direct sur la page entière, pour ne sortir QUE le tableau (pas toute la page

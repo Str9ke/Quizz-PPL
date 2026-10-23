@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v233';
+const CACHE_NAME = 'quiz-ppl-v234';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -102,6 +102,7 @@ const PRECACHE_URLS = [
   BASE + 'manifest-biblio.json',
   BASE + 'js/apps.js',
   BASE + 'js/aerodromes-data.js',
+  BASE + 'aip_freqs.json',
   BASE + 'js/account.js',
   BASE + 'js/app-transfer.js',
   BASE + 'js/firebase-init.js',
