@@ -947,6 +947,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
     <div class="nl-card" id="gametWindCard" style="display:none">
       <div class="nl-card-title"><span class="icon">&#x1F4A8;</span> Vent en altitude (GAMET) <span id="gametValidLabel" style="font-size:.72em;font-weight:400;color:var(--text-secondary);margin-left:6px"></span></div>
       <div id="gametWindRow" style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 4px"></div>
+      <div id="gametWindSrc" style="font-size:.82em;padding:4px 6px 2px;color:var(--text-secondary)"></div>
     </div>
 
     <!-- Alerte péremption d'un dossier chargé -->
@@ -3097,6 +3098,7 @@ function switchTab(id){
        recalculé) : reforcer un recalcul à chaque ouverture d'onglet pour que les blocs par
        étape restent à jour. */
     if(typeof mbRecalc==='function') mbRecalc();
+    if(!window._mbFuelManual && typeof _mbFuelSyncNow==='function') _mbFuelSyncNow(true);
   }
   if(id==='altitudes'){
     if(typeof renderAltitudesProfile==='function') renderAltitudesProfile();
@@ -3438,10 +3440,12 @@ window.renderFuelLog=renderFuelLog;
    et 2,50 € HTVA). OO-MQA ne figure pas dans le mail : tarif inchangé, à confirmer.
    Le tarif retenu dépend de la DATE DU VOL (champ « Date du vol » du Navlog). */
 var RENTAL_VAT=0.21;
+/* Tarifs en vigueur appliqués quelle que soit la date du vol (demande de Thomas, 23/10/2026) :
+   un dossier daté d'avant novembre prenait sinon encore l'ancien tarif. */
 var RENTAL_RATES_HTVA={
-  'OO-WAC':[{from:'2026-11-01',htva:2.30},{from:'',htva:2.00}],
-  'OO-WEO':[{from:'2026-11-01',htva:2.20},{from:'',htva:2.00}],
-  'OO-FCE':[{from:'2026-11-01',htva:2.65},{from:'',htva:2.50}],
+  'OO-WAC':[{from:'',htva:2.30}],
+  'OO-WEO':[{from:'',htva:2.20}],
+  'OO-FCE':[{from:'',htva:2.65}],
   'OO-MQA':[{from:'',htva:2.00,note:'OO-MQA ne figure pas dans l’annonce de hausse du 1er novembre 2026 : tarif à confirmer auprès du club.'}]
 };
 function _rentalOfficialRate(reg,iso){
@@ -3458,6 +3462,9 @@ function _rentalOfficialRate(reg,iso){
 /* Anciennes clés (un tarif par TYPE d'avion, avant les tarifs par immatriculation) : elles
    contenaient l'ancien tarif officiel et masqueraient la hausse — supprimées. */
 try{ localStorage.removeItem('rentalRateC150'); localStorage.removeItem('rentalRateF172'); }catch(e){}
+/* Tarifs personnalisés enregistrés avant la mise à jour des tarifs (23/10/2026) : effacés une fois,
+   sinon un ancien prix tapé à la main restait appliqué à la place du nouveau tarif officiel. */
+try{ if(!localStorage.getItem('rentalRatesV2')){ ['OO-WAC','OO-WEO','OO-FCE','OO-MQA'].forEach(function(r){ localStorage.removeItem('rentalRate_'+r); }); localStorage.setItem('rentalRatesV2','1'); } }catch(e){}
 
 /* ===== FLIGHT PLAN (FPL) ===== */
 function renderFPL(){
@@ -5577,6 +5584,7 @@ function updateWindRose(){
         document.getElementById('cfgWindDirSlider').value=angle;
         document.getElementById('cfgWindSpd').value=spd;
         document.getElementById('cfgWindSpdSlider').value=Math.min(spd,50);
+        _setWindSrc({type:'manual'});
         updateWindRose();
         recalcNavlog();
       };
@@ -5585,7 +5593,32 @@ function updateWindRose(){
 }
 
 /* ===== WIND SYNC ===== */
+/* ===== SOURCE DU VENT DE NAVIGATION =====
+   Le vent de navigation (cfgWindDir/cfgWindSpd, utilisé par TOUS les calculs de legs, carburant,
+   temps, coût) changeait tout seul : chaque METAR chargé (onglet Perf, changement d'avion,
+   actualisation…) recopiait le vent AU SOL de Chièvres (autoApplyWind), d'où les retours
+   intempestifs à « 190°/25 kt ». Désormais la source est mémorisée :
+   - 'gamet' (par défaut, niveau 2000 ft ou celui sur lequel on a cliqué) : repris du GAMET de
+     l'OPMET, et remis à jour partout dès qu'un OPMET plus récent arrive ;
+   - 'manual' : vent saisi à la main (champs, curseurs, rose, METAR choisi) : plus jamais modifié
+     automatiquement.
+   Un METAR (vent au sol) ne remplace jamais automatiquement un vent déjà configuré. */
+window._windSrc=(function(){ try{ return JSON.parse(localStorage.getItem('navlogWindSrc'))||{type:'gamet',alt:2000}; }catch(e){ return {type:'gamet',alt:2000}; } })();
+function _setWindSrc(o){
+  window._windSrc=o;
+  try{ localStorage.setItem('navlogWindSrc',JSON.stringify(o)); }catch(e){}
+  _renderWindSrcInfo();
+}
+window._setWindSrc=_setWindSrc;
+function _renderWindSrcInfo(){
+  var el=document.getElementById('gametWindSrc'); if(!el) return;
+  var w=window._windSrc||{}, d=_v('cfgWindDir'), v=_v('cfgWindSpd');
+  if(w.type==='gamet') el.innerHTML='✅ Vent utilisé partout : <b>GAMET '+(w.alt||2000)+' ft — '+d+'°/'+v+' kt</b> · mis à jour automatiquement à chaque nouvel OPMET';
+  else el.innerHTML='✋ Vent saisi à la main : <b>'+d+'°/'+v+' kt</b> (ne change plus tout seul) · <a href="#" onclick="window._setWindSrc({type:\'gamet\',alt:2000});window.loadGametWindWidget();return false" style="color:var(--link-color)">revenir au GAMET 2000 ft</a>';
+}
+window._renderWindSrcInfo=_renderWindSrcInfo;
 function syncWind(src){
+  _setWindSrc({type:'manual'});
   var dirNum=document.getElementById('cfgWindDir');
   var dirSlider=document.getElementById('cfgWindDirSlider');
   var spdNum=document.getElementById('cfgWindSpd');
@@ -5886,8 +5919,13 @@ function loadWeather(icao){
 }
 
 function autoApplyWind(){
-  if(wxCache['EBCV']&&wxCache['EBCV'].metar){applyWind('EBCV');return;}
-  if(wxCache['EBCI']&&wxCache['EBCI'].metar){applyWind('EBCI');return;}
+  /* Repli UNIQUEMENT si aucun vent n'est configuré (0/0) et qu'aucun GAMET n'est disponible : le
+     vent au sol d'un METAR n'est pas un vent de croisière, il ne doit jamais écraser le vent GAMET
+     ni un vent saisi (cause des retours à « 190°/25 kt »). */
+  if((parseFloat(_v('cfgWindDir'))||0)!==0 || (parseFloat(_v('cfgWindSpd'))||0)!==0) return;
+  if(typeof _lastGametLevels!=='undefined' && _lastGametLevels && _lastGametLevels.length) return;
+  if(wxCache['EBCV']&&wxCache['EBCV'].metar){applyWind('EBCV',true);return;}
+  if(wxCache['EBCI']&&wxCache['EBCI'].metar){applyWind('EBCI',true);return;}
 }
 
 /* Retry weather fetch for a single airport with extended time window */
@@ -6179,7 +6217,8 @@ function toggleWxAirport(icao){
   }
 }
 
-function applyWind(icao){
+function applyWind(icao,auto){
+  if(!auto) _setWindSrc({type:'manual'});   /* bouton « appliquer ce vent » d'un METAR */
   var data=wxCache[icao];
   if(!data||!data.metar) return;
   var src=data.metarSource||icao;
@@ -6193,8 +6232,9 @@ function applyWind(icao){
   document.getElementById('cfgWindSpdSlider').value=Math.min(w.spd,50);
   updateWindRose();
   recalcNavlog();
+  _renderWindSrcInfo();
 }
-window.applyWind=applyWind;
+window.applyWind=function(icao){ applyWind(icao,false); };
 
 /* ===== PER-LEG WIND ===== */
 var legWindIdx=null;
@@ -6479,12 +6519,16 @@ function loadGametWindWidget(){
        laisser un vent nul par défaut alors qu'une vraie prévision est disponible. Un vent déjà
        configuré (restauré d'un dossier/autosave, ou déjà choisi par l'utilisateur) n'est jamais
        écrasé silencieusement. */
-    var curDir=parseFloat(_v('cfgWindDir'))||0, curSpd=parseFloat(_v('cfgWindSpd'))||0;
-    if(curDir===0 && curSpd===0){
-      var nearestIdx=0, nearestDiff=Infinity;
-      levels.forEach(function(l,idx){ var diff=Math.abs(l.alt-2000); if(diff<nearestDiff){ nearestDiff=diff; nearestIdx=idx; } });
-      _applyGametWindByIdx(nearestIdx, true);
-    }
+    /* Source GAMET (par défaut) : le niveau choisi (2000 ft sauf autre clic) est ré-appliqué avec
+       les valeurs de CET OPMET — un OPMET plus récent met donc à jour le vent partout. Vent saisi
+       à la main : jamais touché. */
+    var src=window._windSrc||{type:'gamet',alt:2000};
+    if(src.type==='gamet'){
+      var want=src.alt||2000, nearestIdx=0, nearestDiff=Infinity;
+      levels.forEach(function(l,idx){ var diff=Math.abs(l.alt-want); if(diff<nearestDiff){ nearestDiff=diff; nearestIdx=idx; } });
+      _applyGametWindByIdx(nearestIdx, true, want);
+    } else { _gametActiveIdx=-1; _renderGametWindRow(); }
+    _renderWindSrcInfo();
   }).catch(function(){ /* opmet.html indisponible (offline) : widget reste masqué */ });
 }
 window.loadGametWindWidget=loadGametWindWidget;
@@ -6510,9 +6554,11 @@ function _renderGametWindRow(){
    à la main une valeur déjà affichée juste au-dessus. 'silent' (utilisé pour l'application
    automatique au chargement) n'affiche pas de toast, pour ne pas surprendre l'utilisateur dès
    l'ouverture de la page. */
-function _applyGametWindByIdx(idx, silent){
+function _applyGametWindByIdx(idx, silent, wantAlt){
   if(!_lastGametLevels || !_lastGametLevels[idx]) return;
   var l=_lastGametLevels[idx];
+  /* clic = ce niveau devient la référence ; ré-application automatique = garde le niveau voulu */
+  _setWindSrc({type:'gamet',alt:silent&&wantAlt?wantAlt:l.alt});
   var dirStr=String(l.dir);
   var dir;
   if(dirStr.indexOf('-')>=0){
@@ -6540,7 +6586,8 @@ function _applyGametWindByIdx(idx, silent){
   if(typeof recalcNavlog==='function') recalcNavlog();
   _gametActiveIdx=idx;
   _renderGametWindRow();
-  if(!silent && typeof _toast==='function') _toast('💨 Vent '+dir+'°/'+spd+'kt ('+l.alt+' ft) appliqué aux calculs','',3000);
+  _renderWindSrcInfo();
+  if(!silent && typeof _toast==='function') _toast('💨 Vent '+dir+'°/'+spd+'kt ('+l.alt+' ft) appliqué partout','',3000);
 }
 window._applyGametWindByIdx=_applyGametWindByIdx;
 
@@ -7001,6 +7048,7 @@ function getConfig(){
     fuel:parseFloat(_v('cfgFuel'))||20,
     alt:parseInt(_v('cfgAlt'))||2300,
     windDir:parseFloat(_v('cfgWindDir'))||0,
+    windSrc:window._windSrc||{type:'gamet',alt:2000},
     windSpd:parseFloat(_v('cfgWindSpd'))||0,
     dev:parseFloat(_v('cfgDev'))||-1,
     reserveMin:reserveMode==='day'?30:45,
@@ -7408,6 +7456,8 @@ function recalcNavlog(){
   if(_dailyWarningsData && typeof renderDailyWarnings==='function') renderDailyWarnings();
   _scheduleAutosave();
   window._lastComputedBlockFuelL=_computeCarbuBlockFuelL();
+  /* Report AUTOMATIQUE du block fuel (Carbu) dans Masse & centrage, sauf quantité saisie à la main */
+  if(!window._mbFuelManual && typeof _mbFuelSyncNow==='function' && document.getElementById('mbFuel')){ try{ _mbFuelSyncNow(true); }catch(e){} }
 }
 
 /* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
@@ -8202,7 +8252,7 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
 
 /* Bande d'écriture sous les lignes LEG de la feuille remplie (mm), par palier de nombre de lignes
    (≤6, ≤11, ≤16, ≤22, ≤30, plus) — calibrée par impression réelle (Chrome, A4, une page par étape). */
-var WRITE_MM=[[3,4],[2.5,3.5],[2,3],[1.5,2],[1,1.2],[.5,.6]]; /* [sous la ligne LEG bleue, sous la ligne point blanche] */
+var WRITE_MM=[[1.5,2],[1.2,1.8],[1,1.5],[.8,1.2],[.6,.8],[.4,.5]]; /* [sous la ligne LEG bleue, sous la ligne point blanche] — bande MINIMALE : le script de la fenêtre d'impression l'agrandit ensuite pour remplir toute la page A5 */
 function printNavlogRecapTable(blank){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
@@ -8400,12 +8450,12 @@ function printNavlogRecapTable(blank){
        tient sur UNE page par étape jusqu'à des marges simulées de 25mm ; le premier palier qui
        déborde est 14px, ce qui laisse deux crans de sécurité. */
     if(blank && totalRows<=30) prof={f:11,p:'12px 4.5px',lp:'11px 4.5px',h1:13,sub:7.5,info:9,infoLbl:7.5};
-    else if(totalRows<=6) prof={f:15,p:'7px 6px',lp:'3.8px 5px',h1:14,sub:8,info:10,infoLbl:8.5};
-    else if(totalRows<=11) prof={f:11.5,p:'5px 4px',lp:'2.5px 4px',h1:11.5,sub:7,info:9,infoLbl:7.6};
-    else if(totalRows<=16) prof={f:9.4,p:'3.7px 3px',lp:'1.9px 3.2px',h1:10,sub:6.2,info:8,infoLbl:6.8};
-    else if(totalRows<=22) prof={f:7.6,p:'2.5px 2.3px',lp:'1.4px 2.5px',h1:8.7,sub:5.5,info:7.2,infoLbl:6};
-    else if(totalRows<=30) prof={f:5.9,p:'1.6px 1.6px',lp:'1px 1.6px',h1:7,sub:4.8,info:6.4,infoLbl:5.3};
-    else prof={f:5.6,p:'1.4px 1.4px',lp:'0.9px 1.4px',h1:6.8,sub:4.6,info:6,infoLbl:5};
+    else if(totalRows<=6) prof={f:10,p:'5px 2px',lp:'3px 2px',h1:13,sub:7.5,info:9.5,infoLbl:8};
+    else if(totalRows<=11) prof={f:10,p:'4px 2px',lp:'2.5px 2px',h1:12,sub:7,info:9,infoLbl:7.6};
+    else if(totalRows<=16) prof={f:9.5,p:'3px 2px',lp:'2px 2px',h1:11,sub:6.5,info:8.5,infoLbl:7.2};
+    else if(totalRows<=22) prof={f:9,p:'2.2px 1.5px',lp:'1.5px 1.5px',h1:10,sub:6,info:8,infoLbl:6.8};
+    else if(totalRows<=30) prof={f:8.5,p:'1.6px 1.6px',lp:'1px 1.6px',h1:9,sub:5.5,info:7.5,infoLbl:6.4};
+    else prof={f:8,p:'1.4px 1.4px',lp:'0.9px 1.4px',h1:8.5,sub:5,info:7,infoLbl:6};
     /* Feuille REMPLIE : sous le texte de chaque ligne LEG (bleue) et de chaque ligne point (blanche),
        une bande libre pour barrer la valeur imprimée et écrire à la main juste en dessous — plus
        large sous la ligne blanche, où l'on note le plus. Hauteur selon le nombre
@@ -8512,8 +8562,8 @@ function printNavlogRecapTable(blank){
     /* A4 imposé (Chrome l'adapte ensuite au papier réel) + mise à l'échelle automatique de chaque
        étape trop haute (script ci-dessous) : la feuille d'une étape, profil d'altitude compris,
        tient TOUJOURS sur une seule page — le profil passait sinon seul sur la page suivante. */
-    '@page{size:A4 portrait;margin:10mm}'+
-    '@media screen{body{width:190mm;margin:0 auto!important}}'+
+    '@page{size:A5 portrait;margin:5mm}'+
+    '@media screen{body{width:138mm;margin:0 auto!important}}'+
     /* Beaucoup de navigateurs (Chrome mobile/Android inclus) n'impriment PAS les couleurs de
        fond par défaut ("économie d'encre") sauf demande explicite — sans ça, le surlignage
        jaune du cap magnétique (et le fond sombre de l'en-tête, le total requis en jaune, etc.)
@@ -8532,9 +8582,9 @@ function printNavlogRecapTable(blank){
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
     'th{background:#333;color:#fff;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
-    'col.c-num{width:6%}col.c-name{width:14%}col.c-alt{width:6%}col.c-route{width:6%}'+
-    'col.c-wind{width:8%}col.c-wca{width:5%}col.c-cap{width:7%}col.c-dist{width:8%}'+
-    'col.c-gs{width:6%}col.c-ete{width:7%}col.c-eta{width:8%}col.c-fuel{width:7%}col.c-comment{width:12%}'+
+    'col.c-num{width:4.5%}col.c-name{width:13%}col.c-alt{width:6%}col.c-route{width:6%}'+
+    'col.c-wind{width:10%}col.c-wca{width:5.5%}col.c-cap{width:6.5%}col.c-dist{width:8%}'+
+    'col.c-gs{width:6%}col.c-ete{width:6.5%}col.c-eta{width:10%}col.c-fuel{width:6%}col.c-comment{width:12%}'+
     'tbody tr.pt-row.alt td{background:#f2f2f2}'+
     '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
@@ -8566,9 +8616,19 @@ function printNavlogRecapTable(blank){
     '.sheet{page-break-inside:avoid}'+
     '</style></head><body>'+
     sheetsHtml+
+    /* Avant impression, pour CHAQUE étape (feuille A5) : si elle est plus courte que la page, les
+       bandes d'écriture sous les lignes LEG (bleues) et points (blanches, 60 %) sont agrandies pour
+       occuper toute la hauteur ; si elle déborde, elle est réduite pour tenir sur une page. */
     '<script>(function(){try{var m=document.createElement("div");m.style.cssText="height:100mm;position:absolute;visibility:hidden";document.body.appendChild(m);'+
-      'var px=m.offsetHeight/100;m.remove();var lim=(297-20-14)*px;'+
-      'document.querySelectorAll(".sheet").forEach(function(s){var h=s.getBoundingClientRect().height;if(h>lim)s.style.zoom=(Math.floor(lim/h*1000)/1000);});}catch(e){}})();</'+'script>'+
+      'var px=m.offsetHeight/100;m.remove();var lim=(210-10-6)*px;'+
+      'document.querySelectorAll(".sheet").forEach(function(s){var h=s.getBoundingClientRect().height;'+
+        'if(h>lim){s.style.zoom=(Math.floor(lim/h*1000)/1000);return;}'+
+        'var legs=s.querySelectorAll("tbody tr.leg-row"),pts=s.querySelectorAll("tbody tr.pt-row");if(!legs.length&&!pts.length)return;'+
+        'var extra=lim-h,wL=legs.length*0.4,wP=pts.length*0.6,u=extra/((wL+wP)||1),cap=12*px;'+
+        'function grow(rows,k){rows.forEach(function(r){var add=Math.min(u*k,cap);r.querySelectorAll("td").forEach(function(td){td.style.paddingBottom=(parseFloat(getComputedStyle(td).paddingBottom)+add)+"px";});});}'+
+        'grow(legs,0.4);grow(pts,0.6);'+
+        'var h2=s.getBoundingClientRect().height;if(h2>lim)s.style.zoom=(Math.floor(lim/h2*1000)/1000);'+
+      '});}catch(e){}})();</'+'script>'+
     '<script>setTimeout(function(){try{window.focus();window.print();}catch(e){}},150);</'+'script>'+
     '</body></html>');
   w.document.close();
@@ -9493,6 +9553,7 @@ function clearWorkspace(){
   document.getElementById('cfgFuel').value=25;
   document.getElementById('cfgWindDir').value=0;
   document.getElementById('cfgWindSpd').value=0;
+  _setWindSrc({type:'gamet',alt:2000});
   document.getElementById('cfgDev').value=-1;
   document.getElementById('cfgDepTime').value='09:00';
   document.getElementById('cfgTaxi').value=10;
@@ -10068,6 +10129,7 @@ function _composeEtapes(){
   var setVal=function(id,v){var el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;};
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
   setVal('cfgWindDir',cfg.windDir); setVal('cfgWindSpd',cfg.windSpd);
+  if(cfg.windSrc && typeof _setWindSrc==='function') _setWindSrc(cfg.windSrc);
   setVal('cfgWindDirSlider',cfg.windDir); setVal('cfgWindSpdSlider',Math.min(cfg.windSpd||0,50));
   setVal('cfgDev',cfg.dev);
   if(cfg.taxiMin!==undefined) setVal('cfgTaxi',cfg.taxiMin);
@@ -10281,6 +10343,7 @@ function _restoreAutosaveIfAny(){
   var setVal=function(id,v){ var el=document.getElementById(id); if(el&&v!==undefined&&v!==null) el.value=v; };
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
   setVal('cfgWindDir',cfg.windDir); setVal('cfgWindSpd',cfg.windSpd);
+  if(cfg.windSrc && typeof _setWindSrc==='function') _setWindSrc(cfg.windSrc);
   setVal('cfgWindDirSlider',cfg.windDir); setVal('cfgWindSpdSlider',Math.min(cfg.windSpd||0,50));
   setVal('cfgDev',cfg.dev);
   if(cfg.depTime) setVal('cfgDepTime',cfg.depTime);
@@ -10992,6 +11055,7 @@ function loadDossier(id, _freshCloudFiles){
   document.getElementById('cfgFuel').value=d.config.fuel;
   document.getElementById('cfgWindDir').value=d.config.windDir;
   document.getElementById('cfgWindSpd').value=d.config.windSpd;
+  if(d.config.windSrc) _setWindSrc(d.config.windSrc); else _setWindSrc({type:'manual'});
   document.getElementById('cfgDev').value=d.config.dev;
   if(d.config.depTime) document.getElementById('cfgDepTime').value=d.config.depTime;
   if(d.config.flightDate) _navlogFlightDate=d.config.flightDate;
@@ -13705,7 +13769,24 @@ function _fetchAltTerrain(totalDist,maxAlt,W,H,ml,mr,mt,mb){
         });
     });
   };
-  _tryOpenElevation();
+  /* Essai 0 : Open-Meteo (modèle Copernicus 90 m, en MÈTRES) — accepte les appels depuis le site
+     (CORS), contrairement à opentopodata (bloqué) ; open-elevation est souvent hors service.
+     100 points maximum par requête : découpage en paquets. */
+  var _tryOpenMeteo=function(){
+    var chunks=[];
+    for(var ci=0;ci<locs.length;ci+=100) chunks.push(locs.slice(ci,ci+100));
+    Promise.all(chunks.map(function(ch){
+      var la=ch.map(function(l){return (+l.latitude).toFixed(5);}).join(',');
+      var lo=ch.map(function(l){return (+l.longitude).toFixed(5);}).join(',');
+      return fetch('https://api.open-meteo.com/v1/elevation?latitude='+la+'&longitude='+lo)
+        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function(d){ if(!d.elevation||d.elevation.length!==ch.length) throw new Error('réponse incomplète'); return d.elevation; });
+    })).then(function(parts){
+      var all=[].concat.apply([],parts);
+      _applyTerrain(all.map(function(e){return Math.max(0,Math.round((e||0)*3.28084));}));
+    }).catch(function(){ _tryOpenElevation(); });
+  };
+  _tryOpenMeteo();
 }
 window.renderAltProfile=renderAltProfile;
 /* Relance manuelle depuis le texte "toucher pour réessayer" affiché après l'abandon des
@@ -15261,7 +15342,7 @@ var MB_DATA = {
     type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, fuelTotal:159, density:0.72,
     emptyMass:665.87, emptyArm:0.99345, emptyMom:661.51,
     fuelArm:1.22, pilotArm:0.94, paxArm:1.06, bag1Arm:2.41, bag2Arm:3.12,
-    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:15, xwindLDGKt:15, glideRatio:9,   /* vent de travers démontré : voir AFM['172'].xwSrc */
+    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15, glideRatio:9,   /* vent de travers démontré (manuel F172M, fig. 9) : voir AFM['172'].xwSrc */
     has2seats:false, weighDate:'13/04/2012',
     envelope:[{m:675,mom:605},{m:890,mom:780},{m:1043,mom:1020},{m:1043,mom:1260},{m:675,mom:810}]
   }
@@ -15489,7 +15570,9 @@ window.mbRecalc=mbRecalc;
    retour-automatique (minuteur de 6s + resync forcé à chaque retour sur l'onglet) écrasait
    silencieusement toute saisie manuelle, empêchant de facto de renseigner ses propres litres
    (ex. ne pas faire le plein) — voir _mbFuelManualChange ci-dessous. */
-function _mbFuelSyncNow(){
+window._mbFuelManual=(function(){ try{ return localStorage.getItem('mbFuelManual')==='1'; }catch(e){ return false; } })();
+function _mbFuelSyncNow(auto){
+  if(!auto){ window._mbFuelManual=false; try{ localStorage.setItem('mbFuelManual','0'); }catch(e){} }
   var el=document.getElementById('mbFuel');
   var ac=MB_DATA[document.getElementById('mbAircraft').value];
   if(!el||!ac) return;
@@ -15498,16 +15581,17 @@ function _mbFuelSyncNow(){
   el.value=val;
   mbRecalc();
   var hint=document.getElementById('mbFuelSyncHint');
-  if(hint) hint.innerHTML='\u{1F517} Pré-rempli depuis Carbu ('+val.toFixed(1)+' L, éditable) — <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">resynchroniser avec Carbu</a>';
+  if(hint) hint.innerHTML='\u{1F517} Repris automatiquement du devis Carbu ('+val.toFixed(1)+' L) — suit chaque changement du devis ; une saisie à la main l’arrête';
 }
 window._mbFuelSyncNow=_mbFuelSyncNow;
 
 /* Édition manuelle du champ Carburant (saisie libre ou bouton Max) : la valeur choisie par le
    pilote est définitive et ne revient plus jamais toute seule au devis Carbu. */
 function _mbFuelManualChange(){
+  window._mbFuelManual=true; try{ localStorage.setItem('mbFuelManual','1'); }catch(e){}
   mbRecalc();
   var hint=document.getElementById('mbFuelSyncHint');
-  if(hint) hint.innerHTML='✏️ Valeur saisie manuellement — <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">resynchroniser avec Carbu</a>';
+  if(hint) hint.innerHTML='✏️ Valeur saisie à la main (ne suit plus le devis) — <a href="#" onclick="window._mbFuelSyncNow();return false;" style="color:#667eea">reprendre le devis Carbu automatiquement</a>';
 }
 window._mbFuelManualChange=_mbFuelManualChange;
 
@@ -15827,7 +15911,7 @@ var AFM = {
     climb:{alts:[0,5000,10000,15000], fpm:{750:[1085,825,570,315],900:[840,610,380,155],1043:[645,435,230,20]},
       vi:[145,135,126,115], fuel:[3.8,9.9,18.2,43.5]},
     toTempStep:15, ldTempStep:15, ldWindStep:5, grassTO:.07, grassLD:.20, climbHotPer5:20,
-    xwTO:15, xwLD:15, xwSrc:'vent de travers démontré Cessna 172M : 15 kt (valeur absente du manuel scanné OO-FCE — à confirmer auprès du club)',
+    xwTO:20, xwLD:15, xwSrc:'manuel de vol F172M OO-FCE, page « Figure 9 » (« vent limite plein travers démontré » : décollage 37 km/h = 20 kt, atterrissage 28 km/h = 15 kt)',
     notes:{to:'Augmenter ces distances de 10 % chaque tranche de 15 °C supérieure à la température standard. Décollage sur piste sèche en herbe : augmenter ces distances de 7 % de la distance totale de passage obstacle des 15 m.',
            ld:'Diminuer les distances de 10 % pour 5 kt de vent debout. Les augmenter de 10 % pour chaque tranche de 15 °C au-dessus de la température standard. Atterrissage sur piste sèche en herbe : augmenter ces distances de 20 % de la distance totale de passage obstacle de 15 m.',
            climb:'Volets relevés, plein gaz, mélange pauvre au-dessus de 915 m (3000 ft). La consommation comprend le point fixe et le décollage. Par temps chaud, réduire le taux de montée de 20 ft/min par tranche de 5 °C au-dessus de la température standard à l’altitude considérée.'}
