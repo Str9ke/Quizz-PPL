@@ -7011,7 +7011,42 @@ function calcLeg(dist,routeTrue,cfg,legWind,legAlt){
   };
 }
 
+/* Noms automatiques « WPn » remis en ordre : n = position du point dans la route (EBSG, WP2,
+   WP3, LFQQ, WP5…). Les noms étaient figés au moment du clic : après une insertion par glisser
+   sur la carte, une nouvelle étape, une suppression ou un point vide rempli plus tard, plusieurs
+   points finissaient avec le même nom (« WP8 » quatre fois) ou dans le désordre. Seuls les noms
+   vides ou de la forme « WP 12 » sont touchés : un nom choisi (aérodrome, VRP, village…) reste.
+   Départ d'une nouvelle étape posé au même endroit que l'arrivée de la précédente (< 0,5 NM) :
+   même nom, c'est le même lieu. */
+function _renumberAutoWaypointNames(){
+  var AUTO=/^WP\s*\d*$/i;
+  for(var i=0;i<waypoints.length;i++){
+    var w=waypoints[i];
+    if(!w || w.lat==null || w.lon==null) continue;
+    var nm=(w.name||'').trim();
+    if(nm && !AUTO.test(nm)) continue;
+    var name='WP'+(i+1);
+    var prev=waypoints[i-1];
+    if(prev && prev.name && prev.lat!=null && prev.lon!=null && !_sharesStage(prev,w) &&
+       haversine(prev.lat,prev.lon,w.lat,w.lon)<0.5) name=prev.name;
+    if(w.name!==name){
+      w.name=name;
+      document.querySelectorAll('.wp-name-input[data-idx="'+i+'"], .nl-recap-name-input[data-idx="'+i+'"]').forEach(function(el){ if(document.activeElement!==el) el.value=name; });
+    }
+  }
+}
+/* Vrai si deux points appartiennent à au moins une même étape (ou si l'un n'a pas d'étape :
+   vol classique, sans découpage). */
+function _sharesStage(a,b){
+  var sa=a._stages||[], sb=b._stages||[];
+  if(!sa.length || !sb.length) return true;
+  for(var k=0;k<sa.length;k++){ if(sb.indexOf(sa[k])>=0) return true; }
+  return false;
+}
+window._renumberAutoWaypointNames=_renumberAutoWaypointNames;
+
 function recalcNavlog(){
+  _renumberAutoWaypointNames();
   var cfg=getConfig();
   document.getElementById('asiGauge').innerHTML=createASI(cfg.tas);
   updateWindRose();
@@ -7222,6 +7257,9 @@ function _isDupOfNextPoint(si){
   if(b.ptType) return false;
   var na=(a.name||'').trim().toUpperCase(), nb=(b.name||'').trim().toUpperCase();
   if(!na || na!==nb) return false;
+  /* Arrivée d'une étape et départ de la suivante (aucune étape commune) : même lieu, même nom,
+     mais ce sont deux points utiles (fin d'un tableau, début du suivant) — jamais un doublon. */
+  if(!_sharesStage(a,b)) return false;
   if(a.lat==null||a.lon==null||b.lat==null||b.lon==null) return true;
   /* "b" agit comme l'arrivée AFFICHÉE de la route (ou de l'étape) dès lors que TOUT ce qui suit
      "b" dans le tableau complet n'est que des points de circuit (masqués) — même si "b" n'est
@@ -7245,11 +7283,13 @@ function _isDupOfNextPoint(si){
    renommage, altitude éditable, commentaires, boutons Dép/Arr) pour UN segment de points —
    utilisé pour chaque étape séparément quand le vol en a plusieurs (temps/numérotation propres
    à ce segment), ou une seule fois pour la route entière sinon. */
-function _buildOnscreenSegmentTable(segIdx,tableIdx){
+function _buildOnscreenSegmentTable(segIdx,tableIdx,legBase){
   var cfg=getConfig();
   var rows='';
   var cumMin=0;
-  var legNum=0;
+  /* Les legs sont numérotés À LA SUITE d'une étape à l'autre (l'étape 2 commence au leg 7 si
+     l'étape 1 finit au leg 6) : legBase = nombre de legs des étapes précédentes. */
+  var legNum=legBase||0;
   /* Altitude de référence pour détecter un changement : celle du point de départ du segment,
      mise à jour à chaque leg (voir plus bas). */
   var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
@@ -7330,8 +7370,8 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       }
       prevLegAlt=nextAlt;
 
-      /* Numéro de LEG (pas de point) affiché ici, propre à ce segment (redémarre à 1 à chaque
-         étape) — le nom du point d'arrivée vit sur SA PROPRE ligne fanion (émise juste après
+      /* Numéro de LEG (pas de point) affiché ici, numéroté à la suite des étapes
+         précédentes (voir legBase) — le nom du point d'arrivée vit sur SA PROPRE ligne fanion (émise juste après
          cette ligne LEG), plus dans cette ligne qui ne porte plus que les données de
          navigation pures. Actions (Dép/Arr/Couper/✕) déplacées sur la ligne fanion du point
          d'arrivée (ptActionsHtml, ci-dessous) : elles concernaient CE point, pas "le leg" au
@@ -7359,6 +7399,7 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx){
       '<td class="nl-recap-type">'+ptActionsHtml+'</td>'+
     '</tr>';
   }
+  window._onscreenLegCount=legNum;
   var depName=(waypoints[segIdx[0]]&&waypoints[segIdx[0]].name)||'?';
   var arrName=(waypoints[segIdx[segIdx.length-1]]&&waypoints[segIdx[segIdx.length-1]].name)||'?';
   var titleHtml=(tableIdx!==null)
@@ -7404,8 +7445,9 @@ function renderNavlogRecapTable(){
   var segments=_computeStageSegments(shownIdx);
   var multiTable=segments.length>1;
   var tablesHtml='';
+  window._onscreenLegCount=0;
   segments.forEach(function(segIdx,segI){
-    tablesHtml+=_buildOnscreenSegmentTable(segIdx, multiTable?segI:null);
+    tablesHtml+=_buildOnscreenSegmentTable(segIdx, multiTable?segI:null, window._onscreenLegCount);
   });
 
   var hiddenNote;
@@ -7555,10 +7597,12 @@ function _perfPrintWindInfo(dirId,spdId,rwyKey){
    soit pour la route entière (vol normal), soit pour UNE étape (vol à étapes, voir découpage
    par jonction plus bas). windBadgeFirst/windBadgeLast limitent l'étiquette de vent piste
    Perf aux VRAIS départ/arrivée globaux, pas à chaque bord de segment interne. */
-function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,perfTakeoffWind,perfLandingWind){
+function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,perfTakeoffWind,perfLandingWind,legBase){
   var rows='';
   var cumMin=0,cumDist=0,cumFuel=0;
-  var legNum=0; /* numérote les LEGS (pas les waypoints) — même logique que le tableau à l'écran */
+  /* numérote les LEGS (pas les waypoints), à la suite d'une étape à l'autre — même logique que
+     le tableau à l'écran (legBase = legs des étapes précédentes) */
+  var legNum=legBase||0;
   var prevLegAlt=segIdx.length?((waypoints[segIdx[0]].altitude)||(parseInt(_v('cfgAlt'))||2300)):undefined;
   for(var k=0;k<segIdx.length;k++){
     var i=segIdx[k];
@@ -7658,7 +7702,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
       '<td class="c-comment">'+(blank?'':escHTML(next._legComment||''))+'</td>'+
     '</tr>';
   }
-  return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel};
+  return {rows:rows,cumMin:cumMin,cumDist:cumDist,cumFuel:cumFuel,legNum:legNum};
 }
 
 /* Résumé numérique carburant/temps — reproduit EXACTEMENT la même classification que
@@ -7891,6 +7935,9 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
   '</svg>';
 }
 
+/* Bande d'écriture sous les lignes LEG de la feuille remplie (mm), par palier de nombre de lignes
+   (≤6, ≤11, ≤16, ≤22, ≤30, plus) — calibrée par impression réelle (Chrome, A4, une page par étape). */
+var WRITE_MM=[6,6,5.5,5,4,1.2];
 function printNavlogRecapTable(blank){
   if(!waypoints || waypoints.length<2){ alert('Tableau récapitulatif indisponible.'); return; }
   var routeName=(waypoints[0]&&waypoints[0].name||'Départ')+' → '+(waypoints[waypoints.length-1]&&waypoints[waypoints.length-1].name||'Arrivée');
@@ -7950,9 +7997,11 @@ function printNavlogRecapTable(blank){
      qui ne disait rien. Mis à jour à la fin de chaque itération, donc déjà à jour pour la
      suivante (les étapes sont traitées dans l'ordre chronologique du vol). */
   var cumTimeMinSoFar=0;
+  var printLegBase=0;
   segments.forEach(function(segIdx,segI){
     var isFirstSeg=(segI===0), isLastSeg=(segI===segments.length-1);
-    var res=multiSheet?_buildRecapSegmentRows(segIdx,cfg,blank,isFirstSeg,isLastSeg,perfTakeoffWind,perfLandingWind):globalRes;
+    var res=multiSheet?_buildRecapSegmentRows(segIdx,cfg,blank,isFirstSeg,isLastSeg,perfTakeoffWind,perfLandingWind,printLegBase):globalRes;
+    printLegBase=res.legNum||printLegBase;
     var segDepIcao=waypoints[segIdx[0]]&&waypoints[segIdx[0]].name||'—';
     var segArrIcao=waypoints[segIdx[segIdx.length-1]]&&waypoints[segIdx[segIdx.length-1]].name||'—';
 
@@ -8091,6 +8140,11 @@ function printNavlogRecapTable(blank){
     else if(totalRows<=22) prof={f:7.6,p:'2.5px 2.3px',lp:'1.4px 2.5px',h1:8.7,sub:5.5,info:7.2,infoLbl:6};
     else if(totalRows<=30) prof={f:5.9,p:'1.6px 1.6px',lp:'1px 1.6px',h1:7,sub:4.8,info:6.4,infoLbl:5.3};
     else prof={f:5.6,p:'1.4px 1.4px',lp:'0.9px 1.4px',h1:6.8,sub:4.6,info:6,infoLbl:5};
+    /* Feuille REMPLIE : sous le texte de chaque ligne LEG (bleue), une bande libre pour barrer la
+       valeur imprimée et écrire la correction à la main juste en dessous. Hauteur selon le nombre
+       de lignes (plus de legs = bande plus fine, la feuille doit tenir sur une page). La place est
+       reprise sur les deux bandeaux (infos du vol, carburant), passés sur une ligne par case. */
+    var writeMm=totalRows<=6?WRITE_MM[0]:totalRows<=11?WRITE_MM[1]:totalRows<=16?WRITE_MM[2]:totalRows<=22?WRITE_MM[3]:totalRows<=30?WRITE_MM[4]:WRITE_MM[5];
 
     /* Profil d'altitude imprimé EN BAS de CETTE feuille, propre à CETTE étape (jamais sur la
        feuille vierge, où il n'y a de toute façon aucune donnée réelle à tracer). Bornes en
@@ -8132,6 +8186,12 @@ function printNavlogRecapTable(blank){
            "1") avec le padding générique + une colonne à 4% : padding dédié plus serré, sur
            une colonne élargie (voir colgroup ci-dessous), pour que 2 chiffres tiennent. */
         'td.c-num,th.c-num{padding-left:2px;padding-right:2px}'+
+        (blank?'':
+          'tr.leg-row td{vertical-align:top;padding-top:1px;padding-bottom:'+writeMm+'mm;line-height:1.05}'+
+          '.info-grid div br,.fuel-grid div br{display:none}'+
+          '.info-grid b,.fuel-grid b{display:inline;margin-right:.6em}'+
+          '.info-grid div,.fuel-grid div{padding:.6mm 5px;line-height:1.15}'+
+          '.info-grid{margin-bottom:3px}.fuel-grid{margin-top:3px}')+
         /* FEUILLE VIERGE — hauteurs FIXES en millimètres.
            Historique : la hauteur des lignes venait uniquement du padding, donc la hauteur
            totale de la feuille dépendait des métriques de la police. Calibrer cette hauteur
@@ -8438,6 +8498,7 @@ function updateLegStrips(){
 
 /* ===== NAVLOG RENDERING ===== */
 function renderNavlog(){
+  _renumberAutoWaypointNames();
   var board=document.getElementById('navlogBoard');
   var html='';
   for(var i=0;i<waypoints.length;i++){
@@ -14541,14 +14602,9 @@ function updateRouteMap(){
      Dézoomé (< ROUTE_MAP_ZOOM_DETAIL) : les flèches de circuit dép/arr (courtes, groupées
      près de l'aérodrome) sont masquées — elles finissaient collées les unes aux autres en un
      amas illisible sur une vue d'ensemble. Les flèches des legs de nav "principaux" affichent
-     TOUJOURS leur numéro de leg (même numérotation qu'au tableau Navlog : redémarre à 1 par
-     étape), quel que soit le niveau de zoom. */
-  var mapLegNum=0, mapLegStage=null;
-  function _mapLegStageOf(aWp,bWp){
-    if(!aWp._stages||!bWp._stages) return null;
-    for(var si=0;si<aWp._stages.length;si++){ if(bWp._stages.indexOf(aWp._stages[si])>=0) return aWp._stages[si]; }
-    return null;
-  }
+     TOUJOURS leur numéro de leg (même numérotation qu'au tableau Navlog : continue d'une étape
+     à l'autre), quel que soit le niveau de zoom. */
+  var mapLegNum=0;
   for(var k=0;k<pts.length-1;k++){
     if(!mapConnected[k]) continue; /* jamais de flèche/numéro de leg entre deux étapes distinctes
       (c'était exactement ça qui donnait l'impression trompeuse que le dernier point d'une étape
@@ -14560,14 +14616,8 @@ function updateRouteMap(){
     if(_mapZoomedOut && isCircuitLeg) continue; /* flèches de circuit masquées dézoomé */
     var legNumBadge=null;
     if(!isCircuitLeg){
-      /* Ne réinitialiser le compteur QUE sur un changement d'étape confirmé des deux côtés
-         (legStageNow non-null) — sinon un point sans métadonnée _stages (ex: ajouté par
-         glisser-déposer sur une carte avant ce correctif, ou tout point qui n'a jamais transité
-         par _composeEtapes) déclenchait un reset à tort, faisant repartir la numérotation de la
-         carte à 1 au lieu de continuer celle du tableau Navlog (même logique de tolérance que
-         _computeStageSegments). */
-      var legStageNow=_mapLegStageOf(waypoints[a.idx],waypoints[b.idx]);
-      if(legStageNow!==null && legStageNow!==mapLegStage){ mapLegStage=legStageNow; mapLegNum=0; }
+      /* Numérotation CONTINUE d'une étape à l'autre (comme les tableaux Navlog) : l'étape 2
+         reprend après le dernier leg de l'étape 1. */
       mapLegNum++;
       legNumBadge=mapLegNum;
     }
