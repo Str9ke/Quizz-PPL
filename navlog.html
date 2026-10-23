@@ -757,6 +757,18 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .pm-metar{font-family:monospace;font-size:.82em;color:var(--text-secondary);margin-top:3px;white-space:normal;word-break:break-word}
 .pm-ok{color:#4caf50;font-weight:800}.pm-ko{color:#ef5350;font-weight:800}.pm-warn{color:#fb8c00;font-weight:800}
 .pm-wrap{overflow-x:auto}
+
+/* Devis carburant : tableau unique consommation + temps */
+.fc-wrap{overflow-x:auto;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-container)}
+.fc-table{width:100%;border-collapse:collapse;font-size:.88em}
+.fc-table th{text-align:left;font-size:.75em;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);padding:8px 10px;border-bottom:2px solid var(--border-color)}
+.fc-table td{padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
+.fc-table .fc-num{text-align:right;white-space:nowrap;font-weight:600}
+.fc-table tr.fc-stage td{background:rgba(102,126,234,.16);color:#8fa0f5;font-weight:800;padding-top:8px}
+.fc-table tr.fc-sub td{background:rgba(102,126,234,.08);font-weight:800}
+.fc-table tr.fc-tot td{background:rgba(255,167,38,.1)}
+.fc-table tr.fc-set td{background:rgba(255,255,255,.03)}
+.fc-table tr.fc-block td{border-top:2px solid var(--border-color);font-weight:800;font-size:1.1em;color:#4caf50}
 /* Print stylesheet */
 @media print{
   body{background:#fff!important;color:#000!important;margin-left:0!important;padding-bottom:0!important}
@@ -1595,6 +1607,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
           <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/temsi/euroc')">&#x1F30D; TEMSI</button>
           <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/wintem/euroc')">&#x1F4A8; WINTEM</button>
           <button class="aeroweb-nav-btn" onclick="window.openAeroWebPopup('https://aviation.meteo.fr/FR/aviation/OPMET/fronts/euroc')">&#x1F300; Fronts</button>
+          <button class="aeroweb-nav-btn" onclick="window.openAeroWebMap()">&#x1F5FA;&#xFE0F; Carte maille fine</button>
+          <button class="aeroweb-nav-btn" onclick="window.openAeroWebDoc()">&#x1F4D8; Doc maille fine</button>
         </div>
         <button class="aeroweb-toggle-btn" id="aerowebToggle" onclick="window.openAeroWebPopup()">&#x1F310; Ouvrir A&#xe9;roWeb (nouvel onglet)</button>
         <p style="font-size:.75em;color:var(--text-secondary);margin:6px 0 0">Le login fonctionne uniquement dans un onglet s&#xe9;par&#xe9; (cookies tiers bloqu&#xe9;s dans les iframes). Connectez-vous, puis faites une capture et collez-la ici (Ctrl+V).</p>
@@ -1798,6 +1812,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
     <div id="msub-aerometar" class="meteo-sub-content">
       <div class="map-card" style="margin-bottom:14px">
         <div class="map-card-title">&#x1F1EB;&#x1F1F7; METAR / TAF officiels &#x2014; A&#xe9;roWeb (M&#xe9;t&#xe9;o-France)</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 16px 10px">
+          <button type="button" class="aeroweb-nav-btn" onclick="window.openAeroWebMap()">&#x1F5FA;&#xFE0F; Carte maille fine AROME (plein &#xe9;cran)</button>
+          <button type="button" class="aeroweb-nav-btn" onclick="window.openAeroWebDoc()">&#x1F4D8; Documentation de la carte</button>
+          <span style="font-size:.75em;color:var(--text-secondary);align-self:center">Connexion A&#xe9;roWeb demand&#xe9;e par la carte. Dans l&#x2019;appli Android, retour avec le bouton &#x2190; du t&#xe9;l&#xe9;phone.</span>
+        </div>
         <div id="awMeta" style="padding:6px 16px;font-size:.82em;color:var(--text-secondary)"></div>
         <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:4px 16px 10px">
           <div id="awLegend"></div>
@@ -2272,7 +2291,9 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
         <span id="fuelTankLabel" style="font-size:.85em;font-weight:400;color:var(--text-secondary)">R&#xe9;servoir utilisable&nbsp;: 85 L</span>
         <span id="fuelAircraftLabel" style="display:none">Cessna F-150M &mdash; OO-MQA</span>
       </div>
-      <div class="config-grid" style="margin-bottom:14px">
+      <!-- Réglages : édités dans le tableau « Consommation et temps » (renderFuelLog) ; champs gardés
+           masqués car sauvegardés avec le dossier et synchronisés avec le Navlog. -->
+      <div class="config-grid" id="fuelCfgGrid" style="display:none;margin-bottom:14px">
         <div class="config-item">
           <label style="font-size:.82em;color:var(--text-secondary);font-weight:600">Conso moyenne (L/h)</label>
           <input type="number" id="fuelBurn" value="20" min="10" max="100" step="0.5" onchange="window.syncFuelBurn('fb')">
@@ -3249,9 +3270,7 @@ function renderFuelLog(){
   if(isNaN(tripFuel)) tripFuel=0;
   
   /* Étapes intermédiaires: taxi supplémentaire par escale (une escale = une étape de plus) */
-  var etapeCount=_fuelStopCount(fuelSegs);
-  var etapeFuel=etapeCount*((taxiD+taxiA)/60)*fuelBurn;
-  var etapeTimeMin=etapeCount*(taxiD+taxiA);
+  var etapeCount=0, etapeFuel=0, etapeTimeMin=0; /* roulages des escales : dans bf.taxiFuel */
 
   /* Source unique : garantit la cohérence avec le Sommaire et le Plan de Vol OACI */
   var bf = computeFullFuelBreakdown(tripFuel);
@@ -3273,89 +3292,53 @@ function renderFuelLog(){
      de l'étape qui se termine + roulage départ de celle qui commence). Le total en
      litres/minutes ne change pas, seul l'affichage est ventilé par étape. */
 
-  function patternRow(k,label){
-    var m=bf.patternList[k]||0;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">'+
-      '<span style="color:#4dd0e1" title="Temps du tour de piste à l\u2019arrivée, réglable pour chaque atterrissage">🛬 '+label+' <input type="number" value="'+m+'" min="0" max="60" step="1" onchange="window._setCircArrMin('+k+',this.value)" style="width:46px;padding:2px 4px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right"> min</span>'+
-      '<span style="color:#4dd0e1;font-weight:600">'+((m/60)*bf.fuelBurn).toFixed(1)+' L</span></div>';
+  /* ===== TABLEAU UNIQUE « CONSOMMATION ET TEMPS » =====
+     Tous les réglages du devis (conso, roulages par étape, tours de piste, marge, réserve,
+     dégagement, supplément) se font directement dans ce tableau ; chaque étape se termine par
+     son sous-total (litres ET temps). Le temps bloc (et donc le coût de location) ne compte
+     QUE ce qui est volé ou roulé : jamais la réserve ni le dégagement. */
+  var totalBlockTimeMin = tripTimeMin + bf.taxiMin + bf.patternMin;  /* sans réserve ni dégagement */
+  var nSt=bf.taxiList.length;
+  var stArr=[];
+  if(splitByStage){ stageNums.forEach(function(sn){ var t=stageTotals[sn]; stArr.push({nav:[t.navFuel,t.navTime],dep:[t.depFuel,t.depTime],arr:[t.arrFuel,t.arrTime]}); }); }
+  else stArr.push({nav:[navFuel,navTimeMin],dep:[circDepFuel,circDepTimeMin],arr:[circArrFuel,circArrTimeMin]});
+  while(stArr.length<nSt) stArr.push({nav:[0,0],dep:[0,0],arr:[0,0]});
+  var fb=bf.fuelBurn;
+  var IN='padding:2px 5px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right;font-weight:600';
+  function num(v,attrs,w){ return '<input type="number" value="'+v+'" '+attrs+' style="width:'+(w||50)+'px;'+IN+'">'; }
+  function tr(label,setting,min,lit,cls,color){
+    return '<tr class="'+(cls||'')+'"><td style="color:'+(color||'var(--text-secondary)')+'">'+label+'</td><td style="white-space:nowrap">'+(setting||'')+'</td>'
+      +'<td class="fc-num">'+(min===null||min===undefined?'':formatTime(min/60))+'</td><td class="fc-num">'+(lit===null||lit===undefined?'':lit.toFixed(1)+' L')+'</td></tr>';
   }
-  var col1='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
-  col1+='<div style="font-weight:700;margin-bottom:12px;color:#667eea;font-size:1.1em">CONSOMMATION (Litres)</div>';
-  /* Ordre CHRONOLOGIQUE d'un vol réel (demandé explicitement à 2 reprises) : roulage départ,
-     circuit départ, navigation, circuit arrivée, roulage arrivée — pas un regroupement par
-     catégorie (nav d'abord, taxis à la fin) qui ne correspond à aucun déroulé réel de vol. */
-  if(splitByStage){
-    stageNums.forEach(function(sn){
-      var st=stageTotals[sn];
-      col1+=row('Roulage départ — Étape '+sn, (taxiD/60)*fuelBurn);
-      if(st.depFuel>0) col1+=row('🛫 Circuit départ — Étape '+sn, st.depFuel, '#b39ddb');
-      /* "hors circuits" explicite : ce chiffre ne couvre QUE les legs de navigation, alors que
-         le "Σ Sous-total étape N" du détail ci-dessus additionne navigation + circuits. */
-      col1+=row('Délestage (Navigation, hors circuits) — Étape '+sn, st.navFuel, st.navFuel>0?undefined:'var(--text-secondary)');
-      if(st.arrFuel>0) col1+=row('🛬 Circuit arrivée — Étape '+sn, st.arrFuel, '#4dd0e1');
-      col1+=patternRow(sn-1,'Tour de piste — Étape '+sn);
-      col1+=row('Roulage arrivée — Étape '+sn, (taxiA/60)*fuelBurn);
-    });
-  } else {
-    col1+=row('Roulage départ (Taxi)', (taxiD/60)*fuelBurn);
-    if(circDepFuel>0) col1+=row('🛫 Circuit départ', circDepFuel, '#b39ddb');
-    if(navFuel>0) col1+=row('Délestage (Navigation)', navFuel);
-    else col1+=row('Délestage (Navigation)', 0, 'var(--text-secondary)');
-    if(circArrFuel>0) col1+=row('🛬 Circuit arrivée', circArrFuel, '#4dd0e1');
-    col1+=patternRow(0,'Tour de piste à l\u2019arrivée');
-    col1+=row('Roulage arrivée (Taxi)', (taxiA/60)*fuelBurn);
-    if(etapeCount>0) col1+=row('Étapes taxi (×'+etapeCount+')', etapeFuel, '#ff9500');
+  var t='<div class="fc-wrap"><table class="fc-table"><thead><tr><th>Poste</th><th>Réglage</th><th class="fc-num">Temps</th><th class="fc-num">Litres</th></tr></thead><tbody>';
+  t+=tr('⛽ Consommation moyenne',num(fb,'min="5" max="100" step="0.1" onchange="window._fuelSet(\'fuelBurn\',this.value)"',60)+' L/h',null,null,'fc-set','var(--text-primary)');
+  var blockMin=0, blockL=0;
+  for(var k=0;k<nSt;k++){
+    var st=stArr[k], tx=bf.taxiList[k], pm=bf.patternList[k]||0;
+    var segK=fuelSegs[k];
+    var lbl=nSt>1?('Étape '+(k+1)+(segK?' — '+escHTML((waypoints[segK[0]]||{}).name||'?')+' → '+escHTML((waypoints[segK[segK.length-1]]||{}).name||'?'):'')):'Vol';
+    t+='<tr class="fc-stage"><td colspan="4">🧭 '+lbl+'</td></tr>';
+    var lD=tx.d/60*fb, lA=tx.a/60*fb, lP=pm/60*fb;
+    t+=tr('Roulage départ',num(tx.d,'min="0" max="60" step="1" onchange="window._setTaxiStage('+k+',\'d\',this.value)"')+' min',tx.d,lD);
+    if(st.dep[0]>0) t+=tr('🛫 Circuit départ','',st.dep[1],st.dep[0],'','#b39ddb');
+    t+=tr('Navigation','',st.nav[1],st.nav[0]);
+    if(st.arr[0]>0) t+=tr('🛬 Circuit arrivée','',st.arr[1],st.arr[0],'','#4dd0e1');
+    t+=tr('🛬 Tour de piste',num(pm,'min="0" max="60" step="1" onchange="window._setCircArrMin('+k+',this.value)"')+' min',pm,lP,'','#4dd0e1');
+    t+=tr('Roulage arrivée',num(tx.a,'min="0" max="60" step="1" onchange="window._setTaxiStage('+k+',\'a\',this.value)"')+' min',tx.a,lA);
+    var sMin=tx.d+st.dep[1]+st.nav[1]+st.arr[1]+pm+tx.a, sL=lD+st.dep[0]+st.nav[0]+st.arr[0]+lP+lA;
+    blockMin+=sMin; blockL+=sL;
+    t+=tr('Σ Sous-total '+(nSt>1?'étape '+(k+1):'du vol'),'',sMin,sL,'fc-sub','#8fa0f5');
   }
-  col1+=row('Marge ('+contPct+'%)', contFuel);
-  col1+=row('Réserve ('+resMin+' min)', resFuel);
-  if(altnFuel>0) col1+=row('Dégagement ('+altnDist+' NM)', altnFuel, '#f87171');
-  /* Champ éditable en direct dans le résumé (pas seulement dans la config au-dessus) : litres
-     supplémentaires à ajouter au total requis (ex: déjà dans le réservoir, marge perso...). */
-  col1+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">'+
-    '<span style="color:var(--text-secondary)" title="Litres supplémentaires ajoutés au total requis (ex: déjà dans le réservoir, marge personnelle...)">Supplémentaire</span>'+
-    '<span><input type="number" id="fuelExtraInline" value="'+extraFuel+'" min="0" max="100" step="0.1" onchange="document.getElementById(\'fuelExtra\').value=this.value;window.renderFuelLog()" style="width:56px;padding:3px 6px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right;font-weight:600"> L</span>'+
-  '</div>';
-  col1+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">';
-  col1+='<div><span style="font-weight:700;font-size:1em">BLOCK FUEL</span><div style="font-size:.78em;color:#4caf50;margin-top:2px">≡ '+formatTime(enduranceMin/60)+' d\u2019autonomie</div></div>';
-  col1+='<span style="font-weight:800;font-size:1.4em;color:#4caf50">'+totalBlockFuel.toFixed(1)+' L</span>';
-  col1+='</div></div>';
-  
-  /* Right Column: Time Breakdown */
-  var totalBlockTimeMin = tripTimeMin + taxiD + taxiA + etapeTimeMin + bf.patternMin;
-  
-  function timeRow(label, min){
-      return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.9em;border-bottom:1px solid rgba(255,255,255,.05)">' +
-            '<span style="color:var(--text-secondary)">'+label+'</span>' +
-            '<span style="font-weight:600">'+formatTime(min/60)+'</span>' + 
-            '</div>';
-  }
-
-  var col2='<div style="background:var(--bg-container);padding:14px;border-radius:12px;border:1px solid var(--border-color)">';
-  col2+='<div style="font-weight:700;margin-bottom:12px;color:#ffa726;font-size:1.1em">TEMPS DE VOL</div>';
-  if(splitByStage){
-    stageNums.forEach(function(sn){
-      var st=stageTotals[sn];
-      col2+=timeRow('Taxi Départ — Étape '+sn, taxiD);
-      if(st.depTime>0) col2+=timeRow('🛫 Circuit départ — Étape '+sn, st.depTime);
-      col2+=timeRow('Temps Vol (Navigation, hors circuits) — Étape '+sn, st.navTime);
-      if(st.arrTime>0) col2+=timeRow('🛬 Circuit arrivée — Étape '+sn, st.arrTime);
-      col2+=timeRow('🛬 Tour de piste — Étape '+sn, bf.patternList[sn-1]||0);
-      col2+=timeRow('Taxi Arrivée — Étape '+sn, taxiA);
-    });
-  } else {
-    col2+=timeRow('Taxi Départ', taxiD);
-    if(circDepTimeMin>0) col2+=timeRow('🛫 Circuit départ', circDepTimeMin);
-    if(navTimeMin>0) col2+=timeRow('Temps Vol (Navigation)', navTimeMin);
-    else col2+=timeRow('Temps Vol (Navigation)', 0);
-    if(circArrTimeMin>0) col2+=timeRow('🛬 Circuit arrivée', circArrTimeMin);
-    col2+=timeRow('🛬 Tour de piste à l\u2019arrivée', bf.patternList[0]||0);
-    col2+=timeRow('Taxi Arrivée', taxiA);
-    if(etapeCount>0) col2+=timeRow('Étapes (×'+etapeCount+')', etapeTimeMin);
-  }
-  col2+='<div style="margin-top:10px;padding-top:10px;border-top:2px solid var(--border-color)">';
-  col2+='<div style="display:flex;justify-content:space-between"><span style="font-weight:700">TOTAL BLOC</span><span style="font-weight:800;font-size:1.2em;color:#ffa726">'+formatTime(totalBlockTimeMin/60)+'</span></div>';
-  col2+='</div></div>';
-
+  if(nSt>1) t+=tr('Σ Total des étapes (temps bloc)','',blockMin,blockL,'fc-sub fc-tot','#ffa726');
+  t+='<tr class="fc-stage"><td colspan="4">🛡️ Carburant de sécurité (non volé : hors temps et hors coût)</td></tr>';
+  t+=tr('Marge de sécurité',num(contPct,'min="0" max="30" step="1" onchange="window._fuelSet(\'fuelContingency\',this.value)"',46)+' % du délestage',null,contFuel);
+  t+=tr('Réserve finale','<select onchange="window._fuelSet(\'fuelResType\',this.value)" style="'+IN+';text-align:left"><option value="30"'+(resMin==30?' selected':'')+'>30 min (jour)</option><option value="45"'+(resMin==45?' selected':'')+'>45 min (nuit)</option></select>',null,resFuel);
+  t+=tr('Dégagement',num(altnDist,'min="0" max="500" step="1" onchange="window._fuelSet(\'fuelAltnDist\',this.value)"',56)+' NM <button type="button" onclick="window.autoCalcAltnDist()" class="navlog-btn" style="font-size:.72em;padding:3px 7px">📍 Auto</button>',null,altnFuel,'','#f87171');
+  t+=tr('Supplémentaire',num(extraFuel,'min="0" max="100" step="0.5" onchange="window._fuelSet(\'fuelExtra\',this.value)"',56)+' L',null,extraFuel);
+  t+='<tr class="fc-block"><td>BLOCK FUEL <div style="font-size:.78em;color:#4caf50;font-weight:600">≡ '+formatTime(enduranceMin/60)+' d’autonomie</div></td><td></td><td class="fc-num" title="Temps bloc : roulages + vol + tours de piste">'+formatTime(totalBlockTimeMin/60)+'</td><td class="fc-num">'+totalBlockFuel.toFixed(1)+' L</td></tr>';
+  t+='</tbody></table></div><p style="font-size:.75em;color:var(--text-secondary);margin:6px 2px 0">Temps bloc '+formatTime(totalBlockTimeMin/60)+' = roulages + vol (circuits compris) + tours de piste — c’est lui qui sert au coût de location. La marge, la réserve et le dégagement sont du carburant emporté en plus : ils ne sont comptés ni dans le temps ni dans le coût.</p>';
+  var col1=t, col2='';
+  elSum.style.display='block';
   elSum.innerHTML=col1+col2;
 
   /* ===== Rental cost ===== */
@@ -3478,8 +3461,7 @@ function renderFPL(){
   var _fplStops=_fuelStopCount(_fplSegs);
   var fplBf = computeFullFuelBreakdown(tripFuelL);
   var fuelBurnVal = fplBf.fuelBurn;
-  /* + roulage des escales, comme le BLOCK FUEL de l'onglet Carbu */
-  var blockFuel = fplBf.total + _fplStops*(((parseFloat(_v('fuelTaxiD'))||0)+(parseFloat(_v('fuelTaxiA'))||0))/60)*fuelBurnVal;
+  var blockFuel = fplBf.total;  /* roulages des escales inclus (bf.taxiFuel) */
   if(blockFuel<1) blockFuel=36; /* fallback: Cessna 150 usable fuel */
   var endMin = Math.round((blockFuel/fuelBurnVal)*60);
   var endStr = String(Math.floor(endMin/60)).padStart(2,'0')+String(endMin%60).padStart(2,'0');
@@ -7062,6 +7044,42 @@ function _setCircArrMin(i,v){
 }
 window._setCircArrMin=_setCircArrMin;
 function _legFuelCounts(i,segs){ return _legStageIdx(i,segs)>=0; }
+/* Roulage départ/arrivée PAR étape (min) : chaque étape a son propre aérodrome, donc son propre
+   roulage. L'étape 1 suit les champs « Taxi départ/arrivée » ; les autres peuvent être réglées une
+   à une dans le tableau Consommation de l'onglet Carbu (sinon mêmes valeurs que l'étape 1). */
+function _taxiStageList(n){
+  var dD=parseFloat(_v('fuelTaxiD'))||0, dA=parseFloat(_v('fuelTaxiA'))||0;
+  var o=window._taxiStage;
+  if(!Array.isArray(o)){ try{ o=JSON.parse(localStorage.getItem('fuelTaxiStage')||'null'); }catch(e){ o=null; } }
+  var out=[];
+  for(var k=0;k<n;k++){
+    var x=(k>0&&o&&o[k])||{};
+    out.push({d:(x.d!=null&&x.d!==''&&!isNaN(x.d))?+x.d:dD, a:(x.a!=null&&x.a!==''&&!isNaN(x.a))?+x.a:dA});
+  }
+  return out;
+}
+function _setTaxiStage(k,which,v){
+  v=Math.max(0,parseFloat(String(v).replace(',','.'))||0);
+  if(k===0){
+    var el=document.getElementById(which==='d'?'fuelTaxiD':'fuelTaxiA');
+    if(el){ el.value=v; el.dispatchEvent(new Event('change')); }
+  } else {
+    var o=window._taxiStage;
+    if(!Array.isArray(o)){ try{ o=JSON.parse(localStorage.getItem('fuelTaxiStage')||'null')||[]; }catch(e){ o=[]; } }
+    o[k]=o[k]||{}; o[k][which]=v; window._taxiStage=o;
+    try{ localStorage.setItem('fuelTaxiStage',JSON.stringify(o)); }catch(e){}
+  }
+  renderFuelLog();
+}
+window._setTaxiStage=_setTaxiStage;
+/* Réglage du devis depuis le tableau : écrit dans le champ d'origine (gardé, masqué) et déclenche
+   ses mêmes synchronisations (conso -> navlog, taxi -> config, réserve -> jour/nuit). */
+function _fuelSet(id,v){
+  var el=document.getElementById(id); if(!el) return;
+  el.value=v; el.dispatchEvent(new Event('change'));
+  renderFuelLog();
+}
+window._fuelSet=_fuelSet;
 
 /* ===== SOURCE UNIQUE DU CALCUL DE CARBURANT ===== */
 /* Utilisée par le Sommaire, l'onglet Carbu et le Plan de Vol OACI pour garantir
@@ -7069,9 +7087,10 @@ function _legFuelCounts(i,segs){ return _legStageIdx(i,segs)>=0; }
    réserve finale + dégagement + supplémentaire). */
 function computeFullFuelBreakdown(tripFuelL){
   var fuelBurnVal = parseFloat(_v('fuelBurn'))||parseFloat(_v('cfgFuel'))||20;
-  var taxiD = parseFloat(_v('fuelTaxiD'))||0;
-  var taxiA = parseFloat(_v('fuelTaxiA'))||0;
-  var taxiFuel = ((taxiD+taxiA)/60)*fuelBurnVal;
+  var nStages = (typeof waypoints!=='undefined' && waypoints.length>1) ? _fuelStopCount()+1 : 1;
+  var taxiList = _taxiStageList(nStages);
+  var taxiMin = taxiList.reduce(function(a,t){ return a+t.d+t.a; },0);
+  var taxiFuel = (taxiMin/60)*fuelBurnVal;   /* roulages départ + arrivée de chaque étape */
   var contPct = parseFloat(_v('fuelContingency'))||0;
   var contFuel = (tripFuelL||0)*(contPct/100);
   var resMin = parseFloat(_v('fuelResType'))||30;
@@ -7089,7 +7108,8 @@ function computeFullFuelBreakdown(tripFuelL){
     tripFuel:tripFuelL||0, taxiFuel:taxiFuel, contFuel:contFuel, contPct:contPct,
     resFuel:resFuel, resMin:resMin, altnFuel:altnFuel, altnDist:altnDist,
     extraFuel:extraFuel, total:total, fuelBurn:fuelBurnVal,
-    patternList:patternList, patternMin:patternMin, patternFuel:patternFuel
+    patternList:patternList, patternMin:patternMin, patternFuel:patternFuel,
+    taxiList:taxiList, taxiMin:taxiMin
   };
 }
 window.computeFullFuelBreakdown=computeFullFuelBreakdown;
@@ -7109,7 +7129,7 @@ function _computeCarbuBlockFuelL(){
     var wp=waypoints[i];
     if(wp.dist>0 && wp._leg && _legFuelCounts(i,segs)) tripFuel+=(wp._leg.fuel||0);
   }
-  var etapeFuel=_fuelStopCount(segs)*((taxiD+taxiA)/60)*fuelBurnVal;
+  var etapeFuel=0; /* roulages des escales déjà dans bf.taxiFuel */
   var bf=computeFullFuelBreakdown(tripFuel);
   return bf.total+etapeFuel;
 }
@@ -7205,6 +7225,18 @@ function calcLeg(dist,routeTrue,cfg,legWind,legAlt){
    vides ou de la forme « WP 12 » sont touchés : un nom choisi (aérodrome, VRP, village…) reste.
    Départ d'une nouvelle étape posé au même endroit que l'arrivée de la précédente (< 0,5 NM) :
    même nom, c'est le même lieu. */
+/* Aérodrome connu (avec pistes) le plus proche d'une position, à moins de maxNm NM, ou null. */
+function _nearestAerodrome(lat,lon,maxNm){
+  if(lat==null||lon==null) return null;
+  var best=null,bd=maxNm||1.5;
+  Object.keys(RUNWAY_DB).forEach(function(c){
+    var a=AIRPORT_COORDS[c]; if(!a) return;
+    var d=haversine(lat,lon,a.lat,a.lon);
+    if(d<=bd){ bd=d; best=c; }
+  });
+  return best;
+}
+window._nearestAerodrome=_nearestAerodrome;
 function _renumberAutoWaypointNames(){
   var AUTO=/^WP\s*\d*$/i;
   for(var i=0;i<waypoints.length;i++){
@@ -7214,6 +7246,12 @@ function _renumberAutoWaypointNames(){
     if(nm && !AUTO.test(nm)) continue;
     var name='WP'+(i+1);
     var prev=waypoints[i-1];
+    /* Départ, arrivée ou escale posé sur un aérodrome : il prend son code OACI (sinon l'onglet Perf
+       ne trouvait ni pistes ni altitude pour « WP7 »). */
+    var isEnd=(i===0 || i===waypoints.length-1 || w.isEtape || (prev && !_sharesStage(prev,w)));
+    var ad=isEnd?_nearestAerodrome(w.lat,w.lon,1):null;
+    if(ad) name=ad;
+    else
     if(prev && prev.name && prev.lat!=null && prev.lon!=null && !_sharesStage(prev,w) &&
        haversine(prev.lat,prev.lon,w.lat,w.lon)<0.5) name=prev.name;
     if(w.name!==name){
@@ -7952,8 +7990,7 @@ function _computeFuelTimeSummary(){
   var fuelBurn=parseFloat(_v('fuelBurn'))||20;
   var taxiD=parseFloat(_v('fuelTaxiD'))||0;
   var taxiA=parseFloat(_v('fuelTaxiA'))||0;
-  var etapeCount=_fuelStopCount(segsFT);
-  var etapeFuel=etapeCount*((taxiD+taxiA)/60)*fuelBurn, etapeTimeMin=etapeCount*(taxiD+taxiA);
+  var etapeCount=0, etapeFuel=0, etapeTimeMin=0; /* roulages des escales déjà dans bf.taxiFuel / bf.taxiMin */
   var bf=computeFullFuelBreakdown(tripFuel);
   return {
     totalDist:totalDist, tripFuel:tripFuel, tripTimeMin:tripTimeMin,
@@ -7962,7 +7999,9 @@ function _computeFuelTimeSummary(){
     circArrFuel:circArrFuel, circArrTimeMin:circArrTimeMin,
     stageTotals:stageTotals,
     etapeFuel:etapeFuel, etapeTimeMin:etapeTimeMin, etapeCount:etapeCount,
-    bf:bf, totalBlockFuel:bf.total+etapeFuel, totalBlockTimeMin:tripTimeMin+taxiD+taxiA+etapeTimeMin+bf.patternMin,
+    /* Temps BLOC = roulages + vol (circuits compris) + tours de piste. Réserve et dégagement
+       sont du carburant emporté, pas du temps volé : jamais comptés ici (ni dans le coût). */
+    bf:bf, totalBlockFuel:bf.total, totalBlockTimeMin:tripTimeMin+bf.taxiMin+bf.patternMin,
     taxiD:taxiD, taxiA:taxiA, fuelBurn:fuelBurn
   };
 }
@@ -8432,7 +8471,11 @@ function printNavlogRecapTable(blank){
        s'adapte au papier réellement utilisé grâce à des tailles NATURELLES (pas étirées) —
        voir le choix de police/padding ci-dessus, calibré sur le nombre de lignes pour tenir sur
        une seule page quel que soit le format. */
-    '@page{margin:10mm}'+
+    /* A4 imposé (Chrome l'adapte ensuite au papier réel) + mise à l'échelle automatique de chaque
+       étape trop haute (script ci-dessous) : la feuille d'une étape, profil d'altitude compris,
+       tient TOUJOURS sur une seule page — le profil passait sinon seul sur la page suivante. */
+    '@page{size:A4 portrait;margin:10mm}'+
+    '@media screen{body{width:190mm;margin:0 auto!important}}'+
     /* Beaucoup de navigateurs (Chrome mobile/Android inclus) n'impriment PAS les couleurs de
        fond par défaut ("économie d'encre") sauf demande explicite — sans ça, le surlignage
        jaune du cap magnétique (et le fond sombre de l'en-tête, le total requis en jaune, etc.)
@@ -8485,6 +8528,9 @@ function printNavlogRecapTable(blank){
     '.sheet{page-break-inside:avoid}'+
     '</style></head><body>'+
     sheetsHtml+
+    '<script>(function(){try{var m=document.createElement("div");m.style.cssText="height:100mm;position:absolute;visibility:hidden";document.body.appendChild(m);'+
+      'var px=m.offsetHeight/100;m.remove();var lim=(297-20-14)*px;'+
+      'document.querySelectorAll(".sheet").forEach(function(s){var h=s.getBoundingClientRect().height;if(h>lim)s.style.zoom=(Math.floor(lim/h*1000)/1000);});}catch(e){}})();</'+'script>'+
     '<script>setTimeout(function(){try{window.focus();window.print();}catch(e){}},150);</'+'script>'+
     '</body></html>');
   w.document.close();
@@ -16072,7 +16118,8 @@ function _renderPerfAllMoves(){
     +'<div class="pm-wrap"><table class="pm-table"><tr><th>Étape</th><th>Terrain · METAR</th><th>Piste</th><th>Vent</th><th>Distance requise</th></tr>';
   mv.forEach(function(m){
     var wp=waypoints[m.idx]||{};
-    var icao=(wp.name||'').trim().toUpperCase();
+    var icao=(wp.name||'').trim().toUpperCase(), alias='';
+    if(!RUNWAY_DB[icao]){ var near=_nearestAerodrome(wp.lat,wp.lon,1.5); if(near){ alias=icao; icao=near; } }
     var key=m.kind+':'+m.idx+':'+icao;
     var rwys=RUNWAY_DB[icao]||[];
     var wx=_perfWxFor(icao,wp);
@@ -16097,7 +16144,7 @@ function _renderPerfAllMoves(){
     var ei=-1; ends.forEach(function(e,i){ if(e.d===sel) ei=i; }); if(ei<0) ei=autoIdx;
     var e=ends[ei];
     var stageTxt=(m.n>1?'Étape '+m.stage+'<br>':'')+(m.kind==='TO'?'🛫 Décollage':'🛬 Atterrissage');
-    var name=AIRPORT_NAMES[icao]||'';
+    var name=(AIRPORT_NAMES[icao]||'')+(alias?' (point '+alias+')':'');
     var metarHtml=wx?('<div class="pm-metar">'+(wx.dist?'METAR de '+escHTML(wx.icao)+' (à '+wx.dist+' NM) · ':'')+escHTML(wx.src)+' : '+escHTML(wx.metar)+'</div>')
       :'<div class="pm-metar">Pas de METAR — lance la récupération (onglet Météo) ou saisis le vent dans la section détaillée.</div>';
     var rwyHtml;
@@ -17449,6 +17496,25 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   function go(){ var lg=document.getElementById('awLegend'); if(lg) lg.innerHTML=legend(); window.loadAerowebMetars(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<script>
+/* Carte « maille fine » d'AéroWeb (modèle AROME : nuages, pluie, vent, visibilité, plafond…).
+   Ses images viennent d'un serveur qui exige la connexion AéroWeb : dans une fenêtre intégrée
+   (iframe) la connexion n'est pas transmise (cookies tiers bloqués), d'où « non autorisé » à
+   chaque heure. Elle s'ouvre donc comme une vraie page : dans l'appli Android, en plein écran
+   DANS l'appli (navigation autorisée vers aviation.meteo.fr, voir capacitor.config.json ; retour
+   avec le bouton ← du téléphone) ; sur ordinateur, dans un nouvel onglet. */
+(function(){
+  var MAP='https://aviation.meteo.fr/Aeroweb_maille_fine/index.html?origin=fr';
+  var DOC='https://aviation.meteo.fr/documentation/doc_maille_fine.pdf#gafor_visi_metropole';
+  function native(){ return typeof window.appIsNative==='function' && window.appIsNative(); }
+  window.openAeroWebMap=function(){
+    if(native()){ window.location.href=MAP; return; }
+    window.open(MAP,'_blank','noopener');
+  };
+  /* PDF : la WebView Android n'affiche pas les PDF -> lecteur du téléphone (navigateur externe) */
+  window.openAeroWebDoc=function(){ window.open(DOC,'_blank','noopener'); };
 })();
 </script>
 </body>
