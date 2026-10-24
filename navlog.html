@@ -469,7 +469,7 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
    traits. */
 .nl-recap-table tbody td{border-top:none;border-bottom:none}
 .nl-recap-table thead th{background:rgba(102,126,234,.14);color:var(--text-secondary);font-weight:700;font-size:.74em;text-transform:uppercase;letter-spacing:.02em}
-.nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;overflow-wrap:normal;word-break:keep-all;min-width:82px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 4px}
+.nl-recap-table td.nl-recap-name{text-align:left;white-space:normal;overflow-wrap:normal;word-break:keep-all;min-width:82px;vertical-align:middle}
 .nl-recap-table tbody tr.nl-recap-point-row:hover td{background:rgba(102,126,234,.1)}
 .nl-recap-table tr.nl-recap-point-row.nl-recap-etape td{background:rgba(255,167,38,.1)}
 .nl-recap-table td.nl-recap-name,.nl-recap-table th:first-child{position:sticky;left:0;z-index:2;background:var(--bg-container)}
@@ -828,6 +828,61 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .freq-pop button.fp-f b{font-family:monospace;font-size:1.05em;white-space:nowrap}
 .freq-pop button.fp-f small{display:block;color:var(--text-secondary);font-size:.85em}
 .freq-pop .fp-foot{font-size:.75em;color:var(--text-secondary);margin-top:8px}
+/* ===== Téléphone : présentation compacte des onglets du Navlog =====
+   style.css (pensé pour le quiz) force sur mobile input/select/label en BLOC pleine largeur et les
+   boutons à 100 % : dans les tableaux du Navlog, chaque case renvoyait son unité (min, L, kg) à la
+   ligne, gonflait chaque ligne et poussait les colonnes de droite hors de l'écran. */
+@media(max-width:600px){
+  table input,table select,table label,table button{display:inline-block;width:auto;margin:0;vertical-align:middle}
+  input[type=checkbox],input[type=radio]{display:inline-block;width:auto;margin:0 4px 0 0;vertical-align:middle;flex:0 0 auto}
+  label{box-sizing:border-box}
+  input,select,textarea{box-sizing:border-box;max-width:100%}
+  .nl-card-title{flex-wrap:wrap;row-gap:2px}
+  .meteo-action-btn{white-space:normal;min-width:0}
+  .meteo-refresh-bar{padding:6px 10px 12px;box-sizing:border-box;max-width:100%}
+  .meteo-refresh-bar .meteo-action-btn{flex:1 1 40%;width:auto;margin:0}
+  #lastFetchInfo label{display:inline;width:auto;margin:0}
+  #lastFetchInfo select{display:inline-block;width:auto;margin:0}
+  /* petits boutons d'action (Imprimer, Tout afficher, Auto-remplir…) : à leur taille, côte à côte */
+  .nl-card .navlog-btn{width:auto;margin:3px 4px 3px 0}
+  /* Tableau Navlog : colonne des points plus étroite, fanion compact */
+  .nl-recap-table{min-width:0;width:max-content;font-size:.76em}
+  .nl-recap-table td.nl-recap-name{min-width:0;max-width:150px;padding-left:4px;padding-right:2px}
+  .nl-recap-wp-flag{gap:4px;padding:4px 16px 4px 6px;font-size:.95em}
+  .nl-recap-name-input{max-width:76px;min-width:28px;padding:2px}
+  .nl-recap-table td.nl-recap-leg-arrow{padding-left:8px}
+  .nl-recap-alt-input{width:50px}
+  .nl-recap-table td.nl-recap-comment{min-width:120px}
+  .nl-recap-comment-input{min-width:0;width:100px}
+  .nl-recap-table td.nl-recap-type{display:table-cell}
+  .nl-recap-table td.nl-recap-type .nl-recap-type-btn{margin:1px 0}
+  /* Devis carburant : 4 colonnes qui tiennent dans l'écran */
+  .fc-table{font-size:.8em}
+  .fc-table th{padding:6px 5px;font-size:.68em}
+  .fc-table td{padding:5px 5px;line-height:1.25}
+  .fc-table td:nth-child(2){white-space:normal;max-width:118px}
+  .fc-table td.fc-num{padding-left:3px}
+  .fuel-leg-row{gap:8px;font-size:.92em}
+  .fuel-leg-row>span:last-child{white-space:nowrap}
+  .fuel-leg-row>span:last-child small{display:none} /* « @ 19.3 L/h » : même conso partout, déjà en tête du tableau */
+  /* Étiquettes Départ/Arrivée du fanion : le n° 1 et la couleur verte suffisent sur téléphone */
+  .nl-recap-wp-flag .nl-recap-role-tag{display:none}
+  .fc-table td input[type=number]{width:44px!important;padding:2px 3px!important}
+  .fc-table td select{max-width:84px;font-size:.95em;padding:2px}
+  .fc-table td .navlog-btn{padding:2px 6px;font-size:.85em}
+  /* Masse & centrage : tout le tableau dans l'écran */
+  .mb-table{font-size:.8em}
+  .mb-table th{padding:5px 4px}
+  .mb-table td{padding:5px 4px;line-height:1.25}
+  .mb-table td:first-child{white-space:normal}
+  .mb-table input[type="number"]{width:56px}
+  .mb-table td small,.mb-table td .mb-hint{font-size:.78em;line-height:1.25}
+  /* Dossiers : rien ne dépasse à droite (longs libellés de boutons, code de synchronisation) */
+  #tab-dossiers .navlog-btn,#tab-dossiers button{white-space:normal;max-width:100%;height:auto}
+  #tab-dossiers input{max-width:100%;min-width:0;box-sizing:border-box}
+  #tab-dossiers .nl-card{overflow-wrap:anywhere}
+}
+
 /* Print stylesheet */
 @media print{
   body{background:#fff!important;color:#000!important;margin-left:0!important;padding-bottom:0!important}

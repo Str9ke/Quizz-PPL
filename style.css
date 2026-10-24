@@ -2780,3 +2780,12 @@ body.sidebar-open .app-sidebar {
 .acc-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: inherit; font-weight: 600; cursor: pointer; width: auto !important; margin: 0; }
 .acc-btn.primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-color: transparent; }
 .acc-msg { font-size: .85em; margin-top: 6px; }
+
+/* Téléphone : le bouton ☰ et le bouton de thème flottent au-dessus du contenu ; ils s'effacent quand
+   on fait défiler vers le bas et reviennent dès qu'on remonte (js/sidebar.js, classe chrome-hide). */
+.sidebar-toggle-btn,.theme-toggle,#themeToggle{transition:opacity .2s,transform .2s}
+@media (max-width: 879px) {
+  body.chrome-hide .sidebar-toggle-btn,
+  body.chrome-hide .theme-toggle,
+  body.chrome-hide #themeToggle { opacity: 0; pointer-events: none; transform: translateY(-14px); }
+}

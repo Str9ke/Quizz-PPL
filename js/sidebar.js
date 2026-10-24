@@ -216,6 +216,18 @@
       document.body.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
     });
     overlay.addEventListener('click', closeSidebar);
+
+    /* Téléphone : ☰ (et le bouton de thème) cachent le début des lignes quand on lit un long
+       tableau. Ils s'effacent pendant qu'on descend et reviennent dès qu'on remonte ou en haut
+       de page. */
+    var lastY = window.scrollY || 0;
+    window.addEventListener('scroll', function () {
+      var y = window.scrollY || 0;
+      if (desk.matches || document.body.classList.contains('sidebar-open')) { document.body.classList.remove('chrome-hide'); lastY = y; return; }
+      if (y < 60 || y < lastY - 8) document.body.classList.remove('chrome-hide');
+      else if (y > lastY + 8) document.body.classList.add('chrome-hide');
+      if (Math.abs(y - lastY) > 8) lastY = y;
+    }, { passive: true });
     nav.querySelector('.sidebar-close-btn').addEventListener('click', closeSidebar);
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
