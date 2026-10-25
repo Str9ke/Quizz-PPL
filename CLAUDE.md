@@ -70,7 +70,8 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - **Mode « Infos au clic »** de la carte de route (`_mapIdentify`) : espaces aériens au-dessus du point (+ fréquences AIP), MEF,
   aérodromes (VAC), points VFR, obstacles, NOTAM (France + Belgique) ; la route n'est pas modifiée et ses points laissent passer le
   clic. Mode Info par défaut ; bouton Info (vert) / Nav (rose) ; chaque ligne survolée s'allume sur la carte (`_miHighlight`), un
-  clic l'épingle et montre le détail ; un clic ailleurs ferme seulement la fenêtre. Bouton « Masquer la route » (`_routeHidden`).
+  clic ouvre le détail. Panneau ancré à gauche (PC) ou en tiroir en bas (téléphone) : liste -> détail (zone cadrée dans la partie
+  libre, ‹ › et flèches du clavier pour la suivante, « Liste » ramène la vue), un clic sur la carte ferme seulement le panneau. Bouton « Masquer la route » (`_routeHidden`).
 - **Dégagements par étape** (`renderAltnPanel`, sous le Navlog) : aérodromes de `AERODROMES_DATA` à moins de 25 NM du tracé de
   l'étape, distance au tracé + distance/Rm depuis l'arrivée ; D1/D2 gardés sur le point d'arrivée (`wp._altn`) ; ceux de la dernière
   étape remplissent le FPL (`fpl_altn1/2`) et la distance « Dégagement » du devis ; ligne « Dégagements » sur la feuille imprimée.
@@ -88,7 +89,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v243`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v244`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
