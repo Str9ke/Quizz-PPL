@@ -130,12 +130,139 @@
     return lines.join('\n');
   }
 
+  /* ---------------- TAF ---------------- */
+  function period(p) {   // 2518/2624 -> « du 25 à 18 h au 26 à 24 h UTC »
+    var m = /^(\d{2})(\d{2})\/(\d{2})(\d{2})$/.exec(p);
+    return m ? 'du ' + n(m[1]) + ' à ' + m[2] + ' h au ' + n(m[3]) + ' à ' + m[4] + ' h UTC' : p;
+  }
+  function tafFr(raw) {
+    var s = String(raw || '').replace(/\s+/g, ' ').replace(/=\s*$/, '').trim();
+    var toks = s.split(' ');
+    if (toks[0] === 'TAF') toks.shift();
+    var mod = '';
+    while (/^(AMD|COR|CNL)$/.test(toks[0])) { mod += { AMD: ' (amendé)', COR: ' (corrigé)', CNL: ' (annulé)' }[toks.shift()]; }
+    if (!/^[A-Z]{4}$/.test(toks[0] || '')) return null;
+    var icao = toks.shift(), head = 'Prévision TAF ' + icao + mod, m;
+    if ((m = /^(\d{2})(\d{2})(\d{2})Z$/.exec(toks[0] || ''))) { head += ', émise le ' + n(m[1]) + ' à ' + m[2] + ':' + m[3] + ' UTC'; toks.shift(); }
+    if (/^\d{4}\/\d{4}$/.test(toks[0] || '')) head += ', valable ' + period(toks.shift());
+    if (toks[0] === 'NIL') return head + '\nPas de prévision (NIL)';
+    var lines = [head], seg = [], label = 'Situation de base';
+    function flush() {
+      if (!seg.length) return;
+      var sub = [];
+      decodeGroups(seg.filter(function (x) { return !/^TX|^TN/.test(x); }), sub);
+      seg.filter(function (x) { return /^T[XN]M?\d{2}\/\d{4}Z$/.test(x); }).forEach(function (x) {
+        var t = /^T([XN])(M?)(\d{2})\/(\d{2})(\d{2})Z$/.exec(x);
+        sub.push('Température ' + (t[1] === 'X' ? 'maxi ' : 'mini ') + (t[2] ? '-' : '') + n(t[3]) + ' °C le ' + n(t[4]) + ' à ' + t[5] + ' h');
+      });
+      lines.push('▸ ' + label + ' : ' + (sub.join(' ; ') || seg.join(' ')));
+      seg = [];
+    }
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i], pm;
+      if (/^PROB(30|40)$/.test(t) || t === 'TEMPO' || t === 'BECMG') {
+        flush();
+        var lab = '';
+        if ((pm = /^PROB(\d{2})$/.exec(t))) { lab = 'Probabilité ' + pm[1] + ' %'; if (toks[i + 1] === 'TEMPO') { lab += ', temporairement'; i++; } }
+        else lab = t === 'TEMPO' ? 'Temporairement' : 'Devenant';
+        if (/^\d{4}\/\d{4}$/.test(toks[i + 1] || '')) lab += ' ' + period(toks[++i]);
+        label = lab;
+        continue;
+      }
+      if ((pm = /^FM(\d{2})(\d{2})(\d{2})$/.exec(t))) { flush(); label = 'À partir du ' + n(pm[1]) + ' à ' + pm[2] + ':' + pm[3] + ' UTC'; continue; }
+      seg.push(t);
+    }
+    flush();
+    return lines.join('\n');
+  }
+
+  /* ---------------- Textes en langage abrégé OACI (NOTAM, GAMET, SIGMET, AIRMET, MAA…) ----------------
+     Traduction mot à mot des abréviations OACI et des mots anglais courants des NOTAM : le sens
+     reste celui du texte officiel, affiché à côté (un clic revient au texte d'origine). */
+  var PHRASES = [
+    [/\bNOT AVBL\b|\bNOT AVAILABLE\b/g, 'non disponible'], [/\bDUE TO\b/g, 'en raison de'], [/\bOUT OF SERVICE\b/g, 'hors service'],
+    [/\bSFC WIND\b/g, 'Vent de surface'], [/\bSFC VIS\b/g, 'Visibilité de surface'], [/\bSFC WSPD MAX\b/g, 'vent de surface maxi'],
+    [/\bSIG CLD\b/g, 'Nuages significatifs'], [/\bMNM QNH\b/g, 'QNH minimum'], [/\bMT OBSC\b/g, 'Montagnes masquées'],
+    [/\bWIND\/T\b/g, 'Vent / température'], [/\bAD WRNG\b/g, 'Avertissement d’aérodrome'], [/\bWX WRNG\b/g, 'Avertissement météo'],
+    [/\bOR LESS\b/g, 'ou moins'], [/\bOR MORE\b/g, 'ou plus'], [/\bREF TO\b/g, 'voir'], [/\bIN FORCE\b/g, 'en vigueur'],
+    [/\bDAY AND NIGHT\b/g, 'jour et nuit'], [/\bICAO MARKINGS?\b/g, 'balisage OACI'], [/\bTHE\b/g, 'le'],
+    [/\bLINE\b/g, 'ligne'], [/\bFIR\b/g, 'FIR'], [/\bAIRMASS\b/g, 'masse d’air'], [/\bOFFSHORE\b/g, 'au large'],
+    [/\bCOASTAL AREA\b/g, 'zone côtière'], [/\bMOBILE RIDGE\b/g, 'dorsale mobile'], [/\bMARITIME POLAR\b/g, 'polaire maritime']
+  ];
+  var WORDS = {
+    ACFT: 'aéronef', ACT: 'actif', AD: 'aérodrome', ADJ: 'adjacent', ADZ: 'prévenir', AFIS: 'AFIS', AGL: 'sol', ALT: 'altitude',
+    ALTN: 'dégagement', AMDT: 'amendement', AMSL: 'au-dessus de la mer', APCH: 'approche', APN: 'aire de trafic', APP: 'approche',
+    APPROACH: 'approche', APR: 'avril', ARP: 'point de référence aérodrome', ARR: 'arrivée', ATC: 'contrôle', ATZ: 'ATZ', AUG: 'août',
+    AVBL: 'disponible', AVGAS: 'AVGAS', BCST: 'diffusion', BLDG: 'bâtiment', BLW: 'sous', ABV: 'au-dessus de', BRG: 'relèvement',
+    BTN: 'entre', CAT: 'catégorie', CB: 'cumulonimbus', CLD: 'Nuages', CLSD: 'fermé', CNL: 'annulé', COORD: 'coordonnées',
+    CRANE: 'grue', CRANES: 'grues', CTC: 'contacter', CTN: 'attention', DEC: 'décembre', DEG: '°', DEP: 'départ', DLY: 'chaque jour',
+    DIST: 'distance', DUE: 'dû', DUR: 'pendant', E: 'est', EMBD: 'noyés', EQPT: 'équipement', ERECTED: 'érigé', EST: 'estimé',
+    EXC: 'sauf', EXER: 'exercice', FCST: 'prévu', FEB: 'février', FIXED: 'fixe', FLT: 'vol', FLW: 'suivant', FM: 'de', FREQ: 'fréquence',
+    FRI: 'vendredi', FRQ: 'fréquents', FZLVL: 'Isotherme 0 °C', GLD: 'planeurs', GND: 'sol', H24: 'jour et nuit', HEL: 'hélicoptère',
+    HGT: 'hauteur', HJ: 'du lever au coucher du soleil', HN: 'du coucher au lever du soleil', HO: 'selon besoins', HR: 'heures',
+    ICE: 'givrage', INCREASED: 'augmentés', INFO: 'information', INSTALLED: 'installé', INSTL: 'installé', INTSF: 'en intensification',
+    ISOL: 'isolés', JAN: 'janvier', JUL: 'juillet', JUN: 'juin', LGT: 'balisage lumineux', LIGHTED: 'balisé', LOC: 'localement',
+    LVL: 'niveau', MAR: 'mars', MAX: 'maxi', MAY: 'mai', MKD: 'balisé', MIL: 'militaire', MIN: 'minutes', MINIMA: 'minima',
+    MNM: 'minimum', MNT: 'surveiller', MOD: 'modéré(e)', MON: 'lundi', MOV: 'se déplaçant vers le', N: 'nord', NC: 'sans changement',
+    NE: 'nord-est', NIGHT: 'nuit', NIL: 'néant', NML: 'normal', NOV: 'novembre', NW: 'nord-ouest', OBS: 'observé', OBSC: 'masqué',
+    OBST: 'obstacle', OCNL: 'occasionnels', OCT: 'octobre', OPR: 'exploitation', OPS: 'opérations', OTLK: 'Tendance', OVER: 'au-dessus de',
+    PAX: 'passagers', PERM: 'permanent', PJE: 'parachutage', PPR: 'autorisation préalable requise', PROC: 'procédure',
+    PROHIBITED: 'interdit', PSN: 'position', PSYS: 'Situation générale', RAD: 'rayon', RADIUS: 'rayon', RDO: 'radio', REF: 'référence',
+    RMK: 'remarque', RQRD: 'requis', RTE: 'route', RWY: 'piste', S: 'sud', SAT: 'samedi', SE: 'sud-est', SECN: 'Section', SEP: 'septembre',
+    SEV: 'fort(e)', SFC: 'surface', SKED: 'horaire', STNR: 'stationnaire', SUN: 'dimanche', SUP: 'supplément AIP', SW: 'sud-ouest',
+    TEMPO: 'temporaire', THU: 'jeudi', TIL: 'jusqu’à', TO: 'à', TOP: 'sommet', TRA: 'zone réglementée temporaire', TUE: 'mardi',
+    TURB: 'Turbulence', TWR: 'tour', TWY: 'taxiway', U: 'hors service', UFN: 'jusqu’à nouvel avis', UNL: 'illimité', VAL: 'vallées',
+    VIS: 'visibilité', W: 'ouest', WED: 'mercredi', WEF: 'à partir du', WI: 'dans', WIP: 'travaux en cours', WKN: 'en affaiblissement',
+    WRNG: 'avertissement', WS: 'cisaillement', MTW: 'ondes orographiques', ALL: 'tous', AND: 'et', OR: 'ou', FOR: 'pour', OF: 'de',
+    ICAO: 'OACI', AT: 'à', ON: 'sur', IN: 'dans', BY: 'par', WITH: 'avec', FROM: 'depuis', TWO: 'deux', VALID: 'valable', BECMG: 'devenant',
+    HIGH: 'haut', LOW: 'bas', NEW: 'nouveau', WORK: 'travaux', WORKS: 'travaux', MEN: 'personnel', EQUIPMENT: 'équipement',
+    WORKING: 'travaillant', VEHICLE: 'véhicule', MARKINGS: 'marquages', MARKING: 'marquage', LIGHTING: 'balisage lumineux',
+    LIGHTS: 'feux', SERVICE: 'service', CLOSED: 'fermé', AVAILABLE: 'disponible', TAXIWAY: 'taxiway', RUNWAY: 'piste', APRON: 'aire de trafic',
+    REQUIRED: 'requis', FUEL: 'carburant', FUELING: 'avitaillement', LARGE: 'gros', ACTIVITY: 'activité', AREA: 'zone', ZONE: 'zone',
+    TEMPORARY: 'temporaire', RESTRICTED: 'réglementée', DANGER: 'dangereuse', OPERATIONAL: 'opérationnel', HOURS: 'heures',
+    ADVECTION: 'Advection', STABILIZING: 'stabilisante', BUILDING: 'se renforçant', APPROACHING: 'approchant', WEST: 'ouest',
+    EAST: 'est', NORTH: 'nord', SOUTH: 'sud', NORTHERN: 'du nord', SEA: 'mer', AS: 'alors que', IS: 'est', A: 'un', AN: 'un',
+    TO_: 'à', DRONE: 'drone', UAS: 'drone', BALLOON: 'ballon', LASER: 'laser', AIRSHOW: 'meeting aérien', DISPLAY: 'démonstration',
+    BIRD: 'oiseaux', BIRDS: 'oiseaux', MIGRATION: 'migration', AWY: 'route aérienne', CTR: 'CTR', TMA: 'TMA', NON: 'non',
+    STANDARD: 'standard', BARRIERS: 'barrières', SPOT: 'emplacement', LEAD: 'guidage', RETROREFLECTIVE: 'rétroréfléchissant',
+    PROFILE: 'profil', LOCATED: 'situé', FEET: 'pieds', METERS: 'mètres', CENTERLINE: 'axe', FOLLOW: 'suivre', MARSHALLING: 'placement'
+  };
+  var CLOUDS = { CU: 'cumulus', SC: 'stratocumulus', ST: 'stratus', AC: 'altocumulus', AS: 'altostratus', NS: 'nimbostratus', TCU: 'cumulus bourgeonnants' };
+  function textFr(raw) {
+    var t = String(raw || '');
+    if (!/[A-Z]{2,}/.test(t)) return null;
+    PHRASES.forEach(function (p) { t = t.replace(p[0], p[1]); });
+    t = t.replace(/\b(\d{2})(\d{2})(\d{2})\/(\d{2})(\d{2})(\d{2})\b/g, function (_, a, b, c, d, e, f) { return 'du ' + n(a) + ' à ' + b + ':' + c + ' au ' + n(d) + ' à ' + e + ':' + f + ' UTC'; })
+      .replace(/\bFL\s?(\d{3})\b/g, 'FL $1')
+      .replace(/\b(\d{3}|\d{3}-\d{3})\/(\d{2,3}(?:-\d{2,3})?)KT\b/g, '$1° $2 kt')
+      .replace(/\b(\d+)\s?FT\b/g, '$1 ft').replace(/\b(\d+)\s?KT\b/g, '$1 kt').replace(/\b(\d+)\s?KM\b/g, '$1 km')
+      .replace(/\b(\d+)\s?M\b/g, '$1 m').replace(/\b(\d+)\s?NM\b/g, '$1 NM').replace(/\b(\d{3,4})\s?HPA\b/g, '$1 hPa')
+      .replace(/\bPS(\d{2})\b/g, function (_, x) { return '+' + n(x) + ' °C'; }).replace(/\bMS(\d{2})\b/g, function (_, x) { return '-' + n(x) + ' °C'; })
+      .replace(/\b(\d{3})\s?DEG\b/g, '$1°').replace(/\bRWY\s?(\d{2}[LRC]?)\b/g, 'piste $1').replace(/\bTWY\s?([A-Z]\d*)\b/g, 'taxiway $1')
+      .replace(/\bU\/S\b/g, 'hors service').replace(/\+(\d+)\s?km\b/g, 'plus de $1 km');
+    t = t.replace(/\b[A-Z][A-Z]+\b|\b[NSEW]\b/g, function (w) {
+      if (CLOUDS[w]) return CLOUDS[w];
+      if (/^(FEW|SCT|BKN|OVC)$/.test(w)) return { FEW: 'peu', SCT: 'épars', BKN: 'fragmentés', OVC: 'couvert' }[w];
+      var wx = weather(w); if (wx && w.length <= 8 && !WORDS[w]) return wx.toLowerCase();
+      return WORDS[w] !== undefined ? WORDS[w] : w;
+    });
+    return t;
+  }
+
+  /* Choix du traducteur selon le message */
+  function aeroFr(raw) {
+    var s = String(raw || '').trim();
+    if (/^(METAR|SPECI)\b/.test(s) || /^[A-Z]{4} \d{6}Z /.test(s) && !/\d{4}\/\d{4}/.test(s.split(' ').slice(0, 4).join(' '))) return metarFr(s);
+    if (/^TAF\b/.test(s) || /^[A-Z]{4} \d{6}Z \d{4}\/\d{4}/.test(s)) return tafFr(s);
+    return textFr(s);
+  }
+
   /* Bascule un élément entre codé et français ; garde l'original. */
   function toggleEl(el, on) {
     if (el._metarFr === undefined) {
-      var raw = (el.textContent || '').trim();
-      var fr = metarFr(raw);
-      el._metarFr = fr || null;
+      var raw = (el.innerText || el.textContent || '').trim();
+      var fr = aeroFr(raw);
+      el._metarFr = (fr && fr !== raw) ? fr : null;
       el._metarRaw = el.innerHTML;
     }
     if (!el._metarFr) return false;
@@ -143,7 +270,7 @@
     if (want) {
       var esc = el._metarFr.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
       var parts = esc.split('\n');
-      el.innerHTML = '<b>' + parts[0] + '</b><br>' + parts.slice(1).join('<br>');
+      el.innerHTML = /^(Prévision TAF|[A-Z]{4} —)/.test(parts[0]) ? '<b>' + parts[0] + '</b><br>' + parts.slice(1).join('<br>') : parts.join('<br>');
       el.classList.add('metar-fr-on');
     } else {
       el.innerHTML = el._metarRaw;
@@ -152,18 +279,11 @@
     return true;
   }
 
-  /* METAR d'un document : lignes .entry sous un en-tête « METAR » (opmet.html) ou .aw-txt
-     précédées d'une étiquette METAR (liste AéroWeb). */
+  /* Messages traduisibles d'un document : OPMET (METAR, TAF, SIGMET, GAMET, AIRMET), AéroWeb,
+     Pays-Bas, NOTAM (.frn-txt), et tout élément marqué « aero-tr ». */
   function metarEls(doc) {
     var out = [];
-    doc.querySelectorAll('.section').forEach(function (sec) {
-      var h = sec.querySelector('.section-header');
-      if (h && /^\W*METAR/i.test(h.textContent.trim())) sec.querySelectorAll('.entry').forEach(function (e) { out.push(e); });
-    });
-    doc.querySelectorAll('.aw-txt').forEach(function (e) {
-      var lbl = e.previousElementSibling;
-      if (lbl && /METAR|SPECI/i.test(lbl.textContent) || /^(METAR|SPECI) /.test(e.textContent.trim())) out.push(e);
-    });
+    doc.querySelectorAll('.section .entry:not(.entry-notprov), .gamet-block, .aw-txt, .frn-txt, .aero-tr').forEach(function (e) { out.push(e); });
     return out;
   }
 
@@ -171,21 +291,28 @@
     if (doc._metarFrWired) return;
     doc._metarFrWired = true;
     var st = doc.createElement('style');
-    st.textContent = '.metar-fr-on{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;line-height:1.5;white-space:normal}'
+    st.textContent = '.metar-fr-on{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;line-height:1.5;white-space:normal!important}'
       + '.metar-fr-click{cursor:pointer}.metar-fr-click:hover{outline:1px dashed rgba(102,126,234,.6);outline-offset:2px}';
     (doc.head || doc.body).appendChild(st);
     doc.addEventListener('click', function (ev) {
       var el = ev.target.closest && ev.target.closest('.metar-fr-click');
-      if (el && !ev.target.closest('a,button')) toggleEl(el);
-    });
+      if (el && !ev.target.closest('a,button,summary')) { ev.stopPropagation(); toggleEl(el); }
+    }, true);
   }
 
   window.metarFr = metarFr;
+  window.tafFr = tafFr;
+  window.aeroTextFr = textFr;
+  window.aeroFr = aeroFr;
   window.metarFrToggle = function (doc, on) {
     if (!doc) return 0;
     wire(doc);
     var k = 0;
-    metarEls(doc).forEach(function (e) { e.classList.add('metar-fr-click'); if (on !== null && toggleEl(e, on)) k++; });
+    metarEls(doc).forEach(function (e) {
+      e.classList.add('metar-fr-click');
+      if (!e.title) e.title = 'Cliquer pour traduire en français / revenir au texte codé';
+      if (on !== null && on !== undefined && toggleEl(e, on)) k++;
+    });
     return k;
   };
 })();

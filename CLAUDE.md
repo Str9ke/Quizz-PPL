@@ -91,6 +91,14 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   2.12–2.13, 2.17–2.18, 2.20–2.23 + site de l'exploitant) ; chargées à la demande dans le panneau Infos ; clubs/sites OpenStreetMap
   cherchés par la page (Overpass, 3 km, cache 30 j `osmClubs_v1`). Panneau Infos : « VOR reçus ici » (ligne de vue radio, portée
   publiée, radial magnétique). Menu « Calques » : fonds OSM / Google plan / Google satellite / relief (`_setMapBase`).
+- **Traduction** (`js/metar-fr.js`, `aeroFr`) : METAR, TAF (`tafFr`), textes abrégés OACI (`textFr` : NOTAM, GAMET, SIGMET, AIRMET, MAA)
+  ; clic sur un message = bascule ; s'applique à l'OPMET (iframe), AéroWeb, Pays-Bas, NOTAM (`.frn-txt`, iframe skeyes), `.aero-tr`.
+- **METAR les plus récents partout** : `_metarPool` (`_rebuildMetarPool`, `_loadMetarSources` : OPMET skeyes, AéroWeb, KNMI, Internet ;
+  heure d'observation la plus récente) -> Perf (`_perfWxFor`) et `wxCache` (`_syncWxCacheFromPool`) ; `_latestTaf`.
+- **NOTAM de la route** (`_routeNotams`, `_routeSamples`) : boutons carte « ⚠️ NOTAM », « 🌤️ METAR / TAF », « 🗼 Obstacles »
+  (panneau latéral `_miOpenList`) ; onglet Altitudes `renderAltitudesNotams` (survol = bande sur le graphique) ; « 📍 Voir où » des
+  NOTAM = fenêtre carte `_showNotamOnMap` (retour = historique). Popups de la carte : clic arrêté (`popupopen`), boutons inline via
+  `window._rmClosePopup` (routeMap n'est pas global !). Tableaux legs (`_toggleRecapTable`) et dégagements (`_toggleAltn`) repliables.
 - **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
   localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
   leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
@@ -104,7 +112,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v247`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v248`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

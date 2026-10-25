@@ -178,7 +178,7 @@ def _spaced(t):
 
 
 def fetch_opmet(stations=None, out_path=os.path.join(ROOT, "opmet_nl.json")):
-    """METAR / TAF officiels des Pays-Bas (KNMI, diffusés par le réseau OPMET aéronautique) via
+    """METAR / TAF officiels des Pays-Bas (+ SIGMET/AIRMET/GAMET de FIR joints par le SIA) (KNMI, diffusés par le réseau OPMET aéronautique) via
     SOFIA-Briefing (SIA) -> opmet_nl.json. Les aérodromes sans observation sont ignorés."""
     t0 = time.time()
     if stations is None:
@@ -188,7 +188,7 @@ def fetch_opmet(stations=None, out_path=os.path.join(ROOT, "opmet_nl.json")):
             stations = []
     s = _session()
     s.headers["Accept"] = "application/json"
-    out = []
+    out, other, seen = [], [], set()
     for i in range(0, len(stations), 25):
         try:
             r = s.post(BASE + "/sofia", data={":operation": "postOpmet", "aerodromes[]": stations[i:i + 25], "isFromSofia": "true"}, timeout=90)
@@ -202,10 +202,19 @@ def fetch_opmet(stations=None, out_path=os.path.join(ROOT, "opmet_nl.json")):
             taf = [_spaced(o.get("text")) for o in ops if (o.get("type") or "").upper().startswith("TAF")]
             if met or taf:
                 out.append({"icao": a.get("icao"), "name": a.get("name"), "metar": met, "taf": taf})
+            # messages de FIR joints par le SIA (SIGMET, AIRMET, GAMET…) : une seule fois chacun
+            for o in ops:
+                typ = (o.get("type") or "").upper()
+                if typ in ("METAR", "SPECI") or typ.startswith("TAF"):
+                    continue
+                txt = (o.get("text") or "").strip()
+                if txt and txt[:80] not in seen:
+                    seen.add(txt[:80])
+                    other.append({"type": typ, "text": txt})
         time.sleep(1)
     res = {"generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "source": "SIA — SOFIA-Briefing (Licence Ouverte 2.0) ; observations KNMI (réseau OPMET aéronautique)",
-           "stations": out}
+           "stations": out, "fir": other}
     if not out:
         raise RuntimeError("aucun METAR néerlandais reçu")
     tmp = out_path + ".tmp"
