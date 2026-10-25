@@ -4,9 +4,9 @@
   libre, même commerciale, avec attribution « open flightmaps association »).
 - Obstacles France : liste officielle du SIA (eAIP ENR 5.4, fichier ObstaclesDataZone1MFRANCE_*.xlsx,
   mise à jour à chaque cycle AIRAC), limitée à la zone de vol (nord de la France).
-- Obstacles Belgique : eAIP skeyes ENR 5.4 (éoliennes à balisage militaire + fichier
-  « additional info ») ; la base complète de l'IGN belge (eTOD) n'a pas de lien direct.
-  OpenAIP (obstacles) en complément si l'API répond (elle est souvent saturée).
+- Obstacles Belgique : base eTOD de l'IGN belge (NGI, CC BY 4.0, AIXM 5.1 : bâtiments, éoliennes,
+  pylônes, lignes électriques… de 60 m et plus, altitude du sommet), + fichier skeyes « additional
+  info » (obstacles signalés, pas encore vérifiés par l'IGN).
 - Cartes VAC belges : liens vers les PDF officiels de l'eAIP skeyes (AD 2), par aérodrome.
   (Les VAC françaises suivent une adresse fixe du SIA, calculée par la page.)
 - Cycle open flightmaps publié (pour les tuiles de la carte VFR).
@@ -179,6 +179,48 @@ def obstacles_be(get):
     return out
 
 
+ETOD = ("https://ac.ngi.be/remoteclient-open/ngi-standard-open/Vectordata/eTOD/"
+        "94bc04de-a424-11eb-a0b2-24418cae2e72_Aixm-5.1_4326.zip")
+ETOD_T = {"WINDMILL": "Éolienne", "POLE": "Pylône", "TRANSMISSION_LINE": "Ligne électrique", "STACK": "Cheminée",
+          "BUILDING": "Bâtiment", "ANTENNA": "Antenne", "SPIRE": "Flèche (clocher)", "CRANE": "Grue",
+          "NATURAL_HIGHPOINT": "Point haut naturel", "BRIDGE": "Pont", "TOWER": "Tour",
+          "COOLING_TOWER": "Tour de refroidissement", "TANK": "Réservoir"}
+
+
+def obstacles_be_etod(s):
+    r = s.get(ETOD, timeout=180)
+    r.raise_for_status()
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    name = next(n for n in z.namelist() if n.lower().endswith(".xml") and "_delta_" not in n)
+    t = z.read(name).decode("utf-8", "replace")
+    out = []
+    for v in re.findall(r"<aixm:VerticalStructure .*?</aixm:VerticalStructure>", t, re.S):
+        typ = (re.search(r"<aixm:type>([^<]+)", v) or [None, ""])[1]
+        h = [float(x) for x in re.findall(r'<aixm:verticalExtent uom="M">([\d.]+)', v)]
+        el = [float(x) for x in re.findall(r'<aixm:elevation uom="M">([\d.]+)', v)]
+        lit = "<aixm:lighted>YES" in v
+        if "<gml:posList" in v:
+            pts = []
+            for pl in re.findall(r"<gml:posList[^>]*>([^<]+)</gml:posList>", v):
+                nums = [float(x) for x in pl.split()]
+                pts += [[round(nums[i], 5), round(nums[i + 1], 5)] for i in range(0, len(nums) - 2, 3)]
+            if len(pts) < 2:
+                continue
+            lat, lon = pts[0]
+        else:
+            m = re.search(r"<gml:pos[^>]*>([-\d.]+)\s+([-\d.]+)", v)
+            if not m:
+                continue
+            lat, lon, pts = float(m[1]), float(m[2]), None
+        o = {"id": "", "t": ETOD_T.get(typ, typ.title() or "Obstacle"), "nb": 1, "lat": round(lat, 5), "lon": round(lon, 5),
+             "alt": round(max(el) * 3.28084) if el else None, "h": round(max(h) * 3.28084) if h else None,
+             "lit": 1 if lit else 0, "src": "IGN belge (eTOD)"}
+        if pts:
+            o["line"] = pts
+        out.append(o)
+    return out
+
+
 def obstacles_openaip(s):
     """Complément best-effort (Belgique) : l'API OpenAIP est souvent saturée -> on n'insiste pas."""
     key = os.environ.get("OPENAIP_API_KEY")
@@ -271,7 +313,7 @@ def main():
                 return r.content
             r.encoding = "utf-8"
             return r.text
-        keep("obs_be", lambda: obstacles_be(get) + obstacles_openaip(s))
+        keep("obs_be", lambda: obstacles_be_etod(s) + [o for o in obstacles_be(get) if o.get("rmk") == "non vérifié par l'IGN"])
         keep("vac_be", lambda: vac_be(get))
     except Exception as e:
         print("session skeyes impossible :", e)
@@ -282,7 +324,7 @@ def main():
     res["sources"] = {
         "vrp": "open flightmaps (OFMA General Users' License) — cycle " + str(res.get("ofm_airac")),
         "obs_fr": "SIA, eAIP ENR 5.4 — " + fr_src.get("f", (old.get("sources") or {}).get("obs_fr", "")),
-        "obs_be": "skeyes eAIP ENR 5.4 (+ OpenAIP)",
+        "obs_be": "IGN belge, eTOD (CC BY 4.0) + skeyes eAIP ENR 5.4 (non vérifiés)",
         "vac_be": "skeyes eAIP AD 2",
     }
     tmp = OUT + ".tmp"

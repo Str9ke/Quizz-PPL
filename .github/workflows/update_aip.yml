@@ -31,6 +31,7 @@ jobs:
             /openaip_data.json
             /aip_freqs.json
             /vfr_data.json
+            /mef.json
             /tools/
 
       # Même environnement (Python + Chromium pour le pare-feu de skeyes) que update_notams.yml
@@ -63,6 +64,10 @@ jobs:
           OPENAIP_API_KEY: ${{ secrets.OPENAIP_API_KEY }}
         run: ~/venv/bin/python -u tools/fetch_vfrdata.py || echo "::warning::Données VFR non mises à jour"
 
+      # MEF calculées par case de 30' (relief SRTM + obstacles de vfr_data.json) -> mef.json
+      - name: Compute MEF
+        run: ~/venv/bin/python -u tools/make_mef.py || echo "::warning::MEF non recalculées"
+
       - name: Publish (commit + push)
         id: push
         timeout-minutes: 15
@@ -70,7 +75,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           before=$(git rev-parse HEAD)
-          bash tools/git_publish.sh "Auto-update fréquences AIP et données VFR" aip_freqs.json vfr_data.json
+          bash tools/git_publish.sh "Auto-update fréquences AIP et données VFR" aip_freqs.json vfr_data.json mef.json
           if [ "$(git rev-parse HEAD)" != "$before" ]; then echo "pushed=true" >> "$GITHUB_OUTPUT"; else echo "pushed=false" >> "$GITHUB_OUTPUT"; fi
 
   deploy:

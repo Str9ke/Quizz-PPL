@@ -61,8 +61,14 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   (tuiles `nwy-tiles-api.prod.newaydata.com`, cycle publié dans `vfr_data.json`, licence OFMA libre ; tuiles gardées hors ligne
   dans le cache `quiz-ppl-tiles-v1` de `sw.js`) ; `vfr_data.json` produit par `tools/fetch_vfrdata.py` (workflow `update_aip.yml`) :
   points VFR (OFMX France + Belgique), obstacles (SIA ENR 5.4 xlsx, skeyes ENR 5.4), liens VAC belges (eAIP skeyes AD 2, sinon site
-  du terrain). VAC françaises : adresse fixe du SIA (`_vacLinks`, cycle AIRAC calculé). Carte OACI IGN (SCAN OACI) NON intégrée :
-  licence IGN gratuite seulement en usage pro/associatif, payante pour une appli grand public, téléchargement interdit.
+  du terrain). VAC françaises : adresse fixe du SIA (`_vacLinks`, cycle AIRAC calculé). Obstacles belges = base eTOD de l'IGN belge
+  (NGI, CC BY 4.0, lignes électriques comprises). **Carte OACI IGN** (SCAN OACI, WMTS `data.geopf.fr/private/wmts`, clé publique
+  `ign_scan_ws`) ajoutée à la demande de Thomas (25/10/2026) en connaissance de la licence IGN (gratuite pro/associatif) : flux
+  seulement, jamais de tuiles dans le dépôt ni l'APK.
+- **MEF** (`tools/make_mef.py` -> `mef.json`, workflow `update_aip.yml`) : CALCULÉES par case de 30' (relief SRTM « Terrarium » +300 ft,
+  obstacle +100 ft, arrondi à la centaine) ; tableau Navlog (`_mefBadge`, rouge si altitude < MEF), impression, profils, couche carte.
+- **Mode « Infos au clic »** de la carte de route (`_mapIdentify`) : espaces aériens au-dessus du point (+ fréquences AIP), MEF,
+  aérodromes (VAC), points VFR, obstacles, NOTAM France ; la route n'est pas modifiée et ses points laissent passer le clic.
 - **NOTAM France officiels** : `tools/notams_fr.py` (SIA SOFIA-Briefing, Licence Ouverte 2.0 : texte non modifié, source et date
   citées) -> `notams_france.json` (partie « notam_fr » de `fetch_notams.py`, récupérée avec le briefing) ; FIR LFFF/LFEE/LFRR
   SFC–FL115 + aérodromes de `tools/lf_aerodromes.txt` ; onglet NOTAMs, carte « NOTAM France » filtrée autour de la route.
@@ -73,7 +79,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v240`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v241`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

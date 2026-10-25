@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v240';
+const CACHE_NAME = 'quiz-ppl-v241';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -108,6 +108,7 @@ const PRECACHE_URLS = [
   BASE + 'js/aerodromes-data.js',
   BASE + 'aip_freqs.json',
   BASE + 'vfr_data.json',
+  BASE + 'mef.json',
   BASE + 'js/account.js',
   BASE + 'js/app-transfer.js',
   BASE + 'js/firebase-init.js',
@@ -322,7 +323,7 @@ self.addEventListener('fetch', event => {
 
   // Carte VFR open flightmaps : cache d'abord (les tuiles d'un cycle AIRAC ne changent pas,
   // l'adresse contient le cycle), réseau sinon ; copie gardée pour le vol hors ligne.
-  if (url.hostname === 'nwy-tiles-api.prod.newaydata.com' && event.request.method === 'GET') {
+  if ((url.hostname === 'nwy-tiles-api.prod.newaydata.com' || (url.hostname === 'data.geopf.fr' && /GetTile/i.test(url.search))) && event.request.method === 'GET') {
     event.respondWith(caches.open(TILE_CACHE).then(cache => cache.match(event.request).then(hit => hit ||
       fetch(event.request).then(resp => {
         if (resp && (resp.ok || resp.type === 'opaque')) {
