@@ -12,6 +12,10 @@
 #    différences (--no-thin est sans effet en HTTPS) → les petits fichiers (OPMET…) sont
 #    préchargés en début de job (voir update_notams.yml).
 set -u
+# Jamais d'attente interactive (éditeur, identifiants) dans un workflow : un `git rebase` qui
+# ouvrait un éditeur ou un push qui attendait laissait le job tourner jusqu'au délai maximal de
+# GitHub (6 h). Chaque opération réseau a aussi un délai maximal.
+export GIT_EDITOR=true GIT_TERMINAL_PROMPT=0 GIT_MERGE_AUTOEDIT=no
 msg="$1"; shift
 [ "$#" -gt 0 ] || exit 0
 t0=$(date +%s%N)
@@ -35,12 +39,23 @@ git update-ref -m "commit: $msg" HEAD "$commit" || exit 1
 tc=$(ms)
 slow_commit=$(summary)
 for attempt in 1 2 3 4 5; do
-  if git push -q origin HEAD:main; then
+  if timeout 180 git push -q origin HEAD:main; then
     echo "commit ${tc} ms [${slow_commit}] push $(( $(ms) - tc )) ms (essai $attempt) [$(summary)]"
     exit 0
   fi
   rm -f "$trace"
-  git fetch -q --depth=1 origin main
-  git rebase -q origin/main || { git rebase --abort; sleep 1; }
+  # Quelqu'un a poussé entre-temps (autre workflow de données). PAS de `git rebase` : dans cette
+  # copie partielle et superficielle (depth 1, sans contenu), il rejouait tout l'historique et
+  # rapatriait les ~380 Mo du dépôt fichier par fichier (job bloqué 30 min, 25/10/2026). On reprend
+  # l'arbre publié tel quel et on y remet seulement NOS fichiers (les nôtres sont les plus récents).
+  files=$(git diff-tree --no-commit-id --name-only -r HEAD)
+  timeout 300 git fetch -q --depth=1 origin main || { sleep 2; continue; }
+  git read-tree origin/main || continue
+  printf '%s
+' $files | git add --sparse -A --pathspec-from-file=- || continue
+  tree=$(git write-tree --missing-ok) || continue
+  commit=$(git commit-tree "$tree" -p origin/main -m "$msg") || continue
+  git update-ref -m "commit: $msg" HEAD "$commit" || continue
+  tc=$(ms)
 done
 exit 1
