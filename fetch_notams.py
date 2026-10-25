@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
@@ -1299,7 +1300,7 @@ import threading
 import subprocess
 import glob as _glob
 
-EXPECTED_FULL = ["opmet", "aeroweb", "daily", "notam", "sfc", "images",
+EXPECTED_FULL = ["opmet", "aeroweb", "daily", "notam", "notam_fr", "sfc", "images",
                  "temsi_france", "temsi_euroc", "wintem_france", "wintem_euroc"]
 
 
@@ -1317,7 +1318,7 @@ class _Publisher:
        connexion Skeyes), le retardaient de ~6 s en passant devant.
     2. Ensuite, le reste part en UN envoi dès que tout est prêt, sauf de petites parties (le NOTAM
        suit alors seul) — ou plus tôt si une partie prête attend depuis plus de 4 s."""
-    SMALL = {"opmet", "opmet_pdf", "aeroweb", "daily", "notam"}
+    SMALL = {"opmet", "opmet_pdf", "aeroweb", "daily", "notam", "notam_fr"}
     PRIORITY = "opmet"
     MAX_WAIT_PRIORITY = 25   # s : au-delà, on n'attend plus l'OPMET (échec Skeyes…)
     MAX_HOLD = 4             # s : délai max d'une partie prête avant envoi
@@ -1459,6 +1460,20 @@ def _aeroweb_task(pub):
         if os.path.exists("opmet_aeroweb.json"):
             pub.ready("aeroweb", ["opmet_aeroweb.json"])
         _lap("aeroweb")
+
+
+def _notams_fr_task(pub):
+    """NOTAM FRANCE officiels du SIA (SOFIA-Briefing), en parallèle de Skeyes — voir tools/notams_fr.py."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools"))
+        from notams_fr import fetch as fetch_notams_fr
+        fetch_notams_fr()
+    except Exception as e:
+        print(f"Error fetching NOTAM France: {e}")
+    finally:
+        if os.path.exists("notams_france.json"):
+            pub.ready("notam_fr", ["notams_france.json"])
+        _lap("notam France")
 
 
 def main():
@@ -1623,8 +1638,9 @@ def main():
             pub.ready("notam", ["notams_belgique.html"])
             _lap("notam")
 
-    with ThreadPoolExecutor(max_workers=4) as bg:
+    with ThreadPoolExecutor(max_workers=5) as bg:
         fut_aeroweb = bg.submit(_aeroweb_task, pub)
+        fut_notams_fr = bg.submit(_notams_fr_task, pub)
         fut_images = bg.submit(_images_task)
         fut_daily = bg.submit(_daily_task)
         # Le résumé NOTAM met ~5 s à être produit par Skeyes : demandé en parallèle de l'OPMET.
@@ -1657,6 +1673,7 @@ def main():
         fut_images.result()
         fut_daily.result()
         fut_aeroweb.result()
+        fut_notams_fr.result()
     pub.close()
 
 

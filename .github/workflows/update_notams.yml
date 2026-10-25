@@ -105,7 +105,7 @@ jobs:
           # d'abord (l'OPMET part vers t+7 s), puis les images (~125 Mo, ~2 s).
           prefetch() { git ls-tree HEAD | awk -v re="$1" '$2 == "blob" && $4 ~ re { print $3 }' \
             | git -c fetch.negotiationAlgorithm=noop fetch -q origin --no-tags --no-write-fetch-head --recurse-submodules=no --filter=blob:none --stdin; }
-          { prefetch '^(opmet|daily_warnings|notams_belgique|fetch_stamp|skeyes_images[.]json|.*_manifest[.]json)'
+          { prefetch '^(opmet|daily_warnings|notams_belgique|notams_france|fetch_stamp|skeyes_images[.]json|.*_manifest[.]json)'
             prefetch '^(skeyes_|temsi_|wintem_).*[.](gif|jpg|jpeg|png)$'; } &
           PY=~/venv/bin/python
           if [ "${{ github.event.inputs.opmet_only }}" = "true" ]; then

@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v238';
+const CACHE_NAME = 'quiz-ppl-v239';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -16,6 +16,10 @@ const CACHE_NAME = 'quiz-ppl-v238';
         plongée, symboles TEMSI — n'avait donc AUCUNE image disponible en vol.
    Ce cache n'est supprimé que si on change explicitement son nom ci-dessous. */
 const ASSETS_CACHE = 'quiz-ppl-assets-v1';
+/* Tuiles de la carte VFR open flightmaps : gardées d'une version à l'autre (comme ASSETS_CACHE)
+   pour rester affichables hors ligne en vol ; au plus TILE_MAX tuiles, les plus anciennes partent. */
+const TILE_CACHE = 'quiz-ppl-tiles-v1';
+const TILE_MAX = 6000;
 
 /* isImageAsset() — une image de l'appli (pas une carte météo régénérée à chaque récupération,
    traitée à part : voir isBriefingData). */
@@ -103,6 +107,7 @@ const PRECACHE_URLS = [
   BASE + 'js/apps.js',
   BASE + 'js/aerodromes-data.js',
   BASE + 'aip_freqs.json',
+  BASE + 'vfr_data.json',
   BASE + 'js/account.js',
   BASE + 'js/app-transfer.js',
   BASE + 'js/firebase-init.js',
@@ -224,7 +229,7 @@ self.addEventListener('activate', event => {
     // affichées EN LIGNE au moins une fois, dans le cache versionné… donc supprimées au
     // déploiement suivant. Les re-télécharger à chaque version serait de toute façon absurde :
     // ~80 Mio pour des fichiers strictement identiques.
-    const others = keys.filter(k => k !== CACHE_NAME && k !== ASSETS_CACHE);
+    const others = keys.filter(k => k !== CACHE_NAME && k !== ASSETS_CACHE && k !== TILE_CACHE);
 
     if (!missing.length) {
       await Promise.all(others.map(k => caches.delete(k)));
@@ -292,6 +297,16 @@ function fetchWithTimeout(request, ms, cacheMode) {
 }
 
 // ---- FETCH : stratégie de cache ----
+let _tileTrimAt = 0;
+function trimTileCache(cache) {
+  if (Date.now() - _tileTrimAt < 30000) return;   // au plus une vérification toutes les 30 s
+  _tileTrimAt = Date.now();
+  cache.keys().then(keys => {
+    if (keys.length <= TILE_MAX) return;
+    return Promise.all(keys.slice(0, keys.length - TILE_MAX + 500).map(k => cache.delete(k)));
+  }).catch(() => {});
+}
+
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -303,6 +318,19 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('securetoken') ||
       url.hostname.includes('googleapis.com')) {
     return; // Ne pas intercepter — laisser le réseau gérer
+  }
+
+  // Carte VFR open flightmaps : cache d'abord (les tuiles d'un cycle AIRAC ne changent pas,
+  // l'adresse contient le cycle), réseau sinon ; copie gardée pour le vol hors ligne.
+  if (url.hostname === 'nwy-tiles-api.prod.newaydata.com' && event.request.method === 'GET') {
+    event.respondWith(caches.open(TILE_CACHE).then(cache => cache.match(event.request).then(hit => hit ||
+      fetch(event.request).then(resp => {
+        if (resp && (resp.ok || resp.type === 'opaque')) {
+          cache.put(event.request, resp.clone()).then(() => trimTileCache(cache)).catch(() => {});
+        }
+        return resp;
+      }))));
+    return;
   }
 
   // IGNORER l'API GitHub et raw.githubusercontent.com — toujours en réseau direct.
@@ -340,7 +368,7 @@ self.addEventListener('fetch', event => {
          pouvait resservir pendant 10 min l'ancien OPMET (iframe, widget vent GAMET).
      → toujours revalidées auprès du serveur (cache: 'no-cache' : un simple 304 si rien n'a
      changé), copie gardée pour le hors-ligne. */
-  const isBriefingData = /\/(opmet[^/]*|notams_belgique\.html|daily_warnings[^/]*|skeyes_[^/]*|(temsi|wintem)_[^/]*|fetch_stamp\.json)$/.test(url.pathname);
+  const isBriefingData = /\/(opmet[^/]*|notams_belgique\.html|notams_france\.json|daily_warnings[^/]*|skeyes_[^/]*|(temsi|wintem)_[^/]*|fetch_stamp\.json)$/.test(url.pathname);
   if (isBriefingData && event.request.method === 'GET') {
     const fromCache = () => caches.match(event.request, { ignoreSearch: true });
     if (!navigator.onLine) {

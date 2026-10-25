@@ -970,6 +970,26 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .dw-airport-label::before{display:none !important}
 .as-map-label{background:rgba(10,10,20,.82) !important;border:none !important;color:#fff !important;font-size:.74em !important;font-weight:700 !important;padding:2px 6px !important;box-shadow:none !important;pointer-events:none}
 .as-map-label::before{display:none !important}
+/* NOTAM France (onglet NOTAMs) */
+.frn-bar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 16px;font-size:.82em}
+.frn-bar label{display:inline-flex;align-items:center;gap:5px;width:auto;margin:0;cursor:pointer}
+.frn-bar input[type=search]{flex:1 1 180px;min-width:0;width:auto;margin:0;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text)}
+.frn-bar select{width:auto;margin:0;padding:3px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text)}
+.frn-list{padding:0 12px 8px;max-height:640px;overflow:auto}
+.frn-h{font-size:.74em;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#8fa0f5;margin:12px 4px 4px}
+.frn-item{border:1px solid var(--border-color);border-left:4px solid #5b8def;border-radius:10px;padding:8px 10px;margin:6px 0;background:rgba(255,255,255,.02);font-size:.84em}
+.frn-item.frn-soon{border-left-color:#8d99ae;opacity:.85}
+.frn-item.frn-warn{border-left-color:#e53935}
+.frn-top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-bottom:4px}
+.frn-top b{font-family:monospace;font-size:1.05em}
+.frn-tag{font-size:.78em;font-weight:700;padding:1px 7px;border-radius:9px;background:rgba(102,126,234,.2);color:#8fa0f5}
+.frn-tag.now{background:rgba(76,175,80,.2);color:#66bb6a}
+.frn-tag.soon{background:rgba(141,153,174,.25);color:#b0bccb}
+.frn-tag.red{background:rgba(229,57,53,.2);color:#ef5350}
+.frn-txt{white-space:pre-wrap;line-height:1.35;font-family:inherit}
+.frn-meta{color:var(--text-secondary);font-size:.86em;margin-top:4px}
+.frn-item details{margin-top:4px;color:var(--text-secondary);font-size:.92em}
+.frn-item details pre{white-space:pre-wrap;margin:4px 0 0;font-family:monospace}
 /* Calques OpenAIP de la carte de route (menu « Calques OpenAIP ») */
 .rm-oa-wrap{position:relative;display:inline-block}
 .rm-oa-menu{position:absolute;z-index:1200;bottom:calc(100% + 6px);left:0;min-width:260px;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.5);padding:8px 10px;display:flex;flex-direction:column;gap:2px;text-align:left}
@@ -985,6 +1005,13 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .oa-ic span.ndb{background:rgba(110,40,90,.88);border-color:#f06292}
 .oa-ic span.as{background:rgba(10,10,20,.8);font-size:10px;font-weight:600}
 .oa-pop b{color:#5c6bc0}
+.oa-pop a.oa-vac{display:inline-block;margin:6px 6px 0 0;padding:4px 9px;border-radius:7px;background:#3949ab;color:#fff!important;text-decoration:none;font-weight:700;font-size:.92em}
+.oa-vrp span{display:inline-block;transform:translate(-50%,-70%);white-space:nowrap;font:700 10px/1.1 system-ui,sans-serif;color:#1a237e;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff;text-align:center;cursor:pointer}
+.oa-vrp i{display:block;margin:0 auto 1px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #1565c0}
+.oa-vrp i.req{border-bottom-color:#90caf9}
+.oa-obs span{display:inline-block;transform:translate(-50%,-85%);white-space:nowrap;font:700 9.5px/1.1 system-ui,sans-serif;color:#b71c1c;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff;text-align:center;cursor:pointer}
+.oa-obs i{display:block;margin:0 auto;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:11px solid #c62828}
+.oa-obs i.lit{border-bottom-color:#ff6f00}
 @media(max-width:640px){ .rm-oa-menu{position:fixed;left:12px;right:12px;bottom:auto;top:50%;transform:translateY(-50%);min-width:0} }
   </style>
 </head>
@@ -1191,11 +1218,14 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <button class="navlog-btn" id="asMapToggleBtn" onclick="window.toggleAirspacesOnMap()" title="Afficher/masquer les espaces aériens croisés sur la carte, avec leur classe OACI (touchez une zone) — charge d'abord les espaces aériens depuis l'onglet Altitudes">&#x1F170;&#xFE0F; Classes espace aérien</button>
         <span class="rm-oa-wrap"><button class="navlog-btn" id="oaLayersBtn" onclick="window._toggleOaMenu(event)" title="Afficher sur la carte les espaces aériens, les aérodromes et les balises VOR/NDB/DME (données OpenAIP embarquées, aussi hors ligne)">&#x1F5FA;&#xFE0F; Calques OpenAIP &#x25BE;</button>
           <span class="rm-oa-menu" id="oaLayersMenu" hidden>
+            <label><input type="checkbox" data-oa="ofm"> &#x1F5FA;&#xFE0F; <b>Carte VFR</b>&nbsp;(open flightmaps)</label>
             <label><input type="checkbox" data-oa="all"> <b>Tout afficher</b></label>
             <label><input type="checkbox" data-oa="as"> &#x1F7EA; Espaces aériens</label>
-            <label><input type="checkbox" data-oa="ad"> &#x2708;&#xFE0F; Aérodromes</label>
+            <label><input type="checkbox" data-oa="ad"> &#x2708;&#xFE0F; Aérodromes + cartes VAC</label>
             <label><input type="checkbox" data-oa="nav"> &#x1F4E1; Balises VOR / NDB / DME</label>
-            <small>Touchez une étiquette, un terrain ou une balise pour ses détails. Espaces aériens dont le plancher est sous le FL 100.</small>
+            <label><input type="checkbox" data-oa="vrp"> &#x1F53A; Points VFR</label>
+            <label><input type="checkbox" data-oa="obs"> &#x26A0;&#xFE0F; Obstacles</label>
+            <small>Touchez une étiquette, un terrain, une balise, un point VFR ou un obstacle pour ses détails. Carte VFR : © open flightmaps association (cycle AIRAC en cours, gardée hors ligne une fois vue). Obstacles : SIA (France), skeyes (Belgique). Espaces aériens dont le plancher est sous le FL 100.</small>
           </span></span>
         <label class="rm-measure-toggle" title="Cliquez 2 points sur la carte (hors navigation) pour mesurer une distance et estimer l'altitude mini pour rejoindre le rivage au-dessus d'un bras de mer">
           <input type="checkbox" id="rmMeasureCheckbox" onchange="window.toggleMeasureMode(this)"> &#x1F4CF; Mode mesure
@@ -1240,6 +1270,25 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
             <a href="notams_belgique.html" target="_blank" rel="noopener">&#x1F517; Ouvrir en plein &#xe9;cran</a>
           </div>
           <div id="routeNotamStatus" style="font-size:.78em;color:var(--text-secondary);padding:0 16px 10px"></div>
+        </div>
+
+        <!-- NOTAM France officiels (SIA, SOFIA-Briefing) — tools/notams_fr.py -> notams_france.json -->
+        <div class="map-card" id="frNotamCard" style="margin-bottom:14px">
+          <div class="map-card-title">&#x1F1EB;&#x1F1F7; NOTAM France &#x2014; SIA (officiel)</div>
+          <p style="padding:8px 16px 0;font-size:.82em;color:var(--text-secondary);margin:0">NOTAM VFR du SIA (SOFIA-Briefing) : FIR Paris, Reims et Brest du sol au FL 115 et a&#xe9;rodromes du nord de la France, r&#xe9;cup&#xe9;r&#xe9;s avec le reste du briefing. Le texte est celui du SIA (traduction fran&#xe7;aise officielle quand elle existe).</p>
+          <div class="frn-bar">
+            <label><input type="radio" name="frnScope" value="route" checked onchange="window.renderFrNotams()"> Autour de ma route</label>
+            <label><input type="radio" name="frnScope" value="all" onchange="window.renderFrNotams()"> Tous</label>
+            <label title="Largeur du couloir de part et d'autre de la route">Couloir <select id="frnWidth" onchange="window.renderFrNotams()"><option value="5">5 NM</option><option value="10" selected>10 NM</option><option value="20">20 NM</option></select></label>
+            <input type="search" id="frnSearch" placeholder="Rechercher (LFQQ, GRUE, TRA…)" oninput="window.renderFrNotams()">
+          </div>
+          <div id="frnStatus" style="font-size:.78em;color:var(--text-secondary);padding:0 16px 6px"></div>
+          <div id="frnList" class="frn-list"></div>
+          <div class="map-card-actions">
+            <button onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b);color:#fff;border:none;font-weight:bold;" title="Récupération complète sur le serveur (NOTAM Belgique et France, OPMET, cartes…)">&#x2B07;&#xFE0F; Récupérer les données</button>
+            <button onclick="window.toggleFrNotamsOnMap()" id="frnMapBtn">&#x1F5FA;&#xFE0F; Voir sur la carte de route</button>
+            <a href="https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html" target="_blank" rel="noopener">&#x1F517; SOFIA-Briefing</a>
+          </div>
         </div>
 
         <!-- Daily Warnings Automatique -->
@@ -3180,6 +3229,7 @@ function switchTab(id){
   if(id==='fuel') window.renderFuelLog();
   if(id==='fpl') window.renderFPL();
 
+  if(id==='notam' && typeof window.loadFrNotams==='function') window.loadFrNotams(false);
   /* Lazy-load NOTAMs iframes on first visit */
   if(id==='notam' && !window._notamLoaded){
     window._notamLoaded=true;
@@ -7031,7 +7081,7 @@ function _oaLim(l){
 }
 function _oaSyncMenu(){
   var m=document.getElementById('oaLayersMenu'); if(!m) return;
-  var all=!!(_oaSel.as&&_oaSel.ad&&_oaSel.nav), any=!!(_oaSel.as||_oaSel.ad||_oaSel.nav);
+  var all=!!(_oaSel.as&&_oaSel.ad&&_oaSel.nav&&_oaSel.vrp&&_oaSel.obs), any=!!(_oaSel.as||_oaSel.ad||_oaSel.nav||_oaSel.vrp||_oaSel.obs||_oaSel.ofm);
   m.querySelectorAll('input[data-oa]').forEach(function(c){ var k=c.getAttribute('data-oa'); c.checked=k==='all'?all:!!_oaSel[k]; });
   var b=document.getElementById('oaLayersBtn');
   if(b){ b.style.background=any?'linear-gradient(135deg,#3498db,#2980b9)':''; b.style.color=any?'#fff':''; b.style.borderColor=any?'transparent':''; }
@@ -7046,7 +7096,7 @@ window._toggleOaMenu=function(ev){
     m.querySelectorAll('input[data-oa]').forEach(function(c){
       c.onchange=function(){
         var k=c.getAttribute('data-oa');
-        if(k==='all') _oaSel={as:c.checked,ad:c.checked,nav:c.checked}; else _oaSel[k]=c.checked;
+        if(k==='all'){ ['as','ad','nav','vrp','obs'].forEach(function(x){ _oaSel[x]=c.checked; }); } else _oaSel[k]=c.checked;
         try{ localStorage.setItem('rmOaLayers',JSON.stringify(_oaSel)); }catch(e){}
         _oaSyncMenu(); _renderOaLayers();
       };
@@ -7054,11 +7104,59 @@ window._toggleOaMenu=function(ev){
     document.addEventListener('click',function(e){ if(!m.hidden && !(e.target.closest&&e.target.closest('.rm-oa-wrap'))) m.hidden=true; });
   }
 };
+/* Carte VFR open flightmaps : surcouche aéronautique transparente (tuiles 512 px, zoom 6 à 12)
+   du cycle publié indiqué par vfr_data.json (tools/fetch_vfrdata.py), calculé à défaut. */
+var _ofmLayer=null, _vfrData=null, _vfrDataP=null;
+function _loadVfrData(){
+  if(!_vfrDataP) _vfrDataP=fetch('vfr_data.json').then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }).then(function(d){ _vfrData=d; return d; });
+  return _vfrDataP;
+}
+function _airacId(date){
+  /* même calcul qu'open flightmaps : cycles de 28 jours depuis le 23/01/2003 */
+  var c=new Date(Date.UTC(2003,0,23)), y=date.getUTCFullYear(), n=0, last=0;
+  while(c<date){ if(c.getUTCFullYear()===y-1) last++; if(c.getUTCFullYear()===y) n++; c=new Date(c.getTime()+28*864e5); }
+  if(!n){ y--; n=last; }
+  return (y%100)*100+n;
+}
+function _syncOfmLayer(){
+  if(typeof routeMap==='undefined'||!routeMap) return;
+  if(!_oaSel.ofm){ if(_ofmLayer){ routeMap.removeLayer(_ofmLayer); _ofmLayer=null; } return; }
+  if(_ofmLayer) return;
+  _loadVfrData().then(function(d){
+    if(!_oaSel.ofm || _ofmLayer) return;
+    var cyc=(d&&d.ofm_airac)||_airacId(new Date());
+    if(!routeMap.getPane('ofmPane')){ routeMap.createPane('ofmPane'); routeMap.getPane('ofmPane').style.zIndex=300; }
+    _ofmLayer=L.tileLayer('https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path='+cyc+'/aero/latest',
+      {pane:'ofmPane',minZoom:5,maxNativeZoom:12,maxZoom:18,attribution:'© open flightmaps association'}).addTo(routeMap);
+  });
+}
+/* Lien vers la carte VAC officielle : France = SIA (cycle AIRAC en cours, adresse fixe),
+   Belgique = PDF de l'eAIP skeyes listés dans vfr_data.json (ou site de l'exploitant). */
+function _sialDir(){
+  var ref=Date.UTC(2026,5,11), d=new Date(ref+28*864e5*Math.floor((Date.now()-ref)/(28*864e5)));
+  var M=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_'+('0'+d.getUTCDate()).slice(-2)+'_'+M[d.getUTCMonth()]+'_'+d.getUTCFullYear()+'/';
+}
+function _vacLinks(icao){
+  icao=(icao||'').toUpperCase();
+  if(/^LF[A-Z]{2}$/.test(icao)) return '<a class="oa-vac" href="'+_sialDir()+'Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.'+icao+'.pdf" target="_blank" rel="noopener">📄 Carte VAC (SIA)</a>';
+  var be=_vfrData&&_vfrData.vac_be&&_vfrData.vac_be[icao];
+  if(be&&be.length){
+    var n={VAC:0,ADC:0,VLC:0,LDG:0,WEB:0}, ord={VAC:0,VLC:1,ADC:2,LDG:3,WEB:4};
+    return be.slice().sort(function(a,b){ return ord[a.k]-ord[b.k]; }).map(function(x){ var lab=x.k==='WEB'?'🌐 Site du terrain':(x.k==='ADC'?'🛬 Carte d’aérodrome':'📄 Carte VAC')+(++n[x.k]>1?' '+n[x.k]:'');
+      return '<a class="oa-vac" href="'+escHTML(x.u)+'" target="_blank" rel="noopener">'+lab+'</a>'; }).join('');
+  }
+  return '';
+}
+window._vacLinks=_vacLinks;
 function _renderOaLayers(){
   if(typeof routeMap==='undefined'||!routeMap||typeof L==='undefined') return;
-  if(!(_oaSel.as||_oaSel.ad||_oaSel.nav)){ if(_oaGroup){ routeMap.removeLayer(_oaGroup); _oaGroup=null; } return; }
-  _loadOpenaipStatic().then(function(d){
-    if(!d){ _toast('⚠️ Données OpenAIP indisponibles (openaip_data.json)','error',3000); return; }
+  _syncOfmLayer();
+  if(!(_oaSel.as||_oaSel.ad||_oaSel.nav||_oaSel.vrp||_oaSel.obs)){ if(_oaGroup){ routeMap.removeLayer(_oaGroup); _oaGroup=null; } return; }
+  Promise.all([_loadOpenaipStatic(),_loadVfrData()]).then(function(res){
+    var d=res[0], vd=res[1];
+    if(!d && (_oaSel.as||_oaSel.ad||_oaSel.nav)){ _toast('⚠️ Données OpenAIP indisponibles (openaip_data.json)','error',3000); }
+    d=d||{airspaces:[],airports:[],navaids:[]};
     if(!_oaCanvas) _oaCanvas=L.canvas({padding:.3});
     if(!routeMap.getPane('oaPane')){ routeMap.createPane('oaPane'); routeMap.getPane('oaPane').style.zIndex=350; }
     var g=L.layerGroup(), b=routeMap.getBounds().pad(0.25), z=routeMap.getZoom();
@@ -7100,7 +7198,7 @@ function _renderOaLayers(){
         var fq=(a.frequencies||[]).filter(function(f){ return f.value; }).slice(0,6).map(function(f){ return escHTML((f.name||'')+' '+f.value); });
         mk.bindPopup('<div class="oa-pop"><b>'+escHTML((a.icaoCode?a.icaoCode+' — ':'')+a.name)+'</b><br>'+escHTML(OA_AD_TYPES[t]||'Terrain')+
           (a.elevation?' · '+Math.round(a.elevation.unit===0?a.elevation.value*3.28084:a.elevation.value)+' ft':'')+(a.ppr?' · PPR':'')+(a.private?' · privé':'')+
-          (rw.length?'<br>Pistes : '+escHTML(rw.join(', ')):'')+(fq.length?'<br>'+fq.join('<br>'):'')+'</div>');
+          (rw.length?'<br>Pistes : '+escHTML(rw.join(', ')):'')+(fq.length?'<br>'+fq.join('<br>'):'')+'<br>'+_vacLinks(a.icaoCode)+'</div>');
         if(z>=11 || (z>=9 && a.icaoCode)) mk.bindTooltip(a.icaoCode||a.name,{permanent:true,direction:'right',offset:[6,0],className:'oa-lbl'});
         else mk.bindTooltip((a.icaoCode?a.icaoCode+' ':'')+a.name,{className:'oa-lbl'});
         g.addLayer(mk);
@@ -7117,6 +7215,27 @@ function _renderOaLayers(){
         g.addLayer(mk);
       });
     }
+    if(_oaSel.vrp && vd && vd.vrp && z>=8){
+      vd.vrp.forEach(function(p){
+        if(!b.contains([p.lat,p.lon])) return;
+        var lab=z>=10?p.id+(p.ad?' <small style="font-weight:600">'+escHTML(p.ad)+'</small>':''):'';
+        var mk=L.marker([p.lat,p.lon],{pane:'oaPane',icon:L.divIcon({className:'oa-vrp',iconSize:[0,0],html:'<span><i class="'+(p.c?'':'req')+'"></i>'+lab+'</span>'})});
+        mk.bindPopup('<div class="oa-pop"><b>Point VFR '+escHTML(p.id)+'</b>'+(p.n&&p.n!==p.id?' — '+escHTML(p.n):'')+'<br>'+(p.c?'Point de report obligatoire':'Point de report sur demande')+(p.ad?' · '+escHTML(p.ad):'')+'<br><small>'+p.lat.toFixed(4)+' , '+p.lon.toFixed(4)+'</small>'+(p.ad?'<br>'+_vacLinks(p.ad):'')+'</div>');
+        g.addLayer(mk);
+      });
+    }
+    if(_oaSel.obs && vd && z>=9){
+      (vd.obs_fr||[]).concat(vd.obs_be||[]).forEach(function(o){
+        if(!b.contains([o.lat,o.lon])) return;
+        if(z<10 && (o.h||0)<300) return;          /* vue large : obstacles de 300 ft et plus */
+        var lab=z>=11&&o.alt?String(o.alt):'';
+        var mk=L.marker([o.lat,o.lon],{pane:'oaPane',icon:L.divIcon({className:'oa-obs',iconSize:[0,0],html:'<span><i class="'+(o.lit?'lit':'')+'"></i>'+lab+'</span>'})});
+        mk.bindPopup('<div class="oa-pop"><b>'+escHTML(o.t||'Obstacle')+'</b>'+(o.nb>1?' ×'+o.nb:'')+(o.id?' ('+escHTML(o.id)+')':'')
+          +'<br>Sommet : <b>'+(o.alt!=null?o.alt+' ft AMSL':'?')+'</b> · hauteur '+(o.h!=null?o.h+' ft':'?')
+          +'<br>'+(o.lit?'Balisé':'Non balisé')+(o.rmk?' · '+escHTML(o.rmk):'')+'<br><small>Source : '+escHTML(o.src||'')+'</small></div>');
+        g.addLayer(mk);
+      });
+    }
     if(_oaGroup) routeMap.removeLayer(_oaGroup);
     _oaGroup=g.addTo(routeMap);
   });
@@ -7124,9 +7243,10 @@ function _renderOaLayers(){
 function _wireOaLayers(){
   if(!routeMap||routeMap._oaWired) return;
   routeMap._oaWired=true;
-  routeMap.on('moveend',function(){ if(!(_oaSel.as||_oaSel.ad||_oaSel.nav)) return; clearTimeout(_oaTimer); _oaTimer=setTimeout(_renderOaLayers,150); });
+  routeMap.on('moveend',function(){ if(!(_oaSel.as||_oaSel.ad||_oaSel.nav||_oaSel.vrp||_oaSel.obs)) return; clearTimeout(_oaTimer); _oaTimer=setTimeout(_renderOaLayers,150); });
   _oaSyncMenu();
-  if(_oaSel.as||_oaSel.ad||_oaSel.nav) _renderOaLayers();
+  _loadVfrData();
+  if(_oaSel.as||_oaSel.ad||_oaSel.nav||_oaSel.vrp||_oaSel.obs||_oaSel.ofm) _renderOaLayers();
 }
 
 /* Carte locale (projection équirectangulaire) d'un avis, centrée sur son centre/centroïde,
@@ -17494,7 +17614,7 @@ window.setBriefingFetchMode = function(v) {
 /* Parties du briefing publiées séparément par le workflow rapide (voir _Publisher dans
    fetch_notams.py) et ce qu'il faut recharger à l'arrivée de chacune. */
 var _BRIEFING_PART_LABELS = {
-  opmet: 'OPMET', aeroweb: 'METAR AéroWeb', notam: 'NOTAM', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
+  opmet: 'OPMET', aeroweb: 'METAR AéroWeb', notam: 'NOTAM', notam_fr: 'NOTAM France', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
   temsi_france: 'TEMSI France', temsi_euroc: 'TEMSI EUROC', wintem_france: 'WINTEM France', wintem_euroc: 'WINTEM EUROC'
 };
 var _ALL_BRIEFING_PARTS = Object.keys(_BRIEFING_PART_LABELS);
@@ -17511,6 +17631,7 @@ window._refreshBriefingParts = function(parts) {
   }
   if (has('aeroweb') && typeof window.loadAerowebMetars === 'function') window.loadAerowebMetars();
   if (has('notam')) _reloadDataFrame('autoNotamFrame');
+  if (has('notam_fr') && typeof window.loadFrNotams === 'function') window.loadFrNotams(true);
   if (has('daily')) {
     _reloadDataFrame('autoDailyWarnFrame');
     // Bandeau, carte et profil d'altitude des avis du jour : restaient sur l'ancienne version
@@ -17889,6 +18010,120 @@ async function _dispatchUpdateWorkflow(inputs, statusEl) {
         alert("❌ Erreur de connexion : " + e);
     }
 }
+
+/* ===== NOTAM FRANCE (SIA) =====
+   notams_france.json (tools/notams_fr.py, récupéré avec le briefing) : chaque NOTAM a sa position,
+   son rayon (NM), ses limites (FL) et ses dates. « Autour de ma route » garde :
+   - les NOTAM d'aérodrome dont le terrain est à moins du couloir de la route ;
+   - les NOTAM en route dont le cercle touche le couloir et dont le plancher est sous
+     l'altitude maxi de la route + 1000 ft ;
+   et seulement ceux en vigueur dans les 24 h. Le texte n'est jamais modifié (Licence Ouverte :
+   pas d'altération, source et date citées). */
+var _frNotams=null, _frNotamsLoading=null, _frnMapLayer=null;
+window.loadFrNotams=function(force){
+  if(_frNotams && !force){ window.renderFrNotams(); return; }
+  if(_frNotamsLoading && !force) return;
+  var st=document.getElementById('frnStatus'); if(st && !_frNotams) st.textContent='⏳ Chargement des NOTAM France…';
+  _frNotamsLoading=fetch('notams_france.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; })
+    .then(function(d){ _frNotamsLoading=null; if(d&&d.notams){ _frNotams=d; } window.renderFrNotams(); })
+    .catch(function(){ _frNotamsLoading=null; window.renderFrNotams(); });
+};
+function _frnRoutePts(){
+  var pts=[];
+  (typeof waypoints!=='undefined'&&waypoints||[]).forEach(function(w,i){
+    if(!w||w.lat==null||w.lon==null) return;
+    if(pts.length){
+      var a=pts[pts.length-1], d=haversine(a.lat,a.lon,w.lat,w.lon), n=Math.max(1,Math.ceil(d/2));
+      for(var k=1;k<n;k++) pts.push({lat:a.lat+(w.lat-a.lat)*k/n,lon:a.lon+(w.lon-a.lon)*k/n});
+    }
+    pts.push({lat:w.lat,lon:w.lon});
+  });
+  return pts;
+}
+function _frnDist(pts,lat,lon){ var m=Infinity; for(var i=0;i<pts.length;i++){ var d=haversine(pts[i].lat,pts[i].lon,lat,lon); if(d<m) m=d; } return m; }
+function _frnFmtDate(iso){
+  if(!iso) return '';
+  var d=new Date(iso); if(isNaN(d)) return iso;
+  if(d.getUTCFullYear()>=2099) return 'PERM';
+  return ('0'+d.getUTCDate()).slice(-2)+'/'+('0'+(d.getUTCMonth()+1)).slice(-2)+' '+('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2)+'Z';
+}
+function _frnFl(v){ if(v==null) return '?'; if(v===0) return 'SFC'; if(v>=999) return 'UNL'; return 'FL'+('00'+v).slice(-3)+' ('+(v*100)+' ft)'; }
+function _frnSelect(){
+  var d=_frNotams; if(!d) return {list:[],pts:[]};
+  var scope=(document.querySelector('input[name="frnScope"]:checked')||{}).value||'route';
+  var width=parseFloat((document.getElementById('frnWidth')||{}).value)||10;
+  var q=((document.getElementById('frnSearch')||{}).value||'').trim().toUpperCase();
+  var pts=_frnRoutePts(), now=Date.now(), horizon=now+24*3600e3;
+  var maxAlt=0; (typeof waypoints!=='undefined'&&waypoints||[]).forEach(function(w){ if(w&&w.altitude>maxAlt) maxAlt=w.altitude; });
+  if(!maxAlt) maxAlt=parseInt(_v('cfgAlt'))||2300;
+  var list=d.notams.filter(function(n){
+    var b=n.b?Date.parse(n.b):0, c=n.c?Date.parse(n.c):Infinity;
+    if(c<now || b>horizon) return false;
+    if(q && (n.id+' '+n.a+' '+n.q+' '+n.e+' '+n.e_fr).toUpperCase().indexOf(q)<0) return false;
+    if(scope==='all' || !pts.length) return true;
+    if(n.lat==null) return false;
+    var dist=_frnDist(pts,n.lat,n.lon);
+    n._dist=dist;
+    if(n.sec==='AD') return dist<=width;
+    if((n.lo||0)*100>maxAlt+1000) return false;
+    return dist<=width+(n.r||0);
+  });
+  list.forEach(function(n){ n._now=!n.b||Date.parse(n.b)<=now; });
+  return {list:list,pts:pts,scope:scope};
+}
+window.renderFrNotams=function(){
+  var box=document.getElementById('frnList'), st=document.getElementById('frnStatus');
+  if(!box) return;
+  if(!_frNotams){ box.innerHTML='<p style="font-size:.85em;color:var(--text-secondary);padding:6px">Pas encore de NOTAM France : lance « Récupérer les données ».</p>'; if(st) st.textContent=''; return; }
+  var sel=_frnSelect(), L=sel.list;
+  var ageH=(Date.now()-Date.parse(_frNotams.generated))/3600e3;
+  if(st) st.innerHTML='Source : '+escHTML(_frNotams.source||'SIA')+' — produit le '+_frnFmtDate(_frNotams.generated)
+    +(ageH>6?' <b style="color:#ffa726">(il y a '+Math.round(ageH)+' h : relance la récupération avant le vol)</b>':'')
+    +' · <b>'+L.length+'</b> NOTAM affiché(s) sur '+_frNotams.count+(sel.scope==='route'&&!sel.pts.length?' (aucune route : tous affichés)':'');
+  var ad=L.filter(function(n){ return n.sec==='AD'; }), fir=L.filter(function(n){ return n.sec!=='AD'; });
+  ad.sort(function(a,b){ return (a._dist||0)-(b._dist||0) || a.a.localeCompare(b.a); });
+  fir.sort(function(a,b){ return (a.r||0)-(b.r||0); });
+  function card(n){
+    var warn=/^(R|P|D)/.test(n.q.slice(0,1)) || /^(RT|RD|RR|RP|WP|WE|WM|WU|WZ)/.test(n.q);
+    var txt=n.e_fr||n.e;
+    return '<div class="frn-item'+(n._now?'':' frn-soon')+(warn?' frn-warn':'')+'">'
+      +'<div class="frn-top"><b>'+escHTML(n.id)+'</b><span class="frn-tag">'+escHTML(n.a)+'</span>'
+      +(n._now?'<span class="frn-tag now">en vigueur</span>':'<span class="frn-tag soon">à partir du '+_frnFmtDate(n.b)+'</span>')
+      +(warn?'<span class="frn-tag red">zone / avertissement</span>':'')
+      +(n._dist!=null&&isFinite(n._dist)?'<span class="frn-tag">à '+n._dist.toFixed(0)+' NM de la route</span>':'')+'</div>'
+      +'<div class="frn-txt">'+escHTML(txt)+'</div>'
+      +'<div class="frn-meta">'+_frnFmtDate(n.b)+' → '+_frnFmtDate(n.c)+(n.d?' · horaires : '+escHTML(n.d):'')
+      +' · '+_frnFl(n.lo)+' → '+_frnFl(n.hi)+(n.r?' · rayon '+n.r+' NM':'')+' · Q '+escHTML(n.q)+'</div>'
+      +(n.e_fr&&n.e&&n.e_fr!==n.e?'<details><summary>Texte original (anglais)</summary><pre>'+escHTML(n.e)+(n.f||n.g?'\nF) '+escHTML(n.f)+'  G) '+escHTML(n.g):'')+'</pre></details>':'')
+      +'</div>';
+  }
+  var h='';
+  if(ad.length) h+='<div class="frn-h">✈️ Aérodromes ('+ad.length+')</div>'+ad.map(card).join('');
+  if(fir.length) h+='<div class="frn-h">🧭 En route ('+fir.length+')</div>'+fir.map(card).join('');
+  box.innerHTML=h||'<p style="font-size:.85em;color:var(--text-secondary);padding:6px">Aucun NOTAM France ne concerne la route dans les 24 h.</p>';
+  if(_frnMapLayer) _frnDrawMap();
+};
+function _frnDrawMap(){
+  if(typeof routeMap==='undefined'||!routeMap||typeof L==='undefined') return;
+  if(_frnMapLayer){ routeMap.removeLayer(_frnMapLayer); }
+  var g=L.layerGroup();
+  _frnSelect().list.forEach(function(n){
+    if(n.lat==null || (n.r||0)>60) return;
+    var col=/^(R|P|D|W)/.test(n.q)?'#e53935':(n.sec==='AD'?'#5b8def':'#ffa726');
+    var c=L.circle([n.lat,n.lon],{radius:Math.max(0.5,n.r||1)*1852,color:col,weight:1.5,fillOpacity:.08,dashArray:n._now?null:'4,4',interactive:true,bubblingMouseEvents:false});
+    c.bindPopup('<b>'+escHTML(n.id)+' '+escHTML(n.a)+'</b><br>'+escHTML((n.e_fr||n.e).slice(0,400))+'<br><small>'+_frnFmtDate(n.b)+' → '+_frnFmtDate(n.c)+' · '+_frnFl(n.lo)+' → '+_frnFl(n.hi)+'</small>');
+    g.addLayer(c);
+  });
+  _frnMapLayer=g.addTo(routeMap);
+}
+window.toggleFrNotamsOnMap=function(){
+  var b=document.getElementById('frnMapBtn');
+  if(_frnMapLayer){ routeMap.removeLayer(_frnMapLayer); _frnMapLayer=null; if(b) b.style.background=''; return; }
+  if(!_frNotams){ window.loadFrNotams(true); return; }
+  _frnDrawMap();
+  if(b) b.style.background='rgba(255,167,38,.3)';
+  _toast('🗺️ NOTAM France affichés sur la carte de route (onglet Navlog)','',3000);
+};
 
 /* Surligne (sans les masquer) les NOTAM concernant les a\u00E9rodromes de la route actuelle
    (waypoints + d\u00E9gagement 1/2), en s'appuyant sur highlightNotamTerms() g\u00E9n\u00E9r\u00E9 par

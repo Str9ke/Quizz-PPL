@@ -63,7 +63,7 @@ APP_HOME = {"ppl": None, "briefing": "briefing.html", "biblio": "bibliotheque.ht
 # comme pour le déploiement du site.
 EXCLUDE_FILES = [
     "config.js", "*.py", "*.har", "*.docx", "*.md", "*.log", "*.txt",
-    "skeyes_*", "temsi_*", "wintem_*", "opmet*", "notams_belgique.html",
+    "skeyes_*", "temsi_*", "wintem_*", "opmet*", "notams_belgique.html", "notams_france.json",
     "daily_warnings*", "figs.json", "c150_manual.pdf", "test_*.png", "_ci_logs*", "package.json", "package-lock.json",
     "capacitor.config.json", "firebase.json", "firestore.*", "storage.rules",
     "*.code-workspace", ".gitignore", ".DS_Store",

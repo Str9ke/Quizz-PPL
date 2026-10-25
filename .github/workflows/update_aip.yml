@@ -30,6 +30,7 @@ jobs:
             /requirements.txt
             /openaip_data.json
             /aip_freqs.json
+            /vfr_data.json
             /tools/
 
       # Même environnement (Python + Chromium pour le pare-feu de skeyes) que update_notams.yml
@@ -56,13 +57,19 @@ jobs:
       - name: Fetch AIP frequencies
         run: ~/venv/bin/python -u tools/aip_freqs.py
 
+      # Points VFR (open flightmaps), obstacles (SIA, skeyes), cartes VAC belges -> vfr_data.json
+      - name: Fetch VFR data
+        env:
+          OPENAIP_API_KEY: ${{ secrets.OPENAIP_API_KEY }}
+        run: ~/venv/bin/python -u tools/fetch_vfrdata.py || echo "::warning::Données VFR non mises à jour"
+
       - name: Publish (commit + push)
         id: push
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           before=$(git rev-parse HEAD)
-          bash tools/git_publish.sh "Auto-update fréquences AIP" aip_freqs.json
+          bash tools/git_publish.sh "Auto-update fréquences AIP et données VFR" aip_freqs.json vfr_data.json
           if [ "$(git rev-parse HEAD)" != "$before" ]; then echo "pushed=true" >> "$GITHUB_OUTPUT"; else echo "pushed=false" >> "$GITHUB_OUTPUT"; fi
 
   deploy:

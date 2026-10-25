@@ -36,7 +36,7 @@
   /* Fichiers régénérés côté serveur. Le test porte sur le NOM DE FICHIER seul : c'est la même
      liste que les exclusions de tools/build_www.py, et garder les deux alignées est la seule
      chose à surveiller en ajoutant un type de carte. */
-  var REMOTE_PATTERN = /^(opmet.*|notams_belgique\.html|daily_warnings.*|temsi_.*|wintem_.*|skeyes_.*)$/i;
+  var REMOTE_PATTERN = /^(opmet.*|notams_belgique\.html|notams_france\.json|daily_warnings.*|temsi_.*|wintem_.*|skeyes_.*)$/i;
 
   function isNativeApp() {
     try {
