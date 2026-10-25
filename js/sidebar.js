@@ -183,7 +183,7 @@
       '<div class="sidebar-header">'
       + (APPS[CURRENT_APP] ? '<img class="sidebar-header-logo" src="' + esc(APPS[CURRENT_APP].logo) + '" alt="">' : '<span class="sidebar-header-icon">✈️</span>')
       + '<span class="sidebar-header-title">' + esc(APPS[CURRENT_APP] ? APPS[CURRENT_APP].name : 'Quiz PPL') + '</span>'
-      + '<button type="button" class="sidebar-close-btn" aria-label="Fermer le menu">✕</button>'
+      + '<button type="button" class="sidebar-close-btn" aria-label="Fermer le menu" title="Replier le menu sur le côté (☰ pour le rouvrir)">✕</button>'
       + '</div>'
       + '<div class="sidebar-body">' + buildHtml(cur) + '</div>';
 

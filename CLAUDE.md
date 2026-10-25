@@ -76,6 +76,12 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   l'étape, distance au tracé + distance/Rm depuis l'arrivée ; D1/D2 gardés sur le point d'arrivée (`wp._altn`) ; ceux de la dernière
   étape remplissent le FPL (`fpl_altn1/2`) et la distance « Dégagement » du devis ; ligne « Dégagements » sur la feuille imprimée.
   Feuille imprimée : départ/arrivée à l'altitude du terrain (`_adElevFor`), MEF sous l'altitude du leg.
+- **Espace de travail synchronisé** : `_doAutosave` (localStorage `navlog_autosave_v1`, date = dernière VRAIE modification via
+  `_wsSig`) + Firestore `quizProgress/{uid}/session/navlogWorkspace` (`_wsCloudPush`/`_wsCloudPull` : le plus récent l'emporte,
+  lu à la connexion et au retour sur l'appli ; aucun envoi avant la première lecture).
+- **METAR en français** : `js/metar-fr.js` (`metarFr`, `metarFrToggle`) ; bouton « 🇫🇷 METAR en français » (OPMET + AéroWeb),
+  clic sur un METAR = bascule ; préférence `metarFr` dans le localStorage.
+- Barre du haut du Navlog : « Tout récupérer » / « OPMET seul » (serveur + `refreshAllWeatherData`) / « Rafraîchir ».
 - **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
   localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
   leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
@@ -89,7 +95,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v244`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v245`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

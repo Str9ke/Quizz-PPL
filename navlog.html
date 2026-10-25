@@ -11,6 +11,7 @@
        effet. Voir js/remote-assets.js. -->
   <script src="js/remote-assets.js?v=20261014b"></script>
   <script src="js/aerodromes-data.js?v=20261023a"></script>
+  <script src="js/metar-fr.js?v=20261025a"></script>
   <link rel="stylesheet" href="style.css?v=20260807a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -986,6 +987,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .dw-airport-label::before{display:none !important}
 .as-map-label{background:rgba(10,10,20,.82) !important;border:none !important;color:#fff !important;font-size:.74em !important;font-weight:700 !important;padding:2px 6px !important;box-shadow:none !important;pointer-events:none}
 .as-map-label::before{display:none !important}
+.metar-fr-btn.on{background:linear-gradient(135deg,#1e88e5,#1565c0)!important;color:#fff!important;border-color:transparent!important}
 /* NOTAM France (onglet NOTAMs) */
 .frn-bar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 16px;font-size:.82em}
 .frn-bar label{display:inline-flex;align-items:center;gap:5px;width:auto;margin:0;cursor:pointer}
@@ -1120,7 +1122,9 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
        qu'après un dossier chargé ET un premier clic sur Actualiser, pour comparer la météo
        sauvegardée dans le dossier à la météo fraîchement récupérée. -->
   <div class="global-refresh-bar" id="globalRefreshBar">
-    <button class="global-refresh-btn" id="globalRefreshBtn" onclick="window.refreshAllWeatherData()">&#x1F504; Tout actualiser (METAR &middot; NOTAM &middot; M&#xe9;t&#xe9;o)</button>
+    <button class="global-refresh-btn" style="background:linear-gradient(135deg,#e53935,#c62828);color:#fff;border-color:transparent" onclick="window.triggerGithubAction();window.refreshAllWeatherData()" title="Récupération complète sur le serveur (OPMET, NOTAM Belgique et France, avis du jour, cartes, images) + actualisation des METAR/TAF de la route">&#x2B07;&#xFE0F; Tout r&#xe9;cup&#xe9;rer</button>
+    <button class="global-refresh-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:transparent" onclick="window.triggerOpmetOnlyAction();window.refreshAllWeatherData()" title="Récupère seulement l'OPMET complet (METAR, TAF, SIGMET, GAMET/AIRMET de skeyes + METAR/TAF AéroWeb France) — plus rapide">&#x26A1; OPMET seul</button>
+    <button class="global-refresh-btn" id="globalRefreshBtn" onclick="window.refreshBriefingDisplay&&window.refreshBriefingDisplay();window.refreshAllWeatherData()" title="Réaffiche les dernières données récupérées et actualise METAR / TAF / NOTAM par terrain / GAMET / avis du jour (sans relancer le serveur)">&#x1F504; Rafra&#xee;chir</button>
     <button class="global-refresh-btn" id="globalClearWsBtn" style="background:rgba(239,83,80,.14);border-color:#ef5350;color:#ef5350" onclick="window.clearWorkspace()" title="Vide complètement l'espace de travail (NavLog, météo, NOTAMs, cartes...)">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
     <span class="global-refresh-time" id="globalRefreshTime"></span>
     <div class="wx-snapshot-toggle" id="wxSnapshotToggle" style="display:none">
@@ -2078,6 +2082,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
             <label style="display:flex;gap:6px;align-items:center;font-size:.8em;color:var(--text-secondary);margin-top:6px"><input type="checkbox" id="awRouteOnly" onchange="window.renderAerowebMetars()"> Seulement les a&#xe9;rodromes de ma route</label>
           </div>
         </div>
+        <div style="padding:0 16px 8px"><button type="button" class="aeroweb-nav-btn metar-fr-btn" onclick="window.toggleMetarFr()" title="Traduire les METAR en français clair (un clic sur un METAR le bascule seul)">&#x1F1EB;&#x1F1F7; METAR en fran&#xe7;ais</button></div>
         <div id="awList" style="padding:0 12px 12px"></div>
       </div>
     </div>
@@ -2110,8 +2115,9 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <div class="map-card-title">&#x1F916; OPMET Automatique (Skeyes)</div>
         <p style="padding:8px 16px;font-size:.82em;color:var(--text-secondary);margin:0">METAR, TAF, SIGMET, GAMET/AIRMET r&#xe9;cup&#xe9;r&#xe9;s depuis Skeyes (EBSG, Belgique &amp; Luxembourg) quand tu lances la r&#xe9;cup&#xe9;ration.</p>
         <div id="autoOpmetFrameSnapBanner" class="iframe-snap-banner" style="display:none"></div>
-          <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px'"></iframe>
+          <iframe id="autoOpmetFrame" src="opmet.html" style="width:100%; border:none; background:transparent;" loading="lazy" onload="this.style.height=this.contentDocument.body.scrollHeight+'px';window._metarFrWire(this)"></iframe>
         <div class="map-card-actions">
+          <button class="metar-fr-btn" onclick="window.toggleMetarFr()" title="Traduire tous les METAR en français clair (un clic sur un METAR le bascule seul)">&#x1F1EB;&#x1F1F7; METAR en fran&#xe7;ais</button>
           <button onclick="var f=document.getElementById('autoOpmetFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
           <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
         </div>
@@ -6240,7 +6246,7 @@ function refreshAllWeatherData(){
   if(typeof loadDailyWarnings==='function') loadDailyWarnings();
   if(typeof loadGametWindWidget==='function') loadGametWindWidget();
   refreshAllMetars(function(){
-    if(btn){ btn.innerHTML='🔄 Tout actualiser (METAR · NOTAM · Météo)'; btn.disabled=false; }
+    if(btn){ btn.innerHTML='🔄 Rafraîchir'; btn.disabled=false; }
     window._lastFullRefreshAt=Date.now();
     _updateGlobalRefreshLabel();
     /* Un dossier avait été chargé : la météo qu'on vient de récupérer devient "Après",
@@ -7589,6 +7595,20 @@ document.addEventListener('keydown',function(e){
   else if(_miIdx>=0&&(e.key==='ArrowRight'||e.key==='ArrowDown')){ _miShowDetail(Math.min(_miItems.length-1,_miIdx+1)); e.preventDefault(); }
   else if(_miIdx>=0&&(e.key==='ArrowLeft'||e.key==='ArrowUp')){ _miShowDetail(Math.max(0,_miIdx-1)); e.preventDefault(); }
 });
+/* METAR en français : préférence gardée sur l'appareil ; s'applique à l'OPMET (iframe) et à la
+   liste AéroWeb, et à chaque nouveau chargement. Un clic sur un METAR le bascule seul. */
+window._metarFrOn=(function(){ try{ return localStorage.getItem('metarFr')==='1'; }catch(e){ return false; } })();
+window._metarFrWire=function(fr){
+  try{ var d=fr&&fr.contentDocument; if(d&&window.metarFrToggle){ window.metarFrToggle(d, window._metarFrOn?true:null); fr.style.height=d.body.scrollHeight+'px'; } }catch(e){}
+};
+window.toggleMetarFr=function(){
+  window._metarFrOn=!window._metarFrOn;
+  try{ localStorage.setItem('metarFr',window._metarFrOn?'1':'0'); }catch(e){}
+  var fr=document.getElementById('autoOpmetFrame');
+  try{ if(fr&&fr.contentDocument) window.metarFrToggle(fr.contentDocument, window._metarFrOn); fr.style.height=fr.contentDocument.body.scrollHeight+'px'; }catch(e){}
+  window.metarFrToggle(document, window._metarFrOn);
+  document.querySelectorAll('.metar-fr-btn').forEach(function(b){ b.classList.toggle('on',window._metarFrOn); b.innerHTML=window._metarFrOn?'🔤 METAR codés':'🇫🇷 METAR en français'; });
+};
 function _miHead(inner){ return '<div class="mi-ph">'+inner+'<button type="button" class="mi-x" onclick="window._miClose()" title="Fermer (Échap)">✕</button></div>'; }
 function _miShowList(restore){
   _miIdx=-1; _miPinned=null; _miHighlight(null,true);
@@ -7639,7 +7659,7 @@ function _mapIdentify(ll){
   _miMark=L.marker(ll,{interactive:false,icon:L.divIcon({className:'mi-click',iconSize:[0,0],html:'<span></span>'})}).addTo(routeMap);
   var token=_miView;
   if(!_aipFreqsMi) _aipFreqsMi=fetch('aip_freqs.json').then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
-  Promise.all([_loadOpenaipStatic(),_loadVfrData(),_loadMef(),_aipFreqsMi,_loadBeNotams()]).then(function(res){
+  Promise.all([_loadOpenaipStatic(),_loadVfrData(),_loadMef(),_aipFreqsMi,_loadBeNotams(),_loadFrNotamsData()]).then(function(res){
     if(token!==_miView||!panel.classList.contains('show')) return;
     var oa=res[0]||{airspaces:[],airports:[],navaids:[]}, vd=res[1]||{}, aip=res[3], items=_miItems;
     function add(o){ items.push(o); }
@@ -7690,13 +7710,28 @@ function _mapIdentify(ll){
         det:'Sommet : <b>'+(o.alt!=null?o.alt+' ft AMSL':'?')+'</b><br>Hauteur sol : '+(o.h!=null?o.h+' ft':'?')+'<br>'+(o.lit?'Balisé':'Non balisé')+(o.nb>1?' · '+o.nb+' éléments':'')+(o.rmk?'<br>'+escHTML(o.rmk):'')+'<br>Position : '+o.lat.toFixed(4)+' N, '+o.lon.toFixed(4)+' E<br><small>Source : '+escHTML(o.src||'')+'</small>',
         geo:function(){ return o.line?L.featureGroup([L.polyline(o.line,{color:'#ffeb3b',weight:5,interactive:false}),_miPoint(o.lat,o.lon)]):_miPoint(o.lat,o.lon); },pt:[o.lat,o.lon],bounds:o.line||null});
     });
-    var nts=[];
-    if(_frNotams) _frNotams.notams.forEach(function(n){ if(n.lat!=null&&(n.r||0)<=60&&_notamActive(n.b,n.c)&&haversine(lat,lon,n.lat,n.lon)<=Math.max(1,n.r||1)) nts.push({id:n.id+' '+n.a,txt:n.e_fr||n.e,pts:[[n.lat,n.lon]],r:n.r||1,b:n.b,c:n.c}); });
-    (_beNotams||[]).forEach(function(n){ if(n.pts.length&&_notamActive(n.b,n.c)&&_beNotamNear(n,lat,lon)) nts.push({id:n.id+' '+n.loc,txt:n.text,pts:n.pts,r:n.r,b:n.b,c:n.c}); });
-    nts.slice(0,8).forEach(function(n){
-      add({sec:'NOTAM ici',col:'#ffa726',head:'<b>'+escHTML(n.id)+'</b>',sub:escHTML(n.txt.slice(0,80)),det:'<pre>'+escHTML(n.txt)+'</pre><small>'+_frnFmtDate(n.b)+' → '+_frnFmtDate(n.c)+'</small>',
+    /* NOTAM des alentours (France + Belgique, en vigueur dans les 24 h) : zone qui touche un
+       cercle de 10 NM autour du point, classés du plus proche au plus lointain. */
+    var nts=[], NEAR=10;
+    if(_frNotams) _frNotams.notams.forEach(function(n){
+      if(n.lat==null||(n.r||0)>60||!_notamActive(n.b,n.c)) return;
+      var d=Math.max(0,haversine(lat,lon,n.lat,n.lon)-(n.r||0));
+      if(d<=NEAR) nts.push({d:d,id:n.id+' '+n.a,txt:n.e_fr||n.e,pts:[[n.lat,n.lon]],r:Math.min(n.r||1,60),b:n.b,c:n.c,lo:n.lo,hi:n.hi});
+    });
+    (_beNotams||[]).forEach(function(n){
+      if(!n.pts.length||!_notamActive(n.b,n.c)) return;
+      var d=_beNotamNear(n,lat,lon)?0:Math.max(0,Math.min.apply(null,n.pts.map(function(q){ return haversine(lat,lon,q[0],q[1]); }))-(n.r||0));
+      if(d<=NEAR) nts.push({d:d,id:n.id+' '+n.loc,txt:n.text,pts:n.pts,r:n.r,b:n.b,c:n.c});
+    });
+    nts.sort(function(a,b){ return a.d-b.d; });
+    nts.slice(0,15).forEach(function(n){
+      add({sec:'NOTAM aux alentours ('+Math.min(nts.length,15)+(nts.length>15?' / '+nts.length:'')+')',col:'#ffa726',head:'<b>'+escHTML(n.id)+'</b>',
+        sub:(n.d<0.05?'ici':'à '+n.d.toFixed(1)+' NM')+' · '+escHTML(n.txt.slice(0,70)),
+        det:'<pre>'+escHTML(n.txt)+'</pre><small>'+_frnFmtDate(n.b)+' → '+_frnFmtDate(n.c)+(n.lo!=null?' · '+_frnFl(n.lo)+' → '+_frnFl(n.hi):'')+(n.r?' · rayon '+(+n.r).toFixed(1)+' NM':'')+'</small>',
         geo:function(){ return _notamGeo(n,'#ffa726'); },bounds:_notamBounds(n)});
     });
+    if(!nts.length) add({sec:'NOTAM aux alentours (0)',col:'#7f8c8d',head:'Aucun NOTAM localisé à moins de '+NEAR+' NM',
+      sub:(_frNotams?'':'NOTAM France pas encore récupérés · ')+'données de la dernière récupération',det:'Les NOTAM affichés sont ceux de la dernière récupération (bouton « Tout récupérer »). Les NOTAM sans position ne sont pas listés ici : voir l’onglet NOTAMs.',geo:null});
     _miShowList(false);
   });
 }
@@ -8655,8 +8690,7 @@ window._setAltn=function(arrIdx,slot,code){
     var fd=document.getElementById('fuelAltnDist'); if(fd){ fd.value=x?Math.ceil(x.dDest):0; }
     if(typeof window.renderFuelLog==='function') try{ window.renderFuelLog(); }catch(e){}
   }
-  if(typeof saveNavlogState==='function') try{ saveNavlogState(); }catch(e){}
-  if(typeof window._autoSaveWorkspace==='function') try{ window._autoSaveWorkspace(); }catch(e){}
+  _scheduleAutosave();   /* garde le choix sur l'appareil… et dans le cloud (voir _wsCloudPush) */
   renderAltnPanel();
 };
 window.renderAltnPanel=renderAltnPanel;
@@ -11434,9 +11468,58 @@ function _doAutosave(){
       etapesStageCount:window._etapesStageCount||0,
       savedAt:Date.now()
     };
+    /* savedAt = heure de la dernière VRAIE modification : un simple rechargement (même contenu)
+       garde l'ancienne date, sinon l'appareil qu'on vient d'ouvrir passerait pour « le plus
+       récent » et n'irait jamais chercher la version du cloud. */
+    var sig=_wsSig(snap), prev=null;
+    try{ prev=JSON.parse(localStorage.getItem(NAVLOG_AUTOSAVE_KEY)||'null'); }catch(e){}
+    if(prev&&prev.savedAt&&_wsSig(prev)===sig) snap.savedAt=prev.savedAt;
     localStorage.setItem(NAVLOG_AUTOSAVE_KEY,JSON.stringify(snap));
+    if(!prev||_wsSig(prev)!==sig) _wsCloudPush(snap);
   }catch(e){ /* quota dépassé ou route non sérialisable : sauvegarde auto best-effort, on ignore */ }
 }
+function _wsSig(sn){ try{ return JSON.stringify([sn.config,sn.waypoints,sn.reserveMode,sn.flightType,sn.etapesStageCount]); }catch(e){ return ''; } }
+/* ===== Espace de travail synchronisé entre appareils (PC, tablette, téléphone) =====
+   Le travail en cours (route, dégagements, commentaires, réglages) part aussi dans le compte
+   (Firestore quizProgress/{uid}/session/navlogWorkspace) ; à l'ouverture et au retour sur
+   l'appli, la version la plus récente (date de la dernière vraie modification) l'emporte.
+   Aucun envoi tant que la version du cloud n'a pas été lue (sinon un appareil qui démarre
+   écraserait le travail plus récent fait ailleurs). */
+var _wsCloudTimer=null, _wsApplying=false, _wsPulled=false;
+function _wsCloudRef(){
+  if(typeof _initFirebase!=='function') return null;
+  var db=_initFirebase(); if(!db||!_navlogUid||!_navlogAuthLive) return null;
+  return db.collection('quizProgress').doc(_navlogUid).collection('session').doc('navlogWorkspace');
+}
+function _wsCloudPush(snap){
+  if(_wsApplying||!_wsPulled) return;
+  clearTimeout(_wsCloudTimer);
+  _wsCloudTimer=setTimeout(function(){
+    var ref=_wsCloudRef(); if(!ref) return;
+    var sn=JSON.parse(JSON.stringify(snap)); delete sn.wxCache;
+    ref.set({savedAt:sn.savedAt,data:JSON.stringify(sn)}).catch(function(e){ console.warn('Espace de travail (cloud) :',e); });
+  },3000);
+}
+function _wsCloudPull(){
+  var ref=_wsCloudRef(); if(!ref) return;
+  ref.get().then(function(doc){
+    _wsPulled=true;
+    var local=null; try{ local=JSON.parse(localStorage.getItem(NAVLOG_AUTOSAVE_KEY)||'null'); }catch(e){}
+    if(!doc.exists){ if(local) _wsCloudPush(local); return; }
+    var d=doc.data();
+    if(local&&local.savedAt&&d.savedAt<=local.savedAt){ if(d.savedAt<local.savedAt) _wsCloudPush(local); return; }
+    var snap=JSON.parse(d.data);
+    if(local&&_wsSig(local)===_wsSig(snap)) return;
+    snap.wxCache=(local&&local.wxCache)||{};
+    localStorage.setItem(NAVLOG_AUTOSAVE_KEY,JSON.stringify(snap));
+    _wsApplying=true;
+    try{ _restoreAutosaveIfAny(); }finally{ setTimeout(function(){ _wsApplying=false; },2500); }
+    if(typeof _toast==='function') _toast('☁️ Route et dégagements mis à jour depuis un autre appareil','',3500);
+  }).catch(function(e){ _wsPulled=true; console.warn('Espace de travail (cloud) :',e); });
+}
+window._wsCloudPull=_wsCloudPull;
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') _wsCloudPull(); });
+
 /* Restauration silencieuse au chargement — mêmes champs que loadDossier (config, waypoints,
    wxCache, flightType, reserveMode), sans tout le reste propre aux dossiers explicites
    (cloud, captures d'écran, checklist...) qui n'a pas de sens pour un simple filet de
@@ -11841,6 +11924,7 @@ window._navlogSyncNow=_navlogSyncNow;
       _navlogUid=user.uid;
       _navlogAuthLive=true; /* session réellement confirmée par Firebase Auth */
       _navlogAuthResolved=true;
+      setTimeout(function(){ if(typeof _wsCloudPull==='function') _wsCloudPull(); },600);
       localStorage.setItem('cachedUid',user.uid);
       /* Mise à jour de l'UI */
       var em=document.getElementById('syncEmailDisplay');
@@ -18678,6 +18762,10 @@ window.renderBeNotams=function(){
    et seulement ceux en vigueur dans les 24 h. Le texte n'est jamais modifié (Licence Ouverte :
    pas d'altération, source et date citées). */
 var _frNotams=null, _frNotamsLoading=null, _frnMapLayer=null, _frnShownList=[];
+function _loadFrNotamsData(){
+  if(_frNotams) return Promise.resolve(_frNotams);
+  return fetch('notams_france.json').then(function(r){ return r.ok?r.json():null; }).then(function(d){ if(d&&d.notams) _frNotams=d; return _frNotams; }).catch(function(){ return null; });
+}
 window._showFrNotam=function(i){ var n=_frnShownList[i]; if(!n||n.lat==null) return;
   window._showNotamOnMap({title:n.id+' '+n.a,txt:(n.e_fr||n.e)+(n.e_fr&&n.e&&n.e_fr!==n.e?'\n\n'+n.e:''),pts:[[n.lat,n.lon]],r:Math.min(n.r||1,60),b:n.b,c:n.c}); };
 window.loadFrNotams=function(force){
@@ -19030,6 +19118,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
     list.innerHTML=html||'<div style="padding:12px;color:var(--text-secondary)">Aucun aérodrome ne correspond.</div>';
+    if(window.metarFrToggle) window.metarFrToggle(document, window._metarFrOn?true:null);
   };
   window.loadAerowebMetars=function(){
     return fetch('opmet_aeroweb.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; })

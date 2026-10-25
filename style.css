@@ -2499,8 +2499,12 @@ body.sidebar-open .app-sidebar {
   }
   /* Menu replié sur le côté (bouton ‹ de l'en-tête) : la page prend toute la largeur ; le
      bouton ☰ le ramène. Choix retenu d'une visite à l'autre (js/sidebar.js). */
-  .sidebar-close-btn::before { content: '‹'; font-size: 1.5em; line-height: 0.8; }
-  .sidebar-close-btn { font-size: 0 !important; }
+  /* Bouton « replier le menu » : bien visible (le ‹ héritait d'une taille de police nulle) */
+  .sidebar-close-btn::before { content: '«'; font-size: 22px; line-height: 1; font-weight: 700; }
+  .sidebar-close-btn { font-size: 0 !important; width: 34px !important; height: 34px; display: inline-flex; align-items: center;
+    justify-content: center; border: 1px solid var(--border-color) !important; border-radius: 9px; color: var(--text-primary) !important;
+    background: rgba(255,255,255,.06) !important; margin-left: auto; }
+  .sidebar-close-btn:hover { background: rgba(102,126,234,.25) !important; }
   body.sidebar-collapsed {
     margin-left: 0;
   }
