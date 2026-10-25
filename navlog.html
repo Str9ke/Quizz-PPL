@@ -518,6 +518,22 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .nl-recap-wp-flag .nl-recap-role-tag{background:rgba(255,255,255,.24);color:#fff}
 .nl-recap-wp-flag .nl-recap-name-input:hover{border-color:rgba(255,255,255,.5)}
 .nl-recap-wp-flag .nl-recap-name-input:focus{border-color:#fff;background:rgba(255,255,255,.18)}
+.altn-stage{margin:14px 0 4px;border:1px solid var(--border-color);border-radius:12px;overflow:hidden}
+.altn-h{padding:8px 12px;background:rgba(102,126,234,.14);font-weight:800;color:#8fa0f5;font-size:.9em;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.altn-h .altn-sel{font-weight:700;color:var(--text-primary);font-size:.92em}
+.altn-sel b{color:#66bb6a}.altn-sel b.d2{color:#ffa726}
+.altn-list{max-height:330px;overflow:auto}
+.altn-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 10px;align-items:center;padding:7px 12px;border-top:1px solid rgba(255,255,255,.06);font-size:.84em}
+.altn-row.d1{background:rgba(76,175,80,.12)}.altn-row.d2{background:rgba(255,167,38,.12)}
+.altn-row .altn-id b{font-family:monospace;font-size:1.08em}
+.altn-row small{color:var(--text-secondary);display:block}
+.altn-d{text-align:right;white-space:nowrap;font-weight:700}
+.altn-d small{font-weight:400}
+.altn-btns{display:flex;gap:4px}
+.altn-btns button{width:auto;margin:0;padding:4px 9px;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);font-weight:800;cursor:pointer;font-size:.9em}
+.altn-btns button.on1{background:#43a047;border-color:#43a047;color:#fff}
+.altn-btns button.on2{background:#fb8c00;border-color:#fb8c00;color:#fff}
+@media(max-width:600px){.altn-row{grid-template-columns:1fr auto;}.altn-row .altn-d{grid-column:1}.altn-row .altn-btns{grid-row:1/3;grid-column:2}}
 .nl-recap-stage-title{font-weight:800;font-size:.92em;margin:14px 0 6px;padding:6px 10px;border-radius:8px;background:rgba(102,126,234,.16);color:#8fa0f5}
 .nl-recap-stage-title:first-child{margin-top:0}
 .nl-recap-table tr.nl-recap-leg-row td.nl-recap-cap{font-style:normal}
@@ -1232,6 +1248,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
     <!-- Route recap table -->
     <div class="nl-card" id="navlogRecapCard" style="display:none">
       <div id="navlogRecapContainer"></div>
+      <div id="navlogAltnPanel"></div>
     </div>
 
     <!-- Route map -->
@@ -7387,7 +7404,18 @@ function _mefBadge(a,b,alt){
 }
 function _mefPrint(a,b,alt){
   var c=_mefSegment(a,b); if(!c) return '';
-  return '<br><span style="font-size:.78em;font-style:normal;'+(alt<c.mef?'color:#c62828;font-weight:800':'color:#1a46a0')+'">MEF '+c.mef+'</span>';
+  return '<span class="mef-p'+(alt<c.mef?' bad':'')+'" style="'+(alt<c.mef?'':'color:#1a46a0')+'">MEF '+c.mef+(alt<c.mef?' ⚠':'')+'</span>';
+}
+/* Altitude réelle d'un terrain (départ, arrivée, escale) : AIRPORT_ELEV / aérodromes connus,
+   par le nom du point ou l'aérodrome à moins de 1,5 NM ; null si inconnue. */
+function _adElevFor(wp){
+  if(!wp) return null;
+  var c=(wp.name||'').trim().toUpperCase(), AD=window.AERODROMES_DATA||{};
+  if(!/^[A-Z]{4}$/.test(c) && wp.lat!=null && typeof _nearestAerodrome==='function') c=_nearestAerodrome(wp.lat,wp.lon,1.5)||'';
+  if(!c) return null;
+  if(AIRPORT_ELEV[c]!==undefined) return AIRPORT_ELEV[c];
+  if(AD[c]&&AD[c].elev!=null) return AD[c].elev;
+  return null;
 }
 function _mefPopup(c){
   return '<div class="oa-pop mi-mef">MEF <b>'+c.mef+' ft</b><br>Point le plus haut : '+(c.by==='relief'?'relief '+c.top+' ft':escHTML(c.by)+' '+c.top+' ft AMSL')
@@ -8476,6 +8504,86 @@ function _buildOnscreenSegmentTable(segIdx,tableIdx,legBase){
     '</div>';
 }
 
+/* ===== DÉGAGEMENTS PAR ÉTAPE =====
+   Pour chaque étape : les aérodromes à moins de 25 NM de son tracé (sauf son arrivée), avec la
+   distance au tracé et la distance + route vraie/magnétique depuis l'arrivée de l'étape — celle qui
+   compte pour le carburant de dégagement. Deux choix par étape (D1, D2), gardés sur le point
+   d'arrivée de l'étape (wp._altn, sauvegardé avec le dossier). Le D1/D2 de la DERNIÈRE étape
+   remplit aussi le plan de vol (cases 16) et la distance « Dégagement » du devis carburant. */
+function _altnCandidates(seg){
+  var AD=window.AERODROMES_DATA||{}, pts=seg.map(function(i){ return waypoints[i]; }).filter(function(w){ return w&&w.lat!=null&&w.lon!=null; });
+  if(pts.length<2) return [];
+  var dest=pts[pts.length-1], destCode=(dest.name||'').toUpperCase();
+  if(!/^[A-Z]{4}$/.test(destCode)&&typeof _nearestAerodrome==='function') destCode=_nearestAerodrome(dest.lat,dest.lon,1.5)||destCode;
+  var cfg=getConfig(), out=[];
+  function segDist(p,a,b){ /* distance (NM) point -> segment, projection locale */
+    var k=Math.cos(p.lat*Math.PI/180), ax=(a.lon-p.lon)*k*60, ay=(a.lat-p.lat)*60, bx=(b.lon-p.lon)*k*60, by=(b.lat-p.lat)*60;
+    var dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy, t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0;
+    var x=ax+t*dx, y=ay+t*dy; return Math.sqrt(x*x+y*y);
+  }
+  Object.keys(AD).forEach(function(code){
+    var a=AD[code]; if(a.lat==null||code===destCode) return;
+    var p={lat:a.lat,lon:a.lon}, dr=Infinity;
+    for(var i=1;i<pts.length;i++) dr=Math.min(dr,segDist(p,pts[i-1],pts[i]));
+    if(dr>25) return;
+    var dd=haversine(dest.lat,dest.lon,a.lat,a.lon), rt=trueBearing(dest.lat,dest.lon,a.lat,a.lon);
+    var lr=0,sf=''; (a.rwys||[]).forEach(function(r){ if((r.len||0)>lr){ lr=r.len; sf=r.sfc||''; } });
+    out.push({code:code,name:a.name,elev:a.elev,dRoute:dr,dDest:dd,rT:Math.round(rt),rM:Math.round(((rt+cfg.dev)%360+360)%360),len:lr,sfc:sf});
+  });
+  out.sort(function(x,y){ return x.dDest-y.dDest; });
+  return {list:out.slice(0,14),dest:dest,destCode:destCode};
+}
+function renderAltnPanel(){
+  var box=document.getElementById('navlogAltnPanel'); if(!box) return;
+  if(!window.AERODROMES_DATA||waypoints.length<2){ box.innerHTML=''; return; }
+  var segs=_navStageSegs(); if(!segs.length){ box.innerHTML=''; return; }
+  var h='<div class="nl-card-title" style="margin-top:18px"><span class="icon">🛬</span> Dégagements par étape <span style="font-size:.72em;font-weight:400;color:var(--text-secondary)">— aérodromes à moins de 25 NM du tracé, classés par distance depuis l’arrivée ; choisis D1 et D2</span></div>';
+  segs.forEach(function(seg,si){
+    var c=_altnCandidates(seg); if(!c||!c.list) return;
+    var arrIdx=seg[seg.length-1], arr=waypoints[arrIdx], sel=(arr&&arr._altn)||[];
+    function selTxt(code,n){ if(!code) return '<span style="opacity:.6">D'+n+' : —</span>'; var x=c.list.filter(function(q){ return q.code===code; })[0];
+      return 'D'+n+' : <b'+(n===2?' class="d2"':'')+'>'+code+'</b>'+(x?' ('+x.dDest.toFixed(0)+' NM, Rm '+('00'+x.rM).slice(-3)+'°)':''); }
+    h+='<div class="altn-stage"><div class="altn-h">'+(segs.length>1?'Étape '+(si+1)+' — ':'')+escHTML(waypoints[seg[0]].name||'?')+' → '+escHTML(arr.name||'?')
+      +'<span class="altn-sel">'+selTxt(sel[0],1)+' · '+selTxt(sel[1],2)+'</span></div><div class="altn-list">';
+    if(!c.list.length) h+='<div class="altn-row"><span>Aucun aérodrome connu à moins de 25 NM du tracé.</span></div>';
+    c.list.forEach(function(x){
+      var on=sel[0]===x.code?1:(sel[1]===x.code?2:0);
+      h+='<div class="altn-row'+(on?' d'+on:'')+'"><div class="altn-id"><b>'+x.code+'</b></div>'
+        +'<div>'+escHTML(x.name)+'<small>'+(x.elev!=null?x.elev+' ft':'')+(x.len?' · piste '+x.len+' m'+(x.sfc?' '+escHTML(x.sfc==='grass'?'herbe':(x.sfc==='asphalt'||x.sfc==='concrete'?'dur':x.sfc)):''):'')+' · à '+x.dRoute.toFixed(1)+' NM du tracé</small></div>'
+        +'<div class="altn-d">'+x.dDest.toFixed(1)+' NM<small>depuis '+escHTML(c.destCode||'l’arrivée')+' · Rm '+('00'+x.rM).slice(-3)+'°</small></div>'
+        +'<div class="altn-btns"><button type="button" class="'+(on===1?'on1':'')+'" onclick="window._setAltn('+arrIdx+',0,\''+x.code+'\')" title="Dégagement 1">D1</button>'
+        +'<button type="button" class="'+(on===2?'on2':'')+'" onclick="window._setAltn('+arrIdx+',1,\''+x.code+'\')" title="Dégagement 2">D2</button></div></div>';
+    });
+    h+='</div></div>';
+  });
+  box.innerHTML=h;
+}
+window._setAltn=function(arrIdx,slot,code){
+  var w=waypoints[arrIdx]; if(!w) return;
+  var a=(w._altn||[]).slice(); a[slot]=(a[slot]===code)?'':code;
+  if(a[1-slot]===a[slot]) a[1-slot]='';
+  w._altn=a;
+  /* dernière étape : plan de vol (cases 16) + distance de dégagement du devis carburant */
+  var segs=_navStageSegs(), last=segs.length?segs[segs.length-1]:null;
+  if(last && last[last.length-1]===arrIdx){
+    ['fpl_altn1','fpl_altn2'].forEach(function(id,k){ var el=document.getElementById(id); if(el){ el.value=a[k]||''; } });
+    var c=_altnCandidates(last), x=c&&c.list&&c.list.filter(function(q){ return q.code===a[0]; })[0];
+    var fd=document.getElementById('fuelAltnDist'); if(fd){ fd.value=x?Math.ceil(x.dDest):0; }
+    if(typeof window.renderFuelLog==='function') try{ window.renderFuelLog(); }catch(e){}
+  }
+  if(typeof saveNavlogState==='function') try{ saveNavlogState(); }catch(e){}
+  if(typeof window._autoSaveWorkspace==='function') try{ window._autoSaveWorkspace(); }catch(e){}
+  renderAltnPanel();
+};
+window.renderAltnPanel=renderAltnPanel;
+/* Ligne « Dégagements » de la feuille imprimée (une par étape) */
+function _altnPrint(seg){
+  var arr=waypoints[seg[seg.length-1]], sel=(arr&&arr._altn||[]).filter(Boolean); if(!sel.length) return '';
+  var c=_altnCandidates(seg), parts=sel.map(function(code,k){ var x=c&&c.list&&c.list.filter(function(q){ return q.code===code; })[0];
+    return '<b>D'+(k+1)+' '+code+'</b>'+(x?' '+escHTML(x.name)+' — '+x.dDest.toFixed(0)+' NM, Rm '+('00'+x.rM).slice(-3)+'°'+(x.elev!=null?', '+x.elev+' ft':''):''); });
+  return '<div style="border:1.4px solid #333;border-top:none;padding:1.2mm 5px;font-size:.92em"><span style="text-transform:uppercase;color:#555;font-weight:700;margin-right:.6em">Dégagements</span>'+parts.join(' &nbsp;·&nbsp; ')+'</div>';
+}
+
 function renderNavlogRecapTable(){
   var card=document.getElementById('navlogRecapCard');
   var cont=document.getElementById('navlogRecapContainer');
@@ -8574,6 +8682,7 @@ function renderNavlogRecapTable(){
     '<div style="margin-top:10px;text-align:center">'+
       '<button class="navlog-btn" style="background:linear-gradient(135deg,#7c4dff,#5b8def);border-color:transparent;color:#fff" onclick="window._addNewStageFromEnd()" title="Termine la route actuelle et prépare un nouveau tableau vide : cliquez ensuite sur la carte pour placer son premier point">➕ Étape suivante</button>'+
     '</div>';
+  renderAltnPanel(); /* dégagements par étape, sous les tableaux */
 }
 window.renderNavlogRecapTable=renderNavlogRecapTable;
 
@@ -8825,7 +8934,9 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     var isArrivalViaCircuit=(k===segIdx.length-1)&&_arrivalViaCircuit(i);
     var viaCircuitTag=isArrivalViaCircuit?' <span class="tag" style="background:#00838f">via circuit</span>':'';
     var isDep=(k===0);
-    var altCell=blank?'':(isDep?alt:'—');
+    var isArrPt=(k===segIdx.length-1), adEl=(isDep||isArrPt)?_adElevFor(wp):null;
+    /* départ / arrivée : altitude RÉELLE du terrain (pas l'altitude de croisière du leg) */
+    var altCell=blank?'':((isDep||isArrPt)?(adEl!=null?adEl+'<span class="ad-el">ft terrain</span>':(isDep?alt:'—')):'—');
 
     var windBadge='';
     if(k===0 && windBadgeFirst && perfTakeoffWind) windBadge=' <span class="tag windtag">💨 '+Math.round(perfTakeoffWind.dir)+'°/'+Math.round(perfTakeoffWind.spd)+'kt piste</span>';
@@ -8839,7 +8950,7 @@ function _buildRecapSegmentRows(segIdx,cfg,blank,windBadgeFirst,windBadgeLast,pe
     rows+='<tr class="pt-row'+(k%2?' alt':'')+(roleLabel?' pt-key':'')+'">'+
       '<td class="c-num"></td>'+
       '<td class="c-name">'+nameCellHtml+'</td>'+
-      '<td class="'+(isDep?'':'dim')+'">'+altCell+'</td>'+
+      '<td class="'+((isDep||isArrPt)?'':'dim')+'">'+altCell+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
       '<td class="dim">'+dimDash+'</td>'+
@@ -9443,6 +9554,7 @@ function printNavlogRecapTable(blank){
         '<tbody>'+res.rows+totRow+'</tbody>'+
       '</table>'+
       fuelBlock+
+      (blank?'':_altnPrint(segIdx))+
       altProfileHtml+
     '</section>';
   });
@@ -9481,9 +9593,11 @@ function printNavlogRecapTable(blank){
     'td.c-name,th.c-name,td.c-comment,th.c-comment{white-space:normal;word-break:break-word}'+
     'td.c-name{text-align:left}'+
     'th{background:#333;color:#fff;text-transform:uppercase;white-space:normal;line-height:1.1;padding:2px 1px}'+
-    'col.c-num{width:4.5%}col.c-name{width:13%}col.c-alt{width:6%}col.c-route{width:6%}'+
-    'col.c-wind{width:10%}col.c-wca{width:5.5%}col.c-cap{width:6.5%}col.c-dist{width:8%}'+
-    'col.c-gs{width:6%}col.c-ete{width:6.5%}col.c-eta{width:10%}col.c-fuel{width:6%}col.c-comment{width:12%}'+
+    'col.c-num{width:4.5%}col.c-name{width:12.5%}col.c-alt{width:8.5%}col.c-route{width:6%}'+
+    'td .mef-p{display:block;white-space:nowrap;font-size:.74em;font-style:normal;font-weight:700;letter-spacing:-.01em;margin-top:.3mm}'+
+    'td .mef-p.bad{color:#c62828}td .ad-el{display:block;font-size:.72em;font-weight:400;color:#555}'+
+    'col.c-wind{width:9%}col.c-wca{width:5.5%}col.c-cap{width:6.5%}col.c-dist{width:8%}'+
+    'col.c-gs{width:6%}col.c-ete{width:6.5%}col.c-eta{width:9%}col.c-fuel{width:6%}col.c-comment{width:12%}'+
     'tbody tr.pt-row.alt td{background:#f2f2f2}'+
     '.dim{color:#ccc}'+
     'td.cap,th.cap{background:#ffe500!important;font-weight:700;color:#000}'+
