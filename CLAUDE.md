@@ -83,6 +83,14 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   clic sur un METAR = bascule ; préférence `metarFr` dans le localStorage.
 - Récupération rapide « OPMET + NOTAM » (`fetch_notams.py --opmet-only`) : OPMET skeyes + AéroWeb + NOTAM skeyes (`fetch_be_notams`) + SIA.
 - Barre du haut du Navlog : « Tout récupérer » / « OPMET + NOTAM » (serveur + `refreshAllWeatherData`) / « Rafraîchir ».
+- **Pays-Bas (officiel, via SIA SOFIA)** : NOTAM FIR EHAA + aérodromes (`tools/eh_aerodromes.txt`), NOTAM belges structurés (EBBU +
+  `tools/eb_aerodromes.txt`) dans `notams_france.json` (champ `cc`) ; METAR/TAF néerlandais (KNMI) `fetch_opmet` -> `opmet_nl.json`
+  (partie « opmet_nl », récupération complète et rapide), carte « METAR / TAF Pays-Bas » (onglet Météo). eAIP LVNL derrière Cloudflare :
+  pas de copie automatique (lien seulement).
+- **Fiches AIP des aérodromes** : `tools/aip_ad.py` (update_aip.yml) -> `aip_ad/<ICAO>.json` (eAIP skeyes + SIA, rubriques AD 2.2–2.4,
+  2.12–2.13, 2.17–2.18, 2.20–2.23 + site de l'exploitant) ; chargées à la demande dans le panneau Infos ; clubs/sites OpenStreetMap
+  cherchés par la page (Overpass, 3 km, cache 30 j `osmClubs_v1`). Panneau Infos : « VOR reçus ici » (ligne de vue radio, portée
+  publiée, radial magnétique). Menu « Calques » : fonds OSM / Google plan / Google satellite / relief (`_setMapBase`).
 - **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
   localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
   leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
@@ -96,7 +104,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v246`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v247`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

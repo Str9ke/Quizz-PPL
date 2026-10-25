@@ -1300,7 +1300,7 @@ import threading
 import subprocess
 import glob as _glob
 
-EXPECTED_FULL = ["opmet", "aeroweb", "daily", "notam", "notam_fr", "sfc", "images",
+EXPECTED_FULL = ["opmet", "aeroweb", "opmet_nl", "daily", "notam", "notam_fr", "sfc", "images",
                  "temsi_france", "temsi_euroc", "wintem_france", "wintem_euroc"]
 
 
@@ -1318,7 +1318,7 @@ class _Publisher:
        connexion Skeyes), le retardaient de ~6 s en passant devant.
     2. Ensuite, le reste part en UN envoi dès que tout est prêt, sauf de petites parties (le NOTAM
        suit alors seul) — ou plus tôt si une partie prête attend depuis plus de 4 s."""
-    SMALL = {"opmet", "opmet_pdf", "aeroweb", "daily", "notam", "notam_fr"}
+    SMALL = {"opmet", "opmet_pdf", "aeroweb", "opmet_nl", "daily", "notam", "notam_fr"}
     PRIORITY = "opmet"
     MAX_WAIT_PRIORITY = 25   # s : au-delà, on n'attend plus l'OPMET (échec Skeyes…)
     MAX_HOLD = 4             # s : délai max d'une partie prête avant envoi
@@ -1460,6 +1460,20 @@ def _aeroweb_task(pub):
         if os.path.exists("opmet_aeroweb.json"):
             pub.ready("aeroweb", ["opmet_aeroweb.json"])
         _lap("aeroweb")
+
+
+def _opmet_nl_task(pub):
+    """METAR/TAF officiels des Pays-Bas (KNMI, via SOFIA-Briefing du SIA) — voir tools/notams_fr.py."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools"))
+        from notams_fr import fetch_opmet as fetch_opmet_nl
+        fetch_opmet_nl()
+    except Exception as e:
+        print(f"Error fetching OPMET Pays-Bas: {e}")
+    finally:
+        if os.path.exists("opmet_nl.json"):
+            pub.ready("opmet_nl", ["opmet_nl.json"])
+        _lap("opmet Pays-Bas")
 
 
 def _notams_fr_task(pub):
@@ -1647,6 +1661,7 @@ def main():
     with ThreadPoolExecutor(max_workers=5) as bg:
         fut_aeroweb = bg.submit(_aeroweb_task, pub)
         fut_notams_fr = bg.submit(_notams_fr_task, pub)
+        fut_opmet_nl = bg.submit(_opmet_nl_task, pub)
         fut_images = bg.submit(_images_task)
         fut_daily = bg.submit(_daily_task)
         # Le résumé NOTAM met ~5 s à être produit par Skeyes : demandé en parallèle de l'OPMET.
@@ -1680,6 +1695,7 @@ def main():
         fut_daily.result()
         fut_aeroweb.result()
         fut_notams_fr.result()
+        fut_opmet_nl.result()
     pub.close()
 
 
@@ -1698,13 +1714,16 @@ def main_opmet_only():
 
     # Récupération rapide = OPMET + NOTAM officiels (les deux à jour avant un vol) :
     #  - METAR/TAF/SIGMET/GAMET : skeyes (Belgique/Luxembourg) + AéroWeb Météo-France (France) ;
-    #  - NOTAM : résumé skeyes (Belgique/Luxembourg) + SIA SOFIA-Briefing (France).
-    pub = _Publisher(["opmet", "aeroweb", "notam", "notam_fr"])
+    #  - METAR/TAF Pays-Bas : KNMI via SIA SOFIA-Briefing ;
+    #  - NOTAM : résumé skeyes (Belgique/Luxembourg) + SIA SOFIA-Briefing (France, Pays-Bas, Belgique).
+    pub = _Publisher(["opmet", "aeroweb", "opmet_nl", "notam", "notam_fr"])
     import threading as _th
     t_aw = _th.Thread(target=_aeroweb_task, args=(pub,), daemon=True)
     t_aw.start()
     t_fr = _th.Thread(target=_notams_fr_task, args=(pub,), daemon=True)
     t_fr.start()
+    t_nl = _th.Thread(target=_opmet_nl_task, args=(pub,), daemon=True)
+    t_nl.start()
     session = make_skeyes_session()
     do_login(session, username, password)
 
@@ -1728,6 +1747,7 @@ def main_opmet_only():
     pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
     t_be.join(timeout=90)
     t_fr.join(timeout=150)
+    t_nl.join(timeout=60)
     t_aw.join(timeout=60)
     pub.close()
 

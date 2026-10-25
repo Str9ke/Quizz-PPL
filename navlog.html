@@ -1012,6 +1012,10 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .rm-oa-wrap{position:relative;display:inline-block}
 .rm-oa-menu{position:absolute;z-index:1200;bottom:calc(100% + 6px);left:0;min-width:260px;background:var(--bg-container,#1e1e2a);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.5);padding:8px 10px;display:flex;flex-direction:column;gap:2px;text-align:left}
 .rm-oa-menu[hidden]{display:none}
+.rm-oa-bases{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:2px 2px 6px;border-bottom:1px solid var(--border-color);margin-bottom:4px;font-size:.8em}
+.rm-oa-bases span{color:var(--text-secondary);margin-right:2px}
+.rm-oa-bases button{width:auto;margin:0;padding:4px 8px;border-radius:999px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);cursor:pointer;font:inherit}
+.rm-oa-bases button.on{background:#3949ab;border-color:#3949ab;color:#fff}
 .rm-oa-menu label{display:flex;align-items:center;gap:8px;padding:7px 4px;border-radius:8px;cursor:pointer;font-size:.85em;white-space:nowrap}
 .rm-oa-menu label:hover{background:rgba(102,126,234,.14)}
 .rm-oa-menu input{width:18px;height:18px;margin:0;flex:0 0 auto}
@@ -1057,6 +1061,11 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 .mi-panel .mi-det{display:block;margin-top:9px;padding:0 2px;font-size:12.5px;border-top:none;line-height:1.5}
 .mi-panel .mi-det pre{white-space:pre-wrap;font:inherit;margin:0 0 4px}
 .mi-click{background:none;border:none}
+.mi-aip{margin-top:8px}
+.mi-aip a{color:#8fa0f5}
+.mi-aip details{border:1px solid var(--border-color,#444);border-radius:8px;margin:5px 0;background:rgba(255,255,255,.03)}
+.mi-aip summary{cursor:pointer;padding:6px 8px;font-size:12px}
+.mi-aip details pre{white-space:pre-wrap;font:11.5px/1.45 system-ui,sans-serif;margin:0;padding:0 8px 8px;color:var(--text-primary,#ddd)}
 .mi-click span{display:block;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#ff4081;border:2px solid #fff;box-shadow:0 0 0 3px rgba(255,64,129,.35)}
 #routeMapContainer.mi-open:not(:has(.mi-panel.sheet)) .leaflet-top.leaflet-left{left:calc(min(300px,40%) + 14px)}
 .mi-pop h6{margin:9px 0 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#8fa0f5}
@@ -1299,6 +1308,8 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <button class="navlog-btn" id="asMapToggleBtn" onclick="window.toggleAirspacesOnMap()" title="Afficher/masquer les espaces aériens croisés sur la carte, avec leur classe OACI (touchez une zone) — charge d'abord les espaces aériens depuis l'onglet Altitudes">&#x1F170;&#xFE0F; Classes espace aérien</button>
         <span class="rm-oa-wrap"><button class="navlog-btn" id="oaLayersBtn" onclick="window._toggleOaMenu(event)" title="Afficher sur la carte les espaces aériens, les aérodromes et les balises VOR/NDB/DME (données OpenAIP embarquées, aussi hors ligne)">&#x1F5FA;&#xFE0F; Calques OpenAIP &#x25BE;</button>
           <span class="rm-oa-menu" id="oaLayersMenu" hidden>
+            <div class="rm-oa-bases"><span>Fond :</span>
+              <button type="button" data-base="osm">OSM</button><button type="button" data-base="google">Google plan</button><button type="button" data-base="gsat">Google satellite</button><button type="button" data-base="topo">Relief</button></div>
             <label><input type="checkbox" data-oa="ofm"> &#x1F5FA;&#xFE0F; <b>Carte VFR</b>&nbsp;(open flightmaps)</label>
             <label><input type="checkbox" data-oa="ign"> &#x1F1EB;&#x1F1F7; <b>Carte OACI</b>&nbsp;(IGN, France)</label>
             <label><input type="checkbox" data-oa="mef"> &#x26F0;&#xFE0F; MEF (altitude maxi par case)</label>
@@ -1364,8 +1375,8 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 
         <!-- NOTAM France officiels (SIA, SOFIA-Briefing) — tools/notams_fr.py -> notams_france.json -->
         <div class="map-card" id="frNotamCard" style="margin-bottom:14px">
-          <div class="map-card-title">&#x1F1EB;&#x1F1F7; NOTAM France &#x2014; SIA (officiel)</div>
-          <p style="padding:8px 16px 0;font-size:.82em;color:var(--text-secondary);margin:0">NOTAM VFR du SIA (SOFIA-Briefing) : FIR Paris, Reims et Brest du sol au FL 115 et a&#xe9;rodromes du nord de la France, r&#xe9;cup&#xe9;r&#xe9;s avec le reste du briefing. Le texte est celui du SIA (traduction fran&#xe7;aise officielle quand elle existe).</p>
+          <div class="map-card-title">&#x1F1EB;&#x1F1F7;&#x1F1F3;&#x1F1F1;&#x1F1E7;&#x1F1EA; NOTAM France &#xb7; Pays-Bas &#xb7; Belgique &#x2014; SIA (officiel)</div>
+          <p style="padding:8px 16px 0;font-size:.82em;color:var(--text-secondary);margin:0">NOTAM VFR du SIA (SOFIA-Briefing, qui re&#xe7;oit aussi les NOTAM &#xe9;trangers de la base europ&#xe9;enne EAD) : FIR Paris, Reims, Brest, Amsterdam et Bruxelles du sol au FL 115, a&#xe9;rodromes du nord de la France, des Pays-Bas et de Belgique, r&#xe9;cup&#xe9;r&#xe9;s avec le reste du briefing. Le texte est celui du SIA (traduction fran&#xe7;aise officielle quand elle existe).</p>
           <div class="frn-bar">
             <label><input type="radio" name="frnScope" value="route" checked onchange="window.renderFrNotams()"> Autour de ma route</label>
             <label><input type="radio" name="frnScope" value="all" onchange="window.renderFrNotams()"> Tous</label>
@@ -2121,6 +2132,15 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
           <button onclick="var f=document.getElementById('autoOpmetFrame'); f.src = f.src.split('?')[0] + '?t=' + new Date().getTime();">&#x1F504; Recharger l'affichage</button>
           <a href="opmet.pdf" target="_blank" rel="noopener">&#x1F517; T&#xe9;l&#xe9;charger le PDF</a>
         </div>
+      </div>
+
+      <!-- METAR / TAF Pays-Bas (KNMI, via SIA SOFIA-Briefing) — tools/notams_fr.py --opmet -> opmet_nl.json -->
+      <div class="map-card" style="margin-bottom:14px;">
+        <div class="map-card-title">&#x1F1F3;&#x1F1F1; METAR / TAF Pays-Bas (officiels)</div>
+        <p style="padding:8px 16px 0;font-size:.82em;color:var(--text-secondary);margin:0">Observations et prévisions du KNMI, diffusées par le réseau OPMET aéronautique et lues chez le SIA (SOFIA-Briefing). Récupérées avec « Tout récupérer » et « OPMET + NOTAM ».</p>
+        <div style="padding:8px 16px 0"><button type="button" class="aeroweb-nav-btn metar-fr-btn" onclick="window.toggleMetarFr()">&#x1F1EB;&#x1F1F7; METAR en fran&#xe7;ais</button></div>
+        <div id="nlMetarMeta" style="padding:6px 16px;font-size:.78em;color:var(--text-secondary)"></div>
+        <div id="nlMetarList" style="padding:0 12px 12px"></div>
       </div>
 
       <!-- OPMET Import manuel -->
@@ -7103,7 +7123,7 @@ function _renderDailyWarningsOnRouteMap(){
   });
   /* + NOTAM localisés en vigueur dans les 24 h : Belgique (tous), France (autour de la route) */
   var nBe=0, nFr=0;
-  (_beNotams||[]).forEach(function(n){ if(!n.pts.length||!_notamActive(n.b,n.c)) return; nBe++;
+  (_beNotams||[]).forEach(function(n){ if(!n.pts.length||!_notamActive(n.b,n.c)||_inSofia(n.id)) return; nBe++;
     var l=n.pts.length>=3?L.polygon(n.pts,{color:'#ff9100',weight:2,fillOpacity:.15,interactive:false}):L.circle(n.pts[0],{radius:Math.max(0.15,n.r||0.15)*1852,color:'#ff9100',weight:2,fillOpacity:.15,interactive:false});
     var c=L.circleMarker(n.pts.length>=3?L.latLngBounds(n.pts).getCenter():n.pts[0],{radius:6,color:'#fff',weight:1.5,fillColor:'#ff9100',fillOpacity:1});
     c.bindPopup('<div class="mi-pop"><b>'+escHTML(n.id+' '+n.loc)+'</b><pre style="white-space:pre-wrap;font:inherit;margin:4px 0">'+escHTML(n.text)+'</pre><small>'+_frnFmtDate(n.b)+' → '+_frnFmtDate(n.c)+'</small></div>');
@@ -7210,8 +7230,18 @@ function _oaLim(l){
   if(l.value===0 && l.referenceDatum===0) return 'SFC';
   return l.value+(l.unit===0?' m':' ft')+(l.referenceDatum===0?' sol':'');
 }
+window._setMapBase=function(k){
+  var B=window._rmBases; if(!B||!B[k]||typeof routeMap==='undefined'||!routeMap) return;
+  Object.keys(B).forEach(function(x){ if(x!==k&&routeMap.hasLayer(B[x])) routeMap.removeLayer(B[x]); });
+  if(!routeMap.hasLayer(B[k])) B[k].addTo(routeMap);
+  B[k].bringToBack&&B[k].bringToBack();
+  try{ localStorage.setItem('rmBase',k); }catch(e){}
+  _oaSyncMenu();
+};
 function _oaSyncMenu(){
   var m=document.getElementById('oaLayersMenu'); if(!m) return;
+  var bk=(function(){ try{ return localStorage.getItem('rmBase')||'osm'; }catch(e){ return 'osm'; } })();
+  m.querySelectorAll('[data-base]').forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-base')===bk); });
   var all=!!(_oaSel.as&&_oaSel.ad&&_oaSel.nav&&_oaSel.vrp&&_oaSel.obs&&_oaSel.mef), any=!!(_oaSel.as||_oaSel.ad||_oaSel.nav||_oaSel.vrp||_oaSel.obs||_oaSel.ofm||_oaSel.ign||_oaSel.mef);
   m.querySelectorAll('input[data-oa]').forEach(function(c){ var k=c.getAttribute('data-oa'); c.checked=k==='all'?all:!!_oaSel[k]; });
   var b=document.getElementById('oaLayersBtn');
@@ -7224,6 +7254,7 @@ window._toggleOaMenu=function(ev){
   if(!m._wired){
     m._wired=true;
     m.addEventListener('click',function(e){ e.stopPropagation(); });
+    m.querySelectorAll('[data-base]').forEach(function(b){ b.onclick=function(){ window._setMapBase(b.getAttribute('data-base')); }; });
     m.querySelectorAll('input[data-oa]').forEach(function(c){
       c.onchange=function(){
         var k=c.getAttribute('data-oa');
@@ -7584,7 +7615,7 @@ function _miEnsurePanel(){
 function _miClose(){
   if(_miPanel) _miPanel.classList.remove('show');
   var mc=document.getElementById('routeMapContainer'); if(mc) mc.classList.remove('mi-open');
-  _miClosedAt=Date.now(); _miHighlight(null,true); _miIdx=-1;
+  _miClosedAt=Date.now(); _miHighlight(null,true); _miIdx=-1; _miVorLayer(null);
   if(_miMark&&routeMap){ routeMap.removeLayer(_miMark); _miMark=null; }
 }
 window._miClose=_miClose;
@@ -7601,6 +7632,22 @@ window._metarFrOn=(function(){ try{ return localStorage.getItem('metarFr')==='1'
 window._metarFrWire=function(fr){
   try{ var d=fr&&fr.contentDocument; if(d&&window.metarFrToggle){ window.metarFrToggle(d, window._metarFrOn?true:null); fr.style.height=d.body.scrollHeight+'px'; } }catch(e){}
 };
+/* METAR / TAF Pays-Bas (opmet_nl.json) */
+window.loadNlMetars=function(force){
+  var list=document.getElementById('nlMetarList'), meta=document.getElementById('nlMetarMeta'); if(!list) return;
+  fetch('opmet_nl.json'+(force?'?t='+Date.now():''),{cache:force?'no-store':'default'}).then(function(r){ return r.ok?r.json():null; }).then(function(d){
+    if(!d||!d.stations){ list.innerHTML='<div style="padding:10px;color:var(--text-secondary)">Pas encore de données : lance « Tout récupérer » ou « OPMET + NOTAM ».</div>'; return; }
+    var age=(Date.now()-Date.parse(d.generated))/60000;
+    if(meta) meta.innerHTML='Source : '+escHTML(d.source)+' — récupéré le '+new Date(d.generated).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})+(age>90?' <b style="color:#ffa726">(il y a '+Math.round(age/60)+' h)</b>':'');
+    list.innerHTML=d.stations.map(function(st){
+      return '<div class="aw-st"><div style="font-weight:800;margin:6px 0 2px"><span style="font-family:monospace;color:#8fa0f5">'+escHTML(st.icao)+'</span> '+escHTML(st.name||'')+'</div>'
+        +st.metar.map(function(m){ return '<div class="aw-lbl">METAR</div><div class="aw-txt">'+escHTML(m)+'</div>'; }).join('')
+        +st.taf.map(function(t){ return '<div class="aw-lbl">TAF</div><div class="aw-txt">'+escHTML(t)+'</div>'; }).join('')+'</div>';
+    }).join('');
+    if(window.metarFrToggle) window.metarFrToggle(document, window._metarFrOn?true:null);
+  }).catch(function(){});
+};
+setTimeout(function(){ if(window.loadNlMetars) window.loadNlMetars(false); },1500);
 window.toggleMetarFr=function(){
   window._metarFrOn=!window._metarFrOn;
   try{ localStorage.setItem('metarFr',window._metarFrOn?'1':'0'); }catch(e){}
@@ -7629,6 +7676,77 @@ function _miShowList(restore){
   });
   if(restore&&_miView&&routeMap) routeMap.flyTo(_miView.c,_miView.z,{duration:.45});
 }
+/* Lignes vers les VOR reçus (pendant que le panneau est ouvert) */
+var _miVorGrp=null;
+function _miVorLayer(list,ll){
+  if(_miVorGrp&&routeMap){ routeMap.removeLayer(_miVorGrp); _miVorGrp=null; }
+  if(!list||!list.length||!routeMap) return;
+  var g=L.layerGroup();
+  list.forEach(function(v){
+    var col=v.amin<=2500?'#43a047':(v.amin<=5000?'#fb8c00':'#e53935');
+    g.addLayer(L.polyline([[v.c[1],v.c[0]],ll],{color:col,weight:1.4,opacity:.7,dashArray:'3,6',interactive:false}));
+    g.addLayer(L.marker([v.c[1],v.c[0]],{interactive:false,icon:L.divIcon({className:'oa-ic',iconSize:[0,0],html:'<span style="background:rgba(10,10,20,.85);border-color:'+col+'">📡 '+escHTML(v.n.identifier||'')+' ≥ '+v.amin+' ft</span>'})}));
+  });
+  _miVorGrp=g.addTo(routeMap);
+}
+/* Fiche AIP officielle d'un aérodrome (aip_ad/<ICAO>.json, chargée à la demande) */
+var _aipAdCache={};
+function _miAipFiche(icao,k){
+  icao=(icao||'').toUpperCase();
+  var box=document.createElement('div'); box.className='mi-aip'; box.innerHTML='<div class="mi-hint">⏳ Fiche AIP officielle…</div>';
+  var det=_miPanel.querySelector('.mi-det'); if(!det) return; det.appendChild(box);
+  var p=_aipAdCache[icao]||(_aipAdCache[icao]=fetch('aip_ad/'+icao+'.json').then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }));
+  p.then(function(f){
+    if(_miIdx!==k) return;
+    var h='';
+    var w=f&&f.web||{}, links=[];
+    if(w.aip) links.push('<a href="'+escHTML(w.aip)+'" target="_blank" rel="noopener">🌐 Site de l’aérodrome (AIP)</a>');
+    if(w.osm&&w.osm!==w.aip) links.push('<a href="'+escHTML(w.osm)+'" target="_blank" rel="noopener">🌐 Site de l’aérodrome</a>');
+    (w.clubs||[]).forEach(function(c){ links.push(c.url?'<a href="'+escHTML(c.url)+'" target="_blank" rel="noopener">✈️ '+escHTML(c.name)+'</a>':'✈️ '+escHTML(c.name)+' <small>(pas de site connu)</small>'); });
+    h+='<h6>Sites web et clubs</h6><div class="mi-web">'+(links.length?links.join('<br>'):'')+'</div><div class="mi-osm"><small>⏳ Clubs (OpenStreetMap)…</small></div>';
+    if(f&&f.s&&f.s.length){
+      h+='<h6>AIP officiel</h6><small>'+escHTML(f.src)+' — relu le '+new Date(f.generated).toLocaleDateString('fr-FR')+' · <a href="'+escHTML(f.url)+'" target="_blank" rel="noopener">page officielle</a></small>';
+      f.s.forEach(function(sec,i){
+        h+='<details class="mi-aip-s"'+(sec.n==='2.18'||sec.n==='2.20'?' open':'')+'><summary><b>AD '+sec.n+'</b> '+escHTML(sec.t)+'</summary><pre>'+escHTML(sec.x)+'</pre></details>';
+      });
+    } else if(/^EH/.test(icao)){
+      var d=new Date(), ref=Date.UTC(2026,5,11), c=new Date(ref+28*864e5*Math.floor((d-ref)/(28*864e5)));
+      h+='<h6>AIP officiel</h6><small>L’eAIP des Pays-Bas (LVNL) bloque la lecture automatique : ouvre-le directement.</small><br><a href="https://eaip.lvnl.nl/" target="_blank" rel="noopener">📘 eAIP Pays-Bas (LVNL)</a>';
+    } else {
+      h+='<h6>AIP officiel</h6><small>Pas de partie AD 2 pour ce terrain dans l’AIP (souvent seulement une carte VAC).</small>';
+    }
+    box.innerHTML=h;
+    var it=_miItems[k], osmBox=box.querySelector('.mi-osm');
+    if(it&&it.pt) _osmClubs(icao,it.pt[0],it.pt[1]).then(function(r){
+      if(_miIdx!==k||!osmBox) return;
+      var have=(f&&f.web&&[f.web.aip,f.web.osm].concat((f.web.clubs||[]).map(function(c){ return c.url; })))||[];
+      var out=[];
+      if(r&&r.site&&have.indexOf(r.site)<0) out.push('<a href="'+escHTML(r.site)+'" target="_blank" rel="noopener">🌐 Site de l’aérodrome (OSM)</a>');
+      (r&&r.clubs||[]).forEach(function(c){ out.push(c.url?'<a href="'+escHTML(c.url)+'" target="_blank" rel="noopener">✈️ '+escHTML(c.name)+'</a>':'✈️ '+escHTML(c.name)+' <small>(pas de site connu)</small>'); });
+      osmBox.innerHTML=out.length?out.join('<br>')+'<br><small>Clubs et sites : OpenStreetMap (à vérifier)</small>':(r?'<small>Aucun club référencé dans OpenStreetMap à moins de 3 km.</small>':'<small>OpenStreetMap indisponible pour le moment.</small>');
+    });
+  });
+}
+/* Clubs et site de l'aérodrome dans OpenStreetMap (Overpass), à moins de 3 km — à la demande,
+   gardés 30 jours sur l'appareil (le serveur public est réservé aux requêtes ponctuelles). */
+function _osmClubs(icao,lat,lon){
+  var K='osmClubs_v1', c={}; try{ c=JSON.parse(localStorage.getItem(K)||'{}'); }catch(e){}
+  if(c[icao]&&Date.now()-c[icao].t<30*864e5) return Promise.resolve(c[icao].r);
+  var q='[out:json][timeout:25];(nwr(around:3000,'+lat+','+lon+')["club"];nwr(around:3000,'+lat+','+lon+')["name"~"club|vliegclub|zweefvlieg|aéro|aero|vol à voile|ULM|parachut|flying",i]["website"];nwr(around:2500,'+lat+','+lon+')["aeroway"="aerodrome"];);out center tags;';
+  return fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}})
+    .then(function(r){ return r.ok?r.json():null; }).then(function(d){
+      if(!d) return null;
+      var res={site:null,clubs:[]};
+      (d.elements||[]).forEach(function(e){ var t=e.tags||{}, w=t.website||t['contact:website']||t.url;
+        if(t.aeroway==='aerodrome'){ if(w&&!res.site) res.site=w; return; }
+        if(!t.name) return;
+        if(!t.club && !/club|vliegclub|zweefvlieg|a[ée]ro|vol à voile|ULM|parachut|flying/i.test(t.name)) return;
+        if(!res.clubs.some(function(x){ return x.name===t.name; })) res.clubs.push({name:t.name,url:w||null});
+      });
+      c[icao]={t:Date.now(),r:res}; try{ localStorage.setItem(K,JSON.stringify(c)); }catch(e){}
+      return res;
+    }).catch(function(){ return null; });
+}
 function _miShowDetail(k){
   var x=_miItems[k]; if(!x) return;
   _miIdx=k;
@@ -7643,6 +7761,7 @@ function _miShowDetail(k){
   _miPanel.querySelector('.mi-prev').onclick=function(){ _miShowDetail(k-1); };
   _miPanel.querySelector('.mi-next').onclick=function(){ _miShowDetail(k+1); };
   _miPanel.querySelectorAll('.mi-place').forEach(function(sp2){ _miPlaceName(+sp2.dataset.lat,+sp2.dataset.lon).then(function(nm){ if(nm) sp2.textContent='— près de '+nm; }); });
+  if(x.icao) _miAipFiche(x.icao,k);
   _miFocus(k);
 }
 function _mapIdentify(ll){
@@ -7694,11 +7813,38 @@ function _mapIdentify(ll){
         var a=x.a, vac=_vacLinks(a.icaoCode);
         var rw=(a.runways||[]).filter(function(r){ return r.designator; }).map(function(r){ var ln=r.dimension&&r.dimension.length; return r.designator+(ln?' ('+ln.value+' m)':''); });
         var fq=(a.frequencies||[]).filter(function(f){ return f.value; }).slice(0,8).map(function(f){ return '📻 '+escHTML((f.name||'')+' '+f.value); });
-        add({sec:'Aérodromes proches',col:'#ab47bc',head:'<b>'+escHTML((a.icaoCode?a.icaoCode+' — ':'')+a.name)+'</b>',
+        add({icao:a.icaoCode,sec:'Aérodromes proches',col:'#ab47bc',head:'<b>'+escHTML((a.icaoCode?a.icaoCode+' — ':'')+a.name)+'</b>',
           sub:x.d.toFixed(1)+' NM · '+escHTML(OA_AD_TYPES[a.type]||'Terrain')+(vac?' · 📄 VAC':''),
           det:(vac||'<small>Pas de carte VAC connue</small>')+'<br>'+(a.elevation?'Altitude : <b>'+Math.round(a.elevation.unit===0?a.elevation.value*3.28084:a.elevation.value)+' ft</b><br>':'')+(rw.length?'Pistes : '+escHTML(rw.join(', '))+'<br>':'')+fq.join('<br>'),
           geo:function(){ return _miPoint(x.c[1],x.c[0]); },pt:[x.c[1],x.c[0]]});
       });
+    /* VOR reçus ici : portée radio en ligne de vue (horizon radio d ≈ 1,23 × (√h_antenne + √h_avion),
+       distances en NM, hauteurs en ft au-dessus de la station), limitée à la portée publiée. Altitude
+       théorique, sans masque du relief ni des obstacles. Radial = route depuis la station, magnétique. */
+    var NT=['DME','TACAN','NDB','VOR','VOR-DME','VORTAC','DVOR','DVOR-DME','DVORTAC'];
+    var vors=(oa.navaids||[]).filter(function(n){ return [3,4,5,6,7,8].indexOf(n.type)>=0&&n.geometry; }).map(function(n){
+      var c=n.geometry.coordinates, d=haversine(c[1],c[0],lat,lon);
+      var el=n.elevation?(n.elevation.unit===0?n.elevation.value*3.28084:n.elevation.value):0;
+      var rng=n.range&&n.range.value?(n.range.unit===1?n.range.value/1.852:n.range.value):null;
+      var hreq=Math.pow(Math.max(0,d/1.23-Math.sqrt(30)),2);            /* antenne ~30 ft au-dessus du sol */
+      var amin=Math.ceil((el+hreq)/100)*100;
+      var decl=n.magneticDeclination||0, rad=Math.round(((trueBearing(c[1],c[0],lat,lon)-decl)%360+360)%360);
+      return {n:n,c:c,d:d,amin:amin,rng:rng,rad:rad,out:rng!=null&&d>rng};
+    }).filter(function(v){ return v.d<=(v.rng?Math.max(v.rng,60):150)&&v.amin<=15000; }).sort(function(a,b){ return a.amin-b.amin||a.d-b.d; });
+    _miVorLayer(vors.filter(function(v){ return !v.out; }).slice(0,12),ll);
+    vors.slice(0,12).forEach(function(v){
+      var n=v.n, fr=n.frequency?String(n.frequency.value).replace(/\.?0+$/,'')+' MHz':'';
+      var col=v.out?'#7f8c8d':(v.amin<=2500?'#43a047':(v.amin<=5000?'#fb8c00':'#e53935'));
+      add({sec:'VOR reçus ici (théorique)',col:col,head:'📡 <b>'+escHTML(n.identifier||'')+'</b> '+escHTML(fr)+' <small style="display:inline">'+escHTML(n.name)+'</small>',
+        sub:(v.out?'hors portée publiée · ':'reçu dès <b>'+v.amin.toLocaleString('fr-FR')+' ft</b> · ')+'radial '+('00'+v.rad).slice(-3)+'° · '+v.d.toFixed(0)+' NM',
+        det:'Type : <b>'+(NT[n.type]||'VOR')+'</b> · fréquence <b>'+escHTML(fr)+'</b>'+(n.channel?' · canal '+escHTML(n.channel):'')
+          +'<br>Distance : <b>'+v.d.toFixed(1)+' NM</b> · radial <b>'+('00'+v.rad).slice(-3)+'°</b> (QDR, depuis la station) · QDM vers la station '+('00'+((v.rad+180)%360)).slice(-3)+'°'
+          +'<br>Altitude mini théorique de réception : <b>'+v.amin.toLocaleString('fr-FR')+' ft</b> (ligne de vue radio)'
+          +(v.rng?'<br>Portée publiée : '+Math.round(v.rng)+' NM'+(v.out?' — <b style="color:#ef5350">point au-delà</b>':''):'')
+          +'<br><small>Calcul théorique sans masque du relief : en vol bas, une colline entre vous et la station peut couper le signal.</small>',
+        geo:function(){ return L.featureGroup([L.polyline([[v.c[1],v.c[0]],[lat,lon]],{color:col,weight:3,dashArray:'6,5',interactive:false}),_miPoint(v.c[1],v.c[0])]); },
+        bounds:[[v.c[1],v.c[0]],[lat,lon]]});
+    });
     (vd.vrp||[]).map(function(q){ return {p:q,d:haversine(lat,lon,q.lat,q.lon)}; }).filter(function(x){ return x.d<=1.5; }).sort(function(a,b){ return a.d-b.d; }).slice(0,3).forEach(function(x){
       add({sec:'Points VFR',col:'#1565c0',head:'🔺 <b>'+escHTML(x.p.id)+'</b>'+(x.p.ad?' ('+escHTML(x.p.ad)+')':''),sub:x.d.toFixed(1)+' NM'+(x.p.c?' · obligatoire':' · sur demande'),
         det:'Nom : <b>'+escHTML(x.p.n||x.p.id)+'</b><br>Position : '+x.p.lat.toFixed(4)+' N, '+x.p.lon.toFixed(4)+' E'+(x.p.ad?'<br>'+_vacLinks(x.p.ad):''),
@@ -7719,7 +7865,7 @@ function _mapIdentify(ll){
       if(d<=NEAR) nts.push({d:d,id:n.id+' '+n.a,txt:n.e_fr||n.e,pts:[[n.lat,n.lon]],r:Math.min(n.r||1,60),b:n.b,c:n.c,lo:n.lo,hi:n.hi});
     });
     (_beNotams||[]).forEach(function(n){
-      if(!n.pts.length||!_notamActive(n.b,n.c)) return;
+      if(!n.pts.length||!_notamActive(n.b,n.c)||_inSofia(n.id)) return;
       var d=_beNotamNear(n,lat,lon)?0:Math.max(0,Math.min.apply(null,n.pts.map(function(q){ return haversine(lat,lon,q[0],q[1]); }))-(n.r||0));
       if(d<=NEAR) nts.push({d:d,id:n.id+' '+n.loc,txt:n.text,pts:n.pts,r:n.r,b:n.b,c:n.c});
     });
@@ -15556,10 +15702,14 @@ function initRouteMap(){
      avec un correctif fragile pour la garder collée à OSM — d'où les fois où elle
      "disparaissait" en fonction de l'ordre des événements Leaflet. Elle est maintenant
      une vraie case à cocher indépendante, active par défaut. */
-  osmLayer.addTo(routeMap); /* OSM est le fond par défaut */
+  var gsatLayer=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{attribution:'Google',maxZoom:20,subdomains:["mt0","mt1","mt2","mt3"]});
+  /* Fonds de carte choisis dans le menu « Calques » (mémorisé) : OSM, Google plan, Google satellite, Topo */
+  window._rmBases={osm:osmLayer,google:googleLayer,gsat:gsatLayer,topo:topoLayer};
+  var _b0=(function(){ try{ return localStorage.getItem('rmBase')||'osm'; }catch(e){ return 'osm'; } })();
+  (window._rmBases[_b0]||osmLayer).addTo(routeMap);
   icaoLayer.addTo(routeMap); /* espaces aériens affichés d'office par-dessus */
   L.control.layers(
-    {'OSM':osmLayer,'Google Maps':googleLayer,'Topo (VFR)':topoLayer},
+    {'OSM':osmLayer,'Google Maps':googleLayer,'Google satellite':gsatLayer,'Topo (VFR)':topoLayer},
     {'Espaces aériens (OpenAIP)':icaoLayer},
     {position:'bottomright',collapsed:true} /* topright réservé au bouton "quitter le plein écran" */
   ).addTo(routeMap);
@@ -18267,7 +18417,7 @@ window.setBriefingFetchMode = function(v) {
 /* Parties du briefing publiées séparément par le workflow rapide (voir _Publisher dans
    fetch_notams.py) et ce qu'il faut recharger à l'arrivée de chacune. */
 var _BRIEFING_PART_LABELS = {
-  opmet: 'OPMET', aeroweb: 'METAR AéroWeb', notam: 'NOTAM', notam_fr: 'NOTAM France', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
+  opmet: 'OPMET', aeroweb: 'METAR AéroWeb', opmet_nl: 'METAR Pays-Bas', notam: 'NOTAM', notam_fr: 'NOTAM FR/NL/BE (SIA)', daily: 'avis du jour', images: 'images Skeyes', sfc: 'analyse SFC',
   temsi_france: 'TEMSI France', temsi_euroc: 'TEMSI EUROC', wintem_france: 'WINTEM France', wintem_euroc: 'WINTEM EUROC'
 };
 var _ALL_BRIEFING_PARTS = Object.keys(_BRIEFING_PART_LABELS);
@@ -18283,6 +18433,7 @@ window._refreshBriefingParts = function(parts) {
     if (typeof loadGametWindWidget === 'function') loadGametWindWidget();
   }
   if (has('aeroweb') && typeof window.loadAerowebMetars === 'function') window.loadAerowebMetars();
+  if (has('opmet_nl') && typeof window.loadNlMetars === 'function') window.loadNlMetars(true);
   if (has('notam')) { _reloadDataFrame('autoNotamFrame'); if (typeof _loadBeNotams === 'function') { _loadBeNotams(true).then(function(){ if (typeof window.renderBeNotams === 'function') window.renderBeNotams(); }); } }
   if (has('notam_fr') && typeof window.loadFrNotams === 'function') window.loadFrNotams(true);
   if (has('daily')) {
@@ -18488,7 +18639,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   function stale() { return gen !== _fetchWatchGen; }
   var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
   var workflow = _fetchWorkflow(), classic = workflow === 'update_notams_classic.yml';
-  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet', 'aeroweb', 'notam', 'notam_fr'] : _ALL_BRIEFING_PARTS.slice();
+  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet', 'aeroweb', 'opmet_nl', 'notam', 'notam_fr'] : _ALL_BRIEFING_PARTS.slice();
   _fetchWatchActive = true;
   _fetchProgressMax = 0;
   _setFetchProgress(1, 'En attente d’un serveur GitHub…');
@@ -18762,6 +18913,12 @@ window.renderBeNotams=function(){
    et seulement ceux en vigueur dans les 24 h. Le texte n'est jamais modifié (Licence Ouverte :
    pas d'altération, source et date citées). */
 var _frNotams=null, _frNotamsLoading=null, _frnMapLayer=null, _frnShownList=[];
+/* NOTAM belge déjà présent dans les données SOFIA (même numéro) : on ne l'affiche qu'une fois */
+function _inSofia(id){
+  if(!_frNotams) return false;
+  if(!_frNotams._ids){ _frNotams._ids={}; _frNotams.notams.forEach(function(n){ if(n.cc==='EB'||n.cc==='EL') _frNotams._ids[n.id]=1; }); }
+  return !!_frNotams._ids[id];
+}
 function _loadFrNotamsData(){
   if(_frNotams) return Promise.resolve(_frNotams);
   return fetch('notams_france.json').then(function(r){ return r.ok?r.json():null; }).then(function(d){ if(d&&d.notams) _frNotams=d; return _frNotams; }).catch(function(){ return null; });

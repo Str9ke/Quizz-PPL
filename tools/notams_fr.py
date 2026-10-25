@@ -1,4 +1,4 @@
-"""NOTAM FRANCE officiels — SIA, SOFIA-Briefing (https://sofia-briefing.aviation-civile.gouv.fr).
+"""NOTAM officiels France + Pays-Bas + Belgique — SIA, SOFIA-Briefing (https://sofia-briefing.aviation-civile.gouv.fr).
 
 Données publiques sous Licence Ouverte 2.0 (CGU SOFIA) : réutilisables à condition de ne pas les
 altérer et de citer la source et la date de mise à jour -> le texte des NOTAM est recopié tel quel
@@ -26,7 +26,8 @@ import requests
 BASE = "https://sofia-briefing.aviation-civile.gouv.fr"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "notams_france.json")
-FIRS = ["LFFF", "LFEE", "LFRR"]
+FIRS = ["LFFF", "LFEE", "LFRR", "EHAA", "EBBU"]   # France + Pays-Bas + Belgique/Luxembourg
+AD_LISTS = ["lf_aerodromes.txt", "eh_aerodromes.txt", "eb_aerodromes.txt"]
 BATCH = 30
 
 
@@ -112,6 +113,7 @@ def _slim(section, n):
         ref = f"{n.get('referredSeries', '')}{int(n['referredNumber']):04d}/{int(n.get('referredYear') or 0):02d}"
     return {
         "id": f"{n.get('series', '')}{int(n.get('number') or 0):04d}/{int(n.get('year') or 0):02d}",
+        "cc": ((n.get("itemA") or q.get("fir") or "")[:2]).upper(),
         "type": n.get("type"), "ref": ref, "sec": section,
         "a": n.get("itemA", ""), "fir": q.get("fir"),
         "q": (q.get("code23") or "") + (q.get("code45") or ""),
@@ -132,10 +134,12 @@ def fetch(out_path=OUT):
     if isinstance(firs, dict):
         _walk(firs.get("listnotams"), found, "FIR")
         _walk(firs.get("listFIRs"), found, "FIR")
-    try:
-        ads = open(os.path.join(ROOT, "tools", "lf_aerodromes.txt"), encoding="utf-8").read().split()
-    except OSError:
-        ads = []
+    ads = []
+    for fn in AD_LISTS:      # SOFIA (SIA) reçoit aussi les NOTAM étrangers via la base européenne EAD
+        try:
+            ads += open(os.path.join(ROOT, "tools", fn), encoding="utf-8").read().split()
+        except OSError:
+            pass
     unknown = []
     for i in range(0, len(ads), BATCH):
         _aero(s, ads[i:i + BATCH], found, unknown)
@@ -152,7 +156,7 @@ def fetch(out_path=OUT):
     notams.sort(key=lambda x: (x["sec"] != "AD", x["a"], x["id"]))
     res = {
         "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "source": "SIA — SOFIA-Briefing (Licence Ouverte 2.0), bulletins VFR FIR " + "/".join(FIRS)
+        "source": "SIA — SOFIA-Briefing (Licence Ouverte 2.0 ; NOTAM étrangers reçus de la base européenne EAD), bulletins VFR FIR " + "/".join(FIRS)
                   + f" (SFC–FL115) et {len(ads)} aérodromes",
         "firs": FIRS, "aerodromes": ads, "count": len(notams), "notams": notams,
     }
@@ -167,7 +171,55 @@ def fetch(out_path=OUT):
     return res
 
 
+def _spaced(t):
+    """SOFIA colle parfois les groupes (« Q1004NOSIG », « SCT030BECMG ») : on remet l'espace."""
+    t = re.sub(r"(?<=\S)(?=(?:BECMG|TEMPO|NOSIG|PROB\d{2}|FM\d{6}|RMK)(?![A-Z]))", " ", t or "")
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def fetch_opmet(stations=None, out_path=os.path.join(ROOT, "opmet_nl.json")):
+    """METAR / TAF officiels des Pays-Bas (KNMI, diffusés par le réseau OPMET aéronautique) via
+    SOFIA-Briefing (SIA) -> opmet_nl.json. Les aérodromes sans observation sont ignorés."""
+    t0 = time.time()
+    if stations is None:
+        try:
+            stations = open(os.path.join(ROOT, "tools", "eh_aerodromes.txt"), encoding="utf-8").read().split()
+        except OSError:
+            stations = []
+    s = _session()
+    s.headers["Accept"] = "application/json"
+    out = []
+    for i in range(0, len(stations), 25):
+        try:
+            r = s.post(BASE + "/sofia", data={":operation": "postOpmet", "aerodromes[]": stations[i:i + 25], "isFromSofia": "true"}, timeout=90)
+            d = json.loads(r.json().get("status.message") or "{}")
+        except Exception as e:
+            print("  OPMET SOFIA :", e)
+            continue
+        for a in d.get("aerodromes") or []:
+            ops = a.get("opmets") or []
+            met = [_spaced(o.get("text")) for o in ops if (o.get("type") or "").upper() in ("METAR", "SPECI")]
+            taf = [_spaced(o.get("text")) for o in ops if (o.get("type") or "").upper().startswith("TAF")]
+            if met or taf:
+                out.append({"icao": a.get("icao"), "name": a.get("name"), "metar": met, "taf": taf})
+        time.sleep(1)
+    res = {"generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "source": "SIA — SOFIA-Briefing (Licence Ouverte 2.0) ; observations KNMI (réseau OPMET aéronautique)",
+           "stations": out}
+    if not out:
+        raise RuntimeError("aucun METAR néerlandais reçu")
+    tmp = out_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(res, f, ensure_ascii=False, separators=(",", ":"))
+    os.replace(tmp, out_path)
+    print(f"OPMET Pays-Bas : {len(out)} aérodromes en {time.time() - t0:.1f}s")
+    return res
+
+
 if __name__ == "__main__":
+    if "--opmet" in sys.argv:
+        fetch_opmet()
+        sys.exit(0)
     try:
         fetch()
     except Exception as e:
