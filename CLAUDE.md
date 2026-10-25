@@ -68,7 +68,12 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - **MEF** (`tools/make_mef.py` -> `mef.json`, workflow `update_aip.yml`) : CALCULÉES par case de 30' (relief SRTM « Terrarium » +300 ft,
   obstacle +100 ft, arrondi à la centaine) ; tableau Navlog (`_mefBadge`, rouge si altitude < MEF), impression, profils, couche carte.
 - **Mode « Infos au clic »** de la carte de route (`_mapIdentify`) : espaces aériens au-dessus du point (+ fréquences AIP), MEF,
-  aérodromes (VAC), points VFR, obstacles, NOTAM France ; la route n'est pas modifiée et ses points laissent passer le clic.
+  aérodromes (VAC), points VFR, obstacles, NOTAM (France + Belgique) ; la route n'est pas modifiée et ses points laissent passer le
+  clic. Mode Info par défaut ; bouton Info (vert) / Nav (rose) ; chaque ligne survolée s'allume sur la carte (`_miHighlight`), un
+  clic l'épingle et montre le détail ; un clic ailleurs ferme seulement la fenêtre. Bouton « Masquer la route » (`_routeHidden`).
+- **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
+  localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
+  leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
 - **NOTAM France officiels** : `tools/notams_fr.py` (SIA SOFIA-Briefing, Licence Ouverte 2.0 : texte non modifié, source et date
   citées) -> `notams_france.json` (partie « notam_fr » de `fetch_notams.py`, récupérée avec le briefing) ; FIR LFFF/LFEE/LFRR
   SFC–FL115 + aérodromes de `tools/lf_aerodromes.txt` ; onglet NOTAMs, carte « NOTAM France » filtrée autour de la route.
@@ -79,7 +84,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v241`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v242`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
