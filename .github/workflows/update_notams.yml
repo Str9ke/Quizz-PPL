@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       opmet_only:
-        description: 'OPMET uniquement (rapide) — METAR+TAF+SIGMET+GAMET/AIRMET complets, ignore NOTAMs/images/TEMSI-WINTEM'
+        description: 'Récupération rapide — OPMET complet (skeyes + AéroWeb) et NOTAM officiels (skeyes + SIA SOFIA), sans images ni TEMSI/WINTEM'
         type: boolean
         default: false
 

@@ -1476,6 +1476,97 @@ def _notams_fr_task(pub):
         _lap("notam France")
 
 
+def fetch_be_notams(session):
+    """NOTAM officiels de Belgique/Luxembourg : résumé NOTAM de skeyes (session connectée)
+    -> notams_belgique.html. Appelé par la récupération complète ET par la rapide (OPMET seul)."""
+    print("--- Extracting NOTAMs ---")
+    try:
+        data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
+        data_response = session.post(data_url)
+        data_response.raise_for_status()
+        _lap(f"notam: réponse reçue ({len(data_response.content)//1024} Ko)")
+    
+        soup = BeautifulSoup(data_response.text, 'html.parser')
+        notam_section = soup.find('body')
+
+        if notam_section:
+            search_html = BeautifulSoup("""
+            <div style='margin: 15px 0; text-align: center;'>
+                <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
+            </div>
+            <script>
+                // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
+                // terme recherché en évidence dans ceux qui restaient affichés — sans retour
+                // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
+                // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
+                // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
+                // pas casser les liens/images imbriqués dans les paragraphes.
+                function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }
+                function _notamHighlightHtml(html, term) {
+                    var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
+                    var parts = html.split(/(<[^>]+>)/);
+                    for (var j = 0; j < parts.length; j++) {
+                        if (parts[j].charAt(0) !== '<') {
+                            parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
+                        }
+                    }
+                    return parts.join('');
+                }
+                function filterNotams() {
+                    var filter = document.getElementById('notamSearch').value.trim();
+                    var filterUpper = filter.toUpperCase();
+                    var paragraphs = document.querySelectorAll('p');
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var p = paragraphs[i];
+                        if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
+                        if (!filter) {
+                            p.innerHTML = p.dataset.origHtml;
+                            p.style.display = "";
+                            continue;
+                        }
+                        var txt = p.innerText || p.textContent;
+                        if (txt.toUpperCase().indexOf(filterUpper) > -1) {
+                            p.style.display = "";
+                            p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
+                        } else {
+                            p.style.display = "none";
+                        }
+                    }
+                }
+                // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
+                // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
+                // sans masquer les autres NOTAM (contrairement à filterNotams()).
+                function highlightNotamTerms(termsStr) {
+                    var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+                    var paragraphs = document.querySelectorAll('p');
+                    var firstMatch = null;
+                    for (var i = 0; i < paragraphs.length; i++) {
+                        var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
+                        var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
+                        paragraphs[i].style.background = matched ? '#fff59d' : '';
+                        paragraphs[i].style.color = matched ? '#000' : '';
+                        paragraphs[i].style.display = '';
+                        if (matched && !firstMatch) firstMatch = paragraphs[i];
+                    }
+                    if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return !!firstMatch;
+                }
+            </script>
+            """, 'html.parser')
+
+            h1_tag = notam_section.find('h1')
+            if h1_tag:
+                h1_tag.insert_after(search_html)
+            else:
+                notam_section.insert(0, search_html)
+
+        html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
+        with open("notams_belgique.html", "w", encoding="utf-8") as f:
+            f.write(html_output)
+    except Exception as e:
+        print(f"Error extracting NOTAMs: {e}")
+
+
 def main():
     username = os.getenv("SKEYES_USER")
     password = os.getenv("SKEYES_PASS")
@@ -1492,92 +1583,7 @@ def main():
     _lap("login")
     
     def _notams():
-        print("--- Extracting NOTAMs ---")
-        try:
-            data_url = "https://ops.skeyes.be/opersite/notamsummary.do?cmd=summaryToHtml"
-            data_response = session.post(data_url)
-            data_response.raise_for_status()
-            _lap(f"notam: réponse reçue ({len(data_response.content)//1024} Ko)")
-        
-            soup = BeautifulSoup(data_response.text, 'html.parser')
-            notam_section = soup.find('body')
-
-            if notam_section:
-                search_html = BeautifulSoup("""
-                <div style='margin: 15px 0; text-align: center;'>
-                    <input type='text' id='notamSearch' placeholder='Rechercher un mot clé (ex: EBCI, TRA, etc.)...' style='padding: 12px; width: 85%; font-size: 16px; border: 1px solid #999; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' onkeyup='filterNotams()'>
-                </div>
-                <script>
-                    // Le filtre masquait les paragraphes non concernés mais ne mettait jamais le
-                    // terme recherché en évidence dans ceux qui restaient affichés — sans retour
-                    // visuel clair, ça pouvait donner l'impression que "la recherche ne marche pas".
-                    // On surligne maintenant le texte trouvé (comme highlightNotamTerms ci-dessous),
-                    // en ne touchant qu'aux segments de texte (jamais aux balises/attributs) pour ne
-                    // pas casser les liens/images imbriqués dans les paragraphes.
-                    function _notamEscRe(s) { return s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }
-                    function _notamHighlightHtml(html, term) {
-                        var re = new RegExp('(' + _notamEscRe(term) + ')', 'ig');
-                        var parts = html.split(/(<[^>]+>)/);
-                        for (var j = 0; j < parts.length; j++) {
-                            if (parts[j].charAt(0) !== '<') {
-                                parts[j] = parts[j].replace(re, '<mark style="background:#fff176;color:#000;padding:0 1px">$1</mark>');
-                            }
-                        }
-                        return parts.join('');
-                    }
-                    function filterNotams() {
-                        var filter = document.getElementById('notamSearch').value.trim();
-                        var filterUpper = filter.toUpperCase();
-                        var paragraphs = document.querySelectorAll('p');
-                        for (var i = 0; i < paragraphs.length; i++) {
-                            var p = paragraphs[i];
-                            if (p.dataset.origHtml === undefined) p.dataset.origHtml = p.innerHTML;
-                            if (!filter) {
-                                p.innerHTML = p.dataset.origHtml;
-                                p.style.display = "";
-                                continue;
-                            }
-                            var txt = p.innerText || p.textContent;
-                            if (txt.toUpperCase().indexOf(filterUpper) > -1) {
-                                p.style.display = "";
-                                p.innerHTML = _notamHighlightHtml(p.dataset.origHtml, filter);
-                            } else {
-                                p.style.display = "none";
-                            }
-                        }
-                    }
-                    // Appelable depuis une page parente (ex: navlog.html, iframe same-origin) pour
-                    // surligner les NOTAM concernant une liste de codes OACI (route/dégagement),
-                    // sans masquer les autres NOTAM (contrairement à filterNotams()).
-                    function highlightNotamTerms(termsStr) {
-                        var terms = (termsStr || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
-                        var paragraphs = document.querySelectorAll('p');
-                        var firstMatch = null;
-                        for (var i = 0; i < paragraphs.length; i++) {
-                            var txt = (paragraphs[i].innerText || paragraphs[i].textContent).toUpperCase();
-                            var matched = terms.length > 0 && terms.some(function(t) { return txt.indexOf(t) > -1; });
-                            paragraphs[i].style.background = matched ? '#fff59d' : '';
-                            paragraphs[i].style.color = matched ? '#000' : '';
-                            paragraphs[i].style.display = '';
-                            if (matched && !firstMatch) firstMatch = paragraphs[i];
-                        }
-                        if (firstMatch) firstMatch.scrollIntoView({behavior: 'smooth', block: 'center'});
-                        return !!firstMatch;
-                    }
-                </script>
-                """, 'html.parser')
-
-                h1_tag = notam_section.find('h1')
-                if h1_tag:
-                    h1_tag.insert_after(search_html)
-                else:
-                    notam_section.insert(0, search_html)
-
-            html_output = str(notam_section) if notam_section else "<p>No NOTAMs found / Parsing failed</p>"
-            with open("notams_belgique.html", "w", encoding="utf-8") as f:
-                f.write(html_output)
-        except Exception as e:
-            print(f"Error extracting NOTAMs: {e}")
+        fetch_be_notams(session)
 
 
     def _daily():
@@ -1678,8 +1684,8 @@ def main():
 
 
 def main_opmet_only():
-    """Point d'entrée léger pour le bouton 'OPMET rapide' : login + fetch_opmet() UNIQUEMENT
-    (pas de NOTAMs, pas d'images radar/satellite, pas de TEMSI/WINTEM) — récupère et remplace
+    """Point d'entrée léger pour le bouton 'OPMET seul' (récupération rapide) : OPMET complet + NOTAM
+    officiels belges et français (pas d'images radar/satellite, pas de TEMSI/WINTEM) — récupère et remplace
     la TOTALITÉ de l'OPMET (METAR + TAF + SIGMET + GAMET/AIRMET, exactement comme sur la page
     Skeyes) dans opmet.html, réutilisant fetch_opmet() telle quelle (même sortie que le
     pipeline complet), pour un job GitHub Actions le plus court possible."""
@@ -1690,12 +1696,28 @@ def main_opmet_only():
         print("Missing credentials")
         return
 
-    pub = _Publisher(["opmet", "aeroweb"])
+    # Récupération rapide = OPMET + NOTAM officiels (les deux à jour avant un vol) :
+    #  - METAR/TAF/SIGMET/GAMET : skeyes (Belgique/Luxembourg) + AéroWeb Météo-France (France) ;
+    #  - NOTAM : résumé skeyes (Belgique/Luxembourg) + SIA SOFIA-Briefing (France).
+    pub = _Publisher(["opmet", "aeroweb", "notam", "notam_fr"])
     import threading as _th
     t_aw = _th.Thread(target=_aeroweb_task, args=(pub,), daemon=True)
     t_aw.start()
+    t_fr = _th.Thread(target=_notams_fr_task, args=(pub,), daemon=True)
+    t_fr.start()
     session = make_skeyes_session()
     do_login(session, username, password)
+
+    def _be():
+        try:
+            fetch_be_notams(session)
+        except Exception as e:
+            print(f"Error fetching NOTAM (fast): {e}")
+        finally:
+            pub.ready("notam", ["notams_belgique.html"])
+            _lap("notam")
+    t_be = _th.Thread(target=_be, daemon=True)
+    t_be.start()
 
     try:
         fetch_opmet(session)
@@ -1704,6 +1726,8 @@ def main_opmet_only():
         _record_failure("opmet", str(e))
         generate_error_html("opmet.html", "OPMET", session, str(e))
     pub.ready("opmet", ["opmet.html", "opmet.pdf", "opmet_page_*.png"])
+    t_be.join(timeout=90)
+    t_fr.join(timeout=150)
     t_aw.join(timeout=60)
     pub.close()
 

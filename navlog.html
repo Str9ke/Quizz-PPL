@@ -1123,7 +1123,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
        sauvegardée dans le dossier à la météo fraîchement récupérée. -->
   <div class="global-refresh-bar" id="globalRefreshBar">
     <button class="global-refresh-btn" style="background:linear-gradient(135deg,#e53935,#c62828);color:#fff;border-color:transparent" onclick="window.triggerGithubAction();window.refreshAllWeatherData()" title="Récupération complète sur le serveur (OPMET, NOTAM Belgique et France, avis du jour, cartes, images) + actualisation des METAR/TAF de la route">&#x2B07;&#xFE0F; Tout r&#xe9;cup&#xe9;rer</button>
-    <button class="global-refresh-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:transparent" onclick="window.triggerOpmetOnlyAction();window.refreshAllWeatherData()" title="Récupère seulement l'OPMET complet (METAR, TAF, SIGMET, GAMET/AIRMET de skeyes + METAR/TAF AéroWeb France) — plus rapide">&#x26A1; OPMET seul</button>
+    <button class="global-refresh-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:transparent" onclick="window.triggerOpmetOnlyAction();window.refreshAllWeatherData()" title="Récupération rapide des données officielles les plus fraîches : OPMET complet (METAR, TAF, SIGMET, GAMET/AIRMET de skeyes + METAR/TAF Météo-France AéroWeb) et NOTAM (skeyes Belgique/Luxembourg + SIA SOFIA France) — sans les cartes ni images">&#x26A1; OPMET + NOTAM</button>
     <button class="global-refresh-btn" id="globalRefreshBtn" onclick="window.refreshBriefingDisplay&&window.refreshBriefingDisplay();window.refreshAllWeatherData()" title="Réaffiche les dernières données récupérées et actualise METAR / TAF / NOTAM par terrain / GAMET / avis du jour (sans relancer le serveur)">&#x1F504; Rafra&#xee;chir</button>
     <button class="global-refresh-btn" id="globalClearWsBtn" style="background:rgba(239,83,80,.14);border-color:#ef5350;color:#ef5350" onclick="window.clearWorkspace()" title="Vide complètement l'espace de travail (NavLog, météo, NOTAMs, cartes...)">&#x1F5D1;&#xFE0F; Vider l'espace de travail</button>
     <span class="global-refresh-time" id="globalRefreshTime"></span>
@@ -1494,7 +1494,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
          remplacés par une action principale, une option rapide et un simple rafraîchissement). -->
     <div class="meteo-refresh-bar">
       <button class="meteo-action-btn" onclick="window.triggerGithubAction()" style="background:linear-gradient(135deg,#e53935,#e35d5b)" title="Lance la r&#xe9;cup&#xe9;ration compl&#xe8;te sur le serveur : OPMET, NOTAM, Daily Warnings, images radar/satellite, TEMSI/WINTEM (~30 s ; l&#x27;OPMET s&#x27;affiche en premier, vers 20 s, puis chaque partie d&#xe8;s son arriv&#xe9;e)">&#x2B07;&#xFE0F; R&#xe9;cup&#xe9;rer toutes les donn&#xe9;es</button>
-      <button class="meteo-action-btn" onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706)" title="R&#xe9;cup&#xe8;re uniquement l'OPMET (METAR, TAF, SIGMET, GAMET/AIRMET) &#x2014; plus rapide">&#x26A1; OPMET seul</button>
+      <button class="meteo-action-btn" onclick="window.triggerOpmetOnlyAction()" style="background:linear-gradient(135deg,#f59e0b,#d97706)" title="R&#xe9;cup&#xe9;ration rapide : OPMET (METAR, TAF, SIGMET, GAMET/AIRMET skeyes + M&#xe9;t&#xe9;o-France) et NOTAM officiels (skeyes + SIA), sans cartes ni images">&#x26A1; OPMET + NOTAM</button>
       <button class="meteo-action-btn" onclick="window.refreshBriefingDisplay()" style="background:rgba(127,127,127,.25);color:var(--text-primary,#fff)" title="Recharge l'affichage avec les derni&#xe8;res donn&#xe9;es d&#xe9;j&#xe0; r&#xe9;cup&#xe9;r&#xe9;es, sans relancer de r&#xe9;cup&#xe9;ration">&#x1F504; Rafra&#xee;chir l'affichage</button>
       <span id="opmetFastStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
       <span id="ghaStatus" style="display:none;font-size:.8em;font-weight:600;padding:4px 10px"></span>
@@ -18488,7 +18488,7 @@ function _waitForFreshData(sinceMs, token, statusEl, opmetOnly) {
   function stale() { return gen !== _fetchWatchGen; }
   var started = Date.now(), runDoneAt = 0, runConclusion = null, runId = null;
   var workflow = _fetchWorkflow(), classic = workflow === 'update_notams_classic.yml';
-  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet', 'aeroweb'] : _ALL_BRIEFING_PARTS.slice();
+  var finished = false, lastSha = null, shown = {}, expected = opmetOnly ? ['opmet', 'aeroweb', 'notam', 'notam_fr'] : _ALL_BRIEFING_PARTS.slice();
   _fetchWatchActive = true;
   _fetchProgressMax = 0;
   _setFetchProgress(1, 'En attente d’un serveur GitHub…');
@@ -19084,7 +19084,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var d=window._aerowebData, list=document.getElementById('awList'), meta=document.getElementById('awMeta');
     var lg=document.getElementById('awLegend'); if(lg && !lg.innerHTML) lg.innerHTML=legend();
     if(!list) return;
-    if(!d){ list.innerHTML='<div style="padding:12px;color:var(--text-secondary)">Pas encore de données : lance « ⬇️ Récupérer toutes les données » ou « ⚡ OPMET seul » ci-dessus.</div>'; if(meta) meta.textContent=''; return; }
+    if(!d){ list.innerHTML='<div style="padding:12px;color:var(--text-secondary)">Pas encore de données : lance « ⬇️ Récupérer toutes les données » ou « ⚡ OPMET + NOTAM » ci-dessus.</div>'; if(meta) meta.textContent=''; return; }
     if(meta){
       var when=d.generated?new Date(d.generated):null;
       meta.innerHTML=(d.error?'<b style="color:#ef5350">⚠️ '+esc(d.error)+'</b><br>':'')

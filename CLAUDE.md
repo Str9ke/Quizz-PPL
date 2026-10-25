@@ -81,7 +81,8 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   lu à la connexion et au retour sur l'appli ; aucun envoi avant la première lecture).
 - **METAR en français** : `js/metar-fr.js` (`metarFr`, `metarFrToggle`) ; bouton « 🇫🇷 METAR en français » (OPMET + AéroWeb),
   clic sur un METAR = bascule ; préférence `metarFr` dans le localStorage.
-- Barre du haut du Navlog : « Tout récupérer » / « OPMET seul » (serveur + `refreshAllWeatherData`) / « Rafraîchir ».
+- Récupération rapide « OPMET + NOTAM » (`fetch_notams.py --opmet-only`) : OPMET skeyes + AéroWeb + NOTAM skeyes (`fetch_be_notams`) + SIA.
+- Barre du haut du Navlog : « Tout récupérer » / « OPMET + NOTAM » (serveur + `refreshAllWeatherData`) / « Rafraîchir ».
 - **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
   localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
   leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
@@ -95,7 +96,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v245`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v246`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
