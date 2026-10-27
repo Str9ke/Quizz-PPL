@@ -22,21 +22,24 @@ for cid in sorted({k.split('/')[0] for k in idx}):
 json.dump(codes, open('codes.json', 'w', encoding='utf-8'), indent=1)
 print(codes)
 
+import glob
 for key, m in idx.items():
     cid, mid = key.split('/')
-    got = set()
-    for sid in m['sujets']:
-        fn = f'raw/{cid}_{mid}_{sid}.html'
-        if os.path.exists(fn):
-            got |= {str(q['gid']) for q in parse_page(open(fn, encoding='utf-8').read())}
-    miss = [x for x in m['all'] if x not in got]
-    fn = f'raw/miss_{cid}_{mid}.html'
-    if not miss or os.path.exists(fn):
-        continue
-    print(key, len(miss), 'hors série', flush=True)
-    post({'pg': '4', 'act': 'choix_all', 'limite_tot': str(len(miss)), 'NV_qcm': ','.join(miss), 'DV_qcm': '', 'RV_qcm': '',
-          'limite1': str(len(miss)), 'limite2': '', 'limite3': '', 'limite4': '0'})
-    c = post({'pg': '5', 'entrainement': 'all'})
-    open(fn, 'w', encoding='utf-8').write(c)
-    print('  ->', len(parse_page(c)), flush=True)
+    for k in range(4):
+        got = set()
+        files = [f'raw/{cid}_{mid}_{sid}.html' for sid in m['sujets']] + glob.glob(f'raw/miss_{cid}_{mid}_*.html')
+        for fn in files:
+            if os.path.exists(fn):
+                got |= {str(q['gid']) for q in parse_page(open(fn, encoding='utf-8').read())}
+        miss = [x for x in m['all'] if x not in got]
+        if not miss:
+            break
+        print(key, len(miss), 'hors série', flush=True)
+        post({'pg': '2', 'ID': cid})          # le site garde la classe en session : module d'une autre classe = 0 QCM
+        post({'pg': '3', 'ID': mid})
+        post({'pg': '4', 'act': 'choix_all', 'limite_tot': str(len(m['all'])), 'NV_qcm': ','.join(miss), 'DV_qcm': '', 'RV_qcm': '',
+              'limite1': str(len(miss)), 'limite2': '', 'limite3': '', 'limite4': '0'})
+        c = post({'pg': '5', 'entrainement': 'all'})
+        open(f'raw/miss_{cid}_{mid}_{k}.html', 'w', encoding='utf-8').write(c)
+        print('  ->', len(parse_page(c)), flush=True)
 print('FINI')

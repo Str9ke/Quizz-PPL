@@ -67,7 +67,7 @@ if __name__ == '__main__':
         cid, mid = key.split('/')
         qs = {}
         series = [(f'raw/{cid}_{mid}_{sid}.html', sname) for sid, sname in m['sujets'].items()]
-        series.append((f'raw/miss_{cid}_{mid}.html', 'Autres questions (hors série)'))
+        series += [(f, 'Autres questions (hors série)') for f in sorted(glob.glob(f'raw/miss_{cid}_{mid}_*.html'))]
         for fn, sname in series:
             if not os.path.exists(fn):
                 continue
