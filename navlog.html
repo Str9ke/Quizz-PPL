@@ -3656,11 +3656,11 @@ function renderFuelLog(){
       if(wp.ptType==='circuitDep'){
         circDepFuel+=legFuel; circDepTimeMin+=t; stageCircDepFuel+=legFuel; stageCircDepTimeMin+=t;
         circTag=' <span class="wp-circuit-tag dep" style="font-size:.65em">🛫 circuit départ</span>';
-        legLabel='Début';
+        legLabel='Circuit départ';
       } else if(wp.ptType==='circuitArr'){
         circArrFuel+=legFuel; circArrTimeMin+=t; stageCircArrFuel+=legFuel; stageCircArrTimeMin+=t;
         circTag=' <span class="wp-circuit-tag arr" style="font-size:.65em">🛬 circuit arrivée</span>';
-        legLabel='Fin';
+        legLabel='Circuit arrivée';
       } else {
         navFuel+=legFuel; navTimeMin+=t; stageNavFuel+=legFuel; stageNavTimeMin+=t;
         navLegGlobalNum++; stageNavLegNum++;
@@ -3675,7 +3675,7 @@ function renderFuelLog(){
       html+='<span style="font-weight:600">'+legFuel.toFixed(1)+' L <small style="color:#aaa;font-weight:normal">@ '+(legData.fuelBurnLh?legData.fuelBurnLh.toFixed(1):fuelBurn)+' L/h</small></span>';
       html+='</div>';
 
-      if(wp.isEtape) {
+      if(wp.isEtape && !isEtapesFuelLog) {
         html+='<div style="padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(255,183,77,0.1);display:flex;justify-content:space-between;align-items:center;color:#ffb74d;font-size:0.88em;font-style:italic;">';
         html+='<span>🟠 (Cumul jusqu\'à l\'étape '+escHTML(wp.name||'WP'+i)+')</span>';
         html+='<span>('+formatTime(tripTimeMin/60)+' — '+tripFuel.toFixed(1)+' L)</span>';
@@ -8987,7 +8987,12 @@ function _computeStageSegments(shownIdx){
        ce garde-fou, un vol normal à 2 aérodromes se retrouvait éclaté en tables "Étape 1"/
        "Étape 2" fantômes (une par point) puisque _stages n'est renseigné QUE par
        _composeEtapes(). */
-    if(prevStages.length===0 || curStages.length===0) continue;
+    if(prevStages.length===0 || curStages.length===0){
+      /* escale explicite (point « escale » sans numéros d'étape) : atterrissage puis redécollage,
+         donc fin d'une étape et début de la suivante au même point */
+      if(prevWp.isEtape && i-1>0){ segments.push(shownIdx.slice(segStart,i)); segStart=i-1; }
+      continue;
+    }
     var overlap=false;
     for(var oi=0;oi<prevStages.length;oi++){ if(curStages.indexOf(prevStages[oi])>=0){ overlap=true; break; } }
     if(overlap) continue;
@@ -10950,6 +10955,10 @@ window._mapMenuAsk=function(btn,what,idx){
    pour ne pas fausser les temps/distances de la route de navigation elle-même. */
 function toggleCircuitType(i, scrollToCard){
   if(!waypoints[i]) return;
+  if(!waypoints[i].ptType&&_isFieldPoint(i)){
+    if(typeof _toast==='function') _toast('🛬 '+(waypoints[i].name||'Ce point')+' est un aérodrome de départ/arrivée d’étape : il ne peut pas devenir un point de circuit.','',4000);
+    return;
+  }
   var cur=waypoints[i].ptType;
   /* Capturé AVANT renderNavlog() : sa propre compensation de scroll (basée sur la
      variation de hauteur du board) lit offsetHeight juste après avoir remplacé le
@@ -10990,6 +10999,10 @@ window.toggleCircuitType=toggleCircuitType;
    même nom d'aérodrome et ne se distinguent que par leur rôle départ/arrivée. */
 function setCircuitType(i, type, scrollToCard){
   if(!waypoints[i]) return;
+  if(type&&!waypoints[i].ptType&&_isFieldPoint(i)){
+    if(typeof _toast==='function') _toast('🛬 '+(waypoints[i].name||'Ce point')+' est un aérodrome de départ/arrivée d’étape : il ne peut pas devenir un point de circuit.','',4000);
+    return;
+  }
   var _preservedScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   waypoints[i].ptType = type;
   renderNavlog();
@@ -11114,9 +11127,19 @@ function _sameFieldAs(i,j){
   return !!a&&a===(o.name||'').trim().toUpperCase()&&haversine(w.lat,w.lon,o.lat,o.lon)<0.3;
 }
 /* Aérodrome où l'on décolle ou atterrit : premier/dernier point, escale, bout d'étape. */
+/* Bout d'étape d'après les numéros d'étape : point de jonction (dans deux étapes) ou voisin qui
+   n'a aucune étape en commun (on change d'étape à ce point). */
+function _stageBoundary(i){
+  var w=waypoints[i]; if(!w||!Array.isArray(w._stages)||!w._stages.length) return false;
+  if(w._stages.length>1) return true;
+  return [i-1,i+1].some(function(j){
+    var o=waypoints[j]; if(!o||!Array.isArray(o._stages)||!o._stages.length) return false;
+    return !o._stages.some(function(x){ return w._stages.indexOf(x)>=0; });
+  });
+}
 function _isFieldPoint(i){
   var w=waypoints[i]; if(!w) return false;
-  if(i===0||i===waypoints.length-1||w.isEtape) return true;
+  if(i===0||i===waypoints.length-1||w.isEtape||_stageBoundary(i)) return true;
   if(_sameFieldAs(i,i-1)||_sameFieldAs(i,i+1)) return true;
   return _isStageEnd(i);
 }
@@ -11127,7 +11150,15 @@ window._isFieldPoint=_isFieldPoint;
 function _fixFieldCircuits(){
   for(var i=1;i<waypoints.length-1;i++){
     var w=waypoints[i]; if(!w||!w.ptType) continue;
-    if((_sameFieldAs(i,i-1)&&!waypoints[i-1].ptType)||(_sameFieldAs(i,i+1)&&!waypoints[i+1].ptType)) w.ptType=undefined;
+    if(w.isEtape||_stageBoundary(i)||(_sameFieldAs(i,i-1)&&!waypoints[i-1].ptType)||(_sameFieldAs(i,i+1)&&!waypoints[i+1].ptType)){ w.ptType=undefined; continue; }
+    /* « circuit départ » juste après un point de navigation (ni terrain, ni circuit) : impossible —
+       on ne décolle pas en plein vol. Si c'est un aérodrome (code OACI connu), c'était l'escale. */
+    var pv=waypoints[i-1], pvPlain=pv&&!pv.ptType&&i-1>0&&!pv.isEtape&&!_stageBoundary(i-1);
+    if(w.ptType==='circuitDep'&&pvPlain){
+      var code=(w.name||'').trim().toUpperCase();
+      w.ptType=undefined;
+      if(/^[A-Z]{4}$/.test(code)&&window.AERODROMES_DATA&&window.AERODROMES_DATA[code]) w.isEtape=true;
+    }
   }
 }
 function _normalizeTrailingCircuitArr(){

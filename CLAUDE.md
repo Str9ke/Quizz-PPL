@@ -124,11 +124,13 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   `_isStageEnd(i)` : terrain de départ/arrivée d'une étape (ou son doublon au même endroit) -> les profils d'altitude y atterrissent.
 - **Devis / coût** : réglages instructeur, tarifs, roulage par étape dans `getConfig().devis` (`_devisCfg`/`_devisApply`/`_devisSet`)
   -> gardés avec la route et synchronisés (avant : localStorage seul = totaux différents PC/téléphone). Un aérodrome d'étape
-  (`_isFieldPoint`) ne peut pas devenir point de circuit ; `_fixFieldCircuits` (début de `recalcNavlog`) répare les anciens cas.
+  (`_isFieldPoint`, `_stageBoundary`) ne peut pas devenir point de circuit (protection dans `setCircuitType`/`toggleCircuitType`) ;
+  `_fixFieldCircuits` (début de `recalcNavlog`) répare les anciens cas (« circuit départ » après un point de nav = escale perdue -> `isEtape`).
+  Une escale `isEtape` coupe le vol en étapes même sans `_stages` (`_computeStageSegments`).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v254`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v255`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
