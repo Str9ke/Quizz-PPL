@@ -89,9 +89,11 @@ def main(work):
                 count[s] = count.get(s, 0) + 1
         order = list(m['sujets'].values()) + ['Autres questions (hors série)']
         c = reg.setdefault(cls[0], {'key': cls[0], 'short': cls[1], 'label': cls[2], 'count': 0, 'modules': []})
-        c['modules'].append({'cat': cat, 'code': code, 'name': m['name'], 'file': fname, 'count': len(qs),
+        com = sum(1 for q in qs if q['explication'] or q.get('explication_images'))
+        c['modules'].append({'cat': cat, 'code': code, 'name': m['name'], 'file': fname, 'count': len(qs), 'commented': com,
                              'sujets': [[s, count[s]] for s in dict.fromkeys(order) if count.get(s)]})
         c['count'] += len(qs)
+        c['commented'] = c.get('commented', 0) + com
         print(cat, m['name'][:50], len(qs))
     for c in reg.values():
         c['modules'].sort(key=lambda x: x['code'])

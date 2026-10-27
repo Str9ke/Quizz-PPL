@@ -123,7 +123,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v252`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v253`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -142,7 +142,9 @@ PPL(H), CAEA, Drones — 15 584 questions, `qbank/<classe>_<module>.json` (id = 
 Difficultés/Historique/Recherche ajoutent les modules déjà travaillés (`_qbAnswered`). Mise à jour : dans un dossier de travail,
 `GLIGLI_PHPSESSID=<cookie PHPSESSID du navigateur connecté>` puis `tools/qbank/crawl_qbank.py` (pages de correction des séries ->
 raw/), `fetch_missing.py` (codes modules + questions hors série), `parse.py` (-> parsed.json), `build_qbank.py <dossier>`.
-Contenu payant d'un tiers : ne jamais committer le cookie ni le HAR (`Livres/` ignoré). Pages : `quiz.html`, `examen.html`,
+Contenu payant d'un tiers : ne jamais committer le cookie ni le HAR (`Livres/` ignoré).
+Menu Catégorie : « TOUTES LES QUESTIONS PPL(A) » (inchangé, sans les banques), `TOUT` (PPL(A) + banques), `COMMENTEES`
+(PPL(A) avec explication), `TOUT COMMENTEES`, et par classe `QB <classe> :: #commentees` ; page Stats : un groupe par classe. Pages : `quiz.html`, `examen.html`,
 `epreuve.html`, `stats.html`, `echecs.html`, `difficultes.html`, `historique.html`, `search.html`, `fiches.html`, `syllabus.html`,
 `navlog.html`, `opmet.html`, `urgences.html` (onglets F-150L + **fiches F 172 M** : `js/urgences172.js`, 5 pages de 138 × 210 mm (A5 moins 1 cm, pochettes plastiques), mise en page FIXE (`PAGES` = une page : 1 moteur, 2 incendies, 3 atterrissages, 4 électrique + moteur irrégulier, 5 givrage/vrille), PDF `fiche_urgence_172M_A5.pdf` à régénérer par impression Chrome si les fiches changent ; manuels sources dans `Livres/`), `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
 `envoi-fichiers.html` (envoi de gros fichiers, jusqu'à 300 Mo).

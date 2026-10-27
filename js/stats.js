@@ -659,6 +659,14 @@ async function initStats() {
       }
     ];
 
+    // Banques par classe (ATPL, PPL(H), CAEA, Drones — js/qbank.js) : un groupe par classe, un module par ligne
+    if (typeof _qbClasses === 'function') {
+      _qbClasses().forEach(c => groups.push({
+        name: c.label.toUpperCase(),
+        categories: c.modules.map(m => ({ label: `${m.code} ${m.name}`, value: m.cat }))
+      }));
+    }
+
     // Charger les stats pour chaque catégorie individuelle
     const groupsData = [];
     for (const group of groups) {
@@ -1231,7 +1239,7 @@ function afficherStats(groupsData, globalStats, masteryBreakdown) {
   let html = `
     <div class="stats-global-card">
       <div class="stats-global-row">
-        <span class="stats-global-title">GLOBAL</span>
+        <span class="stats-global-title">GLOBAL PPL(A)</span>
         <span class="stats-global-perc" style="color:${percColor(gPerc)}">${gPerc}%</span>
       </div>
       <div class="progressbar" style="height:14px;margin:6px 0">
@@ -2522,7 +2530,10 @@ function _getGroupCategories(groupName) {
       'GLIGLI REGLEMENTATION EASY'
     ]
   };
-  return map[groupName] || [];
+  if (map[groupName]) return map[groupName];
+  // groupe d'une banque par classe (nom = libellé de la classe en majuscules)
+  const qbc = (typeof _qbClasses === 'function') ? _qbClasses().find(c => c.label.toUpperCase() === groupName) : null;
+  return qbc ? qbc.modules.map(m => m.cat) : [];
 }
 
 /**

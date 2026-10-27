@@ -125,6 +125,7 @@ async function initIndex() {
   // Mettre à jour totalGlobal avec le vrai total dédupliqué (évite l'écart entre
   // le dropdown "TOUTES (Nxxx)" et la barre de progression qui utilise questions.length)
   totalGlobal = questions.length;
+  window._countCommentees = questions.filter(q => _hasOfficialExplication(q)).length;
   updateCategorySelect();
   catSelect.value = "TOUTES";
 

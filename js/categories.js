@@ -530,6 +530,15 @@ async function updateModeCounts(filterFlags) {
 async function chargerQuestions(cat) {
     // Banques par classe (ATPL, CAEA, Drones, PPL(H)…) : voir js/qbank-ui.js
     if (typeof _qbNorm === 'function' && _qbNorm(cat)) { questions = await _qbLoad(cat); return; }
+    // Questions commentées (avec explication) et « TOUT » (PPL(A) + toutes les banques par classe)
+    const _up = String(cat || '').trim().toUpperCase();
+    if (_up === 'COMMENTEES' || _up === 'TOUT' || _up === 'TOUT COMMENTEES') {
+      await loadAllQuestions();
+      let all = [...questions];
+      if (_up !== 'COMMENTEES' && typeof _qbLoad === 'function') all = all.concat(await _qbLoad('QB ALL'));
+      questions = _up === 'TOUT' ? all : all.filter(q => _hasOfficialExplication(q));
+      return;
+    }
     const norm = getNormalizedCategory(cat);
     let fileName = "";
   const loadFile = async (fname) => {
@@ -891,8 +900,18 @@ function updateCategorySelect() {
 
   const optionToutes = document.createElement("option");
   optionToutes.value = "TOUTES";
-  optionToutes.textContent = `TOUTES LES QUESTIONS (${totalGlobal})`;
+  optionToutes.textContent = `TOUTES LES QUESTIONS PPL(A) (${totalGlobal})`;
   catSelect.appendChild(optionToutes);
+  // « TOUT » et questions commentées (avec explication officielle)
+  const qbT = (typeof _qbTotals === 'function') ? _qbTotals() : { count: 0, commented: 0 };
+  const nCom = window._countCommentees || 0;
+  [
+    qbT.count ? ['TOUT', `TOUT : PPL(A) + ATPL + PPL(H) + CAEA + DRONES (${totalGlobal + qbT.count})`] : null,
+    ['COMMENTEES', `💬 QUESTIONS COMMENTÉES PPL(A) (${nCom})`],
+    qbT.count ? ['TOUT COMMENTEES', `💬 QUESTIONS COMMENTÉES — TOUTES CLASSES (${nCom + qbT.commented})`] : null,
+  ].filter(Boolean).forEach(([v, t]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t; catSelect.appendChild(o);
+  });
 
   // Use friendly display names for EASA categories
   const categories = [

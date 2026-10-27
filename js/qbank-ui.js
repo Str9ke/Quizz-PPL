@@ -22,7 +22,10 @@ function _qbSujetOf(cat) {
 
 function _qbClasses() { return (window.QBANK && window.QBANK.classes) || []; }
 
+const QB_COMMENTED = '#commentees';   // « série » spéciale : questions avec explication
+
 function _qbFind(norm) {
+  if (norm === 'QB ALL') return { cls: null, mod: null, all: true };
   for (const c of _qbClasses()) {
     if (('QB ' + c.key) === norm) return { cls: c, mod: null };
     for (const m of c.modules) if (m.cat === norm) return { cls: c, mod: m };
@@ -34,7 +37,8 @@ function _qbFind(norm) {
 function _qbLabel(cat) {
   const f = _qbFind(_qbNorm(cat));
   if (!f) return cat;
-  const sj = _qbSujetOf(cat);
+  const sj = _qbSujetOf(cat) === QB_COMMENTED ? 'questions commentées' : _qbSujetOf(cat);
+  if (f.all) return ['Toutes les classes', sj].filter(Boolean).join(' · ');
   return [f.cls.short, f.mod ? f.mod.code + ' ' + f.mod.name : 'tous les modules', sj].filter(Boolean).join(' · ');
 }
 
@@ -55,13 +59,11 @@ async function _qbLoadModule(m) {
 async function _qbLoad(cat) {
   const f = _qbFind(_qbNorm(cat));
   if (!f) return [];
-  if (!f.mod) {
-    const all = [];
-    for (const m of f.cls.modules) all.push(...await _qbLoadModule(m));
-    return all;
-  }
-  const list = await _qbLoadModule(f.mod);
+  let list = [];
+  if (f.mod) list = await _qbLoadModule(f.mod);
+  else for (const c of (f.all ? _qbClasses() : [f.cls])) for (const m of c.modules) list.push(...await _qbLoadModule(m));
   const sj = _qbSujetOf(cat);
+  if (sj === QB_COMMENTED) return list.filter(q => q.explication || (q.explication_images && q.explication_images.length));
   return sj ? list.filter(q => (q.sujets || []).includes(sj)) : list;
 }
 
@@ -74,6 +76,12 @@ function _qbAppendOptions(select) {
     all.value = 'QB ' + c.key;
     all.textContent = `${c.short} - TOUS LES MODULES (${c.count})`;
     g.appendChild(all);
+    if (c.commented) {
+      const com = document.createElement('option');
+      com.value = 'QB ' + c.key + QB_SEP + QB_COMMENTED;
+      com.textContent = `${c.short} - 💬 QUESTIONS COMMENTÉES (${c.commented})`;
+      g.appendChild(com);
+    }
     c.modules.forEach(m => {
       const o = document.createElement('option');
       o.value = m.cat;
@@ -124,6 +132,7 @@ function _qbRestoreSelection(saved) {
   const norm = _qbNorm(saved);
   if (!norm) return false;
   const cat = document.getElementById('categorie');
+  if (cat && Array.from(cat.options).some(o => o.value === saved)) { cat.value = saved; _qbRenderSujetSelect(); return true; }
   const base = saved.split(QB_SEP)[0];
   if (!cat || !Array.from(cat.options).some(o => o.value === base)) return false;
   cat.value = base;
@@ -139,4 +148,9 @@ async function _qbAnswered(responses) {
   const out = [];
   for (const c of _qbClasses()) for (const m of c.modules) if (mods.has(m.cat)) out.push(...await _qbLoadModule(m));
   return out;
+}
+
+/** Totaux de toutes les banques (questions, questions commentées). */
+function _qbTotals() {
+  return _qbClasses().reduce((t, c) => ({ count: t.count + c.count, commented: t.commented + (c.commented || 0) }), { count: 0, commented: 0 });
 }
