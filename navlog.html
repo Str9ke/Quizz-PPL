@@ -8420,6 +8420,17 @@ function _navStageSegs(){
   return _computeStageSegments(shown).filter(function(sg){ return sg.length>=2; });
 }
 window._navStageSegs=_navStageSegs;
+/* Terrain de départ ou d'arrivée d'une étape (même s'il n'est pas marqué « escale ») : les profils
+   d'altitude y redescendent à l'altitude du terrain. */
+function _isStageEnd(i){
+  if(i==null||i<0) return false;
+  var w=waypoints[i]; if(!w) return false;
+  /* le point lui-même, ou son doublon posé au même endroit (arrivée d'étape + départ de la suivante) */
+  return _navStageSegs().some(function(sg){ return [sg[0],sg[sg.length-1]].some(function(j){
+    if(j===i) return true; var o=waypoints[j];
+    return o&&w.lat!=null&&o.lat!=null&&haversine(w.lat,w.lon,o.lat,o.lon)<0.3; }); });
+}
+window._isStageEnd=_isStageEnd;
 /* Étape (0-based) du leg qui arrive au point i, ou -1 pour un « leg fantôme » entre deux étapes
    distinctes (fin d'une étape -> début de la suivante posé ailleurs) : il n'existe dans aucun
    tableau Navlog et ne doit pas compter dans le carburant. */
@@ -9753,7 +9764,7 @@ function _buildStaticAltProfileSvg(fromIdx,toIdx){
   function wpElev(w){ var e=_adElevFor(w); return e!=null?e:0; }   /* altitude OFFICIELLE du terrain */
   var wpAlts=[];
   for(var i=0;i<sub.length;i++){
-    if(i===0||i===sub.length-1||sub[i].isEtape) wpAlts.push(wpElev(sub[i]));
+    if(i===0||i===sub.length-1||sub[i].isEtape||_isStageEnd(waypoints.indexOf(sub[i]))) wpAlts.push(wpElev(sub[i]));
     else wpAlts.push(sub[i].altitude||parseInt(_v('cfgAlt'))||2300);
   }
   /* Distance GLOBALE (depuis le tout premier point du vol, jamais réinitialisée par étape —
@@ -14309,7 +14320,7 @@ function _altitudesTrajectory(){
   for(var i=0;i<waypoints.length;i++){
     if(i===0) wpAlts.push(depElev);
     else if(i===waypoints.length-1) wpAlts.push(arrElev);
-    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i));
+    else if(waypoints[i].isEtape||_isStageEnd(i)) wpAlts.push(_wpElev(i));
     else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
     if(i>0) cumDists.push(cumDists[i-1]+(waypoints[i].dist||0));
   }
@@ -15130,7 +15141,7 @@ function renderAltProfile(){
     if(i>0) cumDistWp+=(waypoints[i].dist||0);
     if(i===0) wpAlts.push(depElev);
     else if(i===waypoints.length-1) wpAlts.push(arrElev);
-    else if(waypoints[i].isEtape) wpAlts.push(_wpElev(i,cumDistWp));
+    else if(waypoints[i].isEtape||_isStageEnd(i)) wpAlts.push(_wpElev(i,cumDistWp));
     else wpAlts.push(waypoints[i].altitude||parseInt(document.getElementById('cfgAlt').value)||2300);
   }
 
