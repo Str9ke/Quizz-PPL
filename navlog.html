@@ -3776,12 +3776,12 @@ function renderFuelLog(){
     +(_off.note?'<br><span style="color:#f59e0b">'+_off.note+'</span>':'')+'</div>';
   _rentHtml+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
   _rentHtml+='<label style="font-size:.82em;color:var(--text-secondary);white-space:nowrap">Tarif appliqué (&#x20AC;/min TVAC) :</label>';
-  _rentHtml+='<input type="number" id="fuelRentalRate" value="'+_rate.toFixed(3)+'" min="0" max="50" step="0.001" style="width:88px;padding:5px 8px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em" onchange="localStorage.setItem(\''+_rateKey+'\',this.value);window.renderFuelLog()">';
-  if(_custom) _rentHtml+='<button type="button" onclick="localStorage.removeItem(\''+_rateKey+'\');window.renderFuelLog()" style="font-size:.75em;padding:3px 8px;border-radius:6px;cursor:pointer">&#x21BA; tarif officiel ('+_eur(_off.ttc)+')</button><span style="font-size:.75em;color:#f59e0b">tarif personnalisé</span>';
+  _rentHtml+='<input type="number" id="fuelRentalRate" value="'+_rate.toFixed(3)+'" min="0" max="50" step="0.001" style="width:88px;padding:5px 8px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);font-size:.88em" onchange="window._devisSet(\''+_rateKey+'\',this.value)">';
+  if(_custom) _rentHtml+='<button type="button" onclick="window._devisSet(\''+_rateKey+'\',null)" style="font-size:.75em;padding:3px 8px;border-radius:6px;cursor:pointer">&#x21BA; tarif officiel ('+_eur(_off.ttc)+')</button><span style="font-size:.75em;color:#f59e0b">tarif personnalisé</span>';
   _rentHtml+='</div>';
   _rentHtml+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;font-size:.85em">';
-  _rentHtml+='<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700"><input type="checkbox" '+(_instrOn?'checked':'')+' onchange="localStorage.setItem(\'instructorOn\',this.checked?\'1\':\'0\');window.renderFuelLog()" style="width:18px;height:18px;accent-color:#e879f9"> 👨‍✈️ Instructeur à bord</label>';
-  _rentHtml+='<span style="color:var(--text-secondary)"><input type="number" value="'+_instrRate+'" min="0" max="500" step="1" onchange="localStorage.setItem(\'instructorRateHtva\',this.value);window.renderFuelLog()" style="width:58px;padding:3px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right"> &#x20AC;/h HTVA + TVA 21&nbsp;% = <b style="color:var(--text-primary)">'+_eur(_instrTtc,2)+'&nbsp;&#x20AC;/h TVAC</b></span>';
+  _rentHtml+='<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700"><input type="checkbox" '+(_instrOn?'checked':'')+' onchange="window._devisSet(\'instructorOn\',this.checked?\'1\':\'0\')" style="width:18px;height:18px;accent-color:#e879f9"> 👨‍✈️ Instructeur à bord</label>';
+  _rentHtml+='<span style="color:var(--text-secondary)"><input type="number" value="'+_instrRate+'" min="0" max="500" step="1" onchange="window._devisSet(\'instructorRateHtva\',this.value)" style="width:58px;padding:3px 6px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--input-text);text-align:right"> &#x20AC;/h HTVA + TVA 21&nbsp;% = <b style="color:var(--text-primary)">'+_eur(_instrTtc,2)+'&nbsp;&#x20AC;/h TVAC</b></span>';
   _rentHtml+='</div>';
   _rentHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border-color)">';
   _rentHtml+='<span style="color:var(--text-secondary);font-size:.9em">Avion : '+totalBlockTimeMin.toFixed(0)+' min &times; '+_eur(_rate)+' &#x20AC;/min</span>';
@@ -8393,6 +8393,9 @@ function getConfig(){
     fuelAltnDist:parseFloat(_v('fuelAltnDist'))||0,
     /* minutes de tour de piste à chaque arrivée (onglet Carbu) */
     fuelCircArr:(typeof waypoints!=='undefined'&&waypoints.length>1)?_circArrMins():undefined,
+    /* Réglages du coût (instructeur, tarifs, roulage par étape) : avant, gardés sur l'appareil seulement
+       -> le PC et le téléphone donnaient deux totaux différents pour le même vol. */
+    devis:_devisCfg(),
     perfAircraft:window._perfAircraft||'OO-MQA',
     /* Vent MANUEL saisi dans l'onglet Perf pour décollage/atterrissage (distinct du "vent réf."
        ci-dessus, qui sert au calcul des caps/temps de route) : n'était sauvegardé nulle part —
@@ -8468,6 +8471,38 @@ function _setCircArrMin(i,v){
   renderFuelLog();
 }
 window._setCircArrMin=_setCircArrMin;
+/* Réglages du devis gardés AVEC la route (dossier, sauvegarde auto, compte) : instructeur à bord,
+   tarif instructeur, tarif avion personnalisé, roulage des étapes 2, 3… */
+function _devisCfg(){
+  var o={};
+  try{
+    o.instr=localStorage.getItem('instructorOn')==='1';
+    var r=parseFloat(localStorage.getItem('instructorRateHtva')); if(!isNaN(r)) o.instrRate=r;
+    var ac=window._perfAircraft||'OO-MQA', rr=parseFloat(localStorage.getItem('rentalRate_'+ac));
+    o.rate={}; o.rate[ac]=isNaN(rr)?null:rr;
+    var ts=window._taxiStage; if(!Array.isArray(ts)) ts=JSON.parse(localStorage.getItem('fuelTaxiStage')||'null');
+    if(Array.isArray(ts)) o.taxi=ts;
+  }catch(e){}
+  return o;
+}
+function _devisApply(d){
+  if(!d||typeof d!=='object') return;
+  try{
+    localStorage.setItem('instructorOn',d.instr?'1':'0');
+    if(d.instrRate!=null) localStorage.setItem('instructorRateHtva',d.instrRate); else localStorage.removeItem('instructorRateHtva');
+    if(d.rate) Object.keys(d.rate).forEach(function(k){
+      if(d.rate[k]==null) localStorage.removeItem('rentalRate_'+k); else localStorage.setItem('rentalRate_'+k,d.rate[k]);
+    });
+    if(Array.isArray(d.taxi)){ window._taxiStage=d.taxi.slice(); localStorage.setItem('fuelTaxiStage',JSON.stringify(d.taxi)); }
+  }catch(e){}
+}
+/* Changement d'un réglage du devis : gardé, recalculé, et envoyé aux autres appareils. */
+function _devisSet(key,val){
+  try{ if(val===null) localStorage.removeItem(key); else localStorage.setItem(key,val); }catch(e){}
+  renderFuelLog();
+  if(typeof _scheduleAutosave==='function') _scheduleAutosave();
+}
+window._devisSet=_devisSet;
 function _legFuelCounts(i,segs){ return _legStageIdx(i,segs)>=0; }
 /* Roulage départ/arrivée PAR étape (min) : chaque étape a son propre aérodrome, donc son propre
    roulage. L'étape 1 suit les champs « Taxi départ/arrivée » ; les autres peuvent être réglées une
@@ -8495,6 +8530,7 @@ function _setTaxiStage(k,which,v){
     try{ localStorage.setItem('fuelTaxiStage',JSON.stringify(o)); }catch(e){}
   }
   renderFuelLog();
+  if(typeof _scheduleAutosave==='function') _scheduleAutosave();
 }
 window._setTaxiStage=_setTaxiStage;
 /* Réglage du devis depuis le tableau : écrit dans le champ d'origine (gardé, masqué) et déclenche
@@ -8758,6 +8794,7 @@ function _sharesStage(a,b){
 window._renumberAutoWaypointNames=_renumberAutoWaypointNames;
 
 function recalcNavlog(){
+  if(typeof waypoints!=='undefined'&&waypoints.length>2) _fixFieldCircuits();
   _renumberAutoWaypointNames();
   var cfg=getConfig();
   document.getElementById('asiGauge').innerHTML=createASI(cfg.tas);
@@ -11022,6 +11059,13 @@ window._mapLegSetType=function(idx,type){
 function _cycleLegType(i){
   if(!waypoints[i]) return;
   var cur=waypoints[i].ptType;
+  if(!cur&&_isFieldPoint(i)){
+    if(typeof _toast==='function') _toast('🛬 '+(waypoints[i].name||'Ce point')+' est un aérodrome de départ/arrivée d’étape : il ne peut pas devenir un point de circuit.','',4000);
+    return;
+  }
+  /* Sur téléphone, un simple toucher en faisant défiler la liste changeait le type du point : on demande. */
+  var nxt=cur==='circuitDep'?'circuit arrivée':(cur==='circuitArr'?'point de navigation':'circuit départ');
+  try{ if(window.matchMedia&&matchMedia('(pointer:coarse)').matches&&!confirm('Passer « '+(waypoints[i].name||'ce point')+' » en '+nxt+' ?')) return; }catch(e){}
   if(cur==='circuitDep') window.setCircuitType(i,'circuitArr',false);
   else if(cur==='circuitArr') window.removeCircuitType(i);
   else window.setCircuitType(i,'circuitDep',false);
@@ -11035,6 +11079,31 @@ window._cycleLegType=_cycleLegType;
    de destination), on reconvertit cette traîne en points de navigation normaux : ils
    redeviennent visibles dans le tableau, plutôt que de rester masqués et de recréer un leg
    fantôme « dernier point → circuit » sautant par-dessus eux. */
+/* Même nom, même endroit que le point voisin (moins de 0,3 NM) : c'est le même aérodrome
+   (arrivée d'une étape + départ de la suivante). */
+function _sameFieldAs(i,j){
+  var w=waypoints[i], o=waypoints[j];
+  if(!w||!o||w.lat==null||o.lat==null) return false;
+  var a=(w.name||'').trim().toUpperCase();
+  return !!a&&a===(o.name||'').trim().toUpperCase()&&haversine(w.lat,w.lon,o.lat,o.lon)<0.3;
+}
+/* Aérodrome où l'on décolle ou atterrit : premier/dernier point, escale, bout d'étape. */
+function _isFieldPoint(i){
+  var w=waypoints[i]; if(!w) return false;
+  if(i===0||i===waypoints.length-1||w.isEtape) return true;
+  if(_sameFieldAs(i,i-1)||_sameFieldAs(i,i+1)) return true;
+  return _isStageEnd(i);
+}
+window._isFieldPoint=_isFieldPoint;
+/* Réparation : un aérodrome de jonction marqué « circuit » par erreur (un toucher sur une ligne du
+   devis suffisait) faisait disparaître l'escale -> une seule étape, roulages et tour de piste comptés
+   une seule fois, coût faux. Il redevient un point normal. */
+function _fixFieldCircuits(){
+  for(var i=1;i<waypoints.length-1;i++){
+    var w=waypoints[i]; if(!w||!w.ptType) continue;
+    if((_sameFieldAs(i,i-1)&&!waypoints[i-1].ptType)||(_sameFieldAs(i,i+1)&&!waypoints[i+1].ptType)) w.ptType=undefined;
+  }
+}
 function _normalizeTrailingCircuitArr(){
   for(var j=waypoints.length-1;j>=0;j--){
     if(waypoints[j] && waypoints[j].ptType==='circuitArr'){ waypoints[j].ptType=undefined; }
@@ -11799,6 +11868,7 @@ function _composeEtapes(){
   if(cfg.fuelContingency!==undefined) setVal('fuelContingency',cfg.fuelContingency);
   if(cfg.fuelExtra!==undefined) setVal('fuelExtra',cfg.fuelExtra);
   if(Array.isArray(cfg.fuelCircArr)){ window._circArrMin=cfg.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
+  _devisApply(cfg.devis);
   if(cfg.fuelAltnDist!==undefined) setVal('fuelAltnDist',cfg.fuelAltnDist);
   if(cfg.perfAircraft) syncAircraftSelection(cfg.perfAircraft,true);
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
@@ -12102,6 +12172,7 @@ function _restoreAutosaveIfAny(){
   if(cfg.fuelContingency!==undefined) setVal('fuelContingency',cfg.fuelContingency);
   if(cfg.fuelExtra!==undefined) setVal('fuelExtra',cfg.fuelExtra);
   if(Array.isArray(cfg.fuelCircArr)){ window._circArrMin=cfg.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
+  _devisApply(cfg.devis);
   if(cfg.fuelAltnDist!==undefined) setVal('fuelAltnDist',cfg.fuelAltnDist);
   if(cfg.perfAircraft) syncAircraftSelection(cfg.perfAircraft,true);
   setVal('cfgTAS',cfg.tas); setVal('cfgFuel',cfg.fuel);
@@ -12810,6 +12881,7 @@ function loadDossier(id, _freshCloudFiles){
   if(d.config.alt){var _ca=document.getElementById('cfgAlt');if(_ca)_ca.value=d.config.alt;var _cas=document.getElementById('cfgAltSlider');if(_cas)_cas.value=d.config.alt;}
   if(d.config.fuelBurn!==undefined){var _fb=document.getElementById('fuelBurn');if(_fb)_fb.value=d.config.fuelBurn;}
   if(Array.isArray(d.config.fuelCircArr)){ window._circArrMin=d.config.fuelCircArr.slice(); try{ localStorage.setItem('fuelCircArrMin',JSON.stringify(window._circArrMin)); }catch(e){} }
+  _devisApply(d.config.devis);
   if(d.config.fuelTaxiD!==undefined){var _ftd=document.getElementById('fuelTaxiD');if(_ftd)_ftd.value=d.config.fuelTaxiD;}
   if(d.config.fuelTaxiA!==undefined){var _fta=document.getElementById('fuelTaxiA');if(_fta)_fta.value=d.config.fuelTaxiA;}
   if(d.config.fuelResType){var _frt=document.getElementById('fuelResType');if(_frt)_frt.value=d.config.fuelResType;}
