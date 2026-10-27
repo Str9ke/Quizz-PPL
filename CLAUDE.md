@@ -99,6 +99,13 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   (panneau latéral `_miOpenList`) ; onglet Altitudes `renderAltitudesNotams` (survol = bande sur le graphique) ; « 📍 Voir où » des
   NOTAM = fenêtre carte `_showNotamOnMap` (retour = historique). Popups de la carte : clic arrêté (`popupopen`), boutons inline via
   `window._rmClosePopup` (routeMap n'est pas global !). Tableaux legs (`_toggleRecapTable`) et dégagements (`_toggleAltn`) repliables.
+- **Barre de la carte** : 2 lignes « Carte » (mode, ↶ ↷ `routeUndo/routeRedo` + Ctrl+Z/Y via `_hist`, recentrer, plein écran (barre
+  visible), masquer route, étapes `_mapStageAllows` basé sur `_navStageSegs`, calques, mesure) et « Route » (panneaux `_miOpenList` :
+  NOTAM, METAR/TAF, Fréquences `showRouteFreqPanel`, VOR `showRouteVorPanel`, Zones actives `showRouteActivePanel`, Obstacles = panneau
+  + calque). Survol d'une ligne = repère sur le(s) profil(s) (`_profBand`, item.prof). Altitude officielle des terrains partout
+  (`_adElevFor`). M&C : `fuelManual` gardé (dossier, autosave, cloud), bouton « ⛽ Devis ». Altitudes : graphique + panneau Zones/NOTAM
+  (`.alt-split`). Modèles Météociel : onglets `_modelTab` à heure commune (`modelCarousel.syncTo`). Fiche aérodrome : schéma THÉORIQUE
+  de tour de piste (`_drawCircuit`, sens OpenAIP `turnDirection` 0 droite/1 gauche) + note de tarif (localStorage `adFeeNotes`).
 - **NOTAM belges localisés** : `_loadBeNotams()` lit `notams_belgique.html` (coordonnées, rayon, polygone) ; carte « NOTAM Belgique
   localisés » de l'onglet NOTAMs ; tout NOTAM (FR/BE) cliquable -> `_showNotamOnMap`. « Zones du jour » : avis du jour (retrouvés par
   leur nom dans OpenAIP s'ils n'ont pas de coordonnées) + NOTAM belges + NOTAM France autour de la route.
@@ -112,7 +119,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v248`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v249`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
