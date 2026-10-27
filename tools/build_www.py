@@ -40,7 +40,7 @@ APP_ONLY = {
         "index.html", "quiz.html", "rates.html", "echecs.html", "difficultes.html", "epreuve.html",
         "examen.html", "syllabus.html", "stats.html", "historique.html", "search.html", "fiches.html",
         "symboles.html", "radial.html", "plongee.html",
-        "section_easa_*.json", "gligli_*.json", "questions_*.json", "IMAGES_*/", "Symboles/",
+        "section_easa_*.json", "gligli_*.json", "questions_*.json", "IMAGES_*/", "Symboles/", "qbank/",
     ],
     "briefing": [
         "briefing.html", "navlog.html", "urgences.html", "fiche_urgence_*.pdf", "openaip_*.json",

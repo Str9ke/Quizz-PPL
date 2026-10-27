@@ -231,6 +231,7 @@ async function prefetchAllJsonFiles() {
 
 function getNormalizedCategory(cat) {
   if (!cat) return "TOUTES";
+  if (typeof _qbNorm === 'function' && _qbNorm(cat)) return _qbNorm(cat);
   cat = fixQuotes(cat).replace(/_/g,' ').trim().toLowerCase();
   const catAscii = cat.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -300,6 +301,7 @@ function getNormalizedCategory(cat) {
 
 function getNormalizedSelectedCategory(selected) {
   if (!selected || selected==="TOUTES") return "TOUTES";
+  if (typeof _qbNorm === 'function' && _qbNorm(selected)) return _qbNorm(selected);
   const s=selected.replace(/_/g,' ').trim().toLowerCase();
   const sAscii = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const isGligli = sAscii.includes("gligli");
@@ -526,6 +528,8 @@ async function updateModeCounts(filterFlags) {
 }
 
 async function chargerQuestions(cat) {
+    // Banques par classe (ATPL, CAEA, Drones, PPL(H)…) : voir js/qbank-ui.js
+    if (typeof _qbNorm === 'function' && _qbNorm(cat)) { questions = await _qbLoad(cat); return; }
     const norm = getNormalizedCategory(cat);
     let fileName = "";
   const loadFile = async (fname) => {
@@ -946,6 +950,8 @@ function updateCategorySelect() {
     catSelect.appendChild(opt);
   });
 
+  if (typeof _qbAppendOptions === 'function') _qbAppendOptions(catSelect);
+
   // Restaurer la sélection précédente (le rebuild ci-dessus vide le select)
   if (prevValue) catSelect.value = prevValue;
 
@@ -1030,7 +1036,9 @@ function _updateOriginalityMenuVisibility() {
 
 async function categoryChanged() {
   const myToken = ++_categoryChangeToken;
-  const selected = document.getElementById("categorie").value;
+  // Banque par classe : le menu « Série » apparaît pour un module (sa valeur s'ajoute à la catégorie)
+  if (typeof _qbRenderSujetSelect === 'function') _qbRenderSujetSelect();
+  const selected = (typeof _qbSelectedValue === 'function') ? _qbSelectedValue() : document.getElementById("categorie").value;
   selectedCategory = selected;
   _updateNavDifficultyMenuVisibility();
   _updateOriginalityMenuVisibility();

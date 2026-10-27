@@ -123,7 +123,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v251`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v252`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
@@ -134,7 +134,15 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 
 ## Contenu quiz
 Questions : `section_easa_*.json`, `gligli_*_easy/hard.json`, `questions_*.json` (4742 questions) ; images `IMAGES_*`.
-Scripts : `build_questions_easa*.py`, `check_duplicates.py`, `dedupe_questions.py`. Pages : `quiz.html`, `examen.html`,
+Scripts : `build_questions_easa*.py`, `check_duplicates.py`, `dedupe_questions.py`.
+**Banques par classe (27/10/2026, à la demande de Thomas, depuis son abonnement chezgligli.net)** : ATPL (14 modules 010…092),
+PPL(H), CAEA, Drones — 15 584 questions, `qbank/<classe>_<module>.json` (id = numéro d'origine du QCM, champ `sujets` = séries)
++ `qbank/img/` (WebP), registre `js/qbank.js` ; logique `js/qbank-ui.js` : catégories `QB ATPL` (classe), `QB ATPL 010` (module),
+`QB ATPL 010 :: <série>` (menu « Série » sous Catégorie) ; clé de progression = module + id ; hors « TOUTES » ; pages Échecs/
+Difficultés/Historique/Recherche ajoutent les modules déjà travaillés (`_qbAnswered`). Mise à jour : dans un dossier de travail,
+`GLIGLI_PHPSESSID=<cookie PHPSESSID du navigateur connecté>` puis `tools/qbank/crawl_qbank.py` (pages de correction des séries ->
+raw/), `fetch_missing.py` (codes modules + questions hors série), `parse.py` (-> parsed.json), `build_qbank.py <dossier>`.
+Contenu payant d'un tiers : ne jamais committer le cookie ni le HAR (`Livres/` ignoré). Pages : `quiz.html`, `examen.html`,
 `epreuve.html`, `stats.html`, `echecs.html`, `difficultes.html`, `historique.html`, `search.html`, `fiches.html`, `syllabus.html`,
 `navlog.html`, `opmet.html`, `urgences.html` (onglets F-150L + **fiches F 172 M** : `js/urgences172.js`, 5 pages de 138 × 210 mm (A5 moins 1 cm, pochettes plastiques), mise en page FIXE (`PAGES` = une page : 1 moteur, 2 incendies, 3 atterrissages, 4 électrique + moteur irrégulier, 5 givrage/vrille), PDF `fiche_urgence_172M_A5.pdf` à régénérer par impression Chrome si les fiches changent ; manuels sources dans `Livres/`), `radial.html`, `plongee.html`, `urgences.html`, `symboles.html`, `configuration.html`,
 `envoi-fichiers.html` (envoi de gros fichiers, jusqu'à 300 Mo).

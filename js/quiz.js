@@ -372,7 +372,7 @@ function _buildExplicationHtml(q, includeNote) {
 }
 
 async function demarrerQuiz() {
-  selectedCategory = document.getElementById('categorie').value;
+  selectedCategory = (typeof _qbSelectedValue === 'function') ? _qbSelectedValue() : document.getElementById('categorie').value;
   modeQuiz = document.getElementById('mode').value;
   nbQuestions = parseInt(document.getElementById('nbQuestions').value);
   const filterFlags = (typeof _getCheckedFilterFlags === 'function') ? _getCheckedFilterFlags() : [];
@@ -875,7 +875,7 @@ function updateCategoryInfoBar(categoryName, remaining, total) {
   const nameEl = document.getElementById('categoryName');
   const progressEl = document.getElementById('categoryProgress');
 
-  if (nameEl) nameEl.textContent = categoryName || '';
+  if (nameEl) nameEl.textContent = (typeof _qbNorm === 'function' && _qbNorm(categoryName)) ? _qbLabel(categoryName) : (categoryName || '');
   if (progressEl) {
     if (remaining !== null && total !== null && total > 0) {
       const reussies = total - remaining;
@@ -959,7 +959,7 @@ async function initQuiz() {
     if (catNorm === "TOUTES") {
       await loadAllQuestions();
     } else {
-      await chargerQuestions(catNorm);
+      await chargerQuestions((typeof _qbNorm === 'function' && _qbNorm(selectedCategory)) ? selectedCategory : catNorm);
     }
     let restoredFlags = [];
     try { restoredFlags = JSON.parse(localStorage.getItem('quizFilterFlags') || '[]'); } catch (e) { /* ignore */ }
@@ -1047,7 +1047,7 @@ async function initQuiz() {
       if (catNorm === "TOUTES") {
         await loadAllQuestions();
       } else {
-        await chargerQuestions(catNorm);
+        await chargerQuestions((typeof _qbNorm === 'function' && _qbNorm(selectedCategory)) ? selectedCategory : catNorm);
       }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
       const isAggregate = _isAggregateCategory(normalizedSel);
@@ -2618,7 +2618,7 @@ async function validerReponses() {
     try {
       const savedCQ = [...currentQuestions];
       const catNorm = getNormalizedCategory(selectedCategory);
-      if (catNorm === "TOUTES") { await loadAllQuestions(); } else { await chargerQuestions(catNorm); }
+      if (catNorm === "TOUTES") { await loadAllQuestions(); } else { await chargerQuestions((typeof _qbNorm === 'function' && _qbNorm(selectedCategory)) ? selectedCategory : catNorm); }
       const normalizedSel = getNormalizedSelectedCategory(selectedCategory);
       const isAgg = _isAggregateCategory(normalizedSel);
       const fullL = isAgg ? questions : questions.filter(q => q.categorie === normalizedSel);

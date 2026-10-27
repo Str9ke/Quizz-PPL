@@ -253,7 +253,8 @@ function _isUnseen(r) {
  */
 function _isAggregateCategory(normalizedSel) {
   return normalizedSel === "TOUTES" || normalizedSel === "EASA ALL" || normalizedSel === "GLIGLI ALL" ||
-    normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES";
+    normalizedSel === "GLIGLI HARD ALL" || normalizedSel === "GLIGLI EASY ALL" || normalizedSel === "AUTRES" ||
+    /^QB [A-Z0-9]+$/.test(normalizedSel); // classe entière d'une banque (js/qbank-ui.js)
 }
 
 /**

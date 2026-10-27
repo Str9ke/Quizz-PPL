@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v251';
+const CACHE_NAME = 'quiz-ppl-v252';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -44,6 +44,8 @@ const PRECACHE_URLS = [
   BASE + 'config.js',
   BASE + 'js/globals.js',
   BASE + 'js/helpers.js',
+  BASE + 'js/qbank.js',
+  BASE + 'js/qbank-ui.js',
   BASE + 'js/categories.js',
   BASE + 'js/stats.js',
   BASE + 'js/quiz.js',
@@ -401,7 +403,7 @@ self.addEventListener('fetch', event => {
      network-first, un réseau qui ment (`navigator.onLine` vrai sur le Wi-Fi de bord d'un avion,
      sans passerelle réelle) imposait 3 s d'attente par fichier PUIS un repli sur un cache qui
      pouvait être vide — c'est ce qui a rendu les révisions totalement inaccessibles en vol. */
-  const isQuestionBankJson = /\/(questions_|section_easa_|gligli_)[^/]*\.json$/.test(url.pathname);
+  const isQuestionBankJson = /\/(questions_|section_easa_|gligli_|qbank\/)[^/]*\.json$/.test(url.pathname);
   // config.js contient les clés Firebase/OpenAIP injectées à chaque déploiement :
   // s'il reste coincé en cache-first, une clé mise à jour côté secrets GitHub peut
   // rester invisible indéfiniment (carte OpenAIP qui ne s'affiche plus, etc.) — donc

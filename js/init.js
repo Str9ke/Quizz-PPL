@@ -131,12 +131,13 @@ async function initIndex() {
   // Restaurer la dernière catégorie utilisée (mémorisée au dernier lancement de quiz),
   // pour ne pas repartir sur "TOUTES" à chaque visite de l'accueil.
   const savedCategory = localStorage.getItem('quizCategory');
-  const isValidSavedCategory = savedCategory && Array.from(catSelect.options).some(o => o.value === savedCategory);
+  const isQb = typeof _qbRestoreSelection === 'function' && _qbRestoreSelection(savedCategory || '');
+  const isValidSavedCategory = savedCategory && (isQb || Array.from(catSelect.options).some(o => o.value === savedCategory));
   if (isValidSavedCategory && savedCategory !== 'TOUTES') {
     await chargerQuestions(savedCategory);
     selectedCategory = savedCategory;
   }
-  catSelect.value = selectedCategory;
+  if (!isQb) catSelect.value = selectedCategory;
   const objectifCatSelect = document.getElementById('objectifCategorie');
   if (objectifCatSelect) objectifCatSelect.value = selectedCategory;
 
