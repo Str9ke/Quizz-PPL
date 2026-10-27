@@ -383,6 +383,12 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .meteo-subtab:hover{color:#667eea;background:rgba(102,126,234,.08)}
 .meteo-subtab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .meteo-sub-content{display:none}.meteo-sub-content.active{display:block}
+.ci-wrap{background:var(--bg-container,#fff);border:1px solid var(--border-color,rgba(127,127,127,.3));border-radius:10px;padding:6px;color:var(--text-primary)}
+.ci-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78em;margin:8px 0}
+.ci-legend span{display:flex;align-items:center;gap:6px}.ci-legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.ci-table{width:100%;border-collapse:collapse;font-size:.82em}.ci-table th,.ci-table td{padding:5px 6px;border-bottom:1px solid rgba(127,127,127,.2);text-align:left;white-space:nowrap}
+.ci-badge{color:#111;font-weight:800;border-radius:6px;padding:2px 8px;font-size:.92em}
+.ci-sum{border-left:4px solid;padding:8px 10px;border-radius:6px;background:rgba(127,127,127,.08);font-size:.85em;margin:6px 0}
 .meteo-refresh-bar{display:flex;gap:6px;align-items:center;justify-content:center;padding:6px 0 12px;flex-wrap:wrap}
 .meteo-action-btn{padding:7px 14px;font-size:.78em;font-weight:700;border-radius:12px;cursor:pointer;border:none;color:#fff;white-space:nowrap}
 .iframe-card{position:relative;width:100%;background:var(--bg-question);border-radius:8px;overflow:hidden;min-height:200px}
@@ -1579,6 +1585,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
       <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
+      <button class="meteo-subtab" data-sub="carb" onclick="window.switchMeteoSub('carb')">&#x1F9CA; Givrage carbu</button>
       <button class="meteo-subtab" data-sub="sigmet" onclick="window.switchMeteoSub('sigmet')">&#x26A0;&#xFE0F; SIGMET</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
     </div>
@@ -2145,6 +2152,24 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <div class="map-card-actions">
           <a href="https://www.meteociel.fr/modeles/gfs/storm-motion/3h.htm" target="_blank" rel="noopener">&#x1F517; Meteociel</a>
         </div>
+      </div>
+    </div>
+
+    <!-- ===== SUB: Givrage carburateur ===== -->
+    <div id="msub-carb" class="meteo-sub-content">
+      <div class="map-card">
+        <div class="map-card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span>&#x1F9CA; Givrage carburateur &#x2014; o&#xf9; en est-on, maintenant et pendant le vol</span>
+          <button onclick="window.refreshCarbIcing()" class="navlog-btn" style="font-size:.78em;padding:5px 12px">&#x1F504; Actualiser</button>
+        </div>
+        <div id="ciStatus" style="font-size:.78em;color:var(--text-secondary);margin:2px 0 6px"></div>
+        <div class="ci-wrap"><div id="ciChart"></div></div>
+        <div style="font-size:.78em;color:var(--text-secondary);margin:6px 2px">
+          <b style="color:#00bcd4">&#x25CF;</b> <b>Maintenant</b> : METAR officiel le plus r&#xe9;cent des terrains de la route (skeyes, M&#xe9;t&#xe9;o-France, KNMI), avec la trace des 12 derni&#xe8;res heures (METAR archiv&#xe9;s, NOAA).
+          &#xa0; <b style="color:#e040fb">&#x25A0;</b> <b>Pendant le vol</b> : pr&#xe9;vision AROME M&#xe9;t&#xe9;o-France au point, &#xe0; l'heure de passage pr&#xe9;vue (heure de d&#xe9;part + legs) et &#xe0; l'altitude du leg ; terrains au sol.
+          Zones simplifi&#xe9;es d'apr&#xe8;s les &#xe9;tudes publi&#xe9;es (CAA Safety Sense 14, FAA SAIB CE-09-35) : un rep&#xe8;re hors zone ne garantit pas l'absence de givrage.
+        </div>
+        <div id="ciInfo"></div>
       </div>
     </div>
 
@@ -4276,6 +4301,7 @@ function switchMeteoSub(id){
     if(id==='charts' && window.initTemsiCarousels) window.initTemsiCarousels(false);
     if(id==='sigmet' && window.fetchSigmetAirmet) window.fetchSigmetAirmet();
   }
+  if(id==='carb'){ _renderCarbIcing(); var _cs=window._ciState; if(!_cs.at||_cs.cached||Date.now()-new Date(_cs.at)>10*60000) refreshCarbIcing(); }
   /* Auto-scroll to sub-tabs bar */
   var subtabsBar=document.querySelector('.meteo-subtabs');
   if(subtabsBar) setTimeout(function(){subtabsBar.scrollIntoView({behavior:'smooth',block:'start'});},120);
@@ -18239,6 +18265,238 @@ function _syncWxCacheFromPool(){
 }
 window._loadMetarSources=_loadMetarSources;
 setTimeout(function(){ _loadMetarSources(false); },1200);
+/* ===== GIVRAGE CARBURATEUR (onglet Météo, sous-onglet « Givrage carbu ») =====
+   Diagramme température / point de rosée avec les zones de risque classiques étudiées au PPL
+   (dessin propre, d'après les études publiées : CAA Safety Sense 14, FAA SAIB CE-09-35 — zones
+   simplifiées, pédagogiques). Repères :
+   - « maintenant » : METAR officiels les plus récents des terrains de la route (_perfWxFor :
+     skeyes, Météo-France AéroWeb, KNMI) ; trace des 12 dernières heures (METAR archivés NOAA) ;
+   - « pendant le vol » : prévision du modèle AROME de Météo-France (via Open-Meteo) au point,
+     à l'heure de passage prévue (heure de départ + temps des legs) et à l'altitude du leg. */
+var CI_T0=-10, CI_T1=40, CI_D0=-25, CI_D1=30;
+var CI_ZONES=[  /* [T, écart T−Td maximal] : la zone va de la saturation (Td=T) jusqu'à cet écart */
+  {k:1,c:'#d32f2f',t:'Givrage SÉVÈRE à toutes les puissances',s:'Sévère',pts:[[-8,0],[-5,2],[5,4.5],[15,5],[20,3.5],[24,0]]},
+  {k:2,c:'#f57c00',t:'Givrage MODÉRÉ en croisière, SÉVÈRE en descente',s:'Modéré',pts:[[-10,6],[0,10],[12,13],[25,10],[30,5],[32,0]]},
+  {k:3,c:'#fbc02d',t:'Givrage SÉVÈRE en descente (puissance réduite)',s:'Sévère desc.',pts:[[-10,10],[0,15],[15,20],[30,15],[35,8],[38,0]]},
+  {k:4,c:'#9ccc65',t:'Givrage LÉGER en croisière ou en descente',s:'Léger',pts:[[-10,14],[0,20],[15,25],[30,22],[38,12],[42,0]]}
+];
+function _ciDmax(z,T){
+  var p=z.pts; if(T<p[0][0]||T>p[p.length-1][0]) return null;
+  for(var i=1;i<p.length;i++) if(T<=p[i][0]){ var a=p[i-1],b=p[i]; return a[1]+(b[1]-a[1])*(T-a[0])/(b[0]-a[0]); }
+  return null;
+}
+function _ciZone(T,Td){
+  if(T==null||Td==null) return null;
+  var d=T-Td;
+  for(var i=0;i<CI_ZONES.length;i++){ var m=_ciDmax(CI_ZONES[i],T); if(m!=null&&d<=m+1e-9) return CI_ZONES[i]; }
+  return null;
+}
+function _ciEs(T){ return 6.112*Math.exp(17.62*T/(243.12+T)); }
+function _ciRh(T,Td){ return Math.max(0,Math.min(100,100*_ciEs(Td)/_ciEs(T))); }
+function _ciTd(T,rh){ var g=Math.log(Math.max(rh,1)/100)+17.62*T/(243.12+T); return 243.12*g/(17.62-g); }
+function _ciMetarTT(m){
+  var x=/\s(M?\d{2})\/(M?\d{2})(?=\s|$)/.exec(' '+(m||'')+' ');
+  if(!x) return null;
+  var f=function(s){ return s.charAt(0)==='M'?-(+s.slice(1)):+s; };
+  return {T:f(x[1]),Td:f(x[2])};
+}
+function _ciMetarTime(m){ var t=_metarMinutes(m); return t>0?new Date(t*60000):null; }
+function _ciHHMM(d){ return d?('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2):''; }
+
+/* Points du vol : terrains et points de navigation, heure de passage prévue et altitude */
+function _ciFlightPoints(){
+  var dep=(document.getElementById('cfgDepTime')||{}).value||'09:00';
+  var day=_navlogFlightDate||_todayISO();
+  var t0=new Date(day+'T'+dep+':00'); if(isNaN(t0)) t0=new Date();
+  var taxi=parseFloat((document.getElementById('fuelTaxiD')||{}).value)||0;
+  var t=t0.getTime()+taxi*60000, out=[];
+  for(var i=0;i<waypoints.length;i++){
+    var w=waypoints[i]; if(!w||w.lat==null) continue;
+    if(i>0&&w._leg&&!isNaN(w._leg.ete)) t+=w._leg.ete*3600000;
+    var ad=(i===0||i===waypoints.length-1||w.isEtape||(typeof _isStageEnd==='function'&&_isStageEnd(i)));
+    var el=ad&&typeof _adElevFor==='function'?_adElevFor(w):null;
+    var alt=ad?(el!=null?el:0):(+w.altitude||+((document.getElementById('cfgAlt')||{}).value)||2500);
+    var prev=out[out.length-1], nm=(w.name||('WP'+i)).trim();
+    if(prev&&prev.name===nm&&Math.abs(prev.lat-w.lat)<0.005&&Math.abs(prev.lon-w.lon)<0.005) continue;   /* même terrain (fin d'étape + départ suivant) */
+    out.push({i:i,name:nm,lat:w.lat,lon:w.lon,time:new Date(t),altFt:alt,ad:ad});
+  }
+  return out;
+}
+
+/* Prévision AROME (Météo-France) aux points du vol, à l'heure et à l'altitude prévues */
+var CI_LEVELS=[1000,975,950,925,900,850,800];
+function _ciForecast(pts){
+  if(!pts.length) return Promise.resolve([]);
+  var v=['temperature_2m','dew_point_2m'];
+  CI_LEVELS.forEach(function(p){ v.push('temperature_'+p+'hPa','relative_humidity_'+p+'hPa','geopotential_height_'+p+'hPa'); });
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+pts.map(function(p){return p.lat.toFixed(3);}).join(',')
+    +'&longitude='+pts.map(function(p){return p.lon.toFixed(3);}).join(',')
+    +'&hourly='+v.join(',')+'&models=meteofrance_seamless&timezone=GMT&past_days=1&forecast_days=3';
+  return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(function(d){
+    var arr=Array.isArray(d)?d:[d];
+    return pts.map(function(p,k){
+      var h=arr[k]&&arr[k].hourly; if(!h) return null;
+      var ts=h.time.map(function(s){ return Date.parse(s+'Z'); }), tm=p.time.getTime();
+      var j=0; while(j<ts.length-2&&ts[j+1]<=tm) j++;
+      var f=Math.max(0,Math.min(1,(tm-ts[j])/(ts[j+1]-ts[j])));
+      function at(name){ var a=h[name]; if(!a||a[j]==null||a[j+1]==null) return null; return a[j]+(a[j+1]-a[j])*f; }
+      var zElev=(arr[k].elevation||0)+2, lv=[];
+      var t2=at('temperature_2m'), d2=at('dew_point_2m');
+      if(t2!=null&&d2!=null) lv.push({z:zElev,T:t2,Td:d2});
+      CI_LEVELS.forEach(function(pl){
+        var T=at('temperature_'+pl+'hPa'), rh=at('relative_humidity_'+pl+'hPa'), z=at('geopotential_height_'+pl+'hPa');
+        if(T!=null&&rh!=null&&z!=null&&z>zElev) lv.push({z:z,T:T,Td:_ciTd(T,rh)});
+      });
+      lv.sort(function(a,b){ return a.z-b.z; });
+      if(!lv.length) return null;
+      var zm=Math.max(p.altFt*0.3048,zElev), lo=lv[0], hi=lv[lv.length-1];
+      for(var q=1;q<lv.length;q++) if(lv[q].z>=zm){ lo=lv[q-1]; hi=lv[q]; break; }
+      if(zm<=lv[0].z){ lo=hi=lv[0]; } else if(zm>=lv[lv.length-1].z){ lo=hi=lv[lv.length-1]; }
+      var g=hi.z>lo.z?(zm-lo.z)/(hi.z-lo.z):0;
+      return {T:lo.T+(hi.T-lo.T)*g, Td:Math.min(lo.T+(hi.T-lo.T)*g, lo.Td+(hi.Td-lo.Td)*g)};
+    });
+  });
+}
+
+/* METAR des 12 dernières heures (archives NOAA aviationweather.gov) : évolution observée */
+function _ciHistory(icao){
+  var url='https://aviationweather.gov/api/data/metar?ids='+icao+'&format=raw&hours=12';
+  return fetch(url).then(function(r){ if(!r.ok) throw 0; return r.text(); })
+    .catch(function(){ return typeof fetchViaProxy==='function'?fetchViaProxy(url):''; })
+    .then(function(t){
+      return (t||'').split(/\n+/).map(function(l){ return l.trim(); }).filter(function(l){ return /^(METAR |SPECI )?[A-Z]{4} \d{6}Z/.test(l); })
+        .map(function(l){ var tt=_ciMetarTT(l); return tt&&{T:tt.T,Td:tt.Td,time:_ciMetarTime(l),metar:l}; }).filter(Boolean)
+        .sort(function(a,b){ return a.time-b.time; });
+    }).catch(function(){ return []; });
+}
+
+window._ciState=window._ciState||{obs:[],hist:{},fc:[],pts:[],msg:''};
+function refreshCarbIcing(){
+  var st=window._ciState, box=document.getElementById('ciStatus');
+  if(box) box.textContent='⏳ Récupération des METAR et de la prévision AROME…';
+  try{ _rebuildMetarPool(); }catch(e){}
+  var pts=_ciFlightPoints(), seen={}, obs=[];
+  pts.forEach(function(p){
+    if(!p.ad||!/^[A-Z]{4}$/.test(p.name.toUpperCase())) return;
+    var w=_perfWxFor(p.name.toUpperCase(),waypoints[p.i]); if(!w||seen[w.icao]) return;
+    var tt=_ciMetarTT(w.metar); if(!tt) return; seen[w.icao]=1;
+    obs.push({icao:w.icao,for:p.name.toUpperCase(),dist:w.dist,src:w.src,metar:w.metar,T:tt.T,Td:tt.Td,time:_ciMetarTime(w.metar)});
+  });
+  st.obs=obs; st.pts=pts;
+  _renderCarbIcing();
+  /* chaque source s'affiche dès son arrivée ; l'historique NOAA est limité à 12 s (relais lents) */
+  var jobs=[_ciForecast(pts).then(function(fc){ st.fc=fc; st.fcErr=''; st.at=new Date(); st.cached=false; _renderCarbIcing(); })
+    .catch(function(e){ st.fcErr=String(e&&e.message||e); })];
+  obs.forEach(function(o){ jobs.push(Promise.race([_ciHistory(o.icao),new Promise(function(r){ setTimeout(function(){ r(null); },12000); })])
+    .then(function(h){ if(h) { st.hist[o.icao]=h; _renderCarbIcing(); } })); });
+  Promise.all(jobs).then(function(){
+    st.at=new Date(); st.cached=false;
+    try{ localStorage.setItem('ciLast',JSON.stringify({obs:st.obs,hist:st.hist,fc:st.fc,pts:st.pts,at:st.at})); }catch(e){}
+    _renderCarbIcing();
+  });
+}
+window.refreshCarbIcing=refreshCarbIcing;
+
+function _renderCarbIcing(){
+  var host=document.getElementById('ciChart'); if(!host) return;
+  var st=window._ciState;
+  if(!st.pts.length&&!st.obs.length){
+    try{ var c=JSON.parse(localStorage.getItem('ciLast')||'null'); if(c){ ['obs','hist','fc','pts'].forEach(function(k){ st[k]=c[k]||st[k]; }); st.at=c.at; st.cached=true;
+      st.obs.forEach(function(o){ o.time=o.time&&new Date(o.time); }); st.pts.forEach(function(p){ p.time=new Date(p.time); });
+      Object.keys(st.hist).forEach(function(k){ st.hist[k].forEach(function(h){ h.time=new Date(h.time); }); }); } }catch(e){}
+  }
+  var W=760,H=520,L=56,R=60,T=22,B=48, pw=W-L-R, ph=H-T-B;
+  function X(t){ return L+(t-CI_T0)/(CI_T1-CI_T0)*pw; }
+  function Y(d){ return T+(CI_D1-d)/(CI_D1-CI_D0)*ph; }
+  var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;font-family:inherit" xmlns="http://www.w3.org/2000/svg">';
+  s+='<defs><clipPath id="ciClip"><rect x="'+L+'" y="'+T+'" width="'+pw+'" height="'+ph+'"/></clipPath>'
+    +'<pattern id="ciHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="rgba(127,127,127,.35)" stroke-width="2"/></pattern>'
+    +'<marker id="ciArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e040fb"/></marker></defs>';
+  s+='<rect x="'+L+'" y="'+T+'" width="'+pw+'" height="'+ph+'" fill="rgba(76,175,80,.10)"/>';
+  s+='<g clip-path="url(#ciClip)">';
+  /* zones : de la plus large à la plus sévère */
+  CI_ZONES.slice().reverse().forEach(function(z){
+    var a=z.pts[0][0], b=z.pts[z.pts.length-1][0], up=[], dn=[];
+    for(var t=a;t<=b+1e-6;t+=0.5){ var m=_ciDmax(z,t); up.push(X(t).toFixed(1)+','+Y(t).toFixed(1)); dn.unshift(X(t).toFixed(1)+','+Y(t-m).toFixed(1)); }
+    s+='<polygon points="'+up.concat(dn).join(' ')+'" fill="'+z.c+'" fill-opacity=".78" stroke="'+z.c+'" stroke-width="1"><title>'+z.t+'</title></polygon>';
+  });
+  /* impossible : point de rosée au-dessus de la température */
+  s+='<polygon points="'+X(CI_T0)+','+Y(CI_T0)+' '+X(CI_T1)+','+Y(CI_T1)+' '+X(CI_T1)+','+T+' '+X(CI_T0)+','+T+'" fill="url(#ciHatch)"/>';
+  /* grille */
+  for(var gt=CI_T0;gt<=CI_T1;gt+=5) s+='<line x1="'+X(gt)+'" y1="'+T+'" x2="'+X(gt)+'" y2="'+(T+ph)+'" stroke="rgba(127,127,127,.22)"/>';
+  for(var gd=CI_D0;gd<=CI_D1;gd+=5) s+='<line x1="'+L+'" y1="'+Y(gd)+'" x2="'+(L+pw)+'" y2="'+Y(gd)+'" stroke="rgba(127,127,127,.22)"/>';
+  /* courbes d'humidité relative */
+  [20,30,40,50,60,70,80,90].forEach(function(rh){
+    var p=[]; for(var t=CI_T0;t<=CI_T1;t+=1){ var d=_ciTd(t,rh); if(d>=CI_D0-3) p.push(X(t).toFixed(1)+','+Y(d).toFixed(1)); }
+    s+='<polyline points="'+p.join(' ')+'" fill="none" stroke="rgba(30,60,140,.55)" stroke-width="1" stroke-dasharray="4 3"/>';
+  });
+  s+='<line x1="'+X(CI_T0)+'" y1="'+Y(CI_T0)+'" x2="'+X(CI_T1)+'" y2="'+Y(CI_T1)+'" stroke="#1565c0" stroke-width="2.2"/>';
+  s+='</g>';
+  /* étiquettes HR (à droite du cadre) */
+  /* étiquette de chaque courbe HR là où elle sort du cadre (en haut ou à droite) */
+  [20,30,40,50,60,70,80,90].forEach(function(rh){
+    var d=_ciTd(CI_T1,rh);
+    if(d<=CI_D1){ if(d>CI_D0) s+='<text x="'+(L+pw+3)+'" y="'+(Y(d)+4)+'" font-size="10" fill="#5c7cfa">'+rh+' %</text>'; return; }
+    for(var t=CI_T0;t<=CI_T1;t+=0.25) if(_ciTd(t,rh)>=CI_D1){ s+='<text x="'+X(t)+'" y="'+(T-4)+'" font-size="10" text-anchor="middle" fill="#5c7cfa">'+rh+'%</text>'; break; }
+  });
+  s+='<text x="'+(X(14)+6)+'" y="'+(Y(14)-6)+'" font-size="11" font-weight="700" fill="#1565c0" transform="rotate(-'+(Math.atan2(ph/(CI_D1-CI_D0),pw/(CI_T1-CI_T0))*180/Math.PI).toFixed(1)+' '+(X(14)+6)+' '+(Y(14)-6)+')">100 % (saturation)</text>';
+  /* axes */
+  s+='<rect x="'+L+'" y="'+T+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="rgba(127,127,127,.6)"/>';
+  for(var at=CI_T0;at<=CI_T1;at+=5) s+='<text x="'+X(at)+'" y="'+(T+ph+16)+'" font-size="11" text-anchor="middle" fill="currentColor">'+at+'</text>';
+  for(var ad=CI_D0;ad<=CI_D1;ad+=5) s+='<text x="'+(L-6)+'" y="'+(Y(ad)+4)+'" font-size="11" text-anchor="end" fill="currentColor">'+ad+'</text>';
+  s+='<text x="'+(L+pw/2)+'" y="'+(H-8)+'" font-size="12" text-anchor="middle" font-weight="700" fill="currentColor">Température extérieure (°C)</text>';
+  s+='<text x="14" y="'+(T+ph/2)+'" font-size="12" text-anchor="middle" font-weight="700" fill="currentColor" transform="rotate(-90 14 '+(T+ph/2)+')">Point de rosée (°C)</text>';
+  function clampX(t){ return X(Math.max(CI_T0,Math.min(CI_T1,t))); }
+  function clampY(d){ return Y(Math.max(CI_D0,Math.min(CI_D1,d))); }
+  function tip(name,o,extra){ var z=_ciZone(o.T,o.Td); return name+' — T '+o.T.toFixed(1)+' °C, Td '+o.Td.toFixed(1)+' °C, HR '+Math.round(_ciRh(o.T,o.Td))+' %\n'+(z?z.t:'Risque faible')+(extra?'\n'+extra:''); }
+  /* trace des 12 dernières heures (observé) */
+  var cols=['#00bcd4','#3f51b5','#009688','#795548','#607d8b'];
+  st.obs.forEach(function(o,k){
+    var h=(st.hist[o.icao]||[]), col=cols[k%cols.length];
+    if(h.length>1){
+      s+='<polyline points="'+h.map(function(x){ return clampX(x.T).toFixed(1)+','+clampY(x.Td).toFixed(1); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="1.6" stroke-opacity=".8"/>';
+      h.forEach(function(x,q){ s+='<circle cx="'+clampX(x.T)+'" cy="'+clampY(x.Td)+'" r="2.6" fill="'+col+'" fill-opacity="'+(0.25+0.6*q/h.length).toFixed(2)+'"><title>'+tip(o.icao+' '+_ciHHMM(x.time),x,x.metar)+'</title></circle>'; });
+    }
+  });
+  /* prévision pendant le vol (AROME, altitude du leg) */
+  var fp=[]; st.pts.forEach(function(p,k){ var f=st.fc&&st.fc[k]; if(f) fp.push({p:p,f:f}); });
+  if(fp.length>1) s+='<polyline points="'+fp.map(function(x){ return clampX(x.f.T).toFixed(1)+','+clampY(x.f.Td).toFixed(1); }).join(' ')+'" fill="none" stroke="#e040fb" stroke-width="2.4" marker-mid="url(#ciArr)" marker-end="url(#ciArr)"/>';
+  fp.forEach(function(x,k){
+    var cx=clampX(x.f.T), cy=clampY(x.f.Td);
+    s+='<g><rect x="'+(cx-8)+'" y="'+(cy-8)+'" width="16" height="16" rx="4" fill="#e040fb" stroke="#fff" stroke-width="1.5"/>'
+      +'<text x="'+cx+'" y="'+(cy+4)+'" font-size="10" font-weight="800" text-anchor="middle" fill="#fff">'+(k+1)+'</text>'
+      +'<title>'+tip((k+1)+'. '+x.p.name+' à '+_ciHHMM(x.p.time)+' — '+Math.round(x.p.altFt)+' ft',x.f,'Prévision AROME Météo-France')+'</title></g>';
+  });
+  /* maintenant : METAR officiels */
+  st.obs.forEach(function(o,k){
+    var cx=clampX(o.T), cy=clampY(o.Td), col=cols[k%cols.length];
+    s+='<g><circle cx="'+cx+'" cy="'+cy+'" r="9" fill="'+col+'" stroke="#fff" stroke-width="2.5"/><circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#fff"/>'
+      +'<text x="'+(cx+12)+'" y="'+(cy-10+k*15)+'" font-size="11.5" font-weight="800" fill="'+col+'" stroke="var(--bg-container,#fff)" stroke-width="3" paint-order="stroke">'+o.icao+' '+_ciHHMM(o.time)+'</text>'
+      +'<title>'+tip(o.icao+' (METAR '+_ciHHMM(o.time)+')',o,o.metar)+'</title></g>';
+  });
+  s+='</svg>';
+  host.innerHTML=s;
+  /* légende + tableau */
+  var leg='<div class="ci-legend">'+CI_ZONES.map(function(z){ return '<span><i style="background:'+z.c+'"></i>'+z.t+'</span>'; }).join('')
+    +'<span><i style="background:rgba(76,175,80,.25)"></i>Risque faible (reste possible)</span></div>';
+  var rows='';
+  function row(kind,name,when,alt,o,src){
+    if(!o) return '';
+    var z=_ciZone(o.T,o.Td);
+    return '<tr><td>'+kind+'</td><td><b>'+escHTML(name)+'</b></td><td>'+when+'</td><td>'+alt+'</td><td>'+o.T.toFixed(1)+'</td><td>'+o.Td.toFixed(1)+'</td><td>'+Math.round(_ciRh(o.T,o.Td))+' %</td>'
+      +'<td><span class="ci-badge" style="background:'+(z?z.c:'#4caf50')+'">'+(z?z.s:'Faible')+'</span></td><td style="font-size:.8em;color:var(--text-secondary)">'+src+'</td></tr>';
+  }
+  st.obs.forEach(function(o){ rows+=row('<span style="color:#00bcd4">●</span> Maintenant',o.icao+(o.for!==o.icao?' (pour '+o.for+(o.dist?', '+o.dist+' NM':'')+')':''),_ciHHMM(o.time),'sol',o,'METAR — '+escHTML(o.src||'')); });
+  fp.forEach(function(x,k){ rows+=row('<span style="color:#e040fb">■</span> '+(k+1),x.p.name,_ciHHMM(x.p.time),x.p.ad?'sol':Math.round(x.p.altFt)+' ft',x.f,'AROME Météo-France'); });
+  var worst=null; fp.forEach(function(x){ var z=_ciZone(x.f.T,x.f.Td); if(z&&(!worst||z.k<worst.k)) worst=z; });
+  st.obs.forEach(function(o){ var z=_ciZone(o.T,o.Td); if(z&&(!worst||z.k<worst.k)) worst=z; });
+  var sum=worst?'<div class="ci-sum" style="border-color:'+worst.c+'">⚠️ Risque le plus élevé sur ce vol : <b style="color:'+worst.c+'">'+worst.t+'</b> — réchauffage carburateur : vérification au point fixe, utilisation préventive en croisière, <b>plein chaud avant de réduire</b> pour la descente.</div>'
+    :(fp.length||st.obs.length?'<div class="ci-sum" style="border-color:#4caf50">✅ Risque faible sur les points calculés — le givrage reste possible : surveiller le régime.</div>':'');
+  var info=document.getElementById('ciInfo');
+  if(info) info.innerHTML=sum+leg+(rows?'<div style="overflow-x:auto"><table class="ci-table"><thead><tr><th></th><th>Point</th><th>Heure</th><th>Alt.</th><th>T °C</th><th>Td °C</th><th>HR</th><th>Risque</th><th>Source</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p style="color:var(--text-secondary)">Aucune route : ajoute des points au Navlog (les terrains avec METAR et la prévision le long du vol apparaîtront ici).</p>');
+  var box=document.getElementById('ciStatus');
+  if(box) box.textContent=(st.at?'Mis à jour à '+_ciHHMM(new Date(st.at))+(st.cached?' (copie gardée hors ligne)':''):'')+(st.fcErr?' — prévision indisponible ('+st.fcErr+')':'');
+}
 function _perfWxFor(icao,wp){
   _rebuildMetarPool();
   var P=window._metarPool;

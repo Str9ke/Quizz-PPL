@@ -112,6 +112,11 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - **NOTAM France officiels** : `tools/notams_fr.py` (SIA SOFIA-Briefing, Licence Ouverte 2.0 : texte non modifié, source et date
   citées) -> `notams_france.json` (partie « notam_fr » de `fetch_notams.py`, récupérée avec le briefing) ; FIR LFFF/LFEE/LFRR
   SFC–FL115 + aérodromes de `tools/lf_aerodromes.txt` ; onglet NOTAMs, carte « NOTAM France » filtrée autour de la route.
+- **Givrage carburateur** (onglet Météo, sous-onglet « 🧊 Givrage carbu », `_renderCarbIcing`/`refreshCarbIcing`) : diagramme
+  T / point de rosée dessiné en SVG, zones `CI_ZONES` simplifiées (CAA Safety Sense 14, FAA SAIB CE-09-35), courbes d'HR ;
+  repères : METAR officiels des terrains de la route (`_perfWxFor`) + trace 12 h (aviationweather.gov), prévision AROME
+  Météo-France (Open-Meteo, `models=meteofrance_seamless`, niveaux de pression interpolés à l'altitude du leg) à l'heure de
+  passage (`_ciFlightPoints`) ; dernière copie dans le localStorage `ciLast` (hors ligne).
 - **Menu latéral repliable sur ordinateur** (`js/sidebar.js`, classe `body.sidebar-collapsed`, mémorisé) ; la carte de route
   prend toute la largeur disponible.
 - **Dossiers du navlog** : copie complète dans IndexedDB (`navlogStore`), copie allégée dans le localStorage (`navlog_dossiers`).
@@ -123,7 +128,7 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v253`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v254`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
