@@ -44,6 +44,7 @@ APP_ONLY = {
     ],
     "briefing": [
         "briefing.html", "navlog.html", "urgences.html", "fiche_urgence_*.pdf", "openaip_*.json",
+        "ppr_aerodromes.json", "sup_aip.json",
     ],
     "biblio": [
         "bibliotheque.html", "livre.html", "livre.css", "livre/",

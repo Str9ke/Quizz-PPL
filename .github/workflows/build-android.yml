@@ -227,7 +227,8 @@ jobs:
           set -e
           MANIFEST=android/app/src/main/AndroidManifest.xml
           test -f "$MANIFEST"
-          PERM='android.permission.REQUEST_INSTALL_PACKAGES'
+          # + localisation (mode « En vol » du Navlog : position GPS, alertes d'espaces aériens, trace)
+          for PERM in android.permission.REQUEST_INSTALL_PACKAGES android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION; do
           if grep -q "$PERM" "$MANIFEST"; then
             echo "Permission déjà présente."
           else
@@ -243,6 +244,7 @@ jobs:
           PYEOF
           fi
           grep -c "$PERM" "$MANIFEST"
+          done
 
       - name: Stamp a real version number on the app
         # Capacitor génère toujours `versionCode 1` / `versionName "1.0"` : TOUTES les versions

@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v256';
+const CACHE_NAME = 'quiz-ppl-v257';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -112,6 +112,12 @@ const PRECACHE_URLS = [
   BASE + 'aip_freqs.json',
   BASE + 'vfr_data.json',
   BASE + 'mef.json',
+  // Navlog : météo de la route, briefing complémentaire, navigation en vol (GPS, plané, traces)
+  BASE + 'js/nav-wx.js',
+  BASE + 'js/nav-brief.js',
+  BASE + 'js/nav-flight.js',
+  BASE + 'ppr_aerodromes.json',
+  BASE + 'sup_aip.json',
   BASE + 'js/account.js',
   BASE + 'js/app-transfer.js',
   BASE + 'js/firebase-init.js',
@@ -358,7 +364,12 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('cors.sh') ||
       url.hostname.includes('ogimet.com') ||
       url.hostname.includes('meteo.fr') ||
-      url.hostname.includes('meteo.be')) {
+      url.hostname.includes('meteo.be') ||
+      // Prévisions Open-Meteo (AROME : givrage carburateur, météo de la route) et trafic OpenSky :
+      // la stratégie par défaut (cache d'abord, ignoreSearch) renvoyait la PREMIÈRE réponse gardée
+      // pour n'importe quels points / heures — prévision périmée ou d'un autre endroit.
+      url.hostname.includes('open-meteo.com') ||
+      url.hostname.includes('opensky-network.org')) {
     return; // Ne pas intercepter
   }
 

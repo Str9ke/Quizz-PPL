@@ -1195,7 +1195,9 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
     <button class="navlog-tab" onclick="window.switchTab('altitudes')">&#x1F3D4;&#xFE0F; Altitudes</button>
     <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
+    <button class="navlog-tab" onclick="window.switchTab('vol')">&#x1F6E9;&#xFE0F; En vol</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
+    <button class="navlog-tab" onclick="window.switchTab('pilote')">&#x1F464; Pilote</button>
     <button class="navlog-tab" onclick="window.switchTab('notes')">&#x1F4DD; Notes</button>
     <button class="navlog-tab" onclick="window.switchTab('fpl')">&#x2708;&#xFE0F; FPL</button>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
@@ -1355,6 +1357,10 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
       <div class="summary-item" id="sumAltnItem" style="display:none"><div class="s-label">D&#xe9;gagement</div><div class="s-value" id="sumAltnFuel">0 L</div></div>
       <div class="summary-item"><div class="s-label">Carburant total (block fuel)</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
     </div>
+
+    <!-- Points à vérifier pour ce vol (js/nav-brief.js) : soleil, terrains (carburant, horaires, PPR),
+         frontières, activité militaire / oiseaux / SUP AIP, validités du pilote -->
+    <div class="nl-card" id="briefPlusCard" style="display:none"></div>
 
     <!-- Route recap table -->
     <div class="nl-card" id="navlogRecapCard" style="display:none">
@@ -1585,6 +1591,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
       <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
       <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
       <button class="meteo-subtab" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
+      <button class="meteo-subtab" data-sub="routewx" onclick="window.switchMeteoSub('routewx')">&#x1F6E3;&#xFE0F; M&#xe9;t&#xe9;o de la route</button>
       <button class="meteo-subtab" data-sub="carb" onclick="window.switchMeteoSub('carb')">&#x1F9CA; Givrage carbu</button>
       <button class="meteo-subtab" data-sub="sigmet" onclick="window.switchMeteoSub('sigmet')">&#x26A0;&#xFE0F; SIGMET</button>
       <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
@@ -2156,6 +2163,9 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
     </div>
 
     <!-- ===== SUB: Givrage carburateur ===== -->
+    <!-- Météo de la route (js/nav-wx.js) : AROME le long du tracé, coupe verticale, meilleure altitude, soleil -->
+    <div id="msub-routewx" class="meteo-sub-content"><div id="rwxRoot"></div></div>
+
     <div id="msub-carb" class="meteo-sub-content">
       <div class="map-card">
         <div class="map-card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2785,7 +2795,14 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
         <span id="checklistProgress" style="font-size:.88em;font-weight:700;color:#667eea;display:flex;align-items:center;gap:6px"></span>
       </div>
     </div>
+    <div class="nl-card" id="acChecklistCard"></div>
   </div>
+
+  <!-- ==================== TAB EN VOL (js/nav-flight.js) ==================== -->
+  <div id="tab-vol" class="navlog-tab-content"><div id="flightRoot"></div></div>
+
+  <!-- ==================== TAB PILOTE (js/nav-brief.js) ==================== -->
+  <div id="tab-pilote" class="navlog-tab-content"><div id="pilotRoot"></div></div>
 
   <!-- ==================== TAB NOTES ==================== -->
   <div id="tab-notes" class="navlog-tab-content">
@@ -4133,6 +4150,7 @@ function printConsolidatedDossier(){
     });
   }
 
+  if(window.NLX&&NLX.dossierExtra){ try{ html+=NLX.dossierExtra(); }catch(e){ console.warn('dossierExtra',e); } }
   html+='</body></html>';
   win.document.write(html);
   win.document.close();
@@ -4301,6 +4319,7 @@ function switchMeteoSub(id){
     if(id==='charts' && window.initTemsiCarousels) window.initTemsiCarousels(false);
     if(id==='sigmet' && window.fetchSigmetAirmet) window.fetchSigmetAirmet();
   }
+  if(id==='routewx'&&window.NLX&&NLX.routeWxShow) NLX.routeWxShow();
   if(id==='carb'){ _renderCarbIcing(); var _cs=window._ciState; if(!_cs.at||_cs.cached||Date.now()-new Date(_cs.at)>10*60000) refreshCarbIcing(); }
   /* Auto-scroll to sub-tabs bar */
   var subtabsBar=document.querySelector('.meteo-subtabs');
@@ -8922,6 +8941,7 @@ function recalcNavlog(){
   window._lastComputedBlockFuelL=_computeCarbuBlockFuelL();
   /* Report AUTOMATIQUE du block fuel (Carbu) dans Masse & centrage, sauf quantité saisie à la main */
   if(!window._mbFuelManual && typeof _mbFuelSyncNow==='function' && document.getElementById('mbFuel')){ try{ _mbFuelSyncNow(true); }catch(e){} }
+  try{ window.dispatchEvent(new Event('nl:recalc')); }catch(e){}
 }
 
 /* ===== TABLEAU RÉCAPITULATIF DE LA ROUTE (au-dessus de la carte) =====
@@ -15101,11 +15121,13 @@ function _altProfileSetCrosshair(dist){
   rc.setAttribute('x',rx-tw/2);rc.setAttribute('width',tw);
   tx.setAttribute('x',rx);
   _altProfileShowMapPos(dist);
+  if(window.NLX&&NLX.onCrosshair) try{ NLX.onCrosshair(dist); }catch(e){}
 }
 function _altProfileHideCrosshair(){
   var g=document.getElementById('altCrosshair');
   if(g) g.setAttribute('visibility','hidden');
   _altProfileHideMapPos();
+  if(window.NLX&&NLX.onCrosshairOut) try{ NLX.onCrosshairOut(); }catch(e){}
 }
 
 /* ===== Clic sur le profil d'altitude : surlignage de zone(s) sur la carte =====
@@ -20087,14 +20109,38 @@ document.addEventListener('DOMContentLoaded',init);
    sans dépendre de ce qu'init() fait par ailleurs en interne. Un hash absent ou invalide
    laisse simplement l'onglet par défaut ("nav", déjà actif dans le HTML) inchangé. */
 document.addEventListener('DOMContentLoaded', function () {
-  var validTabs = ['nav','meteo','metar','notam','masse','perf','altitudes','fuel','checklist','notes','fpl','dossiers'];
+  var validTabs = ['nav','meteo','metar','notam','masse','perf','altitudes','fuel','vol','checklist','pilote','notes','fpl','dossiers'];
   var id = (location.hash || '').replace('#', '');
   if (id && validTabs.indexOf(id) !== -1 && typeof window.switchTab === 'function') {
     window.switchTab(id);
   }
 });
+/* ===== Pont vers les modules séparés (js/nav-*.js : vol en direct, météo de route, briefing+) =====
+   Tout le code ci-dessus vit dans cette closure (waypoints, routeMap… ne sont pas globaux) :
+   les modules lisent la route et appellent les outils existants par window.NL. */
+window.NL={
+  get waypoints(){ return waypoints; },
+  get routeMap(){ return typeof routeMap!=='undefined'?routeMap:null; },
+  get airspacesCrossed(){ return _routeAirspaces; },
+  get profGeom(){ return _altProfileGeom; },
+  getConfig:getConfig, recalc:recalcNavlog, haversine:haversine, bearing:trueBearing, destPoint:destPoint,
+  loadOpenaip:_loadOpenaipStatic, loadAipFreqs:_loadAipFreqs, classLabel:_openaipClassLabel, limitFt:_openaipLimitToFt,
+  limText:_oaLim, inAirspace:_inAirspace, airspacePolys:_airspacePolys, bandColor:_airspaceBandColor, geomBBox:_geomBBox,
+  esc:escHTML, openList:_miOpenList, miPoint:_miPoint, routeSamples:_routeSamples, flightPoints:_ciFlightPoints,
+  perfWxFor:_perfWxFor, rebuildMetarPool:_rebuildMetarPool, latestTaf:_latestTaf, adElev:_adElevFor,
+  stageSegs:_navStageSegs, isStageEnd:_isStageEnd, toast:_toast, glideRatio:_glideRatioDefault,
+  latLonAtDist:_altProfileLatLonAtDist, distAtLatLon:_routeDistAtLatLon, loadFrNotams:_loadFrNotamsData,
+  loadBeNotams:_loadBeNotams, routeNotams:_routeNotams, fmtDate:_frnFmtDate, proxy:fetchViaProxy, vacLinks:_vacLinks,
+  today:_todayISO, aircraft:function(){ return (typeof MB_DATA!=='undefined'&&window._perfAircraft)?MB_DATA[window._perfAircraft]:null; },
+  aircraftList:function(){ return typeof MB_DATA!=='undefined'?MB_DATA:{}; }
+};
+window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
+<script src="js/tts.js"></script>
+<script src="js/nav-wx.js?v=20261028a"></script>
+<script src="js/nav-brief.js?v=20261028a"></script>
+<script src="js/nav-flight.js?v=20261028a"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

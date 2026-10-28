@@ -127,10 +127,23 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   (`_isFieldPoint`, `_stageBoundary`) ne peut pas devenir point de circuit (protection dans `setCircuitType`/`toggleCircuitType`) ;
   `_fixFieldCircuits` (début de `recalcNavlog`) répare les anciens cas (« circuit départ » après un point de nav = escale perdue -> `isEtape`).
   Une escale `isEtape` coupe le vol en étapes même sans `_stages` (`_computeStageSegments`).
+- **Modules du Navlog hors page** (28/10/2026) : le script principal de `navlog.html` expose `window.NL` (pont : route, carte,
+  outils OpenAIP/NOTAM…) + événements `nl:ready`, `nl:recalc` ; accroches `NLX.onCrosshair` (survol tracé/profil) et
+  `NLX.dossierExtra` (dossier PDF consolidé). `js/nav-wx.js` : sous-onglet Météo « Météo de la route » (soleil/nuit aéronautique,
+  AROME le long du tracé à l'heure de passage : base nuages, visibilité, 0 °C, averses/orages/brouillard, minima VFR ; coupe
+  verticale ; meilleure altitude). `js/nav-brief.js` : encart « Points à vérifier » (onglet Navlog : terrains d'après `aip_ad/`
+  — carburant AD 2.4, horaires AD 2.3, PPR —, frontières, activité militaire/BIRDTAM/para/drones des NOTAM + avis du jour, SUP AIP),
+  boutons carte « 🔒 PPR » (`ppr_aerodromes.json`, `tools/fetch_ppr.py`, FR/BE/LU/NL/DE/GB) et « ✈️ Trafic » (OpenSky, natif dans
+  l'APK), onglet « Pilote » (validités, 3 atterrissages/90 j, Firestore `session/pilotValidity`), check-lists F150M/F172M (textes
+  des manuels, onglet Checklist). `js/nav-flight.js` : onglet « En vol » + boutons carte « Vol GPS / Plus proche / Plané » (HUD,
+  écart de route, alertes d'espaces horizontales et verticales avec fréquence et voix, log en direct, minuteur réservoir, traces
+  IndexedDB `nlxTracks` + GPX/KML + rejeu). APK : permissions de localisation ajoutées par `build-android.yml`.
+  `tools/sup_aip.py` -> `sup_aip.json` (update_aip.yml, lundi + jeudi). AUP/UUP Eurocontrol (403) et carte AZBA (clé chiffrée) :
+  liens seulement, pas de contournement. `sw.js` ne doit JAMAIS servir Open-Meteo/OpenSky depuis le cache (ignoreSearch).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v256`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v257`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

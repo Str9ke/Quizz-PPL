@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '17 5 * * 4'   # chaque jeudi (jour des cycles AIRAC), 05:17 UTC
+    - cron: '41 5 * * 1'   # et le lundi (nouveaux SUP AIP de la semaine)
 
 concurrency:
   group: update-aip
@@ -33,6 +34,8 @@ jobs:
             /vfr_data.json
             /mef.json
             /aip_ad/
+            /ppr_aerodromes.json
+            /sup_aip.json
             /tools/
 
       # Même environnement (Python + Chromium pour le pare-feu de skeyes) que update_notams.yml
@@ -69,6 +72,16 @@ jobs:
       - name: Fetch AIP aerodromes
         run: ~/venv/bin/python -u tools/aip_ad.py || echo "::warning::Fiches AIP non mises à jour"
 
+      # Terrains PPR / privés (OpenAIP FR, BE, LU, NL, DE, GB + fiches AIP) -> ppr_aerodromes.json
+      - name: Fetch PPR aerodromes
+        env:
+          OPENAIP_API_KEY: ${{ secrets.OPENAIP_API_KEY }}
+        run: ~/venv/bin/python -u tools/fetch_ppr.py || echo "::warning::Liste PPR non mise à jour"
+
+      # SUP AIP France métropole (liste publique du SIA) -> sup_aip.json
+      - name: Fetch SUP AIP
+        run: ~/venv/bin/python -u tools/sup_aip.py || echo "::warning::SUP AIP non mis à jour"
+
       # MEF calculées par case de 30' (relief SRTM + obstacles de vfr_data.json) -> mef.json
       - name: Compute MEF
         run: ~/venv/bin/python -u tools/make_mef.py || echo "::warning::MEF non recalculées"
@@ -80,7 +93,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           before=$(git rev-parse HEAD)
-          bash tools/git_publish.sh "Auto-update fréquences AIP et données VFR" aip_freqs.json vfr_data.json mef.json aip_ad
+          bash tools/git_publish.sh "Auto-update fréquences AIP et données VFR" aip_freqs.json vfr_data.json mef.json aip_ad ppr_aerodromes.json sup_aip.json
           if [ "$(git rev-parse HEAD)" != "$before" ]; then echo "pushed=true" >> "$GITHUB_OUTPUT"; else echo "pushed=false" >> "$GITHUB_OUTPUT"; fi
 
   deploy:
