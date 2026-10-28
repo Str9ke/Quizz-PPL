@@ -59,8 +59,8 @@ jobs:
           printf '{"url":"%s"}\n' "$u" > traffic_relay.json
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add traffic_relay.json
+          git add traffic_relay.json   # wrangler laisse des fichiers modifiés : seuls ceux-ci sont publiés (--autostash plus bas)
           git diff --cached --quiet && exit 0
           git commit -m "Adresse du relais trafic"
-          for i in 1 2 3 4 5; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          for i in 1 2 3 4 5; do git pull --rebase --autostash -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
           exit 1

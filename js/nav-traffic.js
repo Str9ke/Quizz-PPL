@@ -10,7 +10,7 @@
 'use strict';
 var NLX=window.NLX=window.NLX||{};
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-var T={on:false,layer:null,trails:null,timer:null,until:0,fail:0,ac:{},sel:null,labels:true,info:{},relay:null,busy:false};
+var T={on:false,layer:null,trails:null,timer:null,until:0,fail:0,ac:{},sel:null,labels:true,info:{},relay:null,busy:false,said:{},lastOk:0};
 try{ T.labels=localStorage.getItem('trfLabels')!=='0'; }catch(e){}
 
 /* ---------- échelle de couleurs tar1090 (teinte selon l'altitude, gris au sol) ---------- */
@@ -19,6 +19,7 @@ var LIG=[[0,53],[20,50],[32,54],[40,52],[46,51],[50,46],[60,43],[80,41],[120,41]
 function lerp(tab,x){ if(x<=tab[0][0]) return tab[0][1]; for(var i=1;i<tab.length;i++) if(x<=tab[i][0]) return tab[i-1][1]+(tab[i][1]-tab[i-1][1])*(x-tab[i-1][0])/(tab[i][0]-tab[i-1][0]); return tab[tab.length-1][1]; }
 function altColor(a){
   if(a.gnd) return 'hsl(0,0%,62%)';
+  if(a.stale) return 'hsl(0,0%,45%)';
   if(a.ft==null) return 'hsl(0,0%,80%)';
   var h=lerp(HUE,a.ft); return 'hsl('+Math.round(h)+',88%,'+Math.round(lerp(LIG,h))+'%)';
 }
@@ -62,12 +63,13 @@ function norm(a){
     seen:a.seen_pos!=null?a.seen_pos:a.seen,mil:!!(a.dbFlags&1),own:a.ownOp||'',year:a.year||''};
 }
 function fetchTraffic(){
-  var map=NL.routeMap, c=map.getCenter(), b=map.getBounds().pad(0.1);
+  var map=NL.routeMap, b=map.getBounds().pad(0.1), o=NLX.ownFix&&NLX.ownFix(), c=map.getCenter();
+  if(o&&NLX.flightOn&&NLX.flightOn()) c=L.latLng(o.lat,o.lon);
   var dist=Math.min(150,Math.max(10,Math.round(NL.haversine(c.lat,c.lng,b.getNorth(),b.getEast()))));
   var la=c.lat.toFixed(3), lo=c.lng.toFixed(3);
   if(isNative()){
-    return nativeGet('https://api.adsb.lol/v2/lat/'+la+'/lon/'+lo+'/dist/'+dist).then(function(d){ return {src:'adsb.lol',ac:d.ac||[]}; })
-      .catch(function(){ return nativeGet('https://opendata.adsb.fi/api/v2/lat/'+la+'/lon/'+lo+'/dist/'+dist).then(function(d){ return {src:'adsb.fi',ac:d.aircraft||d.ac||[]}; }); });
+    return nativeGet('https://opendata.adsb.fi/api/v2/lat/'+la+'/lon/'+lo+'/dist/'+dist).then(function(d){ return {src:'adsb.fi',ac:d.aircraft||d.ac||[]}; })
+      .catch(function(){ return nativeGet('https://api.adsb.lol/v2/lat/'+la+'/lon/'+lo+'/dist/'+dist).then(function(d){ return {src:'adsb.lol',ac:d.ac||[]}; }); });
   }
   return relayUrl().then(function(u){
     if(!u) throw {noRelay:true};
@@ -88,6 +90,8 @@ function cssOnce(){
     +'.trf-panel{position:absolute;right:8px;top:8px;z-index:1002;width:320px;max-width:calc(100% - 16px);max-height:calc(100% - 16px);overflow:auto;background:rgba(15,15,25,.95);color:#fff;border-radius:12px;padding:10px 12px;font:12px/1.4 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.5)}'
     +'.trf-panel h3{margin:0;font-size:1.25em}.trf-panel table{width:100%;border-collapse:collapse;margin-top:6px}.trf-panel td{padding:2px 4px;border-bottom:1px solid #333;vertical-align:top}.trf-panel td:first-child{color:#aaa;width:42%}'
     +'.trf-panel img{width:100%;border-radius:8px;margin-top:6px;display:block}.trf-panel a{color:#82b1ff}'
+    +'.trf-alert{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:1003;width:420px;max-width:calc(100% - 16px);background:rgba(230,81,0,.95);color:#fff;border-radius:12px;padding:7px 10px;font:12px/1.4 system-ui,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.5)}'
+    +'.trf-alert.red{background:rgba(198,40,40,.97);animation:trfBl 1s infinite}@keyframes trfBl{50%{box-shadow:0 0 0 4px #fff}}.trf-c{border-top:1px solid rgba(255,255,255,.35);padding:3px 0;cursor:pointer}.trf-alert small{opacity:.85}'
     +'@media(max-width:640px){.trf-panel{top:auto;bottom:8px;left:8px;right:8px;width:auto;max-height:60%}.trf-bar{width:auto;right:60px}}';
   document.head.appendChild(s);
 }
@@ -103,7 +107,7 @@ function draw(){
   if(!T.layer) return;
   T.layer.clearLayers(); T.trails.clearLayers();
   Object.keys(T.ac).forEach(function(h){
-    var a=T.ac[h].a, tr=T.ac[h].tr, sel=T.sel===h;
+    var a=T.ac[h].a, tr=T.ac[h].tr, sel=T.sel===h; a.stale=Date.now()-T.ac[h].t>30000;
     for(var i=1;i<tr.length;i++) T.trails.addLayer(L.polyline([[tr[i-1].lat,tr[i-1].lon],[tr[i].lat,tr[i].lon]],{color:altColor(tr[i]),weight:sel?4:2,opacity:sel?1:.7,interactive:false}));
     var m=L.marker([a.lat,a.lon],{icon:icon(a,sel),zIndexOffset:sel?1500:900});
     m.on('click',function(e){ if(e.originalEvent) L.DomEvent.stop(e.originalEvent); select(h); });
@@ -112,10 +116,12 @@ function draw(){
 }
 function tick(){
   var map=NL.routeMap; if(!map||!T.on||T.busy) return;
+  var flying=NLX.flightOn&&NLX.flightOn();
+  if(flying) T.until=Date.now()+20*60000;
   if(Date.now()>T.until){ toggle(false); NL.toast('✈️ Trafic arrêté après 20 min — touche « Trafic » pour relancer','info',3500); return; }
   T.busy=true;
   fetchTraffic().then(function(d){
-    T.busy=false; if(!T.on) return; T.fail=0;
+    T.busy=false; if(!T.on) return; T.fail=0; T.lastOk=Date.now();
     var now=Date.now(), seen={};
     d.ac.forEach(function(x){
       var a=norm(x); if(a.lat==null||a.lon==null||(a.seen!=null&&a.seen>60)) return; seen[a.hex]=1;
@@ -124,14 +130,78 @@ function tick(){
       if(e.tr.length>60) e.tr.shift();
     });
     Object.keys(T.ac).forEach(function(h){ if(!seen[h]&&now-T.ac[h].t>90000) delete T.ac[h]; });
-    draw(); ensureBar(d.src,Object.keys(seen).length);
+    var bar0=document.getElementById('trfBar'); if(bar0) bar0.style.opacity='';
+    draw(); ensureBar(d.src,Object.keys(seen).length); showConflicts();
     if(T.sel) panel();
     var bt=document.getElementById('nlxTrfBtn'); if(bt) bt.textContent='✈️ Trafic ('+Object.keys(seen).length+')';
   }).catch(function(e){
     T.busy=false;
     if(e&&e.noRelay){ toggle(false); setupHelp(); return; }
-    if(++T.fail>=3){ toggle(false); NL.toast('✈️ Trafic indisponible (hors ligne ou service saturé) — arrêté','error',4000); }
+    ++T.fail;
+    if(NLX.flightOn&&NLX.flightOn()){   /* en vol : pas de réseau = on continue d'essayer, avertissement discret */
+      var bt=document.getElementById('nlxTrfBtn'); if(bt) bt.textContent='✈️ Trafic (pas de réseau'+(T.lastOk?' depuis '+Math.round((Date.now()-T.lastOk)/60000)+' min':'')+')';
+      var bar=document.getElementById('trfBar'); if(bar) bar.style.opacity='.55';
+      showConflicts(); return;
+    }
+    if(T.fail>=3){ toggle(false); NL.toast('✈️ Trafic indisponible (hors ligne ou service saturé) — arrêté','error',4000); }
   });
+}
+
+
+/* ---------- Trafic proche / convergent (par rapport à MA position) ----------
+   Mouvement relatif rectiligne (position et vitesse sol des deux avions) : temps et distance au point de
+   rapprochement maximal (CPA), écart d'altitude maintenant et prévu à ce moment (vario des deux).
+   Seuils : rouge = CPA < 1 NM et < 1000 ft dans les 3 min, ou < 1 NM / < 500 ft maintenant ;
+   orange = CPA < 2 NM et < 1500 ft dans les 5 min, ou < 3 NM / < 1500 ft maintenant. Données Internet :
+   retard de quelques secondes — aide à la surveillance, jamais un anticollision. */
+function clockOf(brg,trk){ var r=((brg-(trk||0))%360+360)%360, h=Math.round(r/30)%12; return (h===0?12:h)+' h'; }
+function conflicts(){
+  var o=NLX.ownFix&&NLX.ownFix(); if(!o) return [];
+  var R=3440.065, k=Math.cos(o.lat*Math.PI/180), og=o.gs>20?o.gs:0, ot=(o.trk||0)*Math.PI/180;
+  var ovx=og*Math.sin(ot), ovy=og*Math.cos(ot), out=[];
+  Object.keys(T.ac).forEach(function(h){
+    var e=T.ac[h], a=e.a; if(!a||a.gnd||a.lat==null||Date.now()-e.t>30000) return;
+    var x=(a.lon-o.lon)*Math.PI/180*R*k, y=(a.lat-o.lat)*Math.PI/180*R, d=Math.hypot(x,y); if(d>15) return;
+    var tg=a.gs||0, tt=(a.trk||0)*Math.PI/180, vx=tg*Math.sin(tt)-ovx, vy=tg*Math.cos(tt)-ovy, v2=vx*vx+vy*vy;
+    var tc=v2>1?Math.max(0,-(x*vx+y*vy)/v2):0, dc=Math.hypot(x+vx*tc,y+vy*tc), tmin=tc*60;
+    var oa=o.alt!=null?o.alt:null; if(oa==null||a.ft==null) return;
+    var dAlt=a.ft-oa, dAltC=a.ft+(a.vr||0)*tmin-(oa+(o.vr||0)*tmin);
+    var lvl=0;
+    if((d<1&&Math.abs(dAlt)<500)||(tmin<=3&&dc<1&&Math.abs(dAltC)<1000)) lvl=2;
+    else if((d<3&&Math.abs(dAlt)<1500)||(tmin<=5&&dc<2&&Math.abs(dAltC)<1500)) lvl=1;
+    if(!lvl) return;
+    out.push({h:h,a:a,lvl:lvl,d:d,brg:(Math.atan2(x,y)*180/Math.PI+360)%360,tmin:tmin,dc:dc,dAlt:dAlt,dAltC:dAltC,conv:tmin>0.1&&dc<d-0.2,cpa:{x:x+vx*tc,y:y+vy*tc},k:k,o:o});
+  });
+  return out.sort(function(p,q){ return q.lvl-p.lvl||p.tmin-q.tmin; });
+}
+function fmtAlt(v){ return (v>=0?'+':'−')+Math.abs(Math.round(v/100)*100)+' ft'; }
+function fmtT(m){ var s=Math.round(m*60); return s<60?s+' s':Math.floor(s/60)+' min '+('0'+s%60).slice(-2)+' s'; }
+function showConflicts(){
+  var mc=document.getElementById('routeMapContainer'), box=document.getElementById('trfAlert'), C=conflicts();
+  if(T.cpaLayer) T.cpaLayer.clearLayers(); else if(NL.routeMap&&T.layer) T.cpaLayer=L.layerGroup().addTo(NL.routeMap);
+  if(!C.length){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement('div'); box.id='trfAlert'; box.className='trf-alert'; ['mousedown','touchstart','dblclick','click'].forEach(function(ev){ box.addEventListener(ev,function(e){ e.stopPropagation(); }); }); mc.appendChild(box); }
+  box.className='trf-alert'+(C[0].lvl===2?' red':'');
+  box.innerHTML='<b>'+(C[0].lvl===2?'⚠️ TRAFIC':'Trafic proche')+'</b>'+C.slice(0,3).map(function(c){
+    var a=c.a, alt=(c.dAlt>=0?'au-dessus':'en dessous');
+    return '<div class="trf-c" data-h="'+c.h+'"><b>'+esc(a.cs||a.r||a.hex)+'</b> '+esc(a.t)+' · <b>'+clockOf(c.brg,c.o.trk)+'</b> · '+c.d.toFixed(1)+' NM · '+fmtAlt(c.dAlt)+' ('+alt+')'+(a.vr>300?' ↑':a.vr<-300?' ↓':'')
+      +(c.conv&&c.tmin<=10?'<br>↘ route convergente : au plus près dans <b>'+fmtT(c.tmin)+'</b>, à '+c.dc.toFixed(1)+' NM et '+fmtAlt(c.dAltC):'<br>s’éloigne ou parallèle')+'</div>';
+  }).join('')+'<small>Données Internet (retard de quelques secondes) : regarde dehors.</small>';
+  box.querySelectorAll('[data-h]').forEach(function(d){ d.onclick=function(){ select(d.dataset.h); }; });
+  /* trait vers le point de rencontre prévu */
+  C.forEach(function(c){ if(!c.conv||c.tmin>10) return;
+    var R=3440.065, lat=c.o.lat+c.cpa.y/R*180/Math.PI, lon=c.o.lon+c.cpa.x/(R*c.k)*180/Math.PI, col=c.lvl===2?'#ff1744':'#ff9100';
+    T.cpaLayer.addLayer(L.polyline([[c.a.lat,c.a.lon],[lat,lon]],{color:col,weight:2,dashArray:'4 6',interactive:false}));
+    T.cpaLayer.addLayer(L.polyline([[c.o.lat,c.o.lon],[lat,lon]],{color:col,weight:2,dashArray:'4 6',interactive:false}));
+    T.cpaLayer.addLayer(L.circleMarker([lat,lon],{radius:7,color:col,weight:3,fill:false,interactive:false}));
+  });
+  /* annonce vocale (une fois par avion et par minute, ou s'il devient rouge) */
+  var c=C[0], prev=T.said[c.h];
+  if(NLX.speak&&(!prev||Date.now()-prev.t>60000||(c.lvl>prev.l))){
+    T.said[c.h]={t:Date.now(),l:c.lvl};
+    NLX.speak('Trafic, '+clockOf(c.brg,c.o.trk).replace(' h',' heures')+', '+c.d.toFixed(1).replace('.',' virgule ')+' nautique, '+Math.abs(Math.round(c.dAlt/100)*100)+' pieds '+(c.dAlt>=0?'au-dessus':'en dessous'));
+    if(c.lvl===2&&navigator.vibrate) try{ navigator.vibrate([200,100,200,100,200]); }catch(e){}
+  }
 }
 
 /* ---------- fiche d'un avion ---------- */
@@ -207,15 +277,17 @@ function toggle(on){
   T.on=on; clearInterval(T.timer);
   var bt=document.getElementById('nlxTrfBtn'); if(bt){ bt.classList.toggle('active',on); if(!on) bt.textContent='✈️ Trafic'; }
   if(!on){
-    if(T.layer){ map.removeLayer(T.layer); map.removeLayer(T.trails); } T.layer=T.trails=null; T.ac={}; T.sel=null;
-    ['trfBar','trfPanel'].forEach(function(id){ var x=document.getElementById(id); if(x) x.remove(); });
+    if(T.layer){ map.removeLayer(T.layer); map.removeLayer(T.trails); } if(T.cpaLayer){ map.removeLayer(T.cpaLayer); T.cpaLayer=null; } T.layer=T.trails=null; T.ac={}; T.sel=null;
+    ['trfBar','trfPanel','trfAlert'].forEach(function(id){ var x=document.getElementById(id); if(x) x.remove(); });
     if(T.moveH){ map.off('moveend',T.moveH); T.moveH=null; }
     return;
   }
   T.trails=L.layerGroup().addTo(map); T.layer=L.layerGroup().addTo(map);
   T.until=Date.now()+20*60000; T.fail=0;
-  tick(); T.timer=setInterval(tick,10000);
+  if(NLX.ensurePosition) NLX.ensurePosition();   /* point bleu + alertes de rapprochement */
+  tick(); T.timer=setInterval(function(){ if(NLX.flightOn&&NLX.flightOn()) tick(); else if(Date.now()-(T.lastTick||0)>=9500) tick(); T.lastTick=Date.now(); },6000);
   T.moveH=function(){ clearTimeout(T.mt); T.mt=setTimeout(tick,600); }; map.on('moveend',T.moveH);
 }
 NLX.toggleTraffic=toggle;
+NLX._trf=T;   // diagnostic (console)
 })();

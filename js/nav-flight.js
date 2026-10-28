@@ -146,6 +146,7 @@ function onFix(pos){
     else { if(f.gs==null) f.gs=p.gs; if(f.trk==null) f.trk=p.trk; }
   }
   if(f.alt==null&&p) f.alt=p.alt;
+  if(p&&f.alt!=null&&p.alt!=null&&t>p.t) f.vr=(f.alt-p.alt)/((t-p.t)/60000)*0.3+(p.vr||0)*0.7;   /* ft/min lissé */
   S.prev=p; S.fix=f;
   if(!S.track.length||t-S.track[S.track.length-1].t>=3000) S.track.push({t:t,lat:f.lat,lon:f.lon,alt:f.alt!=null?Math.round(f.alt):null,gs:f.gs!=null?Math.round(f.gs):null});
   if(t-S.lastSave>20000) saveTrack(false);
@@ -308,7 +309,7 @@ function drawNearest(from){
     NP.layer.addLayer(L.polyline([[from.lat,from.lon],[x.lat,x.lon]],{color:col,weight:3,opacity:1,dashArray:i?'8 6':null,interactive:false}));
     NP.layer.addLayer(L.circleMarker([x.lat,x.lon],{radius:7,color:'#000',weight:2,fillColor:col,fillOpacity:1,interactive:false}));
     var mid=[from.lat+(x.lat-from.lat)*0.6,from.lon+(x.lon-from.lon)*0.6];
-    NP.layer.addLayer(L.marker(mid,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="transform:translate(-50%,-50%);white-space:nowrap;background:rgba(0,0,0,.82);color:'+col+';font:700 11px sans-serif;padding:2px 6px;border-radius:6px;border:1px solid '+col+'">'
+    NP.layer.addLayer(L.marker(mid,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="width:max-content;transform:translate(-50%,-50%);white-space:nowrap;background:rgba(0,0,0,.86);color:'+col+';font:700 11px sans-serif;padding:2px 6px;border-radius:6px;border:1px solid '+col+'">'
       +esc(x.a.icaoCode||x.a.name.slice(0,14))+' · '+x.d.toFixed(1)+' NM · Rm '+n360(mag(tc))+' · '+Math.round(ete)+' min</div>'})}));
   });
   var mc=document.getElementById('routeMapContainer');
@@ -386,7 +387,7 @@ function drawGlide(lat,lon,altFt,groundFt,w){
   });
   /* temps avant le sol : hauteur au-dessus du relief / taux de chute en plané (vitesse ÷ finesse) */
   var sink=g.vg*NM_FT/60/g.ratio, hAgl=Math.max(0,altFt-groundFt), tGnd=hAgl/sink;
-  grp.addLayer(L.marker([r.c.lat,r.c.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="transform:translate(-50%,-140%);white-space:nowrap;background:rgba(27,94,32,.92);color:#fff;font:600 11px/1.35 sans-serif;padding:3px 7px;border-radius:6px;text-align:center">🪂 '+r.R.toFixed(1)+' NM · '+ok+' terrain(s) atteignable(s)<br>⏱ <b>'+Math.floor(tGnd)+' min '+('0'+Math.round(tGnd%1*60)).slice(-2)+' s</b> avant le sol · '+Math.round(altFt)+' ft, sol '+Math.round(groundFt)+' ft · −'+Math.round(sink)+' ft/min</div>'})}));
+  grp.addLayer(L.marker([r.c.lat,r.c.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="width:max-content;transform:translate(-50%,-140%);white-space:nowrap;background:rgba(0,0,0,.86);color:#b9f6ca;border:2px solid #00e676;box-shadow:0 2px 6px rgba(0,0,0,.5);font:600 11px/1.35 sans-serif;padding:3px 7px;border-radius:6px;text-align:center">🪂 '+r.R.toFixed(1)+' NM · '+ok+' terrain(s) atteignable(s)<br>⏱ <b>'+Math.floor(tGnd)+' min '+('0'+Math.round(tGnd%1*60)).slice(-2)+' s</b> avant le sol · '+Math.round(altFt)+' ft, sol '+Math.round(groundFt)+' ft · −'+Math.round(sink)+' ft/min</div>'})}));
   S.map.glide=grp.addTo(map);
 }
 function clearGlide(){ if(S.map.glide&&NL.routeMap){ NL.routeMap.removeLayer(S.map.glide); S.map.glide=null; } }
@@ -593,10 +594,46 @@ function updateBtns(){
   var b=document.getElementById('nlxGpsBtn'); if(b){ b.classList.toggle('active',S.on); b.textContent=S.on?'⏹️ GPS':'🛩️ Vol GPS'; }
   var g=document.getElementById('nlxGlideBtn'); if(g) g.classList.toggle('active',S.glideOn);
 }
+/* ---------- Ma position (sans le mode vol) : point bleu + précision, au sol comme en l'air ---------- */
+var P={watch:null,fix:null,dot:null,acc:null,centered:false};
+function posFix(pos){
+  var c=pos.coords, t=pos.timestamp||Date.now(), q=P.fix;
+  var f={lat:c.latitude,lon:c.longitude,alt:c.altitude!=null?c.altitude*3.28084:null,acc:c.accuracy,t:t,gs:c.speed!=null?c.speed/KT_MS:null,trk:c.heading!=null&&!isNaN(c.heading)?c.heading:null};
+  if(q&&t>q.t){ var dt=(t-q.t)/3600000, d=NL.haversine(q.lat,q.lon,f.lat,f.lon);
+    if(f.gs==null) f.gs=dt>0?d/dt:0; if(f.trk==null&&d>0.005) f.trk=NL.bearing(q.lat,q.lon,f.lat,f.lon); if(f.trk==null) f.trk=q.trk;
+    if(f.alt!=null&&q.alt!=null) f.vr=(f.alt-q.alt)/((t-q.t)/60000)*0.3+(q.vr||0)*0.7; }
+  P.fix=f;
+  var map=NL.routeMap; if(!map||S.on) return;
+  var ll=[f.lat,f.lon];
+  if(!P.dot){ P.acc=L.circle(ll,{radius:f.acc||30,color:'#2979ff',weight:1,fillColor:'#2979ff',fillOpacity:.12,interactive:false}).addTo(map);
+    P.dot=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#2979ff',fillOpacity:1,interactive:false}).addTo(map); }
+  else { P.dot.setLatLng(ll); P.acc.setLatLng(ll); P.acc.setRadius(f.acc||30); }
+  if(!P.centered){ P.centered=true; map.setView(ll,Math.max(map.getZoom(),11)); }
+}
+function posStart(quiet){
+  if(P.watch!=null) return true;
+  if(!navigator.geolocation){ if(!quiet) NL.toast('Position indisponible sur cet appareil','error',3000); return false; }
+  P.centered=!!quiet;
+  P.watch=navigator.geolocation.watchPosition(posFix,function(e){ if(!quiet) NL.toast('📍 Position : '+(e.code===1?'autorisation refusée (réglages du téléphone / du navigateur)':e.message),'error',5000); },{enableHighAccuracy:true,maximumAge:2000,timeout:30000});
+  var b=document.getElementById('nlxPosBtn'); if(b) b.classList.add('active');
+  return true;
+}
+function posStop(){
+  if(P.watch!=null) navigator.geolocation.clearWatch(P.watch); P.watch=null; P.fix=null;
+  if(P.dot&&NL.routeMap){ NL.routeMap.removeLayer(P.dot); NL.routeMap.removeLayer(P.acc); } P.dot=P.acc=null;
+  var b=document.getElementById('nlxPosBtn'); if(b) b.classList.remove('active');
+}
+/* position de l'avion pour les autres modules (trafic) : mode vol d'abord, sinon point bleu */
+NLX.ownFix=function(){ if(S.fix&&Date.now()-S.fix.t<15000) return S.fix; if(P.fix&&Date.now()-P.fix.t<30000) return P.fix; return null; };
+NLX.flightOn=function(){ return S.on; };
+NLX.ensurePosition=function(){ if(!S.on) posStart(true); };
+NLX.speak=function(t){ if(opts().voice) speak(t); };
+
 function addButtons(){
   var rows=document.querySelectorAll('#routeMapCard .rm-tb-row'); if(!rows.length||document.getElementById('nlxGpsBtn')) return;
   var r=rows[0], ref=r.querySelector('.rm-tb-info');
   [['nlxGpsBtn','🛩️ Vol GPS','Mode vol : position GPS, prochaine balise, écart de route, alertes d\'espaces aériens, trace enregistrée',function(){ if(S.on) stop(); else start(); }],
+   ['nlxPosBtn','📍 Position','Afficher ma position sur la carte (GPS du téléphone, ou position approximative sur ordinateur), au sol comme en vol',function(){ if(P.watch!=null) posStop(); else { P.centered=false; posStart(false); } }],
    ['nlxNearBtn','🛬 Plus proche','Les 5 aérodromes les plus proches (cap, distance, piste, fréquence)',showNearest],
    ['nlxGlideBtn','🪂 Plané','Cercle de plané : zone atteignable moteur coupé selon l\'altitude, la finesse et le vent. Sans GPS : promène la souris sur le tracé ou le profil d\'altitude',function(){ toggleGlide(); }]
   ].forEach(function(x){ var b=document.createElement('button'); b.className='navlog-btn'; b.id=x[0]; b.textContent=x[1]; b.title=x[2]; b.onclick=x[3]; r.insertBefore(b,ref); });
