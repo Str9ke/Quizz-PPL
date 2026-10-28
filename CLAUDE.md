@@ -139,11 +139,15 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   écart de route, alertes d'espaces horizontales et verticales avec fréquence et voix, log en direct, minuteur réservoir, traces
   IndexedDB `nlxTracks` + GPX/KML + rejeu). APK : permissions de localisation ajoutées par `build-android.yml`.
   `tools/sup_aip.py` -> `sup_aip.json` (update_aip.yml, lundi + jeudi). AUP/UUP Eurocontrol (403) et carte AZBA (clé chiffrée) :
-  liens seulement, pas de contournement. `sw.js` ne doit JAMAIS servir Open-Meteo/OpenSky depuis le cache (ignoreSearch).
+  liens seulement, pas de contournement. **Zones militaires activées** : bouton carte « 🎯 Militaire » (`milZones`, nav-brief.js) =
+  NOTAM SIA (« ZONES AIRFORCE RTBA ACT … hhmm-hhmm », zones R/D/TSA « ACT ») + avis du jour skeyes, contours OpenAIP par désignation,
+  conflit route/heure/altitude -> encart et alertes en vol. Trafic : adsb.lol en natif (APK), nouvel onglet sur le web (pas de CORS).
+  Plané : finesse/vitesse des manuels (`glideRatio` 8.7, `glideKt` 60 F150M / 65 F172M dans MB_DATA) ; survol suivi sur la carte
+  (le mode Info rend le tracé insensible). « Plus proche » sans GPS : clic sur la carte -> directs vers 5 terrains. `sw.js` ne doit JAMAIS servir Open-Meteo/OpenSky depuis le cache (ignoreSearch).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v257`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v258`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

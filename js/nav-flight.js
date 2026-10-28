@@ -41,6 +41,8 @@ function cssOnce(){
     +'.fl-tank{font-size:1.1em;font-weight:800}.fl-tank.due{color:#ef5350;animation:flBlink 1s infinite}@keyframes flBlink{50%{opacity:.35}}'
     +'.fl-replay{position:absolute;left:8px;right:8px;bottom:8px;z-index:1000;background:rgba(15,15,25,.88);color:#fff;border-radius:12px;padding:8px 10px;font:600 12px system-ui,sans-serif;display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
     +'.fl-replay input[type=range]{flex:1;min-width:120px}.fl-replay button{background:#333;color:#fff;border:1px solid #555;border-radius:8px;padding:3px 9px;cursor:pointer}'
+    +'.fl-near{position:absolute;left:8px;bottom:8px;z-index:1001;width:360px;max-width:calc(100% - 16px);max-height:55%;overflow:auto;background:rgba(15,15,25,.92);color:#fff;border-radius:12px;padding:8px 10px;font:12px/1.35 system-ui,sans-serif}'
+    +'.fl-near small{color:#bbb}.fl-near .bp-row{border-color:#444}.fl-near button{background:#333;color:#fff;border:1px solid #555;border-radius:8px;padding:3px 8px;cursor:pointer}'
     +'.navlog-btn.active{background:rgba(233,30,99,.18)!important;border-color:#e91e63!important;color:#e91e63!important}';
   document.head.appendChild(s);
 }
@@ -111,6 +113,7 @@ function start(){
   if(!navigator.geolocation){ NL.toast('GPS indisponible sur cet appareil','error',4000); return; }
   cssOnce(); loadData();
   S.on=true; S.track=[]; S.trackId='T'+Date.now(); S.alerts={};
+  if(NLX.milZones) NLX.milZones().catch(function(){});   /* zones militaires activées du jour (alertes) */
   S.watch=navigator.geolocation.watchPosition(onFix,function(e){ NL.toast('📡 GPS : '+(e.code===1?'autorisation refusée (réglages du téléphone)':e.message),'error',5000); },{enableHighAccuracy:true,maximumAge:0,timeout:30000});
   wakeLock(); ensureHud(); renderLive(); updateBtns();
   NL.toast('🛩️ Mode vol : GPS actif, écran gardé allumé. Trace enregistrée.','info',3500);
@@ -245,6 +248,8 @@ function checkAirspaces(f){
     if(prev&&prev.key===key&&Date.now()-prev.t<5*60000) return;
     S.alerts[id]={t:Date.now(),key:key};
     var fq=airspaceFreq(a), when=hit.min===0?'maintenant':'dans '+Math.max(1,Math.round(hit.min))+' min';
+    var act=(NLX.milActive||[]).filter(function(z){ return z.as.indexOf(a)>=0&&Date.now()>=z.from&&Date.now()<=z.to; })[0];
+    if(act){ lvl=2; vert+=' — ACTIVE (NOTAM) jusqu’à '+('0'+act.to.getUTCHours()).slice(-2)+':'+('0'+act.to.getUTCMinutes()).slice(-2)+' UTC'; }
     now.push({lvl:lvl,txt:'<b>'+esc(a.name)+'</b> ('+esc(lab)+') '+when+' — '+vert+(fq?'<br>📻 '+esc(fq):''),
       say:a.name.replace(/\bCTR\b/,'C T R').replace(/\bTMA\b/,'T M A')+', '+when+', '+vert.replace('ft','pieds')+(fq?'. Contacter '+fq.replace(/\./,' décimale '):'')});
   });
@@ -272,26 +277,79 @@ function beep(){
     o.frequency.value=880; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(.3,c.currentTime); g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.6); o.start(); o.stop(c.currentTime+.6); }catch(e){}
 }
 
-/* ---------- Terrain le plus proche ---------- */
+/* ---------- Terrain le plus proche ----------
+   En vol (GPS actif) : depuis la position de l'avion, liste + bouton Direct.
+   Au sol (pas de GPS) : mode « choisir un point » — chaque clic sur la carte trace une route directe
+   vers les 5 terrains les plus proches (distance, Rm, cap à prendre et temps avec le vent du Navlog). */
+var NP={on:false,layer:null,box:null};
+function windTri(trueCrs,c){
+  var tas=c.tas||90, wdT=((c.windDir||0)-dev()+360)%360, ws=c.windSpd||0, a=(wdT-trueCrs)*Math.PI/180;
+  var wca=Math.asin(Math.max(-1,Math.min(1,ws*Math.sin(a)/tas)));
+  return {hdg:(trueCrs+wca*180/Math.PI+360)%360,gs:Math.max(20,tas*Math.cos(wca)-ws*Math.cos(a))};
+}
+function nearestHtml(from,L5,gsFix){
+  var c=NL.getConfig();
+  return L5.map(function(x,i){
+    var a=x.a, rw=apRunway(a), tc=NL.bearing(from.lat,from.lon,x.lat,x.lon), wt=windTri(tc,c), gs=gsFix||wt.gs, ete=x.d/gs*60;
+    return '<div class="bp-row" style="cursor:default"><div style="flex:1"><b>'+esc(a.icaoCode||'')+' '+esc(a.name)+'</b><br><small>'+(rw?'Piste '+esc(rw.d||'')+' · '+rw.l+' m '+(rw.s||''):'piste ?')+' · '+Math.round(apElev(a))+' ft'+(apFreq(a)?' · 📻 '+esc(apFreq(a)):'')+(a.ppr?' · PPR':'')+'</small></div>'
+      +'<div style="text-align:right"><b style="font-size:1.25em">Rm '+n360(mag(tc))+'</b><br><small>'+x.d.toFixed(1)+' NM · '+Math.round(ete)+' min'+(gsFix?'':' · Cm '+n360(mag(wt.hdg)))+'</small></div>'
+      +(S.on?'<button class="navlog-btn" data-dir="'+i+'">Direct</button>':'')+'</div>';
+  }).join('');
+}
+function drawNearest(from){
+  var map=NL.routeMap; if(!map) return;
+  var L5=airportsNear(from.lat,from.lon,80).slice(0,5), c=NL.getConfig();
+  if(NP.layer) map.removeLayer(NP.layer);
+  NP.layer=L.layerGroup().addTo(map);
+  NP.layer.addLayer(L.circleMarker([from.lat,from.lon],{radius:6,color:'#fff',weight:2,fillColor:'#ff1744',fillOpacity:1,interactive:false}));
+  L5.forEach(function(x,i){
+    var tc=NL.bearing(from.lat,from.lon,x.lat,x.lon), wt=windTri(tc,c), ete=x.d/wt.gs*60, col=i===0?'#00e676':'#ffea00';
+    NP.layer.addLayer(L.polyline([[from.lat,from.lon],[x.lat,x.lon]],{color:'#000',weight:6,opacity:.55,interactive:false}));
+    NP.layer.addLayer(L.polyline([[from.lat,from.lon],[x.lat,x.lon]],{color:col,weight:3,opacity:1,dashArray:i?'8 6':null,interactive:false}));
+    NP.layer.addLayer(L.circleMarker([x.lat,x.lon],{radius:7,color:'#000',weight:2,fillColor:col,fillOpacity:1,interactive:false}));
+    var mid=[from.lat+(x.lat-from.lat)*0.6,from.lon+(x.lon-from.lon)*0.6];
+    NP.layer.addLayer(L.marker(mid,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="transform:translate(-50%,-50%);white-space:nowrap;background:rgba(0,0,0,.82);color:'+col+';font:700 11px sans-serif;padding:2px 6px;border-radius:6px;border:1px solid '+col+'">'
+      +esc(x.a.icaoCode||x.a.name.slice(0,14))+' · '+x.d.toFixed(1)+' NM · Rm '+n360(mag(tc))+' · '+Math.round(ete)+' min</div>'})}));
+  });
+  var mc=document.getElementById('routeMapContainer');
+  if(!NP.box){ NP.box=document.createElement('div'); NP.box.className='fl-near'; ['mousedown','touchstart','dblclick','wheel','click'].forEach(function(ev){ NP.box.addEventListener(ev,function(e){ e.stopPropagation(); }); }); mc.appendChild(NP.box); }
+  NP.box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><b>🛬 Terrains les plus proches</b><button data-x>✕ Terminer</button></div>'
+    +'<small>Depuis le point cliqué · temps à '+(c.tas||90)+' kt avec le vent du Navlog ('+Math.round(c.windDir||0)+'°/'+Math.round(c.windSpd||0)+' kt) · Cm = cap à prendre · clique ailleurs pour recommencer</small>'+nearestHtml(from,L5,null);
+  NP.box.querySelector('[data-x]').onclick=function(){ nearPick(false); };
+}
+function nearClick(e){
+  if(!NP.on) return;
+  var map=NL.routeMap, mc=document.getElementById('routeMapContainer');
+  if(!map||e.target.closest('.fl-near,.fl-hud,.fl-alert,.fl-replay,.leaflet-control,.mi-panel')) return;
+  e.stopPropagation(); e.preventDefault();
+  var r=mc.getBoundingClientRect(), ll=map.containerPointToLatLng([e.clientX-r.left,e.clientY-r.top]);
+  loadData().then(function(){ drawNearest({lat:ll.lat,lon:ll.lng}); });
+}
+function nearPick(on){
+  NP.on=on; var mc=document.getElementById('routeMapContainer'), b=document.getElementById('nlxNearBtn');
+  if(b) b.classList.toggle('active',on);
+  if(mc) mc.style.cursor=on?'crosshair':'';
+  if(!on){ if(NP.layer&&NL.routeMap) NL.routeMap.removeLayer(NP.layer); NP.layer=null; if(NP.box) NP.box.remove(); NP.box=null; return; }
+  if(mc&&!NP.hooked){ NP.hooked=true; mc.addEventListener('click',nearClick,true); }
+  NL.toast('🛬 Clique sur la carte : routes directes vers les 5 terrains les plus proches de ce point','info',4000);
+  var c=document.getElementById('routeMapCard'); if(c) c.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function showNearest(){
+  if(!S.on||!S.fix){ nearPick(!NP.on); return; }
   loadData().then(function(){
-    var f=S.fix, map=NL.routeMap, from=f?{lat:f.lat,lon:f.lon}:(map?{lat:map.getCenter().lat,lon:map.getCenter().lng}:null); if(!from) return;
+    var f=S.fix, map=NL.routeMap, from={lat:f.lat,lon:f.lon};
     var L5=airportsNear(from.lat,from.lon,80).slice(0,5);
-    var html=(f?'':'<p style="font-size:.8em;color:var(--text-secondary)">Pas de position GPS : distances depuis le centre de la carte.</p>')+L5.map(function(x,i){
-      var a=x.a, rw=apRunway(a), brg=mag(NL.bearing(from.lat,from.lon,x.lat,x.lon)), ete=f&&f.gs>20?x.d/f.gs*60:null;
-      return '<div class="bp-row" data-i="'+i+'" style="cursor:default"><div style="flex:1"><b>'+esc(a.icaoCode||'')+' '+esc(a.name)+'</b><br><small>'+(rw?'Piste '+esc(rw.d||'')+' · '+rw.l+' m '+(rw.s||''):'piste ?')+' · '+Math.round(apElev(a))+' ft'+(apFreq(a)?' · 📻 '+esc(apFreq(a)):'')+(a.ppr?' · PPR':'')+'</small></div>'
-        +'<div style="text-align:right"><b style="font-size:1.3em">'+n360(brg)+'</b><br><small>'+x.d.toFixed(1)+' NM'+(ete?' · '+Math.round(ete)+' min':'')+'</small></div><button class="navlog-btn" data-dir="'+i+'">Direct</button></div>';
-    }).join('');
-    var m=NLX.modal('🛬 Terrains les plus proches',html||'<p>Aucun terrain à moins de 80 NM.</p>');
+    var m=NLX.modal('🛬 Terrains les plus proches de l’avion',nearestHtml(from,L5,f.gs>20?f.gs:null)||'<p>Aucun terrain à moins de 80 NM.</p>');
     m.querySelectorAll('[data-dir]').forEach(function(b){ b.onclick=function(){ var x=L5[+b.dataset.dir]; S.direct={lat:x.lat,lon:x.lon,name:x.a.icaoCode||x.a.name}; m.remove();
-      if(S.fix) drawOwnship(S.fix); updateHud(); if(map) map.fitBounds([[from.lat,from.lon],[x.lat,x.lon]],{padding:[60,60]}); if(opts().voice) speak('Direct '+(x.a.name||'')+', cap '+Math.round(mag(NL.bearing(from.lat,from.lon,x.lat,x.lon)))); }; });
+      drawOwnship(S.fix); updateHud(); if(map) map.fitBounds([[from.lat,from.lon],[x.lat,x.lon]],{padding:[60,60]}); if(opts().voice) speak('Direct '+(x.a.name||'')+', cap '+Math.round(mag(NL.bearing(from.lat,from.lon,x.lat,x.lon)))); }; });
   });
 }
 
 /* ---------- Plané ---------- */
+/* finesse et vitesse de plané de l'avion choisi (MB_DATA : graphiques « plané maximum » des manuels) */
 function acGlide(){
   var ac=NL.aircraft&&NL.aircraft(), t=(ac&&ac.type)||'';
-  return {ratio:NL.glideRatio(),vg:opts().vg||(/150/.test(t)?60:65),type:t};
+  return {ratio:(ac&&ac.glideRatio)||NL.glideRatio(),vg:(ac&&ac.glideKt)||(/150/.test(t)?60:65),type:t,reg:(ac&&ac.reg)||''};
 }
 function legAt(dist){
   var w=NL.waypoints, cum=0;
@@ -329,14 +387,26 @@ function drawGlide(lat,lon,altFt,groundFt,w){
   S.map.glide=grp.addTo(map);
 }
 function clearGlide(){ if(S.map.glide&&NL.routeMap){ NL.routeMap.removeLayer(S.map.glide); S.map.glide=null; } }
+/* survol / toucher de la carte près du tracé (à moins de 35 px) -> position sur la route, comme le
+   profil d'altitude (en mode Info le tracé ne reçoit plus la souris : on suit donc la carte elle-même) */
+function glideMapMove(e){
+  if(!S.glideOn||S.on) return;
+  var map=NL.routeMap, d=NL.distAtLatLon(e.latlng.lat,e.latlng.lng); if(d==null) return;
+  var ll=NL.latLonAtDist(d); if(!ll) return;
+  var p1=map.latLngToContainerPoint(e.latlng), p2=map.latLngToContainerPoint([ll.lat,ll.lon]);
+  if(Math.hypot(p1.x-p2.x,p1.y-p2.y)>(e.type==='click'?60:35)) return;
+  NL.setCrosshair(d);
+}
 function toggleGlide(on){
   S.glideOn=on==null?!S.glideOn:on;
   var b=document.getElementById('nlxGlideBtn'); if(b) b.classList.toggle('active',S.glideOn);
+  var map=NL.routeMap;
+  if(map&&!S.glideHooked){ S.glideHooked=true; map.on('mousemove',glideMapMove); map.on('click',glideMapMove); }
   if(!S.glideOn){ clearGlide(); return; }
   loadData().then(function(){
     var g=acGlide();
     if(S.fix) drawGlide(S.fix.lat,S.fix.lon,S.fix.alt||0,null,legWind());
-    else NL.toast('🪂 Plané : promène la souris (ou le doigt) sur le tracé ou sur le profil d\'altitude. Finesse '+g.ratio+', plané à '+g.vg+' kt, arrivée '+opts().margin+' ft au-dessus du terrain, vent du leg.','info',6000);
+    else NL.toast('🪂 Plané '+(g.reg||g.type)+' : promène la souris sur le tracé (ou touche-le) ou sur le profil d’altitude. Finesse '+String(g.ratio).replace('.',',')+' à '+g.vg+' kt (manuel de vol), arrivée '+opts().margin+' ft au-dessus du terrain, vent du leg.','info',6000);
   });
 }
 NLX.onCrosshair=function(dist){
@@ -474,7 +544,7 @@ function renderLive(){
   html+='<div class="nl-card"><div class="nl-card-title"><span class="icon">⚙️</span> Alertes</div><div class="fl-btns" style="font-size:.85em">'
     +'<label><input type="checkbox" id="flVoice"'+(o.voice?' checked':'')+'> 🔊 Annonces vocales</label>'
     +'<label>Prévenir <input type="number" id="flLook" value="'+o.look+'" min="1" max="15" style="width:52px;padding:4px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:inherit"> min avant un espace</label>'
-    +'<label>Plané : arrivée <input type="number" id="flMargin" value="'+o.margin+'" step="100" min="0" style="width:70px;padding:4px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:inherit"> ft sol, à <input type="number" id="flVg" value="'+(o.vg||acGlide().vg)+'" min="40" max="120" style="width:56px;padding:4px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:inherit"> kt, finesse '+acGlide().ratio+'</label></div>'
+    +'<label>Plané : arrivée <input type="number" id="flMargin" value="'+o.margin+'" step="100" min="0" style="width:70px;padding:4px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:inherit"> ft sol · '+esc(acGlide().reg||acGlide().type)+' : finesse '+String(acGlide().ratio).replace('.',',')+' à '+acGlide().vg+' kt (manuel de vol)</label></div>'
     +((S.log||[]).length?'<div style="font-size:.8em;max-height:160px;overflow:auto">'+S.log.map(function(x){ return '<div style="border-bottom:1px solid var(--border-color);padding:3px 0"><small>'+hm(x.t)+'</small> '+x.txt+'</div>'; }).join('')+'</div>':'')+'</div>';
   html+='<div class="nl-card"><div class="nl-card-title"><span class="icon">📼</span> Traces enregistrées</div><div id="flTracks"><small>…</small></div></div>';
   root.innerHTML=html;
@@ -492,7 +562,6 @@ function renderLive(){
   $('flVoice').onchange=function(){ setOpt('voice',this.checked); };
   $('flLook').onchange=function(){ setOpt('look',Math.max(1,+this.value||5)); };
   $('flMargin').onchange=function(){ setOpt('margin',Math.max(0,+this.value||0)); };
-  $('flVg').onchange=function(){ setOpt('vg',+this.value||null); };
   listTracks().then(function(L0){
     var el=$('flTracks'); if(!el) return;
     L0=(L0||[]).sort(function(a,b){ return b.start-a.start; });

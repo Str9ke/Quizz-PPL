@@ -17315,16 +17315,16 @@ window.updateRouteMap=updateRouteMap;
 /* ========================================================
    MASS & BALANCE MODULE
    ======================================================== */
-/* glideRatio (finesse en plané, ex 9 = 9 ft parcourus pour 1 ft perdu) : valeur usuelle
-   typique par type d'avion, utilisée comme valeur PAR DÉFAUT (éditable) dans le popup du
-   mode mesure de la carte — à confirmer/corriger par le pilote depuis le manuel de vol
-   réel de l'appareil avant tout usage opérationnel. */
+/* glideRatio (finesse, ft parcourus pour 1 ft perdu) et glideKt (vitesse de plané) : graphiques
+   « PLANÉ MAXIMUM » des manuels de vol (hélice en moulinet, volets relevés, vent nul) —
+   F150M fig. 18 : 60 kt, 12 000 ft -> ~32 km ; F172M fig. 9 : 65 kt, 12 000 ft -> ~32 km
+   => finesse ≈ 8,7 pour les deux. Utilisés par le cercle de plané (js/nav-flight.js) et le mode mesure. */
 var MB_DATA = {
   'OO-MQA': {
     type:'Cessna F-150M', reg:'OO-MQA', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:8.7, glideKt:60,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -17332,7 +17332,7 @@ var MB_DATA = {
     type:'Cessna F-150M', reg:'OO-WAC', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:529.80, emptyArm:0.8382, emptyMom:444.07,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:8.7, glideKt:60,
     has2seats:true, weighDate:'18/06/2019',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -17340,7 +17340,7 @@ var MB_DATA = {
     type:'Cessna F-150M', reg:'OO-WEO', mtow:726, fuelUsable:85, fuelTotal:98, density:0.72,
     emptyMass:517.82, emptyArm:0.8382, emptyMom:434.04,
     fuelArm:1.07, pilotArm:0.99, paxArm:0.99, bag1Arm:1.63, bag2Arm:2.13,
-    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:7,
+    vneKt:141, vfeApprKt:85, vfeAttKt:85, vaKt:97, xwindTOKt:20, xwindLDGKt:15, glideRatio:8.7, glideKt:60,
     has2seats:true, weighDate:'12/06/2014',
     envelope:[{m:520,mom:416},{m:580,mom:464},{m:726,mom:606},{m:726,mom:694},{m:520,mom:494}]
   },
@@ -17348,7 +17348,7 @@ var MB_DATA = {
     type:'Cessna F-172M', reg:'OO-FCE', mtow:1043, fuelUsable:144, fuelTotal:159, density:0.72,
     emptyMass:665.87, emptyArm:0.99345, emptyMom:661.51,
     fuelArm:1.22, pilotArm:0.94, paxArm:1.06, bag1Arm:2.41, bag2Arm:3.12,
-    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15, glideRatio:9,   /* vent de travers démontré (manuel F172M, fig. 9) : voir AFM['172'].xwSrc */
+    vneKt:158, vfeApprKt:86, vfeAttKt:86, vaKt:96, xwindTOKt:20, xwindLDGKt:15, glideRatio:8.7, glideKt:65,   /* vent de travers démontré (manuel F172M, fig. 9) : voir AFM['172'].xwSrc */
     has2seats:false, weighDate:'13/04/2012',
     envelope:[{m:675,mom:605},{m:890,mom:780},{m:1043,mom:1020},{m:1043,mom:1260},{m:675,mom:810}]
   }
@@ -20129,7 +20129,7 @@ window.NL={
   esc:escHTML, openList:_miOpenList, miPoint:_miPoint, routeSamples:_routeSamples, flightPoints:_ciFlightPoints,
   perfWxFor:_perfWxFor, rebuildMetarPool:_rebuildMetarPool, latestTaf:_latestTaf, adElev:_adElevFor,
   stageSegs:_navStageSegs, isStageEnd:_isStageEnd, toast:_toast, glideRatio:_glideRatioDefault,
-  latLonAtDist:_altProfileLatLonAtDist, distAtLatLon:_routeDistAtLatLon, loadFrNotams:_loadFrNotamsData,
+  latLonAtDist:_altProfileLatLonAtDist, setCrosshair:_altProfileSetCrosshair, hideCrosshair:_altProfileHideCrosshair, distAtLatLon:_routeDistAtLatLon, loadFrNotams:_loadFrNotamsData,
   loadBeNotams:_loadBeNotams, routeNotams:_routeNotams, fmtDate:_frnFmtDate, proxy:fetchViaProxy, vacLinks:_vacLinks,
   today:_todayISO, aircraft:function(){ return (typeof MB_DATA!=='undefined'&&window._perfAircraft)?MB_DATA[window._perfAircraft]:null; },
   aircraftList:function(){ return typeof MB_DATA!=='undefined'?MB_DATA:{}; }
@@ -20138,9 +20138,9 @@ window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 <script src="js/tts.js"></script>
-<script src="js/nav-wx.js?v=20261028a"></script>
-<script src="js/nav-brief.js?v=20261028a"></script>
-<script src="js/nav-flight.js?v=20261028a"></script>
+<script src="js/nav-wx.js?v=20261028b"></script>
+<script src="js/nav-brief.js?v=20261028b"></script>
+<script src="js/nav-flight.js?v=20261028b"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

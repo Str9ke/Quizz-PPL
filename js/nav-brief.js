@@ -277,6 +277,10 @@ function renderBrief(){
   adCards().then(function(r){ if(seq!==_bpSeq) return; var seen={}; r.alerts=r.alerts.filter(function(a){ if(seen[a.txt.replace(/ \(.*?\)/,'')]) return false; seen[a.txt.replace(/ \(.*?\)/,'')]=1; return true; });
     var el=document.getElementById('bpAd'); if(el) el.innerHTML=(r.alerts.length?r.alerts.map(it).join(''):'')+r.html; count(r.alerts.filter(function(a){ return a.lvl; }).length); });
   borders().then(function(b){ if(seq!==_bpSeq) return; var el=document.getElementById('bpBorder'); if(el&&b.length){ el.innerHTML='<div class="bp-sec">🛂 Passage de frontière</div>'+borderAdvice(b); count(1); } NLX._borders=b; });
+  milZones().then(function(Z){ if(seq!==_bpSeq) return; var hit=Z.filter(function(z){ return z.hits.length; }), el=document.getElementById('bpTop'); if(!el) return;
+    var h=hit.map(function(z){ return it({lvl:2,txt:'🎯 <b>'+esc(z.label)+'</b> active '+utc(z.from)+'–'+utc(z.to)+' UTC : ta route la traverse vers '+hmLoc(z.hits[0].time)+' à '+Math.round(z.hits[0].alt)+' ft'}); }).join('');
+    h+=it({lvl:0,txt:'🎯 '+Z.length+' zone(s) militaire(s) activée(s) ce jour (NOTAM, avis du jour) — <a href="#" onclick="document.getElementById(\'nlxMilBtn\').click();return false" style="color:var(--link-color)">voir sur la carte</a>'});
+    el.insertAdjacentHTML('beforeend',h); count(hit.length); }).catch(function(){});
   activity().then(function(a){ if(seq!==_bpSeq) return; NLX._activity=a; var el=document.getElementById('bpAct'); if(el){ el.innerHTML=activityHtml(a); if(window.metarFrToggle) window.metarFrToggle(document,window._metarFrOn?true:null); } });
 }
 function scheduleBrief(){ clearTimeout(_bpTimer); _bpTimer=setTimeout(renderBrief,900); }
@@ -292,7 +296,7 @@ function showPpr(){
     var m=modal('🔒 Aérodromes PPR / privés — '+items.length+' (FR, BE, LU, NL, DE, GB)','<div id="pprList"></div><small style="color:var(--text-secondary)">Source : OpenAIP (champ PPR / privé) complété par les fiches AIP officielles (Belgique, France). '
       +'Liste indicative : la carte VAC / l\'AIP du terrain fait foi. Touche un terrain pour le voir sur la carte.</small>',
       '<input id="pprQ" placeholder="Chercher (nom, OACI)" style="flex:1 1 140px"><select id="pprC"><option value="">Tous pays</option>'+Object.keys(CC_NAMES).filter(function(k){ return k!=='CH'; }).map(function(k){ return '<option value="'+k+'">'+CC_NAMES[k]+'</option>'; }).join('')+'</select>'
-      +'<label style="font-size:.8em"><input type="checkbox" id="pprR"> près de la route</label><button class="navlog-btn" id="pprMap">🗺️ Sur la carte</button>');
+      +'<label style="font-size:.8em"><input type="checkbox" id="pprR"> près de la route</label><button class="navlog-btn" id="pprMap">🗺️ Tous sur la carte</button>');
     function draw(){
       var q=(m.querySelector('#pprQ').value||'').toUpperCase(), c=m.querySelector('#pprC').value, r=m.querySelector('#pprR').checked;
       var L=items.filter(function(a){ return (!c||a.cc===c)&&(!r||a._d<=15)&&(!q||(a.name+' '+a.icao).toUpperCase().indexOf(q)>=0); })
@@ -307,58 +311,178 @@ function showPpr(){
       var row=e.target.closest('.bp-row'); if(!row) return; var a=items[+row.dataset.i]; if(!a||a.lat==null) return;
       m.remove(); pprLayer(items,true); var map=NL.routeMap; if(map){ map.setView([a.lat,a.lon],11); var c=document.getElementById('routeMapCard'); if(c) c.scrollIntoView({behavior:'smooth'}); }
     });
-    m.querySelector('#pprMap').onclick=function(){ m.remove(); pprLayer(items,!_pprLayer); };
+    m.querySelector('#pprMap').onclick=function(){ m.remove(); pprLayer(items,true); };
     if(S.length>1) m.querySelector('#pprR').checked=true;
     draw();
   });
 }
-var _pprLayer=null;
+var _pprLayer=null, _pprChip=null;
+/* PPR rouge vif / privé jaune : lisibles sur le fond OSM, satellite, carte VFR et OACI */
 function pprLayer(items,on){
   var map=NL.routeMap; if(!map) return;
   if(_pprLayer){ map.removeLayer(_pprLayer); _pprLayer=null; }
+  if(_pprChip){ _pprChip.remove(); _pprChip=null; }
+  var bt=document.getElementById('nlxPprBtn'); if(bt) bt.classList.toggle('active',!!on);
   if(!on) return;
   _pprLayer=L.layerGroup(items.filter(function(a){ return a.lat!=null; }).map(function(a){
-    return L.marker([a.lat,a.lon],{icon:L.divIcon({className:'',iconSize:[18,18],html:'<div style="font-size:14px;line-height:18px;text-align:center;filter:drop-shadow(0 0 2px #000)">'+(a.ppr?'🔒':'🏠')+'</div>'})})
-      .bindPopup('<b>'+esc(a.icao)+' '+esc(a.name)+'</b><br>'+(a.ppr?'PPR':'')+(a.priv?' privé':'')+(a.rwy?'<br>Piste '+a.rwy+' m':'')+(a.freq?'<br>📻 '+esc(a.freq):'')+(a.aip?'<br><small>'+esc(a.aip.slice(0,200))+'</small>':''));
+    var ppr=a.ppr, bg=ppr?'#ff1744':a.cond?'#ff9100':'#ffd600', fg=ppr?'#fff':'#000';
+    return L.marker([a.lat,a.lon],{zIndexOffset:800,icon:L.divIcon({className:'',iconSize:[34,16],iconAnchor:[17,8],
+      html:'<div style="background:'+bg+';color:'+fg+';border:2px solid #000;border-radius:8px;font:800 10px/12px sans-serif;text-align:center;box-shadow:0 0 0 2px #fff">'+(ppr?'PPR':a.cond?'PPR?':'PRIV')+'</div>'})})
+      .bindPopup('<b>'+esc(a.icao)+' '+esc(a.name)+'</b><br>'+(ppr?'PPR':a.cond?'PPR pour certains vols':'')+(a.priv?' · privé':'')+(a.rwy?'<br>Piste '+a.rwy+' m':'')+(a.freq?'<br>📻 '+esc(a.freq):'')+(a.aip?'<br><small>AIP : …'+esc(a.aip.slice(0,220))+'…</small>':''));
   })).addTo(map);
-  NL.toast&&NL.toast('🔒 Terrains PPR/privés affichés — touche « 🔒 PPR » puis « Sur la carte » pour les masquer','info',3500);
+  var mc=document.getElementById('routeMapContainer');
+  _pprChip=document.createElement('div');
+  _pprChip.style.cssText='position:absolute;right:56px;bottom:10px;z-index:1000;background:#ff1744;color:#fff;border:2px solid #000;border-radius:14px;padding:4px 10px;font:700 12px sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+  _pprChip.textContent='PPR affichés ✕ Masquer';
+  ['mousedown','touchstart','dblclick','click'].forEach(function(ev){ _pprChip.addEventListener(ev,function(e){ e.stopPropagation(); }); });
+  _pprChip.onclick=function(){ pprLayer(null,false); };
+  mc.appendChild(_pprChip);
 }
 
-/* ---------- Trafic réel (OpenSky Network) ---------- */
-var _trf={layer:null,timer:null,until:0};
-function osGet(url){
-  var cap=window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CapacitorHttp;
-  if(cap) return cap.get({url:url}).then(function(r){ return typeof r.data==='string'?JSON.parse(r.data):r.data; });
-  return fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return NL.proxy(url).then(function(t){ return typeof t==='string'?JSON.parse(t):t; }); });
+/* ---------- Trafic réel ----------
+   Aucun service ADS-B gratuit n'autorise l'appel depuis une page web (règle CORS des navigateurs) :
+   - appli Android : requête native (CapacitorHttp) vers adsb.lol (secours : OpenSky), affichée sur la carte ;
+   - site web : ouverture de la carte en direct adsb.lol centrée sur la carte de route. */
+var _trf={layer:null,timer:null,until:0,fail:0};
+function isNative(){ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CapacitorHttp); }
+function nativeGet(url){ return window.Capacitor.Plugins.CapacitorHttp.get({url:url,headers:{Accept:'application/json'}}).then(function(r){ if(r.status&&r.status>=400) throw new Error('HTTP '+r.status); return typeof r.data==='string'?JSON.parse(r.data):r.data; }); }
+function trafficFetch(b){
+  var c=b.getCenter(), rad=Math.min(150,Math.max(10,Math.round(NL.haversine(c.lat,c.lng,b.getNorth(),b.getEast()))));
+  return nativeGet('https://api.adsb.lol/v2/lat/'+c.lat.toFixed(3)+'/lon/'+c.lng.toFixed(3)+'/dist/'+rad).then(function(d){
+    return (d&&d.ac||[]).map(function(a){ var gnd=a.alt_baro==='ground'; return {id:a.flight||a.r||a.hex,type:a.t||'',lat:a.lat,lon:a.lon,ft:gnd?0:(typeof a.alt_baro==='number'?a.alt_baro:a.alt_geom),gnd:gnd,kt:a.gs,trk:a.track||a.true_heading||0,sq:a.squawk}; });
+  }).catch(function(){
+    return nativeGet('https://opensky-network.org/api/states/all?lamin='+b.getSouth().toFixed(3)+'&lomin='+b.getWest().toFixed(3)+'&lamax='+b.getNorth().toFixed(3)+'&lomax='+b.getEast().toFixed(3)).then(function(d){
+      return (d&&d.states||[]).map(function(s){ var alt=s[13]!=null?s[13]:s[7]; return {id:(s[1]||s[0]).trim(),type:'',lat:s[6],lon:s[5],ft:alt!=null?alt*3.28084:null,gnd:s[8],kt:s[9]!=null?s[9]*1.94384:null,trk:s[10]||0,sq:s[14]}; });
+    });
+  });
 }
 function trafficTick(){
-  var map=NL.routeMap; if(!map) return;
-  if(Date.now()>_trf.until){ toggleTraffic(false); NL.toast('✈️ Trafic arrêté après 10 min (limite du service gratuit OpenSky)','info',3500); return; }
-  var b=map.getBounds().pad(0.15);
-  var url='https://opensky-network.org/api/states/all?lamin='+b.getSouth().toFixed(3)+'&lomin='+b.getWest().toFixed(3)+'&lamax='+b.getNorth().toFixed(3)+'&lomax='+b.getEast().toFixed(3);
-  osGet(url).then(function(d){
-    if(!_trf.layer) return;
-    _trf.layer.clearLayers();
-    (d&&d.states||[]).forEach(function(s){
-      if(s[5]==null||s[6]==null) return;
-      var alt=s[13]!=null?s[13]:s[7], ft=alt!=null?Math.round(alt*3.28084/100)*100:null, gnd=s[8], kt=s[9]!=null?Math.round(s[9]*1.94384):null, trk=s[10]||0;
-      var col=gnd?'#9e9e9e':ft!=null&&ft<5000?'#ff1744':ft!=null&&ft<10000?'#ff9100':'#42a5f5';
-      _trf.layer.addLayer(L.marker([s[6],s[5]],{icon:L.divIcon({className:'',iconSize:[22,22],html:'<div style="transform:rotate('+trk+'deg);color:'+col+';font-size:18px;line-height:22px;text-align:center;filter:drop-shadow(0 0 2px #000)">✈</div>'}),zIndexOffset:900})
-        .bindTooltip('<b>'+esc((s[1]||s[0]).trim())+'</b> '+(gnd?'au sol':(ft!=null?ft+' ft':'')+(kt?' · '+kt+' kt':''))+(s[14]?' · '+s[14]:''),{direction:'top'}));
+  var map=NL.routeMap; if(!map||!_trf.layer) return;
+  if(Date.now()>_trf.until){ toggleTraffic(false); NL.toast('✈️ Trafic arrêté après 15 min — touche « Trafic » pour relancer','info',3500); return; }
+  trafficFetch(map.getBounds().pad(0.15)).then(function(list){
+    if(!_trf.layer) return; _trf.fail=0; _trf.layer.clearLayers();
+    list.forEach(function(a){
+      if(a.lat==null||a.lon==null) return;
+      var ft=a.ft!=null?Math.round(a.ft/100)*100:null, col=a.gnd?'#9e9e9e':ft!=null&&ft<5000?'#ff1744':ft!=null&&ft<10000?'#ff9100':'#42a5f5';
+      _trf.layer.addLayer(L.marker([a.lat,a.lon],{zIndexOffset:900,icon:L.divIcon({className:'',iconSize:[24,24],html:'<div style="transform:rotate('+a.trk+'deg);color:'+col+';font-size:20px;line-height:24px;text-align:center;-webkit-text-stroke:1px #000">✈</div>'})})
+        .bindTooltip('<b>'+esc(a.id||'?')+'</b> '+esc(a.type)+' · '+(a.gnd?'au sol':(ft!=null?ft+' ft':'')+(a.kt?' · '+Math.round(a.kt)+' kt':''))+(a.sq?' · '+a.sq:''),{direction:'top'}));
     });
-    var bt=document.getElementById('nlxTrfBtn'); if(bt) bt.textContent='✈️ Trafic ('+((d&&d.states)||[]).length+')';
-  }).catch(function(){ NL.toast('✈️ OpenSky ne répond pas (limite atteinte ou hors ligne)','error',3000); });
+    var bt=document.getElementById('nlxTrfBtn'); if(bt) bt.textContent='✈️ Trafic ('+list.length+')';
+  }).catch(function(){
+    if(++_trf.fail>=2){ toggleTraffic(false); NL.toast('✈️ Service de trafic indisponible pour le moment (hors ligne ou limite atteinte) — trafic arrêté','error',4000); }
+  });
 }
 function toggleTraffic(on){
   var map=NL.routeMap; if(!map) return;
+  if(!isNative()){
+    var c=map.getCenter();
+    window.open('https://adsb.lol/?lat='+c.lat.toFixed(4)+'&lon='+c.lng.toFixed(4)+'&zoom='+Math.max(7,Math.min(12,map.getZoom())),'_blank','noopener');
+    NL.toast('✈️ Trafic en direct ouvert dans un nouvel onglet (adsb.lol), centré sur ta carte. Sur le site web, aucun service gratuit n’autorise l’affichage directement sur notre carte ; dans l’appli Android, il s’affiche sur la carte.','info',7000);
+    return;
+  }
   if(on==null) on=!_trf.layer;
   clearInterval(_trf.timer);
   if(_trf.layer){ map.removeLayer(_trf.layer); _trf.layer=null; }
   var bt=document.getElementById('nlxTrfBtn'); if(bt){ bt.textContent='✈️ Trafic'; bt.classList.toggle('active',!!on); }
   if(!on) return;
-  _trf.layer=L.layerGroup().addTo(map); _trf.until=Date.now()+10*60000;
-  trafficTick(); _trf.timer=setInterval(trafficTick,30000);
-  NL.toast('✈️ Trafic réel OpenSky (ADS-B), mis à jour toutes les 30 s pendant 10 min. Rouge < 5000 ft, orange < 10 000 ft. Pour la préparation au sol seulement.','info',5000);
+  _trf.layer=L.layerGroup().addTo(map); _trf.until=Date.now()+15*60000; _trf.fail=0;
+  trafficTick(); _trf.timer=setInterval(trafficTick,20000);
+  NL.toast('✈️ Trafic réel ADS-B (adsb.lol), toutes les 20 s pendant 15 min. Rouge < 5000 ft, orange < 10 000 ft, gris au sol. Préparation au sol seulement : ne remplace pas la surveillance du ciel.','info',5000);
+}
+
+/* ---------- Zones militaires activées (RTBA, R, D, TSA/TRA, CBA, HTA) ----------
+   Sources officielles déjà récupérées par l'appli : NOTAM SIA (France, Belgique, Pays-Bas ; les
+   activations RTBA sont publiées la veille par NOTAM « ZONES AIRFORCE RTBA ACT ») et avis du jour
+   skeyes (activations TSA/TRA/HTA belges). Chaque désignation est retrouvée dans les contours OpenAIP. */
+function normTok(s){ return String(s||'').toUpperCase().replace(/[\s\-–]/g,''); }
+function zoneKeyIndex(oa){
+  if(oa._zk) return oa._zk;
+  var ix={};
+  oa.airspaces.forEach(function(a){
+    String(a.name||'').toUpperCase().split(/[\s\/(),]+/).forEach(function(t,i){
+      t=normTok(t); if(!t||i>2) return; (ix[t]=ix[t]||[]).push(a);
+      var m=/^(LF|EB|EH|ED|EL)(R|D|P)(\d.*)$/.exec(t); if(m) (ix[m[2]+m[3]]=ix[m[2]+m[3]]||[]).push(a);
+    });
+  });
+  try{ Object.defineProperty(oa,'_zk',{value:ix,enumerable:false}); }catch(e){}
+  return ix;
+}
+function parseDw(s){ var m=/(\d{1,2}) ([A-Z]{3}) (\d{4}) (\d{2}):(\d{2})/.exec(s||''); if(!m) return null;
+  var mo='JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC'.indexOf(m[2])/3; return mo<0?null:new Date(Date.UTC(+m[3],mo,+m[1],+m[4],+m[5])); }
+function hhmm(day,s){ return new Date(Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),+s.slice(0,2),+s.slice(2))); }
+function milZones(){
+  return Promise.all([NL.loadFrNotams(),once('daily_warnings.json'),NL.loadOpenaip()]).then(function(r){
+    var fr=r[0], dw=r[1], oa=r[2], b=dayBounds(), out=[], ix=oa?zoneKeyIndex(oa):{};
+    function add(key,label,from,to,src,txt,lo,hi){
+      if(!from||!to||from.getTime()>b[1]||to.getTime()<b[0]) return;
+      var k=normTok(key), list=(ix[k]||[]).filter(function(a){ return NL.classLabel(a)!=='FIR'; });
+      out.push({key:k,label:label||key,from:from,to:to,src:src,txt:txt,lo:lo,hi:hi,as:list});
+    }
+    ((fr&&fr.notams)||[]).forEach(function(n){
+      var e=n.e||'', q=n.q||''; if(!/^R/.test(q)&&!/RTBA|TSA|TRA|CBA/.test(e)) return;
+      if(!/\bACT(IVE|IVATED)?\b/.test(e)) return;
+      var nb=new Date(n.b), nc=n.c?new Date(n.c):new Date(nb.getTime()+864e5), src=(n.cc||'LF')+' NOTAM '+n.id;
+      if(/RTBA/.test(e)){
+        var re=/ZONE\s+(R\s?\d+[A-Z0-9]*)\s+([^\n]*)\n\s*(\d{4})-(\d{4})\s*:\s*ACTIVE/g, m, any=false;
+        while((m=re.exec(e))){ any=true; var f=hhmm(nb,m[3]), t=hhmm(nb,m[4]); if(t<f) t=new Date(t.getTime()+864e5);
+          add(m[1],'RTBA '+m[1].replace(/\s/g,'')+' '+m[2].trim(),f,t,src,e,null,null); }
+        if(any) return;
+      }
+      var seen={}, mm, re2=/\b(?:(LF|EB|EH|ED|EL)-?)?(R|D|P)\s?(\d{1,3}[A-Z]?\d?[A-Z]?)\b|\b(TSA|TRA|CBA|HTA)\s?-?(\d{1,3}[A-Z]?)\b/g;
+      while((mm=re2.exec(e))){
+        var key=mm[4]?mm[4]+mm[5]:(mm[1]||(n.cc==='EB'?'EB':n.cc==='EH'?'EH':'LF'))+mm[2]+mm[3];
+        if(seen[key]) continue; seen[key]=1;
+        add(key,(mm[4]?mm[4]+' '+mm[5]:(mm[1]||n.cc||'LF')+'-'+mm[2]+mm[3]),nb,nc,src,e,n.lo!=null?n.lo*100:null,n.hi!=null&&n.hi<999?n.hi*100:null);
+      }
+    });
+    ((dw&&dw.warnings)||[]).forEach(function(w){
+      var m=/^(TSA|TRA|CBA|HTA|LFA|EBR|EBD|EBP)\s?-?(\d+[A-Z]?)/i.exec((w.text||'').trim()); if(!m||!/\bACT/.test(w.text)) return;
+      var key=m[1].toUpperCase()+m[2].toUpperCase();
+      add(key,w.text.split(' ACT')[0],parseDw(w.from),parseDw(w.till),'Avis du jour skeyes '+(w.ref||''),w.text+' · '+(w.lower||'')+' – '+(w.upper||''),null,null);
+    });
+    /* conflits avec la route : dans la zone, à l'heure de passage, entre plancher et plafond */
+    var S=NLX.routeSamplesTimed?NLX.routeSamplesTimed(2):[];
+    out.forEach(function(z){
+      z.hits=[];
+      z.as.forEach(function(a){
+        var lo=z.lo!=null?z.lo:NL.limitFt(a.lowerLimit)||0, hi=z.hi!=null?z.hi:NL.limitFt(a.upperLimit)||99999;
+        S.forEach(function(p){ if(p.time>=z.from&&p.time<=z.to&&p.alt>=lo-200&&p.alt<=hi+200&&NL.inAirspace(a,p.lat,p.lon)) z.hits.push(p); });
+      });
+    });
+    out.sort(function(x,y){ return (y.hits.length?1:0)-(x.hits.length?1:0)||x.from-y.from; });
+    NLX.milActive=out;
+    return out;
+  });
+}
+NLX.milZones=milZones;
+function utc(d){ return ('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2); }
+var _milLayer=null;
+function showMil(){
+  var map=NL.routeMap; if(!map) return;
+  var bt=document.getElementById('nlxMilBtn');
+  if(_milLayer){ map.removeLayer(_milLayer); _milLayer=null; if(bt) bt.classList.remove('active'); return; }
+  milZones().then(function(Z){
+    _milLayer=L.layerGroup().addTo(map); if(bt) bt.classList.add('active');
+    var bounds=[];
+    Z.forEach(function(z){
+      z.as.forEach(function(a){
+        NL.airspacePolys(a).forEach(function(pl){
+          var ll=pl[0].map(function(q){ return [q[1],q[0]]; }); bounds=bounds.concat(ll);
+          _milLayer.addLayer(L.polygon(ll,{color:z.hits.length?'#d50000':'#ff1744',weight:z.hits.length?4:2,fillColor:'#ff1744',fillOpacity:.22,dashArray:z.hits.length?null:'6 4'})
+            .bindTooltip('<b>'+esc(z.label)+'</b><br>ACTIVE '+utc(z.from)+' → '+utc(z.to)+' UTC'+(z.hits.length?'<br>⚠️ sur ta route à '+hmLoc(z.hits[0].time):'')+'<br><small>'+esc(z.src)+'</small>',{sticky:true}));
+        });
+      });
+    });
+    var items=Z.map(function(z){
+      return {sec:z.hits.length?'⚠️ Actives sur ta route':'Zones militaires activées ce jour ('+Z.length+')',col:z.hits.length?'#d50000':'#ff1744',
+        head:'<b>'+esc(z.label)+'</b>',sub:'ACTIVE '+utc(z.from)+' → '+utc(z.to)+' UTC'+(z.hits.length?' · traversée prévue vers '+hmLoc(z.hits[0].time)+' à '+Math.round(z.hits[0].alt)+' ft':'')+(z.as.length?'':' · contour inconnu'),
+        det:'<div class="aero-tr" style="white-space:pre-wrap">'+esc(z.txt.slice(0,600))+'</div><small>'+esc(z.src)+'</small>',
+        geo:z.as.length?function(){ return L.featureGroup([].concat.apply([],z.as.map(function(a){ return NL.airspacePolys(a).map(function(pl){ return L.polygon(pl[0].map(function(q){ return [q[1],q[0]]; }),{color:'#d50000',weight:3,fillOpacity:.25,interactive:false}); }); }))); }:null,
+        bounds:z.as.length?(function(){ var bb=NL.geomBBox(z.as[0]); return [[bb[1],bb[0]],[bb[3],bb[2]]]; })():null};
+    });
+    if(!items.length) items=[{sec:'Zones militaires',col:'#7f8c8d',head:'Aucune activation trouvée pour ce jour',sub:'NOTAM et avis du jour de la dernière récupération',det:'',geo:null}];
+    NL.openList('🎯 Zones militaires activées (NOTAM, avis du jour)',items);
+  });
 }
 
 /* ---------- Validités du pilote ---------- */
@@ -523,8 +647,9 @@ NLX.dossierExtra=function(){
 function addButtons(){
   var rows=document.querySelectorAll('#routeMapCard .rm-tb-row'); if(rows.length<2||document.getElementById('nlxPprBtn')) return;
   var r=rows[1];
-  var b1=document.createElement('button'); b1.className='navlog-btn'; b1.id='nlxPprBtn'; b1.textContent='🔒 PPR'; b1.title='Aérodromes soumis à autorisation préalable (PPR) ou privés : France, Belgique, Luxembourg, Pays-Bas, Allemagne, Royaume-Uni'; b1.onclick=showPpr; r.appendChild(b1);
-  var b2=document.createElement('button'); b2.className='navlog-btn'; b2.id='nlxTrfBtn'; b2.textContent='✈️ Trafic'; b2.title='Trafic réel autour de la carte (ADS-B, OpenSky Network) — pour la préparation au sol'; b2.onclick=function(){ toggleTraffic(); }; r.appendChild(b2);
+  var b1=document.createElement('button'); b1.className='navlog-btn'; b1.id='nlxPprBtn'; b1.textContent='🔒 PPR'; b1.title='Aérodromes soumis à autorisation préalable (PPR) ou privés : France, Belgique, Luxembourg, Pays-Bas, Allemagne, Royaume-Uni'; b1.onclick=function(){ if(_pprLayer){ pprLayer(null,false); return; } showPpr(); }; r.appendChild(b1);
+  var b2=document.createElement('button'); b2.className='navlog-btn'; b2.id='nlxTrfBtn'; b2.textContent='✈️ Trafic'; b2.title='Trafic réel ADS-B autour de la carte (adsb.lol) — sur la carte dans l’appli Android, dans un nouvel onglet sur le site'; b2.onclick=function(){ toggleTraffic(); }; r.appendChild(b2);
+  var b3=document.createElement('button'); b3.className='navlog-btn'; b3.id='nlxMilBtn'; b3.textContent='🎯 Militaire'; b3.title='Zones militaires ACTIVÉES le jour du vol (RTBA, zones R/D, TSA/TRA, HTA) d’après les NOTAM officiels et les avis du jour skeyes, dessinées sur la carte ; en rouge épais si la route les traverse à l’heure prévue'; b3.onclick=showMil; r.appendChild(b3);
 }
 
 function init(){
