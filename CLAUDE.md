@@ -149,10 +149,13 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   `NLX.ownFix()` (mode vol ou bouton « 📍 Position ») ; en vol le trafic ne s'arrête pas et garde les derniers avions grisés sans réseau.
   Plané : finesse/vitesse des manuels (`glideRatio` 8.7, `glideKt` 60 F150M / 65 F172M dans MB_DATA) ; survol suivi sur la carte
   (le mode Info rend le tracé insensible). « Plus proche » sans GPS : clic sur la carte -> directs vers 5 terrains. `sw.js` ne doit JAMAIS servir Open-Meteo/OpenSky depuis le cache (ignoreSearch).
+- **Date/heure du vol automatiques** (`_autoNowDateTime`, navlog.html) : à l'ouverture, au chargement d'un dossier et au retour sur l'appli,
+  date passée -> aujourd'hui + départ maintenant (5 min suivantes) ; départ du jour dépassé de > 30 min -> maintenant ; jamais si le vol
+  est futur ou décollé (log `nlxLive`).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v262`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v263`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de

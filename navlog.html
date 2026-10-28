@@ -3382,6 +3382,35 @@ window._setNavlogFlightDate=function(v){
   // Le tarif de location dépend de la date du vol (hausse au 1er novembre 2026)
   if(typeof renderFuelLog==='function') renderFuelLog();
 };
+/* Date et heure du vol mises à MAINTENANT à l'ouverture (sauvegarde, compte, dossier) :
+   - date passée -> aujourd'hui, et heure de départ = maintenant (arrondie aux 5 min suivantes) ;
+   - aujourd'hui avec une heure de départ dépassée de plus de 30 min -> maintenant ;
+   - jamais pour un vol prévu plus tard (date future, heure à venir), ni pendant un vol déjà décollé
+     (heure de décollage du log « En vol » aujourd'hui). */
+function _autoNowDateTime(){
+  try{
+    var lv=JSON.parse(localStorage.getItem('nlxLive')||'null');
+    if(lv&&lv.takeoff&&!lv.landing&&Date.now()-lv.takeoff<12*3600000) return;
+  }catch(e){}
+  var today=_todayISO(), fd=_navlogFlightDate||today, el=document.getElementById('cfgDepTime');
+  var now=new Date(Date.now()+5*60000); now.setMinutes(Math.ceil(now.getMinutes()/5)*5,0,0);
+  var nowHM=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  if(now.getDate()!==new Date().getDate()) nowHM='23:55';
+  var changed=false;
+  if(fd<today){ _navlogFlightDate=today; if(el) el.value=nowHM; changed=true; }
+  else if(fd===today&&el){
+    var p=(el.value||'09:00').split(':'), dep=new Date(); dep.setHours(+p[0],+p[1],0,0);
+    if(Date.now()-dep.getTime()>30*60000){ el.value=nowHM; changed=true; }
+  }
+  if(changed){
+    var fdi=document.getElementById('cfgFlightDate'); if(fdi) fdi.value=_navlogFlightDate;
+    if(typeof _toast==='function') _toast('📅 Vol mis à aujourd’hui, départ '+(el?el.value:'')+' (modifiable au-dessus du tableau Navlog)','info',4000);
+  }
+  return changed;
+}
+window._autoNowDateTime=_autoNowDateTime;
+document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ if(_autoNowDateTime()&&typeof recalcNavlog==='function') recalcNavlog(); },1800); });
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&_autoNowDateTime()&&typeof recalcNavlog==='function') recalcNavlog(); });
 var calYear, calMonth;
 
 /* Map modal state */
@@ -12256,6 +12285,7 @@ function _restoreAutosaveIfAny(){
   setVal('cfgDev',cfg.dev);
   if(cfg.depTime) setVal('cfgDepTime',cfg.depTime);
   if(cfg.flightDate) _navlogFlightDate=cfg.flightDate;
+  _autoNowDateTime();
   if(cfg.taxiMin!==undefined) setVal('cfgTaxi',cfg.taxiMin);
   if(cfg.landingMin!==undefined) setVal('cfgLanding',cfg.landingMin);
   if(cfg.alt){ setVal('cfgAlt',cfg.alt); setVal('cfgAltSlider',cfg.alt); }
@@ -12970,6 +13000,7 @@ function loadDossier(id, _freshCloudFiles){
   document.getElementById('cfgDev').value=d.config.dev;
   if(d.config.depTime) document.getElementById('cfgDepTime').value=d.config.depTime;
   if(d.config.flightDate) _navlogFlightDate=d.config.flightDate;
+  _autoNowDateTime();
   if(d.config.taxiMin!==undefined) document.getElementById('cfgTaxi').value=d.config.taxiMin;
   if(d.config.landingMin!==undefined) document.getElementById('cfgLanding').value=d.config.landingMin;
   if(d.config.alt){var _ca=document.getElementById('cfgAlt');if(_ca)_ca.value=d.config.alt;var _cas=document.getElementById('cfgAltSlider');if(_cas)_cas.value=d.config.alt;}
