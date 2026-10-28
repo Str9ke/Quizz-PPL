@@ -159,7 +159,7 @@ function onFix(pos){
     saveLive();
   }
   autoSequence(f);
-  drawOwnship(f); updateHud(); checkAirspaces(f); tankCheck();
+  drawOwnship(f); updateHud(); checkAirspaces(f); tankCheck(); borderCheck(f);
   if(S.glideOn) drawGlide(f.lat,f.lon,f.alt||0,null,legWind());
   if(document.getElementById('tab-vol')&&document.getElementById('tab-vol').classList.contains('active')) renderLiveSoft();
 }
@@ -267,6 +267,24 @@ function banner(lvl,html){
   if(!b){ b=document.createElement('div'); b.id='flAlert'; b.onclick=function(){ b.remove(); }; ['mousedown','touchstart','dblclick'].forEach(function(ev){ b.addEventListener(ev,function(e){ e.stopPropagation(); }); }); mc.appendChild(b); }
   b.className='fl-alert'+(lvl===2?'':lvl===1?' w':' i'); b.innerHTML=html+'<div style="font-size:.8em;opacity:.8;margin-top:3px">Touche pour fermer</div>';
   clearTimeout(S.bannerT); S.bannerT=setTimeout(function(){ if(b.parentNode) b.remove(); },lvl===2?45000:20000);
+}
+
+/* ---------- Passage de frontière : annonce 2 min avant puis au passage (points calculés par nav-brief.js) ---------- */
+function borderCheck(f){
+  var B=NLX._borders; if(!B||!B.length||!live.takeoff||f.gs==null||f.gs<30) return;
+  S.bAnn=S.bAnn||{};
+  B.forEach(function(b,i){
+    if(b.lat==null) return;
+    var d=NL.haversine(f.lat,f.lon,b.lat,b.lon), min=d/f.gs*60, to=({NL:'aux ',GB:'au ',LU:'au '}[b.to]||'en ')+(NLX.countryName?NLX.countryName(b.to):b.to), fis=NLX.borderFis&&NLX.borderFis[b.to];
+    var ahead=f.trk!=null&&Math.abs(((NL.bearing(f.lat,f.lon,b.lat,b.lon)-f.trk+540)%360)-180)<90;
+    if(!S.bAnn[i+'a']&&ahead&&min<=2.2&&d>0.5){ S.bAnn[i+'a']=1;
+      banner(1,'🛂 <b>Frontière dans '+Math.max(1,Math.round(min))+' min</b> : entrée '+esc(to)+(fis?'<br>📻 '+esc(fis):''));
+      if(opts().voice) speak('Frontière dans '+Math.max(1,Math.round(min))+' minutes. Entrée en '+to+(fis?'. Contacter '+fis.replace(/\./,' décimale '):'')); }
+    if(!S.bAnn[i+'b']&&d<=0.6){ S.bAnn[i+'b']=1;
+      banner(1,'🛂 <b>Passage de la frontière</b> : tu entres '+esc(to)+' ('+hm(Date.now())+')'+(fis?'<br>📻 '+esc(fis):''));
+      if(opts().voice) speak('Passage de la frontière. Vous entrez '+to+'.');
+      (S.log=S.log||[]).unshift({t:Date.now(),txt:'🛂 Frontière : '+esc(to)}); }
+  });
 }
 
 /* ---------- Voix et sons ---------- */

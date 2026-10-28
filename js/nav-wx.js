@@ -113,6 +113,8 @@ function interpAt(h,tm){
 }
 function analyse(p,a,b){
   if(!a||!a.hourly) return {p:p,err:true};
+  var t0=Date.parse(a.hourly.time[0]+'Z'), t1=Date.parse(a.hourly.time[a.hourly.time.length-1]+'Z'), tm=p.time.getTime();
+  if(tm<t0-36e5||tm>t1+36e5) return {p:p,err:true,out:true};
   var at=interpAt(a.hourly,p.time.getTime()), bt=b&&b.hourly?interpAt(b.hourly,p.time.getTime()):function(){ return null; };
   var gElev=(a.elevation||0), lv=[];
   LEVELS.forEach(function(pl){
@@ -271,6 +273,8 @@ function tableHtml(fc){
 }
 NLX.routeWxAlerts=function(){
   var fc=st.fc||(st.cached&&st.cached.fc); if(!fc) return null;
+  var p0=routeSamples(8)[0]; if(p0&&fc[0]&&fc[0].p&&Math.abs(new Date(fc[0].p.time)-p0.time)>3*36e5) return null;   /* prévision d'un autre jour / horaire */
+  if(fc.every(function(f){ return f.err; })) return null;
   var out={bad:0,warn:0,list:[]};
   fc.forEach(function(f){ if(f.err||!f.p) return; var v=vfrCheck(f); if(v.lvl===2) out.bad++; else if(v.lvl) out.warn++; if(v.lvl&&f.p.name) out.list.push({lvl:v.lvl,txt:esc(f.p.name)+' : '+v.msgs.join(', ')}); });
   var fz=fc.filter(function(f){ return f.fz!=null; }).map(function(f){ return f.fz; });
@@ -393,6 +397,14 @@ if(st.cached&&st.cached.fc) try{ st.cached.fc=revive(st.cached.fc); }catch(e){ s
 NLX.routeWxRefresh=function(){
   var pts=routeSamples(8);
   if(pts.length<2){ st.err='route vide'; render(); return Promise.resolve(); }
+  /* AROME : de la veille à J+2. Hors de cette période, pas de prévision (avant : l'heure la plus proche
+     était prise sans le dire -> faux « hors minima » pour un vol daté d'il y a des mois) */
+  var now=Date.now(), tf=pts[0].time.getTime();
+  if(tf<now-30*36e5||tf>now+60*36e5){
+    st.fc=null; st.cached=null; st.at=null; st.err='la date du vol ('+pts[0].time.toLocaleDateString('fr-BE')+') est hors de la période de prévision AROME (hier → après-demain). Change la date du vol au-dessus du tableau Navlog.';
+    try{ localStorage.removeItem('rwxLast'); }catch(e){}
+    render(); window.dispatchEvent(new Event('nlx:routewx')); return Promise.resolve();
+  }
   if(pts.length>45){ var k=Math.ceil(pts.length/45); pts=pts.filter(function(p,i){ return p.name||i%k===0; }); }
   st.busy=true; st.err=''; render();
   return fetchFc(pts).then(function(fc){

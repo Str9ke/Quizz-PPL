@@ -64,7 +64,7 @@ def add_from_aip(out):
         # lignes de l'AIP sur l'accès au terrain (pas l'avitaillement, la douane ni la santé, dont le
         # « PPR » ne concerne que ces services : LFQQ « Avitaillement … PPR en dehors de ces HOR »)
         lines = [ln for x in d.get("s", []) if x.get("n") in ("2.2", "2.3", "2.20") for ln in x.get("x", "").split("\n")
-                 if not re.match(r"(?i)\s*(avitaillement|fuel|douane|customs|services de sant|health|sûreté|security|services de manutention|handling)", ln)]
+                 if not re.match(r"(?i)\s*(avitaillement|fuel|douane|customs|services de sant|health|sûreté|security|services de manutention|handling|dégivrage|de-icing|observations|bureau met|bia|bria|bdp|ats reporting)", ln)]
         txt = " ".join(lines)
         m = PPR_RE.search(txt)
         if not m:

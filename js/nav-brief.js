@@ -57,7 +57,8 @@ function isDST(d){
   return d>=lastSun(2)&&d<lastSun(9);
 }
 function sec(ad,n){ var s=(ad&&ad.s||[]).filter(function(x){ return x.n===n; })[0]; return s?s.x:''; }
-function line(txt,re){ var L=(txt||'').split('\n'); for(var i=0;i<L.length;i++) if(re.test(L[i])) return L[i].split('|').slice(1).join('|').trim()||L[i]; return ''; }
+/* valeur d'une rubrique AIP (« Libellé | valeur FR | valeur EN ») : la partie française, '' si la rubrique est vide */
+function line(txt,re){ var L=(txt||'').split('\n'); for(var i=0;i<L.length;i++) if(re.test(L[i])){ var v=L[i].split('|').slice(1); return (v[0]||'').trim(); } return ''; }
 function parseFuel(ad){
   var t=sec(ad,'2.4'), l=line(t,/^(Fuel types|Types de carburants|Carburants)/i)||t;
   var f=[]; if(/100\s?LL/i.test(l)) f.push('AVGAS 100LL'); if(/UL\s?91/i.test(l)) f.push('UL91'); if(/JET\s?A-?1/i.test(l)) f.push('JET A1'); if(/MOGAS|SP\s?9[58]/i.test(l)) f.push('MOGAS');
@@ -69,7 +70,9 @@ function parseHours(ad,when){
   var t=sec(ad,'2.3'); if(!t) return null;
   var txt=line(t,/^(AD Operator|Gestionnaire de l'AD|AD Administration)/i);
   if(!txt||/^H\s?24/i.test(txt)){ var ats=line(t,/^(ATS)\b/i); if(ats&&!/^H\s?24/i.test(ats)) txt=ats; else if(!txt) txt=ats; }
-  if(!txt) txt=t.split('\n')[0];
+  /* AIP belges des petits terrains : horaires sur la première ligne, sans libellé */
+  if(!txt&&!/\|/.test(t.split('\n')[0])) txt=t.split('\n')[0];
+  if(!txt) return null;
   var res={raw:txt.slice(0,240),h24:/^\s*H\s?24/i.test(txt),ppr:/\bPPR\b|prior permission/i.test(t),onReq:/\bO\/R\b|on request|sur demande/i.test(txt),
     ss:/not later than SS|SS\b|coucher/i.test(txt)&&!/SR-SS/.test(txt),hj:/\bHJ\b|SR-SS/i.test(txt),customs:line(t,/^(Customs|Douanes)/i)};
   var summer=isDST(when), rng=[], m, re=/(\d{4})\s*(?:-|à|to)\s*(\d{4})(?:\s*\((\d{4})\s*(?:-|to)\s*(\d{4})\))?/g;
@@ -106,14 +109,15 @@ function aipFor(icao){
 function oaAirport(oa,icao){ return ((oa&&oa.airports)||[]).filter(function(a){ return a.icaoCode===icao; })[0]; }
 
 /* Terrains du vol : départ, escales, arrivée, dégagements choisis */
+function stageOf(i){ var sg=NL.stageSegs(); for(var k=0;k<sg.length;k++) if(sg[k].indexOf(i)>=0) return k; return 0; }
 function fieldsOfFlight(){
-  var pts=NL.flightPoints(), out=[], seen={};
+  var pts=NL.flightPoints(), out=[], seen={}, nStages=NL.stageSegs().length;
   pts.forEach(function(p,k){
     if(!p.ad) return; var c=(p.name||'').trim().toUpperCase(); if(!/^[A-Z]{4}$/.test(c)) return;
     var role=k===0?'Départ':(k===pts.length-1?'Arrivée':'Escale');
     var key=c+role; if(seen[key]) return; seen[key]=1;
     out.push({icao:c,role:role,time:p.time,lat:p.lat,lon:p.lon});
-    var w=NL.waypoints[p.i]; (w&&w._altn||[]).forEach(function(a,j){ if(a&&!seen['A'+a]){ seen['A'+a]=1; out.push({icao:a,role:'Dégagement D'+(j+1),time:p.time,altn:true}); } });
+    var w=NL.waypoints[p.i]; (w&&w._altn||[]).forEach(function(a,j){ if(a&&!seen['A'+a]){ seen['A'+a]=1; out.push({icao:a,role:'Dégagement D'+(j+1)+(nStages>1?' (étape '+(stageOf(p.i)+1)+')':''),time:p.time,altn:true}); } });
   });
   return out;
 }
@@ -174,15 +178,40 @@ function borders(){
     /* lissage : un pays doit durer au moins 2 échantillons (pas d'aller-retour dû à l'aérodrome le plus proche) */
     var out=[], cur=seq.length?seq[0].cc:null;
     for(var k=1;k<seq.length;k++){
-      if(seq[k].cc&&seq[k].cc!==cur&&(k+1>=seq.length||seq[k+1].cc===seq[k].cc)){ out.push({from:cur,to:seq[k].cc,d:seq[k].d}); cur=seq[k].cc; }
+      if(seq[k].cc&&seq[k].cc!==cur&&(k+1>=seq.length||seq[k+1].cc===seq[k].cc)){
+        var d=(seq[k-1].d+seq[k].d)/2, ll=NL.latLonAtDist(d), st=sinceTakeoff(d);
+        out.push({from:cur,to:seq[k].cc,d:d,lat:ll&&ll.lat,lon:ll&&ll.lon,st:st}); cur=seq[k].cc;
+      }
     }
     return out;
   });
 }
+/* depuis le dernier décollage (départ ou escale) jusqu'à la distance d le long de la route :
+   terrain, NM, minutes (temps de vol du Navlog) et heure prévue */
+function sinceTakeoff(d){
+  var w=NL.waypoints, cum=0, st={name:(w[0]&&w[0].name)||'départ',d:0,eta:0,i:0,stop:false};
+  for(var i=1;i<w.length;i++){
+    var leg=+w[i].dist||0, nd=cum+leg;
+    if(nd>=d&&leg>0){
+      var e0=+(w[i-1]._eta||0), e1=+(w[i]._eta||0), f=(d-cum)/leg, eta=e0+(e1-e0)*f;
+      var dep=new Date((NL.getConfig().flightDate||NL.today())+'T'+(NL.getConfig().depTime||'09:00')+':00').getTime()+(NL.getConfig().fuelTaxiD||0)*60000;
+      var t=NLX.routeSamplesTimed?(function(){ var S=NLX.routeSamplesTimed(2), best=null; S.forEach(function(p){ if(!best||Math.abs(p.d-d)<Math.abs(best.d-d)) best=p; }); return best&&best.time; })():new Date(dep+eta*60000);
+      return {from:(st.name||'').trim(),stop:st.stop,nm:d-st.d,min:eta-st.eta,time:t};
+    }
+    cum=nd;
+    if(i<w.length-1&&(w[i].isEtape||NL.isStageEnd(i))) st={name:w[i].name,d:cum,eta:+(w[i]._eta||0),i:i,stop:true};
+  }
+  return {from:st.name,stop:st.stop,nm:d-st.d,min:0,time:null};
+}
+var FIS={BE:'Brussels Information 126.900',FR:'Lille / Paris Information (SIV)',NL:'Dutch Mil Info / Amsterdam Information',DE:'Langen Information',LU:'Luxembourg Approach'};
+NLX.borderFis=FIS; NLX.countryName=function(c){ return CC_NAMES[c]||c; };
 function borderAdvice(list){
   if(!list.length) return '';
   var uk=list.some(function(b){ return b.from==='GB'||b.to==='GB'; });
-  var h=list.map(function(b){ return '<div class="bp-it '+(uk?'b':'w')+'">🛂 <b>'+esc(CC_NAMES[b.from]||b.from)+' → '+esc(CC_NAMES[b.to]||b.to)+'</b> vers '+Math.round(b.d)+' NM du départ</div>'; }).join('');
+  var h=list.map(function(b){ var st=b.st||{};
+    return '<div class="bp-it '+(uk?'b':'w')+'">🛂 <b>'+esc(CC_NAMES[b.from]||b.from)+' → '+esc(CC_NAMES[b.to]||b.to)+'</b> : '
+      +(st.nm!=null?'<b>'+st.nm.toFixed(1).replace('.',',')+' NM</b> et <b>'+Math.round(st.min)+' min</b> après le '+(st.stop?'redécollage de <b>'+esc(st.from)+'</b> (après l’escale)':'décollage de <b>'+esc(st.from)+'</b>')+(st.time?' — vers '+hmLoc(st.time):''):Math.round(b.d)+' NM du départ')
+      +(FIS[b.to]?'<br><small>Ensuite : '+esc(FIS[b.to])+'</small>':'')+'</div>'; }).join('');
   h+='<div class="bp-it i"><b>Plan de vol obligatoire</b> pour franchir une frontière (SERA.4001) — dépose-le et fais-le activer ; contacte le FIS de chaque côté (Brussels Info, Lille/Paris Info, Dutch Mil/Amsterdam Info…). '
     +'Pièce d\'identité à bord ; dans l\'espace Schengen pas de contrôle des personnes, mais des marchandises soumises à déclaration.</div>';
   if(uk) h+='<div class="bp-it b"><b>Royaume-Uni (hors Schengen)</b> : GAR (General Aviation Report) à envoyer à l\'UK Border Force avant le départ, atterrissage sur un aérodrome douanier ou désigné, passeport. '
@@ -256,7 +285,9 @@ function renderBrief(){
   var card=document.getElementById('briefPlusCard'); if(!card||!NL.waypoints||NL.waypoints.filter(function(w){ return w&&w.lat!=null; }).length<2){ if(card) card.style.display='none'; return; }
   cssOnce(); card.style.display='';
   var open=lsGet('bpOpen',true), seq=++_bpSeq;
-  var top=[], sun=NLX.sunAlerts?NLX.sunAlerts():[];
+  var top=[], sun=NLX.sunAlerts?NLX.sunAlerts():[], fdate=NL.getConfig().flightDate||NL.today(), td=NL.today();
+  var dd=Math.round((Date.parse(fdate)-Date.parse(td))/864e5), dfr=fdate.split('-').reverse().join('/');
+  top.push({lvl:dd<0||dd>2?2:dd?1:0,txt:'📅 Vol du <b>'+dfr+'</b>'+(dd===0?' (aujourd’hui)':dd===1?' (demain)':dd<0?' — <b>date passée</b> : soleil, horaires, NOTAM et météo sont calculés pour ce jour-là. Change la date au-dessus du tableau Navlog.':dd>2?' — <b>dans '+dd+' jours</b> : pas encore de prévision AROME pour ce jour-là.':'')});
   sun.forEach(function(s){ top.push({lvl:s.lvl,txt:'☀️ '+s.txt}); });
   var wx=NLX.routeWxAlerts?NLX.routeWxAlerts():null;
   if(wx){ if(wx.bad) top.push({lvl:2,txt:'🌥️ Météo de la route : '+wx.bad+' point(s) hors minima VFR (prévision AROME)'}); else if(wx.warn) top.push({lvl:1,txt:'🌥️ Météo de la route : '+wx.warn+' point(s) limites'});
