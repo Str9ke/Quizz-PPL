@@ -404,7 +404,16 @@ function toggleGlide(on){
   S.glideOn=on==null?!S.glideOn:on;
   var b=document.getElementById('nlxGlideBtn'); if(b) b.classList.toggle('active',S.glideOn);
   var map=NL.routeMap;
-  if(map&&!S.glideHooked){ S.glideHooked=true; map.on('mousemove',glideMapMove); map.on('click',glideMapMove); }
+  if(map&&!S.glideHooked){ S.glideHooked=true; map.on('mousemove',glideMapMove);
+    /* plané actif : un clic / toucher sur la carte sert UNIQUEMENT au plané (capturé avant le mode Info
+       ou Nav, qui ouvrait sinon les informations du lieu ou ajoutait un point) */
+    var mc=document.getElementById('routeMapContainer');
+    if(mc) mc.addEventListener('click',function(e){
+      if(!S.glideOn||S.on||NP.on||e.target.closest('.fl-near,.fl-hud,.fl-alert,.fl-replay,.leaflet-control,.leaflet-popup,.mi-panel,.trf-panel')) return;
+      e.stopPropagation(); e.preventDefault();
+      var r=mc.getBoundingClientRect(); glideMapMove({type:'click',latlng:map.containerPointToLatLng([e.clientX-r.left,e.clientY-r.top])});
+    },true);
+  }
   if(!S.glideOn){ clearGlide(); return; }
   loadData().then(function(){
     var g=acGlide();

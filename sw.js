@@ -4,7 +4,7 @@
 //             Network-First pour les appels Firebase/Firestore
 // ============================================================
 
-const CACHE_NAME = 'quiz-ppl-v259';
+const CACHE_NAME = 'quiz-ppl-v260';
 
 /* ASSETS_CACHE — cache SÉPARÉ et VOLONTAIREMENT indépendant du numéro de version, réservé aux
    images (Symboles/**, IMAGES_**). Deux raisons, toutes deux issues de pannes réelles :
@@ -116,6 +116,7 @@ const PRECACHE_URLS = [
   BASE + 'js/nav-wx.js',
   BASE + 'js/nav-brief.js',
   BASE + 'js/nav-flight.js',
+  BASE + 'js/nav-traffic.js',
   BASE + 'ppr_aerodromes.json',
   BASE + 'sup_aip.json',
   BASE + 'js/account.js',
@@ -369,7 +370,8 @@ self.addEventListener('fetch', event => {
       // la stratégie par défaut (cache d'abord, ignoreSearch) renvoyait la PREMIÈRE réponse gardée
       // pour n'importe quels points / heures — prévision périmée ou d'un autre endroit.
       url.hostname.includes('open-meteo.com') ||
-      url.hostname.includes('opensky-network.org')) {
+      url.hostname.includes('opensky-network.org') ||
+      url.hostname.includes('adsb') || url.hostname.includes('workers.dev') || url.hostname.includes('planespotters')) {
     return; // Ne pas intercepter
   }
 

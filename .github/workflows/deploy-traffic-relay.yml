@@ -1,0 +1,66 @@
+name: Deploy traffic relay
+
+# Relais du trafic réel pour la version WEB du Briefing (tools/traffic-relay/worker.js, Cloudflare
+# Workers, offre gratuite). Secrets à créer une fois : CLOUDFLARE_API_TOKEN (modèle « Edit Cloudflare
+# Workers ») et CLOUDFLARE_ACCOUNT_ID. Après le déploiement, l'adresse du relais est écrite dans
+# traffic_relay.json (lu par js/nav-traffic.js) et publiée avec le site.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/traffic-relay/**'
+      - '.github/workflows/deploy-traffic-relay.yml'
+
+concurrency:
+  group: traffic-relay
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets présents ?
+        id: chk
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Relais non déployé : secrets CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID absents."
+          fi
+
+      - name: Deploy worker
+        if: steps.chk.outputs.ok == 'true'
+        id: wr
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: tools/traffic-relay
+          command: deploy
+
+      - name: Publish relay address
+        if: steps.chk.outputs.ok == 'true'
+        env:
+          OUT: ${{ steps.wr.outputs.command-output }}
+          URL: ${{ steps.wr.outputs.deployment-url }}
+        run: |
+          u="$URL"
+          [ -n "$u" ] || u=$(printf '%s' "$OUT" | grep -oE 'https://[a-z0-9.-]+\.workers\.dev' | head -1)
+          if [ -z "$u" ]; then echo "::warning::Adresse du relais introuvable dans la sortie de wrangler"; exit 0; fi
+          echo "Relais : $u"
+          curl -s -H 'Origin: https://str9ke.github.io' "$u/traffic/50.45/3.82/20" | head -c 200; echo
+          printf '{"url":"%s"}\n' "$u" > traffic_relay.json
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add traffic_relay.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Adresse du relais trafic"
+          for i in 1 2 3 4 5; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1

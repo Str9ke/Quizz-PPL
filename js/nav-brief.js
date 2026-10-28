@@ -339,57 +339,6 @@ function pprLayer(items,on){
   mc.appendChild(_pprChip);
 }
 
-/* ---------- Trafic réel ----------
-   Aucun service ADS-B gratuit n'autorise l'appel depuis une page web (règle CORS des navigateurs) :
-   - appli Android : requête native (CapacitorHttp) vers adsb.lol (secours : OpenSky), affichée sur la carte ;
-   - site web : ouverture de la carte en direct adsb.lol centrée sur la carte de route. */
-var _trf={layer:null,timer:null,until:0,fail:0};
-function isNative(){ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()&&window.Capacitor.Plugins&&window.Capacitor.Plugins.CapacitorHttp); }
-function nativeGet(url){ return window.Capacitor.Plugins.CapacitorHttp.get({url:url,headers:{Accept:'application/json'}}).then(function(r){ if(r.status&&r.status>=400) throw new Error('HTTP '+r.status); return typeof r.data==='string'?JSON.parse(r.data):r.data; }); }
-function trafficFetch(b){
-  var c=b.getCenter(), rad=Math.min(150,Math.max(10,Math.round(NL.haversine(c.lat,c.lng,b.getNorth(),b.getEast()))));
-  return nativeGet('https://api.adsb.lol/v2/lat/'+c.lat.toFixed(3)+'/lon/'+c.lng.toFixed(3)+'/dist/'+rad).then(function(d){
-    return (d&&d.ac||[]).map(function(a){ var gnd=a.alt_baro==='ground'; return {id:a.flight||a.r||a.hex,type:a.t||'',lat:a.lat,lon:a.lon,ft:gnd?0:(typeof a.alt_baro==='number'?a.alt_baro:a.alt_geom),gnd:gnd,kt:a.gs,trk:a.track||a.true_heading||0,sq:a.squawk}; });
-  }).catch(function(){
-    return nativeGet('https://opensky-network.org/api/states/all?lamin='+b.getSouth().toFixed(3)+'&lomin='+b.getWest().toFixed(3)+'&lamax='+b.getNorth().toFixed(3)+'&lomax='+b.getEast().toFixed(3)).then(function(d){
-      return (d&&d.states||[]).map(function(s){ var alt=s[13]!=null?s[13]:s[7]; return {id:(s[1]||s[0]).trim(),type:'',lat:s[6],lon:s[5],ft:alt!=null?alt*3.28084:null,gnd:s[8],kt:s[9]!=null?s[9]*1.94384:null,trk:s[10]||0,sq:s[14]}; });
-    });
-  });
-}
-function trafficTick(){
-  var map=NL.routeMap; if(!map||!_trf.layer) return;
-  if(Date.now()>_trf.until){ toggleTraffic(false); NL.toast('✈️ Trafic arrêté après 15 min — touche « Trafic » pour relancer','info',3500); return; }
-  trafficFetch(map.getBounds().pad(0.15)).then(function(list){
-    if(!_trf.layer) return; _trf.fail=0; _trf.layer.clearLayers();
-    list.forEach(function(a){
-      if(a.lat==null||a.lon==null) return;
-      var ft=a.ft!=null?Math.round(a.ft/100)*100:null, col=a.gnd?'#9e9e9e':ft!=null&&ft<5000?'#ff1744':ft!=null&&ft<10000?'#ff9100':'#42a5f5';
-      _trf.layer.addLayer(L.marker([a.lat,a.lon],{zIndexOffset:900,icon:L.divIcon({className:'',iconSize:[24,24],html:'<div style="transform:rotate('+a.trk+'deg);color:'+col+';font-size:20px;line-height:24px;text-align:center;-webkit-text-stroke:1px #000">✈</div>'})})
-        .bindTooltip('<b>'+esc(a.id||'?')+'</b> '+esc(a.type)+' · '+(a.gnd?'au sol':(ft!=null?ft+' ft':'')+(a.kt?' · '+Math.round(a.kt)+' kt':''))+(a.sq?' · '+a.sq:''),{direction:'top'}));
-    });
-    var bt=document.getElementById('nlxTrfBtn'); if(bt) bt.textContent='✈️ Trafic ('+list.length+')';
-  }).catch(function(){
-    if(++_trf.fail>=2){ toggleTraffic(false); NL.toast('✈️ Service de trafic indisponible pour le moment (hors ligne ou limite atteinte) — trafic arrêté','error',4000); }
-  });
-}
-function toggleTraffic(on){
-  var map=NL.routeMap; if(!map) return;
-  if(!isNative()){
-    var c=map.getCenter();
-    window.open('https://adsb.lol/?lat='+c.lat.toFixed(4)+'&lon='+c.lng.toFixed(4)+'&zoom='+Math.max(7,Math.min(12,map.getZoom())),'_blank','noopener');
-    NL.toast('✈️ Trafic en direct ouvert dans un nouvel onglet (adsb.lol), centré sur ta carte. Sur le site web, aucun service gratuit n’autorise l’affichage directement sur notre carte ; dans l’appli Android, il s’affiche sur la carte.','info',7000);
-    return;
-  }
-  if(on==null) on=!_trf.layer;
-  clearInterval(_trf.timer);
-  if(_trf.layer){ map.removeLayer(_trf.layer); _trf.layer=null; }
-  var bt=document.getElementById('nlxTrfBtn'); if(bt){ bt.textContent='✈️ Trafic'; bt.classList.toggle('active',!!on); }
-  if(!on) return;
-  _trf.layer=L.layerGroup().addTo(map); _trf.until=Date.now()+15*60000; _trf.fail=0;
-  trafficTick(); _trf.timer=setInterval(trafficTick,20000);
-  NL.toast('✈️ Trafic réel ADS-B (adsb.lol), toutes les 20 s pendant 15 min. Rouge < 5000 ft, orange < 10 000 ft, gris au sol. Préparation au sol seulement : ne remplace pas la surveillance du ciel.','info',5000);
-}
-
 /* ---------- Zones militaires activées (RTBA, R, D, TSA/TRA, CBA, HTA) ----------
    Sources officielles déjà récupérées par l'appli : NOTAM SIA (France, Belgique, Pays-Bas ; les
    activations RTBA sont publiées la veille par NOTAM « ZONES AIRFORCE RTBA ACT ») et avis du jour
@@ -648,7 +597,7 @@ function addButtons(){
   var rows=document.querySelectorAll('#routeMapCard .rm-tb-row'); if(rows.length<2||document.getElementById('nlxPprBtn')) return;
   var r=rows[1];
   var b1=document.createElement('button'); b1.className='navlog-btn'; b1.id='nlxPprBtn'; b1.textContent='🔒 PPR'; b1.title='Aérodromes soumis à autorisation préalable (PPR) ou privés : France, Belgique, Luxembourg, Pays-Bas, Allemagne, Royaume-Uni'; b1.onclick=function(){ if(_pprLayer){ pprLayer(null,false); return; } showPpr(); }; r.appendChild(b1);
-  var b2=document.createElement('button'); b2.className='navlog-btn'; b2.id='nlxTrfBtn'; b2.textContent='✈️ Trafic'; b2.title='Trafic réel ADS-B autour de la carte (adsb.lol) — sur la carte dans l’appli Android, dans un nouvel onglet sur le site'; b2.onclick=function(){ toggleTraffic(); }; r.appendChild(b2);
+  var b2=document.createElement('button'); b2.className='navlog-btn'; b2.id='nlxTrfBtn'; b2.textContent='✈️ Trafic'; b2.title='Trafic réel ADS-B / MLAT autour de la carte (adsb.lol) : couleur selon l’altitude, fiche détaillée au clic'; b2.onclick=function(){ if(NLX.toggleTraffic) NLX.toggleTraffic(); }; r.appendChild(b2);
   var b3=document.createElement('button'); b3.className='navlog-btn'; b3.id='nlxMilBtn'; b3.textContent='🎯 Militaire'; b3.title='Zones militaires ACTIVÉES le jour du vol (RTBA, zones R/D, TSA/TRA, HTA) d’après les NOTAM officiels et les avis du jour skeyes, dessinées sur la carte ; en rouge épais si la route les traverse à l’heure prévue'; b3.onclick=showMil; r.appendChild(b3);
 }
 

@@ -141,13 +141,16 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   `tools/sup_aip.py` -> `sup_aip.json` (update_aip.yml, lundi + jeudi). AUP/UUP Eurocontrol (403) et carte AZBA (clé chiffrée) :
   liens seulement, pas de contournement. **Zones militaires activées** : bouton carte « 🎯 Militaire » (`milZones`, nav-brief.js) =
   NOTAM SIA (« ZONES AIRFORCE RTBA ACT … hhmm-hhmm », zones R/D/TSA « ACT ») + avis du jour skeyes, contours OpenAIP par désignation,
-  conflit route/heure/altitude -> encart et alertes en vol. Trafic : adsb.lol en natif (APK), nouvel onglet sur le web (pas de CORS).
+  conflit route/heure/altitude -> encart et alertes en vol. **Trafic** (`js/nav-traffic.js`, rendu type tar1090 : couleurs
+  d'altitude, traînées, fiche au clic + adsbdb/planespotters) : APK = adsb.lol en natif ; web = relais Cloudflare Worker
+  `tools/traffic-relay/` (workflow `deploy-traffic-relay.yml`, secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID, adresse
+  écrite dans `traffic_relay.json`) ; sans relais : fenêtre d'aide (adresse manuelle localStorage `trafficRelay`).
   Plané : finesse/vitesse des manuels (`glideRatio` 8.7, `glideKt` 60 F150M / 65 F172M dans MB_DATA) ; survol suivi sur la carte
   (le mode Info rend le tracé insensible). « Plus proche » sans GPS : clic sur la carte -> directs vers 5 terrains. `sw.js` ne doit JAMAIS servir Open-Meteo/OpenSky depuis le cache (ignoreSearch).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v259`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v260`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
