@@ -380,10 +380,13 @@ function drawGlide(lat,lon,altFt,groundFt,w){
   var ok=0;
   airportsNear(lat,lon,r.R+w.kt*r.t+3).forEach(function(x){
     var rf=reach(lat,lon,altFt-apElev(x.a)-margin,g.ratio,g.vg,w), d=NL.haversine(rf.c.lat,rf.c.lon,x.lat,x.lon), can=d<=rf.R; if(can) ok++;
+    var tArr=can?NL.haversine(lat,lon,x.lat,x.lon)/g.vg*60:null;   /* ordre de grandeur, sans vent */
     grp.addLayer(L.circleMarker([x.lat,x.lon],{radius:can?8:5,color:can?'#1b5e20':'#9e9e9e',weight:2,fillColor:can?'#76ff03':'#bdbdbd',fillOpacity:can?.9:.6})
-      .bindTooltip((x.a.icaoCode||'')+' '+x.a.name+(can?' : atteignable':' : trop loin')+' ('+x.d.toFixed(1)+' NM)',{direction:'top'}));
+      .bindTooltip((x.a.icaoCode||'')+' '+x.a.name+(can?' : atteignable, ~'+Math.round(tArr)+' min de plané':' : trop loin')+' ('+x.d.toFixed(1)+' NM)',{direction:'top'}));
   });
-  grp.addLayer(L.marker([r.c.lat,r.c.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="transform:translate(-50%,-140%);white-space:nowrap;background:rgba(27,94,32,.9);color:#fff;font:600 11px sans-serif;padding:2px 6px;border-radius:6px">🪂 '+r.R.toFixed(1)+' NM · '+Math.round(altFt)+' ft · '+ok+' terrain(s)</div>'})}));
+  /* temps avant le sol : hauteur au-dessus du relief / taux de chute en plané (vitesse ÷ finesse) */
+  var sink=g.vg*NM_FT/60/g.ratio, hAgl=Math.max(0,altFt-groundFt), tGnd=hAgl/sink;
+  grp.addLayer(L.marker([r.c.lat,r.c.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div style="transform:translate(-50%,-140%);white-space:nowrap;background:rgba(27,94,32,.92);color:#fff;font:600 11px/1.35 sans-serif;padding:3px 7px;border-radius:6px;text-align:center">🪂 '+r.R.toFixed(1)+' NM · '+ok+' terrain(s) atteignable(s)<br>⏱ <b>'+Math.floor(tGnd)+' min '+('0'+Math.round(tGnd%1*60)).slice(-2)+' s</b> avant le sol · '+Math.round(altFt)+' ft, sol '+Math.round(groundFt)+' ft · −'+Math.round(sink)+' ft/min</div>'})}));
   S.map.glide=grp.addTo(map);
 }
 function clearGlide(){ if(S.map.glide&&NL.routeMap){ NL.routeMap.removeLayer(S.map.glide); S.map.glide=null; } }

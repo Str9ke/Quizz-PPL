@@ -631,7 +631,22 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 #rmObsBtn.on{background:linear-gradient(135deg,#c62828,#8e0000);color:#fff;border-color:transparent}
 .route-map-card.rm-fullscreen{z-index:200000!important}
 body:has(.route-map-card.rm-fullscreen) .app-sidebar,body:has(.route-map-card.rm-fullscreen) .sidebar-toggle-btn,body:has(.route-map-card.rm-fullscreen) .pwa-install-banner{display:none!important}
-@media(max-width:640px){.rm-tb-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}.rm-tb-info{display:none}.rm-tb-lbl{width:auto}}
+/* Téléphone : les lignes « Carte » / « Route » prenaient la largeur de TOUS leurs boutons (1500 px) au
+   lieu de celle de l'écran — ni retour à la ligne ni défilement possible, la fin était inaccessible.
+   -> pastilles compactes qui passent à la ligne, titre de ligne au-dessus, barre repliable (🧰 Outils). */
+.rm-tb-row{min-width:0;max-width:100%}
+.rm-tb-toggle{display:none}
+@media(max-width:640px){
+  .rm-tb-row{flex-wrap:wrap;overflow:visible;gap:4px}
+  .rm-tb-info{display:none}
+  .rm-tb-lbl{flex:1 1 100%;width:auto;margin:2px 0 0}
+  .route-map-card .rm-tb-row .navlog-btn{padding:6px 9px;font-size:.74em}
+  .route-map-card .rm-tb-row select{max-width:100%;font-size:.74em!important}
+  .rm-tb-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:1px solid var(--border-color);border-radius:10px;padding:7px 12px;color:var(--text-primary);font:600 .82em system-ui,sans-serif;cursor:pointer}
+  .route-map-toolbar.rm-tb-collapsed .rm-tb-row{display:none}
+  .route-map-card .alt-profile-wrap svg{min-width:0!important}
+  .route-map-card.rm-fullscreen .rm-tb-row{flex-wrap:wrap;overflow:visible}
+}
 .route-map-card .route-map-info{font-size:.75em;color:var(--text-secondary);flex:1}
 .route-map-card .route-map-legend{font-size:.72em;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap}
 .route-map-card .route-map-legend span{display:inline-flex;align-items:center;gap:4px}
@@ -20138,9 +20153,9 @@ window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 <script src="js/tts.js"></script>
-<script src="js/nav-wx.js?v=20261028b"></script>
-<script src="js/nav-brief.js?v=20261028b"></script>
-<script src="js/nav-flight.js?v=20261028b"></script>
+<script src="js/nav-wx.js?v=20261028c"></script>
+<script src="js/nav-brief.js?v=20261028c"></script>
+<script src="js/nav-flight.js?v=20261028c"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

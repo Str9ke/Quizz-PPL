@@ -652,8 +652,18 @@ function addButtons(){
   var b3=document.createElement('button'); b3.className='navlog-btn'; b3.id='nlxMilBtn'; b3.textContent='🎯 Militaire'; b3.title='Zones militaires ACTIVÉES le jour du vol (RTBA, zones R/D, TSA/TRA, HTA) d’après les NOTAM officiels et les avis du jour skeyes, dessinées sur la carte ; en rouge épais si la route les traverse à l’heure prévue'; b3.onclick=showMil; r.appendChild(b3);
 }
 
+/* Téléphone : bouton « 🧰 Outils » qui replie / déplie les deux lignes de boutons sous la carte */
+function addToolbarToggle(){
+  var tb=document.querySelector('#routeMapCard .route-map-toolbar'); if(!tb||tb.querySelector('.rm-tb-toggle')) return;
+  var n=tb.querySelectorAll('.rm-tb-row button,.rm-tb-row label,.rm-tb-row select').length;
+  var b=document.createElement('button'); b.type='button'; b.className='rm-tb-toggle';
+  function upd(){ var c=tb.classList.contains('rm-tb-collapsed'); b.innerHTML='<span>🧰 Outils de la carte et de la route <small style="opacity:.7">('+n+')</small></span><span>'+(c?'▸ Afficher':'▾ Replier')+'</span>'; }
+  b.onclick=function(){ tb.classList.toggle('rm-tb-collapsed'); lsSet('rmTbCollapsed',tb.classList.contains('rm-tb-collapsed')); upd(); };
+  if(lsGet('rmTbCollapsed',false)) tb.classList.add('rm-tb-collapsed');
+  tb.insertBefore(b,tb.firstChild); upd();
+}
 function init(){
-  cssOnce(); addButtons(); renderPilot(); renderCk(); pvCloudPull(); scheduleBrief();
+  cssOnce(); addButtons(); setTimeout(addToolbarToggle,0); renderPilot(); renderCk(); pvCloudPull(); scheduleBrief();
   var tabBtns=document.querySelectorAll('.navlog-tab'); tabBtns.forEach(function(b){ if(/'checklist'/.test(b.getAttribute('onclick')||'')) b.addEventListener('click',renderCk); });
   var pa=document.getElementById('perfAircraft'); if(pa) pa.addEventListener('change',function(){ lsSet('ckSel',null); renderCk(); });
 }
