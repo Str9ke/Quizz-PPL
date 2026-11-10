@@ -38,4 +38,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000   # 30 min : GitHub reste parfois bloqué sur « syncing_files » (échec du 09/11)
 
