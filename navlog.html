@@ -39,6 +39,8 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .navlog-tabs{display:flex;gap:0;border-bottom:2px solid var(--border-color);max-width:900px;margin:0 auto 16px;padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .navlog-tabs::-webkit-scrollbar{display:none}
 /* Barre d'onglets : glisser (souris ou doigt), molette, flèches ‹ › quand des onglets sont cachés */
+.nt-grp{flex:0 0 auto;align-self:center;font:700 .58em/1 system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--text-secondary);opacity:.75;padding:0 4px 0 12px;margin-left:4px;border-left:1px solid var(--border-color);white-space:nowrap}
+.navlog-tabs .nt-grp:first-child{border-left:none;margin-left:0;padding-left:2px}
 .navlog-tabs{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;overscroll-behavior-x:contain}
 .navlog-tabs.dragging{cursor:grabbing}
 .navlog-tabs.dragging .navlog-tab{pointer-events:none}
@@ -1205,19 +1207,24 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
 
   <!-- Tabs -->
   <div class="navlog-tabs" id="navlogTabs">
+    <span class="nt-grp">Route</span>
     <button class="navlog-tab active" onclick="window.switchTab('nav')">&#x1F9ED; Navlog</button>
+    <button class="navlog-tab" onclick="window.switchTab('altitudes')">&#x1F3D4;&#xFE0F; Altitudes</button>
+    <span class="nt-grp">M&#xe9;t&#xe9;o</span>
     <button class="navlog-tab" onclick="window.switchTab('meteo')">&#x1F326;&#xFE0F; M&#xe9;t&#xe9;o</button>
     <button class="navlog-tab" onclick="window.switchTab('notam')">&#x26A0;&#xFE0F; NOTAMs</button>
+    <span class="nt-grp">Avion</span>
+    <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
     <button class="navlog-tab" onclick="window.switchTab('masse')">&#x2696;&#xFE0F; M&amp;CG</button>
     <button class="navlog-tab" onclick="window.switchTab('perf')">&#x1F4CA; Perf</button>
-    <button class="navlog-tab" onclick="window.switchTab('altitudes')">&#x1F3D4;&#xFE0F; Altitudes</button>
-    <button class="navlog-tab" onclick="window.switchTab('fuel')">&#x26FD; Carbu</button>
-    <button class="navlog-tab" onclick="window.switchTab('vol')">&#x1F6E9;&#xFE0F; En vol</button>
     <button class="navlog-tab" onclick="window.switchTab('checklist')">&#x2705; Checklist</button>
-    <button class="navlog-tab" onclick="window.switchTab('pilote')">&#x1F464; Pilote</button>
-    <button class="navlog-tab" onclick="window.switchTab('notes')">&#x1F4DD; Notes</button>
+    <span class="nt-grp">Vol</span>
+    <button class="navlog-tab" onclick="window.switchTab('vol')">&#x1F6E9;&#xFE0F; En vol</button>
     <button class="navlog-tab" onclick="window.switchTab('fpl')">&#x2708;&#xFE0F; FPL</button>
+    <span class="nt-grp">Dossier</span>
     <button class="navlog-tab" onclick="window.switchTab('dossiers')">&#x1F4C2; Dossiers</button>
+    <button class="navlog-tab" onclick="window.switchTab('notes')">&#x1F4DD; Notes</button>
+    <button class="navlog-tab" onclick="window.switchTab('pilote')">&#x1F464; Pilote</button>
   </div>
 
   <!-- Barre d'actualisation globale : refait METAR+TAF+NOTAM (par terrain) + GAMET + avis du
@@ -2367,7 +2374,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
       <div id="mbDelestageRow" style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <div>
           <label style="font-size:.82em;color:var(--text-secondary)">D&#xe9;lestage pr&#xe9;vu (L) :</label>
-          <input type="number" id="mbDelestage" value="20" min="0" max="200" step="1" onchange="window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em">
+          <input type="number" id="mbDelestage" value="20" min="0" max="200" step="0.1" onchange="window._mbDelManual=true;var n=document.getElementById('mbDelNote');if(n)n.textContent='saisi à la main';window.mbRecalc()" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--input-text);font-size:.85em"> <small id="mbDelNote" style="color:var(--text-secondary);font-size:.75em"></small>
         </div>
       </div>
 
@@ -6096,7 +6103,9 @@ window._setWindSrc=_setWindSrc;
 function _renderWindSrcInfo(){
   var el=document.getElementById('gametWindSrc'); if(!el) return;
   var w=window._windSrc||{}, d=_v('cfgWindDir'), v=_v('cfgWindSpd');
-  if(w.type==='gamet') el.innerHTML='✅ Vent utilisé partout : <b>GAMET '+(w.alt||2000)+' ft — '+d+'°/'+v+' kt</b> · mis à jour automatiquement à chaque nouvel OPMET';
+  var gOld=window._gametEnd&&Date.now()>window._gametEnd, gH=gOld?Math.round((Date.now()-window._gametEnd)/36e5):0;
+  if(w.type==='gamet'&&gOld) el.innerHTML='<span style="color:#ff5252;font-weight:700">⚠️ Vent GAMET périmé depuis '+(gH>=48?Math.round(gH/24)+' jours':gH+' h')+' : <b>'+d+'°/'+v+' kt</b> sert encore aux caps, temps et carburant — récupère la météo (OPMET) avant de préparer le vol.</span>';
+  else if(w.type==='gamet') el.innerHTML='✅ Vent utilisé partout : <b>GAMET '+(w.alt||2000)+' ft — '+d+'°/'+v+' kt</b> · mis à jour automatiquement à chaque nouvel OPMET';
   else el.innerHTML='✋ Vent saisi à la main : <b>'+d+'°/'+v+' kt</b> (ne change plus tout seul) · <a href="#" onclick="window._setWindSrc({type:\'gamet\',alt:2000});window.loadGametWindWidget();return false" style="color:var(--link-color)">revenir au GAMET 2000 ft</a>';
 }
 window._renderWindSrcInfo=_renderWindSrcInfo;
@@ -6964,6 +6973,10 @@ function loadGametWindWidget(){
     var validLabel = '';
     if(validMatch){
       validLabel = 'valide '+validMatch[2]+':'+validMatch[3]+' → '+validMatch[5]+':'+validMatch[6]+' UTC (J'+validMatch[1]+')';
+      /* fin de validité (jour du mois + heure UTC) : le mois est celui en cours, ou le précédent si la date tombe dans le futur */
+      var _gn=new Date(), _ge=new Date(Date.UTC(_gn.getUTCFullYear(),_gn.getUTCMonth(),+validMatch[4],+validMatch[5],+validMatch[6]));
+      if(_ge-_gn>20*864e5) _ge.setUTCMonth(_ge.getUTCMonth()-1);
+      window._gametEnd=_ge.getTime();
     }
 
     /* Le GAMET brut insère parfois du texte entre les niveaux (plage horaire de validité
@@ -17588,7 +17601,15 @@ function mbRecalc(){
   document.getElementById('mbTotalMom').textContent=totalMom.toFixed(2);
   document.getElementById('mbTotalArm').textContent=totalArm.toFixed(4);
   // Landing (after delestage)
-  var delL=parseFloat(document.getElementById('mbDelestage').value)||0;
+  var _delEl=document.getElementById('mbDelestage');
+  if(!window._mbDelManual&&typeof waypoints!=='undefined'&&waypoints.length>1){
+    try{
+      var _tf=0,_sg=_navStageSegs(); for(var _i=1;_i<waypoints.length;_i++){ var _w=waypoints[_i]; if(_w.dist>0&&_w._leg&&_legFuelCounts(_i,_sg)) _tf+=(_w._leg.fuel||0); }
+      var _bf=computeFullFuelBreakdown(_tf), _burn=_bf.total-(_bf.contFuel||0)-(_bf.resFuel||0)-(_bf.altnFuel||0)-(_bf.extraFuel||0);
+      if(_burn>0){ _delEl.value=Math.round(_burn*10)/10; var _dn=document.getElementById('mbDelNote'); if(_dn) _dn.textContent='repris du devis carburant (roulages + vol + tours de piste) — une saisie à la main le fige'; }
+    }catch(e){}
+  }
+  var delL=parseFloat(_delEl.value)||0;
   var delKg=delL*ac.density;
   var landMass=totalMass-delKg;
   var landMom=totalMom-(delKg*ac.fuelArm);
@@ -18661,6 +18682,10 @@ function _renderPerfAllMoves(){
       +'<span class="pm-ap"><b>'+escHTML(icao||'?')+'</b> '+escHTML(AIRPORT_NAMES[icao]||'')+(alias?' <small>(point '+escHTML(alias)+')</small>':'')+'</span>';
     var metarHtml=wx?('<div class="pm-metar">'+(wx.dist?'METAR de <b>'+escHTML(wx.icao)+'</b> (à '+wx.dist+' NM) · ':'')+escHTML(wx.src)+' : '+escHTML(wx.metar)+'</div>')
       :'<div class="pm-metar">Pas de METAR — lance la récupération (onglet Météo).</div>';
+    var wxAge=wx?_metarAgeMinutes(wx.metar):null, wxOld=wxAge!=null&&wxAge>120;
+    if(wxAge!=null) metarHtml+='<div class="pm-metar" style="font-family:inherit;'+(wxOld?'color:#ff5252;font-weight:700':'color:var(--text-secondary)')+'">'
+      +(wxOld?'⚠️ METAR vieux de '+(wxAge>=2880?Math.round(wxAge/1440)+' jours':Math.round(wxAge/60)+' h')+' : vent, température et QNH ne sont plus valables — actualise la météo avant de te fier à ces distances.'
+             :'METAR de il y a '+(wxAge<60?wxAge+' min':Math.floor(wxAge/60)+' h '+('0'+wxAge%60).slice(-2)))+'</div>';
     if(!e){
       html+='<div class="pm-card">'+head+'</div>'+metarHtml+'<div class="pm-body"><div style="color:var(--text-secondary)">Pistes inconnues pour ce terrain.</div></div></div>';
       return;
@@ -18671,7 +18696,7 @@ function _renderPerfAllMoves(){
     var distOk=e.avail?need<=e.avail:true;
     var xwOk=c.xw<=lim, gustOk=!cg||cg.xw<=lim, twOk=c.hw>=0;
     var allOk=xwOk&&twOk&&distOk;
-    head+='<span class="pm-status '+(allOk?(gustOk?'ok':'warn'):'ko')+'">'+(allOk?(gustOk?'✔ dans les normes':'⚠ rafales hors limite'):'✖ hors normes')+'</span></div>';
+    head+='<span class="pm-status '+(allOk?(gustOk&&!wxOld?'ok':'warn'):'ko')+'">'+(allOk?(wxOld?'⚠ METAR périmé':gustOk?'✔ dans les normes':'⚠ rafales hors limite'):'✖ hors normes')+'</span></div>';
     var rsel='<select onchange="window._perfMvRwy[\''+key.replace(/'/g,'')+'\']=this.value;window._renderPerfAllMoves()">';
     ends.forEach(function(x,i){ rsel+='<option value="'+escHTML(x.d)+'"'+(i===ei?' selected':'')+'>Piste '+escHTML(x.d)+' · '+x.hdg+'° · '+(x.avail||'?')+' m · '+(x.grass?'herbe':'dur')+(i===autoIdx?' (meilleur vent)':'')+'</option>'; });
     rsel+='</select>';
@@ -20186,10 +20211,10 @@ window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 <script src="js/tts.js"></script>
-<script src="js/nav-wx.js?v=20261028f"></script>
-<script src="js/nav-brief.js?v=20261028f"></script>
-<script src="js/nav-flight.js?v=20261028f"></script>
-<script src="js/nav-traffic.js?v=20261028f"></script>
+<script src="js/nav-wx.js?v=20261113a"></script>
+<script src="js/nav-brief.js?v=20261113a"></script>
+<script src="js/nav-flight.js?v=20261113a"></script>
+<script src="js/nav-traffic.js?v=20261113a"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

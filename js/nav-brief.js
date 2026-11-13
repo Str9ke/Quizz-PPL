@@ -29,6 +29,13 @@ function cssOnce(){
     +'.bp-ad{font-size:.8em;border:1px solid var(--border-color);border-radius:10px;padding:7px 9px}.bp-ad h4{margin:0 0 4px;font-size:1em}.bp-links a{color:var(--link-color);margin-right:8px}'
     +'.bp-tag{display:inline-block;border-radius:8px;padding:0 7px;margin:1px 3px 1px 0;font-size:.92em;font-weight:700}.bp-ok{background:rgba(76,175,80,.18);color:#4caf50}'
     +'.bp-wa{background:rgba(255,167,38,.2);color:#ffa726}.bp-ba{background:rgba(239,83,80,.2);color:#ef5350}.bp-in{background:rgba(100,181,246,.18);color:#64b5f6}'
+    +'.bp-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:4px 0 10px}'
+    +'.bp-tile{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;border:1px solid var(--border-color);border-left:4px solid #4caf50;border-radius:12px;padding:8px 10px;background:rgba(76,175,80,.06);color:var(--text-primary);cursor:pointer;font:inherit;transition:transform .12s,box-shadow .12s}'
+    +'.bp-tile:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25)}.bp-tile .ic{grid-row:1/3;font-size:1.5em}.bp-tile .lab{font-size:.68em;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary)}.bp-tile .val{font-size:.86em;font-weight:700;line-height:1.2}'
+    +'.bp-tile.l1{border-left-color:#ffa726;background:rgba(255,167,38,.08)}.bp-tile.l2{border-left-color:#ef5350;background:rgba(239,83,80,.1)}'
+    +'.bp-verdict{font-size:.72em;font-weight:700;border-radius:12px;padding:4px 12px;background:rgba(76,175,80,.16);color:#4caf50}.bp-verdict.l1{background:rgba(255,167,38,.18);color:#ffa726}.bp-verdict.l2{background:rgba(239,83,80,.18);color:#ef5350}'
+    +'details.bp-d{border-top:1px solid var(--border-color);padding:6px 0}details.bp-d>summary{cursor:pointer;font-weight:700;font-size:.88em;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}details.bp-d>summary::-webkit-details-marker{display:none}'
+    +'details.bp-d>summary::before{content:"▸";color:var(--text-secondary);transition:transform .15s}details.bp-d[open]>summary::before{transform:rotate(90deg)}'
     +'.bp-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10050;display:flex;align-items:center;justify-content:center;padding:12px}'
     +'.bp-box{background:var(--card-bg,#1d1d27);color:var(--text-primary,#eee);border-radius:14px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column;border:1px solid var(--border-color)}'
     +'.bp-box header{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border-color);flex-wrap:wrap}.bp-box header b{flex:1}'
@@ -221,7 +228,7 @@ function borderAdvice(list){
 
 /* ---------- Activité militaire, oiseaux, parachutage, drones ; SUP AIP ---------- */
 var CAT=[
-  {k:'mil',t:'🎯 Activité militaire / zones',re:/\bTSA|\bTRA\b|\bCBA|RTBA|\bZRT\b|\bZDT\b|\bR\s?\d{1,3}[A-Z]?\b|\bD\s?\d{1,3}[A-Z]?\b|MIL(ITARY)?\b|EXER|\bLFA\b|HTA\d|AIR DEFEN|\bACT\b/i},
+  {k:'mil',t:'🎯 Zones et activités annoncées par NOTAM',re:/\bTSA|\bTRA\b|\bCBA|RTBA|\bZRT\b|\bZDT\b|\bR\s?\d{1,3}[A-Z]?\b|\bD\s?\d{1,3}[A-Z]?\b|MIL(ITARY)?\b|EXER|\bLFA\b|HTA\d|AIR DEFEN|\bACT\b/i},
   {k:'bird',t:'🐦 Oiseaux (BIRDTAM)',re:/BIRD/i},
   {k:'para',t:'🪂 Parachutage / voltige',re:/PJE|PARACHUT|SKYDIV|AEROBATIC|VOLTIGE/i},
   {k:'uas',t:'🚁 Drones',re:/\bUAS\b|DRONE|UNMANNED|RPAS/i}];
@@ -246,7 +253,7 @@ function activity(){
     Object.keys(out).forEach(function(k){ out[k].sort(function(a,b){ return (b.crossed?1:0)-(a.crossed?1:0)||(a.d==null?99:a.d)-(b.d==null?99:b.d); }); });
     var day=(NL.getConfig().flightDate||NL.today()), codes=fieldsOfFlight().map(function(f){ return f.icao; });
     out.sup=((sup&&sup.items)||[]).filter(function(s){ return s.from<=day&&s.to>=day; }).map(function(s){
-      s.hit=codes.some(function(c){ return s.title.indexOf(c)>=0; })||/ZRT|ZDT|ZIT|Hauts[- ]de[- ]France|Nord|Pas-de-Calais|Somme|Aisne|Ardennes|Marne|Picardie|Lille|Valenciennes|Cambrai|Reims/i.test(s.title);
+      s.hit=codes.some(function(c){ return s.title.indexOf(c)>=0; })||/Hauts[- ]de[- ]France|Pas-de-Calais|\((59|62|02|80|08)\)|Picardie|Lille|Valenciennes|Cambrai|Maubeuge|Le Quesnoy|Marly|Calais|Dunkerque|Graveline|Manche orientale|FIR et l.UIR France/i.test(s.title);
       return s;
     }).sort(function(a,b){ return (b.hit?1:0)-(a.hit?1:0); });
     return out;
@@ -270,8 +277,10 @@ function activityHtml(a){
   });
   if(!h) h='<div class="bp-it">Aucune activation militaire, BIRDTAM, parachutage ou drone trouvé près de la route ce jour-là (NOTAM et avis du jour de la dernière récupération).</div>';
   if(a.sup&&a.sup.length){
-    h+='<div class="bp-sec">📑 SUP AIP France en vigueur ce jour ('+a.sup.length+')</div>';
-    a.sup.slice(0,30).forEach(function(s){ h+='<div class="bp-it '+(s.hit?'w':'i')+'"><a href="'+esc(s.url)+'" target="_blank" rel="noopener" style="color:var(--link-color)"><b>SUP '+esc(s.num)+'</b></a> '+esc(s.title)+' <small>('+esc(s.from)+' → '+esc(s.to)+')</small></div>'; });
+    var supLine=function(x){ return '<div class="bp-it '+(x.hit?'w':'i')+'"><a href="'+esc(x.url)+'" target="_blank" rel="noopener" style="color:var(--link-color)"><b>SUP '+esc(x.num)+'</b></a> '+esc(x.title)+' <small>('+esc(x.from)+' → '+esc(x.to)+')</small></div>'; };
+    var near=a.sup.filter(function(x){ return x.hit; }), far=a.sup.filter(function(x){ return !x.hit; });
+    h+='<div class="bp-sec">📑 SUP AIP France qui peuvent concerner ta route ('+near.length+')</div>'+(near.map(supLine).join('')||'<div class="bp-it">Aucun SUP AIP ne cite tes terrains ni le nord de la France.</div>');
+    if(far.length) h+='<details class="bp-d" style="margin-top:4px"><summary>Les '+far.length+' autres SUP AIP en vigueur (reste de la France)</summary>'+far.map(supLine).join('')+'</details>';
   }
   h+='<div class="bp-it i" style="margin-top:6px">Sources officielles à consulter aussi : <a href="https://www.sia.aviation-civile.gouv.fr/schedules" target="_blank" rel="noopener" style="color:var(--link-color)">activité RTBA / AZBA (SIA)</a> · '
     +'<a href="https://www.public.nm.eurocontrol.int/PUBPORTAL/gateway/spec/index.html" target="_blank" rel="noopener" style="color:var(--link-color)">AUP/UUP Eurocontrol</a> · '
@@ -279,39 +288,71 @@ function activityHtml(a){
   return h;
 }
 
-/* ---------- Encart « Points à vérifier » ---------- */
+/* ---------- Encart « Briefing du vol » : tuiles de synthèse + détail repliable ---------- */
 var _bpTimer=null, _bpSeq=0;
 function renderBrief(){
   var card=document.getElementById('briefPlusCard'); if(!card||!NL.waypoints||NL.waypoints.filter(function(w){ return w&&w.lat!=null; }).length<2){ if(card) card.style.display='none'; return; }
   cssOnce(); card.style.display='';
-  var open=lsGet('bpOpen',true), seq=++_bpSeq;
-  var top=[], sun=NLX.sunAlerts?NLX.sunAlerts():[], fdate=NL.getConfig().flightDate||NL.today(), td=NL.today();
-  var dd=Math.round((Date.parse(fdate)-Date.parse(td))/864e5), dfr=fdate.split('-').reverse().join('/');
-  top.push({lvl:dd<0||dd>2?2:dd?1:0,txt:'📅 Vol du <b>'+dfr+'</b>'+(dd===0?' (aujourd’hui)':dd===1?' (demain)':dd<0?' — <b>date passée</b> : soleil, horaires, NOTAM et météo sont calculés pour ce jour-là. Change la date au-dessus du tableau Navlog.':dd>2?' — <b>dans '+dd+' jours</b> : pas encore de prévision AROME pour ce jour-là.':'')});
-  sun.forEach(function(s){ top.push({lvl:s.lvl,txt:'☀️ '+s.txt}); });
-  var wx=NLX.routeWxAlerts?NLX.routeWxAlerts():null;
-  if(wx){ if(wx.bad) top.push({lvl:2,txt:'🌥️ Météo de la route : '+wx.bad+' point(s) hors minima VFR (prévision AROME)'}); else if(wx.warn) top.push({lvl:1,txt:'🌥️ Météo de la route : '+wx.warn+' point(s) limites'});
-    else top.push({lvl:0,txt:'🌥️ Minima VFR tenus sur la route (prévision AROME du '+new Date(wx.at).toLocaleString('fr-BE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')'});
-    if(wx.fzMin!=null) top.push({lvl:wx.fzMin<4000?1:0,txt:'🧊 Isotherme 0 °C le plus bas : '+Math.round(wx.fzMin/100)*100+' ft'}); }
-  else top.push({lvl:1,txt:'🌥️ Météo de la route pas encore calculée — <a href="#" onclick="window.switchTab(\'meteo\');window.switchMeteoSub(\'routewx\');return false" style="color:var(--link-color)">ouvrir « Météo de la route »</a>'});
-  (NLX.pilotAlerts?NLX.pilotAlerts():[]).forEach(function(p){ top.push(p); });
+  var seq=++_bpSeq, openSec=lsGet('bpSecs',{syn:true,ad:true,bd:true,act:false});
+  var T={}, ORDER=['date','sun','wx','data','ad','bd','mil','pil'];
+  function tile(k,ic,lab,val,lvl,sec,act){ T[k]={ic:ic,lab:lab,val:val,lvl:lvl,sec:sec,act:act}; }
   function it(a){ return '<div class="bp-it '+(a.lvl===2?'b':a.lvl?'w':'')+'">'+a.txt+'</div>'; }
-  card.innerHTML='<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-tg><span><span class="icon">📋</span> Points à vérifier pour ce vol <small id="bpCount" style="font-weight:400;color:var(--text-secondary)"></small></span>'
-    +'<span style="font-size:.7em;font-weight:600;color:var(--text-secondary);border:1px solid var(--border-color);border-radius:10px;padding:3px 10px">'+(open?'▾ Replier':'▸ Afficher')+'</span></div>'
-    +'<div id="bpBody" style="'+(open?'':'display:none')+'"><div id="bpTop">'+top.map(it).join('')+'</div>'
-    +'<div class="bp-sec">🛬 Terrains du vol</div><div id="bpAd"><small>⏳ fiches AIP…</small></div>'
-    +'<div id="bpBorder"></div><div class="bp-sec">🎯 Activité du jour autour de la route</div><div id="bpAct"><small>⏳ NOTAM et avis du jour…</small></div></div>';
-  card.querySelector('[data-tg]').onclick=function(){ lsSet('bpOpen',!open); renderBrief(); };
-  var nAlert=top.filter(function(a){ return a.lvl; }).length;
-  function count(extra){ var el=document.getElementById('bpCount'); nAlert+=extra; if(el) el.textContent=nAlert?'· '+nAlert+' point(s) d\'attention':'· rien à signaler'; }
-  count(0);
-  adCards().then(function(r){ if(seq!==_bpSeq) return; var seen={}; r.alerts=r.alerts.filter(function(a){ if(seen[a.txt.replace(/ \(.*?\)/,'')]) return false; seen[a.txt.replace(/ \(.*?\)/,'')]=1; return true; });
-    var el=document.getElementById('bpAd'); if(el) el.innerHTML=(r.alerts.length?r.alerts.map(it).join(''):'')+r.html; count(r.alerts.filter(function(a){ return a.lvl; }).length); });
-  borders().then(function(b){ if(seq!==_bpSeq) return; var el=document.getElementById('bpBorder'); if(el&&b.length){ el.innerHTML='<div class="bp-sec">🛂 Passage de frontière</div>'+borderAdvice(b); count(1); } NLX._borders=b; });
-  milZones().then(function(Z){ if(seq!==_bpSeq) return; var hit=Z.filter(function(z){ return z.hits.length; }), el=document.getElementById('bpTop'); if(!el) return;
-    var h=hit.map(function(z){ return it({lvl:2,txt:'🎯 <b>'+esc(z.label)+'</b> active '+utc(z.from)+'–'+utc(z.to)+' UTC : ta route la traverse vers '+hmLoc(z.hits[0].time)+' à '+Math.round(z.hits[0].alt)+' ft'}); }).join('');
-    h+=it({lvl:0,txt:'🎯 '+Z.length+' zone(s) militaire(s) activée(s) ce jour (NOTAM, avis du jour) — <a href="#" onclick="document.getElementById(\'nlxMilBtn\').click();return false" style="color:var(--link-color)">voir sur la carte</a>'});
-    el.insertAdjacentHTML('beforeend',h); count(hit.length); }).catch(function(){});
+
+  /* --- synthèse immédiate (calcul local) --- */
+  var top=[], sun=NLX.sunAlerts?NLX.sunAlerts():[], fdate=NL.getConfig().flightDate||NL.today(), td=NL.today();
+  var dd=Math.round((Date.parse(fdate)-Date.parse(td))/864e5), dfr=fdate.split('-').reverse().join('/'), dl=dd<0||dd>2?2:dd?1:0;
+  tile('date','📅','Vol',dfr.slice(0,5)+' · '+(NL.getConfig().depTime||''),dl,'syn');
+  if(dl) top.push({lvl:dl,txt:'📅 Vol du <b>'+dfr+'</b>'+(dd===1?' (demain)':dd<0?' — <b>date passée</b> : soleil, horaires, NOTAM et météo sont calculés pour ce jour-là. Change la date au-dessus du tableau Navlog.':dd>2?' — <b>dans '+dd+' jours</b> : pas encore de prévision AROME pour ce jour-là.':'')});
+  var sl=0; sun.forEach(function(s){ sl=Math.max(sl,s.lvl); top.push({lvl:s.lvl,txt:'☀️ '+s.txt}); });
+  var m=/nuit[^0-9]*(\d{2}:\d{2})\)?$/.exec((sun[sun.length-1]||{}).txt||''), m2=/dès (\d{2}:\d{2})/.exec((sun[0]||{}).txt||'');
+  tile('sun',sl===2?'🌙':'☀️','Jour / nuit',sl===2?'vol de nuit !':sl?'proche de la nuit':'de jour'+(m2?' · nuit '+m2[1]:''),sl,'syn');
+  var wx=NLX.routeWxAlerts?NLX.routeWxAlerts():null;
+  function goWx(){ window.switchTab('meteo'); window.switchMeteoSub('routewx'); }
+  if(wx){
+    var wl=wx.bad?2:wx.warn?1:0;
+    tile('wx','🌥️','Météo de la route',wx.bad?wx.bad+' pt hors minima':wx.warn?wx.warn+' pt limites':'minima VFR tenus',wl,null,goWx);
+    top.push({lvl:wl,txt:'🌥️ '+(wx.bad?'Météo de la route : '+wx.bad+' point(s) hors minima VFR':wx.warn?'Météo de la route : '+wx.warn+' point(s) limites':'Minima VFR tenus sur la route')+' (prévision AROME du '+new Date(wx.at).toLocaleString('fr-BE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')'});
+    if(wx.fzMin!=null) top.push({lvl:wx.fzMin<4000?1:0,txt:'🧊 Isotherme 0 °C le plus bas : '+Math.round(wx.fzMin/100)*100+' ft'});
+  } else tile('wx','🌥️','Météo de la route','à calculer ›',1,null,goWx);
+  var pa=NLX.pilotAlerts?NLX.pilotAlerts():[], pl=0; pa.forEach(function(p){ pl=Math.max(pl,p.lvl); if(p.lvl) top.push(p); });
+  tile('pil','👤','Pilote',pa.length&&/non renseignées/.test(pa[0].txt)?'à renseigner ›':pl===2?'validité expirée':pl?'à surveiller':'en règle',pl,null,function(){ window.switchTab('pilote'); });
+  tile('data','📡','Données NOTAM','…',0,'syn');
+  tile('ad','🛬','Terrains','…',0,'ad'); tile('bd','🛂','Frontière','aucune',0,'bd'); tile('mil','🎯','Zones militaires','…',0,'act');
+
+  function sec(k,title,id,inner){ return '<details class="bp-d" data-s="'+k+'"'+(openSec[k]?' open':'')+'><summary>'+title+' <small data-n></small></summary><div id="'+id+'">'+inner+'</div></details>'; }
+  card.innerHTML='<div class="nl-card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span><span class="icon">📋</span> Briefing du vol</span><span id="bpVerdict" class="bp-verdict"></span></div>'
+    +'<div id="bpTiles" class="bp-tiles"></div>'
+    +sec('syn','📌 À retenir','bpTop',top.map(it).join('')||'<div class="bp-it">Rien à signaler côté date, soleil, météo et pilote.</div>')
+    +sec('ad','🛬 Terrains du vol : carburant, horaires, PPR','bpAd','<small>⏳ fiches AIP…</small>')
+    +sec('bd','🛂 Passage de frontière','bpBorder','<div class="bp-it">Pas de frontière sur cette route.</div>')
+    +sec('act','🎯 Zones, NOTAM d’activité et SUP AIP autour de la route','bpAct','<small>⏳ NOTAM et avis du jour…</small>');
+  card.querySelectorAll('details.bp-d').forEach(function(d){ d.addEventListener('toggle',function(){ var o=lsGet('bpSecs',openSec); o[d.dataset.s]=d.open; lsSet('bpSecs',o); }); });
+  function draw(){
+    var el=document.getElementById('bpTiles'); if(!el) return;
+    el.innerHTML=ORDER.map(function(k){ var t=T[k]; return '<button type="button" class="bp-tile l'+t.lvl+'" data-k="'+k+'"><span class="ic">'+t.ic+'</span><span class="lab">'+t.lab+'</span><span class="val">'+t.val+'</span></button>'; }).join('');
+    el.querySelectorAll('.bp-tile').forEach(function(b){ b.onclick=function(){ var t=T[b.dataset.k]; if(t.act) return t.act();
+      var d=card.querySelector('details[data-s="'+t.sec+'"]'); if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'}); } }; });
+    var red=0, org=0; ORDER.forEach(function(k){ if(T[k].lvl===2) red++; else if(T[k].lvl===1) org++; });
+    var v=document.getElementById('bpVerdict'); if(v){ v.className='bp-verdict l'+(red?2:org?1:0); v.textContent=red?'🔴 '+red+' point'+(red>1?'s':'')+' bloquant'+(red>1?'s':'')+(org?' · '+org+' à vérifier':''):org?'🟠 '+org+' point'+(org>1?'s':'')+' à vérifier':'🟢 Rien à signaler'; }
+  }
+  draw();
+  function addTop(a){ var el=document.getElementById('bpTop'); if(!el) return; if(/Rien à signaler/.test(el.textContent)&&el.children.length===1) el.innerHTML=''; el.insertAdjacentHTML('beforeend',it(a)); }
+
+  /* --- fraîcheur des NOTAM (date de la dernière récupération) --- */
+  NL.loadFrNotams().then(function(d){ if(seq!==_bpSeq) return;
+    var g=d&&d.generated?Date.parse(d.generated):null; if(!g){ T.data.val='jamais récupérées'; T.data.lvl=2; draw(); return; }
+    var h=(Date.now()-g)/36e5, lv=h>12?2:h>3?1:0;
+    T.data.val=h<1?'il y a '+Math.round(h*60)+' min':h<48?'il y a '+Math.round(h)+' h':'il y a '+Math.round(h/24)+' jours'; T.data.lvl=lv; draw();
+    if(lv) addTop({lvl:lv,txt:'📡 NOTAM, avis du jour et zones : dernière récupération '+T.data.val+' ('+new Date(g).toLocaleString('fr-BE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+') — lance « Tout récupérer » avant de te fier aux zones actives.'});
+  });
+  adCards().then(function(r){ if(seq!==_bpSeq) return; var seen={}; r.alerts=r.alerts.filter(function(a){ var k=a.txt.replace(/ \(.*?\)/,''); if(seen[k]) return false; seen[k]=1; return true; });
+    var el=document.getElementById('bpAd'); if(el) el.innerHTML=(r.alerts.length?r.alerts.map(it).join(''):'')+r.html;
+    var lv=0; r.alerts.forEach(function(a){ lv=Math.max(lv,a.lvl); }); T.ad.lvl=lv; T.ad.val=r.alerts.filter(function(a){ return a.lvl; }).length?r.alerts.filter(function(a){ return a.lvl; }).length+' point(s) à voir':'ouverts, carburant OK'; draw(); });
+  borders().then(function(b){ if(seq!==_bpSeq) return; NLX._borders=b; var el=document.getElementById('bpBorder'); if(el&&b.length){ el.innerHTML=borderAdvice(b);
+      T.bd.lvl=1; T.bd.val=b.length+' passage'+(b.length>1?'s':'')+' · plan de vol'; draw(); } });
+  milZones().then(function(Z){ if(seq!==_bpSeq) return; var hit=Z.filter(function(z){ return z.hits.length; });
+    hit.forEach(function(z){ addTop({lvl:2,txt:'🎯 <b>'+esc(z.label)+'</b> active '+utc(z.from)+'–'+utc(z.to)+' UTC : ta route la traverse vers '+hmLoc(z.hits[0].time)+' à '+Math.round(z.hits[0].alt)+' ft'}); });
+    T.mil.lvl=hit.length?2:0; T.mil.val=hit.length?hit.length+' sur ta route !':Z.length+' actives, aucune sur la route'; T.mil.act=function(){ var b=document.getElementById('nlxMilBtn'); if(b){ if(!b.classList.contains('active')) b.click(); document.getElementById('routeMapCard').scrollIntoView({behavior:'smooth'}); } }; draw(); }).catch(function(){ T.mil.val='indisponible'; draw(); });
   activity().then(function(a){ if(seq!==_bpSeq) return; NLX._activity=a; var el=document.getElementById('bpAct'); if(el){ el.innerHTML=activityHtml(a); if(window.metarFrToggle) window.metarFrToggle(document,window._metarFrOn?true:null); } });
 }
 function scheduleBrief(){ clearTimeout(_bpTimer); _bpTimer=setTimeout(renderBrief,900); }
