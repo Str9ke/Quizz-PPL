@@ -18651,13 +18651,32 @@ function _renderPerfAllMoves(){
   var mv=_perfMovements();
   if(!mv.length){ box.innerHTML=''; return; }
   var A=AFM[_afmKey()];
-  var mass=window._mbTakeoffMass||null;
+  var mass0=window._mbTakeoffMass||null, mass=mass0;
+  /* Masse RÉELLE de chaque mouvement = masse du centrage − carburant brûlé avant (devis : roulages, legs,
+     tours de piste des étapes précédentes ; pour un atterrissage, aussi le roulage départ et le vol de l'étape).
+     Avant : tout était calculé à la masse du premier décollage. */
+  var _mvMass={};
+  try{
+    var _sg=_navStageSegs(), _nav=_sg.map(function(){ return 0; });
+    for(var _i=1;_i<waypoints.length;_i++){ var _w=waypoints[_i], _k=_legStageIdx(_i,_sg); if(_k>=0&&_w.dist>0&&_w._leg) _nav[_k]+=(_w._leg.fuel||0); }
+    var _bf=computeFullFuelBreakdown(_nav.reduce(function(a,b){ return a+b; },0)), _fb=_bf.fuelBurn||20;
+    var _acd=(MB_DATA[window._perfAircraft]||{}).density||0.72, _used=0;
+    _sg.forEach(function(sg,k){
+      var tx=_bf.taxiList[k]||{d:0,a:0}, pm=_bf.patternList[k]||0;
+      _mvMass['TO'+(k+1)]={L:_used};
+      _used+=tx.d/60*_fb+_nav[k]+pm/60*_fb;
+      _mvMass['LD'+(k+1)]={L:_used};
+      _used+=tx.a/60*_fb;
+    });
+    Object.keys(_mvMass).forEach(function(k){ _mvMass[k].kg=mass0?mass0-_mvMass[k].L*_acd:null; });
+  }catch(e){ _mvMass={}; }
   var html='<div class="nl-card-title" style="font-size:1em;margin-bottom:4px">🛫🛬 Tous les décollages et atterrissages du vol</div>'
-    +'<div style="font-size:.78em;color:var(--text-secondary);margin-bottom:10px">'+escHTML(A.label)+' · masse '+(mass?Math.round(mass)+' kg (centrage)':'maxi '+A.mtow+' kg (centrage non rempli)')
+    +'<div style="font-size:.78em;color:var(--text-secondary);margin-bottom:10px">'+escHTML(A.label)+' · masse au départ '+(mass?Math.round(mass)+' kg (centrage), puis masse réelle à chaque mouvement':'maxi '+A.mtow+' kg (centrage non rempli)')
     +' · vent de travers démontré : décollage '+A.xwTO+' kt, atterrissage '+A.xwLD+' kt</div><div class="pm-grid">';
   function ok(b){ return b?'<span class="pm-v ok">✔</span>':'<span class="pm-v ko">✖</span>'; }
   mv.forEach(function(m){
     var wp=waypoints[m.idx]||{};
+    var _mm=_mvMass[m.kind+m.stage], mass=(_mm&&_mm.kg)||mass0;
     var icao=(wp.name||'').trim().toUpperCase(), alias='';
     if(!RUNWAY_DB[icao]){ var near=_nearestAerodrome(wp.lat,wp.lon,1.5); if(near){ alias=icao; icao=near; } }
     var key=m.kind+':'+m.idx+':'+icao;
@@ -18709,10 +18728,11 @@ function _renderPerfAllMoves(){
     var dist='<div class="pm-dist"><div><span>Roulement</span><b>'+Math.round(r.roll)+' m</b></div>'
       +'<div><span>Passage 15 m'+(isTO?'':' ×1,5')+'</span><b>'+Math.round(need)+' m</b></div>'
       +'<div><span>'+(isTO?'TORA':'LDA')+' piste '+escHTML(e.d)+'</span><b>'+(e.avail||'?')+' m</b> '+ok(distOk)+'</div></div>';
-    var climb='';
+    var climb=(mass0&&_mm)?'<div class="pm-climb" style="color:var(--text-secondary)">⚖️ Masse à ce moment : <b>'+Math.round(mass)+' kg</b>'+(_mm.L>0.05?' <small>(centrage '+Math.round(mass0)+' kg − '+_mm.L.toFixed(1)+' L brûlés)</small>':' <small>(masse du centrage)</small>')
+      +(A.masses&&A.masses.length>1?'':' <small>· le manuel ne donne les distances qu’à '+A.mtow+' kg : valeurs prudentes</small>')+'</div>':'';
     if(isTO){
       var cl=afmClimb({elev:elev,temp:temp,qnh:qnh,mass:mass});
-      climb='<div class="pm-climb">⬆️ Taux de montée maxi sur place : <b>'+Math.round(cl.fpm)+' ft/min</b> à VI '+Math.round(cl.vi)+' km/h ('+Math.round(cl.vi*0.53996)+' kt)'
+      climb+='<div class="pm-climb">⬆️ Taux de montée maxi sur place : <b>'+Math.round(cl.fpm)+' ft/min</b> à VI '+Math.round(cl.vi)+' km/h ('+Math.round(cl.vi*0.53996)+' kt)'
         +(cl.corr>0?' <small>(table '+Math.round(cl.fpmTable)+' − '+Math.round(cl.corr)+' ft/min pour la chaleur)</small>':'')+'</div>';
     }
     var det='<details class="pm-det"><summary>Détail du calcul (manuel de vol)</summary><div>'+r.steps.map(function(x){ return '• '+x; }).join('<br>')
@@ -20211,10 +20231,10 @@ window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 <script src="js/tts.js"></script>
-<script src="js/nav-wx.js?v=20261113a"></script>
-<script src="js/nav-brief.js?v=20261113a"></script>
-<script src="js/nav-flight.js?v=20261113a"></script>
-<script src="js/nav-traffic.js?v=20261113a"></script>
+<script src="js/nav-wx.js?v=20261113b"></script>
+<script src="js/nav-brief.js?v=20261113b"></script>
+<script src="js/nav-flight.js?v=20261113b"></script>
+<script src="js/nav-traffic.js?v=20261113b"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

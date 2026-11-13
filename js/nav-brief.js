@@ -345,7 +345,12 @@ function renderBrief(){
     T.data.val=h<1?'il y a '+Math.round(h*60)+' min':h<48?'il y a '+Math.round(h)+' h':'il y a '+Math.round(h/24)+' jours'; T.data.lvl=lv; draw();
     if(lv) addTop({lvl:lv,txt:'📡 NOTAM, avis du jour et zones : dernière récupération '+T.data.val+' ('+new Date(g).toLocaleString('fr-BE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+') — lance « Tout récupérer » avant de te fier aux zones actives.'});
   });
-  adCards().then(function(r){ if(seq!==_bpSeq) return; var seen={}; r.alerts=r.alerts.filter(function(a){ var k=a.txt.replace(/ \(.*?\)/,''); if(seen[k]) return false; seen[k]=1; return true; });
+  adCards().then(function(r){ if(seq!==_bpSeq) return; var seen={};
+    /* dégagement : sans D1 sur la dernière étape, le devis ne compte aucun carburant de dégagement */
+    try{ var sg=NL.stageSegs(), lastSeg=sg[sg.length-1], arr=lastSeg&&NL.waypoints[lastSeg[lastSeg.length-1]];
+      var altnL=parseFloat((document.getElementById('fuelAltnDist')||{}).value)||0;
+      if(arr&&!((arr._altn||[])[0])&&!altnL) r.alerts.push({lvl:1,txt:'Aucun dégagement choisi pour l’arrivée à '+esc((arr.name||'').trim())+' : le devis carburant ne compte <b>aucun carburant de dégagement</b> — choisis D1 dans « Dégagements » sous le tableau Navlog.'});
+    }catch(e){} r.alerts=r.alerts.filter(function(a){ var k=a.txt.replace(/ \(.*?\)/,''); if(seen[k]) return false; seen[k]=1; return true; });
     var el=document.getElementById('bpAd'); if(el) el.innerHTML=(r.alerts.length?r.alerts.map(it).join(''):'')+r.html;
     var lv=0; r.alerts.forEach(function(a){ lv=Math.max(lv,a.lvl); }); T.ad.lvl=lv; T.ad.val=r.alerts.filter(function(a){ return a.lvl; }).length?r.alerts.filter(function(a){ return a.lvl; }).length+' point(s) à voir':'ouverts, carburant OK'; draw(); });
   borders().then(function(b){ if(seq!==_bpSeq) return; NLX._borders=b; var el=document.getElementById('bpBorder'); if(el&&b.length){ el.innerHTML=borderAdvice(b);

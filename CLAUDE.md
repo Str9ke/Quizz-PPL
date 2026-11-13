@@ -155,11 +155,13 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
 - **Fraîcheur des données** (13/11/2026) : Perf signale un METAR de plus de 2 h (`wxOld`, verdict « METAR périmé ») ; vent GAMET périmé signalé
   (`window._gametEnd`) ; encart « Briefing du vol » (`renderBrief`, nav-brief.js) = tuiles de synthèse (date, jour/nuit, météo, données NOTAM,
   terrains, frontière, zones militaires, pilote) + sections repliables (`bpSecs`) ; délestage M&CG repris du devis (`_mbDelManual`).
+  Perf : masse RÉELLE par mouvement (`_mvMass` dans `_renderPerfAllMoves` : centrage − carburant brûlé d'après le devis) ; alerte
+  « aucun dégagement choisi » dans l'encart. Petits terrains français (LFQO…) : pas d'AD 2 dans l'eAIP -> pas de fiche AIP (VAC seulement).
   Onglets du Navlog regroupés par phase (`.nt-grp` : Route, Météo, Avion, Vol, Dossier).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v265`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v266`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
