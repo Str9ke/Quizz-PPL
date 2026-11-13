@@ -1,7 +1,77 @@
 {
-  "generated": "Wed, 11 Nov 2026 18:08:37 GMT",
-  "count": 4,
+  "generated": "Fri, 13 Nov 2026 13:07:08 GMT",
+  "count": 10,
   "warnings": [
+    {
+      "ref": "F3560/26",
+      "from": "13 NOV 2026 07:30",
+      "till": "13 NOV 2026 17:00",
+      "schedule": "0730-1000 1200-1700",
+      "text": "HTA13-WESTERLO HELICOPTER TRAINING AREA ACT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F3556/26",
+      "from": "13 NOV 2026 09:00",
+      "till": "13 NOV 2026 17:00",
+      "schedule": "0900-1200 1430-1700",
+      "text": "HTA02-ARDENNES 02 ACT",
+      "lower": "GND",
+      "upper": "250FT AGL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F3554/26",
+      "from": "13 NOV 2026 11:15",
+      "till": "13 NOV 2026 16:15",
+      "schedule": "1115-1230 1500-1615",
+      "text": "EBD26-ARDENNES 05 ACT",
+      "lower": "1000FT AGL",
+      "upper": "4500FT AMSL",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "F3550/26",
+      "from": "13 NOV 2026 08:00",
+      "till": "13 NOV 2026 16:00",
+      "schedule": null,
+      "text": "TEMPO SEGREGATED AREA (TSA) 'MIL UAS TRAINING BOX PAMPA' ESTABLISHED 510329N 0052825E - 510406N 0053046E - 510333N 0053101E - 510305N 0052834E - 510329N 0052825E FOR MIL UAS ACT , WITHIN VISUAL LINE OF SIGHT",
+      "lower": "GND",
+      "upper": "500FT AGL",
+      "geometry": {
+        "type": "polygon",
+        "vertices": [
+          [
+            51.058056,
+            5.473611
+          ],
+          [
+            51.068333,
+            5.512778
+          ],
+          [
+            51.059167,
+            5.516944
+          ],
+          [
+            51.051389,
+            5.476111
+          ],
+          [
+            51.058056,
+            5.473611
+          ]
+        ]
+      }
+    },
     {
       "ref": "F3528/26",
       "from": "11 NOV 2026 00:00",
@@ -15,27 +85,56 @@
       }
     },
     {
-      "ref": "G2531/26",
-      "from": "29 OCT 2026 00:00",
-      "till": "11 NOV 2026 23:59",
+      "ref": "F3469/26",
+      "from": "13 NOV 2026 08:30",
+      "till": "13 NOV 2026 16:30",
       "schedule": null,
-      "text": "TRIGGER NOTAM. PERM AIRAC AMDT 011/2026 29 OCT 2026. LOW FLYING AREA GOLF THREE LATERAL LIMITS UPDATED",
-      "lower": "4500FT AMSL",
-      "upper": "FL065",
+      "text": "EBR62-SINT-TRUIDEN 2 ACT",
+      "lower": "GND",
+      "upper": "2000FT AMSL",
       "geometry": {
         "type": "unlocated"
       }
     },
     {
-      "ref": "G2530/26",
-      "from": "29 OCT 2026 00:00",
-      "till": "11 NOV 2026 23:59",
+      "ref": "G2700/26",
+      "from": "13 NOV 2026 07:30",
+      "till": "13 NOV 2026 16:30",
       "schedule": null,
-      "text": "TRIGGER NOTAM. PERM AIRAC AMDT 011/2026 29 OCT 2026. NEW RESTRICTED AREA EBR05G - HELCHTEREN UAS",
-      "lower": "GND",
-      "upper": "5000FT AMSL",
+      "text": "LFA11-KOKSIJDE TRAINING AREA ACT",
+      "lower": "10FT AMSL",
+      "upper": "500FT AMSL",
       "geometry": {
         "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2699/26",
+      "from": "13 NOV 2026 06:00",
+      "till": "13 NOV 2026 17:00",
+      "schedule": null,
+      "text": "EBR20-BRASSCHAAT ACT",
+      "lower": "GND",
+      "upper": "FL070",
+      "geometry": {
+        "type": "unlocated"
+      }
+    },
+    {
+      "ref": "G2645/26",
+      "from": "03 NOV 2026 09:00",
+      "till": "30 NOV 2026 16:00",
+      "schedule": "NOV 03-06 0700-1600, NOV 09-10 0700-1600, NOV 12-13 0700-1600,",
+      "text": "NOV 16-20 0700-1600, NOV 23-26 0700-1600, NOV 30 0700-1600 TEMPO SEGREGATED AREA (TSA) 'PEUTIE' ESTABLISHED 505607N 0042813E RADIUS 500M FOR UAS ACT IN VISUAL LINE OF SIGHT. STATUS OF THE AREA CAN BE CHECKED WITH BRUSSELS TWR",
+      "lower": "GND",
+      "upper": "310FT AMSL",
+      "geometry": {
+        "type": "circle",
+        "center": [
+          50.935278,
+          4.470278
+        ],
+        "radiusNm": 0.27
       }
     },
     {
