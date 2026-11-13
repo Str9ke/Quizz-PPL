@@ -303,8 +303,11 @@ body.light .navlog-hero-title{background:linear-gradient(135deg,#6c47b8,#8b5cf6,
 .add-wp-btn:hover{border-color:#667eea;color:#667eea;background:rgba(102,126,234,.05)}
 
 /* Summary panel */
-.summary-panel{max-width:700px;margin:14px auto;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,.08),rgba(118,75,162,.08));border:1px solid rgba(102,126,234,.2);border-radius:14px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-around}
-.summary-item{text-align:center}
+.summary-panel{margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
+.summary-item{text-align:left;background:var(--bg-container);border:1px solid var(--border-color);border-left:4px solid #667eea;border-radius:12px;padding:9px 12px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.summary-item:last-child{border-left-color:#22c55e;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03))}
+.summary-item:last-child .s-value{color:#22c55e}
+#sumAltnItem{border-left-color:#ffa726}
 .summary-item .s-label{font-size:.72em;color:var(--text-secondary);text-transform:uppercase;font-weight:600}
 .summary-item .s-value{font-size:1.3em;font-weight:800;color:var(--text-heading)}
 .summary-item .s-sub{font-size:.68em;color:var(--text-secondary);margin-top:2px}
@@ -744,7 +747,7 @@ body:has(.route-map-card.rm-fullscreen) .app-sidebar,body:has(.route-map-card.rm
   .windy-grid{grid-template-columns:1fr}
   .ext-links-grid{grid-template-columns:1fr}
   .wp-card-header{flex-direction:column;align-items:flex-start}
-  .summary-panel{flex-direction:column;align-items:center}
+  .summary-panel{grid-template-columns:repeat(2,1fr)}.summary-item:last-child{grid-column:1/-1}
   .dossier-card .d-header{flex-wrap:wrap}
   #routeMapContainer{min-height:300px;height:min(118vw,68vh);max-height:none}
   /* Sans ce wrap, la ligne d'outils (infos route + légende + 4 boutons, aucun retour à la
@@ -816,6 +819,15 @@ body:has(.route-map-card.rm-fullscreen) .app-sidebar,body:has(.route-map-card.rm
 
 /* Subtab scroll indicators */
 .meteo-subtabs{position:relative}
+/* Météo : familles (Messages / Ma route / Cartes / Observation) puis les sous-onglets de la famille choisie */
+.meteo-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.meteo-cat{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:9px 12px;border-radius:12px;border:1px solid var(--border-color);background:var(--bg-container);color:var(--text-primary);font:700 .88em system-ui,sans-serif;cursor:pointer;transition:border-color .15s,background .15s}
+.meteo-cat small{font-weight:500;font-size:.78em;color:var(--text-secondary)}
+.meteo-cat:hover{border-color:#667eea}
+.meteo-cat.active{background:linear-gradient(135deg,rgba(102,126,234,.28),rgba(118,75,162,.22));border-color:#667eea}
+.meteo-subtabs[data-cat="msg"] .meteo-subtab:not([data-cat="msg"]),.meteo-subtabs[data-cat="route"] .meteo-subtab:not([data-cat="route"]),
+.meteo-subtabs[data-cat="map"] .meteo-subtab:not([data-cat="map"]),.meteo-subtabs[data-cat="obs"] .meteo-subtab:not([data-cat="obs"]){display:none}
+@media(max-width:640px){.meteo-cats{grid-template-columns:repeat(2,1fr)}.meteo-cat{padding:8px 10px;font-size:.82em}}
 .meteo-subtabs::before,.meteo-subtabs::after{content:'';position:absolute;top:0;bottom:0;width:28px;pointer-events:none;z-index:2;opacity:0;transition:opacity .3s}
 .meteo-subtabs::before{left:0;background:linear-gradient(to right,var(--bg-container),transparent)}
 .meteo-subtabs::after{right:0;background:linear-gradient(to left,var(--bg-container),transparent)}
@@ -1379,7 +1391,7 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
       <div class="summary-item"><div class="s-label">Carburant trajet</div><div class="s-value" id="sumTripFuel">0 L</div></div>
       <div class="summary-item"><div class="s-label">R&#xe9;serve</div><div class="s-value" id="sumReserve">0 L</div><div class="s-sub" id="sumReserveMode">&#x2600;&#xFE0F; Jour 30 min</div></div>
       <div class="summary-item" id="sumAltnItem" style="display:none"><div class="s-label">D&#xe9;gagement</div><div class="s-value" id="sumAltnFuel">0 L</div></div>
-      <div class="summary-item"><div class="s-label">Carburant total (block fuel)</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
+      <div class="summary-item"><div class="s-label">Carburant total &#xe0; emporter</div><div class="s-value" id="sumTotalFuel">0 L</div></div>
     </div>
 
     <!-- Points à vérifier pour ce vol (js/nav-brief.js) : soleil, terrains (carburant, horaires, PPR),
@@ -1604,21 +1616,27 @@ details.afm-tables>summary,details.perf-detail>summary{cursor:pointer;font-weigh
   <div id="tab-meteo" class="navlog-tab-content">
 
     <!-- Sub-tabs -->
-    <div class="meteo-subtabs">
-      <button class="meteo-subtab active" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
-      <button class="meteo-subtab" data-sub="aerometar" onclick="window.switchMeteoSub('aerometar')">&#x1F1EB;&#x1F1F7; METAR A&#xe9;roWeb</button>
-      <button class="meteo-subtab" data-sub="metar" onclick="window.switchMeteoSub('metar')">&#x1F4E1; METAR secours</button>
-      <button class="meteo-subtab" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
-      <button class="meteo-subtab" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
-      <button class="meteo-subtab" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
-      <button class="meteo-subtab" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
-      <button class="meteo-subtab" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
-      <button class="meteo-subtab" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
-      <button class="meteo-subtab" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
-      <button class="meteo-subtab" data-sub="routewx" onclick="window.switchMeteoSub('routewx')">&#x1F6E3;&#xFE0F; M&#xe9;t&#xe9;o de la route</button>
-      <button class="meteo-subtab" data-sub="carb" onclick="window.switchMeteoSub('carb')">&#x1F9CA; Givrage carbu</button>
-      <button class="meteo-subtab" data-sub="sigmet" onclick="window.switchMeteoSub('sigmet')">&#x26A0;&#xFE0F; SIGMET</button>
-      <button class="meteo-subtab" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
+    <div class="meteo-cats" id="meteoCats">
+      <button type="button" class="meteo-cat active" data-cat="msg" onclick="window.switchMeteoCat('msg')">&#x1F4C4; Messages<small>METAR &middot; TAF &middot; SIGMET</small></button>
+      <button type="button" class="meteo-cat" data-cat="route" onclick="window.switchMeteoCat('route')">&#x1F6E3;&#xFE0F; Ma route<small>pr&#xe9;vision &middot; givrage</small></button>
+      <button type="button" class="meteo-cat" data-cat="map" onclick="window.switchMeteoCat('map')">&#x1F5FA;&#xFE0F; Cartes<small>TEMSI &middot; WINTEM &middot; mod&#xe8;les</small></button>
+      <button type="button" class="meteo-cat" data-cat="obs" onclick="window.switchMeteoCat('obs')">&#x1F6F0;&#xFE0F; Observation<small>radar &middot; satellite</small></button>
+    </div>
+    <div class="meteo-subtabs" data-cat="msg">
+      <button class="meteo-subtab active" data-cat="msg" data-sub="opmet" onclick="window.switchMeteoSub('opmet')">&#x1F4C4; OPMET</button>
+      <button class="meteo-subtab" data-cat="msg" data-sub="aerometar" onclick="window.switchMeteoSub('aerometar')">&#x1F1EB;&#x1F1F7; METAR A&#xe9;roWeb</button>
+      <button class="meteo-subtab" data-cat="msg" data-sub="metar" onclick="window.switchMeteoSub('metar')">&#x1F4E1; METAR secours</button>
+      <button class="meteo-subtab" data-cat="msg" data-sub="sigmet" onclick="window.switchMeteoSub('sigmet')">&#x26A0;&#xFE0F; SIGMET</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="charts" onclick="window.switchMeteoSub('charts')">&#x1F5FA;&#xFE0F; TEMSI / WINTEM</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="fronts" onclick="window.switchMeteoSub('fronts')">&#x1F300; Fronts</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="models" onclick="window.switchMeteoSub('models')">&#x1F4CA; Mod&#xe8;les GFS</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="numwx" onclick="window.switchMeteoSub('numwx')">&#x1F4CA; Num Wx</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="windy" onclick="window.switchMeteoSub('windy')">&#x1F32C;&#xFE0F; Windy</button>
+      <button class="meteo-subtab" data-cat="map" data-sub="aeroweb" onclick="window.switchMeteoSub('aeroweb')">&#x1F510; A&#xe9;roWeb</button>
+      <button class="meteo-subtab" data-cat="obs" data-sub="radar" onclick="window.switchMeteoSub('radar')">&#x1F4E1; Radar</button>
+      <button class="meteo-subtab" data-cat="obs" data-sub="satellite" onclick="window.switchMeteoSub('satellite')">&#x1F6F0;&#xFE0F; Satellite</button>
+      <button class="meteo-subtab" data-cat="route" data-sub="routewx" onclick="window.switchMeteoSub('routewx')">&#x1F6E3;&#xFE0F; M&#xe9;t&#xe9;o de la route</button>
+      <button class="meteo-subtab" data-cat="route" data-sub="carb" onclick="window.switchMeteoSub('carb')">&#x1F9CA; Givrage carbu</button>
     </div>
 
     <!-- Barre de récupération des données (simplifiée le 13/10/2026 : 4 boutons redondants
@@ -4348,7 +4366,20 @@ function setChecklistState(s){ _checklistState=s||{}; renderChecklist(); }
 
 /* ===== METEO SUB-TABS ===== */
 var _meteoSubLoaded={};
+/* Famille de sous-onglets météo : affiche ses sous-onglets et ouvre le dernier consulté (sinon le premier) */
+var _meteoCatLast={};
+function switchMeteoCat(cat,keep){
+  var bar=document.querySelector('.meteo-subtabs'); if(!bar) return;
+  bar.setAttribute('data-cat',cat);
+  document.querySelectorAll('.meteo-cat').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-cat')===cat); });
+  if(keep) return;
+  var first=bar.querySelector('.meteo-subtab[data-cat="'+cat+'"]');
+  switchMeteoSub(_meteoCatLast[cat]||(first&&first.getAttribute('data-sub')));
+}
+window.switchMeteoCat=switchMeteoCat;
 function switchMeteoSub(id){
+  var _mb=document.querySelector('.meteo-subtab[data-sub="'+id+'"]'), _mc=_mb&&_mb.getAttribute('data-cat');
+  if(_mc){ _meteoCatLast[_mc]=id; switchMeteoCat(_mc,true); }
   var btns=document.querySelectorAll('.meteo-subtab');
   btns.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-sub')===id);});
   var subs=document.querySelectorAll('.meteo-sub-content');
@@ -20231,10 +20262,10 @@ window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 <script src="js/tts.js"></script>
-<script src="js/nav-wx.js?v=20261113b"></script>
-<script src="js/nav-brief.js?v=20261113b"></script>
-<script src="js/nav-flight.js?v=20261113b"></script>
-<script src="js/nav-traffic.js?v=20261113b"></script>
+<script src="js/nav-wx.js?v=20261113c"></script>
+<script src="js/nav-brief.js?v=20261113c"></script>
+<script src="js/nav-flight.js?v=20261113c"></script>
+<script src="js/nav-traffic.js?v=20261113c"></script>
   <script src="js/statusbar.js?v=20260818a"></script>
   <script src="js/apps.js?v=20261018a"></script>
   <script src="js/sidebar.js"></script>

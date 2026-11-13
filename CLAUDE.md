@@ -158,10 +158,13 @@ son manifeste, son logo (`icons/<app>-*.png`, sources `tools/make_logos.py`) et 
   Perf : masse RÉELLE par mouvement (`_mvMass` dans `_renderPerfAllMoves` : centrage − carburant brûlé d'après le devis) ; alerte
   « aucun dégagement choisi » dans l'encart. Petits terrains français (LFQO…) : pas d'AD 2 dans l'eAIP -> pas de fiche AIP (VAC seulement).
   Onglets du Navlog regroupés par phase (`.nt-grp` : Route, Météo, Avion, Vol, Dossier).
+- **Présentation (13/11/2026)** : accueil `briefing.html` = carte « Vol en préparation » avec verdict et tuiles (`RD`, `drawReady` : départ, soleil,
+  âge des données, dégagement, pilote, route — calcul local sur `navlog_autosave_v1`) ; onglet Météo en 4 familles (`switchMeteoCat` :
+  Messages / Ma route / Cartes / Observation, `data-cat` sur les sous-onglets) ; résumé du Navlog en bandeau de tuiles (`.summary-panel`).
 - Le Briefing : accueil tableau de bord `briefing.html` ; les METAR Internet sont dans l'onglet `#metar` (secours si pas d'OPMET).
 
 ## Règles qui comptent
-1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v266`) à chaque modification qui change le site
+1. **Incrémenter `CACHE_NAME` dans `sw.js`** (actuellement `quiz-ppl-v267`) à chaque modification qui change le site
    ou l'APK, même si seul un workflow change. C'est ce numéro qui déclenche « mise à jour disponible » et nomme la version de l'APK
    (`tools/app_version.py`). Oubli = les utilisateurs ne reçoivent pas la mise à jour.
 2. L'appli doit marcher **hors ligne en vol** : tout nouveau fichier de contenu doit être embarqué (voir `EXCLUDE_*` de
