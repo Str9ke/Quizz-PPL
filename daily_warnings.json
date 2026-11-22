@@ -1,24 +1,12 @@
 {
-  "generated": "Thu, 19 Nov 2026 12:57:17 GMT",
-  "count": 8,
+  "generated": "Sun, 22 Nov 2026 13:35:49 GMT",
+  "count": 4,
   "warnings": [
     {
-      "ref": "C1665/26",
-      "from": "19 NOV 2026 07:00",
-      "till": "19 NOV 2026 18:00",
-      "schedule": null,
-      "text": "NO OVERFLY ARP 1NM",
-      "lower": "GND",
-      "upper": "4500FT AMSL",
-      "geometry": {
-        "type": "unlocated"
-      }
-    },
-    {
-      "ref": "F3639/26",
-      "from": "19 NOV 2026 09:00",
-      "till": "19 NOV 2026 15:00",
-      "schedule": null,
+      "ref": "F3658/26",
+      "from": "21 NOV 2026 09:00",
+      "till": "22 NOV 2026 15:00",
+      "schedule": "SAT 0900-1500 1800-2000, SUN 0900-1500",
       "text": "TSA28D-ELSENBORN 05 ACT",
       "lower": "GND",
       "upper": "4500FT AMSL",
@@ -27,68 +15,45 @@
       }
     },
     {
-      "ref": "F3528/26",
-      "from": "11 NOV 2026 00:00",
-      "till": "10 FEB 2027 23:59",
-      "schedule": "EVERY MON-FRI H24",
-      "text": "EBR67 NIVELLES ACT",
+      "ref": "F3501/26",
+      "from": "20 NOV 2026 09:00",
+      "till": "24 NOV 2026 17:00",
+      "schedule": "20-23 0900-1100 1300-1500 2100-2300, 24 0700-0900 1100-1300",
+      "text": "1500-1700 TEMPO SEGREGATED AREA (TSA) 'BOX ETALE' ESTABLISHED 494018N 0053448E - 494022N 0053941E - 493528N 0053948E - 493520N0053445E - 494018N 0053448E DUE TO MIL REMOTELY PILOTED ACFT SYSTEM (RPAS)26",
       "lower": "GND",
-      "upper": "400FT AGL",
+      "upper": "500FT AGL",
       "geometry": {
-        "type": "unlocated"
+        "type": "polygon",
+        "vertices": [
+          [
+            49.671667,
+            5.58
+          ],
+          [
+            49.672778,
+            5.661389
+          ],
+          [
+            49.591111,
+            5.663333
+          ],
+          [
+            49.671667,
+            5.58
+          ]
+        ]
       }
     },
     {
-      "ref": "G2731/26",
-      "from": "19 NOV 2026 06:00",
-      "till": "19 NOV 2026 17:00",
-      "schedule": null,
-      "text": "EBR20-BRASSCHAAT ACT",
-      "lower": "GND",
-      "upper": "FL070",
+      "ref": "G2742/26",
+      "from": "21 NOV 2026 07:30",
+      "till": "22 NOV 2026 16:30",
+      "schedule": "DAILY 0730-1630",
+      "text": "LFA11-KOKSIJDE TRAINING AREA ACT",
+      "lower": "10FT AMSL",
+      "upper": "500FT AMSL",
       "geometry": {
         "type": "unlocated"
-      }
-    },
-    {
-      "ref": "G2730/26",
-      "from": "19 NOV 2026 07:00",
-      "till": "19 NOV 2026 14:00",
-      "schedule": null,
-      "text": "EBR17A-LOMBARDSIJDE SECTOR ALPHA ACT",
-      "lower": "SFC",
-      "upper": "2500FT AMSL",
-      "geometry": {
-        "type": "unlocated"
-      }
-    },
-    {
-      "ref": "G2729/26",
-      "from": "19 NOV 2026 07:00",
-      "till": "19 NOV 2026 16:00",
-      "schedule": null,
-      "text": "EBR04-ELSENBORN 01 ACT",
-      "lower": "GND",
-      "upper": "FL105",
-      "geometry": {
-        "type": "unlocated"
-      }
-    },
-    {
-      "ref": "G2645/26",
-      "from": "03 NOV 2026 09:00",
-      "till": "30 NOV 2026 16:00",
-      "schedule": "NOV 03-06 0700-1600, NOV 09-10 0700-1600, NOV 12-13 0700-1600,",
-      "text": "NOV 16-20 0700-1600, NOV 23-26 0700-1600, NOV 30 0700-1600 TEMPO SEGREGATED AREA (TSA) 'PEUTIE' ESTABLISHED 505607N 0042813E RADIUS 500M FOR UAS ACT IN VISUAL LINE OF SIGHT. STATUS OF THE AREA CAN BE CHECKED WITH BRUSSELS TWR",
-      "lower": "GND",
-      "upper": "310FT AMSL",
-      "geometry": {
-        "type": "circle",
-        "center": [
-          50.935278,
-          4.470278
-        ],
-        "radiusNm": 0.27
       }
     },
     {
